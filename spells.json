@@ -1,0 +1,3386 @@
+[
+   {
+    "name": "Ancient Dust",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Pathfinder #186: Ghost King's Rage pg. 75",
+    "traditions": [
+      "Arcane",
+      "Divine"
+    ],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Necromancy",
+      "Negative"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "15-foot cone",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "negative damage equal to your spellcasting modifier and 1 persistent negative",
+    "heightened": {
+      "+2": "The initial negative damage increases by 1d6, and the persistent damage increases by 1."
+    },
+    "description": "You cough up a cloud of gray soil, echoing grave dust. Each creature in the area takes negative damage equal to your spellcasting modifier and 1 persistent negative damage depending on its Fortitude save.",
+    "custom": false
+  },
+  {
+    "name": "Approximate",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Secrets of Magic pg. 90",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Detection",
+      "Divination"
+    ],
+    "cast": "2 actions",
+    "range": "10 feet",
+    "area": "1 cubic foot",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Name a particular type of object you are looking for within the area. You gain an instant estimate of the quantity of the chosen objects that are clearly visible within the target area. The number is rounded to the largest digit.",
+    "custom": false
+  },
+  {
+    "name": "Boost Eidolon",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Secrets of Magic pg. 144",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Evocation",
+      "Summoner"
+    ],
+    "cast": "1 action",
+    "range": "100 feet",
+    "area": null,
+    "targets": "your eidolon",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You focus deeply on the link between you and your eidolon and boost the power of your eidolon's attacks. Your eidolon gains a +2 status bonus to damage rolls with its unarmed attacks. If its Strikes deal more than one weapon damage die, the status bonus increases to 2 per weapon damage die, to a maximum of +8.",
+    "custom": false
+  },
+  {
+    "name": "Bramble Bush",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Pathfinder #203 Shepherd of Decay pg. 78",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Plant",
+      "Wood"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": "5-foot cube",
+    "targets": null,
+    "duration": "until the start of your next turn",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "1d4 piercing",
+    "heightened": {
+      "+2": "The initial damage increases by 1d4, and the damage dealt by hazardous terrain increases by 1."
+    },
+    "description": "A thorned bush sprouts from the ground, lashes around, and withers. Any creature in the area takes 1d4 piercing damage with a basic Reflex save. Until the start of your next turn, the area is difficult terrain and hazardous terrain.",
+    "custom": false
+  },
+  {
+    "name": "Bullhorn",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Player Core 2 pg. 241",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Auditory",
+      "Cantrip",
+      "Concentrate",
+      "Illusion",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "10 minutes",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "5th": "Your voice can be heard clearly up to 1,200 feet away.",
+      "7th": "Your voice can be heard clearly up to 1 mile away."
+    },
+    "description": "You amplify your voice so all listeners within 500 feet can hear it loudly and clearly. You gain a +1 status bonus to checks to Coerce and auditory Performance checks to Perform at a large venue.",
+    "custom": false
+  },
+  {
+    "name": "Buzzing Bites",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Divine Mysteries pg. 299",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Cantrip",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d4 piercing",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You evoke buzzing and crawling insects to bite a foe, dealing 1d4 piercing damage and potentially sickening the target depending on its Fortitude save. Once the spell ends, the target becomes temporarily immune for 1 minute.",
+    "custom": false
+  },
+  {
+    "name": "Caustic Blast",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 319",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Acid",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": "5-foot burst",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "1d8 acid",
+    "heightened": {
+      "+2": "The initial damage increases by 1d8, and the persistent damage on a critical failure increases by 1."
+    },
+    "description": "You fling a large glob of acid that detonates, spraying nearby creatures. Creatures in the area take 1d8 acid damage with a basic Reflex save; on a critical failure, the creature also takes 1 persistent acid damage.",
+    "custom": false
+  },
+  {
+    "name": "Clinging Ice",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 386",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Cold",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "1d4 cold",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "Freezing sleet and heavy snowfall collect on the target's feet and legs, dealing 1d4 cold damage and potentially reducing its Speeds depending on its Reflex save.",
+    "custom": false
+  },
+  {
+    "name": "Courageous Anthem",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 370",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You inspire yourself and your allies with encouragement. You and all allies in the area gain a +1 status bonus to attack rolls, damage rolls, and saves against fear effects.",
+    "custom": false
+  },
+  {
+    "name": "Daze",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 322",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Mental",
+      "Nonlethal"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "1 round",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "1d6 mental",
+    "heightened": {
+      "+2": "The damage increases by 1d6."
+    },
+    "description": "You daze the target with a mental jolt that deals 1d6 mental damage with a basic Will save. On a critical failure, the target is also stunned 1.",
+    "custom": false
+  },
+  {
+    "name": "Deep Breath",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Rage of Elements pg. 70",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Air",
+      "Cantrip",
+      "Manipulate"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "10 minutes",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "2nd": "The duration increases to 1 hour, and you lose only 10 minutes of breath if you speak.",
+      "4th": "The duration increases to 8 hours, and you lose only 10 minutes of breath if you speak."
+    },
+    "description": "You take an incredibly deep breath and can hold it for the spell's duration. You don't lose breath when hit, but you do lose all the air if you speak or Cast a Spell.",
+    "custom": false
+  },
+  {
+    "name": "Detect Magic",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 323",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Detection",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You learn the rank or level of the most powerful magical effect the spell detects, as determined by the GM.",
+      "4th": "As 3rd rank, but you also pinpoint the source of the highest-rank magic to within a 5-foot cube (or the nearest if larger)."
+    },
+    "description": "You send out a pulse that registers the presence of magic. You receive no information beyond the presence or absence of magic, though you can choose to ignore magic you're fully aware of.",
+    "custom": false
+  },
+  {
+    "name": "Detect Metal",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Rage of Elements pg. 142",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Detection",
+      "Manipulate",
+      "Metal"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You can discern all types of metal you detected, and your spell can overcome deceptive illusions hiding one metal as another if the effect's rank is lower than your detect metal spell."
+    },
+    "description": "You attune yourself to magnetic fields, becoming aware of the presence or absence of metallic objects, veins, and deposits within the area.",
+    "custom": false
+  },
+  {
+    "name": "Discern Secrets",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 386",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "5th": "You can target two creatures instead of one."
+    },
+    "description": "Your patron whispers secrets. The target can Recall Knowledge, Seek, or Sense Motive as a free action and gains a +1 status bonus to the statistic used for the roll while you Sustain the spell.",
+    "custom": false
+  },
+  {
+    "name": "Distortion Lens",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Dark Archives (Remastered) pg. 23",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": "5-foot burst",
+    "targets": null,
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+3": "The lens increases or decreases the range of abilities by an additional 5 feet."
+    },
+    "description": "You create a magical lens that distorts space. Allied ranged attacks passing through it gain range, while enemy ranged attacks passing through it require additional range.",
+    "custom": false
+  },
+  {
+    "name": "Divine Lance",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 325",
+    "traditions": [
+      "Divine"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Sanctified",
+      "Spirit"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d4 spirit",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You unleash a beam of divine energy. Make a ranged spell attack roll against the target's AC. On a hit, the target takes 2d4 spirit damage.",
+    "custom": false
+  },
+  {
+    "name": "Draw Moisture",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Rage of Elements pg. 173",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Water"
+    ],
+    "cast": "2 actions",
+    "range": "10 feet",
+    "area": null,
+    "targets": "1 object up to 10 Bulk",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You draw water out of an object, drying it and collecting the water in a floating globule you can direct into a nearby container.",
+    "custom": false
+  },
+  {
+    "name": "Eat Fire",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Rage of Elements pg. 119",
+    "traditions": [
+      "Arcane",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Fire",
+      "Manipulate"
+    ],
+    "cast": "reaction",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "until the end of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+3": "The resistance increases by 5."
+    },
+    "description": "You consume and ingest fire, gaining resistance 5 to fire damage until the end of the current turn. During the remaining duration, you can use Belch Smoke to create a 5-foot-burst smoke cloud within 20 feet.",
+    "custom": false
+  },
+  {
+    "name": "Electric Arc",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 328",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Electricity",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 or 2 creatures",
+    "duration": null,
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "2d4 electricity",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "An arc of lightning leaps from one target to another. Each target takes 2d4 electricity damage with a basic Reflex save.",
+    "custom": false
+  },
+  {
+    "name": "Elemental Counter",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Rage of Elements pg. 222",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate"
+    ],
+    "cast": "reaction",
+    "range": "60 feet",
+    "area": null,
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You expend a spell slot of a countering element to attempt to counteract a triggering elemental spell affecting you or a creature within 60 feet.",
+    "custom": false
+  },
+  {
+    "name": "Evil Eye",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Player Core pg. 386",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Curse",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Your patron's resentment manifests in a baleful gaze. The target becomes sickened 1 on a failed Will save, or sickened 2 on a critical failure, and the value can't be reduced below 1 while the spell is active and you can see the target.",
+    "custom": false
+  },
+  {
+    "name": "Figment",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Player Core pg. 331",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Illusion",
+      "Manipulate",
+      "Subtle"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": null,
+    "duration": "sustained",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You create a simple illusory sound or vision. When you Cast or Sustain the spell, you can attempt to Create a Diversion with the illusion, gaining a +2 circumstance bonus to your Deception check.",
+    "custom": false
+  },
+  {
+    "name": "Forbidden Thought",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Dark Archives (Remastered) pg. 21",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Mental",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "2d6 mental",
+    "heightened": {
+      "+1": "The damage increases by 1d6."
+    },
+    "description": "You place a psychic lock in a foe's mind that prevents it from a specific action. If the creature attempts that action on its next turn, it takes 2d6 mental damage with a basic Will save.",
+    "custom": false
+  },
+  {
+    "name": "Forbidding Ward",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Player Core pg. 332",
+    "traditions": [
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 ally and 1 enemy",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "6th": "The status bonus increases to +2."
+    },
+    "description": "You ward an ally against one enemy. The ally gains a +1 status bonus to AC and saving throws against that enemy's attacks, spells, and other effects.",
+    "custom": false
+  },
+  {
+    "name": "Frost's Touch",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Treasure Vault pg. 185",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Arcane",
+      "Cantrip",
+      "Cold"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 object",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You can create simple objects of ice with up to 1 Bulk and level 1.",
+      "5th": "Items you create can be up to 4 Bulk and 4th level.",
+      "7th": "Items you create can be up to 8 Bulk and 8th level.",
+      "9th": "Items you create can be up to 20 Bulk and 12th level."
+    },
+    "description": "You cool an object or solidify ambient moisture into a crude, fragile non-magical ice object.",
+    "custom": false
+  },
+  {
+    "name": "Frostbite",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 332",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Cold",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "2d4 cold",
+    "heightened": {
+      "+1": "The damage increases by 1d4 and the weakness on a critical failure increases by 1."
+    },
+    "description": "An orb of biting cold freezes the target's body, dealing 2d4 cold damage with a basic Fortitude save. On a critical failure, the target also gains weakness 1 to bludgeoning until the start of your next turn.",
+    "custom": false
+  },
+  {
+    "name": "Gale Blast",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core 2 pg. 246",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Air",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "5-foot emanation",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d6 bludgeoning",
+    "heightened": {
+      "+1": "The damage increases by 1d6."
+    },
+    "description": "Wind whirls around you in a 5-foot emanation. Each creature in the area takes 1d6 bludgeoning damage and may be pushed away depending on its Fortitude save.",
+    "custom": false
+  },
+  {
+    "name": "Glamorize",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Divine Mysteries pg. 258",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 hour",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You alter a minor detail of your appearance or create a small environmental effect confined to your person. While active, you can Sustain it to make further adjustments.",
+    "custom": false
+  },
+  {
+    "name": "Glass Shield",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Rage of Elements pg. 94",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Earth"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "until the start of your next turn",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "1d4 piercing",
+    "heightened": {
+      "3rd": "The shield has Hardness 4, and the damage increases to 3d4.",
+      "5th": "The shield has Hardness 7, and the damage increases to 4d4.",
+      "7th": "The shield has Hardness 10, and the damage increases to 5d4.",
+      "9th": "The shield has Hardness 12, and the damage increases to 6d4."
+    },
+    "description": "You summon a layer of clear glass that functions as a shield. When you Shield Block, the shield explodes in a shower of glass that can damage the creature that broke it.",
+    "custom": false
+  },
+  {
+    "name": "Glimpse Weakness",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Dark Archives (Remastered) pg. 18",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic"
+    ],
+    "cast": "1 action",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": "additional precision damage equal to 1 + the spell's rank",
+    "heightened": null,
+    "description": "You glimpse a weakness in a foe. The first ally that hits the target with a successful Strike deals additional precision damage equal to 1 plus the spell's rank, and then the spell ends.",
+    "custom": false
+  },
+  {
+    "name": "Gouging Claw",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Player Core pg. 333",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Morph"
+    ],
+    "cast": "2 actions",
+    "range": "touch",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d6 slashing or piercing plus 2 persistent bleed",
+    "heightened": {
+      "+1": "The damage increases by 1d6 and the persistent bleed damage increases by 1."
+    },
+    "description": "You morph your limb into a clawed appendage and make a melee spell attack. On a hit, you deal 2d6 slashing or piercing damage plus 2 persistent bleed damage.",
+    "custom": false
+  },
+  {
+    "name": "Guidance",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Player Core pg. 334",
+    "traditions": [
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "until the start of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You ask for supernatural guidance, granting the target a +1 status bonus to one attack roll, Perception check, saving throw, or skill check before the duration ends.",
+    "custom": false
+  },
+  {
+    "name": "Haunting Hymn",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core 2 pg. 246",
+    "traditions": [
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Auditory",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Sonic"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "15-foot cone",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d8 sonic",
+    "heightened": {
+      "+2": "The damage increases by 1d8."
+    },
+    "description": "You echo a jarring hymn that only creatures in the area can hear. The hymn deals 1d8 sonic damage with a basic Fortitude save, and on a critical failure a target is deafened for 1 minute.",
+    "custom": false
+  },
+  {
+    "name": "Healing Plaster",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Secrets of Magic pg. 109",
+    "traditions": [
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Earth",
+      "Transmutation"
+    ],
+    "cast": "1 action",
+    "range": "5 feet",
+    "area": null,
+    "targets": "a handful of dirt or mud",
+    "duration": "10 minutes",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "The plaster grants a +1 item bonus to Medicine checks to Administer First Aid or Treat Wounds."
+    },
+    "description": "You purify dirt or mud into a pliable plaster that can be used in lieu of healer's tools for Medicine checks to Administer First Aid or Treat Wounds.",
+    "custom": false
+  },
+  {
+    "name": "Ignition",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 336",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Fire",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d4 fire",
+    "heightened": {
+      "+1": "The initial damage increases by 1d4 and the persistent fire damage on a critical hit increases by 1d4."
+    },
+    "description": "You point at a target and make a spell attack roll. On a hit, the target takes 2d4 fire damage. If the target is within your melee reach, you can instead make a melee spell attack and increase the damage dice to d6s.",
+    "custom": false
+  },
+  {
+    "name": "Illuminate",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Rage of Elements pg. 120",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Fire",
+      "Manipulate"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+1": "The maximum area increases by 10 feet."
+    },
+    "description": "You light all non-magical fire-based light sources in the area, such as candles, lamps, and sconces.",
+    "custom": false
+  },
+  {
+    "name": "Imaginary Weapon",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 22",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Force",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "touch",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d6 force",
+    "heightened": {
+      "+1": "The damage increases by 1d6."
+    },
+    "description": "You create a simple weapon of force and lash out. Make a melee spell attack roll; on a hit, you deal 2d6 force damage. On a critical success, you deal double damage and can push the target 10 feet away.",
+    "custom": false
+  },
+  {
+    "name": "Infectious Enthusiasm",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Secrets of Magic pg. 112",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Emotion",
+      "Enchantment",
+      "Mental"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You gain a +1 status bonus to your choice of attack rolls, Will saves, or Charisma-based skill checks. During the duration, an ally within 30 feet who saw you cast the spell can take a concentrate action to gain the same bonus.",
+    "custom": false
+  },
+  {
+    "name": "Information Overload",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Rival Academies pg. 44",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Mental",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You flood the target's thoughts with irrelevant and confusing information, causing it to become stupefied 1 on a failed Will save, or stupefied 2 on a critical failure.",
+    "custom": false
+  },
+  {
+    "name": "Inside Ropes",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Conjuration",
+    "source": "Pathfinder #181: Zombie Feast pg. 79",
+    "traditions": [
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Conjuration"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "10 minutes",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You gain a +1 item bonus to Athletics checks to Climb while using your guts."
+    },
+    "description": "You pull a large handful of guts from your midsection and can use them as 50 feet of rope to help you Climb and attach yourself to a wall.",
+    "custom": false
+  },
+  {
+    "name": "Invoke True Name",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Secrets of Magic pg. 247",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Cantrip",
+      "Enchantment",
+      "True Name"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature whose true name you know",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You speak a creature's true name. Until the end of the current turn, the target is flat-footed against your spells, takes a –2 circumstance penalty to saving throws against your spells, and gains weakness to the first damage it takes from one of your spells equal to double the spell's level.",
+    "custom": false
+  },
+  {
+    "name": "Join Pasts",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Pathfinder #147: Tomorrow Must Burn pg. 74",
+    "traditions": [
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Divination",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": "touch",
+    "area": null,
+    "targets": "2 willing creatures",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+1": "You can touch one additional target to include them in the spell's effects."
+    },
+    "description": "You bring the targets into mental communion so they can share thoughts and experiences. When one target attempts Recall Knowledge, the other can Aid using any Lore skill.",
+    "custom": false
+  },
+  {
+    "name": "Know the Way",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Detection",
+    "source": "Player Core pg. 340",
+    "traditions": [
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Detection",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You can choose a location you were at within the last week.",
+      "7th": "You can choose a location you were at regardless of how long ago you were there."
+    },
+    "description": "You magically reorient yourself, immediately knowing which direction is north and the direction to a location you were at within the last 24 hours.",
+    "custom": false
+  },
+  {
+    "name": "Light",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 340",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Light",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "120 feet",
+    "area": null,
+    "targets": null,
+    "duration": "until your next daily preparations",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "4th": "The orb sheds light in a 60-foot radius, and dim light for the next 60 feet."
+    },
+    "description": "You create an orb of light that sheds bright light in a 20-foot radius and dim light for the next 20 feet. You can attach it to a willing creature or move it by Sustaining the spell.",
+    "custom": false
+  },
+  {
+    "name": "Live Wire",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core 2 pg. 248",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Electricity",
+      "Manipulate",
+      "Metal"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "1d4 slashing and 1d4 electricity",
+    "heightened": {
+      "+2": "The slashing damage, initial electricity damage, and persistent electricity damage on a critical hit each increase by 1d4."
+    },
+    "description": "You conjure a sharp copper filament humming with electrical current that lashes at a foe. On a critical success, the target takes double damage and 1d4 persistent electricity damage.",
+    "custom": false
+  },
+  {
+    "name": "Manifest Will",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "War of Immortals pg. 63",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Aura",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Subtle",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "10-foot emanation",
+    "targets": null,
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+1": "An arcane manifestation increases its weakness by 1 and a divine manifestation increases its temporary Hit Points by 2."
+    },
+    "description": "You unleash energy from the broken connection to your patron, creating an aura with effects based on your patron's tradition.",
+    "custom": false
+  },
+  {
+    "name": "Message",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Player Core pg. 343",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Auditory",
+      "Cantrip",
+      "Concentrate",
+      "Illusion",
+      "Linguistic",
+      "Mental",
+      "Subtle"
+    ],
+    "cast": "1 action",
+    "range": "120 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "see text",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "The spell's range increases to 500 feet."
+    },
+    "description": "You mouth words quietly, but they're transferred directly to the ears of the target. The target can give a brief response that is delivered directly to your ear.",
+    "custom": false
+  },
+  {
+    "name": "Murmuration",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Howl of the Wild pg. 61",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Sonic",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "1d4 piercing or sonic",
+    "heightened": {
+      "+1": "The damage increases by 1d4, or by 2d4 on a critical failure (1d4 sonic and 1d4 piercing)."
+    },
+    "description": "The target feels phantom feathers and hears screeches, warning it to keep away from a designated creature. Once per round, if it moves closer, it must attempt a Will save or take damage.",
+    "custom": false
+  },
+  {
+    "name": "Musical Accompaniment",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Firebrands pg. 90",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Auditory",
+      "Cantrip",
+      "Illusion"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "2nd": "The duration increases to 10 minutes."
+    },
+    "description": "You're surrounded by orchestral music that shifts to match your behavior. It provides a +1 status bonus to Performance checks and sometimes to social checks, but you take a –4 penalty to Stealth checks.",
+    "custom": false
+  },
+  {
+    "name": "Needle Darts",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Rage of Elements pg. 144",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Metal"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "3d4 piercing",
+    "heightened": {
+      "+1": "You send one additional needle, increasing the regular damage by 1d4 and the persistent bleed damage on a critical hit by 1."
+    },
+    "description": "You shape three needles out of a piece of metal in your possession and send them flying at one target. On a critical success, the target also takes 1 persistent bleed damage.",
+    "custom": false
+  },
+  {
+    "name": "Nudge Fate",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Player Core pg. 387",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "When the target fails an attack roll, skill check, or saving throw and a +1 status bonus would improve the outcome by one degree, you grant that bonus retroactively and the spell ends.",
+    "custom": false
+  },
+  {
+    "name": "Pact Broker",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Dark Archives (Remastered) pg. 159; Divine Mysteries pg. 298",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Auditory",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Linguistic",
+      "Mental",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "2d4 mental",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You offer to broker a pact of peace. If the target refuses or breaks the pact with hostile action, it must attempt a Will save; on a failure it takes mental damage and a penalty to attack and damage rolls against you and your allies.",
+    "custom": false
+  },
+  {
+    "name": "Phase Bolt",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 106",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "3d4 piercing",
+    "heightened": {
+      "+1": "The bolt's damage increases by 1d4."
+    },
+    "description": "You project a bolt of magical energy that stutters in and out of phase. Make a ranged spell attack roll; reduce the target's circumstance bonuses to AC by 2 for this attack.",
+    "custom": false
+  },
+  {
+    "name": "Prestidigitation",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 351",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "10 feet",
+    "area": null,
+    "targets": "1 object",
+    "duration": "sustained",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You perform simple magical effects such as cooking, lifting, making a tiny fragile object, or tidying.",
+    "custom": false
+  },
+  {
+    "name": "Protect Companion",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Secrets of Magic pg. 123",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Abjuration",
+      "Cantrip"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "your eidolon, or a creature with the minion trait under your control",
+    "duration": "until the start of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+2": "The reaction reduces the damage by another 10, and you lose 5 more Hit Points."
+    },
+    "description": "You extend your aura as a magical shield that protects your eidolon or minion, granting a +1 circumstance bonus to AC. You also gain the Life Block reaction to reduce its damage at the cost of your own Hit Points.",
+    "custom": false
+  },
+  {
+    "name": "Puff of Poison",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core 2 pg. 249",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Poison"
+    ],
+    "cast": "2 actions",
+    "range": "10 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d4 poison and 1d4 persistent poison",
+    "heightened": {
+      "+2": "The initial poison damage increases by 1d4, and the persistent poison damage increases by 1d4."
+    },
+    "description": "You exhale a shimmering cloud of toxic breath at an enemy's face. The target takes poison damage and persistent poison damage depending on its Fortitude save.",
+    "custom": false
+  },
+  {
+    "name": "Read Aura",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Detection",
+    "source": "Player Core pg. 352",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Detection",
+      "Manipulate"
+    ],
+    "cast": "1 minute",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 object",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You can target up to 10 objects.",
+      "6th": "You can target any number of objects."
+    },
+    "description": "You focus on the target object, opening your mind to perceive magical auras. When the casting is complete, you know whether that item is magical. You or anyone you advise about the aura gains a +2 circumstance bonus to Identify Magic on the item. If the object is illusory, you detect this only if the effect's rank is lower than the rank of your read aura spell.",
+    "custom": false
+  },
+  {
+    "name": "Read the Air",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Secrets of Magic pg. 125",
+    "traditions": [
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Divination"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "As part of Casting this Spell, you Recall Knowledge using Society to gain information about the immediate social situation. You also gain a +1 status bonus on your next Diplomacy check to Make an Impression on those present during the spell's duration.",
+    "custom": false
+  },
+  {
+    "name": "Reinforce Eidolon",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Secrets of Magic pg. 145",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Abjuration",
+      "Cantrip",
+      "Summoner"
+    ],
+    "cast": "1 action",
+    "range": "100 feet",
+    "area": null,
+    "targets": "your eidolon",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You reinforce your eidolon's defenses. It gains a +1 status bonus to AC and saving throws, plus resistance to all damage equal to half the spell's level.",
+    "custom": false
+  },
+  {
+    "name": "Root Reading",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Rage of Elements pg. 197",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Wood"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You gain insights into the immediate vicinity through the roots of trees and bushes. If there are unnoticed Medium or larger creatures in the area, you learn of their presence and gain bonuses to Seek and Track them.",
+    "custom": false
+  },
+  {
+    "name": "Rousing Splash",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Rage of Elements pg. 174",
+    "traditions": [
+      "Divine",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Water"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": "1d4 temporary Hit Points",
+    "heightened": {
+      "+1": "The amount of temporary Hit Points granted increases by 1d4."
+    },
+    "description": "You cause a splash of cold water to descend on an ally's head, granting 1d4 temporary Hit Points for 1 minute and an immediate flat check to recover from persistent acid or fire damage.",
+    "custom": false
+  },
+  {
+    "name": "Scatter Scree",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Conjuration",
+    "source": "Player Core 2 pg. 250",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Earth",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": "two contiguous 5-foot cubes",
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "2d4 bludgeoning",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "A jumble of rocks cascades into the area, dealing 2d4 bludgeoning damage with a basic Reflex save. The ground becomes difficult terrain for the duration.",
+    "custom": false
+  },
+  {
+    "name": "Scrounger's Glee",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Howl of the Wild pg. 61",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Auditory",
+      "Cantrip",
+      "Concentrate",
+      "Fear",
+      "Hex",
+      "Mental",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+2": "The number of Hit Points restored when you Dismiss the spell increases by 1d4."
+    },
+    "description": "With a cruel laugh, you make the target understand that death is coming. The target becomes frightened on a failed Will save, and you can Dismiss the spell as a reaction when an ally critically succeeds at a Strike against it to restore Hit Points to that ally.",
+    "custom": false
+  },
+  {
+    "name": "Share Vision",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Divine Mysteries pg. 297",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 willing creature",
+    "duration": "10 minutes",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You and the target can see through each other's eyes, share vision-based senses, and gain a +2 status bonus to Perception checks, but if either of you is blinded or dazzled, you both are.",
+    "custom": false
+  },
+  {
+    "name": "Shield",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Player Core pg. 356",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Force"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "until the start of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+2": "The shield's Hardness increases by 5."
+    },
+    "description": "You raise a magical shield of force. It grants a +1 circumstance bonus to AC and can be used with Shield Block. The shield has Hardness 5, and after you use Shield Block, the spell ends and you can't cast it again for 10 minutes.",
+    "custom": false
+  },
+  {
+    "name": "Shroud of Night",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Illusion",
+    "source": "Player Core pg. 387",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Darkness",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Your patron blankets the target's eyes in darkness. On a failed save, the target treats bright light as dim light, and unless it has greater darkvision, all creatures are concealed to it.",
+    "custom": false
+  },
+  {
+    "name": "Sigil",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Player Core pg. 357",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "touch",
+    "area": null,
+    "targets": "1 creature or object",
+    "duration": "unlimited",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "The sigil instead fades after 1 month.",
+      "5th": "The sigil instead fades after 1 year.",
+      "7th": "The sigil never fades."
+    },
+    "description": "You harmlessly place your unique magical sigil, about 1 square inch in size, on a creature or object. The mark can be visible or invisible and can be scrubbed or scraped off with 5 minutes of work.",
+    "custom": false
+  },
+  {
+    "name": "Silver's Refrain",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Pathfinder #147: Tomorrow Must Burn pg. 74",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Abjuration",
+      "Bard",
+      "Cantrip",
+      "Composition"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Weapon and unarmed attacks by allies in the area are treated as silver, and the spell automatically attempts to counteract dimension door cast by devils within or into the area.",
+    "custom": false
+  },
+  {
+    "name": "Slashing Gust",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Rage of Elements pg. 71",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Air",
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 or 2 creatures",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d4 slashing",
+    "heightened": {
+      "+1": "The damage increases by 1d4, and the persistent damage on a critical hit increases by 1d4."
+    },
+    "description": "You slash your hand through the air, creating ripples that slice your enemies. Make a spell attack roll against each target's AC. On a critical success, a target also takes persistent bleed damage.",
+    "custom": false
+  },
+  {
+    "name": "Song of Strength",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Player Core pg. 371",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You bolster allies' physical strength. You and your allies gain a +1 status bonus to Athletics checks and to DCs against Athletics skill actions such as Disarm, Reposition, Shove, and Trip.",
+    "custom": false
+  },
+  {
+    "name": "Spirit Object",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Divine Mysteries pg. 299",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Rare",
+      "Cantrip",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 unattended object up to 1 Bulk",
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d4 bludgeoning, piercing, or slashing",
+    "heightened": {
+      "+1": "Increase the maximum Bulk of the target by 1 and the damage by 2d4."
+    },
+    "description": "You briefly bring a nearby object to life. You can Sustain the spell to command it to move or Strike, using your melee spell attack roll against a creature adjacent to it.",
+    "custom": false
+  },
+  {
+    "name": "Spout",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core 2 pg. 252",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Water"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": "5-foot cube",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "2d4 bludgeoning",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "Water blasts upward from the ground, a pool, or thin air. Creatures in the area take 2d4 bludgeoning damage with a basic Reflex save. On a critical failure, a creature is off-guard until the end of your next turn.",
+    "custom": false
+  },
+  {
+    "name": "Stabilize",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Player Core pg. 359",
+    "traditions": [
+      "Divine",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Healing",
+      "Manipulate",
+      "Vitality"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 dying creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Life energy shuts death's door. The target loses the dying condition, though it remains unconscious at 0 Hit Points.",
+    "custom": false
+  },
+  {
+    "name": "Sting of the Sea",
+    "type": "Cantrip",
+    "level": 1,
+    "school": null,
+    "source": "Howl of the Wild pg. 61",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Hex",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "A briny tentacle appears from a glowing portal to wrap around the target's face, blocking its vision. At the beginning of each of its turns, the target must attempt a Fortitude save or suffer a vision-impairing condition until the end of its turn.",
+    "custom": false
+  },
+  {
+    "name": "Stoke the Heart",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Player Core pg. 387",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Emotion",
+      "Hex",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+2": "The status bonus to damage increases by 1."
+    },
+    "description": "Your patron fills a creature with fervor, empowering its blows. The target gains a +2 status bonus to damage rolls.",
+    "custom": false
+  },
+  {
+    "name": "Summon Instrument",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Conjuration",
+    "source": "Player Core pg. 361",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "3 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 hour",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "5th": "The instrument is instead a virtuoso handheld instrument."
+    },
+    "description": "You materialize a handheld musical instrument in your grasp. It is typical for its type, but it plays for only you.",
+    "custom": false
+  },
+  {
+    "name": "Take Root",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Rage of Elements pg. 198",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Manipulate",
+      "Plant",
+      "Wood"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 willing creature",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Roots sprout from the target and reinforce its stance or grip. The creature gains a +1 circumstance bonus to Fortitude DC against Shove and to Reflex DC against Disarm or Trip, as well as against effects that remove held items.",
+    "custom": false
+  },
+  {
+    "name": "Tame",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Secrets of Magic pg. 135",
+    "traditions": [
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Auditory",
+      "Cantrip",
+      "Enchantment",
+      "Mental"
+    ],
+    "cast": "2 actions",
+    "range": "10 feet",
+    "area": null,
+    "targets": "1 non-hostile domesticated animal",
+    "duration": "1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "The duration becomes 10 minutes.",
+      "6th": "The duration becomes 1 hour."
+    },
+    "description": "As you make comforting sounds and gestures, you improve the target's attitude toward you by one step for the duration unless it succeeds at a Will save.",
+    "custom": false
+  },
+  {
+    "name": "Tangle Vine",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Conjuration",
+    "source": "Player Core pg. 362",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Plant",
+      "Wood"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": null,
+    "heightened": {
+      "2nd": "The effects last for 2 rounds.",
+      "4th": "The effects last for 1 minute."
+    },
+    "description": "A vine appears from thin air and lashes the target. On a success, the target takes a –10-foot circumstance penalty to its Speeds for 1 round; on a critical success, it is also immobilized.",
+    "custom": false
+  },
+  {
+    "name": "Telekinetic Hand",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 362",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": "Elemental",
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 unattended object of Light Bulk or less",
+    "duration": "sustained",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "3rd": "You can target an unattended object with a Bulk of 1 or less.",
+      "5th": "The range increases to 60 feet, and you can target an unattended object with a Bulk of 1 or less.",
+      "7th": "The range increases to 60 feet, and you can target an unattended object with a Bulk of 2 or less."
+    },
+    "description": "You create a floating magical hand, either invisible or ghostlike, that grasps the target object and levitates it slowly up to 20 feet in any direction.",
+    "custom": false
+  },
+  {
+    "name": "Telekinetic Projectile",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Player Core pg. 363",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Attack",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": true,
+    "damage": "2d6 bludgeoning, piercing, or slashing",
+    "heightened": {
+      "+1": "The damage increases by 1d6."
+    },
+    "description": "You hurl a loose unattended object at the target. On a hit, it deals 2d6 bludgeoning, piercing, or slashing damage as appropriate for the object.",
+    "custom": false
+  },
+  {
+    "name": "Telekinetic Rend",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 17",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": "2 non-overlapping 5-foot bursts",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d6 bludgeoning or 1d6 slashing",
+    "heightened": {
+      "+2": "The damage increases by 1d6."
+    },
+    "description": "Your mind creates a violent axis of motion in a nearby space. You deal your choice of 1d6 bludgeoning or 1d6 slashing damage to all creatures in the area with a basic Fortitude save.",
+    "custom": false
+  },
+  {
+    "name": "Thermal Stasis",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Dark Archives (Remastered) pg. 20",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic"
+    ],
+    "cast": "1 action",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "until the start of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+1": "Each resistance increases by 2."
+    },
+    "description": "The target gains resistance 2 against fire damage and resistance 2 against cold damage.",
+    "custom": false
+  },
+  {
+    "name": "Timber",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Conjuration",
+    "source": "Rage of Elements pg. 198",
+    "traditions": [
+      "Arcane",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Wood"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "15-foot line",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "2d4 bludgeoning",
+    "heightened": {
+      "+1": "The initial damage increases by 1d4."
+    },
+    "description": "You create a small dead tree in your space that falls through the line and immediately decomposes. Creatures in the area take 2d4 bludgeoning damage with a basic Reflex save.",
+    "custom": false
+  },
+  {
+    "name": "Time Sense",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Divination",
+    "source": "Dark Archives (Remastered) pg. 183",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You gain a perfect sense of time or other predictable calendar information. You can also gain a +1 status bonus to one precisely timed roll on the same turn you cast the spell.",
+    "custom": false
+  },
+  {
+    "name": "Torturous Trauma",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Pathfinder #186: Ghost King's Rage pg. 77",
+    "traditions": [
+      "Arcane",
+      "Divine"
+    ],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Necromancy",
+      "Nonlethal"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 living creature",
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d4 + your spellcasting modifier bludgeoning",
+    "heightened": {
+      "+1": "The bludgeoning damage increases by 1d4."
+    },
+    "description": "You batter a creature's internal organs without external signs. The target takes bludgeoning damage with a basic Fortitude save, and on a critical failure it is fatigued until the start of your next turn.",
+    "custom": false
+  },
+  {
+    "name": "Trade Death for Life",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Divine Mysteries pg. 297",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Healing",
+      "Hex",
+      "Manipulate",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "1d4 void",
+    "heightened": {
+      "+1": "The damage increases by 1d4 and the fast healing increases by 1."
+    },
+    "description": "Your patron steals life from one enemy to grant it to another. The target takes 1d4 void damage with a basic Fortitude save. If it takes damage, a willing creature within range gains fast healing 1 while you Sustain the spell.",
+    "custom": false
+  },
+  {
+    "name": "Tremor Signs",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Evocation",
+    "source": "Rage of Elements pg. 97",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Earth",
+      "Manipulate",
+      "Subtle"
+    ],
+    "cast": "1 action",
+    "range": "120 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "4th": "The spell can target up to 5 creatures."
+    },
+    "description": "You send a series of tremors toward your target through connected earth, conveying a simple agreed-upon message. The target can respond in kind.",
+    "custom": false
+  },
+  {
+    "name": "Uplifting Overture",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Player Core pg. 372",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 ally",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "This counts as having prepared to Aid your ally on a skill check of your choice. When you later use the Aid reaction, you can roll Performance instead of the normal skill check and improve poor outcomes.",
+    "custom": false
+  },
+  {
+    "name": "Vitality Lash",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Player Core pg. 366",
+    "traditions": [
+      "Divine",
+      "Primal"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Vitality"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature that is undead or otherwise has void healing",
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "2d6 vitality",
+    "heightened": {
+      "+1": "The damage increases by 1d6."
+    },
+    "description": "You demolish the target's corrupted essence with vitality energy. The target takes 2d6 vitality damage with a basic Fortitude save, and on a critical failure it is enfeebled 1 until the start of your next turn.",
+    "custom": false
+  },
+  {
+    "name": "Void Warp",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Necromancy",
+    "source": "Player Core pg. 366",
+    "traditions": [
+      "Arcane",
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Void"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 living creature",
+    "duration": null,
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "2d4 void",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You call upon the Void to harm life force. The target takes 2d4 void damage with a basic Fortitude save, and on a critical failure it is enfeebled 1 until the start of your next turn.",
+    "custom": false
+  },
+  {
+    "name": "Warp Step",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Transmutation",
+    "source": "Dark Archives (Remastered) pg. 107",
+    "traditions": [
+      "Arcane",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Cantrip",
+      "Concentrate",
+      "Manipulate"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "until the end of your turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "The earth warps beneath your feet. You gain a +5-foot status bonus to your Speed until the end of your turn and then Stride twice, or use another movement type you possess.",
+    "custom": false
+  },
+  {
+    "name": "Wash Your Luck",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Abjuration",
+    "source": "Secrets of Magic pg. 140",
+    "traditions": [
+      "Divine",
+      "Occult"
+    ],
+    "spellList": null,
+    "traits": [
+      "Abjuration",
+      "Cantrip",
+      "Fortune"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Once during the spell's duration, before rolling a check, you can cancel out a misfortune effect on that roll. After doing so, the spell ends.",
+    "custom": false
+  },
+  {
+    "name": "Wilding Word",
+    "type": "Cantrip",
+    "level": 1,
+    "school": "Enchantment",
+    "source": "Player Core pg. 387",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Hex",
+      "Mental",
+      "Witch"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Your patron's majesty or displeasure comes in a growl from your throat, making the target reluctant to harm you. On a failed save it takes penalties on harmful rolls against you and can become sickened when it damages you.",
+    "custom": false
+  },
+  {
+    "name": "Rallying Anthem",
+    "type": "Cantrip",
+    "level": 2,
+    "school": "Enchantment",
+    "source": "Player Core pg. 371",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Your song moves allies to protect themselves more effectively. You and all allies in the area gain a +1 status bonus to AC and saving throws, as well as resistance equal to half the spell's rank to physical damage.",
+    "custom": false
+  },
+  {
+    "name": "Triple Time",
+    "type": "Cantrip",
+    "level": 2,
+    "school": "Enchantment",
+    "source": "Player Core pg. 372",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Emotion",
+      "Manipulate",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Your music sets a fast pace. You and all allies in the area gain a +10-foot status bonus to all Speeds for 1 round.",
+    "custom": false
+  },
+  {
+    "name": "Astral Rain",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 22",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Force",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": "one 5-foot cube",
+    "targets": null,
+    "duration": "until the start of your next turn",
+    "savingThrow": "Reflex",
+    "attack": false,
+    "damage": "4d4 bludgeoning or piercing",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You fling a mass of furious thoughts into the air, where they expand into numerous blades or other shapes that rain down. Any creature in the area or entering it before the start of your next turn takes damage with a basic Reflex save.",
+    "custom": false
+  },
+  {
+    "name": "Dirge of Doom",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Enchantment",
+    "source": "Player Core pg. 370",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Fear",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "Enemies within the area are frightened 1 and can't reduce their frightened value below 1 while they remain in the area.",
+    "custom": false
+  },
+  {
+    "name": "Entropic Wheel",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 20",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Cold",
+      "Concentrate",
+      "Fire",
+      "Psychic"
+    ],
+    "cast": "reaction",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": "additional cold or fire damage equal to motes",
+    "heightened": null,
+    "description": "You stockpile thermal energy in a magical wheel. When you Cast a Spell that deals fire damage, the target also takes cold damage equal to the number of motes; when you Cast a Spell that deals cold damage, it also takes fire damage equal to the number of motes.",
+    "custom": false
+  },
+  {
+    "name": "Ghostly Shift",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Abjuration",
+    "source": "Dark Archives (Remastered) pg. 23",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "+2": "The resistance increases by 1."
+    },
+    "description": "You gain resistance 2 to all damage except force.",
+    "custom": false
+  },
+  {
+    "name": "Omnidirectional Scan",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Divination",
+    "source": "Dark Archives (Remastered) pg. 18",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic",
+      "Scrying"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "30-foot emanation",
+    "targets": "1 ally and 1 enemy",
+    "duration": "until the start of your next turn",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You quickly view your surroundings from a variety of angles, can Seek the entire emanation, and prepare to Aid the target ally on an attack roll against the target enemy using your spell attack modifier.",
+    "custom": false
+  },
+  {
+    "name": "Shatter Mind",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Enchantment",
+    "source": "Dark Archives (Remastered) pg. 21",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Mental",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": "15-foot cone",
+    "targets": null,
+    "duration": null,
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "3d4 mental",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You telepathically assail the minds of your foes, dealing 3d4 mental damage to all enemies in the area with a basic Will save.",
+    "custom": false
+  },
+  {
+    "name": "Song of Marching",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Enchantment",
+    "source": "Player Core pg. 371",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": "60-foot emanation",
+    "targets": null,
+    "duration": "sustained up to 1 hour",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "6th": "You can Sustain the spell for up to 2 hours.",
+      "9th": "You can Sustain the spell for up to 4 hours."
+    },
+    "description": "You maintain a brisk performance that keeps allies on the move. You and allies in the area can Hustle for the spell's duration and gain a +1 status bonus to initiative if an encounter begins.",
+    "custom": false
+  },
+  {
+    "name": "Vector Screen",
+    "type": "Cantrip",
+    "level": 3,
+    "school": "Abjuration",
+    "source": "Dark Archives (Remastered) pg. 17",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": "10-foot line",
+    "targets": null,
+    "duration": null,
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "5th": "The screen is 20 feet long.",
+      "6th": "The screen is 20 feet long and can interfere even with massless attacks, and it grants standard cover against area effects that pass through it."
+    },
+    "description": "You set up a transparent, rippling screen of telekinetic energy that automatically traps ammunition from physical ranged attacks and penalizes larger ranged weapons that pass through it.",
+    "custom": false
+  },
+  {
+    "name": "Contagious Idea",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Enchantment",
+    "source": "Dark Archives (Remastered) pg. 21",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Emotion",
+      "Manipulate",
+      "Mental",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 or 2 creatures other than yourself",
+    "duration": "1 minute",
+    "savingThrow": "Will",
+    "attack": false,
+    "damage": "5 temporary Hit Points or frightened effect",
+    "heightened": {
+      "+1": "The temporary Hit Points for a pleasant thought increase by 1."
+    },
+    "description": "You place either a pleasant thought that grants temporary Hit Points or a terrifying thought that frightens the target, then spread the same thought to a second target.",
+    "custom": false
+  },
+  {
+    "name": "Dancing Blade",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 17",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 creature",
+    "duration": "sustained",
+    "savingThrow": null,
+    "attack": true,
+    "damage": "3d6 weapon damage",
+    "heightened": {
+      "+2": "The damage increases by 1d6."
+    },
+    "description": "You telekinetically animate a weapon that's unattended or on your person. It flies to the target and Strikes using your spell attack modifier. Each time you Sustain the spell, the weapon can Strike or change targets.",
+    "custom": false
+  },
+  {
+    "name": "Foresee the Path",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Divination",
+    "source": "Dark Archives (Remastered) pg. 18",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Psychic"
+    ],
+    "cast": "1 action",
+    "range": "60 feet",
+    "area": null,
+    "targets": "1 ally and 1 enemy",
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You see just a split second into the future and glean how an enemy will move, potentially granting an ally a reaction to make a melee Strike if the enemy leaves a square within reach.",
+    "custom": false
+  },
+  {
+    "name": "Hologram Cage",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Illusion",
+    "source": "Dark Archives (Remastered) pg. 22",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Illusion",
+      "Light",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "3 actions",
+    "range": "60 feet",
+    "area": "1 cube 20 feet on each side",
+    "targets": null,
+    "duration": "1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": {
+      "7th": "The range increases to 80 feet, and you can expand the cube to be 25 feet on each side."
+    },
+    "description": "You weave light into a cube of vivid and fantastic patterns. The walls shed light and completely block line of sight between creatures inside and outside the cage.",
+    "custom": false
+  },
+  {
+    "name": "House of Imaginary Walls",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Illusion",
+    "source": "Player Core pg. 370",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Illusion",
+      "Manipulate",
+      "Visual"
+    ],
+    "cast": "1 action",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You mime an invisible wall adjacent to you. It is solid to creatures that don't disbelieve it, even incorporeal creatures, though it doesn't block objects.",
+    "custom": false
+  },
+  {
+    "name": "Redistribute Potential",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Evocation",
+    "source": "Dark Archives (Remastered) pg. 20",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Cold",
+      "Concentrate",
+      "Fire",
+      "Manipulate",
+      "Psychic"
+    ],
+    "cast": "2 actions",
+    "range": "60 feet",
+    "area": "2 adjacent 5-foot squares",
+    "targets": null,
+    "duration": "until the start of your next turn",
+    "savingThrow": "Fortitude",
+    "attack": false,
+    "damage": "4d4 cold or fire",
+    "heightened": {
+      "+1": "The damage increases by 1d4."
+    },
+    "description": "You shunt thermal energy from one area to another. Creatures in either area take damage with a basic Fortitude save, and on a failed save also suffer a brief condition based on the area.",
+    "custom": false
+  },
+  {
+    "name": "Tesseract Tunnel",
+    "type": "Cantrip",
+    "level": 5,
+    "school": "Conjuration",
+    "source": "Dark Archives (Remastered) pg. 23",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Cantrip",
+      "Concentrate",
+      "Manipulate",
+      "Psychic",
+      "Teleportation"
+    ],
+    "cast": "2 actions",
+    "range": null,
+    "area": null,
+    "targets": null,
+    "duration": "sustained up to 1 minute",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You create a portal in your current space and another where you end your Stride. Until the beginning of your next turn, creatures entering the first portal can immediately transport themselves to the exit portal as part of their movement.",
+    "custom": false
+  },
+  {
+    "name": "Allegro",
+    "type": "Cantrip",
+    "level": 7,
+    "school": "Enchantment",
+    "source": "Player Core pg. 370",
+    "traditions": [],
+    "spellList": null,
+    "traits": [
+      "Uncommon",
+      "Bard",
+      "Cantrip",
+      "Composition",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "cast": "1 action",
+    "range": "30 feet",
+    "area": null,
+    "targets": "1 ally",
+    "duration": "1 round",
+    "savingThrow": null,
+    "attack": false,
+    "damage": null,
+    "heightened": null,
+    "description": "You perform rapidly, speeding up your ally. The ally becomes quickened and can use the additional action to Strike, Stride, or Step.",
+    "custom": false
+  }
+]

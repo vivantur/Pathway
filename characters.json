@@ -1,0 +1,429 @@
+{
+  "348925636796088332": {
+    "hylia": {
+      "name": "Hylia",
+      "data": {
+        "name": "Hylia",
+        "class": "Oracle",
+        "dualClass": null,
+        "level": 1,
+        "xp": 80,
+        "ancestry": "Elf",
+        "heritage": "Seer Elf",
+        "background": "Occult Librarian",
+        "alignment": "N",
+        "gender": "Female",
+        "age": "300",
+        "deity": "Pharasma",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "cha",
+        "languages": [
+          "Common",
+          "Elven",
+          "Fey",
+          "Shadowtongue"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 12,
+          "int": 12,
+          "wis": 14,
+          "cha": 16,
+          "breakdown": {
+            "ancestryFree": [
+              "Con"
+            ],
+            "ancestryBoosts": [
+              "Dex",
+              "Int"
+            ],
+            "ancestryFlaws": [
+              "Con"
+            ],
+            "backgroundBoosts": [
+              "Wis",
+              "Cha"
+            ],
+            "classBoosts": [
+              "Cha"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Con",
+                "Cha",
+                "Dex",
+                "Wis"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 6,
+          "classhp": 8,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 30,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 2,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 2,
+          "castingDivine": 2,
+          "castingOccult": 0,
+          "castingPrimal": 2,
+          "acrobatics": 2,
+          "arcana": 2,
+          "athletics": 0,
+          "crafting": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "intimidation": 0,
+          "medicine": 2,
+          "nature": 2,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 2,
+          "society": 0,
+          "stealth": 0,
+          "survival": 0,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Trance of Celerity",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Schooled in Secrets",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Seer Elf",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Wildborn Magic",
+            null,
+            "Ancestry Feat",
+            1,
+            "Elf Feat 1",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Time Mystery",
+          "Curse of Turbulent Moments",
+          "Revelation Spells",
+          "Oracular Curse",
+          "Low-Light Vision",
+          "Seer Elf"
+        ],
+        "lores": [
+          [
+            "Academia",
+            2
+          ]
+        ],
+        "equipmentContainers": {
+          "6b64452a-839e-4a51-8c74-7f4c1243a038": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Healing Potion (Minor)",
+            1,
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Hand Crossbow",
+            "qty": 1,
+            "prof": "simple",
+            "die": "d6",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Hand Crossbow",
+            "runes": [],
+            "damageType": "P",
+            "attack": 5,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Dagger",
+            "qty": 1,
+            "prof": "simple",
+            "die": "d4",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Dagger",
+            "runes": [],
+            "damageType": "P",
+            "attack": 5,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 3,
+          "gp": 3,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Studded Leather Armor",
+            "qty": 1,
+            "prof": "light",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Studded Leather",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [
+          {
+            "name": "Oracle",
+            "magicTradition": "divine",
+            "spellcastingType": "spontaneous",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              5,
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Forbidding Ward",
+                  "Divine Lance",
+                  "Shield",
+                  "Guidance",
+                  "Time Sense"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Bane",
+                  "Ill Omen",
+                  "Heal",
+                  "Déjà Vu"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          },
+          {
+            "name": "Seer Elf",
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": true,
+            "perDay": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Detect Magic"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          },
+          {
+            "name": "Wildborn Magic",
+            "magicTradition": "primal",
+            "spellcastingType": "prepared",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": true,
+            "perDay": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Root Reading"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 1,
+        "focus": {
+          "divine": {
+            "cha": {
+              "abilityBonus": 3,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Temporal Distortion"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 3,
+          "acAbilityBonus": 2,
+          "acItemBonus": 2,
+          "acTotal": 17,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "saved": "2026-03-20T19:53:42.158Z",
+      "art": "https://media.discordapp.net/attachments/1479885412133765242/1480422906478465044/f1ed1ff4-93eb-4904-a7fc-66f1f1d34023.png?ex=69bec805&is=69bd7685&hm=28e768232d718c04878c3bfb332959d3b4f6f2ce43c4b08e9cd1c41aee1b57b4&=&format=webp&quality=lossless&width=625&height=937"
+    }
+  }
+}
