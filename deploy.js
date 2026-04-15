@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
-
+ 
 const commands = [
   {
     name: 'ping',
@@ -252,11 +252,35 @@ const commands = [
         required: false
       }
     ]
+  },
+  {
+    name: 'ancestry',
+    description: 'Look up a PF2e ancestry (Elf, Dwarf, Gnome, etc.)',
+    options: [
+      {
+        name: 'name',
+        description: 'The ancestry to look up (e.g. Elf, Dwarf, Gnome)',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
+    name: 'archetype',
+    description: 'Look up a PF2e archetype (Acrobat, Assassin, Fighter, etc.)',
+    options: [
+      {
+        name: 'name',
+        description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
   }
 ];
-
+ 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
+ 
 (async () => {
   try {
     console.log('Registering slash commands...');

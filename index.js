@@ -31,6 +31,14 @@ try {
   console.error('Could not load ancestries.json:', err.message);
 }
 
+let archetypeDatabase = {};
+try {
+  archetypeDatabase = JSON.parse(fs.readFileSync('archetypes.json', 'utf8'));
+  console.log(`Loaded ${Object.keys(archetypeDatabase).length} archetypes from database.`);
+} catch (err) {
+  console.error('Could not load archetypes.json:', err.message);
+}
+
 function loadCharacters() {
   try {
     return JSON.parse(fs.readFileSync('characters.json', 'utf8'));
@@ -108,7 +116,6 @@ function formatRollBreakdown(dieRoll, modifier, extraBonus, total, sides) {
 // ── Spell lookup ──────────────────────────────────────────────────────────────
 
 function findSpell(spellName) {
-  // Normalize smart quotes and curly apostrophes to straight ones
   const normalize = str => str
     .toLowerCase()
     .trim()
@@ -125,43 +132,85 @@ function findSpell(spellName) {
   return null;
 }
 
+// ── Archetype lookup ──────────────────────────────────────────────────────────
+
+function findArchetype(query) {
+  const q = query.toLowerCase().trim();
+
+  // Exact match (case-insensitive)
+  for (const [key, archetype] of Object.entries(archetypeDatabase)) {
+    if (key.toLowerCase() === q) return { archetype, exact: true, matches: [] };
+  }
+
+  // Partial match
+  const matches = Object.entries(archetypeDatabase).filter(([key]) =>
+    key.toLowerCase().includes(q)
+  );
+
+  if (matches.length === 1) return { archetype: matches[0][1], exact: true, matches: [] };
+  if (matches.length > 1)   return { archetype: null, exact: false, matches: matches.map(([k]) => k) };
+  return { archetype: null, exact: false, matches: [] };
+}
+
+function buildArchetypeEmbed(archetype) {
+  const rarityColor = {
+    Common:   0x4a90d9,
+    Uncommon: 0xc45f00,
+    Rare:     0x6b21a8,
+  };
+
+  const typeEmoji = archetype.type === 'multiclass' ? '🔀' : '📖';
+  const typeLabel = archetype.type === 'multiclass' ? 'Multiclass Archetype' : 'Archetype';
+  const rarityLabel = archetype.rarity !== 'Common' ? ` • ${archetype.rarity}` : '';
+
+  const embed = new EmbedBuilder()
+    .setColor(rarityColor[archetype.rarity] ?? 0x4a90d9)
+    .setTitle(`${typeEmoji} ${archetype.name}`)
+    .setDescription(archetype.description || '*No description available.*')
+    .addFields(
+      { name: '📋 Type',           value: `${typeLabel}${rarityLabel}`, inline: true },
+      { name: '🎯 Dedication Feat', value: `Feat ${archetype.dedication_level}`,  inline: true },
+      { name: '📚 Source',         value: archetype.source || 'Unknown',          inline: true },
+    );
+
+  if (archetype.prerequisites) {
+    embed.addFields({ name: '⚠️ Prerequisites', value: archetype.prerequisites, inline: false });
+  }
+
+  embed.setFooter({ text: 'Pathway • PF2e Archetype Lookup' });
+  return embed;
+}
+
 // ── Normalize spell to match spells.json format ───────────────────────────────
 function normalizeSpell(spell) {
-  // level: "1st" → 1
   let level = spell.level;
   if (typeof level === 'string') {
     level = parseInt(level) || 1;
   }
 
-  // traditions: comma string → array
   let traditions = spell.traditions ?? '';
   if (typeof traditions === 'string') {
     traditions = traditions.split(',').map(t => t.trim()).filter(Boolean);
   }
   if (!Array.isArray(traditions)) traditions = [];
 
-  // traits: comma string → array
   let traits = spell.traits ?? '';
   if (typeof traits === 'string') {
     traits = traits.split(',').map(t => t.trim()).filter(Boolean);
   }
   if (!Array.isArray(traits)) traits = [];
 
-  // type: use spell.type, confirm cantrip from traits
   let type = spell.type ?? 'Spell';
   if (traits.map(t => t.toLowerCase()).includes('cantrip')) type = 'Cantrip';
   if (level === 0) type = 'Cantrip';
 
-  // saving throw: strip "basic " from defense field
   let savingThrow = null;
   if (spell.defense && spell.defense.trim()) {
     savingThrow = spell.defense.replace(/^basic\s+/i, '').trim();
   }
 
-  // target: spells.json uses "target" not "targets"
   const target = spell.target ?? spell.targets ?? null;
 
-  // damage: flatten { base, type, extra } → string
   let damage = spell.damage;
   if (damage && typeof damage === 'object') {
     const parts = [damage.base, damage.type].filter(Boolean).join(' ');
@@ -170,7 +219,6 @@ function normalizeSpell(spell) {
   }
   if (!damage || (typeof damage === 'string' && !damage.trim())) damage = null;
 
-  // description: fall back to summary, then a default string — never allow empty
   let description = '';
   if (spell.description && spell.description.trim()) {
     description = spell.description.trim();
@@ -193,7 +241,6 @@ function buildSpellEmbed(rawSpell) {
   const traditionsDisplay = spell.traditions.length > 0 ? spell.traditions.join(', ') : 'None';
   const traitsDisplay     = spell.traits.length > 0 ? spell.traits.join(', ') : null;
 
-  // Ensure description is never empty for Discord's embed validator
   let description = spell.description && spell.description.trim()
     ? spell.description
     : '*No description available.*';
@@ -206,7 +253,6 @@ function buildSpellEmbed(rawSpell) {
     .setTitle(spell.name)
     .setDescription(description);
 
-  // Level line
   const levelLine = [`**${levelDisplay}**`, spell.school ?? null].filter(Boolean).join(' · ');
   embed.addFields({ name: '\u200b', value: levelLine, inline: false });
 
@@ -214,7 +260,6 @@ function buildSpellEmbed(rawSpell) {
   embed.addFields({ name: 'Traditions', value: traditionsDisplay, inline: false });
   if (traitsDisplay) embed.addFields({ name: 'Traits', value: traitsDisplay, inline: false });
 
-  // Meta
   const metaLines = [
     spell.cast     ? `**Cast** ${spell.cast}`         : null,
     spell.range    ? `**Range** ${spell.range}`       : null,
@@ -227,7 +272,6 @@ function buildSpellEmbed(rawSpell) {
   if (spell.savingThrow) embed.addFields({ name: 'Saving Throw', value: spell.savingThrow, inline: false });
   if (spell.damage)      embed.addFields({ name: 'Damage',       value: spell.damage,      inline: false });
 
-  // Heightening
   if (spell.heightening && typeof spell.heightening === 'object') {
     let htText = '';
     if (spell.heightening.type === 'per_rank' && spell.heightening.damage_bonus) {
@@ -275,7 +319,7 @@ function buildAncestryCorePage(ancestry) {
       { name: '📈 Attribute Boosts', value: boosts,                  inline: true },
       { name: '📉 Attribute Flaw',   value: flaws,                   inline: true },
       { name: '\u200B',              value: '\u200B',                inline: true },
-      { name: '👁️ Senses',          value: sensesText,              inline: false },
+      { name: '👁️ Senses',          value: sensesText || 'None',    inline: false },
       { name: '🗣️ Languages',       value: languageText,            inline: false },
     );
 }
@@ -772,6 +816,30 @@ client.on('interactionCreate', async (interaction) => {
     const embed   = buildAncestryCorePage(ancestry);
     const buttons = buildAncestryButtons(0, key);
     await interaction.reply({ embeds: [embed], components: [buttons] });
+  }
+
+  // ─── /archetype ──────────────────────────────────────────────────
+  else if (commandName === 'archetype') {
+    const input = interaction.options.getString('name');
+    const { archetype, matches } = findArchetype(input);
+
+    if (!archetype && matches.length > 1) {
+      const nameList = matches.sort().join(', ');
+      return interaction.reply({
+        content: `🔍 Multiple archetypes match **"${input}"**. Did you mean one of these?\n**${nameList}**`,
+        ephemeral: true,
+      });
+    }
+
+    if (!archetype) {
+      return interaction.reply({
+        content: `❌ No archetype found for **"${input}"**. Check your spelling or try another name.`,
+        ephemeral: true,
+      });
+    }
+
+    const embed = buildArchetypeEmbed(archetype);
+    await interaction.reply({ embeds: [embed] });
   }
 
 });
