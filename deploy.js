@@ -154,6 +154,53 @@ const commands = [
         ]
       }
     ]
+  },
+  // ---- BAG COMMAND (added below gold) ----
+  {
+    name: 'bag',
+    description: 'Manage your character\'s inventory bags',
+    options: [
+      {
+        name: 'view',
+        description: 'View your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: []
+      },
+      {
+        name: 'setname',
+        description: 'Set your character name shown on the bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Your character name', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'add',
+        description: 'Add an item to a bag category',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Which bag (e.g. potions, weapons, trinkets)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item name to add', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'remove',
+        description: 'Remove an item from a bag category',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Which bag (e.g. potions, weapons, trinkets)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item name to remove', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'clear',
+        description: 'Clear all items from a bag category',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Which bag to clear', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      }
+    ]
   }
 ];
 
