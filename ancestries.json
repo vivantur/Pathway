@@ -1,0 +1,5176 @@
+{
+  "dwarf": {
+    "name": "Dwarf",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 10,
+    "size": "Medium",
+    "speed": 20,
+    "attribute_boosts": [
+      "Constitution",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Clan Dagger",
+        "description": "You get one clan dagger for free, as it was given to you at birth. Selling this clan dagger is a terrible taboo and earns you the disdain of other dwarves."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Dwarven"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Gnomish",
+        "Goblin",
+        "Jotun",
+        "Orcish",
+        "Petran",
+        "Sakvroth"
+      ]
+    },
+    "description": "Dwarves are a short, stocky people who are often stubborn, fierce, and devoted. They have a well-earned reputation as a stoic and stern people, but also have an unbridled zeal and deeply value artisanship. While trust from a dwarf is hard-won, once gained it is as strong as iron.",
+    "source": "Player Core pg. 43",
+    "heritages": [
+      {
+        "name": "Ancient-Blooded Dwarf",
+        "description": "Trigger: You fail a saving throw against a magical effect. Roll a DC 17 flat check. On a success, you gain a +2 circumstance bonus to that saving throw."
+      },
+      {
+        "name": "Death Warden Dwarf",
+        "description": "You gain a +1 circumstance bonus to saves against negative energy effects and effects that would give you the drained condition."
+      },
+      {
+        "name": "Forge Dwarf",
+        "description": "You gain fire resistance equal to half your level (minimum 1), and treat environmental heat effects as one step less severe."
+      },
+      {
+        "name": "Rock Dwarf",
+        "description": "You gain a +2 circumstance bonus to your Fortitude or Reflex DC against Shove or Trip, and a +2 bonus to Reflex saves against falling traps."
+      },
+      {
+        "name": "Strong-Blooded Dwarf",
+        "description": "You gain poison resistance equal to half your level (minimum 1). Each successful save against a poison reduces its stage by 2, or 1 for virulent poison."
+      },
+      {
+        "name": "Oathkeeper Dwarf",
+        "description": "You gain a +1 circumstance bonus to Will saves against effects that would make you act against your promises or oaths."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Dwarven Lore",
+            "description": "You gain trained in Crafting and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Dwarven Weapon Familiarity",
+            "description": "You are trained with the battle axe, pick, and warhammer, and all dwarf weapons. Martial dwarf weapons are simple and advanced dwarf weapons are martial for you."
+          },
+          {
+            "name": "Rock Runner",
+            "description": "You ignore difficult terrain from rubble and uneven ground made of stone or earth."
+          },
+          {
+            "name": "Stonecunning",
+            "description": "You gain a +2 circumstance bonus to Perception to notice unusual stonework, even without Searching for it."
+          },
+          {
+            "name": "Unburdened Iron",
+            "description": "You ignore the Speed penalty from armor. When encumbered you can Stride at full Speed but take a -1 circumstance penalty to attack rolls."
+          },
+          {
+            "name": "Vengeful Hatred",
+            "description": "Choose one: drow, duergars, giants, or orcs. You gain a +1 circumstance bonus to damage rolls against that creature type."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Boulder Roll",
+            "description": "You can Shove an enemy up to one size larger than you. On a success, you move them into an adjacent space rather than pushing them away."
+          },
+          {
+            "name": "Dwarven Weapon Cunning",
+            "description": "Whenever you critically hit using a battle axe, pick, warhammer, or dwarf weapon, apply the weapon critical specialization effect.",
+            "prerequisites": [
+              "Dwarven Weapon Familiarity"
+            ]
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Stonewalker",
+            "description": "You gain meld into stone as an innate primal spell once per day. You can sense secret doors in stone surfaces within 5 feet."
+          }
+        ]
+      }
+    ]
+  },
+  "elf": {
+    "name": "Elf",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Medium",
+    "speed": 30,
+    "attribute_boosts": [
+      "Dexterity",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Elven"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Empyrean",
+        "Fey",
+        "Gnomish",
+        "Goblin",
+        "Kholo",
+        "Orcish"
+      ]
+    },
+    "description": "Elves are a tall, long-lived people with a strong tradition of art and magic. As an ancient people, elves have seen great change and have the perspective that only comes from watching the arc of history. They value kindness, intellect, and beauty.",
+    "source": "Player Core pg. 47",
+    "heritages": [
+      {
+        "name": "Arctic Elf",
+        "description": "You gain cold resistance equal to half your level (minimum 1), and treat environmental cold effects as one step less extreme."
+      },
+      {
+        "name": "Cavern Elf",
+        "description": "You were born or spent many years in underground tunnels where light is scarce. You gain darkvision."
+      },
+      {
+        "name": "Desert Elf",
+        "description": "You gain fire resistance equal to half your level (minimum 1), and treat environmental heat effects as one step less extreme."
+      },
+      {
+        "name": "Seer Elf",
+        "description": "You can cast detect magic as an innate arcane cantrip at will. You gain a +1 circumstance bonus to Identify Magic and Decipher Writing of a magical nature."
+      },
+      {
+        "name": "Whisper Elf",
+        "description": "You gain a +2 circumstance bonus to Perception when Searching or Seeking hidden creatures. Your flat check for a concealed creature is DC 3 (not 5), and DC 9 for hidden (not 11)."
+      },
+      {
+        "name": "Woodland Elf",
+        "description": "When Climbing foliage, you move at half Speed on a success and full Speed on a critical success. Acrobatics successes to Balance on plant matter become critical successes."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Ancestral Longevity",
+            "description": "During daily preparations, gain trained proficiency in one skill of your choice until you next prepare."
+          },
+          {
+            "name": "Elven Lore",
+            "description": "You gain trained in Arcana and Society. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Elven Weapon Familiarity",
+            "description": "You are trained with longbows, composite longbows, longswords, rapiers, shortbows, composite shortbows, and elven curve blades."
+          },
+          {
+            "name": "Forlorn",
+            "description": "Having lived outside elven society, your proficiency rank for Will saves increases to expert."
+          },
+          {
+            "name": "Nimble Elf",
+            "description": "Your Speed increases by 5 feet."
+          },
+          {
+            "name": "Otherworldly Magic",
+            "description": "You can cast one cantrip from the arcane spell list as an innate arcane cantrip at will."
+          },
+          {
+            "name": "Unwavering Mien",
+            "description": "When you succeed on a save against frightened or confused, you get a critical success instead."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Elven Weapon Elegance",
+            "description": "When you critically hit with a longbow, composite longbow, longsword, rapier, shortbow, composite shortbow, or elven curve blade, apply the critical specialization effect.",
+            "prerequisites": [
+              "Elven Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Resistance to Ruin",
+            "description": "You gain a +1 circumstance bonus to saves against necromancy effects and the doomed condition."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Elven Weapon Expertise",
+            "description": "Your proficiency ranks for longbows, composite longbows, longswords, rapiers, shortbows, composite shortbows, and elven curve blades increase to expert.",
+            "prerequisites": [
+              "Elven Weapon Elegance"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gnome": {
+    "name": "Gnome",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Strength"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Fey",
+        "Gnomish"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Dwarven",
+        "Elven",
+        "Goblin",
+        "Jotun",
+        "Orcish"
+      ]
+    },
+    "description": "Gnomes are short and hardy folk with an unquenchable curiosity and eccentric habits. Always hungry for new experiences, gnomes wander to stave off the Bleaching, a terrible ailment that drains color from gnomes who fail to dream, innovate, and take in new experiences.",
+    "source": "Player Core pg. 51",
+    "heritages": [
+      {
+        "name": "Chameleon Gnome",
+        "description": "You can shift the color of your hair, skin, and eyes. You can cast color spray as a 1st-level innate primal spell once per day."
+      },
+      {
+        "name": "Fey-Touched Gnome",
+        "description": "Your connection to the First World is strong. You can cast a cantrip from the primal spell list as an innate primal spell at will."
+      },
+      {
+        "name": "Sensate Gnome",
+        "description": "You gain imprecise scent with a range of 30 feet and a +2 circumstance bonus to Perception against creatures within that range."
+      },
+      {
+        "name": "Umbral Gnome",
+        "description": "You gain darkvision."
+      },
+      {
+        "name": "Wellspring Gnome",
+        "description": "Choose arcane, divine, or occult. You can cast a cantrip from that tradition as an innate spell at will."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Animal Accomplice",
+            "description": "You gain the service of a Tiny animal that does not require Nature expertise. It has one support benefit."
+          },
+          {
+            "name": "Fey Fellowship",
+            "description": "Your attitude toward fey starts one step more favorable, and you can speak with fey without sharing a language."
+          },
+          {
+            "name": "First World Magic",
+            "description": "You learn one cantrip from the primal spell list you can cast as an innate primal spell at will."
+          },
+          {
+            "name": "Gnome Obsession",
+            "description": "You gain trained in a Lore skill of your choice, and can temporarily swap it during daily preparations."
+          },
+          {
+            "name": "Gnome Weapon Familiarity",
+            "description": "You are trained with the glaive, kukri, and all gnome weapons. Martial gnome weapons are simple and advanced gnome weapons are martial for you."
+          },
+          {
+            "name": "Illusion Sense",
+            "description": "You gain a +1 circumstance bonus to saves against illusion effects and to Perception checks to disbelieve illusions."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Gnome Weapon Innovator",
+            "description": "Whenever you critically hit using a gnome weapon, apply the critical specialization effect.",
+            "prerequisites": [
+              "Gnome Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Life-Giving Magic",
+            "description": "When you cast an innate spell of 1st rank or higher that is not a cantrip, you gain temporary HP equal to the spell rank."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Energized Font",
+            "description": "When you cast an innate focus spell, you regain 1 Focus Point up to your maximum.",
+            "prerequisites": [
+              "Focus Pool"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "goblin": {
+    "name": "Goblin",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Goblin"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Dwarven",
+        "Gnomish",
+        "Halfling",
+        "Kholo",
+        "Orcish"
+      ]
+    },
+    "description": "Goblins are a short, scrappy, energetic people who have spent millennia maligned and feared. These small folk live in the moment and prefer tall tales over factual records. Goblin virtues are about being present, creative, and honest.",
+    "source": "Player Core pg. 55",
+    "heritages": [
+      {
+        "name": "Charhide Goblin",
+        "description": "You gain fire resistance equal to half your level (minimum 1). When you take fire damage, make a DC 5 flat check to avoid gaining persistent fire damage."
+      },
+      {
+        "name": "Irongut Goblin",
+        "description": "You can subsist on non-edible things and gain a +2 circumstance bonus to saves against afflictions and effects that would make you sickened."
+      },
+      {
+        "name": "Razortooth Goblin",
+        "description": "You gain a jaws unarmed attack dealing 1d6 piercing damage with the finesse and unarmed traits."
+      },
+      {
+        "name": "Snow Goblin",
+        "description": "You gain cold resistance equal to half your level (minimum 1), and treat environmental cold effects as one step less severe."
+      },
+      {
+        "name": "Tailed Goblin",
+        "description": "You do not need an adjacent wall to balance on narrow surfaces and gain a +2 circumstance bonus to Athletics checks to Climb."
+      },
+      {
+        "name": "Treedweller Goblin",
+        "description": "You gain a climb Speed of 10 feet and ignore difficult terrain from undergrowth."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Burn It!",
+            "description": "Your spells and alchemical items dealing fire damage gain a status bonus to damage equal to half the spell rank (minimum 1), plus 1 additional persistent fire damage."
+          },
+          {
+            "name": "City Scavenger",
+            "description": "When you Subsist in a settlement, you can also Earn Income as if using Subsistence without needing Society proficiency."
+          },
+          {
+            "name": "Goblin Lore",
+            "description": "You gain trained in Nature and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Goblin Scuttle",
+            "description": "Trigger: An ally ends its turn adjacent to you. Effect: You Step as a reaction."
+          },
+          {
+            "name": "Goblin Song",
+            "description": "Attempt a Performance check against one target within 30 feet; on a success, the target is flat-footed until the start of your next turn."
+          },
+          {
+            "name": "Goblin Weapon Familiarity",
+            "description": "You are trained with the dogslicer, horsechopper, and all goblin weapons. Martial goblin weapons are simple and advanced goblin weapons are martial for you."
+          },
+          {
+            "name": "Junk Tinker",
+            "description": "You can Craft using junk or discarded materials, reducing the cost by 25%."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Goblin Weapon Frenzy",
+            "description": "Whenever you critically hit using a goblin weapon, apply the critical specialization effect.",
+            "prerequisites": [
+              "Goblin Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Roll with It",
+            "description": "Trigger: A creature succeeds on a melee Strike against you. You roll with the blow, taking half damage and being pushed 10 feet, landing prone."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Very Sneaky",
+            "description": "You can Hide and Sneak even while observed. When undetected, you gain a +2 circumstance bonus to Stealth and initiative."
+          }
+        ]
+      }
+    ]
+  },
+  "halfling": {
+    "name": "Halfling",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Strength"
+    ],
+    "senses": [
+      {
+        "name": "Keen Eyes",
+        "description": "You gain a +2 circumstance bonus to Seek hidden or undetected creatures within 30 feet. The flat check to target a concealed creature is DC 3 (not 5), and DC 9 for hidden (not 11)."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Halfling"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Dwarven",
+        "Elven",
+        "Gnomish",
+        "Goblin"
+      ]
+    },
+    "description": "Halflings are a short, adaptable people who exhibit remarkable curiosity, pluck, and a love of creature comforts. Easily assumed to be harmless, their dexterous fingers and nimble minds make them surprisingly capable.",
+    "source": "Player Core pg. 59",
+    "heritages": [
+      {
+        "name": "Gutsy Halfling",
+        "description": "You gain a +1 circumstance bonus to saves against emotion effects. When you succeed on a save against an emotion effect, you get a critical success instead."
+      },
+      {
+        "name": "Hillock Halfling",
+        "description": "Whenever you rest and recover, you regain additional HP equal to your Constitution modifier (minimum 0)."
+      },
+      {
+        "name": "Jinxed Halfling",
+        "description": "You can cast ill omen as an innate occult cantrip at will."
+      },
+      {
+        "name": "Nomadic Halfling",
+        "description": "Your ancestors traveled from place to place. You gain two additional languages of your choice."
+      },
+      {
+        "name": "Twilight Halfling",
+        "description": "Your ancestors made homes in dim forests. You gain low-light vision."
+      },
+      {
+        "name": "Wildwood Halfling",
+        "description": "You are not slowed by difficult terrain from undergrowth and forest environments."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Distracting Shadows",
+            "description": "You can use creatures at least one size larger than you as cover to Hide and Sneak."
+          },
+          {
+            "name": "Halfling Lore",
+            "description": "You gain trained in Acrobatics and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Halfling Luck",
+            "description": "Trigger: You fail a skill check or saving throw. You can reroll it but must use the second result even if worse."
+          },
+          {
+            "name": "Halfling Weapon Familiarity",
+            "description": "You are trained with slings, halfling sling staves, and shortswords, and with all halfling weapons."
+          },
+          {
+            "name": "Innocuous",
+            "description": "You gain a +2 circumstance bonus to Deception checks to pass as a non-threat."
+          },
+          {
+            "name": "Titan Slinger",
+            "description": "When using a sling, increase the damage die by one step against Large or larger creatures."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Halfling Weapon Trickster",
+            "description": "You apply critical specialization effects with shortswords and halfling weapons.",
+            "prerequisites": [
+              "Halfling Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Vivacious Conduit",
+            "description": "When healed with a heal spell, you recover additional HP equal to your Constitution modifier."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Extreme Luck",
+            "description": "When you use Halfling Luck and still fail, you can choose not to use the result and treat it as a failure.",
+            "prerequisites": [
+              "Halfling Luck"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "human": {
+    "name": "Human",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Free",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common"
+      ],
+      "bonus_count": "1 + your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Any common language or language prevalent in your region"
+      ]
+    },
+    "description": "Humans are incredibly diverse. Some are decisive warriors who win glory on the battlefield, while others are careful diplomats who prefer the pen to the sword. Humans are exceptionally adaptable, thriving in nearly any environment and culture.",
+    "source": "Player Core pg. 63",
+    "heritages": [
+      {
+        "name": "Skilled Heritage",
+        "description": "You become trained in one skill of your choice. At 5th level, you become an expert in that skill."
+      },
+      {
+        "name": "Versatile Heritage",
+        "description": "Humanity adaptability manifests as a general feat of your choice for which you meet the prerequisites."
+      },
+      {
+        "name": "Half-Elf",
+        "description": "You have human and elven ancestry. You gain low-light vision and access to elf and half-elf ancestry feats in addition to human ancestry feats."
+      },
+      {
+        "name": "Half-Orc",
+        "description": "You have human and orcish ancestry. You gain low-light vision or darkvision if you already have it. You can select orc and half-orc ancestry feats in addition to human feats."
+      },
+      {
+        "name": "Wintertouched Human",
+        "description": "You gain cold resistance 5 and treat environmental cold effects as one step less severe."
+      },
+      {
+        "name": "Wandering Human",
+        "description": "Your line has traveled across many lands. You gain additional languages equal to half your Intelligence modifier (minimum 1)."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Adapted Cantrip",
+            "description": "Choose one cantrip from a magical tradition other than your own. You can cast it as an innate spell of that tradition at will."
+          },
+          {
+            "name": "Cooperative Nature",
+            "description": "You gain a +4 circumstance bonus on checks to Aid another creature."
+          },
+          {
+            "name": "General Training",
+            "description": "Your varied background grants you a general feat for which you meet the prerequisites."
+          },
+          {
+            "name": "Haughty Obstinacy",
+            "description": "If you roll a success on a save against a mental effect that would give the controlled condition, you get a critical success instead."
+          },
+          {
+            "name": "Natural Ambition",
+            "description": "You gain a 1st-level class feat for which you meet the prerequisites."
+          },
+          {
+            "name": "Natural Skill",
+            "description": "You gain trained proficiency in two additional skills of your choice."
+          },
+          {
+            "name": "Unconventional Weaponry",
+            "description": "Choose one uncommon weapon. You gain trained proficiency in it."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Adaptive Adept",
+            "description": "Choose one spell of 1st rank or higher from the same tradition as your Adapted Cantrip. You can cast it as an innate spell once per day.",
+            "prerequisites": [
+              "Adapted Cantrip"
+            ]
+          },
+          {
+            "name": "Clever Improviser",
+            "description": "You can attempt skill checks for skills you are untrained in without the usual penalty."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Multitalented",
+            "description": "You gain a 2nd-level multiclass dedication feat even without taking its prerequisite delegation, as long as you meet all other prerequisites."
+          }
+        ]
+      }
+    ]
+  },
+  "leshy": {
+    "name": "Leshy",
+    "traits": [
+      "Humanoid",
+      "Plant"
+    ],
+    "hp": 8,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Plant Nourishment",
+        "description": "You gain nourishment through photosynthesis, absorbing minerals, or scavenging decaying matter. You typically do not need to pay for food. If you rely on photosynthesis and go without sunlight for 1 week, you begin to starve."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Fey"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Sakvroth"
+      ]
+    },
+    "description": "Leshies are small plant-like humanoids created and nurtured by druids. Each leshy is unique, but all share an affinity for nature and a curiosity about the world. They exist in a wondrous state of innocent wonder, fascinated by everything they encounter.",
+    "source": "Player Core pg. 57",
+    "heritages": [
+      {
+        "name": "Cactus Leshy",
+        "description": "You gain a spine unarmed attack dealing 1d6 piercing damage. When a creature damages you with a non-reach melee attack, it takes 1 piercing damage."
+      },
+      {
+        "name": "Fruit Leshy",
+        "description": "Once per day, a creature can eat your fruit as a single action to recover 1d8 HP. The fruit regrows in 24 hours."
+      },
+      {
+        "name": "Fungus Leshy",
+        "description": "You are a mushroom leshy. You gain darkvision and are immune to the sickened condition from ingested sources."
+      },
+      {
+        "name": "Gourd Leshy",
+        "description": "You have a hollow gourd for a head that can store one Bulk 0 item inside."
+      },
+      {
+        "name": "Leaf Leshy",
+        "description": "Your leaves slow your descent. You take no damage from falling and can Glide 5 feet forward per 10 feet of descent."
+      },
+      {
+        "name": "Vine Leshy",
+        "description": "You gain a +2 circumstance bonus to Athletics checks to Grapple and gain the Improved Grab action."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Leshy Lore",
+            "description": "You gain trained in Nature and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Grasping Reach",
+            "description": "Your melee reach increases by 5 feet for the purpose of making Grapple checks and interacting with objects."
+          },
+          {
+            "name": "Seedpod",
+            "description": "You gain a seedpod ranged unarmed attack with a 30-foot range dealing 1d6 bludgeoning damage with the agile, finesse, and unarmed traits."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Leshy Familiar",
+            "description": "You gain a familiar with the plant trait with two abilities of your choice."
+          },
+          {
+            "name": "Call of the Wild",
+            "description": "You can cast animal messenger as an innate primal spell once per day."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Ritual Reversion",
+            "description": "Once per day, you can transform into a Small plant. While transformed, you are stationary, gain regeneration 5, and appear as a mundane plant."
+          }
+        ]
+      }
+    ]
+  },
+  "orc": {
+    "name": "Orc",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 10,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Free",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Orcish"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Goblin",
+        "Jotun",
+        "Petran",
+        "Sakvroth"
+      ]
+    },
+    "description": "Orcs are a proud, strong people with a rich warrior culture and deep spiritual traditions. Modern orcs struggle against a violent reputation that many are working to change, and are increasingly found integrated into other societies.",
+    "source": "Player Core pg. 71",
+    "heritages": [
+      {
+        "name": "Badlands Orc",
+        "description": "You gain fire resistance equal to half your level (minimum 1), and treat environmental heat effects as one step less severe."
+      },
+      {
+        "name": "Battle-Ready Orc",
+        "description": "Your proficiency rank for simple weapons and unarmed attacks increases to expert."
+      },
+      {
+        "name": "Deep Orc",
+        "description": "Your life among subterranean passages grants you Terrain Expertise for underground terrain."
+      },
+      {
+        "name": "Grave Orc",
+        "description": "You gain negative resistance equal to half your level (minimum 1)."
+      },
+      {
+        "name": "Hold-Scarred Orc",
+        "description": "You gain resistance to mental damage equal to half your level (minimum 1)."
+      },
+      {
+        "name": "Rainfall Orc",
+        "description": "You have adapted to wet environments. You gain a swim Speed of 15 feet."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Bloody Blows",
+            "description": "Once per round when you hit a creature and deal damage, that creature takes 1 persistent bleed damage."
+          },
+          {
+            "name": "Orc Ferocity",
+            "description": "Trigger: You would be reduced to 0 HP. You avoid being knocked out and remain at 1 HP instead. Once per day."
+          },
+          {
+            "name": "Orc Lore",
+            "description": "You gain trained in Athletics and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Orc Weapon Familiarity",
+            "description": "You are trained with falchions, greataxes, and all orc weapons. Martial orc weapons are simple and advanced orc weapons are martial for you."
+          },
+          {
+            "name": "Hold Mark",
+            "description": "You gain a +2 circumstance bonus to Intimidation checks to Demoralize creatures from cultures that recognize your orc hold marking."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Orc Weapon Carnage",
+            "description": "Whenever you critically hit using a falchion, greataxe, or orc weapon, apply the critical specialization effect.",
+            "prerequisites": [
+              "Orc Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Victorious Vigor",
+            "description": "When you knock a foe out or kill them, you regain 1d8 temporary HP plus 1d8 per 4 levels.",
+            "prerequisites": [
+              "Orc Ferocity"
+            ]
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Incredible Ferocity",
+            "description": "Your Orc Ferocity triggers once per encounter rather than once per day.",
+            "prerequisites": [
+              "Orc Ferocity"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "catfolk": {
+    "name": "Catfolk",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Amurrune"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Iruxi",
+        "Jotun",
+        "Fey"
+      ]
+    },
+    "description": "Catfolk are highly social, feline humanoids prone to curiosity and wandering. They combine the features of felines and humanoids in both appearance and temperament, enjoying learning new things and collecting trinkets. They view themselves as the chosen guardians of natural places.",
+    "source": "Player Core 2 pg. 9",
+    "heritages": [
+      {
+        "name": "Clawed Catfolk",
+        "description": "You gain a claw unarmed attack dealing 1d6 slashing damage with the agile, finesse, and unarmed traits."
+      },
+      {
+        "name": "Hunting Catfolk",
+        "description": "You gain the Terrain Stalker feat even without meeting its prerequisites."
+      },
+      {
+        "name": "Jungle Catfolk",
+        "description": "You gain a climb Speed of 10 feet and a swim Speed of 10 feet."
+      },
+      {
+        "name": "Nine Lives Catfolk",
+        "description": "Once per day, when damage would reduce you to 0 HP, make a DC 16 flat check to remain at 1 HP instead."
+      },
+      {
+        "name": "Sharp-Eared Catfolk",
+        "description": "You gain a +2 circumstance bonus to Perception checks involving hearing."
+      },
+      {
+        "name": "Tailed Catfolk",
+        "description": "You have a prehensile tail that can Interact with objects. You gain a +2 circumstance bonus to Acrobatics checks to Balance."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Cat Nap",
+            "description": "Once per hour, you can spend 10 minutes resting to recover 1d6 HP per level."
+          },
+          {
+            "name": "Catfolk Lore",
+            "description": "You gain trained in Acrobatics and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Catfolk Weapon Familiarity",
+            "description": "You are trained with kukris, sickles, and all catfolk weapons."
+          },
+          {
+            "name": "Land on Your Feet",
+            "description": "When you fall, you take only half the normal damage and do not land prone."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Catfolk Weapon Raking",
+            "description": "Whenever you critically hit using a catfolk weapon, apply the critical specialization effect.",
+            "prerequisites": [
+              "Catfolk Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Evade Doom",
+            "description": "Once per round when you roll a success on a Reflex save, you treat the result as a critical success."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Eerie Flexibility",
+            "description": "You can Squeeze through tight spaces as though they were normal terrain."
+          }
+        ]
+      }
+    ]
+  },
+  "fetchling": {
+    "name": "Fetchling",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Shadowtongue"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Draconic",
+        "D'ziriak",
+        "Necril",
+        "Undercommon"
+      ]
+    },
+    "description": "Fetchlings are a people shaped by the Shadow Plane, descended from humans who became stranded there long ago. They walk between shadow and light, comfortable in darkness as in daylight. Many serve as scouts and diplomats between planes.",
+    "source": "Ancestry Guide pg. 83",
+    "heritages": [
+      {
+        "name": "Liminal Fetchling",
+        "description": "You exist at the boundary between light and shadow. You can cast dim the light as an innate occult cantrip at will."
+      },
+      {
+        "name": "Noisome Fetchling",
+        "description": "Creatures adjacent to you take a -1 circumstance penalty to Perception checks."
+      },
+      {
+        "name": "Resolute Fetchling",
+        "description": "Hardship in the Shadow Plane has made you resilient. You gain a +1 circumstance bonus to saves against mental effects."
+      },
+      {
+        "name": "Shade Fetchling",
+        "description": "You gain a +1 circumstance bonus to spell attack rolls and spell DCs when casting spells with the shadow trait."
+      },
+      {
+        "name": "Tenebrism Fetchling",
+        "description": "Once per turn, when in dim light or darkness, you can teleport 5 feet to another location in dim light or darkness as a free action."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Fetchling Lore",
+            "description": "You gain trained in Stealth and Occultism. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Shadow Blending",
+            "description": "In areas of dim light, you are concealed rather than needing to use Stealth."
+          },
+          {
+            "name": "Subtle Shadow",
+            "description": "You gain a +2 circumstance bonus to Stealth checks when hiding in dim light or darkness."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Shadow Pockets",
+            "description": "You can produce small items from shadow as a free action, even without a physical pocket."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Shadowy Teleportation",
+            "description": "Once per day, you can cast shadow walk as an innate occult spell."
+          }
+        ]
+      }
+    ]
+  },
+  "hobgoblin": {
+    "name": "Hobgoblin",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Goblin"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Dwarven",
+        "Halfling",
+        "Jotun",
+        "Kholo",
+        "Orcish"
+      ]
+    },
+    "description": "Hobgoblins are a militaristic people who excel at warfare and discipline. They have built powerful nations and earned a reputation as merciless warriors, but modern hobgoblins are just as often found as valued members of adventuring parties and diverse societies.",
+    "source": "Player Core 2 pg. 13",
+    "heritages": [
+      {
+        "name": "Elfbane Hobgoblin",
+        "description": "You gain a +1 circumstance bonus to saves against arcane magical effects."
+      },
+      {
+        "name": "Runtboss Hobgoblin",
+        "description": "You gain a +1 circumstance bonus to Intimidation checks and can Demoralize as a single action."
+      },
+      {
+        "name": "Smokeworker Hobgoblin",
+        "description": "You gain fire resistance equal to half your level (minimum 1) and do not treat smoke as difficult terrain."
+      },
+      {
+        "name": "Totembound Hobgoblin",
+        "description": "Choose a totem animal. You gain low-light vision and a +1 circumstance bonus to Nature checks relating to your totem animal."
+      },
+      {
+        "name": "Warmarch Hobgoblin",
+        "description": "You can Hustle during overland travel for twice as long before becoming fatigued."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Alchemical Scholar",
+            "description": "You are trained in Crafting and gain the Alchemical Crafting feat."
+          },
+          {
+            "name": "Hobgoblin Lore",
+            "description": "You gain trained in Athletics and Intimidation. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Hobgoblin Weapon Familiarity",
+            "description": "You are trained with composite shortbows, composite longbows, longswords, and all goblin weapons."
+          },
+          {
+            "name": "Leech-Clipper",
+            "description": "You do not take a penalty for attacking a creature adjacent to you or an ally when they are grappled together."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Hobgoblin Weapon Discipline",
+            "description": "Whenever you critically hit using a goblin weapon, composite shortbow, composite longbow, or longsword, apply the critical specialization effect.",
+            "prerequisites": [
+              "Hobgoblin Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Pride in Arms",
+            "description": "When you succeed at a Strike, you can grant a +1 circumstance bonus to the next attack roll an ally makes against the same target before the start of your next turn."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Formation Attack",
+            "description": "When adjacent to an ally who is also adjacent to your target, your Strikes deal an extra 1d6 damage."
+          }
+        ]
+      }
+    ]
+  },
+  "kholo": {
+    "name": "Kholo",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Kholo"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Elven",
+        "Fey",
+        "Iruxi",
+        "Necril",
+        "Orcish"
+      ]
+    },
+    "description": "Kholo (also called gnolls) are powerfully-built humanoids resembling hyenas. They are cunning hunters who live in clans led by powerful matriarchs, prizing strength and cunning. Their society is built around the hunt and the bond of the clan.",
+    "source": "Player Core 2 pg. 17",
+    "heritages": [
+      {
+        "name": "Sweetbreath Kholo",
+        "description": "Once per day, you can exhale a cloud in a 10-foot emanation. Creatures must succeed at a Fortitude save against your class DC or become confused for 1 round."
+      },
+      {
+        "name": "Witch-Tooth Kholo",
+        "description": "Your jaws unarmed attack deals 1d8 piercing damage. On a critical hit, the target takes 1d6 persistent bleed damage."
+      },
+      {
+        "name": "Cunning Kholo",
+        "description": "You gain a +1 circumstance bonus to skill checks involving tracking, hunting, or pursuit."
+      },
+      {
+        "name": "Packmate Kholo",
+        "description": "When adjacent to at least one ally, you gain a +1 circumstance bonus to attack rolls."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Bone Gnaw",
+            "description": "You have a jaws unarmed attack dealing 1d6 piercing damage. On a critical hit, the target is also clumsy 1 until the start of your next turn."
+          },
+          {
+            "name": "Kholo Lore",
+            "description": "You gain trained in Intimidation and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Kholo Weapon Familiarity",
+            "description": "You are trained with falchions, flails, and all kholo weapons."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Pack Tactics",
+            "description": "When you flank a creature with an ally, you deal an extra 1d4 damage with your Strikes."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Kholo Weapon Expertise",
+            "description": "Whenever you critically hit using a kholo weapon, falchion, or flail, apply the critical specialization effect.",
+            "prerequisites": [
+              "Kholo Weapon Familiarity"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "kitsune": {
+    "name": "Kitsune",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Dwarven",
+        "Sylvan"
+      ]
+    },
+    "description": "Kitsune are a charismatic and witty people with a connection to the spiritual that grants them a supernatural talent for illusion and transformation. Known as excellent tricksters and diplomats, they can shift form to interact with others more easily.",
+    "source": "Ancestry Guide pg. 121",
+    "heritages": [
+      {
+        "name": "Dark Fields Kitsune",
+        "description": "You gain darkvision and can cast darkness as an innate occult spell once per day."
+      },
+      {
+        "name": "Earthly Wilds Kitsune",
+        "description": "You can cast speak with animals as an innate primal spell once per day."
+      },
+      {
+        "name": "Empty Sky Kitsune",
+        "description": "You gain a fly Speed of 10 feet for 1 minute once per day."
+      },
+      {
+        "name": "Iron Peninsula Kitsune",
+        "description": "You gain a +2 circumstance bonus to saves against mental effects."
+      },
+      {
+        "name": "Lunar Kitsune",
+        "description": "You can cast moon frenzy as an innate primal spell once per day."
+      },
+      {
+        "name": "Star Kitsune",
+        "description": "You can cast dancing lights as an innate occult cantrip at will."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Kitsune Lore",
+            "description": "You gain trained in Deception and Occultism. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Kitsune Spell Familiarity",
+            "description": "You can cast illusory disguise as an innate occult spell once per day."
+          },
+          {
+            "name": "Fox Trick",
+            "description": "Once per day, you can cast cloak of colors as an innate occult spell."
+          },
+          {
+            "name": "Meddlesome Fingers",
+            "description": "In your fox form, you can use simple tools and perform Interact actions as if you had hands."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Many Tails",
+            "description": "You manifest an additional tail. Each tail grants one additional use of your innate ancestry spell per day."
+          },
+          {
+            "name": "Inari's Guidance",
+            "description": "Once per day, you can cast augury as an innate occult spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Fox Shape",
+            "description": "You can cast pest form at will as an innate primal spell, but only into a fox form."
+          }
+        ]
+      }
+    ]
+  },
+  "kobold": {
+    "name": "Kobold",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Draconic"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Diabolic",
+        "Dwarven",
+        "Empyrean",
+        "Fey",
+        "Gnomish",
+        "Petran"
+      ]
+    },
+    "description": "Kobolds are small, reptilian humanoids with a proud draconic heritage. They are cunning survivalists who excel at trap-making and tunnel fighting. Though often looked down upon by larger peoples, kobolds have fierce pride and a tight-knit sense of community.",
+    "source": "Player Core 2 pg. 21",
+    "heritages": [
+      {
+        "name": "Cavern Kobold",
+        "description": "You are adapted to underground environments. You gain a climb Speed of 10 feet."
+      },
+      {
+        "name": "Dragonscaled Kobold",
+        "description": "You gain resistance to one energy type based on your draconic color (acid, cold, electricity, fire, or poison) equal to half your level (minimum 1)."
+      },
+      {
+        "name": "Spellscale Kobold",
+        "description": "You can cast one cantrip from the arcane spell list as an innate arcane cantrip at will."
+      },
+      {
+        "name": "Strong-Jaw Kobold",
+        "description": "Your jaws are particularly powerful. You gain a jaws unarmed attack dealing 1d6 piercing damage."
+      },
+      {
+        "name": "Venomtail Kobold",
+        "description": "You gain a tail Strike unarmed attack dealing 1d4 poison damage with the agile, finesse, and unarmed traits."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Cringe",
+            "description": "When a creature attacks you, you can cringe as a reaction. The creature must succeed on a Will save or become off-guard against all attacks until the start of its next turn."
+          },
+          {
+            "name": "Kobold Lore",
+            "description": "You gain trained in Acrobatics and Crafting. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Kobold Weapon Familiarity",
+            "description": "You are trained with picks, spears, and all kobold weapons."
+          },
+          {
+            "name": "Snare Setter",
+            "description": "You gain the Snare Crafting skill feat and can Craft snares in half the normal time."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Kobold Weapon Specialist",
+            "description": "Whenever you critically hit using a kobold weapon, pick, or spear, apply the critical specialization effect.",
+            "prerequisites": [
+              "Kobold Weapon Familiarity"
+            ]
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Winglets",
+            "description": "Small vestigial wings emerge from your back. You gain a +2 circumstance bonus to Acrobatics and can Glide 5 feet forward per 10 feet of descent."
+          }
+        ]
+      }
+    ]
+  },
+  "lizardfolk": {
+    "name": "Lizardfolk",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Claws",
+        "description": "You have a claw unarmed attack that deals 1d4 slashing damage with the agile and unarmed traits."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Iruxi"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Amurrun",
+        "Boggard",
+        "Draconic",
+        "Elven",
+        "Fey",
+        "Jotun",
+        "Thalassic"
+      ]
+    },
+    "description": "Lizardfolk are proud, strong people who live in tribal communities in warm and tropical regions. Known as Iruxi among their own kind, they have scaled skin and natural athleticism. They tend to be practical and direct, valuing action over deliberation.",
+    "source": "Player Core 2 pg. 25",
+    "heritages": [
+      {
+        "name": "Cliffscale Lizardfolk",
+        "description": "You can cling to surfaces with your toes. You gain a climb Speed of 20 feet."
+      },
+      {
+        "name": "Frilled Lizardfolk",
+        "description": "Once per day, you can fan your frill to frighten enemies. All enemies in a 20-foot emanation must attempt a Will save against your class DC or become frightened 1."
+      },
+      {
+        "name": "Sandstrider Lizardfolk",
+        "description": "You gain fire resistance equal to half your level (minimum 1) and treat environmental heat as one step less severe."
+      },
+      {
+        "name": "Unseen Lizardfolk",
+        "description": "You can rapidly shift your scale pigmentation. You can cast blur as an innate primal spell once per day."
+      },
+      {
+        "name": "Wetlander Lizardfolk",
+        "description": "You excel in aquatic environments. You gain a swim Speed of 25 feet."
+      },
+      {
+        "name": "Woodstalker Lizardfolk",
+        "description": "You can Hide in forests and undergrowth even without cover."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Iruxi Unarmed Cunning",
+            "description": "Your claw unarmed attack deals 1d6 slashing damage instead of 1d4."
+          },
+          {
+            "name": "Lizardfolk Lore",
+            "description": "You gain trained in Athletics and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Marsh Runner",
+            "description": "You move through swamps and marshes at full Speed and treat mud and shallow water as normal terrain."
+          },
+          {
+            "name": "Parthenogenic Hatchling",
+            "description": "You gain a +1 circumstance bonus to saves against effects that would cause you to act against your will."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Iruxi Unarmed Expertise",
+            "description": "Your proficiency with your claw unarmed attack increases to expert.",
+            "prerequisites": [
+              "Iruxi Unarmed Cunning"
+            ]
+          },
+          {
+            "name": "Tongue Pull",
+            "description": "You gain a tongue ranged unarmed attack with a range of 10 feet that can Grapple or disarm a creature."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Tail Whip",
+            "description": "You gain a tail unarmed attack dealing 1d6 bludgeoning damage with the trip trait."
+          }
+        ]
+      }
+    ]
+  },
+  "ratfolk": {
+    "name": "Ratfolk",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Strength"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Sharp Teeth",
+        "description": "You have a jaws unarmed attack that deals 1d4 piercing damage, is in the brawling group, and has the agile and finesse traits."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Ysoki"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Draconic",
+        "Dwarven",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Kholo",
+        "Orcish",
+        "Sakvroth"
+      ]
+    },
+    "description": "Ratfolk are quick, clever people who thrive in diverse communities and dynamic environments. Known for curiosity and skill with crafting and trade, they form tight bonds with their family groups. Despite their reputation as scrappy survivors, ratfolk often excel as merchants, scholars, and adventurers.",
+    "source": "Player Core 2 pg. 29",
+    "heritages": [
+      {
+        "name": "Deep Rat",
+        "description": "You come from underground warrens. You gain darkvision."
+      },
+      {
+        "name": "Desert Rat",
+        "description": "You gain fire resistance equal to half your level (minimum 1) and treat environmental heat as one step less severe."
+      },
+      {
+        "name": "Longsnout Rat",
+        "description": "Your long snout gives you a powerful sense of smell. You gain a +2 circumstance bonus to Perception checks that rely on smell."
+      },
+      {
+        "name": "Sewer Rat",
+        "description": "You gain a +2 circumstance bonus to saves against diseases and poisons."
+      },
+      {
+        "name": "Shadow Rat",
+        "description": "You can Hide in areas of dim light without cover."
+      },
+      {
+        "name": "Snow Rat",
+        "description": "You gain cold resistance equal to half your level (minimum 1) and treat environmental cold as one step less severe."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Cheek Pouches",
+            "description": "Your cheeks can expand remarkably. You can store items with a total Bulk of 1 in your cheeks."
+          },
+          {
+            "name": "Ratfolk Lore",
+            "description": "You gain trained in Acrobatics and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Ratfolk Weapon Familiarity",
+            "description": "You are trained with the shortsword, sickle, and all ratfolk weapons."
+          },
+          {
+            "name": "Sturdy",
+            "description": "Your compact frame is surprisingly resilient. Your maximum Hit Points increase by 2."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Ratfolk Weapon Specialist",
+            "description": "Whenever you critically hit using a ratfolk weapon, shortsword, or sickle, apply the critical specialization effect.",
+            "prerequisites": [
+              "Ratfolk Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Vicious Incisors",
+            "description": "Your incisors are formidable. You gain a jaws unarmed attack dealing 1d6 piercing damage."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Overcrowd",
+            "description": "You can move through spaces occupied by allies without needing to Tumble Through."
+          }
+        ]
+      }
+    ]
+  },
+  "tengu": {
+    "name": "Tengu",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Common",
+        "Tengu"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Dwarven",
+        "Elven",
+        "Halfling",
+        "Gnomish",
+        "Goblin",
+        "Fey"
+      ]
+    },
+    "description": "Tengus are avian humanoids who collect memories, traditions, and skills from the cultures they encounter. They are talented mimics with a sharp eye for detail and an even sharper tongue. Tengus excel as fighters and scholars, mastering skills from many cultural traditions.",
+    "source": "Player Core 2 pg. 33",
+    "heritages": [
+      {
+        "name": "Dogtooth Tengu",
+        "description": "Your beak deals 1d8 piercing damage, and on a critical hit the target takes 1d4 persistent bleed damage."
+      },
+      {
+        "name": "Jinxed Tengu",
+        "description": "Once per turn, when you hit a creature with an unarmed attack, you can give it a -1 circumstance penalty to its next saving throw."
+      },
+      {
+        "name": "Mountainkeeper Tengu",
+        "description": "You have practiced spiritual traditions. You gain trained in Religion or Occultism (your choice)."
+      },
+      {
+        "name": "Skyborn Tengu",
+        "description": "Your lightweight bones allow you to Leap prodigiously. When you Leap, treat it as having a fly speed of 10 feet for determining distance."
+      },
+      {
+        "name": "Stormtossed Tengu",
+        "description": "You gain electricity resistance equal to half your level (minimum 1)."
+      },
+      {
+        "name": "Taloned Tengu",
+        "description": "You gain a talon unarmed attack dealing 1d4 slashing damage with agile and finesse traits."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Eat Fortune",
+            "description": "Once per day, when a creature uses a fortune effect on you, you can negate it as a reaction."
+          },
+          {
+            "name": "Squawk!",
+            "description": "Once per round, you can Demoralize a creature as a free action using Intimidation."
+          },
+          {
+            "name": "Tengu Lore",
+            "description": "You gain trained in Acrobatics and Intimidation. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Tengu Weapon Familiarity",
+            "description": "You are trained with katanas, khakkharas, naginatas, wakizashis, and all tengu weapons."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Tengu Weapon Expertise",
+            "description": "Whenever you critically hit using a tengu weapon, katana, khaqqhara, naginata, or wakizashi, apply the critical specialization effect.",
+            "prerequisites": [
+              "Tengu Weapon Familiarity"
+            ]
+          },
+          {
+            "name": "Soaring Flight",
+            "description": "Once per day, you can gain a fly Speed of 20 feet for 10 minutes."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Wind-Up Tengu",
+            "description": "You gain a permanent fly Speed of 20 feet."
+          }
+        ]
+      }
+    ]
+  },
+  "tripkee": {
+    "name": "Tripkee",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Strength"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Adhesive Feet",
+        "description": "Your feet can cling to surfaces. You gain a climb Speed of 15 feet."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Tripkee"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Boggard",
+        "Chthonian",
+        "Draconic",
+        "Elven",
+        "Fey",
+        "Iruxi",
+        "Thalassic"
+      ]
+    },
+    "description": "Tripkees are small, frog-like humanoids with sticky hands and feet and an innate connection to nature and rain. They build communities in tropical and subtropical rainforests, with culture revolving around water, spirits, and the rhythms of the natural world.",
+    "source": "Player Core 2 pg. 37",
+    "heritages": [
+      {
+        "name": "Poisonous Tripkee",
+        "description": "Creatures that grapple you or Strike you with an unarmed attack take 1d4 poison damage."
+      },
+      {
+        "name": "Sticky Tripkee",
+        "description": "You gain a +4 circumstance bonus to checks to maintain a grapple and to Climb, and can Climb at full Speed."
+      },
+      {
+        "name": "Swimmer Tripkee",
+        "description": "You gain a swim Speed of 25 feet and can breathe underwater."
+      },
+      {
+        "name": "Camouflage Tripkee",
+        "description": "You can rapidly change your skin color. You can Hide even while observed, and gain a +2 circumstance bonus to Stealth checks."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Tongue Strike",
+            "description": "You gain a tongue unarmed attack with a reach of 10 feet dealing 1d4 bludgeoning damage."
+          },
+          {
+            "name": "Tripkee Lore",
+            "description": "You gain trained in Nature and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Rain Dance",
+            "description": "Once per day, you can cast obscuring mist as an innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Leaping Pounce",
+            "description": "When you Leap, you can make one melee Strike against any creature in the area of your leap as part of the same action."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Spirit Caller",
+            "description": "Once per day, you can cast commune with nature as an innate primal spell."
+          }
+        ]
+      }
+    ]
+  },
+  "athamaru": {
+    "name": "Athamaru",
+    "traits": [
+      "Humanoid",
+      "Amphibious"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 20,
+    "attribute_boosts": [
+      "Strength",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Swim Speed",
+        "description": "You have a swim Speed of 25 feet."
+      },
+      {
+        "name": "Pheromone Communication",
+        "description": "You can communicate basic emotions chemically to other athamaru within 30 feet without speaking."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Thalassic"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Alghollthu",
+        "Azlanti",
+        "Fey",
+        "Tien"
+      ]
+    },
+    "description": "Athamarus are fish-like humanoids who form tight-knit communities underseas, with villages led by a common matriarch. They engage in subsistence farming of seaweed, train eels as mounts, and create elaborate works of coral art. They value community above all else.",
+    "source": "Howl of the Wild pg. 17",
+    "heritages": [
+      {
+        "name": "Bioluminescent Athamaru",
+        "description": "Your body produces light. You can activate or deactivate this as a free action, producing dim light in a 10-foot radius."
+      },
+      {
+        "name": "Deepwater Athamaru",
+        "description": "You are adapted to the crushing pressure of deep water. You can breathe at any depth and ignore environmental effects of deep water pressure."
+      },
+      {
+        "name": "Eel-Rider Athamaru",
+        "description": "You are particularly bonded to eels. You gain the Mount Companion feat for free and your eel companion counts as a trained animal companion."
+      },
+      {
+        "name": "Reef-Builder Athamaru",
+        "description": "Your coral adornments have grown into your body. You gain a +1 circumstance bonus to your AC."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Athamaru Lore",
+            "description": "You gain trained in Athletics and Society. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Pheromone Mastery",
+            "description": "Your pheromone control is exceptional. You can communicate complex ideas to other athamaru within 60 feet without speaking."
+          },
+          {
+            "name": "Coral Crafting",
+            "description": "You gain the Craft skill feat and can craft items from living coral, which regrow if properly tended."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Eel Mount Mastery",
+            "description": "Your eel mount is treated as an expert animal companion and gains its support benefit."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Matriarch's Resolve",
+            "description": "Once per day, when you would be reduced to 0 HP, you remain at 1 HP and grow to Large size for 1 minute."
+          }
+        ]
+      }
+    ]
+  },
+  "azarketi": {
+    "name": "Azarketi",
+    "traits": [
+      "Humanoid",
+      "Amphibious"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 20,
+    "attribute_boosts": [
+      "Constitution",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Hydration",
+        "description": "Your body requires you to submerge in water at least once per 24-hour period. After 24 hours on land, you take a -1 status penalty to Fortitude saves. After 48 hours, you begin to suffocate until returned to water."
+      },
+      {
+        "name": "Swim Speed",
+        "description": "You have a swim Speed of 30 feet."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Alghollthu"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Aquan",
+        "Azlanti",
+        "Draconic",
+        "Elven",
+        "Undercommon"
+      ]
+    },
+    "description": "Azarketis are amphibious humanoids descended from humans who were magically transformed by Alghollthus long ago. They maintain a connection to the sea and have developed their own culture and identity separate from their origins.",
+    "source": "Absalom, City of Lost Omens pg. 393",
+    "heritages": [
+      {
+        "name": "Ancient Osiriani Azarketi",
+        "description": "You gain a +2 circumstance bonus to Recall Knowledge checks about ancient history and Azlanti artifacts."
+      },
+      {
+        "name": "Benthic Azarketi",
+        "description": "You come from the deep ocean. You gain darkvision and can breathe in water at any depth without penalty."
+      },
+      {
+        "name": "Mistborne Azarketi",
+        "description": "You were born in mist-shrouded coastal areas. You are concealed in areas of mist or fog even without cover."
+      },
+      {
+        "name": "Vivacious Azarketi",
+        "description": "Your connection to the water is invigorating. When you start your turn in water, you gain 1d4 temporary HP."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Azarketi Lore",
+            "description": "You gain trained in Athletics and Arcana. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Hydraulic Deflection",
+            "description": "Once per round as a reaction, you create a watery barrier giving you a +1 circumstance bonus to AC."
+          },
+          {
+            "name": "Murk Diver",
+            "description": "You ignore concealment from murky water and gain a +2 circumstance bonus to Stealth in aquatic environments."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Beckoning Wave",
+            "description": "Once per day, you can cast hydraulic push as a 2nd-rank innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Tidal Leap",
+            "description": "When emerging from water, you can Leap horizontally up to your Speed without a check."
+          }
+        ]
+      }
+    ]
+  },
+  "centaur": {
+    "name": "Centaur",
+    "traits": [
+      "Humanoid",
+      "Beast"
+    ],
+    "hp": 8,
+    "size": "Large",
+    "speed": 30,
+    "attribute_boosts": [
+      "Strength",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Hooves",
+        "description": "You gain a hoof unarmed attack dealing 1d8 bludgeoning damage."
+      },
+      {
+        "name": "Quadruped",
+        "description": "Your four legs grant a +2 circumstance bonus to Athletics checks to resist being knocked prone and to saves against effects that would move you."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Fey"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Arboreal",
+        "Cyclops",
+        "Dwarven",
+        "Elven",
+        "Gnomish",
+        "Halfling",
+        "Jotun"
+      ]
+    },
+    "description": "Centaurs are proud nomads who range far and wide across their ancestral territories, protecting their lands from exploitation and intrusion. They are survivalists who forge tight bonds with family and community and stand firm in the face of danger.",
+    "source": "Howl of the Wild pg. 29",
+    "heritages": [
+      {
+        "name": "Forest Centaur",
+        "description": "You ignore difficult terrain from undergrowth and gain a +2 circumstance bonus to Survival checks in forested areas."
+      },
+      {
+        "name": "Mountain Centaur",
+        "description": "You ignore difficult terrain from rocky ground and gain a +2 circumstance bonus to Athletics checks to Climb."
+      },
+      {
+        "name": "Plains Centaur",
+        "description": "Your Speed increases by 5 feet, and you can Hustle twice as long during overland travel before becoming fatigued."
+      },
+      {
+        "name": "Stormchaser Centaur",
+        "description": "You gain electricity resistance equal to half your level (minimum 1) and ignore difficult terrain from rain and heavy wind."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Centaur Lore",
+            "description": "You gain trained in Athletics and Nature. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Charge!",
+            "description": "When you Stride at least 10 feet and then Strike with your hooves, deal an extra 1d8 damage and attempt to Trip the target as a free action."
+          },
+          {
+            "name": "Centaur Weapon Familiarity",
+            "description": "You are trained with composite longbows, composite shortbows, lances, and all centaur weapons."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Trample",
+            "description": "You can Stride through the space of prone creatures, dealing your hoof damage to each one (basic Reflex save)."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "War Gallop",
+            "description": "When you use Charge!, you can move up to twice your Speed before Striking."
+          }
+        ]
+      }
+    ]
+  },
+  "merfolk": {
+    "name": "Merfolk",
+    "traits": [
+      "Humanoid",
+      "Amphibious"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 5,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Swim Speed",
+        "description": "You have a swim Speed of 25 feet."
+      },
+      {
+        "name": "Aquatic Adaptation",
+        "description": "You can breathe both air and water. Your land Speed of 5 feet reflects your body not being built for land travel."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Thalassic"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Aquan",
+        "Azlanti",
+        "Draconic",
+        "Elven",
+        "Fey"
+      ]
+    },
+    "description": "Merfolk are aquatic humanoids with the upper body of a humanoid and the lower body of a fish. They are graceful swimmers who build civilizations beneath the waves. Though slow on land, merfolk are powerful allies in their natural aquatic environment.",
+    "source": "Howl of the Wild pg. 35",
+    "heritages": [
+      {
+        "name": "Benthic Merfolk",
+        "description": "You come from the deep ocean. You gain darkvision and can breathe at any depth without penalty."
+      },
+      {
+        "name": "Shallows Merfolk",
+        "description": "You gain a +2 circumstance bonus to Athletics checks in shallow water or when dealing with tides and currents."
+      },
+      {
+        "name": "Songcaller Merfolk",
+        "description": "Your voice carries through water. You gain a +2 circumstance bonus to Performance and Diplomacy checks."
+      },
+      {
+        "name": "Wavewarden Merfolk",
+        "description": "You gain a +2 circumstance bonus to attacks and saves against creatures with the aquatic trait."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Hydraulic Deflection",
+            "description": "Once per round as a reaction, you summon a watery barrier that grants you a +1 circumstance bonus to AC."
+          },
+          {
+            "name": "Merfolk Lore",
+            "description": "You gain trained in Athletics and Nature. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Sea Singer",
+            "description": "You gain a +2 circumstance bonus to Performance checks and can cast haunting hymn as an innate occult cantrip at will."
+          },
+          {
+            "name": "Tail Strike",
+            "description": "You gain a tail Strike unarmed attack dealing 1d6 bludgeoning damage with the finesse and unarmed traits."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Water Dance",
+            "description": "Once per day, you can cast hydraulic torrent as an innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Ocean Stride",
+            "description": "Your land Speed increases to 15 feet as you learn to move on your tail on land."
+          }
+        ]
+      }
+    ]
+  },
+  "minotaur": {
+    "name": "Minotaur",
+    "traits": [
+      "Humanoid",
+      "Beast"
+    ],
+    "hp": 10,
+    "size": "Large",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Horns",
+        "description": "You have powerful horns. You gain a horns unarmed attack dealing 1d8 piercing damage with the shove trait."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Jotun"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Cyclops",
+        "Dwarven",
+        "Fey",
+        "Petran",
+        "Sakvroth"
+      ]
+    },
+    "description": "Minotaurs are large, powerful humanoids with the head and horns of a bull. They have a legendary sense of direction and rarely get lost. Modern minotaurs have built their own cultures and often struggle against the violent reputation imposed by stories of their ancestors.",
+    "source": "Howl of the Wild pg. 41",
+    "heritages": [
+      {
+        "name": "Dungeon Minotaur",
+        "description": "You have lived in labyrinthine underground warrens. You gain darkvision and a +2 circumstance bonus to Survival checks to navigate dungeons and underground environments."
+      },
+      {
+        "name": "Island Minotaur",
+        "description": "Your people made their home on a remote island. You gain a swim Speed of 20 feet and a +2 circumstance bonus to Athletics checks to swim."
+      },
+      {
+        "name": "Mountain Minotaur",
+        "description": "You are adapted to high altitudes. You ignore difficult terrain from rocky or mountainous environments."
+      },
+      {
+        "name": "Maze-Walker Minotaur",
+        "description": "Your legendary sense of direction is even stronger. You can never become lost and always know which direction is north."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Labyrinthine Recall",
+            "description": "You can always retrace any path you have taken, even in a maze, without a check."
+          },
+          {
+            "name": "Minotaur Lore",
+            "description": "You gain trained in Athletics and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Powerful Charge",
+            "description": "When you Stride at least 10 feet and then use your horns Strike, you deal an extra 1d6 damage."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Roar",
+            "description": "Once per encounter, you can let out a thunderous roar. All enemies within 30 feet attempt a Will save against your class DC or become frightened 1 (frightened 2 on a critical failure)."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Gore and Trample",
+            "description": "When you use Powerful Charge, you can attempt to Shove the target. On a success, you can Stride into the target previous space."
+          }
+        ]
+      }
+    ]
+  },
+  "nagaji": {
+    "name": "Nagaji",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 10,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Scaled Skin",
+        "description": "Your scales provide you with a +1 circumstance bonus to your AC against physical damage."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Nagaji"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Amurrun",
+        "Aquan",
+        "Celestial",
+        "Draconic",
+        "Undercommon",
+        "Shadowtongue",
+        "Tengu",
+        "Vanaran"
+      ]
+    },
+    "description": "Nagaji are a serpentine race created to serve the naga. They are strong, scaled humanoids with serpentine features and a proud warrior culture. Modern nagaji have broken free of their creators and built their own societies throughout eastern Golarion.",
+    "source": "Impossible Lands pg. 47",
+    "heritages": [
+      {
+        "name": "Clinging Nagaji",
+        "description": "Your scales can cling to surfaces. You gain a climb Speed of 20 feet."
+      },
+      {
+        "name": "Venomous Nagaji",
+        "description": "You have potent venom in your bite. You gain a fang unarmed attack dealing 1d6 piercing plus 1d4 poison damage."
+      },
+      {
+        "name": "Skilled Nagaji",
+        "description": "Your heritage focused on intellectual capabilities. You gain a +2 circumstance bonus to checks to Recall Knowledge."
+      },
+      {
+        "name": "Stalker Nagaji",
+        "description": "You are trained in ambush tactics. You gain a +2 circumstance bonus to Stealth checks and do not need to reduce your Speed to Sneak."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Nagaji Lore",
+            "description": "You gain trained in Athletics and Intimidation. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Resistant Scales",
+            "description": "You gain a +1 circumstance bonus to saves against poison effects."
+          },
+          {
+            "name": "Serpent's Tongue",
+            "description": "You gain the scent sense (imprecise, 30 feet) and a +1 circumstance bonus to Perception checks that rely on smell."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Naga's Gaze",
+            "description": "Once per day, you can cast charm as a 2nd-rank innate occult spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Superior Venom",
+            "description": "Your venom is exceptionally potent. You can envenom weapons as a free action, and your natural venom deals 2d4 persistent poison damage.",
+            "prerequisites": [
+              "Venomous Nagaji"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "samsaran": {
+    "name": "Samsaran",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Lifebound",
+        "description": "Once per day, you can attempt a Recall Knowledge check using any skill, even if you are untrained, representing dim memories from a previous incarnation."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Samsaran"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Chthonian",
+        "Diabolic",
+        "Draconic",
+        "Empyreal",
+        "Jotun",
+        "Petran",
+        "Pyric",
+        "Sussuran",
+        "Thalassic"
+      ]
+    },
+    "description": "Samsarans are blue-skinned people who reincarnate upon death and recall pieces of their past lives. They are thoughtful and philosophical, eternally cycling through life and death, each samsaran an ancient soul in a new body accumulating wisdom across incarnations.",
+    "source": "Tian Xia Character Guide pg. 53",
+    "heritages": [
+      {
+        "name": "Shards of the Past Samsaran",
+        "description": "Your past-life memories are unusually vivid. You gain trained in two skills of your choice representing knowledge from a past life."
+      },
+      {
+        "name": "Mystic Past Life Samsaran",
+        "description": "You recall magical knowledge from a past life. You can cast one cantrip from any tradition as an innate spell at will."
+      },
+      {
+        "name": "Peaceful Samsaran",
+        "description": "Your cycle of rebirth has made you serene. You gain a +1 circumstance bonus to Will saves and are immune to the frightened condition."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Samsaran Lore",
+            "description": "You gain trained in Occultism and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Past-Life Knowledge",
+            "description": "Once per day, you can use any skill as though you were trained in it."
+          },
+          {
+            "name": "Eerie Resemblance",
+            "description": "Once per day, you can cast read omens as an innate occult spell relating to one creature you can see."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Reincarnated Resolve",
+            "description": "You gain a +1 circumstance bonus to saves against death effects and when recovering from dying."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Recall Life",
+            "description": "Once per day, if you would die, attempt a DC 20 flat check. On a success, you return to life with 1 HP after 1 round."
+          }
+        ]
+      }
+    ]
+  },
+  "tanuki": {
+    "name": "Tanuki",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 10,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [],
+    "special": [
+      {
+        "name": "Magical Belly",
+        "description": "Your belly carries innate magic. Once per day, you can cast a 1st-rank illusion spell of your choice as an innate primal spell."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Tanuki"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Elven",
+        "Fey",
+        "Gnomish",
+        "Goblin",
+        "Kitsune",
+        "Tengu"
+      ]
+    },
+    "description": "Tanukis are jolly, raccoon-like humanoids from eastern Golarion who love food, drink, and good company. Known for their magical shapeshifting abilities and association with fortune, tanukis are natural merchants and entertainers who bring good cheer wherever they go.",
+    "source": "Tian Xia Character Guide pg. 65",
+    "heritages": [
+      {
+        "name": "Feast Tanuki",
+        "description": "Your magical belly can produce food and drink. Once per day, you can produce enough food and drink to sustain four Medium creatures for one day."
+      },
+      {
+        "name": "Forest Tanuki",
+        "description": "You are comfortable in woodland environments. You ignore difficult terrain in forested areas and gain a +2 circumstance bonus to Survival checks in forests."
+      },
+      {
+        "name": "Shapechanger Tanuki",
+        "description": "Your shapeshifting is more powerful. You can cast illusory disguise as an innate occult cantrip at will."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Belly Drum",
+            "description": "Once per day, you can cast fear as an innate primal spell by drumming on your belly."
+          },
+          {
+            "name": "Tanuki Lore",
+            "description": "You gain trained in Deception and Performance. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Lucky Charm",
+            "description": "Once per day when an adjacent ally fails a check, they can reroll it and use the better result."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Sake Belly",
+            "description": "Once per day, you produce a flask of magical sake. A creature that drinks it gains a +1 circumstance bonus to attacks and saves against fear for 1 hour."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Full Transform",
+            "description": "Once per day, you can cast nature form as an innate primal spell."
+          }
+        ]
+      }
+    ]
+  },
+  "vanara": {
+    "name": "Vanara",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [],
+    "special": [
+      {
+        "name": "Prehensile Tail",
+        "description": "Your tail can be used to hold items and perform simple tasks. You can Interact with objects using your tail as if it were a hand, leaving your other hands free."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Vanara"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Infernal",
+        "Sylvan"
+      ]
+    },
+    "description": "Vanaras are intelligent, monkey-like humanoids with prehensile tails and exceptional agility. Found throughout tropical and subtropical regions, they are known for quick wits, spiritual traditions, and formidable martial arts. Their communities are lively and community-oriented.",
+    "source": "Impossible Lands pg. 53",
+    "heritages": [
+      {
+        "name": "Jungle Vanara",
+        "description": "You gain a climb Speed of 20 feet and do not treat branches and vines as difficult terrain."
+      },
+      {
+        "name": "Mountain Vanara",
+        "description": "You ignore difficult terrain from rocky surfaces and gain a +2 circumstance bonus to Athletics checks to Climb."
+      },
+      {
+        "name": "River Vanara",
+        "description": "You gain a swim Speed of 20 feet and a +2 circumstance bonus to Athletics checks to swim."
+      },
+      {
+        "name": "Warrior Vanara",
+        "description": "Your unarmed Strikes deal 1d6 bludgeoning damage and have the agile and finesse traits."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Tree Runner",
+            "description": "You gain a +2 circumstance bonus to Acrobatics and Athletics checks in arboreal environments."
+          },
+          {
+            "name": "Vanara Lore",
+            "description": "You gain trained in Acrobatics and Athletics. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Tail Strike",
+            "description": "You gain a tail unarmed attack dealing 1d4 bludgeoning damage with the agile, finesse, and trip traits."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Brachiation",
+            "description": "When moving through arboreal environments, you can move at full Speed even while Climbing."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Monkey Grip",
+            "description": "You cannot be disarmed and gain a +4 circumstance bonus to checks to maintain a grapple."
+          }
+        ]
+      }
+    ]
+  },
+  "wayang": {
+    "name": "Wayang",
+    "traits": [
+      "Humanoid",
+      "Shadow"
+    ],
+    "hp": 8,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Shadow Connection",
+        "description": "Your connection to shadow grants you a +1 circumstance bonus to saves against shadow and darkness effects."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Shadowtongue",
+        "Wayang"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "D'ziriak",
+        "Diabolic",
+        "Minatan",
+        "Nagaji",
+        "Thalassic",
+        "Vudrani",
+        "Yaksha"
+      ]
+    },
+    "description": "Wayangs are small, shadow-touched humanoids who have lived in harmony with the Shadow Plane for generations. Mysterious and secretive, their culture revolves around shadow puppet performances they believe can influence reality itself.",
+    "source": "Tian Xia Character Guide pg. 71",
+    "heritages": [
+      {
+        "name": "Dissolution Wayang",
+        "description": "Once per day, you can become invisible as a free action for 1 minute."
+      },
+      {
+        "name": "Shadow Weaver Wayang",
+        "description": "You gain a +2 circumstance bonus to spell attack rolls and DCs for shadow and darkness spells."
+      },
+      {
+        "name": "Street Performer Wayang",
+        "description": "You gain a +2 circumstance bonus to Performance checks and can cast ghost sound as an innate occult cantrip at will."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Wayang Lore",
+            "description": "You gain trained in Occultism and Performance. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Shadow Magic",
+            "description": "You can cast shadow trap as an innate occult cantrip at will."
+          },
+          {
+            "name": "Puppet Master",
+            "description": "Once per round as a free action, you create a shadow puppet that gives one enemy within 30 feet a -1 circumstance penalty to Perception until the start of your next turn."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Shadowstep",
+            "description": "Once per day, you can teleport up to 30 feet to a location in dim light or darkness as a single action."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Master of Shadow",
+            "description": "You can cast darkness at will as an innate occult spell."
+          }
+        ]
+      }
+    ]
+  },
+  "anadi": {
+    "name": "Anadi",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [],
+    "special": [
+      {
+        "name": "Spider Form",
+        "description": "You can shift between humanoid and spider form as a single action. In spider form you gain a climb Speed of 20 feet and a venomous fangs unarmed attack dealing 1d6 piercing plus 1d4 poison damage."
+      },
+      {
+        "name": "Anadi Venom",
+        "description": "Creatures you bite must succeed at a Fortitude save against your class DC or take 1d4 persistent poison damage."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Anadi",
+        "Mwangi"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Elven",
+        "Goblin",
+        "Iruxi",
+        "Orcish",
+        "Sylvan"
+      ]
+    },
+    "description": "Anadi are intelligent, humanoid spiders who live in the Mwangi Expanse. Skilled at disguise and illusion, they often use their shapeshifting ability to appear as other humanoids. Their twin forms stem from carefully developed magic.",
+    "source": "The Mwangi Expanse pg. 103",
+    "heritages": [
+      {
+        "name": "Adaptive Anadi",
+        "description": "You gain trained in one additional skill and one additional language."
+      },
+      {
+        "name": "Poisonous Anadi",
+        "description": "Your venom is particularly potent. The persistent poison damage from your fangs increases to 1d6."
+      },
+      {
+        "name": "Studious Anadi",
+        "description": "You gain trained in Crafting and can create and read complex webs as coded text."
+      },
+      {
+        "name": "Venomous Anadi",
+        "description": "On a critical hit with your fangs, the target is also enfeebled 1 for 1 round."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Anadi Lore",
+            "description": "You gain trained in Deception and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Web Spinner",
+            "description": "You can produce silk to create rope up to 50 feet per day, or web traps as snares."
+          },
+          {
+            "name": "Illusory Disguise",
+            "description": "You can cast illusory disguise as an innate occult cantrip at will."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Spider Climb",
+            "description": "You gain a climb Speed of 20 feet in both your humanoid and spider forms."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Perfect Mimicry",
+            "description": "You can cast 5th-level illusory disguise as an innate occult spell once per day."
+          }
+        ]
+      }
+    ]
+  },
+  "android": {
+    "name": "Android",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Constructed",
+        "description": "You gain a +1 circumstance bonus to saves against diseases, poisons, and radiation. You do not need to breathe."
+      },
+      {
+        "name": "Emotionally Unaware",
+        "description": "You take a -1 circumstance penalty to Diplomacy and Performance checks, and to Perception checks to Sense Motive."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Androffan"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Abyssal",
+        "Celestial",
+        "Draconic",
+        "Dwarven",
+        "Undercommon",
+        "Utopian"
+      ]
+    },
+    "description": "Androids are humanoids constructed of living metal and powered by an internal energy source. Created by a highly advanced society, many androids seek to understand what it means to be alive and to forge their own identities.",
+    "source": "Ancestry Guide pg. 69",
+    "heritages": [
+      {
+        "name": "Chassis Android",
+        "description": "Your chassis is built for durability. You gain a +1 circumstance bonus to AC when unarmored."
+      },
+      {
+        "name": "Laborer Android",
+        "description": "You gain a +2 circumstance bonus to Athletics checks and your carrying capacity increases by 2 Bulk."
+      },
+      {
+        "name": "Polyglot Android",
+        "description": "Your language banks are extensive. You gain two additional languages of your choice."
+      },
+      {
+        "name": "Warrior Android",
+        "description": "Combat protocols are deeply embedded in your programming. You are trained in light and medium armor."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Android Lore",
+            "description": "You gain trained in Crafting and Society. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Efficient Upgrades",
+            "description": "Once per day during daily preparations, you can gain a single skill feat for which you meet the prerequisites until your next daily preparations."
+          },
+          {
+            "name": "Nanite Surge",
+            "description": "Once per day as a free action, you can heal 1d8 HP per level, but become stunned 1 until the start of your next turn."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Targeting Subroutine",
+            "description": "Once per round, you can ignore the flat-footed bonus AC against one of your attacks."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Override Inhibitors",
+            "description": "Once per day, you can gain a second action this turn, but become stunned 1 at the start of your next turn."
+          }
+        ]
+      }
+    ]
+  },
+  "automaton": {
+    "name": "Automaton",
+    "traits": [
+      "Construct",
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      },
+      {
+        "name": "Arcane Sense",
+        "description": "Your core grants you an imprecise arcane sense with a range of 30 feet, detecting magical auras."
+      }
+    ],
+    "special": [
+      {
+        "name": "Constructed Body",
+        "description": "You gain a +2 circumstance bonus to saves against disease, poison, and sleep effects. You do not breathe, eat, or drink."
+      },
+      {
+        "name": "Arcane Core",
+        "description": "You can cast a cantrip from the arcane spell list as an innate arcane cantrip at will."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Utopian"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Abyssal",
+        "Aquan",
+        "Auran",
+        "Celestial",
+        "Dwarven",
+        "Elven",
+        "Ignan",
+        "Infernal",
+        "Terran"
+      ]
+    },
+    "description": "Automatons are mechanical constructs built by the ancient Jistka Imperium and powered by a spark of life called an arcane core. After millennia, some have developed true consciousness and seek to reclaim their past and build new futures.",
+    "source": "Guns and Gears pg. 37",
+    "heritages": [
+      {
+        "name": "Artillerist Automaton",
+        "description": "You have an integrated ranged weapon dealing 1d6 energy damage of a type you choose at creation, with a range of 60 feet."
+      },
+      {
+        "name": "Mage Automaton",
+        "description": "You gain a 1st-rank arcane spell as a once-per-day innate arcane spell."
+      },
+      {
+        "name": "Scout Automaton",
+        "description": "You gain a +2 circumstance bonus to Stealth and Perception checks."
+      },
+      {
+        "name": "Warrior Automaton",
+        "description": "Your unarmed attacks deal 1d8 bludgeoning damage and you gain the Attack of Opportunity reaction."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Automaton Lore",
+            "description": "You gain trained in Arcana and Crafting. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Ceaseless Recollections",
+            "description": "Once per day, you can use Recall Knowledge even without training in the relevant skill."
+          },
+          {
+            "name": "Inscribed Core",
+            "description": "You can cast an additional cantrip from the arcane spell list at will."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Energy Beam",
+            "description": "Once per round, you can fire an energy ray dealing 1d8 damage of your chosen energy type with a range of 60 feet."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Self-Repair",
+            "description": "Once per day as a single action, you can heal yourself for 2d8 HP per level."
+          }
+        ]
+      }
+    ]
+  },
+  "conrasu": {
+    "name": "Conrasu",
+    "traits": [
+      "Humanoid",
+      "Plant"
+    ],
+    "hp": 10,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [],
+    "special": [
+      {
+        "name": "Sunlight Healing",
+        "description": "You can enter a meditative, healing state as a 10-minute activity when exposed to direct sunlight, recovering 1d8 HP (plus 1d8 per 2 levels after 1st). Once done, you are immune to this for 1 day."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Mwangi",
+        "Rasu"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Celestial",
+        "Elven",
+        "Iruxi",
+        "Sylvan",
+        "Terran",
+        "Utopian"
+      ]
+    },
+    "description": "Conrasue are rigid, armored plant creatures connected to the cosmic order of the universe. Animated by shards of cosmic force, they believe in maintaining balance. Though strange and alien in appearance, conrasue are thoughtful beings who cherish their community.",
+    "source": "The Mwangi Expanse pg. 107",
+    "heritages": [
+      {
+        "name": "Maintainer Conrasu",
+        "description": "You gain a +2 circumstance bonus to Nature checks relating to plants and a constant speak with plants effect."
+      },
+      {
+        "name": "Repairer Conrasu",
+        "description": "Your cosmic energy can restore construct-like beings. You can cast mending as an innate primal spell at will."
+      },
+      {
+        "name": "Templar Conrasu",
+        "description": "You are a warrior of cosmic order. You are trained in martial weapons and gain the Armor Proficiency general feat."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Conrasu Lore",
+            "description": "You gain trained in Nature and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Hardened Shell",
+            "description": "Your outer shell is especially dense. You gain a +1 circumstance bonus to AC and to checks to resist forced movement."
+          },
+          {
+            "name": "Spellbound Shell",
+            "description": "Once per day, you can cast mage armor as an innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Wood Stride",
+            "description": "You are unaffected by difficult terrain from plants and undergrowth."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Cosmic Order",
+            "description": "Once per day, you can negate one chaos-typed spell or effect as a reaction."
+          }
+        ]
+      }
+    ]
+  },
+  "dragonet": {
+    "name": "Dragonet",
+    "traits": [
+      "Humanoid",
+      "Dragon"
+    ],
+    "hp": 8,
+    "size": "Tiny",
+    "speed": 20,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      },
+      {
+        "name": "Scent",
+        "description": "You have an imprecise scent sense with a range of 30 feet."
+      }
+    ],
+    "special": [
+      {
+        "name": "Draconic Wings",
+        "description": "You have functional wings. You gain a fly Speed of 20 feet."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Draconic"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Any common language"
+      ]
+    },
+    "description": "Dragonets are miniature dragons, complete with wings, dagger-like teeth, and magical breath. They can be fiercely independent and proud, at times protective or avaricious, and they delight in the finer things in life.",
+    "source": "Draconic Codex pg. 208",
+    "heritages": [
+      {
+        "name": "Chromatic Dragonet",
+        "description": "Choose one energy type: acid, cold, electricity, fire, or poison. You gain resistance equal to half your level (minimum 1) and can breathe a 15-foot cone of that energy once per day."
+      },
+      {
+        "name": "Metallic Dragonet",
+        "description": "Choose one energy type: acid, cold, electricity, or fire. You gain resistance and can breathe a 15-foot cone of that energy once per day."
+      },
+      {
+        "name": "Primal Dragonet",
+        "description": "Your draconic magic is especially strong. You can cast a cantrip from the arcane spell list as an innate arcane cantrip at will."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Draconic Claws",
+            "description": "You gain a claw unarmed attack dealing 1d4 slashing damage with the agile and finesse traits."
+          },
+          {
+            "name": "Dragonet Lore",
+            "description": "You gain trained in Arcana and Intimidation. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Terrifying Presence",
+            "description": "You gain a +2 circumstance bonus to Intimidation checks and can Demoralize creatures up to 60 feet away."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Breath Weapon",
+            "description": "You can use your draconic breath weapon twice per day and it now deals 2d6 damage."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "True Draconic Form",
+            "description": "Once per day, you can cast dragon form as an innate arcane spell."
+          }
+        ]
+      }
+    ]
+  },
+  "fleshwarp": {
+    "name": "Fleshwarp",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 10,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Unusual Anatomy",
+        "description": "Your strange body resists confinement. You gain a +2 circumstance bonus to Fortitude saves and checks to Escape grapples, and can attempt to Escape as a free action once per round."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Aklo"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Dwarven",
+        "Elven",
+        "Goblin",
+        "Necril",
+        "Orcish",
+        "Undercommon"
+      ]
+    },
+    "description": "Fleshwarps are creatures whose humanoid ancestors were subject to powerful magical transformations. Their strange forms reflect the magical forces that reshaped them. Each fleshwarp is unique and finds strength in their remarkable resilience.",
+    "source": "Ancestry Guide pg. 89",
+    "heritages": [
+      {
+        "name": "Irongut Fleshwarp",
+        "description": "You can eat non-food items for nourishment and gain a +2 circumstance bonus to saves against ingested afflictions."
+      },
+      {
+        "name": "Phantasmal Fleshwarp",
+        "description": "Part of your form shifts between planes. You can Hide even while observed and gain a +2 circumstance bonus to Stealth checks."
+      },
+      {
+        "name": "Spinewarden Fleshwarp",
+        "description": "You have bony protrusions. You gain a +1 circumstance bonus to AC, and when a creature strikes or grapples you, they take 1d4 piercing damage."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Fleshwarp Lore",
+            "description": "You gain trained in Medicine and Occultism. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Mutate",
+            "description": "Once per day as a single action, you can gain a swim speed of 20 feet, a climb speed of 20 feet, or low-light vision for 1 hour."
+          },
+          {
+            "name": "Aberrant Resistance",
+            "description": "You gain a +1 circumstance bonus to saves against transmutation effects and effects that would change your shape."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Unnatural Resilience",
+            "description": "When you recover HP from any source, add your Constitution modifier to the amount recovered."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Shapeshifter's Edge",
+            "description": "Once per round, you can change your fleshwarp heritage ability as a free action."
+          }
+        ]
+      }
+    ]
+  },
+  "ghoran": {
+    "name": "Ghoran",
+    "traits": [
+      "Humanoid",
+      "Plant"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Seed",
+        "description": "You produce a seed. Upon your death, the seed can be planted to eventually produce a new ghoran with similar but altered memories, considered a separate individual."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Sylvan"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Draconic",
+        "Elven",
+        "Gnomish",
+        "Jotun"
+      ]
+    },
+    "description": "Ghorans are plant-like humanoids created by an ancient druidic sect to preserve memories across generations. Their bodies are composed of plant matter and wood, and each ghoran carries the faint experiences of previous ghorans through inherited memory.",
+    "source": "Impossible Lands pg. 35",
+    "heritages": [
+      {
+        "name": "Photosynthetic Ghoran",
+        "description": "Once per day when exposed to direct sunlight for an hour, you regain HP equal to twice your level."
+      },
+      {
+        "name": "Thornborn Ghoran",
+        "description": "You have thorny protrusions. When a creature strikes you with a melee attack, they take 1d4 piercing damage."
+      },
+      {
+        "name": "Wildwood Ghoran",
+        "description": "You can Hide in natural outdoor environments even without cover."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Ghoran Lore",
+            "description": "You gain trained in Nature and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Verdant Growth",
+            "description": "Once per day, you can cast entangle as an innate primal spell."
+          },
+          {
+            "name": "Bark Skin",
+            "description": "Your outer layer is like bark. You gain a +1 circumstance bonus to AC when unarmored."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Fruit Body",
+            "description": "Once per day, you produce a fruit that can be eaten as a single action to heal 2d8 HP."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Rootwalker",
+            "description": "You gain tremorsense (imprecise, 30 feet) while in contact with the ground."
+          }
+        ]
+      }
+    ]
+  },
+  "goloma": {
+    "name": "Goloma",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 30,
+    "attribute_boosts": [
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Eight Eyes",
+        "description": "Your eight eyes give you a wider field of vision. You gain a +2 circumstance bonus to Perception checks and cannot be flanked."
+      }
+    ],
+    "special": [],
+    "languages": {
+      "base": [
+        "Goloma",
+        "Mwangi"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Abyssal",
+        "Aklo",
+        "Draconic",
+        "Elven",
+        "Halfling",
+        "Necril",
+        "Orcish",
+        "Sylvan"
+      ]
+    },
+    "description": "Golomas are four-armed humanoids with eight eyes that grant them nearly 360-degree vision. Defined by their vigilance and deep-seated wariness of predators, golomas are excellent hunters and trackers who have built their culture around protection and awareness.",
+    "source": "The Mwangi Expanse pg. 115",
+    "heritages": [
+      {
+        "name": "Fearful Goloma",
+        "description": "Your vigilance extends to sensing danger. You gain the Danger Sense skill feat for free."
+      },
+      {
+        "name": "Night Goloma",
+        "description": "You have adapted to hunting at night. You gain darkvision."
+      },
+      {
+        "name": "Wilderness Goloma",
+        "description": "You gain a +2 circumstance bonus to Survival checks to Track and can Track at your full Speed."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Four-Armed Hunter",
+            "description": "Your four arms let you hold an additional weapon or item and perform actions requiring two hands with three arms."
+          },
+          {
+            "name": "Goloma Lore",
+            "description": "You gain trained in Nature and Survival. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Reactive Eyes",
+            "description": "Your eight eyes react to danger. You gain a +2 circumstance bonus to Reflex saves and initiative checks."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Many-Handed Assault",
+            "description": "Once per round, you can make one additional unarmed Strike as a free action."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "All-Seeing Vigilance",
+            "description": "You gain a constant true seeing innate primal effect."
+          }
+        ]
+      }
+    ]
+  },
+  "jotunborn": {
+    "name": "Jotunborn",
+    "traits": [
+      "Humanoid",
+      "Giant"
+    ],
+    "hp": 10,
+    "size": "Large",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Wisdom",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Charisma"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Iivlar Weaving",
+        "description": "Planar thread produced by creatures called iivlars is woven into your skin. This thread glows with dim light in a 10-foot emanation. You can Sustain to extinguish, reactivate, or adjust the coloration of this light."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Jotun"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Cyclops",
+        "Dwarven",
+        "Empyrean",
+        "Fey",
+        "Orcish",
+        "Petran",
+        "Shadowtongue"
+      ]
+    },
+    "description": "Jotunborn were forged from the blood of an ancient group of giants called titans, tasked to watch over the Universe. These massive humanoids carry the power of their giant ancestors in their blood and serve as stewards of the natural world.",
+    "source": "Battlecry! pg. 10",
+    "heritages": [
+      {
+        "name": "Cloud Jotunborn",
+        "description": "You carry storm giant blood. You gain electricity resistance equal to half your level (minimum 1) and can cast gust of wind as an innate primal spell once per day."
+      },
+      {
+        "name": "Fire Jotunborn",
+        "description": "You carry fire giant blood. You gain fire resistance equal to half your level (minimum 1) and your unarmed Strikes deal an extra 1d4 fire damage."
+      },
+      {
+        "name": "Frost Jotunborn",
+        "description": "You carry frost giant blood. You gain cold resistance equal to half your level (minimum 1) and your unarmed Strikes deal an extra 1d4 cold damage."
+      },
+      {
+        "name": "Stone Jotunborn",
+        "description": "You carry stone giant blood. You gain a +2 circumstance bonus to Fortitude saves and your unarmed Strikes deal an extra 1d4 bludgeoning damage."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Giant's Throw",
+            "description": "You can throw rocks or boulders as a ranged attack dealing 1d8 bludgeoning damage with a range of 60 feet."
+          },
+          {
+            "name": "Jotunborn Lore",
+            "description": "You gain trained in Athletics and Intimidation. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Powerful Build",
+            "description": "You count as one size larger for carrying capacity and which creatures you can grapple or Shove."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Rend",
+            "description": "When you successfully Grapple a creature, you also deal 1d6 bludgeoning damage to them as part of the same action."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Giant's Fury",
+            "description": "Once per round when you hit with an unarmed Strike, you can push the target up to 10 feet away."
+          }
+        ]
+      }
+    ]
+  },
+  "kashrishi": {
+    "name": "Kashrishi",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Empathic Sense",
+        "description": "Kashrishi get a vague sense of the current emotional state of others within 15 feet of them, a general feeling of happiness, anger, or fear."
+      }
+    ],
+    "special": [
+      {
+        "name": "Crystal Horn",
+        "description": "You have a natural horn that can focus psychic energy. Your horn unarmed attack deals 1d6 piercing damage."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Kashrishi"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aquan",
+        "Celestial",
+        "Draconic",
+        "Sylvan",
+        "Terran"
+      ]
+    },
+    "description": "Kashrishi are small, rhinoceros-like humanoids with crystalline horns that grant them psychic abilities. They are perceptive and thoughtful beings who sense the mental states of those around them. Their society values wisdom and mental discipline above all.",
+    "source": "Impossible Lands pg. 41",
+    "heritages": [
+      {
+        "name": "Crystal-Bright Kashrishi",
+        "description": "Your horn shines with inner light. You can activate your horn to produce bright light in a 20-foot radius and dim light in a 40-foot radius as a free action."
+      },
+      {
+        "name": "Focused Kashrishi",
+        "description": "Your mental focus is exceptional. You gain a +2 circumstance bonus to Will saves and to Perception checks to Sense Motive."
+      },
+      {
+        "name": "Resonant Kashrishi",
+        "description": "Your horn resonates with psychic energy. You can cast detect thoughts as an innate occult spell once per day."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Kashrishi Lore",
+            "description": "You gain trained in Diplomacy and Occultism. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Mental Shield",
+            "description": "Once per round as a reaction, you can gain a +2 circumstance bonus to a Will save against a mental effect."
+          },
+          {
+            "name": "Expanded Thoughtsense",
+            "description": "Your empathic sense range increases to 60 feet."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Mind Blast",
+            "description": "Once per day, you can cast mind probe as an innate occult spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Psychic Aura",
+            "description": "Enemies within 10 feet of you take a -1 circumstance penalty to Will saves."
+          }
+        ]
+      }
+    ]
+  },
+  "poppet": {
+    "name": "Poppet",
+    "traits": [
+      "Humanoid",
+      "Construct"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Dexterity"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Constructed",
+        "description": "Your constructed body resists ailments that assail the flesh. You gain a +1 circumstance bonus to saving throws against death effects, disease, and poison, and against effects that would give you the drained, paralyzed, or sickened conditions."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Dwarven",
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Sylvan"
+      ]
+    },
+    "description": "Poppets are small animated objects that have gained sapience and a spark of life. Born from beloved toys or crafted by caring hands, each poppet is unique. They often seek to understand the world that created them and find their place among living creatures.",
+    "source": "Grand Bazaar pg. 60",
+    "heritages": [
+      {
+        "name": "Ghost Poppet",
+        "description": "You are partially incorporeal. Once per day, you can move through a solid object up to 5 feet thick."
+      },
+      {
+        "name": "Toy Poppet",
+        "description": "You were once a beloved toy. You gain a +2 circumstance bonus to Deception and Performance checks when pretending to be an inanimate object."
+      },
+      {
+        "name": "Vintage Poppet",
+        "description": "You are an old creation filled with absorbed experience. You gain a +1 circumstance bonus to all untrained skill checks."
+      },
+      {
+        "name": "Warrior Poppet",
+        "description": "You were crafted to fight. You gain a +1 circumstance bonus to attack rolls and damage rolls with unarmed attacks."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Button Eyes",
+            "description": "Your button eyes are surprisingly perceptive. You gain a +2 circumstance bonus to Perception checks to find hidden objects and secret doors."
+          },
+          {
+            "name": "Detachable Head",
+            "description": "You can remove your head. Your detached head can speak and perceive surroundings within 30 feet of your body."
+          },
+          {
+            "name": "Poppet Lore",
+            "description": "You gain trained in Crafting and Deception. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Cute Nod",
+            "description": "Your childlike appearance causes others to lower their guard. You gain a +2 circumstance bonus to Diplomacy checks to Make an Impression."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Live Again",
+            "description": "Once per day, when reduced to 0 HP, you remain at 1 HP and gain the quickened condition for 1 round."
+          }
+        ]
+      }
+    ]
+  },
+  "sarangay": {
+    "name": "Sarangay",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Strength",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Wisdom"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Sacred Jewel",
+        "description": "You carry a sacred jewel in your brow that houses your soul. If you die, your jewel can be used in a week-long ritual to restore you to life without material cost."
+      },
+      {
+        "name": "Horns",
+        "description": "You have powerful horns. You gain a horns unarmed attack dealing 1d8 piercing damage."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Empyreal",
+        "Fey",
+        "Nagaji",
+        "Petran",
+        "Pyric",
+        "Sussuran",
+        "Thalassic",
+        "Yaksha"
+      ]
+    },
+    "description": "Sarangays are powerful, carabao-headed humanoids from Tian Xia who bear sacred jewels in their brows. They are strong warriors with a deep connection to the spirit world. Their jewels are believed to contain their souls, granting them spiritual resilience.",
+    "source": "Tian Xia Character Guide pg. 59",
+    "heritages": [
+      {
+        "name": "Forest Sarangay",
+        "description": "You ignore difficult terrain from undergrowth and gain a +2 circumstance bonus to Survival checks in forested areas."
+      },
+      {
+        "name": "Spirit-Touched Sarangay",
+        "description": "Your jewel has a strong connection to the spirit world. You can see invisible spirits and gain a +2 circumstance bonus to Religion checks."
+      },
+      {
+        "name": "War-Scarred Sarangay",
+        "description": "Your body is covered in battle scars that have toughened your skin. You gain a +1 circumstance bonus to your AC."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Sarangay Lore",
+            "description": "You gain trained in Athletics and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Goring Charge",
+            "description": "When you Stride at least 10 feet and then Strike with your horns, deal an extra 1d6 damage and attempt to Trip the target."
+          },
+          {
+            "name": "Jewel Guardian",
+            "description": "You gain a +2 circumstance bonus to saves against death effects and effects that would reduce your maximum HP."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Ancestral Rage",
+            "description": "Once per day, you can enter a rage granting a +2 circumstance bonus to attack and damage rolls for 1 minute."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Soul Fortification",
+            "description": "Your sacred jewel provides extraordinary protection. You become immune to death effects and spells that target your soul."
+          }
+        ]
+      }
+    ]
+  },
+  "shisk": {
+    "name": "Shisk",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Spine Defense",
+        "description": "Your body is covered in sharp spines. When a creature hits you with an unarmed attack or natural weapon, they take 1d4 piercing damage."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Mwangi",
+        "Shisk"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Any common language"
+      ]
+    },
+    "description": "Shisks are porcupine-like humanoids renowned as keepers of secret knowledge. They are reclusive scholars who jealously guard lore that other peoples have forgotten. Their spine-covered bodies make them formidable even without weapons.",
+    "source": "The Mwangi Expanse pg. 123",
+    "heritages": [
+      {
+        "name": "Spine Hurler Shisk",
+        "description": "You can launch your spines as projectiles. You gain a spine ranged unarmed attack dealing 1d6 piercing damage with a range increment of 30 feet."
+      },
+      {
+        "name": "Tattoo-Shisk",
+        "description": "You have ritual tattoos that protect you. You gain a +1 circumstance bonus to AC and to saves against magical effects."
+      },
+      {
+        "name": "Twilight Shisk",
+        "description": "You have adapted to dim twilight zones. You gain a +2 circumstance bonus to Stealth checks in dim light."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Ancient Memories",
+            "description": "Once per day, you can attempt a Recall Knowledge check as if trained in the relevant skill, even if you are untrained."
+          },
+          {
+            "name": "Shisk Lore",
+            "description": "You gain trained in two Lore skills of your choice."
+          },
+          {
+            "name": "Quill Barrage",
+            "description": "Once per day, you can shoot spines in a 15-foot cone dealing 2d6 piercing damage (basic Reflex save against your class DC)."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Secret Keeper",
+            "description": "Once per day, you can use ancient knowledge to gain a +4 circumstance bonus to one Recall Knowledge check."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Master of Secrets",
+            "description": "You gain legendary proficiency in one Lore skill of your choice."
+          }
+        ]
+      }
+    ]
+  },
+  "shoony": {
+    "name": "Shoony",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 6,
+    "size": "Small",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Constitution"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Blunt Snout",
+        "description": "Your snout gives you an excellent sense of smell. You gain the scent sense (imprecise, 30 feet)."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Shoony"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Dwarven",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Terran"
+      ]
+    },
+    "description": "Shoonies are small, dog-like humanoids with a deep love of peace, community, and simple pleasures. Despite their gentle nature, shoonies can be fierce defenders of their communities. They are excellent farmers, builders, and craftspeople who prefer to resolve conflicts peacefully.",
+    "source": "Pathfinder #153",
+    "heritages": [
+      {
+        "name": "Fisherkith Shoony",
+        "description": "You gain a swim Speed of 15 feet and a +2 circumstance bonus to Athletics checks to swim."
+      },
+      {
+        "name": "Paddler Shoony",
+        "description": "Your webbed paws make you an excellent swimmer. You gain a swim Speed of 20 feet."
+      },
+      {
+        "name": "Thickpaw Shoony",
+        "description": "Your paws are thick and callused. You gain a claws unarmed attack dealing 1d4 slashing damage with the agile, finesse, and unarmed traits."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Canine Cadence",
+            "description": "Your cheerful nature is infectious. You gain a +2 circumstance bonus to Diplomacy checks to Make an Impression on any non-hostile creature."
+          },
+          {
+            "name": "Shoony Lore",
+            "description": "You gain trained in Athletics and Crafting. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Shoony Weapon Familiarity",
+            "description": "You are trained with the crossbow, handaxe, sickle, and all shoony weapons."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Dig Down",
+            "description": "You gain a burrow Speed of 10 feet through earth (but not stone)."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Loyal Retreat",
+            "description": "When you use the Aid reaction, you can also move up to 10 feet before aiding."
+          }
+        ]
+      }
+    ]
+  },
+  "skeleton": {
+    "name": "Skeleton",
+    "traits": [
+      "Undead",
+      "Skeleton"
+    ],
+    "hp": 6,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Undead Nature",
+        "description": "You do not need to eat or drink, but you do need to sleep. Negative energy heals you; positive energy harms you."
+      },
+      {
+        "name": "Rattling Death",
+        "description": "When you take bludgeoning damage, you can release a rattling sound as a free action that can Demoralize one creature within 30 feet."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Necril"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Dwarven",
+        "Elven",
+        "Infernal",
+        "Orcish",
+        "Undercommon"
+      ]
+    },
+    "description": "Skeletons are undead creatures animated by necromantic magic. Some retain memories and personalities from their past lives; others are newly awakened spirits finding their way in an unfamiliar bony form. Skeleton adventurers often seek to understand their undead existence.",
+    "source": "Book of the Dead pg. 55",
+    "heritages": [
+      {
+        "name": "Bone Skipper Skeleton",
+        "description": "Your joints are especially nimble. You gain a +2 circumstance bonus to Acrobatics checks and can squeeze through tight spaces as if they were normal terrain."
+      },
+      {
+        "name": "Fodder Skeleton",
+        "description": "Once per day as a single action, you can regain 1d6 HP per level."
+      },
+      {
+        "name": "Sturdy Skeleton",
+        "description": "Your bones are unusually dense. You gain a +2 circumstance bonus to your Fortitude DC against combat maneuvers and a +1 circumstance bonus to your AC."
+      },
+      {
+        "name": "Skulking Skeleton",
+        "description": "You move silently for a skeleton. You gain a +2 circumstance bonus to Stealth checks."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Clatter",
+            "description": "Once per round, you can Demoralize a creature using the rattle of your bones as a free action."
+          },
+          {
+            "name": "Marrow Storage",
+            "description": "You can store items with a total Bulk of 1 inside your hollow skeleton frame."
+          },
+          {
+            "name": "Skeleton Lore",
+            "description": "You gain trained in Medicine and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Ossuary Path",
+            "description": "Once per day, you can move through solid objects up to 5 feet thick, emerging in an open space."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Reassemble",
+            "description": "Once per day, when reduced to 0 HP, your bones scatter and reform within 30 feet with 1 HP."
+          }
+        ]
+      }
+    ]
+  },
+  "sprite": {
+    "name": "Sprite",
+    "traits": [
+      "Humanoid",
+      "Fey"
+    ],
+    "hp": 6,
+    "size": "Tiny",
+    "speed": 20,
+    "attribute_boosts": [
+      "Dexterity",
+      "Intelligence",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Strength"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Fey Influence",
+        "description": "Your fey nature gives you a connection to the supernatural world. You can cast detect magic as an innate primal cantrip at will."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Sylvan"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Celestial",
+        "Draconic",
+        "Elven",
+        "Gnomish",
+        "Goblin",
+        "Jotun"
+      ]
+    },
+    "description": "Sprites are tiny faeries with a strong connection to the First World. Despite their small size, sprites are fierce and capable adventurers who compensate with magic and agility. They can fly and carry an innate magical nature that makes them valuable allies.",
+    "source": "Ancestry Guide pg. 127",
+    "heritages": [
+      {
+        "name": "Draxie Sprite",
+        "description": "You have innate draconic magic. You can cast a cantrip from the arcane spell list as an innate arcane cantrip at will."
+      },
+      {
+        "name": "Grig Sprite",
+        "description": "You have a beautiful singing voice. You gain a +2 circumstance bonus to Performance checks and can cast inspire courage as an innate occult cantrip once per day."
+      },
+      {
+        "name": "Melixie Sprite",
+        "description": "You have a bee-like body. You gain a stinger unarmed attack dealing 1d4 piercing plus 1d4 poison damage."
+      },
+      {
+        "name": "Nixie Sprite",
+        "description": "You are a water sprite. You gain a swim Speed of 20 feet and can breathe underwater."
+      },
+      {
+        "name": "Nyktera Sprite",
+        "description": "You are a night sprite. You gain darkvision and can cast darkness as an innate occult spell once per day."
+      },
+      {
+        "name": "Pixie Sprite",
+        "description": "You have pixie wings. You gain a fly Speed of 20 feet."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Fey Dust",
+            "description": "Once per day, you can cast glitterdust as an innate primal spell."
+          },
+          {
+            "name": "Sprite Lore",
+            "description": "You gain trained in Nature and Occultism. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Sprite Weapon Familiarity",
+            "description": "You are trained with all Tiny and Small weapons and can use any of them one-handed."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Invisibility Veil",
+            "description": "Once per day, you can cast invisibility on yourself as an innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Fey Charm",
+            "description": "Once per day, you can cast charm as a 3rd-rank innate primal spell."
+          }
+        ]
+      }
+    ]
+  },
+  "strix": {
+    "name": "Strix",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Strix Wings",
+        "description": "You have powerful wings. You can Fly at a Speed of 20 feet. Wearing medium or heavy armor may limit your flight at the GM discretion."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Strix"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Draconic",
+        "Gnomish",
+        "Infernal",
+        "Jotun"
+      ]
+    },
+    "description": "Strix are a reclusive avian people who live in isolated mountain communities. Paranoid by nature due to historical persecution, strix are cautious about outsiders but fiercely loyal to those who earn their trust. They are excellent hunters with powerful wings that grant them flight.",
+    "source": "Ancestry Guide pg. 133",
+    "heritages": [
+      {
+        "name": "Aerial Strix",
+        "description": "You are an exceptional flier. Your fly Speed increases to 30 feet and you can Hover without spending actions."
+      },
+      {
+        "name": "Nightglider Strix",
+        "description": "You are most comfortable in the dark. You gain a +2 circumstance bonus to Stealth checks at night or in dim light."
+      },
+      {
+        "name": "Predator Strix",
+        "description": "You hunt with fierce instincts. You gain a +2 circumstance bonus to Survival checks to Track."
+      },
+      {
+        "name": "Shoreline Strix",
+        "description": "Your people live near the coast. You gain a swim Speed of 20 feet."
+      },
+      {
+        "name": "Windborn Strix",
+        "description": "The wind is your ally. You ignore wind-based penalties to movement and flight."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Strix Lore",
+            "description": "You gain trained in Acrobatics and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Talon Strike",
+            "description": "You gain a talon unarmed attack dealing 1d4 slashing damage with the agile, finesse, and unarmed traits."
+          },
+          {
+            "name": "Vigilance",
+            "description": "You gain a +2 circumstance bonus to Perception checks to notice hidden creatures approaching from the air."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Diving Strike",
+            "description": "When you Fly and then Strike a creature below you, you deal an extra 1d6 damage."
+          },
+          {
+            "name": "Ferocious Beaks",
+            "description": "Your beak unarmed attack gains the forceful trait."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Great Strix Wings",
+            "description": "Your fly Speed increases by 10 feet and you can carry a Medium or smaller creature while flying."
+          }
+        ]
+      }
+    ]
+  },
+  "surki": {
+    "name": "Surki",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Darkvision",
+        "description": "You can see in darkness and dim light just as well as you can see in bright light, though your vision in darkness is in black and white."
+      }
+    ],
+    "special": [
+      {
+        "name": "Silk Spinner",
+        "description": "You can produce silk from glands in your wrists, using it to create simple tools, climb as if you had a climb Speed of 20 feet, or entangle foes."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Surki"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Elven",
+        "Fey",
+        "Sakvroth"
+      ]
+    },
+    "description": "Surkis are insectile humanoids who subsist on the latent magic in the world around them. As a subterranean species native to the Darklands, surkis have rarely been seen on the surface, only now emerging in a generational dig. Each surki is unique, with adaptations reflecting their adventures and chosen role.",
+    "source": "Howl of the Wild pg. 47",
+    "heritages": [
+      {
+        "name": "Ambush Surki",
+        "description": "You gain a +2 circumstance bonus to Stealth checks when in areas with webs or silk coverings."
+      },
+      {
+        "name": "Burrowing Surki",
+        "description": "You can burrow through earth. You gain a burrow Speed of 15 feet through earth (not stone)."
+      },
+      {
+        "name": "Venomous Surki",
+        "description": "Your bite carries venom. You gain a fangs unarmed attack dealing 1d6 piercing plus 1d4 poison damage."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Surki Lore",
+            "description": "You gain trained in Crafting and Nature. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Web Trap",
+            "description": "Once per day, you can create a web trap as a 1-minute activity that functions as a snare."
+          },
+          {
+            "name": "Spindle Silk",
+            "description": "Your silk is particularly strong. You can use your silk to Grapple a creature up to 30 feet away as a ranged attack."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Web Highway",
+            "description": "Once per day, you can create a 60-foot silk highway that you and allies can Stride across at full Speed, even vertically."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Web Master",
+            "description": "Once per day, you can create web structures that entangle all creatures in a 20-foot square as a 2-action activity."
+          }
+        ]
+      }
+    ]
+  },
+  "vishkanya": {
+    "name": "Vishkanya",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Dexterity",
+      "Free"
+    ],
+    "attribute_flaws": [],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Venomous",
+        "description": "Your blood and saliva carry a natural venom. Once per day, you can envenom a weapon or your unarmed attack as a free action, dealing 1d4 poison damage and 1d4 persistent poison damage on a hit."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Vishkanya"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Aquan",
+        "Draconic",
+        "Elven",
+        "Goblin",
+        "Undercommon",
+        "Vanaran"
+      ]
+    },
+    "description": "Vishkanyas are ophidian humanoids who carry potent venom within their blood and saliva. Graceful and deadly, with scaly skin and slit pupils hinting at their serpentine heritage. Though often feared for their venom, vishkanyas value harmony and community as much as any other people.",
+    "source": "Impossible Lands pg. 59",
+    "heritages": [
+      {
+        "name": "Keen-Nosed Vishkanya",
+        "description": "Your sense of smell is exceptionally acute. You gain the scent sense (imprecise, 30 feet) and a +2 circumstance bonus to Perception checks relying on smell."
+      },
+      {
+        "name": "Selective Venom Vishkanya",
+        "description": "You have fine control over your venom. You can choose who is affected by your venom and can adjust its potency as a free action."
+      },
+      {
+        "name": "Slithery Vishkanya",
+        "description": "Your serpentine flexibility is exceptional. You can squeeze through tight spaces as if they were normal terrain."
+      },
+      {
+        "name": "Nimble Vishkanya",
+        "description": "You are particularly agile. You gain a +5-foot status bonus to your Speed."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Vishkanya Lore",
+            "description": "You gain trained in Acrobatics and Stealth. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Toxic Secretions",
+            "description": "Your skin secretes natural toxin. Creatures that grapple you or that you grapple take poison damage from your venom."
+          },
+          {
+            "name": "Serpentine Flexibility",
+            "description": "You gain a +2 circumstance bonus to Escape checks and to checks to squeeze through narrow spaces."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Cobra's Swiftness",
+            "description": "Once per round, you can make one additional unarmed Strike as a free action."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Improved Venom",
+            "description": "Your natural venom now deals 2d4 poison damage and 2d4 persistent poison damage."
+          }
+        ]
+      }
+    ]
+  },
+  "yaksha": {
+    "name": "Yaksha",
+    "traits": [
+      "Humanoid",
+      "Spirit"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Constitution",
+      "Charisma",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Spirit Connection",
+        "description": "You have a connection to the spirit world. You can see spiritual presences invisible to others and can detect haunt-type hazards within 30 feet automatically."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common",
+        "Fey",
+        "Yaksha"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Empyrean",
+        "Diabolic",
+        "Nagaji",
+        "Tang",
+        "Tengu",
+        "Vudrani"
+      ]
+    },
+    "description": "Yakshas are divine guardian spirits who emigrated to Golarion from the First World. Famed for resolute vows and prowess with primal magic, yakshas shield the indigent and protect the wilderness, punishing those who threaten either with bone-crushing fury.",
+    "source": "Tian Xia Character Guide pg. 77",
+    "heritages": [
+      {
+        "name": "Bountiful Yaksha",
+        "description": "You are a yaksha of prosperity and abundance. You can cast create food as an innate primal spell once per day."
+      },
+      {
+        "name": "Fierce Yaksha",
+        "description": "You are a warrior yaksha. You gain a +2 circumstance bonus to attack rolls on your first Strike each turn."
+      },
+      {
+        "name": "Guardian Yaksha",
+        "description": "You protect sacred sites. You gain a +2 circumstance bonus to Perception checks and cannot be surprised."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Spirit Sight",
+            "description": "Your spiritual vision is enhanced. You can see invisible undead and spirits within 30 feet."
+          },
+          {
+            "name": "Yaksha Lore",
+            "description": "You gain trained in Nature and Religion. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Spiritual Weapon",
+            "description": "Once per day, you can cast spirit explosion as an innate primal spell."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Ward the Sacred",
+            "description": "Once per day, you can create a 30-foot sanctified zone lasting 1 hour where evil spirits cannot enter."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Spirit Form",
+            "description": "Once per day, you can become incorporeal for 1 minute."
+          }
+        ]
+      }
+    ]
+  },
+  "yaoguai": {
+    "name": "Yaoguai",
+    "traits": [
+      "Humanoid"
+    ],
+    "hp": 8,
+    "size": "Medium",
+    "speed": 25,
+    "attribute_boosts": [
+      "Charisma",
+      "Constitution",
+      "Free"
+    ],
+    "attribute_flaws": [
+      "Intelligence"
+    ],
+    "senses": [
+      {
+        "name": "Low-Light Vision",
+        "description": "You can see in dim light as though it were bright light, so you ignore the concealed condition due to dim light."
+      }
+    ],
+    "special": [
+      {
+        "name": "Change Shape",
+        "description": "You can shift between your humanoid and true yaoguai form as a single action. This form can resemble any common Medium humanoid ancestry prevalent where you were born. You can remain in humanoid form indefinitely, but revert after 1 hour of unconsciousness."
+      }
+    ],
+    "languages": {
+      "base": [
+        "Common"
+      ],
+      "bonus_count": "your Intelligence modifier (if positive)",
+      "bonus_pool": [
+        "Aklo",
+        "Draconic",
+        "Elven",
+        "Fey",
+        "Kitsune",
+        "Nagaji",
+        "Sakvroth",
+        "Tengu",
+        "Ysoki"
+      ]
+    },
+    "description": "Yaoguai are spirit-touched shapeshifters from Tian Xia, descended from animals, plants, or objects who gained spiritual power and humanoid form through cultivation. Each yaoguai is associated with a specific origin that influences their abilities and personality. They are known as tricksters and wanderers.",
+    "source": "Tian Xia Character Guide pg. 83",
+    "heritages": [
+      {
+        "name": "Fox Yaoguai",
+        "description": "You have fox heritage. You gain a +2 circumstance bonus to Deception and Stealth checks."
+      },
+      {
+        "name": "Serpent Yaoguai",
+        "description": "You have serpent heritage. You gain darkvision and resistance to poison equal to half your level (minimum 1)."
+      },
+      {
+        "name": "Tiger Yaoguai",
+        "description": "You have tiger heritage. You gain a claws unarmed attack dealing 1d6 slashing damage and a +2 circumstance bonus to Athletics checks to Climb."
+      },
+      {
+        "name": "Tortoise Yaoguai",
+        "description": "You have tortoise heritage. You gain a +2 circumstance bonus to Fortitude DC and saves against effects that would move you or knock you prone."
+      }
+    ],
+    "ancestry_feats": [
+      {
+        "level": 1,
+        "feats": [
+          {
+            "name": "Animal Transformation",
+            "description": "Your shapeshifting is more developed. You can assume your animal form as a single action and maintain it indefinitely."
+          },
+          {
+            "name": "Yaoguai Lore",
+            "description": "You gain trained in Deception and Nature. If you would automatically become trained in one, you instead become trained in a skill of your choice."
+          },
+          {
+            "name": "Spirit Trickery",
+            "description": "You can cast ghost sound as an innate occult cantrip at will."
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "feats": [
+          {
+            "name": "Accumulated Power",
+            "description": "The spiritual power you have cultivated grants you an additional use of your ancestry spell per day."
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "feats": [
+          {
+            "name": "Perfect Transformation",
+            "description": "You can now transform into any animal of your size category or smaller at will."
+          }
+        ]
+      }
+    ]
+  }
+}
