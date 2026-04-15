@@ -1,0 +1,717 @@
+{
+  "conditions": {
+    "blinded": {
+      "name": "Blinded",
+      "category": "condition",
+      "description": "You can't see. All terrain is difficult terrain to you. You're immune to visual effects. You take a –4 status penalty to Perception checks and all checks that require you to see something. Creatures are hidden from you unless you can perceive them with a non-visual sense. Conditions that require sight don't affect you.",
+      "source": "Player Core pg. 426"
+    },
+    "broken": {
+      "name": "Broken",
+      "category": "condition",
+      "description": "Broken is a condition that affects objects. A broken object can't be used for its normal function, nor does it grant bonuses. Broken armor still grants its item bonus, but its Dex cap and check penalty are both doubled. A broken item can be repaired.",
+      "source": "Player Core pg. 426"
+    },
+    "clumsy": {
+      "name": "Clumsy",
+      "category": "condition",
+      "value_label": "Clumsy X",
+      "description": "Your movements become clumsy and imprecise. You take a status penalty equal to the condition value to Dexterity-based checks and DCs, including AC, Reflex saves, ranged attack rolls, and skill checks using Acrobatics, Stealth, and Thievery.",
+      "source": "Player Core pg. 426"
+    },
+    "concealed": {
+      "name": "Concealed",
+      "category": "condition",
+      "description": "While you are concealed from a creature, such as in a thick fog, you're difficult to see. You can still be observed, but you're tougher to target. A creature must succeed at a DC 5 flat check to target you with an attack, spell, or other effect. If they fail, the attack/spell is lost.",
+      "source": "Player Core pg. 426"
+    },
+    "confused": {
+      "name": "Confused",
+      "category": "condition",
+      "description": "You don't have your wits about you. You are flat-footed, you don't treat anyone as your ally, and you can't Delay, Ready, or use reactions. Each turn you must use all your actions to Strike or cast offensive cantrips. If you have no valid targets, you do nothing. At the end of your turn, make a DC 11 flat check; on a success, the condition ends.",
+      "source": "Player Core pg. 426"
+    },
+    "controlled": {
+      "name": "Controlled",
+      "category": "condition",
+      "description": "Someone else is making decisions for your character. The controller dictates your actions, and you're unable to use your own free will. A dominate spell is a common source of this condition.",
+      "source": "Player Core pg. 426"
+    },
+    "dazzled": {
+      "name": "Dazzled",
+      "category": "condition",
+      "description": "Your eyes are overstimulated. All creatures and objects are concealed from you.",
+      "source": "Player Core pg. 426"
+    },
+    "deafened": {
+      "name": "Deafened",
+      "category": "condition",
+      "description": "You can't hear. You're immune to auditory effects. You take a –2 status penalty to Perception checks and all checks that require hearing. If you perform an action with the auditory trait, it automatically fails. You're off-guard against creatures you can't perceive with a non-auditory sense.",
+      "source": "Player Core pg. 427"
+    },
+    "doomed": {
+      "name": "Doomed",
+      "category": "condition",
+      "value_label": "Doomed X",
+      "description": "Your life is ebbing away. Your dying condition limit is reduced by your doomed value. If your maximum dying value is 0 or lower, you instantly die. Doomed diminishes by 1 each time you get a full night's rest.",
+      "source": "Player Core pg. 427"
+    },
+    "drained": {
+      "name": "Drained",
+      "category": "condition",
+      "value_label": "Drained X",
+      "description": "Your blood has been drained or your life force depleted. You take a status penalty equal to the value to Constitution-based checks and DCs, including HP per level and Fortitude saves. Each time you get a full night's rest, the drained value is reduced by 1.",
+      "source": "Player Core pg. 427"
+    },
+    "dying": {
+      "name": "Dying",
+      "category": "condition",
+      "value_label": "Dying X",
+      "description": "You are bleeding out or otherwise at death's door. At dying 4 you are dead. At the start of your turn, make a recovery check (flat check DC 10 + dying value). On a critical success, reduce dying by 2; on a success, reduce by 1; on a failure, increase by 1; on a critical failure, increase by 2. If dying reaches 0 you gain the wounded condition.",
+      "source": "Player Core pg. 427"
+    },
+    "encumbered": {
+      "name": "Encumbered",
+      "category": "condition",
+      "description": "You are carrying more than you can manage. While encumbered, you're clumsy 1 and take a –10-foot penalty to all your Speeds. As a result of being clumsy, you also take a –1 penalty to AC and Reflex saves (and all other Dex-based checks and DCs).",
+      "source": "Player Core pg. 427"
+    },
+    "enfeebled": {
+      "name": "Enfeebled",
+      "category": "condition",
+      "value_label": "Enfeebled X",
+      "description": "You're physically weakened. You take a status penalty equal to the value to Strength-based checks and DCs, including melee attack rolls, Strength-based skill checks, and Athletics DCs.",
+      "source": "Player Core pg. 427"
+    },
+    "fascinated": {
+      "name": "Fascinated",
+      "category": "condition",
+      "description": "You are compelled to focus on something, distracting you from anything else. You take a –2 status penalty to Perception and skill checks, and you can't use actions with the concentrate trait unless they relate to the object of fascination. The condition ends if a hostile creature takes an action against you.",
+      "source": "Player Core pg. 427"
+    },
+    "fatigued": {
+      "name": "Fatigued",
+      "category": "condition",
+      "description": "You're tired and can't summon much energy. You take a –1 status penalty to AC and saving throws. You can't use exploration activities. Fatigued ends after a full night's rest.",
+      "source": "Player Core pg. 427"
+    },
+    "flat-footed": {
+      "name": "Flat-Footed",
+      "category": "condition",
+      "description": "You're distracted or otherwise unable to focus your full attention on defense. You take a –2 circumstance penalty to AC. Some effects give you this condition without specifying a trigger; if so, the condition persists until the trigger ends.",
+      "source": "Player Core pg. 427"
+    },
+    "fleeing": {
+      "name": "Fleeing",
+      "category": "condition",
+      "description": "You're forced to run away. On your turn you must spend all your actions to move away from the source of the fleeing condition as fast as possible. You can't spend your actions to do anything else. If you have multiple speeds, you can choose which to use.",
+      "source": "Player Core pg. 427"
+    },
+    "frightened": {
+      "name": "Frightened",
+      "category": "condition",
+      "value_label": "Frightened X",
+      "description": "You're gripped with fear and struggle to act. You take a status penalty equal to the value to all your checks and DCs. At the end of each of your turns, the value decreases by 1.",
+      "source": "Player Core pg. 427"
+    },
+    "grabbed": {
+      "name": "Grabbed",
+      "category": "condition",
+      "description": "You're held in place by another creature, giving you the flat-footed and immobilized conditions. If you attempt a manipulate action while grabbed, you must succeed at a DC 5 flat check or the action fails.",
+      "source": "Player Core pg. 427"
+    },
+    "hidden": {
+      "name": "Hidden",
+      "category": "condition",
+      "description": "A creature you're hidden from knows your general location but can't see you. When you attack, the creature must succeed at a DC 11 flat check or the attack fails. You're still observed by creatures that can perceive you normally.",
+      "source": "Player Core pg. 428"
+    },
+    "immobilized": {
+      "name": "Immobilized",
+      "category": "condition",
+      "description": "You can't use any action with the move trait. If you're immobilized and something else would move you, you must succeed at a DC 10 flat check or the movement doesn't occur.",
+      "source": "Player Core pg. 428"
+    },
+    "invisible": {
+      "name": "Invisible",
+      "category": "condition",
+      "description": "Creatures can't see you. You're undetected to all creatures, though they can attempt to find you using Seek. Unlike being hidden, you don't need to attempt Stealth checks to remain undetected — you're automatically undetected unless you do something to reveal yourself.",
+      "source": "Player Core pg. 428"
+    },
+    "observed": {
+      "name": "Observed",
+      "category": "condition",
+      "description": "You're fully perceptible to a creature. This is the baseline visibility state. You're observed by all creatures unless you take steps to hide.",
+      "source": "Player Core pg. 428"
+    },
+    "off-guard": {
+      "name": "Off-Guard",
+      "category": "condition",
+      "description": "You're distracted or otherwise unable to focus your full attention on defense. You take a –2 circumstance penalty to AC. Some spells and abilities cause you to be off-guard against specific attacks only.",
+      "source": "Player Core pg. 428"
+    },
+    "paralyzed": {
+      "name": "Paralyzed",
+      "category": "condition",
+      "description": "Your body is frozen in place. You have the flat-footed condition and can't act except to attempt to Recall Knowledge. Your turn still comes in initiative. A paralyzed creature can't move or take any physical actions.",
+      "source": "Player Core pg. 428"
+    },
+    "petrified": {
+      "name": "Petrified",
+      "category": "condition",
+      "description": "You've been turned to stone. You can't act, and you're an object with a Hardness of 8. You're immune to physical damage until your Hardness is overcome. If broken, you shatter and can't be restored by reverting the petrification.",
+      "source": "Player Core pg. 428"
+    },
+    "prone": {
+      "name": "Prone",
+      "category": "condition",
+      "description": "You're lying on the ground. You take a –2 circumstance penalty to attack rolls. The only move action you can use is Crawl. You gain a +2 circumstance bonus to AC against ranged attacks, but you're flat-footed against melee attacks. You can Stand to remove this condition.",
+      "source": "Player Core pg. 428"
+    },
+    "quickened": {
+      "name": "Quickened",
+      "category": "condition",
+      "description": "You gain 1 additional action at the start of your turn each round. The source of quickened usually specifies what this extra action can be used for. If no restriction is listed, you can use it for any single action. When you're slowed and quickened simultaneously, the extra action and lost action cancel each other out.",
+      "source": "Player Core pg. 428"
+    },
+    "restrained": {
+      "name": "Restrained",
+      "category": "condition",
+      "description": "You're tied up and can barely move, or a creature has you pinned. You have the flat-footed and immobilized conditions, and you can't use any actions with the attack or manipulate trait except to Escape. Restrained overrides grabbed.",
+      "source": "Player Core pg. 428"
+    },
+    "sickened": {
+      "name": "Sickened",
+      "category": "condition",
+      "value_label": "Sickened X",
+      "description": "You feel ill. You take a status penalty equal to the value to all your checks and DCs. You can't willingly ingest anything. You can spend an action to attempt a Fortitude save against the DC of the effect that made you sickened; on a success, reduce the sickened value by 1.",
+      "source": "Player Core pg. 428"
+    },
+    "slowed": {
+      "name": "Slowed",
+      "category": "condition",
+      "value_label": "Slowed X",
+      "description": "You have fewer actions. At the start of your turn, reduce the number of actions you regain by the slowed value. This can't reduce your actions below 0. Slowed 1 means you get 2 actions each turn instead of 3.",
+      "source": "Player Core pg. 429"
+    },
+    "stunned": {
+      "name": "Stunned",
+      "category": "condition",
+      "value_label": "Stunned X",
+      "description": "You've become senseless. If stunned has a value, reduce that value by 1 for each action you would take (before rolling). You then lose the action. When stunned 0 or no value, the condition ends. Stunned overrides slowed.",
+      "source": "Player Core pg. 429"
+    },
+    "stupefied": {
+      "name": "Stupefied",
+      "category": "condition",
+      "value_label": "Stupefied X",
+      "description": "Your thoughts are foggy. You take a status penalty equal to the value to Intelligence-, Wisdom-, and Charisma-based checks and DCs, including spell attack rolls, spell DCs, and Perception. If you cast a spell while stupefied, roll a flat check (DC = 5 + stupefied value); on a failure, the spell is lost.",
+      "source": "Player Core pg. 429"
+    },
+    "unconscious": {
+      "name": "Unconscious",
+      "category": "condition",
+      "description": "You're out cold. You're blinded, flat-footed, have –4 to Perception, and take a –4 status penalty to AC, attack rolls, and saving throws. You fall prone and drop anything held. When unconscious with 0 HP, you have the dying condition. You can wake by taking damage, from a successful Perception check (DC 11 flat) at the start of each turn, or when healed to 1+ HP.",
+      "source": "Player Core pg. 429"
+    },
+    "undetected": {
+      "name": "Undetected",
+      "category": "condition",
+      "description": "A creature you're undetected by doesn't know where you are. You can use Hide and Sneak to become hidden or undetected. An undetected creature doesn't need to make flat checks to attack, but they must attempt to figure out the correct square (usually a Seek or similar action).",
+      "source": "Player Core pg. 429"
+    },
+    "unfriendly": {
+      "name": "Unfriendly",
+      "category": "condition",
+      "description": "This condition reflects the attitude of an NPC. An unfriendly creature dislikes and distrusts you. It won't do favors for you and may look for opportunities to hinder you.",
+      "source": "Player Core pg. 429"
+    },
+    "unnoticed": {
+      "name": "Unnoticed",
+      "category": "condition",
+      "description": "A creature is unnoticed by you if you have no idea it exists. The creature is also undetected and hidden from you.",
+      "source": "Player Core pg. 429"
+    },
+    "wounded": {
+      "name": "Wounded",
+      "category": "condition",
+      "value_label": "Wounded X",
+      "description": "You have been badly hurt. If you gain the dying condition, increase the dying value by your wounded value. Wounded ends if a spell or other effect removes all your damage. It can also be removed by the Treat Wounds action (requiring a Medicine check).",
+      "source": "Player Core pg. 429"
+    }
+  },
+  "actions": {
+    "aid": {
+      "name": "Aid",
+      "category": "action",
+      "action_cost": "Reaction",
+      "traits": ["General"],
+      "trigger": "An ally is about to use a skill action or attack roll and you previously prepared to help.",
+      "description": "You help your ally with a task. Attempt a check of the same type they're attempting (DC 20 unless otherwise stated). Critical success: +2 circumstance bonus to their check (or +3 if they're a master, +4 if legendary). Success: +1 circumstance bonus. Failure: no effect. Critical failure: –1 circumstance penalty.",
+      "source": "Player Core pg. 416"
+    },
+    "arrest-a-fall": {
+      "name": "Arrest a Fall",
+      "category": "action",
+      "action_cost": "Reaction",
+      "traits": ["Move"],
+      "trigger": "You fall.",
+      "description": "If you have a fly speed, you can attempt an Acrobatics check (DC 15) to stop your fall and hover in place instead. If you fail, you continue to fall and suffer the normal consequences.",
+      "source": "Player Core pg. 416"
+    },
+    "balance": {
+      "name": "Balance",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move along an unstable surface. Attempt an Acrobatics check against the surface's Balance DC. Critical success: move up to full Speed. Success: move up to half Speed. Failure: lose the action and can't Balance this turn. Critical failure: fall prone.",
+      "source": "Player Core pg. 233"
+    },
+    "climb": {
+      "name": "Climb",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move up, down, or across a climbable surface. Attempt an Athletics check against the surface's Climb DC. Critical success: move up to full Speed. Success: move up to half Speed. Failure: make no progress. Critical failure: fall and take falling damage.",
+      "source": "Player Core pg. 236"
+    },
+    "crawl": {
+      "name": "Crawl",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move up to half your Speed while prone. You can't Crawl faster than your Speed. Unlike most move actions, this can be used while prone.",
+      "source": "Player Core pg. 417"
+    },
+    "create-a-diversion": {
+      "name": "Create a Diversion",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Mental", "Move"],
+      "description": "Attempt a Deception check against the Perception DC of each creature you want to distract. On a success, you're hidden from them until you do something to reveal yourself or until the end of your next turn. Critical failure: they're more wary of you.",
+      "source": "Player Core pg. 239"
+    },
+    "demoralize": {
+      "name": "Demoralize",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Auditory", "Concentrate", "Emotion", "Fear", "Mental"],
+      "description": "Attempt an Intimidation check against a creature's Will DC. Success: the creature is frightened 1. Critical success: the creature is frightened 2. You can't demoralize the same creature again for 1 minute regardless of outcome. Penalty if target doesn't understand your language.",
+      "source": "Player Core pg. 247"
+    },
+    "disarm": {
+      "name": "Disarm",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "requirements": "You have at least one free hand.",
+      "description": "Attempt an Athletics check against the target's Reflex DC. Critical success: the item falls to the ground and the creature is flat-footed until the start of their next turn. Success: the item falls to the ground. Failure: no effect. Critical failure: you're flat-footed until the start of your next turn.",
+      "source": "Player Core pg. 236"
+    },
+    "escape": {
+      "name": "Escape",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "description": "Attempt to get free of a grab, restrain, or other effect holding you in place. Use your unarmed attack modifier, Acrobatics, or Athletics (your choice) vs. the creature's Athletics DC or the effect's DC. Critical success: free and a +1 circumstance bonus to attacks against that creature until end of turn. Success: free. Failure: remain held. Critical failure: condition worsens (grabbed → restrained, or apply another round).",
+      "source": "Player Core pg. 417"
+    },
+    "feint": {
+      "name": "Feint",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Mental"],
+      "requirements": "You are within melee reach of the opponent.",
+      "description": "Attempt a Deception check against a foe's Perception DC. Critical success: target is flat-footed against your melee attacks until the end of your next turn. Success: target is flat-footed against your next melee attack. Failure: no effect. Critical failure: flat-footed against that creature's melee attacks until end of your next turn.",
+      "source": "Player Core pg. 239"
+    },
+    "grapple": {
+      "name": "Grapple",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "requirements": "You have at least one free hand. The target is no more than one size larger than you.",
+      "description": "Attempt an Athletics check against the target's Fortitude DC. Critical success: target is restrained until end of your next turn. Success: target is grabbed until end of your next turn. Failure: no effect. Critical failure: you're grabbed by the target.",
+      "source": "Player Core pg. 236"
+    },
+    "hide": {
+      "name": "Hide",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": [],
+      "description": "Attempt a Stealth check against the Perception DC of each creature that can currently observe you. On a success, you become hidden from that creature. You must have cover or concealment to hide. If you lose cover, you're no longer hidden.",
+      "source": "Player Core pg. 252"
+    },
+    "high-jump": {
+      "name": "High Jump",
+      "category": "action",
+      "action_cost": "2 Actions",
+      "traits": ["Move"],
+      "description": "Stride, then attempt an Athletics check (DC 30 for a 8-foot vertical Leap, or lower DCs for smaller leaps). Critical success: leap up to 8 feet vertically. Success: leap up to your vertical reach. Failure: leap up to 1 foot. Critical failure: fall prone.",
+      "source": "Player Core pg. 236"
+    },
+    "interact": {
+      "name": "Interact",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Manipulate"],
+      "description": "Use one of your hands to manipulate an object or part of the environment. This includes drawing or stowing an item, opening a door, retrieving an item from a container, or other similar tasks.",
+      "source": "Player Core pg. 417"
+    },
+    "leap": {
+      "name": "Leap",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Leap horizontally up to 10 feet (15 feet if your Speed is 30+) or vertically up to 3 feet. If you have a longer jump, use that instead. You land in the first available space.",
+      "source": "Player Core pg. 417"
+    },
+    "long-jump": {
+      "name": "Long Jump",
+      "category": "action",
+      "action_cost": "2 Actions",
+      "traits": ["Move"],
+      "description": "Stride, then attempt an Athletics check. The DC equals 5 × the number of feet you want to jump. Critical success: jump the full distance. Success: jump half the distance. Failure: don't jump (the Stride still happens).",
+      "source": "Player Core pg. 236"
+    },
+    "make-an-impression": {
+      "name": "Make an Impression",
+      "category": "action",
+      "action_cost": "1 Minute",
+      "traits": ["Auditory", "Concentrate", "Linguistic", "Mental"],
+      "description": "Attempt a Diplomacy check against the Will DC of a creature that can hear and understand you. Critical success: their attitude improves by 2 steps. Success: attitude improves by 1 step. Failure: no change. Critical failure: attitude worsens by 1 step.",
+      "source": "Player Core pg. 241"
+    },
+    "raise-a-shield": {
+      "name": "Raise a Shield",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": [],
+      "requirements": "You are wielding a shield.",
+      "description": "Raise your shield, gaining its listed circumstance bonus to AC until the start of your next turn. You must use this action each turn to keep the bonus. Enables Shield Block reaction.",
+      "source": "Player Core pg. 417"
+    },
+    "ready": {
+      "name": "Ready",
+      "category": "action",
+      "action_cost": "2 Actions",
+      "traits": ["Concentrate"],
+      "description": "Prepare a reaction for later. Choose a trigger and an action (or free action) to take when that trigger occurs. Until the start of your next turn, you can use that action as a reaction when the trigger is met. If the trigger doesn't occur, you lose the prepared action.",
+      "source": "Player Core pg. 417"
+    },
+    "recall-knowledge": {
+      "name": "Recall Knowledge",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Concentrate", "Secret"],
+      "description": "Attempt a skill check to remember a piece of information about a subject. The GM chooses the DC. Critical success: recall the information and an additional detail. Success: recall the information. Failure: fail to recall. Critical failure: recall something false.",
+      "source": "Player Core pg. 417"
+    },
+    "seek": {
+      "name": "Seek",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Concentrate", "Secret"],
+      "description": "Attempt a Perception check to find hidden or undetected creatures in a 30-foot cone (or a 15-foot burst if searching an area). The GM rolls secretly. On a success, a hidden creature becomes observed; an undetected creature becomes hidden. Creatures using Stealth use their check result as the DC.",
+      "source": "Player Core pg. 417"
+    },
+    "shove": {
+      "name": "Shove",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "requirements": "You have at least one free hand. Target is no more than one size larger than you.",
+      "description": "Attempt an Athletics check vs. the target's Fortitude DC. Critical success: push 10 feet and can Stride after. Success: push 5 feet. Failure: no effect. Critical failure: you're flat-footed until start of your next turn.",
+      "source": "Player Core pg. 236"
+    },
+    "sneak": {
+      "name": "Sneak",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move up to half your Speed, attempting to remain undetected. Attempt a Stealth check (the GM rolls secretly) against the Perception DC of each creature that could detect you. On a success, you remain hidden. You must be hidden or undetected to Sneak.",
+      "source": "Player Core pg. 252"
+    },
+    "stand": {
+      "name": "Stand",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Stand up from prone. If you're prone, this removes that condition.",
+      "source": "Player Core pg. 417"
+    },
+    "step": {
+      "name": "Step",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move 5 feet without triggering reactions. Unlike Stride, a Step doesn't trigger reactions that are triggered by movement. You can't Step if your Speed is 0.",
+      "source": "Player Core pg. 417"
+    },
+    "stride": {
+      "name": "Stride",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Move up to your Speed. This is the standard movement action. Moving through difficult terrain costs 2 feet of movement per foot traveled.",
+      "source": "Player Core pg. 417"
+    },
+    "strike": {
+      "name": "Strike",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "description": "Attack with a weapon or unarmed attack. Roll the attack modifier vs. the target's AC. Each attack after the first takes a multiple attack penalty (–5/–10 for most, or –4/–8 for agile weapons). Critical hit = double damage dice.",
+      "source": "Player Core pg. 417"
+    },
+    "swim": {
+      "name": "Swim",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Move"],
+      "description": "Attempt an Athletics check to move through water. The DC depends on the current. Critical success: move at full Speed. Success: move at half Speed. Failure: no progress. Critical failure: sink or be pushed back.",
+      "source": "Player Core pg. 236"
+    },
+    "take-cover": {
+      "name": "Take Cover",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": [],
+      "description": "Duck behind cover to gain standard cover (+2 circumstance bonus to AC, Reflex, and Stealth vs. ranged attacks). You must have cover available. This lasts until you move, attack, or otherwise give it up.",
+      "source": "Player Core pg. 417"
+    },
+    "trip": {
+      "name": "Trip",
+      "category": "action",
+      "action_cost": "1 Action",
+      "traits": ["Attack"],
+      "requirements": "You have at least one free hand. Target is no more than one size larger.",
+      "description": "Attempt an Athletics check vs. the target's Reflex DC. Critical success: target falls prone and takes 1d6 bludgeoning damage. Success: target falls prone. Failure: no effect. Critical failure: you're flat-footed until start of your next turn.",
+      "source": "Player Core pg. 236"
+    }
+  },
+  "traits": {
+    "agile": {
+      "name": "Agile",
+      "category": "trait",
+      "description": "The multiple attack penalty you take with this weapon on the second attack is –4 instead of –5, and –8 instead of –10 on the third and subsequent attacks.",
+      "source": "Player Core pg. 279"
+    },
+    "attack": {
+      "name": "Attack",
+      "category": "trait",
+      "description": "An ability with this trait involves making an attack roll against a creature's defenses. Attacks are subject to the multiple attack penalty.",
+      "source": "Player Core pg. 420"
+    },
+    "auditory": {
+      "name": "Auditory",
+      "category": "trait",
+      "description": "Auditory actions and effects rely on sound. Creatures that can't hear are immune to auditory effects.",
+      "source": "Player Core pg. 420"
+    },
+    "cantrip": {
+      "name": "Cantrip",
+      "category": "trait",
+      "description": "A cantrip is a spell that can be cast at will, any number of times per day. Cantrips are automatically heightened to half your level rounded up.",
+      "source": "Player Core pg. 420"
+    },
+    "concentrate": {
+      "name": "Concentrate",
+      "category": "trait",
+      "description": "An action with this trait requires a degree of mental concentration. Critically failing a flat check from the frightened condition causes you to waste a concentrate action.",
+      "source": "Player Core pg. 420"
+    },
+    "death": {
+      "name": "Death",
+      "category": "trait",
+      "description": "An effect with the death trait kills you immediately if it reduces you to 0 HP. Such effects bypass the normal dying rules.",
+      "source": "Player Core pg. 420"
+    },
+    "detection": {
+      "name": "Detection",
+      "category": "trait",
+      "description": "Effects with this trait involve noticing the presence of hidden or invisible creatures, objects, or auras.",
+      "source": "Player Core pg. 420"
+    },
+    "emotion": {
+      "name": "Emotion",
+      "category": "trait",
+      "description": "Effects with this trait alter the target's emotions. Creatures that can't feel emotions (such as constructs) are immune to emotion effects.",
+      "source": "Player Core pg. 421"
+    },
+    "fear": {
+      "name": "Fear",
+      "category": "trait",
+      "description": "Fear effects evoke feelings of dread. Creatures that are immune to fear are unaffected.",
+      "source": "Player Core pg. 421"
+    },
+    "finesse": {
+      "name": "Finesse",
+      "category": "trait",
+      "description": "You can use your Dexterity modifier instead of Strength for attack rolls with this melee weapon. You still use Strength for damage rolls.",
+      "source": "Player Core pg. 279"
+    },
+    "flourish": {
+      "name": "Flourish",
+      "category": "trait",
+      "description": "Flourish actions are dramatic and physical, requiring coordination. You can only use 1 flourish per turn.",
+      "source": "Player Core pg. 421"
+    },
+    "forceful": {
+      "name": "Forceful",
+      "category": "trait",
+      "description": "This weapon's momentum grows with each attack. When you attack with it more than once per turn, the second attack gains a +1 circumstance bonus to damage, and each subsequent attack gains a +2 circumstance bonus.",
+      "source": "Player Core pg. 279"
+    },
+    "fortune": {
+      "name": "Fortune",
+      "category": "trait",
+      "description": "A fortune effect benefits you in some way, often by allowing you to roll twice and take the better result. Fortune and misfortune effects cancel each other out — apply neither if both apply.",
+      "source": "Player Core pg. 421"
+    },
+    "free-hand": {
+      "name": "Free-Hand",
+      "category": "trait",
+      "description": "This weapon doesn't take up your hand, so you can hold or wield other items. When using a free-hand weapon, you can still use that hand for spellcasting and other purposes.",
+      "source": "Player Core pg. 279"
+    },
+    "grapple": {
+      "name": "Grapple",
+      "category": "trait",
+      "description": "You can use this weapon to Grapple a foe as if you had a free hand. This also applies to Shove and Trip for weapons that list those traits.",
+      "source": "Player Core pg. 279"
+    },
+    "incapacitation": {
+      "name": "Incapacitation",
+      "category": "trait",
+      "description": "When a spell or effect with this trait reduces an enemy to dying or kills them, they're merely knocked out (or similarly neutralized) if the effect could cause death. A creature with a higher level than the spell reduces any critical failure from this effect to a failure.",
+      "source": "Player Core pg. 421"
+    },
+    "linguistic": {
+      "name": "Linguistic",
+      "category": "trait",
+      "description": "An effect with this trait depends on language. Creatures that can't understand a language are immune to linguistic effects.",
+      "source": "Player Core pg. 421"
+    },
+    "magical": {
+      "name": "Magical",
+      "category": "trait",
+      "description": "Something with the magical trait is imbued with magic. A non-magical item can become magical through temporarily enchanting it.",
+      "source": "Player Core pg. 421"
+    },
+    "manipulate": {
+      "name": "Manipulate",
+      "category": "trait",
+      "description": "You must physically manipulate an item or make gestures to use an action with this trait. Spells with material or somatic components have this trait. If you're in a situation where you can't use your hands, you can't perform manipulate actions.",
+      "source": "Player Core pg. 421"
+    },
+    "mental": {
+      "name": "Mental",
+      "category": "trait",
+      "description": "A mental effect can alter the target's mind or emotions. Mindless creatures and those with no Intelligence modifier are immune to mental effects.",
+      "source": "Player Core pg. 421"
+    },
+    "misfortune": {
+      "name": "Misfortune",
+      "category": "trait",
+      "description": "A misfortune effect causes you to roll twice and use the worse result. Fortune and misfortune effects cancel each other out.",
+      "source": "Player Core pg. 421"
+    },
+    "move": {
+      "name": "Move",
+      "category": "trait",
+      "description": "An action with this trait involves movement. Effects that prevent movement stop you from using actions with this trait.",
+      "source": "Player Core pg. 421"
+    },
+    "nonlethal": {
+      "name": "Nonlethal",
+      "category": "trait",
+      "description": "Attacks with this weapon are nonlethal, reducing foes to 0 HP rather than killing them. The GM can decide if an attack is lethal or nonlethal regardless of the weapon used.",
+      "source": "Player Core pg. 279"
+    },
+    "open": {
+      "name": "Open",
+      "category": "trait",
+      "description": "These actions can only be used as the first action in your turn. Open actions often have additional effects when used after other actions.",
+      "source": "Player Core pg. 421"
+    },
+    "poison": {
+      "name": "Poison",
+      "category": "trait",
+      "description": "An effect with the poison trait exposes the target to a poison. Creatures immune to poison are unaffected. Poison damage and effects are resisted by poison resistance.",
+      "source": "Player Core pg. 421"
+    },
+    "press": {
+      "name": "Press",
+      "category": "trait",
+      "description": "Press actions can only be used after you've already attacked this turn. Some press actions have additional requirements.",
+      "source": "Player Core pg. 421"
+    },
+    "range": {
+      "name": "Range",
+      "category": "trait",
+      "description": "A weapon with this trait can attack at range. The range increment is listed; attacks beyond this increment take a –2 penalty per additional increment.",
+      "source": "Player Core pg. 421"
+    },
+    "reach": {
+      "name": "Reach",
+      "category": "trait",
+      "description": "This weapon can attack creatures up to 10 feet away instead of only adjacent creatures. Some reach weapons have longer ranges.",
+      "source": "Player Core pg. 279"
+    },
+    "secret": {
+      "name": "Secret",
+      "category": "trait",
+      "description": "The GM rolls the check for this action in secret and tells you only the effect of the result, not the check result itself.",
+      "source": "Player Core pg. 421"
+    },
+    "shove": {
+      "name": "Shove",
+      "category": "trait",
+      "description": "You can use this weapon to Shove a foe as if you had a free hand.",
+      "source": "Player Core pg. 279"
+    },
+    "stance": {
+      "name": "Stance",
+      "category": "trait",
+      "description": "A stance is a general combat strategy you enter by using a stance action. You can only be in one stance at a time, and using another stance action immediately ends your current one. Stances end when you're knocked unconscious or are no longer able to act.",
+      "source": "Player Core pg. 421"
+    },
+    "sweep": {
+      "name": "Sweep",
+      "category": "trait",
+      "description": "This weapon makes wide sweeping attacks. You gain a +1 circumstance bonus to attack rolls against a target if you already attempted an attack against a different target this turn.",
+      "source": "Player Core pg. 279"
+    },
+    "trip": {
+      "name": "Trip",
+      "category": "trait",
+      "description": "You can use this weapon to Trip a foe as if you had a free hand.",
+      "source": "Player Core pg. 279"
+    },
+    "two-hand": {
+      "name": "Two-Hand",
+      "category": "trait",
+      "description": "This weapon can be wielded with two hands. When wielded in two hands, the weapon uses the listed two-hand damage die instead of its normal damage die.",
+      "source": "Player Core pg. 279"
+    },
+    "unarmed": {
+      "name": "Unarmed",
+      "category": "trait",
+      "description": "An unarmed attack uses your body rather than a manufactured weapon. Unarmed attacks are in the brawling weapon group and can't be disarmed.",
+      "source": "Player Core pg. 279"
+    },
+    "versatile": {
+      "name": "Versatile",
+      "category": "trait",
+      "description": "A versatile weapon can deal a different type of damage than its listed type. The alternative damage type is listed in parentheses. You choose when you attack.",
+      "source": "Player Core pg. 279"
+    },
+    "visual": {
+      "name": "Visual",
+      "category": "trait",
+      "description": "A visual effect can affect only creatures that can see it. Blinded creatures and those in areas of darkness are immune to visual effects.",
+      "source": "Player Core pg. 421"
+    }
+  }
+}
