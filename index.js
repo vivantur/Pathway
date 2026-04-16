@@ -105,7 +105,7 @@ function xpToNextLevel() { return 1000; }
 
 function resolveChar(userId, nameArg, characters) {
   if (!characters[userId] || Object.keys(characters[userId]).length === 0)
-    return { error: 'You have no saved characters! Use `/addchar` to add one.' };
+    return { error: 'You have no saved characters! Use `/char add` to add one.' };
   let charKey;
   if (!nameArg) {
     const keys = Object.keys(characters[userId]);
@@ -416,99 +416,120 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply('Pong! 🏓 Bot is alive and running.');
   }
 
-  // ─── /bag ────────────────────────────────────────────────────────
-  else if (commandName === 'bag') {
+  // ─── /char ───────────────────────────────────────────────────────
+  else if (commandName === 'char') {
     const sub = interaction.options.getSubcommand();
-    const userId = interaction.user.id;
-    const bags = loadBags();
-    const userBag = getOrCreateBag(bags, userId);
 
-    // VIEW
-    if (sub === 'view') {
-      return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
-    }
-
-    // RENAME
-    if (sub === 'rename') {
-      const newName = interaction.options.getString('name');
-      userBag.bagName = newName;
-      saveBags(bags);
-      return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
-    }
-
-    // ADD — auto-creates category if it doesn't exist
+    // ADD
     if (sub === 'add') {
-      const category = interaction.options.getString('category').trim();
-      const item = interaction.options.getString('item').trim();
-
-      if (!userBag.categories[category]) {
-        userBag.categories[category] = [];
-      }
-      userBag.categories[category].push(item);
-      saveBags(bags);
-      return interaction.reply({ content: `✅ Added **${item}** to **${category}**!`, ephemeral: true });
+      await interaction.deferReply();
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
+      try {
+        const response = await fetch(attachment.url);
+        const data = await response.json();
+        const char = data.build ?? data;
+        if (!char || !char.name) return interaction.editReply('Could not read that file.');
+        const characters = loadCharacters();
+        const userId = interaction.user.id;
+        if (!characters[userId]) characters[userId] = {};
+        const key = char.name.toLowerCase().replace(/\s+/g, '-');
+        const existingArt    = characters[userId][key]?.art ?? null;
+        const existingSenses = characters[userId][key]?.senses ?? null;
+        characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+        saveCharacters(characters);
+        await interaction.editReply(`✅ **${char.name}** saved! Use \`/sheet\` to view them.`);
+      } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
-    // REMOVE item
-    if (sub === 'remove') {
-      const category = interaction.options.getString('category').trim();
-      const item = interaction.options.getString('item').trim();
-
-      if (!userBag.categories[category]) {
-        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
-      }
-
-      const index = userBag.categories[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
-      if (index === -1) {
-        return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
-      }
-
-      userBag.categories[category].splice(index, 1);
-
-      // Auto-remove category if now empty
-      if (userBag.categories[category].length === 0) {
-        delete userBag.categories[category];
-      }
-
-      saveBags(bags);
-      return interaction.reply({ content: `✅ Removed **${item}** from **${category}**!`, ephemeral: true });
+    // UPDATE
+    else if (sub === 'update') {
+      await interaction.deferReply();
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
+      try {
+        const response = await fetch(attachment.url);
+        const data = await response.json();
+        const char = data.build ?? data;
+        if (!char || !char.name) return interaction.editReply('Could not read that file.');
+        const characters = loadCharacters();
+        const userId = interaction.user.id;
+        const key = char.name.toLowerCase().replace(/\s+/g, '-');
+        if (!characters[userId]?.[key]) return interaction.editReply(`Couldn't find **${char.name}**. Use \`/char add\` first.`);
+        const existingArt    = characters[userId][key].art ?? null;
+        const existingSenses = characters[userId][key].senses ?? null;
+        characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+        saveCharacters(characters);
+        await interaction.editReply(`✅ **${char.name}** updated to level ${char.level}!`);
+      } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
-    // REMOVE CATEGORY
-    if (sub === 'removecategory') {
-      const category = interaction.options.getString('category').trim();
-
-      if (!userBag.categories[category]) {
-        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
+    // REMOVE
+    else if (sub === 'remove') {
+      const userId = interaction.user.id;
+      const characters = loadCharacters();
+      const charKey = interaction.options.getString('name').toLowerCase().replace(/\s+/g, '-');
+      if (!characters[userId]?.[charKey]) {
+        const names = Object.values(characters[userId] ?? {}).map(c => c.name).join(', ');
+        return interaction.reply(`Couldn't find that character. Your characters: ${names}`);
       }
-
-      delete userBag.categories[category];
-      saveBags(bags);
-      return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
+      const name = characters[userId][charKey].name;
+      delete characters[userId][charKey];
+      saveCharacters(characters);
+      await interaction.reply(`✅ **${name}** has been removed.`);
     }
 
-    // CLEAR everything
-    if (sub === 'clear') {
-      userBag.categories = {};
-      saveBags(bags);
-      return interaction.reply({ content: `🗑️ Your bag has been cleared!`, ephemeral: true });
+    // LIST
+    else if (sub === 'list') {
+      const userId = interaction.user.id;
+      const characters = loadCharacters();
+      if (!characters[userId] || Object.keys(characters[userId]).length === 0)
+        return interaction.reply('You have no saved characters! Use `/char add` to add one.');
+      const list = Object.values(characters[userId]).map(c => `• **${c.name}**${c.art ? ' 🖼️' : ''}`).join('\n');
+      await interaction.reply(`Your characters:\n${list}`);
     }
-  }
 
-  // ─── /setinfo ────────────────────────────────────────────────────
-  else if (commandName === 'setinfo') {
-    const field = interaction.options.getString('field');
-    const value = interaction.options.getString('value');
-    const nameArg = interaction.options.getString('character');
-    const characters = loadCharacters();
-    const { error, charKey } = resolveChar(interaction.user.id, nameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    const parsed = value.split(',').map(v => v.trim()).filter(Boolean);
-    characters[interaction.user.id][charKey][field] = parsed;
-    saveCharacters(characters);
-    const charName = characters[interaction.user.id][charKey].name;
-    const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
-    await interaction.reply({ content: `✅ **${fieldLabel}** updated for **${charName}**:\n${parsed.join(', ')}`, ephemeral: true });
+    // FEATS
+    else if (sub === 'feats') {
+      await interaction.deferReply();
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+      if (error) return interaction.editReply(error);
+      const c = charEntry.data;
+      const allFeats = (c.feats ?? []).map(f => Array.isArray(f) ? f[0] : f).filter(Boolean);
+      const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`✨ ${c.name}'s Feats`).setDescription(allFeats.length > 0 ? allFeats.join('\n') : 'No feats found');
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      await interaction.editReply({ embeds: [embed] });
+    }
+
+    // ART
+    else if (sub === 'art') {
+      const url = interaction.options.getString('url');
+      const characters = loadCharacters();
+      const { error, charKey } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+      if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
+      characters[interaction.user.id][charKey].art = url;
+      saveCharacters(characters);
+      const charName = characters[interaction.user.id][charKey].name;
+      await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
+    }
+
+    // INFO
+    else if (sub === 'info') {
+      const field = interaction.options.getString('field');
+      const value = interaction.options.getString('value');
+      const nameArg = interaction.options.getString('character');
+      const characters = loadCharacters();
+      const { error, charKey } = resolveChar(interaction.user.id, nameArg, characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+      const parsed = value.split(',').map(v => v.trim()).filter(Boolean);
+      characters[interaction.user.id][charKey][field] = parsed;
+      saveCharacters(characters);
+      const charName = characters[interaction.user.id][charKey].name;
+      const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
+      await interaction.reply({ content: `✅ **${fieldLabel}** updated for **${charName}**:\n${parsed.join(', ')}`, ephemeral: true });
+    }
   }
 
   // ─── /sheet ──────────────────────────────────────────────────────
@@ -598,8 +619,8 @@ client.on('interactionCreate', async (interaction) => {
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
           ...(attackLines ? [{ name: '⚔️ Attacks', value: attackLines.trim(), inline: false }] : []),
-          { name: '🌐 Languages', value: languages.length > 0 ? languages.join(', ') : 'None set — use `/setinfo`', inline: true },
-          { name: '👁️ Senses', value: senses.length > 0 ? senses.join(', ') : 'None set — use `/setinfo`', inline: true },
+          { name: '🌐 Languages', value: languages.length > 0 ? languages.join(', ') : 'None set — use `/char info`', inline: true },
+          { name: '👁️ Senses', value: senses.length > 0 ? senses.join(', ') : 'None set — use `/char info`', inline: true },
         )
         .setFooter({ text: `Pathfinder 2e · Saved ${charEntry.saved?.split('T')[0] ?? ''}` });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
@@ -632,19 +653,6 @@ client.on('interactionCreate', async (interaction) => {
       if (casterText) embed.addFields({ name: `${caster.name} (${caster.magicTradition} · ${caster.castingType})`, value: casterText.trim(), inline: false });
     });
     embed.setFooter({ text: 'Use /cast <spell> to cast · /spell <n> for spell details' });
-    await interaction.editReply({ embeds: [embed] });
-  }
-
-  // ─── /charfeats ──────────────────────────────────────────────────
-  else if (commandName === 'charfeats') {
-    await interaction.deferReply();
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
-    if (error) return interaction.editReply(error);
-    const c = charEntry.data;
-    const allFeats = (c.feats ?? []).map(f => Array.isArray(f) ? f[0] : f).filter(Boolean);
-    const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`✨ ${c.name}'s Feats`).setDescription(allFeats.length > 0 ? allFeats.join('\n') : 'No feats found');
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
     await interaction.editReply({ embeds: [embed] });
   }
 
@@ -716,19 +724,6 @@ client.on('interactionCreate', async (interaction) => {
     embed.setDescription(description);
     embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
     await interaction.editReply({ embeds: [embed] });
-  }
-
-  // ─── /setart ─────────────────────────────────────────────────────
-  else if (commandName === 'setart') {
-    const url = interaction.options.getString('url');
-    const characters = loadCharacters();
-    const { error, charKey } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
-    characters[interaction.user.id][charKey].art = url;
-    saveCharacters(characters);
-    const charName = characters[interaction.user.id][charKey].name;
-    await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
   }
 
   // ─── /roll ───────────────────────────────────────────────────────
@@ -810,75 +805,6 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.editReply({ embeds: [buildRollEmbed({ title: `${c.name} makes a ${saveDisplay} save!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: charEntry.art ?? null })] });
   }
 
-  // ─── /addchar ────────────────────────────────────────────────────
-  else if (commandName === 'addchar') {
-    await interaction.deferReply();
-    const attachment = interaction.options.getAttachment('file');
-    if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
-    try {
-      const response = await fetch(attachment.url);
-      const data = await response.json();
-      const char = data.build ?? data;
-      if (!char || !char.name) return interaction.editReply('Could not read that file.');
-      const characters = loadCharacters();
-      const userId = interaction.user.id;
-      if (!characters[userId]) characters[userId] = {};
-      const key = char.name.toLowerCase().replace(/\s+/g, '-');
-      const existingArt    = characters[userId][key]?.art ?? null;
-      const existingSenses = characters[userId][key]?.senses ?? null;
-      characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
-      saveCharacters(characters);
-      await interaction.editReply(`✅ **${char.name}** saved! Use \`/sheet\` to view them.`);
-    } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
-  }
-
-  // ─── /updatechar ─────────────────────────────────────────────────
-  else if (commandName === 'updatechar') {
-    await interaction.deferReply();
-    const attachment = interaction.options.getAttachment('file');
-    if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
-    try {
-      const response = await fetch(attachment.url);
-      const data = await response.json();
-      const char = data.build ?? data;
-      if (!char || !char.name) return interaction.editReply('Could not read that file.');
-      const characters = loadCharacters();
-      const userId = interaction.user.id;
-      const key = char.name.toLowerCase().replace(/\s+/g, '-');
-      if (!characters[userId]?.[key]) return interaction.editReply(`Couldn't find **${char.name}**. Use \`/addchar\` first.`);
-      const existingArt    = characters[userId][key].art ?? null;
-      const existingSenses = characters[userId][key].senses ?? null;
-      characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
-      saveCharacters(characters);
-      await interaction.editReply(`✅ **${char.name}** updated to level ${char.level}!`);
-    } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
-  }
-
-  // ─── /mychars ────────────────────────────────────────────────────
-  else if (commandName === 'mychars') {
-    const userId = interaction.user.id;
-    const characters = loadCharacters();
-    if (!characters[userId] || Object.keys(characters[userId]).length === 0)
-      return interaction.reply('You have no saved characters! Use `/addchar` to add one.');
-    const list = Object.values(characters[userId]).map(c => `• **${c.name}**${c.art ? ' 🖼️' : ''}`).join('\n');
-    await interaction.reply(`Your characters:\n${list}`);
-  }
-
-  // ─── /removechar ─────────────────────────────────────────────────
-  else if (commandName === 'removechar') {
-    const userId = interaction.user.id;
-    const characters = loadCharacters();
-    const charKey = interaction.options.getString('name').toLowerCase().replace(/\s+/g, '-');
-    if (!characters[userId]?.[charKey]) {
-      const names = Object.values(characters[userId] ?? {}).map(c => c.name).join(', ');
-      return interaction.reply(`Couldn't find that character. Your characters: ${names}`);
-    }
-    const name = characters[userId][charKey].name;
-    delete characters[userId][charKey];
-    saveCharacters(characters);
-    await interaction.reply(`✅ **${name}** has been removed.`);
-  }
-
   // ─── /ancestry ───────────────────────────────────────────────────
   else if (commandName === 'ancestry') {
     const input = interaction.options.getString('name');
@@ -910,6 +836,58 @@ client.on('interactionCreate', async (interaction) => {
     if (!rule)
       return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
+  }
+
+  // ─── /bag ────────────────────────────────────────────────────────
+  else if (commandName === 'bag') {
+    const sub = interaction.options.getSubcommand();
+    const userId = interaction.user.id;
+    const bags = loadBags();
+    const userBag = getOrCreateBag(bags, userId);
+
+    if (sub === 'view') {
+      return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
+    }
+    if (sub === 'rename') {
+      const newName = interaction.options.getString('name');
+      userBag.bagName = newName;
+      saveBags(bags);
+      return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
+    }
+    if (sub === 'add') {
+      const category = interaction.options.getString('category').trim();
+      const item = interaction.options.getString('item').trim();
+      if (!userBag.categories[category]) userBag.categories[category] = [];
+      userBag.categories[category].push(item);
+      saveBags(bags);
+      return interaction.reply({ content: `✅ Added **${item}** to **${category}**!`, ephemeral: true });
+    }
+    if (sub === 'remove') {
+      const category = interaction.options.getString('category').trim();
+      const item = interaction.options.getString('item').trim();
+      if (!userBag.categories[category])
+        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
+      const index = userBag.categories[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
+      if (index === -1)
+        return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
+      userBag.categories[category].splice(index, 1);
+      if (userBag.categories[category].length === 0) delete userBag.categories[category];
+      saveBags(bags);
+      return interaction.reply({ content: `✅ Removed **${item}** from **${category}**!`, ephemeral: true });
+    }
+    if (sub === 'removecategory') {
+      const category = interaction.options.getString('category').trim();
+      if (!userBag.categories[category])
+        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
+      delete userBag.categories[category];
+      saveBags(bags);
+      return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
+    }
+    if (sub === 'clear') {
+      userBag.categories = {};
+      saveBags(bags);
+      return interaction.reply({ content: `🗑️ Your bag has been cleared!`, ephemeral: true });
+    }
   }
 
   // ─── /gold ───────────────────────────────────────────────────────

@@ -4,26 +4,49 @@ const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 const commands = [
   { name: 'ping', description: 'Check if the bot is alive' },
   {
-    name: 'addchar', description: 'Add a character from a Pathbuilder JSON export',
-    options: [{ name: 'file', description: 'Your Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
-  },
-  {
-    name: 'updatechar', description: 'Update an existing character with a fresh Pathbuilder JSON export',
-    options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
-  },
-  {
-    name: 'setart', description: 'Set character art for your character',
+    name: 'char', description: 'Character management',
     options: [
-      { name: 'url', description: 'Direct image URL for your character art', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-    ]
-  },
-  {
-    name: 'setinfo', description: 'Manually set senses or languages not in Pathbuilder JSON',
-    options: [
-      { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true, choices: [{ name: 'Senses', value: 'senses' }, { name: 'Languages', value: 'languages' }] },
-      { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+      {
+        name: 'add', description: 'Add a character from a Pathbuilder JSON export',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'file', description: 'Your Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+      },
+      {
+        name: 'update', description: 'Update an existing character with a fresh Pathbuilder JSON export',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+      },
+      {
+        name: 'remove', description: 'Remove a saved character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'Name of the character to remove', type: ApplicationCommandOptionType.String, required: true }]
+      },
+      {
+        name: 'list', description: 'List all your saved characters',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'feats', description: 'Show all feats for your character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
+      {
+        name: 'art', description: 'Set character art for your character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'url', description: 'Direct image URL for your character art', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'info', description: 'Manually set senses or languages not in Pathbuilder JSON',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true, choices: [{ name: 'Senses', value: 'senses' }, { name: 'Languages', value: 'languages' }] },
+          { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      }
     ]
   },
   {
@@ -33,15 +56,6 @@ const commands = [
   {
     name: 'spellbook', description: 'Show all spells for your character',
     options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-  },
-  {
-    name: 'charfeats', description: 'Show all feats for your character',
-    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-  },
-  { name: 'mychars', description: 'List all your saved characters' },
-  {
-    name: 'removechar', description: 'Remove a saved character',
-    options: [{ name: 'name', description: 'Name of the character to remove', type: ApplicationCommandOptionType.String, required: true }]
   },
   {
     name: 'roll', description: 'Roll dice (e.g. 1d20+5)',
@@ -104,16 +118,11 @@ const commands = [
   {
     name: 'bag', description: 'Manage your inventory bag',
     options: [
-      {
-        name: 'view', description: 'View your bag',
-        type: ApplicationCommandOptionType.Subcommand
-      },
+      { name: 'view', description: 'View your bag', type: ApplicationCommandOptionType.Subcommand },
       {
         name: 'rename', description: 'Rename your bag',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'name', description: 'New name for your bag', type: ApplicationCommandOptionType.String, required: true }
-        ]
+        options: [{ name: 'name', description: 'New name for your bag', type: ApplicationCommandOptionType.String, required: true }]
       },
       {
         name: 'add', description: 'Add an item (creates the category if it doesn\'t exist)',
@@ -134,14 +143,9 @@ const commands = [
       {
         name: 'removecategory', description: 'Remove an entire category from your bag',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }
-        ]
+        options: [{ name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }]
       },
-      {
-        name: 'clear', description: 'Clear everything from your bag',
-        type: ApplicationCommandOptionType.Subcommand
-      }
+      { name: 'clear', description: 'Clear everything from your bag', type: ApplicationCommandOptionType.Subcommand }
     ]
   },
   {
