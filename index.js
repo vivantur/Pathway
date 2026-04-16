@@ -726,32 +726,6 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.editReply({ embeds: [embed] });
   }
 
-  // ─── /roll ───────────────────────────────────────────────────────
-  else if (commandName === 'roll') {
-    const expression = interaction.options.getString('dice');
-    const charNameArg = interaction.options.getString('character');
-    const match = expression.toLowerCase().replace(/\s+/g, '').match(/^(\d+)d(\d+)([+-]\d+)?$/);
-    if (!match) return interaction.reply({ content: 'Invalid dice format! Try `1d20`, `2d6+3`, etc.', ephemeral: true });
-    const count = Math.min(parseInt(match[1]), 100);
-    const sides = parseInt(match[2]);
-    const bonus = parseInt(match[3] ?? '0');
-    const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
-    const total = rolls.reduce((a, b) => a + b, 0) + bonus;
-    const rollStr = rolls.length > 1 ? `[${rolls.join(', ')}]` : `${rolls[0]}`;
-    const bonusStr = bonus !== 0 ? ` + ${bonus}` : '';
-    const isCrit   = sides === 20 && count === 1 && rolls[0] === 20;
-    const isFumble = sides === 20 && count === 1 && rolls[0] === 1;
-    let breakdown = `${count}d${sides} (${rollStr})${bonusStr} = **${total}**`;
-    if (isCrit)   breakdown += '\n⭐ Natural 20!';
-    if (isFumble) breakdown += '\n💀 Natural 1!';
-    let thumbnail = null;
-    if (charNameArg) {
-      const characters = loadCharacters();
-      thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
-    }
-    await interaction.reply({ embeds: [buildRollEmbed({ title: `🎲 ${count}d${sides}${bonusStr}`, breakdown, charName: charNameArg ?? interaction.user.username, thumbnail })] });
-  }
-
   // ─── /skill ──────────────────────────────────────────────────────
   else if (commandName === 'skill') {
     await interaction.deferReply();

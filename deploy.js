@@ -210,7 +210,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
   try {
     console.log('Registering slash commands...');
     await rest.put(
-      Routes.applicationGuildCommands('1484284107688116294', '1466843829343752417'),
+      Routes.applicationCommands('1484284107688116294'),
       { body: commands }
     );
     console.log('Done! Slash commands registered successfully.');
