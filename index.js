@@ -64,60 +64,34 @@ function saveBags(data) {
   fs.writeFileSync('bags.json', JSON.stringify(data, null, 2));
 }
 
-const EMPTY_BAGS = {
-  pack: [], potions: [], attunement: [], mps: [],
-  weapons_armor: [], trinkets: [], fish: [], uncrafted: [],
-  mount: [], special: [], components: [], dump: [],
-  crafted: [], consumables: []
-};
-
-const BAG_CATEGORIES = [
-  ['Pack',            'pack'],
-  ['Potions',         'potions'],
-  ['Attunement',      'attunement'],
-  ['MPs',             'mps'],
-  ['Weapons & Armor', 'weapons_armor'],
-  ['Trinkets',        'trinkets'],
-  ['Fish',            'fish'],
-  ['Uncrafted',       'uncrafted'],
-  ['Mount',           'mount'],
-  ['Special',         'special'],
-  ['Components',      'components'],
-  ['Dump',            'dump'],
-  ['Crafted',         'crafted'],
-  ['Consumables',     'consumables'],
-];
-
-const CATEGORY_ALIASES = {
-  pack: 'pack',
-  potions: 'potions', potion: 'potions',
-  attunement: 'attunement', attuned: 'attunement',
-  mps: 'mps', mp: 'mps',
-  weapons: 'weapons_armor', armor: 'weapons_armor', weapons_armor: 'weapons_armor',
-  trinkets: 'trinkets', trinket: 'trinkets',
-  fish: 'fish',
-  uncrafted: 'uncrafted',
-  mount: 'mount', mounts: 'mount',
-  special: 'special',
-  components: 'components', component: 'components',
-  dump: 'dump',
-  crafted: 'crafted',
-  consumables: 'consumables', consumable: 'consumables',
-};
-
-function buildBagEmbed(bagData) {
-  const embed = new EmbedBuilder()
-    .setTitle(`🎒 ${bagData.characterName}'s Bags`)
-    .setColor(0x9B59B6)
-    .setFooter({ text: 'Use /bag add • /bag remove • /bag clear • /bag setname' });
-  for (const [label, key] of BAG_CATEGORIES) {
-    const items = bagData.bags[key] ?? [];
-    const value = items.length > 0 ? items.join('\n') : '*This bag is empty.*';
-    embed.addFields({ name: `**${label}**`, value, inline: true });
+function getOrCreateBag(bags, userId) {
+  if (!bags[userId]) {
+    bags[userId] = { bagName: 'Bag 1', categories: {} };
   }
+  return bags[userId];
+}
+
+function buildBagEmbed(userBag) {
+  const embed = new EmbedBuilder()
+    .setTitle(`🎒 ${userBag.bagName}`)
+    .setColor(0x9B59B6)
+    .setFooter({ text: '/bag add • /bag remove • /bag removecategory • /bag rename • /bag clear' });
+
+  const cats = Object.entries(userBag.categories ?? {});
+
+  if (cats.length === 0) {
+    embed.setDescription('*Your bag is empty. Use `/bag add <category> <item>` to get started!*');
+  } else {
+    for (const [cat, items] of cats) {
+      const value = items.length > 0 ? items.join('\n') : '*Empty*';
+      embed.addFields({ name: `**${cat}**`, value, inline: true });
+    }
+  }
+
   return embed;
 }
 
+// ── Character helpers ─────────────────────────────────────────────────────────
 function getMod(score) {
   const mod = Math.floor((score - 10) / 2);
   return mod >= 0 ? `+${mod}` : `${mod}`;
@@ -447,64 +421,77 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
     const bags = loadBags();
+    const userBag = getOrCreateBag(bags, userId);
 
-    if (!bags[userId]) {
-      bags[userId] = { characterName: 'My Character', bags: { ...EMPTY_BAGS } };
-    }
-
-    const userBag = bags[userId];
-
+    // VIEW
     if (sub === 'view') {
       return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
     }
 
-    if (sub === 'setname') {
-      const name = interaction.options.getString('name');
-      userBag.characterName = name;
+    // RENAME
+    if (sub === 'rename') {
+      const newName = interaction.options.getString('name');
+      userBag.bagName = newName;
       saveBags(bags);
-      return interaction.reply({ content: `✅ Character name set to **${name}**!`, ephemeral: true });
+      return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
     }
 
+    // ADD — auto-creates category if it doesn't exist
     if (sub === 'add') {
-      const categoryInput = interaction.options.getString('category').toLowerCase().trim();
+      const category = interaction.options.getString('category').trim();
       const item = interaction.options.getString('item').trim();
-      const category = CATEGORY_ALIASES[categoryInput];
-      if (!category) {
-        return interaction.reply({
-          content: `❌ Unknown category **"${categoryInput}"**.\nValid options: pack, potions, attunement, mps, weapons, armor, trinkets, fish, uncrafted, mount, special, components, dump, crafted, consumables`,
-          ephemeral: true
-        });
+
+      if (!userBag.categories[category]) {
+        userBag.categories[category] = [];
       }
-      userBag.bags[category].push(item);
+      userBag.categories[category].push(item);
       saveBags(bags);
-      return interaction.reply({ content: `✅ Added **${item}** to **${categoryInput}**!`, ephemeral: true });
+      return interaction.reply({ content: `✅ Added **${item}** to **${category}**!`, ephemeral: true });
     }
 
+    // REMOVE item
     if (sub === 'remove') {
-      const categoryInput = interaction.options.getString('category').toLowerCase().trim();
+      const category = interaction.options.getString('category').trim();
       const item = interaction.options.getString('item').trim();
-      const category = CATEGORY_ALIASES[categoryInput];
-      if (!category) {
-        return interaction.reply({ content: `❌ Unknown category **"${categoryInput}"**.`, ephemeral: true });
+
+      if (!userBag.categories[category]) {
+        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
       }
-      const index = (userBag.bags[category] ?? []).findIndex(i => i.toLowerCase() === item.toLowerCase());
+
+      const index = userBag.categories[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
       if (index === -1) {
-        return interaction.reply({ content: `❌ **${item}** not found in **${categoryInput}**.`, ephemeral: true });
+        return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
       }
-      userBag.bags[category].splice(index, 1);
+
+      userBag.categories[category].splice(index, 1);
+
+      // Auto-remove category if now empty
+      if (userBag.categories[category].length === 0) {
+        delete userBag.categories[category];
+      }
+
       saveBags(bags);
-      return interaction.reply({ content: `✅ Removed **${item}** from **${categoryInput}**!`, ephemeral: true });
+      return interaction.reply({ content: `✅ Removed **${item}** from **${category}**!`, ephemeral: true });
     }
 
-    if (sub === 'clear') {
-      const categoryInput = interaction.options.getString('category').toLowerCase().trim();
-      const category = CATEGORY_ALIASES[categoryInput];
-      if (!category) {
-        return interaction.reply({ content: `❌ Unknown category **"${categoryInput}"**.`, ephemeral: true });
+    // REMOVE CATEGORY
+    if (sub === 'removecategory') {
+      const category = interaction.options.getString('category').trim();
+
+      if (!userBag.categories[category]) {
+        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
       }
-      userBag.bags[category] = [];
+
+      delete userBag.categories[category];
       saveBags(bags);
-      return interaction.reply({ content: `🗑️ Cleared all items from **${categoryInput}**!`, ephemeral: true });
+      return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
+    }
+
+    // CLEAR everything
+    if (sub === 'clear') {
+      userBag.categories = {};
+      saveBags(bags);
+      return interaction.reply({ content: `🗑️ Your bag has been cleared!`, ephemeral: true });
     }
   }
 

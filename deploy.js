@@ -102,6 +102,49 @@ const commands = [
     options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
   },
   {
+    name: 'bag', description: 'Manage your inventory bag',
+    options: [
+      {
+        name: 'view', description: 'View your bag',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'rename', description: 'Rename your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'New name for your bag', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'add', description: 'Add an item (creates the category if it doesn\'t exist)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Category name (e.g. Potions, Weapons, Trinkets)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item to add', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove an item from your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Category name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item to remove', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'removecategory', description: 'Remove an entire category from your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'clear', description: 'Clear everything from your bag',
+        type: ApplicationCommandOptionType.Subcommand
+      }
+    ]
+  },
+  {
     name: 'gold', description: 'Manage your character\'s currency',
     options: [
       {
@@ -151,53 +194,6 @@ const commands = [
           { name: 'sp', description: 'Set silver pieces', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'cp', description: 'Set copper pieces', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      }
-    ]
-  },
-  // ---- BAG COMMAND (added below gold) ----
-  {
-    name: 'bag',
-    description: 'Manage your character\'s inventory bags',
-    options: [
-      {
-        name: 'view',
-        description: 'View your bag',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: []
-      },
-      {
-        name: 'setname',
-        description: 'Set your character name shown on the bag',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'name', description: 'Your character name', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'add',
-        description: 'Add an item to a bag category',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Which bag (e.g. potions, weapons, trinkets)', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item name to add', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'remove',
-        description: 'Remove an item from a bag category',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Which bag (e.g. potions, weapons, trinkets)', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item name to remove', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'clear',
-        description: 'Clear all items from a bag category',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Which bag to clear', type: ApplicationCommandOptionType.String, required: true }
         ]
       }
     ]
