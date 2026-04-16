@@ -725,7 +725,104 @@ client.on('interactionCreate', async (interaction) => {
     embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
     await interaction.editReply({ embeds: [embed] });
   }
+// ─── /roll ───────────────────────────────────────────────────────
+  else if (commandName === 'roll') {
+    try {
+      const raw = interaction.options.getString('dice').toLowerCase().replace(/\s+/g, '');
 
+      // Validate: only allow digits, d, +, -, *, /
+      if (!/^[0-9d+\-*/]+$/.test(raw)) {
+        return interaction.reply({ content: '❌ Invalid expression! Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.', ephemeral: true });
+      }
+
+      // Tokenize into parts + operators
+      const tokens = raw.split(/([+\-*/])/).filter(Boolean);
+      const breakdownParts = [];
+      const values = [];
+
+      for (const token of tokens) {
+        if (['+', '-', '*', '/'].includes(token)) {
+          breakdownParts.push(token === '*' ? '×' : token === '/' ? '÷' : token);
+          values.push(token);
+          continue;
+        }
+
+        if (token.includes('d')) {
+          const [numDiceStr, numSidesStr] = token.split('d');
+          const numDice = parseInt(numDiceStr) || 1;
+          const numSides = parseInt(numSidesStr);
+
+          if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) {
+            return interaction.reply({ content: `❌ Invalid dice: \`${token}\`. Try something like \`2d6\` or \`1d20\`.`, ephemeral: true });
+          }
+
+          const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
+          const rollTotal = rolls.reduce((a, b) => a + b, 0);
+          const rollDisplay = numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`;
+
+          breakdownParts.push(rollDisplay);
+          values.push(rollTotal);
+        } else {
+          const num = parseInt(token);
+          if (isNaN(num)) {
+            return interaction.reply({ content: `❌ Couldn't parse \`${token}\`. Make sure your expression is valid.`, ephemeral: true });
+          }
+          breakdownParts.push(`${num}`);
+          values.push(num);
+        }
+      }
+
+      // First pass: handle * and /
+      const pass1values = [];
+      const pass1ops = [];
+      let current = values[0];
+      for (let i = 1; i < values.length; i += 2) {
+        const op = values[i];
+        const next = values[i + 1];
+        if (op === '*') {
+          current = current * next;
+        } else if (op === '/') {
+          if (next === 0) return interaction.reply({ content: '❌ Cannot divide by zero!', ephemeral: true });
+          current = Math.floor(current / next);
+        } else {
+          pass1values.push(current);
+          pass1ops.push(op);
+          current = next;
+        }
+      }
+      pass1values.push(current);
+
+      // Second pass: handle + and -
+      let total = pass1values[0];
+      for (let i = 0; i < pass1ops.length; i++) {
+        if (pass1ops[i] === '+') total += pass1values[i + 1];
+        if (pass1ops[i] === '-') total -= pass1values[i + 1];
+      }
+      total = Math.floor(total);
+
+      const breakdown = `${breakdownParts.join(' ')} = **${total}**`;
+
+      const charNameArg = interaction.options.getString('character');
+      let thumbnail = null;
+      if (charNameArg) {
+        const characters = loadCharacters();
+        thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x7289DA)
+        .setTitle(`🎲 ${raw}`)
+        .setDescription(breakdown);
+      if (thumbnail) embed.setThumbnail(thumbnail);
+      embed.setFooter({ text: charNameArg ?? interaction.user.username });
+
+      await interaction.reply({ embeds: [embed] });
+
+    } catch (err) {
+      console.error('Roll error:', err);
+      await interaction.reply({ content: '❌ Something went wrong parsing that expression. Try again!', ephemeral: true });
+    }
+  }
   // ─── /skill ──────────────────────────────────────────────────────
   else if (commandName === 'skill') {
     await interaction.deferReply();
