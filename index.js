@@ -2,85 +2,6 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
-const mongoose = require('mongoose');
-
-// ── MongoDB connection ────────────────────────────────────────────────────────
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB!'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// ── Bag Schema ────────────────────────────────────────────────────────────────
-const bagSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
-  characterName: { type: String, default: 'My Character' },
-  bags: {
-    pack:          { type: [String], default: [] },
-    potions:       { type: [String], default: [] },
-    attunement:    { type: [String], default: [] },
-    mps:           { type: [String], default: [] },
-    weapons_armor: { type: [String], default: [] },
-    trinkets:      { type: [String], default: [] },
-    fish:          { type: [String], default: [] },
-    uncrafted:     { type: [String], default: [] },
-    mount:         { type: [String], default: [] },
-    special:       { type: [String], default: [] },
-    components:    { type: [String], default: [] },
-    dump:          { type: [String], default: [] },
-    crafted:       { type: [String], default: [] },
-    consumables:   { type: [String], default: [] },
-  }
-});
-const Bag = mongoose.model('Bag', bagSchema);
-
-// ── Bag helpers ───────────────────────────────────────────────────────────────
-const BAG_CATEGORIES = [
-  ['Pack',            'pack'],
-  ['Potions',         'potions'],
-  ['Attunement',      'attunement'],
-  ['MPs',             'mps'],
-  ['Weapons & Armor', 'weapons_armor'],
-  ['Trinkets',        'trinkets'],
-  ['Fish',            'fish'],
-  ['Uncrafted',       'uncrafted'],
-  ['Mount',           'mount'],
-  ['Special',         'special'],
-  ['Components',      'components'],
-  ['Dump',            'dump'],
-  ['Crafted',         'crafted'],
-  ['Consumables',     'consumables'],
-];
-
-const CATEGORY_ALIASES = {
-  pack: 'pack',
-  potions: 'potions', potion: 'potions',
-  attunement: 'attunement', attuned: 'attunement',
-  mps: 'mps', mp: 'mps',
-  weapons: 'weapons_armor', armor: 'weapons_armor', weapons_armor: 'weapons_armor',
-  trinkets: 'trinkets', trinket: 'trinkets',
-  fish: 'fish',
-  uncrafted: 'uncrafted',
-  mount: 'mount', mounts: 'mount',
-  special: 'special',
-  components: 'components', component: 'components',
-  dump: 'dump',
-  crafted: 'crafted',
-  consumables: 'consumables', consumable: 'consumables',
-};
-
-function buildBagEmbed(bagData) {
-  const embed = new EmbedBuilder()
-    .setTitle(`🎒 ${bagData.characterName}'s Bags`)
-    .setColor(0x9B59B6)
-    .setFooter({ text: 'Use /bag add • /bag remove • /bag clear • /bag setname' });
-
-  for (const [label, key] of BAG_CATEGORIES) {
-    const items = bagData.bags[key];
-    const value = items?.length > 0 ? items.join('\n') : '*This bag is empty.*';
-    embed.addFields({ name: `**${label}**`, value, inline: true });
-  }
-
-  return embed;
-}
 
 const client = new Client({
   intents: [
@@ -133,6 +54,70 @@ function loadCharacters() {
 function saveCharacters(data) {
   fs.writeFileSync('characters.json', JSON.stringify(data, null, 2));
 }
+
+// ── Bag helpers ───────────────────────────────────────────────────────────────
+function loadBags() {
+  try { return JSON.parse(fs.readFileSync('bags.json', 'utf8')); }
+  catch { return {}; }
+}
+function saveBags(data) {
+  fs.writeFileSync('bags.json', JSON.stringify(data, null, 2));
+}
+
+const EMPTY_BAGS = {
+  pack: [], potions: [], attunement: [], mps: [],
+  weapons_armor: [], trinkets: [], fish: [], uncrafted: [],
+  mount: [], special: [], components: [], dump: [],
+  crafted: [], consumables: []
+};
+
+const BAG_CATEGORIES = [
+  ['Pack',            'pack'],
+  ['Potions',         'potions'],
+  ['Attunement',      'attunement'],
+  ['MPs',             'mps'],
+  ['Weapons & Armor', 'weapons_armor'],
+  ['Trinkets',        'trinkets'],
+  ['Fish',            'fish'],
+  ['Uncrafted',       'uncrafted'],
+  ['Mount',           'mount'],
+  ['Special',         'special'],
+  ['Components',      'components'],
+  ['Dump',            'dump'],
+  ['Crafted',         'crafted'],
+  ['Consumables',     'consumables'],
+];
+
+const CATEGORY_ALIASES = {
+  pack: 'pack',
+  potions: 'potions', potion: 'potions',
+  attunement: 'attunement', attuned: 'attunement',
+  mps: 'mps', mp: 'mps',
+  weapons: 'weapons_armor', armor: 'weapons_armor', weapons_armor: 'weapons_armor',
+  trinkets: 'trinkets', trinket: 'trinkets',
+  fish: 'fish',
+  uncrafted: 'uncrafted',
+  mount: 'mount', mounts: 'mount',
+  special: 'special',
+  components: 'components', component: 'components',
+  dump: 'dump',
+  crafted: 'crafted',
+  consumables: 'consumables', consumable: 'consumables',
+};
+
+function buildBagEmbed(bagData) {
+  const embed = new EmbedBuilder()
+    .setTitle(`🎒 ${bagData.characterName}'s Bags`)
+    .setColor(0x9B59B6)
+    .setFooter({ text: 'Use /bag add • /bag remove • /bag clear • /bag setname' });
+  for (const [label, key] of BAG_CATEGORIES) {
+    const items = bagData.bags[key] ?? [];
+    const value = items.length > 0 ? items.join('\n') : '*This bag is empty.*';
+    embed.addFields({ name: `**${label}**`, value, inline: true });
+  }
+  return embed;
+}
+
 function getMod(score) {
   const mod = Math.floor((score - 10) / 2);
   return mod >= 0 ? `+${mod}` : `${mod}`;
@@ -461,18 +446,22 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'bag') {
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
+    const bags = loadBags();
 
-    let bag = await Bag.findOne({ userId });
-    if (!bag) bag = await Bag.create({ userId });
+    if (!bags[userId]) {
+      bags[userId] = { characterName: 'My Character', bags: { ...EMPTY_BAGS } };
+    }
+
+    const userBag = bags[userId];
 
     if (sub === 'view') {
-      return interaction.reply({ embeds: [buildBagEmbed(bag)] });
+      return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
     }
 
     if (sub === 'setname') {
       const name = interaction.options.getString('name');
-      bag.characterName = name;
-      await bag.save();
+      userBag.characterName = name;
+      saveBags(bags);
       return interaction.reply({ content: `✅ Character name set to **${name}**!`, ephemeral: true });
     }
 
@@ -480,17 +469,14 @@ client.on('interactionCreate', async (interaction) => {
       const categoryInput = interaction.options.getString('category').toLowerCase().trim();
       const item = interaction.options.getString('item').trim();
       const category = CATEGORY_ALIASES[categoryInput];
-
       if (!category) {
         return interaction.reply({
-          content: `❌ Unknown category **"${categoryInput}"**.\nValid options: ${[...new Set(Object.keys(CATEGORY_ALIASES))].join(', ')}`,
+          content: `❌ Unknown category **"${categoryInput}"**.\nValid options: pack, potions, attunement, mps, weapons, armor, trinkets, fish, uncrafted, mount, special, components, dump, crafted, consumables`,
           ephemeral: true
         });
       }
-
-      bag.bags[category].push(item);
-      bag.markModified('bags');
-      await bag.save();
+      userBag.bags[category].push(item);
+      saveBags(bags);
       return interaction.reply({ content: `✅ Added **${item}** to **${categoryInput}**!`, ephemeral: true });
     }
 
@@ -498,33 +484,26 @@ client.on('interactionCreate', async (interaction) => {
       const categoryInput = interaction.options.getString('category').toLowerCase().trim();
       const item = interaction.options.getString('item').trim();
       const category = CATEGORY_ALIASES[categoryInput];
-
       if (!category) {
         return interaction.reply({ content: `❌ Unknown category **"${categoryInput}"**.`, ephemeral: true });
       }
-
-      const index = bag.bags[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
+      const index = (userBag.bags[category] ?? []).findIndex(i => i.toLowerCase() === item.toLowerCase());
       if (index === -1) {
         return interaction.reply({ content: `❌ **${item}** not found in **${categoryInput}**.`, ephemeral: true });
       }
-
-      bag.bags[category].splice(index, 1);
-      bag.markModified('bags');
-      await bag.save();
+      userBag.bags[category].splice(index, 1);
+      saveBags(bags);
       return interaction.reply({ content: `✅ Removed **${item}** from **${categoryInput}**!`, ephemeral: true });
     }
 
     if (sub === 'clear') {
       const categoryInput = interaction.options.getString('category').toLowerCase().trim();
       const category = CATEGORY_ALIASES[categoryInput];
-
       if (!category) {
         return interaction.reply({ content: `❌ Unknown category **"${categoryInput}"**.`, ephemeral: true });
       }
-
-      bag.bags[category] = [];
-      bag.markModified('bags');
-      await bag.save();
+      userBag.bags[category] = [];
+      saveBags(bags);
       return interaction.reply({ content: `🗑️ Cleared all items from **${categoryInput}**!`, ephemeral: true });
     }
   }
@@ -959,7 +938,6 @@ client.on('interactionCreate', async (interaction) => {
     if (subcommand === 'view') {
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry)] });
     }
-
     if (subcommand === 'add') {
       const pp = interaction.options.getInteger('pp') ?? 0;
       const gp = interaction.options.getInteger('gp') ?? 0;
@@ -976,7 +954,6 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💰 ${char.name}'s Wallet — Added ${formatWallet({ pp, gp, sp, cp })}`)] });
     }
-
     if (subcommand === 'spend') {
       const pp = interaction.options.getInteger('pp') ?? 0;
       const gp = interaction.options.getInteger('gp') ?? 0;
@@ -993,7 +970,6 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💸 ${char.name}'s Wallet — Spent ${formatWallet({ pp, gp, sp, cp })}`)] });
     }
-
     if (subcommand === 'convert') {
       const from   = interaction.options.getString('from');
       const to     = interaction.options.getString('to');
@@ -1017,7 +993,6 @@ client.on('interactionCreate', async (interaction) => {
       const remainderNote = remainder > 0 ? ` (+${remainder} cp remainder)` : '';
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`🔄 ${char.name}'s Wallet — Converted`).setDescription(`Converted **${amount} ${from}** → **${converted} ${to}**${remainderNote}`)] });
     }
-
     if (subcommand === 'set') {
       charEntry.wallet = {
         pp: interaction.options.getInteger('pp') ?? wallet.pp ?? 0,
