@@ -244,6 +244,41 @@ const commands = [
           { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
         ]
       },
+      {
+        name: 'effect', description: 'Apply a status effect/condition to a combatant',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'target', description: 'Combatant to apply the effect to', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'name', description: 'Effect name (e.g. "frightened", "bless", or custom name)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'value', description: 'Value for scaling conditions (Frightened 2, Heroism 3, etc.)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'duration', description: 'Duration in rounds (leave blank for permanent until removed)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'attack_bonus', description: 'Custom: bonus/penalty to attack rolls', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'damage_bonus', description: 'Custom: bonus/penalty to damage', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'ac_bonus', description: 'Custom: bonus/penalty to AC', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'save_bonus', description: 'Custom: bonus/penalty to saves', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'skill_bonus', description: 'Custom: bonus/penalty to skill checks', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'description', description: 'Custom: description of the effect', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'removeeffect', description: 'Remove a status effect from a combatant',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'target', description: 'Combatant to remove the effect from', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'name', description: 'Effect name to remove', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'effects', description: 'List all active effects on a combatant',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'target', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'conditions', description: 'Show the list of available PF2e condition presets',
+        type: ApplicationCommandOptionType.Subcommand
+      },
       { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
     ]
   },
@@ -279,41 +314,7 @@ const commands = [
     ]
   }
 ];
-{
-        name: 'effect', description: 'Apply a status effect/condition to a combatant',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'target', description: 'Combatant to apply the effect to', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'name', description: 'Effect name (e.g. "frightened", "bless", or custom name)', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'value', description: 'Value for scaling conditions (Frightened 2, Heroism 3, etc.)', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'duration', description: 'Duration in rounds (leave blank for permanent until removed)', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'attack_bonus', description: 'Custom: bonus/penalty to attack rolls', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'damage_bonus', description: 'Custom: bonus/penalty to damage', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'ac_bonus', description: 'Custom: bonus/penalty to AC', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'save_bonus', description: 'Custom: bonus/penalty to saves', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'skill_bonus', description: 'Custom: bonus/penalty to skill checks', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'description', description: 'Custom: description of the effect', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'removeeffect', description: 'Remove a status effect from a combatant',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'target', description: 'Combatant to remove the effect from', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'name', description: 'Effect name to remove', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'effects', description: 'List all active effects on a combatant',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'target', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'conditions', description: 'Show the list of available PF2e condition presets',
-        type: ApplicationCommandOptionType.Subcommand
-      },
+
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
