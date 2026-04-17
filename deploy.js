@@ -201,6 +201,49 @@ const commands = [
         ]
       }
     ]
+  },
+  {
+    name: 'init', description: 'Initiative tracker for combat',
+    options: [
+      { name: 'start', description: 'Start a new encounter in this channel', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'add', description: 'Add your loaded character to initiative',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'bonus', description: 'Override initiative bonus (defaults to Perception)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'result', description: 'Use this exact initiative result instead of rolling', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'addnpc', description: 'GM: add a monster/NPC to initiative',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'bonus', description: 'Initiative modifier', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'hp', description: 'Max HP', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'result', description: 'Use exact initiative instead of rolling', type: ApplicationCommandOptionType.Integer, required: false }
+        ]
+      },
+      { name: 'next', description: 'Advance to the next turn', type: ApplicationCommandOptionType.Subcommand },
+      { name: 'list', description: 'Show current initiative order', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'hp', description: 'Modify a combatant\'s HP',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'change', description: 'Positive to heal, negative to damage', type: ApplicationCommandOptionType.Integer, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a combatant',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
+    ]
   }
 ];
 
