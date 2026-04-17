@@ -184,6 +184,49 @@ function rollD20Plus(modifier) {
   const roll = Math.floor(Math.random() * 20) + 1;
   return { total: roll + modifier, roll, mod: modifier };
 }
+// Parse a damage expression like "1d6+2", "2d8-1", "1d4"
+// Returns { rolls, bonus, total, display } or null if invalid
+function rollDamageExpression(expr) {
+  if (!expr) return null;
+  const cleaned = expr.toLowerCase().replace(/\s+/g, '');
+  const match = cleaned.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+  if (!match) return null;
+  const numDice = parseInt(match[1]) || 1;
+  const numSides = parseInt(match[2]);
+  const bonus = match[3] ? parseInt(match[3]) : 0;
+  if (numDice < 1 || numDice > 100 || numSides < 1) return null;
+  const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
+  const sum = rolls.reduce((a, b) => a + b, 0);
+  const total = sum + bonus;
+  const bonusText = bonus > 0 ? `+${bonus}` : bonus < 0 ? `${bonus}` : '';
+  const display = `${numDice}d${numSides}[${rolls.join(', ')}]${bonusText}`;
+  return { rolls, bonus, numDice, numSides, sum, total, display };
+}
+
+// Determine PF2e degree of success for an attack
+// Returns 'crit-success' | 'success' | 'failure' | 'crit-failure' | null (if no AC known)
+function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
+  if (targetAc === null || targetAc === undefined) return null;
+  let degree;
+  if (attackTotal >= targetAc + 10) degree = 'crit-success';
+  else if (attackTotal >= targetAc) degree = 'success';
+  else if (attackTotal <= targetAc - 10) degree = 'crit-failure';
+  else degree = 'failure';
+  // Nat 20 bumps up, nat 1 bumps down
+  if (dieRoll === 20) {
+    degree = degree === 'crit-failure' ? 'failure' : degree === 'failure' ? 'success' : 'crit-success';
+  } else if (dieRoll === 1) {
+    degree = degree === 'crit-success' ? 'success' : degree === 'success' ? 'failure' : 'crit-failure';
+  }
+  return degree;
+}
+
+// PF2e MAP calculation
+function calculateMap(mapLevel, agile) {
+  if (mapLevel === 0 || !mapLevel) return 0;
+  if (mapLevel === 1) return agile ? -4 : -5;
+  return agile ? -8 : -10;
+}
 require('dotenv').config();
 const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
