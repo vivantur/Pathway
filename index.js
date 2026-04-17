@@ -10,6 +10,7 @@ const {
   removeCombatant,
   advanceTurn,
   modifyHp,
+  setSummaryMessageId,
 } = require('./encounters');
 
 const client = new Client({
@@ -180,12 +181,53 @@ function buildInitiativeEmbed(enc) {
     .setColor(0xAA0000);
 }
 
+// Post or update the pinned summary message for an encounter
+async function updateSummary(channel, enc) {
+  if (!enc) return;
+  const embed = buildInitiativeEmbed(enc);
+
+  // If we already have a summary message, try to edit it
+  if (enc.summaryMessageId) {
+    try {
+      const existing = await channel.messages.fetch(enc.summaryMessageId);
+      await existing.edit({ embeds: [embed] });
+      return;
+    } catch {
+      // Message was deleted or can't be edited; fall through and post a new one
+    }
+  }
+
+  // Post a fresh summary and try to pin it
+  try {
+    const msg = await channel.send({ embeds: [embed] });
+    setSummaryMessageId(channel.id, msg.id);
+    try {
+      await msg.pin();
+    } catch (err) {
+      console.warn('Could not pin summary message (missing Manage Messages permission?):', err.message);
+    }
+  } catch (err) {
+    console.error('Failed to post summary:', err);
+  }
+}
+
+// Unpin and clear the summary message (used on /init end)
+async function clearSummary(channel, enc) {
+  if (!enc?.summaryMessageId) return;
+  try {
+    const msg = await channel.messages.fetch(enc.summaryMessageId);
+    try { await msg.unpin(); } catch {}
+  } catch {
+    // Message is gone, nothing to do
+  }
+}
+
 function rollD20Plus(modifier) {
   const roll = Math.floor(Math.random() * 20) + 1;
   return { total: roll + modifier, roll, mod: modifier };
 }
+
 // Parse a damage expression like "1d6+2", "2d8-1", "1d4"
-// Returns { rolls, bonus, total, display } or null if invalid
 function rollDamageExpression(expr) {
   if (!expr) return null;
   const cleaned = expr.toLowerCase().replace(/\s+/g, '');
@@ -204,7 +246,6 @@ function rollDamageExpression(expr) {
 }
 
 // Determine PF2e degree of success for an attack
-// Returns 'crit-success' | 'success' | 'failure' | 'crit-failure' | null (if no AC known)
 function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   if (targetAc === null || targetAc === undefined) return null;
   let degree;
@@ -212,7 +253,6 @@ function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   else if (attackTotal >= targetAc) degree = 'success';
   else if (attackTotal <= targetAc - 10) degree = 'crit-failure';
   else degree = 'failure';
-  // Nat 20 bumps up, nat 1 bumps down
   if (dieRoll === 20) {
     degree = degree === 'crit-failure' ? 'failure' : degree === 'failure' ? 'success' : 'crit-success';
   } else if (dieRoll === 1) {
@@ -227,302 +267,7 @@ function calculateMap(mapLevel, agile) {
   if (mapLevel === 1) return agile ? -4 : -5;
   return agile ? -8 : -10;
 }
-require('dotenv').config();
-const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
-const commands = [
-  { name: 'ping', description: 'Check if the bot is alive' },
-  {
-    name: 'char', description: 'Character management',
-    options: [
-      {
-        name: 'add', description: 'Add a character from a Pathbuilder JSON export',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'file', description: 'Your Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
-      },
-      {
-        name: 'update', description: 'Update an existing character with a fresh Pathbuilder JSON export',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
-      },
-      {
-        name: 'remove', description: 'Remove a saved character',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'name', description: 'Name of the character to remove', type: ApplicationCommandOptionType.String, required: true }]
-      },
-      {
-        name: 'list', description: 'List all your saved characters',
-        type: ApplicationCommandOptionType.Subcommand
-      },
-      {
-        name: 'feats', description: 'Show all feats for your character',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-      },
-      {
-        name: 'art', description: 'Set character art for your character',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'url', description: 'Direct image URL for your character art', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'info', description: 'Manually set senses or languages not in Pathbuilder JSON',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true, choices: [{ name: 'Senses', value: 'senses' }, { name: 'Languages', value: 'languages' }] },
-          { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      }
-    ]
-  },
-  {
-    name: 'sheet', description: 'Display a character sheet',
-    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-  },
-  {
-    name: 'spellbook', description: 'Show all spells for your character',
-    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-  },
-  {
-    name: 'roll', description: 'Roll dice (e.g. 1d20+5)',
-    options: [
-      { name: 'dice', description: 'Dice expression e.g. 1d20+5 or 2d6', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'character', description: 'Character name to show on the result (optional)', type: ApplicationCommandOptionType.String, required: false }
-    ]
-  },
-  {
-    name: 'skill', description: 'Roll a skill check for your character',
-    options: [
-      { name: 'skill', description: 'The skill to roll', type: ApplicationCommandOptionType.String, required: true, choices: [
-        { name: 'Acrobatics', value: 'acrobatics' }, { name: 'Arcana', value: 'arcana' },
-        { name: 'Athletics', value: 'athletics' }, { name: 'Crafting', value: 'crafting' },
-        { name: 'Deception', value: 'deception' }, { name: 'Diplomacy', value: 'diplomacy' },
-        { name: 'Intimidation', value: 'intimidation' }, { name: 'Medicine', value: 'medicine' },
-        { name: 'Nature', value: 'nature' }, { name: 'Occultism', value: 'occultism' },
-        { name: 'Performance', value: 'performance' }, { name: 'Religion', value: 'religion' },
-        { name: 'Society', value: 'society' }, { name: 'Stealth', value: 'stealth' },
-        { name: 'Survival', value: 'survival' }, { name: 'Thievery', value: 'thievery' }
-      ]},
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
-    ]
-  },
-  {
-    name: 'save', description: 'Roll a saving throw for your character',
-    options: [
-      { name: 'type', description: 'The save to roll', type: ApplicationCommandOptionType.String, required: true, choices: [
-        { name: 'Fortitude', value: 'fortitude' }, { name: 'Reflex', value: 'reflex' }, { name: 'Will', value: 'will' }
-      ]},
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
-    ]
-  },
-  {
-    name: 'spell', description: 'Look up a spell from the database',
-    options: [{ name: 'name', description: 'Name of the spell to look up', type: ApplicationCommandOptionType.String, required: true }]
-  },
-  {
-    name: 'cast', description: 'Cast a spell with your character',
-    options: [
-      { name: 'spell', description: 'Name of the spell to cast', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'target', description: 'Combatant name to target (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'level', description: 'Level to cast the spell at (for heightening)', type: ApplicationCommandOptionType.Integer, required: false }
-    ]
-  },
-  {
-    name: 'ancestry', description: 'Look up a PF2e ancestry',
-    options: [{ name: 'name', description: 'The ancestry to look up (e.g. Elf, Dwarf, Gnome)', type: ApplicationCommandOptionType.String, required: true }]
-  },
-  {
-    name: 'archetype', description: 'Look up a PF2e archetype',
-    options: [{ name: 'name', description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)', type: ApplicationCommandOptionType.String, required: true }]
-  },
-  {
-    name: 'rule', description: 'Look up a PF2e condition, action, or trait',
-    options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
-  },
-  {
-    name: 'bag', description: 'Manage your inventory bag',
-    options: [
-      { name: 'view', description: 'View your bag', type: ApplicationCommandOptionType.Subcommand },
-      {
-        name: 'rename', description: 'Rename your bag',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'name', description: 'New name for your bag', type: ApplicationCommandOptionType.String, required: true }]
-      },
-      {
-        name: 'add', description: 'Add an item (creates the category if it doesn\'t exist)',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Category name (e.g. Potions, Weapons, Trinkets)', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item to add', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'remove', description: 'Remove an item from your bag',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'category', description: 'Category name', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item to remove', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      {
-        name: 'removecategory', description: 'Remove an entire category from your bag',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }]
-      },
-      { name: 'clear', description: 'Clear everything from your bag', type: ApplicationCommandOptionType.Subcommand }
-    ]
-  },
-  {
-    name: 'gold', description: 'Manage your character\'s currency',
-    options: [
-      {
-        name: 'view', description: 'View your current wallet', type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
-      },
-      {
-        name: 'add', description: 'Add currency to your wallet', type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'pp', description: 'Platinum pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'gp', description: 'Gold pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'sp', description: 'Silver pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'cp', description: 'Copper pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'spend', description: 'Spend currency from your wallet', type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'pp', description: 'Platinum pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'gp', description: 'Gold pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'sp', description: 'Silver pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'cp', description: 'Copper pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'convert', description: 'Convert between currency types', type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'from', description: 'Currency to convert from', type: ApplicationCommandOptionType.String, required: true, choices: [
-            { name: 'Copper (cp)', value: 'cp' }, { name: 'Silver (sp)', value: 'sp' },
-            { name: 'Gold (gp)', value: 'gp' }, { name: 'Platinum (pp)', value: 'pp' }
-          ]},
-          { name: 'to', description: 'Currency to convert to', type: ApplicationCommandOptionType.String, required: true, choices: [
-            { name: 'Copper (cp)', value: 'cp' }, { name: 'Silver (sp)', value: 'sp' },
-            { name: 'Gold (gp)', value: 'gp' }, { name: 'Platinum (pp)', value: 'pp' }
-          ]},
-          { name: 'amount', description: 'How many to convert', type: ApplicationCommandOptionType.Integer, required: true },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'set', description: 'Set your wallet to exact amounts', type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'pp', description: 'Set platinum pieces', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'gp', description: 'Set gold pieces', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'sp', description: 'Set silver pieces', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'cp', description: 'Set copper pieces', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      }
-    ]
-  },
-  {
-    name: 'init', description: 'Initiative tracker for combat',
-    options: [
-      { name: 'start', description: 'Start a new encounter in this channel', type: ApplicationCommandOptionType.Subcommand },
-      {
-        name: 'add', description: 'Add your loaded character to initiative',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'bonus', description: 'Override initiative bonus (defaults to Perception)', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'result', description: 'Use this exact initiative result instead of rolling', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
-        name: 'addnpc', description: 'GM: add a monster/NPC to initiative',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'name', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'bonus', description: 'Initiative modifier', type: ApplicationCommandOptionType.Integer, required: true },
-          { name: 'hp', description: 'Max HP', type: ApplicationCommandOptionType.Integer, required: true },
-          { name: 'ac', description: 'AC (for hit/crit determination)', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'result', description: 'Use exact initiative instead of rolling', type: ApplicationCommandOptionType.Integer, required: false }
-        ]
-      },
-      { name: 'next', description: 'Advance to the next turn', type: ApplicationCommandOptionType.Subcommand },
-      { name: 'list', description: 'Show current initiative order', type: ApplicationCommandOptionType.Subcommand },
-      {
-        name: 'hp', description: 'Modify a combatant\'s HP',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'change', description: 'Positive to heal, negative to damage', type: ApplicationCommandOptionType.Integer, required: true }
-        ]
-      },
-      {
-        name: 'remove', description: 'Remove a combatant',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
-        ]
-      },
-      { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
-    ]
-  },
-  {
-    name: 'attack', description: 'Roll an attack with one of your weapons',
-    options: [
-      { name: 'weapon', description: 'Weapon name (from your sheet)', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'target', description: 'Combatant name to attack (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false },
-      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
-        { name: 'First attack (no penalty)', value: 0 },
-        { name: 'Second attack (-5)', value: 1 },
-        { name: 'Third attack (-10)', value: 2 }
-      ]}
-    ]
-  },
-  {
-    name: 'mattack', description: 'GM: roll a monster attack against a target',
-    options: [
-      { name: 'attacker', description: 'Name of the NPC/monster attacking (must be in encounter)', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'name', description: 'Name of the attack (e.g. "Shortsword", "Fire Breath")', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'bonus', description: 'Attack roll bonus', type: ApplicationCommandOptionType.Integer, required: true },
-      { name: 'damage', description: 'Damage dice expression (e.g. "1d6+2" or "2d8+4")', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'target', description: 'Combatant to attack', type: ApplicationCommandOptionType.String, required: true },
-      { name: 'type', description: 'Damage type (piercing, slashing, bludgeoning, fire, etc.)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
-        { name: 'First attack (no penalty)', value: 0 },
-        { name: 'Second attack (-5)', value: 1 },
-        { name: 'Third attack (-10)', value: 2 }
-      ]},
-      { name: 'agile', description: 'Is this an agile attack? (MAP is -4/-8 instead of -5/-10)', type: ApplicationCommandOptionType.Boolean, required: false }
-    ]
-  }
-];
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
-(async () => {
-  try {
-    console.log('Registering slash commands...');
-    await rest.put(
-      Routes.applicationCommands('1484284107688116294'),
-      { body: commands }
-    );
-    console.log('Done! Slash commands registered successfully.');
-  } catch (err) {
-    console.error(err);
-  }
-})();
 // ── Spell lookup ──────────────────────────────────────────────────────────────
 function findSpell(spellName) {
   const normalize = str => str.toLowerCase().trim()
@@ -801,7 +546,6 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'char') {
     const sub = interaction.options.getSubcommand();
 
-    // ADD
     if (sub === 'add') {
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
@@ -823,7 +567,6 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
-    // UPDATE
     else if (sub === 'update') {
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
@@ -845,7 +588,6 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
-    // REMOVE
     else if (sub === 'remove') {
       const userId = interaction.user.id;
       const characters = loadCharacters();
@@ -860,7 +602,6 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply(`✅ **${name}** has been removed.`);
     }
 
-    // LIST
     else if (sub === 'list') {
       const userId = interaction.user.id;
       const characters = loadCharacters();
@@ -870,7 +611,6 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply(`Your characters:\n${list}`);
     }
 
-    // FEATS
     else if (sub === 'feats') {
       await interaction.deferReply();
       const characters = loadCharacters();
@@ -883,7 +623,6 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply({ embeds: [embed] });
     }
 
-    // ART
     else if (sub === 'art') {
       const url = interaction.options.getString('url');
       const characters = loadCharacters();
@@ -896,7 +635,6 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
     }
 
-    // INFO
     else if (sub === 'info') {
       const field = interaction.options.getString('field');
       const value = interaction.options.getString('value');
@@ -1082,7 +820,6 @@ client.on('interactionCreate', async (interaction) => {
     const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Level ${effectiveLevel}`;
     const traditionDisplay = spell.traditions?.[0] ?? '';
 
-    // Look up target if provided
     const channelId = interaction.channel.id;
     const enc = getEncounter(channelId);
     let target = null;
@@ -1107,7 +844,6 @@ client.on('interactionCreate', async (interaction) => {
     if (spell.duration) description += `**Duration** ${spell.duration}\n`;
     description += '\n';
 
-    // Handle attack spells with targeting
     let attackDegree = null;
     let attackDieRoll = null;
     let attackTotal = null;
@@ -1123,7 +859,6 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 
-    // Save-based spells
     if (saveType) {
       if (target) {
         description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}** — ${target.name} must roll \`/save type:${saveType}\`\n\n`;
@@ -1132,16 +867,13 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 
-    // Roll damage if the spell has a damage expression and either no target or target was hit
     let damageResult = null;
     let finalDamage = 0;
-    let appliedDamage = false;
     if (spell.damage && typeof spell.damage === 'string') {
       damageResult = rollDamageExpression(spell.damage);
     }
 
     if (damageResult) {
-      // If attack spell with target and we know the outcome:
       if (isAttackSpell && target && attackDegree) {
         if (attackDegree === 'crit-success') {
           finalDamage = damageResult.total * 2;
@@ -1150,9 +882,7 @@ client.on('interactionCreate', async (interaction) => {
           finalDamage = damageResult.total;
           description += `**Damage**\n${damageResult.display} = **${finalDamage}**\n`;
         }
-        // miss/crit miss: no damage shown
       } else {
-        // No target or save-based spell: show damage, GM applies after save
         finalDamage = damageResult.total;
         description += `**Damage:** ${damageResult.display} = **${finalDamage}**\n`;
         if (saveType && target) {
@@ -1160,11 +890,9 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
     } else if (spell.damage) {
-      // Damage was non-parseable string (already in spell.damage as a pre-formatted string)
       description += `**Damage:** ${spell.damage}\n`;
     }
 
-    // Attack outcome for targeted attack spells
     if (isAttackSpell && target) {
       if (attackDegree === 'crit-success')      description += `\n🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
       else if (attackDegree === 'success')      description += `\n✅ **Hit on ${target.name}!** (AC ${target.ac})`;
@@ -1173,17 +901,14 @@ client.on('interactionCreate', async (interaction) => {
       else                                       description += `\n🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
     }
 
-    // Apply damage to target automatically if it's an attack spell that hit
     if (target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success') && finalDamage > 0) {
       modifyHp(channelId, target.name, -finalDamage);
-      appliedDamage = true;
       const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
       description += target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
     }
 
-    // Short description from spell
     const shortDesc = spell.description ?? '';
     if (shortDesc && shortDesc !== '*No description available.*') {
       const desc = shortDesc.length > 300 ? shortDesc.slice(0, 300) + `...\n*Use \`/spell ${spell.name}\` for full details*` : shortDesc;
@@ -1193,13 +918,14 @@ client.on('interactionCreate', async (interaction) => {
     embed.setDescription(description);
     embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
 
-    // Mention target's owner if they're a player and got hit or targeted
     const payload = { embeds: [embed] };
     if (target && !target.isNpc && target.ownerId) {
       payload.content = `<@${target.ownerId}>`;
     }
     await interaction.editReply(payload);
+    if (target && enc) await updateSummary(interaction.channel, enc);
   }
+
   // ─── /mattack ────────────────────────────────────────────────────
   else if (commandName === 'mattack') {
     const channelId = interaction.channel.id;
@@ -1222,39 +948,32 @@ client.on('interactionCreate', async (interaction) => {
     const map = interaction.options.getInteger('map') ?? 0;
     const agile = interaction.options.getBoolean('agile') ?? false;
 
-    // Find attacker in encounter
     const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
     if (!attacker) {
       return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
     }
 
-    // Find target in encounter
     const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
     if (!target) {
       return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
     }
 
-    // Validate damage expression
     const damageResult = rollDamageExpression(damageExpr);
     if (!damageResult) {
       return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
     }
 
-    // Calculate MAP and roll attack
     const mapPenalty = calculateMap(map, agile);
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const attackTotal = dieRoll + attackBonus + mapPenalty;
 
-    // Determine outcome
     const degree = determineDegreeOfSuccess(attackTotal, dieRoll, target.ac ?? null);
 
-    // Build attack roll line
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
     let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText} = **${attackTotal}**`;
     if (dieRoll === 20) attackLine += ' ⭐ Natural 20!';
     if (dieRoll === 1)  attackLine += ' 💀 Natural 1!';
 
-    // Damage (double on crit)
     let finalDamage = Math.max(1, damageResult.total);
     let damageLine;
     if (degree === 'crit-success') {
@@ -1264,7 +983,6 @@ client.on('interactionCreate', async (interaction) => {
       damageLine = `**Damage**\n${damageResult.display} = **${finalDamage} ${damageType}**`;
     }
 
-    // Outcome line
     let outcomeLine;
     if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
     else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** (AC ${target.ac})`;
@@ -1272,7 +990,6 @@ client.on('interactionCreate', async (interaction) => {
     else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** (AC ${target.ac})`;
     else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
 
-    // Apply damage if hit
     let hpLine = '';
     let mentionLine = '';
     if (degree === 'success' || degree === 'crit-success') {
@@ -1282,12 +999,10 @@ client.on('interactionCreate', async (interaction) => {
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
     }
-    // Always mention target's owner (if player) so they know they were attacked
     if (!target.isNpc && target.ownerId) {
       mentionLine = `<@${target.ownerId}>`;
     }
 
-    // Assemble
     const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
     const description = [
       attackLine,
@@ -1306,18 +1021,18 @@ client.on('interactionCreate', async (interaction) => {
     const replyPayload = { embeds: [embed] };
     if (mentionLine) replyPayload.content = mentionLine;
     await interaction.reply(replyPayload);
+    await updateSummary(interaction.channel, enc);
   }
-// ─── /roll ───────────────────────────────────────────────────────
+
+  // ─── /roll ───────────────────────────────────────────────────────
   else if (commandName === 'roll') {
     try {
       const raw = interaction.options.getString('dice').toLowerCase().replace(/\s+/g, '');
 
-      // Validate: only allow digits, d, +, -, *, /
       if (!/^[0-9d+\-*/]+$/.test(raw)) {
         return interaction.reply({ content: '❌ Invalid expression! Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.', ephemeral: true });
       }
 
-      // Tokenize into parts + operators
       const tokens = raw.split(/([+\-*/])/).filter(Boolean);
       const breakdownParts = [];
       const values = [];
@@ -1354,7 +1069,6 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
 
-      // First pass: handle * and /
       const pass1values = [];
       const pass1ops = [];
       let current = values[0];
@@ -1374,7 +1088,6 @@ client.on('interactionCreate', async (interaction) => {
       }
       pass1values.push(current);
 
-      // Second pass: handle + and -
       let total = pass1values[0];
       for (let i = 0; i < pass1ops.length; i++) {
         if (pass1ops[i] === '+') total += pass1values[i + 1];
@@ -1405,6 +1118,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply({ content: '❌ Something went wrong parsing that expression. Try again!', ephemeral: true });
     }
   }
+
   // ─── /skill ──────────────────────────────────────────────────────
   else if (commandName === 'skill') {
     await interaction.deferReply();
@@ -1634,12 +1348,14 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'start') {
       if (getEncounter(channelId))
         return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
-      createEncounter(channelId, userId);
-      return interaction.reply(
+      const newEnc = createEncounter(channelId, userId);
+      await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
         `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
         `When everyone is in, the GM uses \`/init next\` to begin.`
       );
+      await updateSummary(interaction.channel, newEnc);
+      return;
     }
 
     const enc = getEncounter(channelId);
@@ -1672,7 +1388,7 @@ client.on('interactionCreate', async (interaction) => {
         rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
       }
 
-     const charAc = charEntry.data?.acTotal?.acTotal ?? null;
+      const charAc = charEntry.data?.acTotal?.acTotal ?? null;
       addCombatant(channelId, {
         name: charName,
         initiative,
@@ -1683,7 +1399,9 @@ client.on('interactionCreate', async (interaction) => {
         isNpc: false,
       });
 
-      return interaction.reply(`✅ **${charName}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`✅ **${charName}** joined initiative at **${initiative}** ${rollText}.`);
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     // ADDNPC (GM only)
@@ -1694,6 +1412,7 @@ client.on('interactionCreate', async (interaction) => {
       const name = interaction.options.getString('name');
       const bonus = interaction.options.getInteger('bonus');
       const hp = interaction.options.getInteger('hp');
+      const ac = interaction.options.getInteger('ac');
       const resultOverride = interaction.options.getInteger('result');
 
       if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase()))
@@ -1714,11 +1433,14 @@ client.on('interactionCreate', async (interaction) => {
         initiative,
         hp,
         maxHp: hp,
+        ac,
         ownerId: userId,
         isNpc: true,
       });
 
-      return interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     // NEXT
@@ -1731,10 +1453,11 @@ client.on('interactionCreate', async (interaction) => {
       advanceTurn(channelId);
       const current = enc.combatants[enc.turnIndex];
       const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
-      return interaction.reply({
+      await interaction.reply({
         content: `🎯 It's **${current.name}**'s turn! ${mention}`,
-        embeds: [buildInitiativeEmbed(enc)],
       });
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     // LIST
@@ -1756,7 +1479,9 @@ client.on('interactionCreate', async (interaction) => {
       const verb = change >= 0 ? 'healed' : 'took';
       const amount = Math.abs(change);
       const downed = combatant.hp === 0 ? ' 💀 **Down!**' : '';
-      return interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${downed}`);
+      await interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${downed}`);
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     // REMOVE
@@ -1765,16 +1490,142 @@ client.on('interactionCreate', async (interaction) => {
       const result = removeCombatant(channelId, name);
       if (!result)
         return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
-      return interaction.reply(`🗑️ Removed **${name}** from initiative.`);
+      await interaction.reply(`🗑️ Removed **${name}** from initiative.`);
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     // END
     if (sub === 'end') {
       if (userId !== enc.gmId)
         return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
+      await clearSummary(interaction.channel, enc);
       deleteEncounter(channelId);
       return interaction.reply('🏁 Combat ended. Well fought!');
     }
+  }
+
+  // ─── /attack ─────────────────────────────────────────────────────
+  else if (commandName === 'attack') {
+    const weaponName = interaction.options.getString('weapon');
+    const targetName = interaction.options.getString('target');
+    const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+    const map = interaction.options.getInteger('map') ?? 0;
+    const characters = loadCharacters();
+
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+
+    const c = charEntry.data;
+    const weapons = c.weapons ?? [];
+
+    const weapon = weapons.find(w => (w.display ?? w.name).toLowerCase() === weaponName.toLowerCase())
+      ?? weapons.find(w => (w.display ?? w.name).toLowerCase().includes(weaponName.toLowerCase()));
+    if (!weapon) {
+      const available = weapons.map(w => w.display ?? w.name).join(', ') || 'none';
+      return interaction.reply({ content: `❌ Couldn't find weapon "${weaponName}" on ${c.name}. Available: ${available}`, ephemeral: true });
+    }
+
+    const hasAgile = (weapon.traits ?? []).map(t => t.toLowerCase()).includes('agile');
+    const mapPenalty = map === 0 ? 0 : map === 1 ? (hasAgile ? -4 : -5) : (hasAgile ? -8 : -10);
+
+    const attackBonus = weapon.attack ?? 0;
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const attackTotal = dieRoll + attackBonus + extraBonus + mapPenalty;
+
+    const dieSize = weapon.die ?? 'd4';
+    const damageBonus = weapon.damageBonus ?? 0;
+    const damageType = weapon.damageType === 'P' ? 'piercing'
+      : weapon.damageType === 'S' ? 'slashing'
+      : weapon.damageType === 'B' ? 'bludgeoning'
+      : (weapon.damageType ?? '').toLowerCase();
+
+    const dieMatch = dieSize.match(/^(\d*)d(\d+)$/i);
+    const numDice = dieMatch ? (parseInt(dieMatch[1]) || 1) : 1;
+    const numSides = dieMatch ? parseInt(dieMatch[2]) : 4;
+    const rollDamage = () => {
+      const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
+      return { rolls, total: rolls.reduce((a, b) => a + b, 0) };
+    };
+    const damageRoll = rollDamage();
+    const damageTotal = Math.max(1, damageRoll.total + damageBonus);
+
+    const channelId = interaction.channel.id;
+    const enc = getEncounter(channelId);
+    let target = null;
+    let targetDegree = null;
+
+    if (targetName) {
+      if (!enc) {
+        return interaction.reply({ content: '❌ Target specified but no active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+      }
+      target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      if (!target) {
+        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+      }
+    }
+
+    const targetAc = target?.ac ?? null;
+    if (targetAc !== null) {
+      targetDegree = determineDegreeOfSuccess(attackTotal, dieRoll, targetAc);
+    }
+
+    const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
+    const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
+    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText}${bonusText} = **${attackTotal}**`;
+    if (dieRoll === 20) attackLine += ' ⭐ Natural 20!';
+    if (dieRoll === 1)  attackLine += ' 💀 Natural 1!';
+
+    let finalDamage = damageTotal;
+    let damageLine;
+    if (targetDegree === 'crit-success') {
+      finalDamage = damageTotal * 2;
+      damageLine = `**Damage (CRIT × 2)**\n${numDice}d${numSides}[${damageRoll.rolls.join(', ')}] ${fmt(damageBonus)} = ${damageTotal} × 2 = **${finalDamage} ${damageType}**`;
+    } else {
+      damageLine = `**Damage**\n${numDice}d${numSides}[${damageRoll.rolls.join(', ')}] ${fmt(damageBonus)} = **${finalDamage} ${damageType}**`;
+    }
+
+    let outcomeLine = '';
+    if (targetDegree === 'crit-success') outcomeLine = `🎯 **Critical Hit on ${target.name}!** (AC ${targetAc})`;
+    else if (targetDegree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** (AC ${targetAc})`;
+    else if (targetDegree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** (AC ${targetAc})`;
+    else if (targetDegree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** (AC ${targetAc})`;
+    else if (target)                          outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
+
+    let hpLine = '';
+    let mentionLine = '';
+    if (target && (targetDegree === 'success' || targetDegree === 'crit-success')) {
+      modifyHp(channelId, target.name, -finalDamage);
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
+      hpLine = target.isNpc
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
+      if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}> `;
+    } else if (target && !target.isNpc && target.ownerId) {
+      mentionLine = `<@${target.ownerId}> `;
+    }
+
+    const description = [
+      attackLine,
+      '',
+      (targetDegree === 'success' || targetDegree === 'crit-success' || targetDegree === null) ? damageLine : null,
+      outcomeLine || null,
+      hpLine || null,
+    ].filter(s => s !== null).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(0xC0392B)
+      .setTitle(`⚔️ ${c.name} attacks with ${weapon.display ?? weapon.name}!`)
+      .setDescription(description)
+      .setFooter({ text: `${c.name} · Attack ${fmt(attackBonus)} · ${weapon.die ?? ''}${damageBonus ? fmt(damageBonus) : ''} ${damageType}` });
+    if (charEntry.art) embed.setThumbnail(charEntry.art);
+
+    const replyPayload = { embeds: [embed] };
+    if (mentionLine) replyPayload.content = mentionLine.trim();
+
+    await interaction.reply(replyPayload);
+    const encForSummary = getEncounter(interaction.channel.id);
+    if (encForSummary && target) await updateSummary(interaction.channel, encForSummary);
   }
 
 });

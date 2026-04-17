@@ -1,6 +1,6 @@
 // src/encounters.js
 // In-memory encounter store, keyed by channelId.
-// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId: string }
+// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId: string, summaryMessageId: string|null }
 
 const encounters = new Map();
 
@@ -14,6 +14,7 @@ function createEncounter(channelId, gmId) {
     turnIndex: 0,
     round: 1,
     gmId,
+    summaryMessageId: null, // ID of the pinned summary message
   };
   encounters.set(channelId, encounter);
   return encounter;
@@ -26,7 +27,7 @@ function deleteEncounter(channelId) {
 function addCombatant(channelId, combatant) {
   const enc = encounters.get(channelId);
   if (!enc) return null;
-  // combatant = { name, initiative, hp, maxHp, ownerId, isNpc }
+  // combatant = { name, initiative, hp, maxHp, ac, ownerId, isNpc }
   enc.combatants.push(combatant);
   // Sort descending by initiative; ties broken by higher maxHp, then name
   enc.combatants.sort((a, b) => {
@@ -73,6 +74,12 @@ function modifyHp(channelId, name, delta) {
   return c;
 }
 
+function setSummaryMessageId(channelId, messageId) {
+  const enc = encounters.get(channelId);
+  if (!enc) return;
+  enc.summaryMessageId = messageId;
+}
+
 module.exports = {
   getEncounter,
   createEncounter,
@@ -81,4 +88,5 @@ module.exports = {
   removeCombatant,
   advanceTurn,
   modifyHp,
+  setSummaryMessageId,
 };
