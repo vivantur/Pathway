@@ -178,7 +178,6 @@ function buildInitiativeEmbed(enc) {
     const marker = i === enc.turnIndex ? '▶️ ' : '   ';
     const hp = combatant.isNpc ? '(HP hidden)' : `${combatant.hp}/${combatant.maxHp} HP`;
     const dead = combatant.hp === 0 ? ' 💀' : '';
-    // Build effect display: "[Frightened 2, Off-Guard, Bless (3r)]"
     let effectLine = '';
     if (combatant.effects && combatant.effects.length > 0) {
       const effectTexts = combatant.effects.map(e => {
@@ -197,23 +196,16 @@ function buildInitiativeEmbed(enc) {
     .setColor(0xAA0000);
 }
 
-// Post or update the pinned summary message for an encounter
 async function updateSummary(channel, enc) {
   if (!enc) return;
   const embed = buildInitiativeEmbed(enc);
-
-  // If we already have a summary message, try to edit it
   if (enc.summaryMessageId) {
     try {
       const existing = await channel.messages.fetch(enc.summaryMessageId);
       await existing.edit({ embeds: [embed] });
       return;
-    } catch {
-      // Message was deleted or can't be edited; fall through and post a new one
-    }
+    } catch {}
   }
-
-  // Post a fresh summary and try to pin it
   try {
     const msg = await channel.send({ embeds: [embed] });
     setSummaryMessageId(channel.id, msg.id);
@@ -227,15 +219,12 @@ async function updateSummary(channel, enc) {
   }
 }
 
-// Unpin and clear the summary message (used on /init end)
 async function clearSummary(channel, enc) {
   if (!enc?.summaryMessageId) return;
   try {
     const msg = await channel.messages.fetch(enc.summaryMessageId);
     try { await msg.unpin(); } catch {}
-  } catch {
-    // Message is gone, nothing to do
-  }
+  } catch {}
 }
 
 function rollD20Plus(modifier) {
@@ -243,7 +232,6 @@ function rollD20Plus(modifier) {
   return { total: roll + modifier, roll, mod: modifier };
 }
 
-// Parse a damage expression like "1d6+2", "2d8-1", "1d4"
 function rollDamageExpression(expr) {
   if (!expr) return null;
   const cleaned = expr.toLowerCase().replace(/\s+/g, '');
@@ -261,7 +249,6 @@ function rollDamageExpression(expr) {
   return { rolls, bonus, numDice, numSides, sum, total, display };
 }
 
-// Determine PF2e degree of success for an attack
 function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   if (targetAc === null || targetAc === undefined) return null;
   let degree;
@@ -277,7 +264,6 @@ function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   return degree;
 }
 
-// PF2e MAP calculation
 function calculateMap(mapLevel, agile) {
   if (mapLevel === 0 || !mapLevel) return 0;
   if (mapLevel === 1) return agile ? -4 : -5;
@@ -428,7 +414,6 @@ function normalizeSpell(spell) {
   return { ...spell, level, traditions, traits, type, savingThrow, target, damage, description };
 }
 
-// ── Build spell embed ─────────────────────────────────────────────────────────
 function buildSpellEmbed(rawSpell) {
   const spell = normalizeSpell(rawSpell);
   const isCantrip = spell.type === 'Cantrip';
@@ -535,7 +520,6 @@ client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
 
-  // ── Button handler ────────────────────────────────────────────────
   if (interaction.isButton()) {
     if (!interaction.customId.startsWith('ancestry_')) return;
     const parts = interaction.customId.split('_');
@@ -840,13 +824,9 @@ client.on('interactionCreate', async (interaction) => {
     const enc = getEncounter(channelId);
     let target = null;
     if (targetName) {
-      if (!enc) {
-        return interaction.editReply('❌ Target specified but no active encounter in this channel. Start one with `/init start`.');
-      }
+      if (!enc) return interaction.editReply('❌ Target specified but no active encounter in this channel. Start one with `/init start`.');
       target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-      if (!target) {
-        return interaction.editReply(`❌ No combatant named "${targetName}" in this encounter.`);
-      }
+      if (!target) return interaction.editReply(`❌ No combatant named "${targetName}" in this encounter.`);
     }
 
     const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`${c.name} casts ${spell.name}!`);
@@ -870,24 +850,17 @@ client.on('interactionCreate', async (interaction) => {
       if (attackDieRoll === 20) description += ' ⭐ Natural 20!';
       if (attackDieRoll === 1)  description += ' 💀 Natural 1!';
       description += '\n\n';
-      if (target) {
-        attackDegree = determineDegreeOfSuccess(attackTotal, attackDieRoll, target.ac ?? null);
-      }
+      if (target) attackDegree = determineDegreeOfSuccess(attackTotal, attackDieRoll, target.ac ?? null);
     }
 
     if (saveType) {
-      if (target) {
-        description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}** — ${target.name} must roll \`/save type:${saveType}\`\n\n`;
-      } else {
-        description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}**\n\n`;
-      }
+      if (target) description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}** — ${target.name} must roll \`/save type:${saveType}\`\n\n`;
+      else description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}**\n\n`;
     }
 
     let damageResult = null;
     let finalDamage = 0;
-    if (spell.damage && typeof spell.damage === 'string') {
-      damageResult = rollDamageExpression(spell.damage);
-    }
+    if (spell.damage && typeof spell.damage === 'string') damageResult = rollDamageExpression(spell.damage);
 
     if (damageResult) {
       if (isAttackSpell && target && attackDegree) {
@@ -901,9 +874,7 @@ client.on('interactionCreate', async (interaction) => {
       } else {
         finalDamage = damageResult.total;
         description += `**Damage:** ${damageResult.display} = **${finalDamage}**\n`;
-        if (saveType && target) {
-          description += `*(On a failed save, apply ${finalDamage} damage. Crit fail = ${finalDamage * 2}, success = ${Math.floor(finalDamage / 2)}, crit success = 0)*\n`;
-        }
+        if (saveType && target) description += `*(On a failed save, apply ${finalDamage} damage. Crit fail = ${finalDamage * 2}, success = ${Math.floor(finalDamage / 2)}, crit success = 0)*\n`;
       }
     } else if (spell.damage) {
       description += `**Damage:** ${spell.damage}\n`;
@@ -935,9 +906,7 @@ client.on('interactionCreate', async (interaction) => {
     embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
 
     const payload = { embeds: [embed] };
-    if (target && !target.isNpc && target.ownerId) {
-      payload.content = `<@${target.ownerId}>`;
-    }
+    if (target && !target.isNpc && target.ownerId) payload.content = `<@${target.ownerId}>`;
     await interaction.editReply(payload);
     if (target && enc) await updateSummary(interaction.channel, enc);
   }
@@ -948,12 +917,8 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const enc = getEncounter(channelId);
 
-    if (!enc) {
-      return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
-    }
-    if (userId !== enc.gmId) {
-      return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
-    }
+    if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+    if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
 
     const attackerName = interaction.options.getString('attacker');
     const attackName = interaction.options.getString('name');
@@ -965,19 +930,13 @@ client.on('interactionCreate', async (interaction) => {
     const agile = interaction.options.getBoolean('agile') ?? false;
 
     const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
-    if (!attacker) {
-      return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
-    }
+    if (!attacker) return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
 
     const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-    if (!target) {
-      return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-    }
+    if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
 
     const damageResult = rollDamageExpression(damageExpr);
-    if (!damageResult) {
-      return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
-    }
+    if (!damageResult) return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
 
     const mapPenalty = calculateMap(map, agile);
     const dieRoll = Math.floor(Math.random() * 20) + 1;
@@ -1015,9 +974,7 @@ client.on('interactionCreate', async (interaction) => {
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
     }
-    if (!target.isNpc && target.ownerId) {
-      mentionLine = `<@${target.ownerId}>`;
-    }
+    if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
     const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
     const description = [
@@ -1044,56 +1001,41 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'roll') {
     try {
       const raw = interaction.options.getString('dice').toLowerCase().replace(/\s+/g, '');
-
-      if (!/^[0-9d+\-*/]+$/.test(raw)) {
-        return interaction.reply({ content: '❌ Invalid expression! Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.', ephemeral: true });
-      }
-
+      if (!/^[0-9d+\-*/]+$/.test(raw)) return interaction.reply({ content: '❌ Invalid expression! Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.', ephemeral: true });
       const tokens = raw.split(/([+\-*/])/).filter(Boolean);
       const breakdownParts = [];
       const values = [];
-
       for (const token of tokens) {
         if (['+', '-', '*', '/'].includes(token)) {
           breakdownParts.push(token === '*' ? '×' : token === '/' ? '÷' : token);
           values.push(token);
           continue;
         }
-
         if (token.includes('d')) {
           const [numDiceStr, numSidesStr] = token.split('d');
           const numDice = parseInt(numDiceStr) || 1;
           const numSides = parseInt(numSidesStr);
-
-          if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) {
-            return interaction.reply({ content: `❌ Invalid dice: \`${token}\`. Try something like \`2d6\` or \`1d20\`.`, ephemeral: true });
-          }
-
+          if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) return interaction.reply({ content: `❌ Invalid dice: \`${token}\`. Try something like \`2d6\` or \`1d20\`.`, ephemeral: true });
           const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
           const rollTotal = rolls.reduce((a, b) => a + b, 0);
           const rollDisplay = numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`;
-
           breakdownParts.push(rollDisplay);
           values.push(rollTotal);
         } else {
           const num = parseInt(token);
-          if (isNaN(num)) {
-            return interaction.reply({ content: `❌ Couldn't parse \`${token}\`. Make sure your expression is valid.`, ephemeral: true });
-          }
+          if (isNaN(num)) return interaction.reply({ content: `❌ Couldn't parse \`${token}\`. Make sure your expression is valid.`, ephemeral: true });
           breakdownParts.push(`${num}`);
           values.push(num);
         }
       }
-
       const pass1values = [];
       const pass1ops = [];
       let current = values[0];
       for (let i = 1; i < values.length; i += 2) {
         const op = values[i];
         const next = values[i + 1];
-        if (op === '*') {
-          current = current * next;
-        } else if (op === '/') {
+        if (op === '*') current = current * next;
+        else if (op === '/') {
           if (next === 0) return interaction.reply({ content: '❌ Cannot divide by zero!', ephemeral: true });
           current = Math.floor(current / next);
         } else {
@@ -1103,32 +1045,23 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
       pass1values.push(current);
-
       let total = pass1values[0];
       for (let i = 0; i < pass1ops.length; i++) {
         if (pass1ops[i] === '+') total += pass1values[i + 1];
         if (pass1ops[i] === '-') total -= pass1values[i + 1];
       }
       total = Math.floor(total);
-
       const breakdown = `${breakdownParts.join(' ')} = **${total}**`;
-
       const charNameArg = interaction.options.getString('character');
       let thumbnail = null;
       if (charNameArg) {
         const characters = loadCharacters();
         thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
       }
-
-      const embed = new EmbedBuilder()
-        .setColor(0x7289DA)
-        .setTitle(`🎲 ${raw}`)
-        .setDescription(breakdown);
+      const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`🎲 ${raw}`).setDescription(breakdown);
       if (thumbnail) embed.setThumbnail(thumbnail);
       embed.setFooter({ text: charNameArg ?? interaction.user.username });
-
       await interaction.reply({ embeds: [embed] });
-
     } catch (err) {
       console.error('Roll error:', err);
       await interaction.reply({ content: '❌ Something went wrong parsing that expression. Try again!', ephemeral: true });
@@ -1201,10 +1134,8 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'archetype') {
     const input = interaction.options.getString('name');
     const { archetype, matches } = findArchetype(input);
-    if (!archetype && matches.length > 1)
-      return interaction.reply({ content: `🔍 Multiple archetypes match **"${input}"**. Did you mean one of these?\n**${matches.sort().join(', ')}**`, ephemeral: true });
-    if (!archetype)
-      return interaction.reply({ content: `❌ No archetype found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
+    if (!archetype && matches.length > 1) return interaction.reply({ content: `🔍 Multiple archetypes match **"${input}"**. Did you mean one of these?\n**${matches.sort().join(', ')}**`, ephemeral: true });
+    if (!archetype) return interaction.reply({ content: `❌ No archetype found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
     await interaction.reply({ embeds: [buildArchetypeEmbed(archetype)] });
   }
 
@@ -1216,8 +1147,7 @@ client.on('interactionCreate', async (interaction) => {
       const nameList = matches.map(r => `${r.name} *(${r.category})*`).sort().join('\n');
       return interaction.reply({ content: `🔍 Multiple entries match **"${input}"**:\n${nameList}`, ephemeral: true });
     }
-    if (!rule)
-      return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
+    if (!rule) return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
   }
 
@@ -1228,9 +1158,7 @@ client.on('interactionCreate', async (interaction) => {
     const bags = loadBags();
     const userBag = getOrCreateBag(bags, userId);
 
-    if (sub === 'view') {
-      return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
-    }
+    if (sub === 'view') return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
     if (sub === 'rename') {
       const newName = interaction.options.getString('name');
       userBag.bagName = newName;
@@ -1248,11 +1176,9 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'remove') {
       const category = interaction.options.getString('category').trim();
       const item = interaction.options.getString('item').trim();
-      if (!userBag.categories[category])
-        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
+      if (!userBag.categories[category]) return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
       const index = userBag.categories[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
-      if (index === -1)
-        return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
+      if (index === -1) return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
       userBag.categories[category].splice(index, 1);
       if (userBag.categories[category].length === 0) delete userBag.categories[category];
       saveBags(bags);
@@ -1260,8 +1186,7 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (sub === 'removecategory') {
       const category = interaction.options.getString('category').trim();
-      if (!userBag.categories[category])
-        return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
+      if (!userBag.categories[category]) return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
       delete userBag.categories[category];
       saveBags(bags);
       return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
@@ -1283,16 +1208,13 @@ client.on('interactionCreate', async (interaction) => {
     if (!charEntry.wallet) charEntry.wallet = { pp: 0, gp: 0, sp: 0, cp: 0 };
     const wallet = charEntry.wallet;
 
-    if (subcommand === 'view') {
-      return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry)] });
-    }
+    if (subcommand === 'view') return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry)] });
     if (subcommand === 'add') {
       const pp = interaction.options.getInteger('pp') ?? 0;
       const gp = interaction.options.getInteger('gp') ?? 0;
       const sp = interaction.options.getInteger('sp') ?? 0;
       const cp = interaction.options.getInteger('cp') ?? 0;
-      if (pp === 0 && gp === 0 && sp === 0 && cp === 0)
-        return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
+      if (pp === 0 && gp === 0 && sp === 0 && cp === 0) return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
       wallet.pp = (wallet.pp ?? 0) + pp;
       wallet.gp = (wallet.gp ?? 0) + gp;
       wallet.sp = (wallet.sp ?? 0) + sp;
@@ -1307,12 +1229,10 @@ client.on('interactionCreate', async (interaction) => {
       const gp = interaction.options.getInteger('gp') ?? 0;
       const sp = interaction.options.getInteger('sp') ?? 0;
       const cp = interaction.options.getInteger('cp') ?? 0;
-      if (pp === 0 && gp === 0 && sp === 0 && cp === 0)
-        return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
+      if (pp === 0 && gp === 0 && sp === 0 && cp === 0) return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
       const currentTotal = walletToCopper(wallet);
       const spendTotal = pp * 1000 + gp * 100 + sp * 10 + cp;
-      if (spendTotal > currentTotal)
-        return interaction.reply({ content: `❌ **${char.name}** can't afford that! They only have **${formatWallet(wallet)}**.`, ephemeral: true });
+      if (spendTotal > currentTotal) return interaction.reply({ content: `❌ **${char.name}** can't afford that! They only have **${formatWallet(wallet)}**.`, ephemeral: true });
       charEntry.wallet = copperToWallet(currentTotal - spendTotal);
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
@@ -1326,10 +1246,8 @@ client.on('interactionCreate', async (interaction) => {
       const fromValue = COPPER_VALUE[from];
       const toValue   = COPPER_VALUE[to];
       const totalCopperToConvert = amount * fromValue;
-      if ((wallet[from] ?? 0) < amount)
-        return interaction.reply({ content: `❌ **${char.name}** only has **${wallet[from] ?? 0} ${from}**.`, ephemeral: true });
-      if (fromValue < toValue && totalCopperToConvert < toValue)
-        return interaction.reply({ content: `❌ ${amount} ${from} isn't worth even 1 ${to}.`, ephemeral: true });
+      if ((wallet[from] ?? 0) < amount) return interaction.reply({ content: `❌ **${char.name}** only has **${wallet[from] ?? 0} ${from}**.`, ephemeral: true });
+      if (fromValue < toValue && totalCopperToConvert < toValue) return interaction.reply({ content: `❌ ${amount} ${from} isn't worth even 1 ${to}.`, ephemeral: true });
       const converted = Math.floor(totalCopperToConvert / toValue);
       const remainder = totalCopperToConvert % toValue;
       wallet[from] = (wallet[from] ?? 0) - amount;
@@ -1360,10 +1278,8 @@ client.on('interactionCreate', async (interaction) => {
     const channelId = interaction.channel.id;
     const userId = interaction.user.id;
 
-    // START
     if (sub === 'start') {
-      if (getEncounter(channelId))
-        return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
+      if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
       const newEnc = createEncounter(channelId, userId);
       await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
@@ -1375,18 +1291,15 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const enc = getEncounter(channelId);
-    if (!enc)
-      return interaction.reply({ content: '❌ No active encounter. Start one with `/init start`.', ephemeral: true });
+    if (!enc) return interaction.reply({ content: '❌ No active encounter. Start one with `/init start`.', ephemeral: true });
 
-    // ADD (player character)
     if (sub === 'add') {
       const characters = loadCharacters();
       const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
       const charName = charEntry.name;
-      if (enc.combatants.some(x => x.name.toLowerCase() === charName.toLowerCase()))
-        return interaction.reply({ content: `❌ ${charName} is already in the encounter.`, ephemeral: true });
+      if (enc.combatants.some(x => x.name.toLowerCase() === charName.toLowerCase())) return interaction.reply({ content: `❌ ${charName} is already in the encounter.`, ephemeral: true });
 
       const perception = computeCharPerception(charEntry);
       const maxHp = computeCharMaxHp(charEntry);
@@ -1413,6 +1326,7 @@ client.on('interactionCreate', async (interaction) => {
         ac: charAc,
         ownerId: userId,
         isNpc: false,
+        effects: [],
       });
 
       await interaction.reply(`✅ **${charName}** joined initiative at **${initiative}** ${rollText}.`);
@@ -1420,10 +1334,8 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // ADDNPC (GM only)
     if (sub === 'addnpc') {
-      if (userId !== enc.gmId)
-        return interaction.reply({ content: '❌ Only the GM can add NPCs.', ephemeral: true });
+      if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can add NPCs.', ephemeral: true });
 
       const name = interaction.options.getString('name');
       const bonus = interaction.options.getInteger('bonus');
@@ -1431,8 +1343,7 @@ client.on('interactionCreate', async (interaction) => {
       const ac = interaction.options.getInteger('ac');
       const resultOverride = interaction.options.getInteger('result');
 
-      if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase()))
-        return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
+      if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase())) return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
 
       let initiative, rollText;
       if (resultOverride !== null) {
@@ -1452,30 +1363,25 @@ client.on('interactionCreate', async (interaction) => {
         ac,
         ownerId: userId,
         isNpc: true,
+        effects: [],
       });
 
-      await interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
 
-  // NEXT
     if (sub === 'next') {
-      if (userId !== enc.gmId)
-        return interaction.reply({ content: '❌ Only the GM can advance turns.', ephemeral: true });
-      if (enc.combatants.length === 0)
-        return interaction.reply({ content: '❌ No combatants in the encounter yet.', ephemeral: true });
+      if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can advance turns.', ephemeral: true });
+      if (enc.combatants.length === 0) return interaction.reply({ content: '❌ No combatants in the encounter yet.', ephemeral: true });
 
       const result = advanceTurn(channelId);
       const current = result.current;
       const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
 
-      // Build turn announcement, with expired effect notifications
       let content = `🎯 It's **${current.name}**'s turn! ${mention}`;
       if (result.expiredEffects && result.expiredEffects.length > 0) {
-        const expiredText = result.expiredEffects
-          .map(x => `**${x.effect.name}** on **${x.combatantName}**`)
-          .join(', ');
+        const expiredText = result.expiredEffects.map(x => `**${x.effect.name}** on **${x.combatantName}**`).join(', ');
         content += `\n⏳ Expired: ${expiredText}`;
       }
 
@@ -1484,20 +1390,14 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // LIST
-    if (sub === 'list') {
-      return interaction.reply({ embeds: [buildInitiativeEmbed(enc)] });
-    }
+    if (sub === 'list') return interaction.reply({ embeds: [buildInitiativeEmbed(enc)] });
 
-    // HP
     if (sub === 'hp') {
       const name = interaction.options.getString('name');
       const change = interaction.options.getInteger('change');
       const combatant = enc.combatants.find(x => x.name.toLowerCase() === name.toLowerCase());
-      if (!combatant)
-        return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
-      if (combatant.ownerId !== userId && enc.gmId !== userId)
-        return interaction.reply({ content: '❌ You can only modify HP for your own character (or any, if GM).', ephemeral: true });
+      if (!combatant) return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
+      if (combatant.ownerId !== userId && enc.gmId !== userId) return interaction.reply({ content: '❌ You can only modify HP for your own character (or any, if GM).', ephemeral: true });
 
       modifyHp(channelId, name, change);
       const verb = change >= 0 ? 'healed' : 'took';
@@ -1508,21 +1408,135 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // REMOVE
     if (sub === 'remove') {
       const name = interaction.options.getString('name');
       const result = removeCombatant(channelId, name);
-      if (!result)
-        return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
+      if (!result) return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
       await interaction.reply(`🗑️ Removed **${name}** from initiative.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
 
-    // END
+    if (sub === 'effect') {
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+      const value = interaction.options.getInteger('value');
+      const duration = interaction.options.getInteger('duration');
+
+      const target = findCombatant(enc, targetName);
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      const preset = getPreset(effectName);
+      let effect;
+
+      if (preset) {
+        const modifiers = preset.build(value ?? 1);
+        effect = {
+          name: preset.name,
+          value: preset.scaling ? (value ?? 1) : null,
+          duration: duration ?? null,
+          modifiers,
+          isPreset: true,
+          presetKey: preset.key,
+          appliedBy: userId,
+        };
+      } else {
+        const modifiers = {
+          attackBonus: interaction.options.getInteger('attack_bonus') ?? 0,
+          damageBonus: interaction.options.getInteger('damage_bonus') ?? 0,
+          acBonus: interaction.options.getInteger('ac_bonus') ?? 0,
+          saveBonus: interaction.options.getInteger('save_bonus') ?? 0,
+          skillBonus: interaction.options.getInteger('skill_bonus') ?? 0,
+          description: interaction.options.getString('description') ?? '(custom effect)',
+        };
+        effect = {
+          name: effectName,
+          value: value ?? null,
+          duration: duration ?? null,
+          modifiers,
+          isPreset: false,
+          presetKey: null,
+          appliedBy: userId,
+        };
+      }
+
+      const result = addEffect(channelId, target.name, effect);
+      if (!result) return interaction.reply({ content: `❌ Failed to apply effect.`, ephemeral: true });
+
+      const modLines = [];
+      const m = effect.modifiers;
+      if (m.attackBonus) modLines.push(`Attack: ${fmt(m.attackBonus)}`);
+      if (m.damageBonus) modLines.push(`Damage: ${fmt(m.damageBonus)}`);
+      if (m.acBonus)     modLines.push(`AC: ${fmt(m.acBonus)}`);
+      if (m.saveBonus)   modLines.push(`Saves: ${fmt(m.saveBonus)}`);
+      if (m.skillBonus)  modLines.push(`Skills: ${fmt(m.skillBonus)}`);
+
+      const valueText = effect.value !== null ? ` ${effect.value}` : '';
+      const durationText = effect.duration !== null ? ` for ${effect.duration} round${effect.duration === 1 ? '' : 's'}` : '';
+      const replacedText = result.replaced ? ' (replaced existing)' : '';
+      const modText = modLines.length > 0 ? `\n**Modifiers:** ${modLines.join(', ')}` : '';
+      const descText = m.description ? `\n*${m.description}*` : '';
+
+      await interaction.reply(`🌀 Applied **${effect.name}${valueText}** to **${target.name}**${durationText}${replacedText}${modText}${descText}`);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    if (sub === 'removeeffect') {
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+
+      const target = findCombatant(enc, targetName);
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      const result = removeEffect(channelId, target.name, effectName);
+      if (!result) return interaction.reply({ content: `❌ **${target.name}** doesn't have an effect named "${effectName}".`, ephemeral: true });
+
+      await interaction.reply(`🧹 Removed **${result.effect.name}** from **${target.name}**.`);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    if (sub === 'effects') {
+      const targetName = interaction.options.getString('target');
+      const target = findCombatant(enc, targetName);
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      if (!target.effects || target.effects.length === 0) return interaction.reply(`**${target.name}** has no active effects.`);
+
+      const lines = target.effects.map(e => {
+        const valueText = e.value !== null && e.value !== undefined ? ` ${e.value}` : '';
+        const durationText = e.duration !== null && e.duration !== undefined ? ` — ${e.duration} round${e.duration === 1 ? '' : 's'} left` : ' — permanent';
+        const desc = e.modifiers?.description ? `\n    *${e.modifiers.description}*` : '';
+        return `• **${e.name}${valueText}**${durationText}${desc}`;
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`🌀 ${target.name}'s Active Effects`)
+        .setDescription(lines.join('\n'));
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'conditions') {
+      const presets = listPresets();
+      const scaling = presets.filter(p => p.scaling).map(p => p.name).sort();
+      const flat = presets.filter(p => !p.scaling).map(p => p.name).sort();
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle('🌀 Available PF2e Conditions')
+        .setDescription('Use `/init effect target:<name> name:<condition>` to apply one. Conditions with values need the `value:` option (e.g. Frightened 2).')
+        .addFields(
+          { name: 'Scaling (need a value)', value: scaling.join(', '), inline: false },
+          { name: 'Flat', value: flat.join(', '), inline: false },
+          { name: 'Custom Effects', value: 'Use any name not in the list and provide your own `attack_bonus`, `damage_bonus`, `ac_bonus`, `save_bonus`, or `skill_bonus` options.', inline: false }
+        );
+      return interaction.reply({ embeds: [embed] });
+    }
+
     if (sub === 'end') {
-      if (userId !== enc.gmId)
-        return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
+      if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
       await clearSummary(interaction.channel, enc);
       deleteEncounter(channelId);
       return interaction.reply('🏁 Combat ended. Well fought!');
@@ -1580,19 +1594,13 @@ client.on('interactionCreate', async (interaction) => {
     let targetDegree = null;
 
     if (targetName) {
-      if (!enc) {
-        return interaction.reply({ content: '❌ Target specified but no active encounter in this channel. Start one with `/init start`.', ephemeral: true });
-      }
+      if (!enc) return interaction.reply({ content: '❌ Target specified but no active encounter in this channel. Start one with `/init start`.', ephemeral: true });
       target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-      if (!target) {
-        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-      }
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
     }
 
     const targetAc = target?.ac ?? null;
-    if (targetAc !== null) {
-      targetDegree = determineDegreeOfSuccess(attackTotal, dieRoll, targetAc);
-    }
+    if (targetAc !== null) targetDegree = determineDegreeOfSuccess(attackTotal, dieRoll, targetAc);
 
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
     const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
@@ -1653,146 +1661,5 @@ client.on('interactionCreate', async (interaction) => {
   }
 
 });
-// EFFECT
-    if (sub === 'effect') {
-      const targetName = interaction.options.getString('target');
-      const effectName = interaction.options.getString('name');
-      const value = interaction.options.getInteger('value');
-      const duration = interaction.options.getInteger('duration');
-
-      const target = findCombatant(enc, targetName);
-      if (!target)
-        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-
-      // Try to match a preset first
-      const preset = getPreset(effectName);
-      let effect;
-
-      if (preset) {
-        // Preset-based effect
-        const modifiers = preset.build(value ?? 1);
-        effect = {
-          name: preset.name,
-          value: preset.scaling ? (value ?? 1) : null,
-          duration: duration ?? null,
-          modifiers,
-          isPreset: true,
-          presetKey: preset.key,
-          appliedBy: userId,
-        };
-      } else {
-        // Custom effect — pull modifier options from the command
-        const modifiers = {
-          attackBonus: interaction.options.getInteger('attack_bonus') ?? 0,
-          damageBonus: interaction.options.getInteger('damage_bonus') ?? 0,
-          acBonus: interaction.options.getInteger('ac_bonus') ?? 0,
-          saveBonus: interaction.options.getInteger('save_bonus') ?? 0,
-          skillBonus: interaction.options.getInteger('skill_bonus') ?? 0,
-          description: interaction.options.getString('description') ?? '(custom effect)',
-        };
-        // Zero out undefined modifiers
-        const hasAnyModifier = modifiers.attackBonus || modifiers.damageBonus ||
-                               modifiers.acBonus || modifiers.saveBonus || modifiers.skillBonus;
-        effect = {
-          name: effectName,
-          value: value ?? null,
-          duration: duration ?? null,
-          modifiers,
-          isPreset: false,
-          presetKey: null,
-          appliedBy: userId,
-        };
-        if (!hasAnyModifier) {
-          // Pure informational effect — that's fine
-          effect.modifiers.description = modifiers.description;
-        }
-      }
-
-      const result = addEffect(channelId, target.name, effect);
-      if (!result)
-        return interaction.reply({ content: `❌ Failed to apply effect.`, ephemeral: true });
-
-      // Build reply
-      const modLines = [];
-      const m = effect.modifiers;
-      if (m.attackBonus) modLines.push(`Attack: ${fmt(m.attackBonus)}`);
-      if (m.damageBonus) modLines.push(`Damage: ${fmt(m.damageBonus)}`);
-      if (m.acBonus)     modLines.push(`AC: ${fmt(m.acBonus)}`);
-      if (m.saveBonus)   modLines.push(`Saves: ${fmt(m.saveBonus)}`);
-      if (m.skillBonus)  modLines.push(`Skills: ${fmt(m.skillBonus)}`);
-
-      const valueText = effect.value !== null ? ` ${effect.value}` : '';
-      const durationText = effect.duration !== null ? ` for ${effect.duration} round${effect.duration === 1 ? '' : 's'}` : '';
-      const replacedText = result.replaced ? ' (replaced existing)' : '';
-      const modText = modLines.length > 0 ? `\n**Modifiers:** ${modLines.join(', ')}` : '';
-      const descText = m.description ? `\n*${m.description}*` : '';
-
-      await interaction.reply(
-        `🌀 Applied **${effect.name}${valueText}** to **${target.name}**${durationText}${replacedText}${modText}${descText}`
-      );
-      await updateSummary(interaction.channel, enc);
-      return;
-    }
-
-    // REMOVEEFFECT
-    if (sub === 'removeeffect') {
-      const targetName = interaction.options.getString('target');
-      const effectName = interaction.options.getString('name');
-
-      const target = findCombatant(enc, targetName);
-      if (!target)
-        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-
-      const result = removeEffect(channelId, target.name, effectName);
-      if (!result)
-        return interaction.reply({ content: `❌ **${target.name}** doesn't have an effect named "${effectName}".`, ephemeral: true });
-
-      await interaction.reply(`🧹 Removed **${result.effect.name}** from **${target.name}**.`);
-      await updateSummary(interaction.channel, enc);
-      return;
-    }
-
-    // EFFECTS (list active effects on a target)
-    if (sub === 'effects') {
-      const targetName = interaction.options.getString('target');
-      const target = findCombatant(enc, targetName);
-      if (!target)
-        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-
-      if (!target.effects || target.effects.length === 0) {
-        return interaction.reply(`**${target.name}** has no active effects.`);
-      }
-
-      const lines = target.effects.map(e => {
-        const valueText = e.value !== null && e.value !== undefined ? ` ${e.value}` : '';
-        const durationText = e.duration !== null && e.duration !== undefined ? ` — ${e.duration} round${e.duration === 1 ? '' : 's'} left` : ' — permanent';
-        const desc = e.modifiers?.description ? `\n    *${e.modifiers.description}*` : '';
-        return `• **${e.name}${valueText}**${durationText}${desc}`;
-      });
-
-      const embed = new EmbedBuilder()
-        .setColor(0x9B59B6)
-        .setTitle(`🌀 ${target.name}'s Active Effects`)
-        .setDescription(lines.join('\n'));
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    // CONDITIONS (show available PF2e presets)
-    if (sub === 'conditions') {
-      const presets = listPresets();
-      const scaling = presets.filter(p => p.scaling).map(p => p.name).sort();
-      const flat = presets.filter(p => !p.scaling).map(p => p.name).sort();
-
-      const embed = new EmbedBuilder()
-        .setColor(0x9B59B6)
-        .setTitle('🌀 Available PF2e Conditions')
-        .setDescription('Use `/init effect target:<name> name:<condition>` to apply one. Conditions with values need the `value:` option (e.g. Frightened 2).')
-        .addFields(
-          { name: 'Scaling (need a value)', value: scaling.join(', '), inline: false },
-          { name: 'Flat', value: flat.join(', '), inline: false },
-          { name: 'Custom Effects', value: 'Use any name not in the list and provide your own `attack_bonus`, `damage_bonus`, `ac_bonus`, `save_bonus`, or `skill_bonus` options.', inline: false }
-        );
-      return interaction.reply({ embeds: [embed] });
-    }
 
 client.login(process.env.TOKEN);
