@@ -11,7 +11,12 @@ const {
   advanceTurn,
   modifyHp,
   setSummaryMessageId,
+  findCombatant,
+  addEffect,
+  removeEffect,
+  clearEffects,
 } = require('./encounters');
+const { getPreset, listPresets } = require('./effects');
 
 const client = new Client({
   intents: [
@@ -173,12 +178,24 @@ function buildInitiativeEmbed(enc) {
     const marker = i === enc.turnIndex ? '▶️ ' : '   ';
     const hp = combatant.isNpc ? '(HP hidden)' : `${combatant.hp}/${combatant.maxHp} HP`;
     const dead = combatant.hp === 0 ? ' 💀' : '';
-    return `${marker}**${combatant.initiative}** — ${combatant.name} ${hp}${dead}`;
+    // Build effect display: "[Frightened 2, Off-Guard, Bless (3r)]"
+    let effectLine = '';
+    if (combatant.effects && combatant.effects.length > 0) {
+      const effectTexts = combatant.effects.map(e => {
+        let text = e.name;
+        if (e.value !== null && e.value !== undefined) text += ` ${e.value}`;
+        if (e.duration !== null && e.duration !== undefined) text += ` (${e.duration}r)`;
+        return text;
+      });
+      effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
+    }
+    return `${marker}**${combatant.initiative}** — ${combatant.name} ${hp}${dead}${effectLine}`;
   });
   return new EmbedBuilder()
     .setTitle(`⚔️ Initiative — Round ${enc.round}`)
     .setDescription(lines.join('\n') || '*No combatants yet*')
     .setColor(0xAA0000);
+}
 }
 
 // Post or update the pinned summary message for an encounter
@@ -1443,19 +1460,27 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // NEXT
+  // NEXT
     if (sub === 'next') {
       if (userId !== enc.gmId)
         return interaction.reply({ content: '❌ Only the GM can advance turns.', ephemeral: true });
       if (enc.combatants.length === 0)
         return interaction.reply({ content: '❌ No combatants in the encounter yet.', ephemeral: true });
 
-      advanceTurn(channelId);
-      const current = enc.combatants[enc.turnIndex];
+      const result = advanceTurn(channelId);
+      const current = result.current;
       const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
-      await interaction.reply({
-        content: `🎯 It's **${current.name}**'s turn! ${mention}`,
-      });
+
+      // Build turn announcement, with expired effect notifications
+      let content = `🎯 It's **${current.name}**'s turn! ${mention}`;
+      if (result.expiredEffects && result.expiredEffects.length > 0) {
+        const expiredText = result.expiredEffects
+          .map(x => `**${x.effect.name}** on **${x.combatantName}**`)
+          .join(', ');
+        content += `\n⏳ Expired: ${expiredText}`;
+      }
+
+      await interaction.reply({ content });
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -1629,5 +1654,146 @@ client.on('interactionCreate', async (interaction) => {
   }
 
 });
+// EFFECT
+    if (sub === 'effect') {
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+      const value = interaction.options.getInteger('value');
+      const duration = interaction.options.getInteger('duration');
+
+      const target = findCombatant(enc, targetName);
+      if (!target)
+        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      // Try to match a preset first
+      const preset = getPreset(effectName);
+      let effect;
+
+      if (preset) {
+        // Preset-based effect
+        const modifiers = preset.build(value ?? 1);
+        effect = {
+          name: preset.name,
+          value: preset.scaling ? (value ?? 1) : null,
+          duration: duration ?? null,
+          modifiers,
+          isPreset: true,
+          presetKey: preset.key,
+          appliedBy: userId,
+        };
+      } else {
+        // Custom effect — pull modifier options from the command
+        const modifiers = {
+          attackBonus: interaction.options.getInteger('attack_bonus') ?? 0,
+          damageBonus: interaction.options.getInteger('damage_bonus') ?? 0,
+          acBonus: interaction.options.getInteger('ac_bonus') ?? 0,
+          saveBonus: interaction.options.getInteger('save_bonus') ?? 0,
+          skillBonus: interaction.options.getInteger('skill_bonus') ?? 0,
+          description: interaction.options.getString('description') ?? '(custom effect)',
+        };
+        // Zero out undefined modifiers
+        const hasAnyModifier = modifiers.attackBonus || modifiers.damageBonus ||
+                               modifiers.acBonus || modifiers.saveBonus || modifiers.skillBonus;
+        effect = {
+          name: effectName,
+          value: value ?? null,
+          duration: duration ?? null,
+          modifiers,
+          isPreset: false,
+          presetKey: null,
+          appliedBy: userId,
+        };
+        if (!hasAnyModifier) {
+          // Pure informational effect — that's fine
+          effect.modifiers.description = modifiers.description;
+        }
+      }
+
+      const result = addEffect(channelId, target.name, effect);
+      if (!result)
+        return interaction.reply({ content: `❌ Failed to apply effect.`, ephemeral: true });
+
+      // Build reply
+      const modLines = [];
+      const m = effect.modifiers;
+      if (m.attackBonus) modLines.push(`Attack: ${fmt(m.attackBonus)}`);
+      if (m.damageBonus) modLines.push(`Damage: ${fmt(m.damageBonus)}`);
+      if (m.acBonus)     modLines.push(`AC: ${fmt(m.acBonus)}`);
+      if (m.saveBonus)   modLines.push(`Saves: ${fmt(m.saveBonus)}`);
+      if (m.skillBonus)  modLines.push(`Skills: ${fmt(m.skillBonus)}`);
+
+      const valueText = effect.value !== null ? ` ${effect.value}` : '';
+      const durationText = effect.duration !== null ? ` for ${effect.duration} round${effect.duration === 1 ? '' : 's'}` : '';
+      const replacedText = result.replaced ? ' (replaced existing)' : '';
+      const modText = modLines.length > 0 ? `\n**Modifiers:** ${modLines.join(', ')}` : '';
+      const descText = m.description ? `\n*${m.description}*` : '';
+
+      await interaction.reply(
+        `🌀 Applied **${effect.name}${valueText}** to **${target.name}**${durationText}${replacedText}${modText}${descText}`
+      );
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // REMOVEEFFECT
+    if (sub === 'removeeffect') {
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+
+      const target = findCombatant(enc, targetName);
+      if (!target)
+        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      const result = removeEffect(channelId, target.name, effectName);
+      if (!result)
+        return interaction.reply({ content: `❌ **${target.name}** doesn't have an effect named "${effectName}".`, ephemeral: true });
+
+      await interaction.reply(`🧹 Removed **${result.effect.name}** from **${target.name}**.`);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // EFFECTS (list active effects on a target)
+    if (sub === 'effects') {
+      const targetName = interaction.options.getString('target');
+      const target = findCombatant(enc, targetName);
+      if (!target)
+        return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+
+      if (!target.effects || target.effects.length === 0) {
+        return interaction.reply(`**${target.name}** has no active effects.`);
+      }
+
+      const lines = target.effects.map(e => {
+        const valueText = e.value !== null && e.value !== undefined ? ` ${e.value}` : '';
+        const durationText = e.duration !== null && e.duration !== undefined ? ` — ${e.duration} round${e.duration === 1 ? '' : 's'} left` : ' — permanent';
+        const desc = e.modifiers?.description ? `\n    *${e.modifiers.description}*` : '';
+        return `• **${e.name}${valueText}**${durationText}${desc}`;
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`🌀 ${target.name}'s Active Effects`)
+        .setDescription(lines.join('\n'));
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // CONDITIONS (show available PF2e presets)
+    if (sub === 'conditions') {
+      const presets = listPresets();
+      const scaling = presets.filter(p => p.scaling).map(p => p.name).sort();
+      const flat = presets.filter(p => !p.scaling).map(p => p.name).sort();
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle('🌀 Available PF2e Conditions')
+        .setDescription('Use `/init effect target:<name> name:<condition>` to apply one. Conditions with values need the `value:` option (e.g. Frightened 2).')
+        .addFields(
+          { name: 'Scaling (need a value)', value: scaling.join(', '), inline: false },
+          { name: 'Flat', value: flat.join(', '), inline: false },
+          { name: 'Custom Effects', value: 'Use any name not in the list and provide your own `attack_bonus`, `damage_bonus`, `ac_bonus`, `save_bonus`, or `skill_bonus` options.', inline: false }
+        );
+      return interaction.reply({ embeds: [embed] });
+    }
 
 client.login(process.env.TOKEN);
