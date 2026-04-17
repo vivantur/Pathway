@@ -1672,11 +1672,13 @@ client.on('interactionCreate', async (interaction) => {
         rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
       }
 
+     const charAc = charEntry.data?.acTotal?.acTotal ?? null;
       addCombatant(channelId, {
         name: charName,
         initiative,
         hp: maxHp,
         maxHp,
+        ac: charAc,
         ownerId: userId,
         isNpc: false,
       });
