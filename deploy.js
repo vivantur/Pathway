@@ -99,6 +99,7 @@ const commands = [
     name: 'cast', description: 'Cast a spell with your character',
     options: [
       { name: 'spell', description: 'Name of the spell to cast', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant name to target (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'level', description: 'Level to cast the spell at (for heightening)', type: ApplicationCommandOptionType.Integer, required: false }
     ]
@@ -222,6 +223,7 @@ const commands = [
           { name: 'name', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
           { name: 'bonus', description: 'Initiative modifier', type: ApplicationCommandOptionType.Integer, required: true },
           { name: 'hp', description: 'Max HP', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'ac', description: 'AC (for hit/crit determination)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'result', description: 'Use exact initiative instead of rolling', type: ApplicationCommandOptionType.Integer, required: false }
         ]
       },
@@ -243,6 +245,37 @@ const commands = [
         ]
       },
       { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
+    ]
+  },
+  {
+    name: 'attack', description: 'Roll an attack with one of your weapons',
+    options: [
+      { name: 'weapon', description: 'Weapon name (from your sheet)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant name to attack (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false },
+      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+        { name: 'First attack (no penalty)', value: 0 },
+        { name: 'Second attack (-5)', value: 1 },
+        { name: 'Third attack (-10)', value: 2 }
+      ]}
+    ]
+  },
+  {
+    name: 'mattack', description: 'GM: roll a monster attack against a target',
+    options: [
+      { name: 'attacker', description: 'Name of the NPC/monster attacking (must be in encounter)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'name', description: 'Name of the attack (e.g. "Shortsword", "Fire Breath")', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'bonus', description: 'Attack roll bonus', type: ApplicationCommandOptionType.Integer, required: true },
+      { name: 'damage', description: 'Damage dice expression (e.g. "1d6+2" or "2d8+4")', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant to attack', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'type', description: 'Damage type (piercing, slashing, bludgeoning, fire, etc.)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+        { name: 'First attack (no penalty)', value: 0 },
+        { name: 'Second attack (-5)', value: 1 },
+        { name: 'Third attack (-10)', value: 2 }
+      ]},
+      { name: 'agile', description: 'Is this an agile attack? (MAP is -4/-8 instead of -5/-10)', type: ApplicationCommandOptionType.Boolean, required: false }
     ]
   }
 ];

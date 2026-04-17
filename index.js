@@ -184,7 +184,302 @@ function rollD20Plus(modifier) {
   const roll = Math.floor(Math.random() * 20) + 1;
   return { total: roll + modifier, roll, mod: modifier };
 }
+require('dotenv').config();
+const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
+const commands = [
+  { name: 'ping', description: 'Check if the bot is alive' },
+  {
+    name: 'char', description: 'Character management',
+    options: [
+      {
+        name: 'add', description: 'Add a character from a Pathbuilder JSON export',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'file', description: 'Your Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+      },
+      {
+        name: 'update', description: 'Update an existing character with a fresh Pathbuilder JSON export',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+      },
+      {
+        name: 'remove', description: 'Remove a saved character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'Name of the character to remove', type: ApplicationCommandOptionType.String, required: true }]
+      },
+      {
+        name: 'list', description: 'List all your saved characters',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'feats', description: 'Show all feats for your character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
+      {
+        name: 'art', description: 'Set character art for your character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'url', description: 'Direct image URL for your character art', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'info', description: 'Manually set senses or languages not in Pathbuilder JSON',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true, choices: [{ name: 'Senses', value: 'senses' }, { name: 'Languages', value: 'languages' }] },
+          { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'sheet', description: 'Display a character sheet',
+    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+  },
+  {
+    name: 'spellbook', description: 'Show all spells for your character',
+    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+  },
+  {
+    name: 'roll', description: 'Roll dice (e.g. 1d20+5)',
+    options: [
+      { name: 'dice', description: 'Dice expression e.g. 1d20+5 or 2d6', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'character', description: 'Character name to show on the result (optional)', type: ApplicationCommandOptionType.String, required: false }
+    ]
+  },
+  {
+    name: 'skill', description: 'Roll a skill check for your character',
+    options: [
+      { name: 'skill', description: 'The skill to roll', type: ApplicationCommandOptionType.String, required: true, choices: [
+        { name: 'Acrobatics', value: 'acrobatics' }, { name: 'Arcana', value: 'arcana' },
+        { name: 'Athletics', value: 'athletics' }, { name: 'Crafting', value: 'crafting' },
+        { name: 'Deception', value: 'deception' }, { name: 'Diplomacy', value: 'diplomacy' },
+        { name: 'Intimidation', value: 'intimidation' }, { name: 'Medicine', value: 'medicine' },
+        { name: 'Nature', value: 'nature' }, { name: 'Occultism', value: 'occultism' },
+        { name: 'Performance', value: 'performance' }, { name: 'Religion', value: 'religion' },
+        { name: 'Society', value: 'society' }, { name: 'Stealth', value: 'stealth' },
+        { name: 'Survival', value: 'survival' }, { name: 'Thievery', value: 'thievery' }
+      ]},
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'save', description: 'Roll a saving throw for your character',
+    options: [
+      { name: 'type', description: 'The save to roll', type: ApplicationCommandOptionType.String, required: true, choices: [
+        { name: 'Fortitude', value: 'fortitude' }, { name: 'Reflex', value: 'reflex' }, { name: 'Will', value: 'will' }
+      ]},
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'spell', description: 'Look up a spell from the database',
+    options: [{ name: 'name', description: 'Name of the spell to look up', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
+    name: 'cast', description: 'Cast a spell with your character',
+    options: [
+      { name: 'spell', description: 'Name of the spell to cast', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant name to target (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'level', description: 'Level to cast the spell at (for heightening)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'ancestry', description: 'Look up a PF2e ancestry',
+    options: [{ name: 'name', description: 'The ancestry to look up (e.g. Elf, Dwarf, Gnome)', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
+    name: 'archetype', description: 'Look up a PF2e archetype',
+    options: [{ name: 'name', description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
+    name: 'rule', description: 'Look up a PF2e condition, action, or trait',
+    options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
+    name: 'bag', description: 'Manage your inventory bag',
+    options: [
+      { name: 'view', description: 'View your bag', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'rename', description: 'Rename your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'New name for your bag', type: ApplicationCommandOptionType.String, required: true }]
+      },
+      {
+        name: 'add', description: 'Add an item (creates the category if it doesn\'t exist)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Category name (e.g. Potions, Weapons, Trinkets)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item to add', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove an item from your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Category name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'item', description: 'Item to remove', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'removecategory', description: 'Remove an entire category from your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }]
+      },
+      { name: 'clear', description: 'Clear everything from your bag', type: ApplicationCommandOptionType.Subcommand }
+    ]
+  },
+  {
+    name: 'gold', description: 'Manage your character\'s currency',
+    options: [
+      {
+        name: 'view', description: 'View your current wallet', type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
+      {
+        name: 'add', description: 'Add currency to your wallet', type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'pp', description: 'Platinum pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'gp', description: 'Gold pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'sp', description: 'Silver pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'cp', description: 'Copper pieces to add', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'spend', description: 'Spend currency from your wallet', type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'pp', description: 'Platinum pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'gp', description: 'Gold pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'sp', description: 'Silver pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'cp', description: 'Copper pieces to spend', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'convert', description: 'Convert between currency types', type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'from', description: 'Currency to convert from', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Copper (cp)', value: 'cp' }, { name: 'Silver (sp)', value: 'sp' },
+            { name: 'Gold (gp)', value: 'gp' }, { name: 'Platinum (pp)', value: 'pp' }
+          ]},
+          { name: 'to', description: 'Currency to convert to', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Copper (cp)', value: 'cp' }, { name: 'Silver (sp)', value: 'sp' },
+            { name: 'Gold (gp)', value: 'gp' }, { name: 'Platinum (pp)', value: 'pp' }
+          ]},
+          { name: 'amount', description: 'How many to convert', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'set', description: 'Set your wallet to exact amounts', type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'pp', description: 'Set platinum pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'gp', description: 'Set gold pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'sp', description: 'Set silver pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'cp', description: 'Set copper pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'init', description: 'Initiative tracker for combat',
+    options: [
+      { name: 'start', description: 'Start a new encounter in this channel', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'add', description: 'Add your loaded character to initiative',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'bonus', description: 'Override initiative bonus (defaults to Perception)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'result', description: 'Use this exact initiative result instead of rolling', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'addnpc', description: 'GM: add a monster/NPC to initiative',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'bonus', description: 'Initiative modifier', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'hp', description: 'Max HP', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'ac', description: 'AC (for hit/crit determination)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'result', description: 'Use exact initiative instead of rolling', type: ApplicationCommandOptionType.Integer, required: false }
+        ]
+      },
+      { name: 'next', description: 'Advance to the next turn', type: ApplicationCommandOptionType.Subcommand },
+      { name: 'list', description: 'Show current initiative order', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'hp', description: 'Modify a combatant\'s HP',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'change', description: 'Positive to heal, negative to damage', type: ApplicationCommandOptionType.Integer, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a combatant',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
+    ]
+  },
+  {
+    name: 'attack', description: 'Roll an attack with one of your weapons',
+    options: [
+      { name: 'weapon', description: 'Weapon name (from your sheet)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant name to attack (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false },
+      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+        { name: 'First attack (no penalty)', value: 0 },
+        { name: 'Second attack (-5)', value: 1 },
+        { name: 'Third attack (-10)', value: 2 }
+      ]}
+    ]
+  },
+  {
+    name: 'mattack', description: 'GM: roll a monster attack against a target',
+    options: [
+      { name: 'attacker', description: 'Name of the NPC/monster attacking (must be in encounter)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'name', description: 'Name of the attack (e.g. "Shortsword", "Fire Breath")', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'bonus', description: 'Attack roll bonus', type: ApplicationCommandOptionType.Integer, required: true },
+      { name: 'damage', description: 'Damage dice expression (e.g. "1d6+2" or "2d8+4")', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'target', description: 'Combatant to attack', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'type', description: 'Damage type (piercing, slashing, bludgeoning, fire, etc.)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+        { name: 'First attack (no penalty)', value: 0 },
+        { name: 'Second attack (-5)', value: 1 },
+        { name: 'Third attack (-10)', value: 2 }
+      ]},
+      { name: 'agile', description: 'Is this an agile attack? (MAP is -4/-8 instead of -5/-10)', type: ApplicationCommandOptionType.Boolean, required: false }
+    ]
+  }
+];
+
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+(async () => {
+  try {
+    console.log('Registering slash commands...');
+    await rest.put(
+      Routes.applicationCommands('1484284107688116294'),
+      { body: commands }
+    );
+    console.log('Done! Slash commands registered successfully.');
+  } catch (err) {
+    console.error(err);
+  }
+})();
 // ── Spell lookup ──────────────────────────────────────────────────────────────
 function findSpell(spellName) {
   const normalize = str => str.toLowerCase().trim()
@@ -713,6 +1008,7 @@ client.on('interactionCreate', async (interaction) => {
     const spellName = interaction.options.getString('spell');
     const nameArg   = interaction.options.getString('character');
     const castLevel = interaction.options.getInteger('level') ?? null;
+    const targetName = interaction.options.getString('target');
     const characters = loadCharacters();
     const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.editReply(error);
@@ -742,8 +1038,24 @@ client.on('interactionCreate', async (interaction) => {
     const isCantrip = spell.type === 'Cantrip';
     const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Level ${effectiveLevel}`;
     const traditionDisplay = spell.traditions?.[0] ?? '';
+
+    // Look up target if provided
+    const channelId = interaction.channel.id;
+    const enc = getEncounter(channelId);
+    let target = null;
+    if (targetName) {
+      if (!enc) {
+        return interaction.editReply('❌ Target specified but no active encounter in this channel. Start one with `/init start`.');
+      }
+      target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      if (!target) {
+        return interaction.editReply(`❌ No combatant named "${targetName}" in this encounter.`);
+      }
+    }
+
     const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`${c.name} casts ${spell.name}!`);
     if (charEntry.art) embed.setThumbnail(charEntry.art);
+
     let description = `*${levelDisplay}${traditionDisplay ? ` ${traditionDisplay}` : ''} spell*\n`;
     if (spell.cast)     description += `**Cast** ${spell.cast}\n`;
     if (spell.range)    description += `**Range** ${spell.range}\n`;
@@ -751,22 +1063,206 @@ client.on('interactionCreate', async (interaction) => {
     if (spell.target)   description += `**Target** ${spell.target}\n`;
     if (spell.duration) description += `**Duration** ${spell.duration}\n`;
     description += '\n';
+
+    // Handle attack spells with targeting
+    let attackDegree = null;
+    let attackDieRoll = null;
+    let attackTotal = null;
     if (isAttackSpell) {
-      const dieRoll = Math.floor(Math.random() * 20) + 1;
-      const total = dieRoll + spellAttackBonus;
-      description += `**Spell Attack Roll**\n1d20 (${dieRoll}) + ${spellAttackBonus} = **${total}**`;
-      if (dieRoll === 20) description += ' ⭐ Natural 20!';
-      if (dieRoll === 1)  description += ' 💀 Natural 1!';
+      attackDieRoll = Math.floor(Math.random() * 20) + 1;
+      attackTotal = attackDieRoll + spellAttackBonus;
+      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)} = **${attackTotal}**`;
+      if (attackDieRoll === 20) description += ' ⭐ Natural 20!';
+      if (attackDieRoll === 1)  description += ' 💀 Natural 1!';
       description += '\n\n';
+      if (target) {
+        attackDegree = determineDegreeOfSuccess(attackTotal, attackDieRoll, target.ac ?? null);
+      }
     }
-    if (saveType) description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}**\n\n`;
-    if (spell.damage) description += `**Damage:** ${spell.damage}\n\n`;
+
+    // Save-based spells
+    if (saveType) {
+      if (target) {
+        description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}** — ${target.name} must roll \`/save type:${saveType}\`\n\n`;
+      } else {
+        description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}**\n\n`;
+      }
+    }
+
+    // Roll damage if the spell has a damage expression and either no target or target was hit
+    let damageResult = null;
+    let finalDamage = 0;
+    let appliedDamage = false;
+    if (spell.damage && typeof spell.damage === 'string') {
+      damageResult = rollDamageExpression(spell.damage);
+    }
+
+    if (damageResult) {
+      // If attack spell with target and we know the outcome:
+      if (isAttackSpell && target && attackDegree) {
+        if (attackDegree === 'crit-success') {
+          finalDamage = damageResult.total * 2;
+          description += `**Damage (CRIT × 2)**\n${damageResult.display} = ${damageResult.total} × 2 = **${finalDamage}**\n`;
+        } else if (attackDegree === 'success') {
+          finalDamage = damageResult.total;
+          description += `**Damage**\n${damageResult.display} = **${finalDamage}**\n`;
+        }
+        // miss/crit miss: no damage shown
+      } else {
+        // No target or save-based spell: show damage, GM applies after save
+        finalDamage = damageResult.total;
+        description += `**Damage:** ${damageResult.display} = **${finalDamage}**\n`;
+        if (saveType && target) {
+          description += `*(On a failed save, apply ${finalDamage} damage. Crit fail = ${finalDamage * 2}, success = ${Math.floor(finalDamage / 2)}, crit success = 0)*\n`;
+        }
+      }
+    } else if (spell.damage) {
+      // Damage was non-parseable string (already in spell.damage as a pre-formatted string)
+      description += `**Damage:** ${spell.damage}\n`;
+    }
+
+    // Attack outcome for targeted attack spells
+    if (isAttackSpell && target) {
+      if (attackDegree === 'crit-success')      description += `\n🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
+      else if (attackDegree === 'success')      description += `\n✅ **Hit on ${target.name}!** (AC ${target.ac})`;
+      else if (attackDegree === 'failure')      description += `\n❌ **Miss on ${target.name}.** (AC ${target.ac})`;
+      else if (attackDegree === 'crit-failure') description += `\n💢 **Critical Miss on ${target.name}.** (AC ${target.ac})`;
+      else                                       description += `\n🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
+    }
+
+    // Apply damage to target automatically if it's an attack spell that hit
+    if (target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success') && finalDamage > 0) {
+      modifyHp(channelId, target.name, -finalDamage);
+      appliedDamage = true;
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
+      description += target.isNpc
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
+    }
+
+    // Short description from spell
     const shortDesc = spell.description ?? '';
-    if (shortDesc && shortDesc !== '*No description available.*')
-      description += shortDesc.length > 400 ? shortDesc.slice(0, 400) + `...\n*Use \`/spell ${spell.name}\` for full details*` : shortDesc;
+    if (shortDesc && shortDesc !== '*No description available.*') {
+      const desc = shortDesc.length > 300 ? shortDesc.slice(0, 300) + `...\n*Use \`/spell ${spell.name}\` for full details*` : shortDesc;
+      description += `\n\n${desc}`;
+    }
+
     embed.setDescription(description);
     embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
-    await interaction.editReply({ embeds: [embed] });
+
+    // Mention target's owner if they're a player and got hit or targeted
+    const payload = { embeds: [embed] };
+    if (target && !target.isNpc && target.ownerId) {
+      payload.content = `<@${target.ownerId}>`;
+    }
+    await interaction.editReply(payload);
+  }
+  // ─── /mattack ────────────────────────────────────────────────────
+  else if (commandName === 'mattack') {
+    const channelId = interaction.channel.id;
+    const userId = interaction.user.id;
+    const enc = getEncounter(channelId);
+
+    if (!enc) {
+      return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+    }
+    if (userId !== enc.gmId) {
+      return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
+    }
+
+    const attackerName = interaction.options.getString('attacker');
+    const attackName = interaction.options.getString('name');
+    const attackBonus = interaction.options.getInteger('bonus');
+    const damageExpr = interaction.options.getString('damage');
+    const targetName = interaction.options.getString('target');
+    const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
+    const map = interaction.options.getInteger('map') ?? 0;
+    const agile = interaction.options.getBoolean('agile') ?? false;
+
+    // Find attacker in encounter
+    const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
+    if (!attacker) {
+      return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
+    }
+
+    // Find target in encounter
+    const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+    if (!target) {
+      return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+    }
+
+    // Validate damage expression
+    const damageResult = rollDamageExpression(damageExpr);
+    if (!damageResult) {
+      return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
+    }
+
+    // Calculate MAP and roll attack
+    const mapPenalty = calculateMap(map, agile);
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const attackTotal = dieRoll + attackBonus + mapPenalty;
+
+    // Determine outcome
+    const degree = determineDegreeOfSuccess(attackTotal, dieRoll, target.ac ?? null);
+
+    // Build attack roll line
+    const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
+    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText} = **${attackTotal}**`;
+    if (dieRoll === 20) attackLine += ' ⭐ Natural 20!';
+    if (dieRoll === 1)  attackLine += ' 💀 Natural 1!';
+
+    // Damage (double on crit)
+    let finalDamage = Math.max(1, damageResult.total);
+    let damageLine;
+    if (degree === 'crit-success') {
+      finalDamage = finalDamage * 2;
+      damageLine = `**Damage (CRIT × 2)**\n${damageResult.display} = ${damageResult.total} × 2 = **${finalDamage} ${damageType}**`;
+    } else {
+      damageLine = `**Damage**\n${damageResult.display} = **${finalDamage} ${damageType}**`;
+    }
+
+    // Outcome line
+    let outcomeLine;
+    if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
+    else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** (AC ${target.ac})`;
+    else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** (AC ${target.ac})`;
+    else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** (AC ${target.ac})`;
+    else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
+
+    // Apply damage if hit
+    let hpLine = '';
+    let mentionLine = '';
+    if (degree === 'success' || degree === 'crit-success') {
+      modifyHp(channelId, target.name, -finalDamage);
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
+      hpLine = target.isNpc
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
+    }
+    // Always mention target's owner (if player) so they know they were attacked
+    if (!target.isNpc && target.ownerId) {
+      mentionLine = `<@${target.ownerId}>`;
+    }
+
+    // Assemble
+    const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
+    const description = [
+      attackLine,
+      '',
+      showDamage ? damageLine : null,
+      outcomeLine,
+      hpLine || null,
+    ].filter(s => s !== null).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(0x8B0000)
+      .setTitle(`👹 ${attacker.name} attacks with ${attackName}!`)
+      .setDescription(description)
+      .setFooter({ text: `GM attack · Attack ${fmt(attackBonus)} · ${damageExpr} ${damageType}` });
+
+    const replyPayload = { embeds: [embed] };
+    if (mentionLine) replyPayload.content = mentionLine;
+    await interaction.reply(replyPayload);
   }
 // ─── /roll ───────────────────────────────────────────────────────
   else if (commandName === 'roll') {
