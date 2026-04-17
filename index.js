@@ -196,7 +196,6 @@ function buildInitiativeEmbed(enc) {
     .setDescription(lines.join('\n') || '*No combatants yet*')
     .setColor(0xAA0000);
 }
-}
 
 // Post or update the pinned summary message for an encounter
 async function updateSummary(channel, enc) {
