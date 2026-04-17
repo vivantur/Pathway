@@ -270,6 +270,61 @@ function calculateMap(mapLevel, agile) {
   return agile ? -8 : -10;
 }
 
+// Sum up all attack/damage/AC/save/skill modifiers from a combatant's effects.
+function sumEffectModifiers(combatant) {
+  const totals = {
+    attackBonus: 0,
+    damageBonus: 0,
+    acBonus: 0,
+    saveBonus: 0,
+    skillBonus: 0,
+    activeEffects: [],
+  };
+  if (!combatant?.effects || combatant.effects.length === 0) return totals;
+
+  for (const effect of combatant.effects) {
+    const m = effect.modifiers || {};
+    const atk = m.attackBonus ?? 0;
+    const dmg = m.damageBonus ?? 0;
+    const ac = m.acBonus ?? 0;
+    const save = m.saveBonus ?? 0;
+    const skill = m.skillBonus ?? 0;
+
+    totals.attackBonus += atk;
+    totals.damageBonus += dmg;
+    totals.acBonus += ac;
+    totals.saveBonus += save;
+    totals.skillBonus += skill;
+
+    if (atk || dmg || ac || save || skill) {
+      const displayValue = effect.value !== null && effect.value !== undefined ? ` ${effect.value}` : '';
+      totals.activeEffects.push({
+        name: `${effect.name}${displayValue}`,
+        attackBonus: atk,
+        damageBonus: dmg,
+        acBonus: ac,
+      });
+    }
+  }
+  return totals;
+}
+
+// Build a human-readable line showing which effects contributed to a roll.
+function formatEffectContributions(effects, kind) {
+  const contributions = effects
+    .filter(e => {
+      if (kind === 'attack') return e.attackBonus !== 0;
+      if (kind === 'damage') return e.damageBonus !== 0;
+      if (kind === 'ac') return e.acBonus !== 0;
+      return false;
+    })
+    .map(e => {
+      const val = kind === 'attack' ? e.attackBonus : kind === 'damage' ? e.damageBonus : e.acBonus;
+      return `${e.name} ${fmt(val)}`;
+    });
+  return contributions.length > 0 ? ` (${contributions.join(', ')})` : '';
+}
+
 // ── Spell lookup ──────────────────────────────────────────────────────────────
 function findSpell(spellName) {
   const normalize = str => str.toLowerCase().trim()
@@ -840,17 +895,28 @@ client.on('interactionCreate', async (interaction) => {
     if (spell.duration) description += `**Duration** ${spell.duration}\n`;
     description += '\n';
 
+    // Look up caster's active effects if in encounter
+    const casterCombatant = enc ? enc.combatants.find(x => x.name.toLowerCase() === c.name.toLowerCase()) : null;
+    const casterMods = sumEffectModifiers(casterCombatant);
+    const targetMods = target ? sumEffectModifiers(target) : { acBonus: 0, activeEffects: [] };
+
     let attackDegree = null;
     let attackDieRoll = null;
     let attackTotal = null;
+    let effectiveTargetAcForSpell = null;
     if (isAttackSpell) {
       attackDieRoll = Math.floor(Math.random() * 20) + 1;
-      attackTotal = attackDieRoll + spellAttackBonus;
-      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)} = **${attackTotal}**`;
+      attackTotal = attackDieRoll + spellAttackBonus + casterMods.attackBonus;
+      const casterEffectText = formatEffectContributions(casterMods.activeEffects, 'attack');
+      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)}${casterEffectText ? ` ${fmt(casterMods.attackBonus)}` : ''} = **${attackTotal}**`;
+      if (casterEffectText) description += `\n*${casterEffectText.trim().slice(1, -1)}*`;
       if (attackDieRoll === 20) description += ' ⭐ Natural 20!';
       if (attackDieRoll === 1)  description += ' 💀 Natural 1!';
       description += '\n\n';
-      if (target) attackDegree = determineDegreeOfSuccess(attackTotal, attackDieRoll, target.ac ?? null);
+      if (target && target.ac !== null && target.ac !== undefined) {
+        effectiveTargetAcForSpell = target.ac + targetMods.acBonus;
+        attackDegree = determineDegreeOfSuccess(attackTotal, attackDieRoll, effectiveTargetAcForSpell);
+      }
     }
 
     if (saveType) {
@@ -881,10 +947,14 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (isAttackSpell && target) {
-      if (attackDegree === 'crit-success')      description += `\n🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
-      else if (attackDegree === 'success')      description += `\n✅ **Hit on ${target.name}!** (AC ${target.ac})`;
-      else if (attackDegree === 'failure')      description += `\n❌ **Miss on ${target.name}.** (AC ${target.ac})`;
-      else if (attackDegree === 'crit-failure') description += `\n💢 **Critical Miss on ${target.name}.** (AC ${target.ac})`;
+      const acBreakdown = target.ac !== null && target.ac !== undefined && targetMods.acBonus !== 0
+        ? ` (base ${target.ac}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAcForSpell})`
+        : '';
+      const displayAc = effectiveTargetAcForSpell ?? target.ac;
+      if (attackDegree === 'crit-success')      description += `\n🎯 **Critical Hit on ${target.name}!** AC ${displayAc}${acBreakdown}`;
+      else if (attackDegree === 'success')      description += `\n✅ **Hit on ${target.name}!** AC ${displayAc}${acBreakdown}`;
+      else if (attackDegree === 'failure')      description += `\n❌ **Miss on ${target.name}.** AC ${displayAc}${acBreakdown}`;
+      else if (attackDegree === 'crit-failure') description += `\n💢 **Critical Miss on ${target.name}.** AC ${displayAc}${acBreakdown}`;
       else                                       description += `\n🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
     }
 
@@ -938,31 +1008,48 @@ client.on('interactionCreate', async (interaction) => {
     const damageResult = rollDamageExpression(damageExpr);
     if (!damageResult) return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
 
+    const attackerMods = sumEffectModifiers(attacker);
+    const targetMods = sumEffectModifiers(target);
+
     const mapPenalty = calculateMap(map, agile);
     const dieRoll = Math.floor(Math.random() * 20) + 1;
-    const attackTotal = dieRoll + attackBonus + mapPenalty;
+    const attackTotal = dieRoll + attackBonus + mapPenalty + attackerMods.attackBonus;
 
-    const degree = determineDegreeOfSuccess(attackTotal, dieRoll, target.ac ?? null);
+    const baseTargetAc = target.ac ?? null;
+    const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
+    const degree = effectiveTargetAc !== null
+      ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc)
+      : null;
 
+    // Build attack line
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
-    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText} = **${attackTotal}**`;
-    if (dieRoll === 20) attackLine += ' ⭐ Natural 20!';
-    if (dieRoll === 1)  attackLine += ' 💀 Natural 1!';
+    const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
+    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
+    if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
+    if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+    if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
 
-    let finalDamage = Math.max(1, damageResult.total);
+    // Damage
+    const totalDamageBonus = attackerMods.damageBonus;
+    let finalDamage = Math.max(1, damageResult.total + totalDamageBonus);
+    const damageContribText = formatEffectContributions(attackerMods.activeEffects, 'damage');
     let damageLine;
     if (degree === 'crit-success') {
       finalDamage = finalDamage * 2;
-      damageLine = `**Damage (CRIT × 2)**\n${damageResult.display} = ${damageResult.total} × 2 = **${finalDamage} ${damageType}**`;
+      damageLine = `**Damage (CRIT × 2)**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = ${damageResult.total + totalDamageBonus} × 2 = **${finalDamage} ${damageType}**`;
     } else {
-      damageLine = `**Damage**\n${damageResult.display} = **${finalDamage} ${damageType}**`;
+      damageLine = `**Damage**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = **${finalDamage} ${damageType}**`;
     }
+    if (damageContribText) damageLine += `\n*${damageContribText.trim().slice(1, -1)}*`;
 
+    const acBreakdown = baseTargetAc !== null && targetMods.acBonus !== 0
+      ? ` (base ${baseTargetAc}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAc})`
+      : '';
     let outcomeLine;
-    if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** (AC ${target.ac})`;
-    else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** (AC ${target.ac})`;
-    else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** (AC ${target.ac})`;
-    else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** (AC ${target.ac})`;
+    if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
     else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
 
     let hpLine = '';
@@ -1366,7 +1453,7 @@ client.on('interactionCreate', async (interaction) => {
         effects: [],
       });
 
-      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -1567,12 +1654,37 @@ client.on('interactionCreate', async (interaction) => {
     const hasAgile = (weapon.traits ?? []).map(t => t.toLowerCase()).includes('agile');
     const mapPenalty = map === 0 ? 0 : map === 1 ? (hasAgile ? -4 : -5) : (hasAgile ? -8 : -10);
 
-    const attackBonus = weapon.attack ?? 0;
-    const dieRoll = Math.floor(Math.random() * 20) + 1;
-    const attackTotal = dieRoll + attackBonus + extraBonus + mapPenalty;
+    const channelId = interaction.channel.id;
+    const enc = getEncounter(channelId);
 
+    // Look up attacker in encounter to get their active effects
+    const attackerCombatant = enc ? enc.combatants.find(x => x.name.toLowerCase() === c.name.toLowerCase()) : null;
+    const attackerMods = sumEffectModifiers(attackerCombatant);
+
+    // Look up target
+    let target = null;
+    if (targetName) {
+      if (!enc) return interaction.reply({ content: '❌ Target specified but no active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+      target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+    }
+    const targetMods = target ? sumEffectModifiers(target) : { acBonus: 0, activeEffects: [] };
+
+    const baseAttackBonus = weapon.attack ?? 0;
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const attackTotal = dieRoll + baseAttackBonus + extraBonus + mapPenalty + attackerMods.attackBonus;
+
+    // Effective target AC includes effect modifiers
+    const baseTargetAc = target?.ac ?? null;
+    const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
+
+    const targetDegree = effectiveTargetAc !== null
+      ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc)
+      : null;
+
+    // Roll damage
     const dieSize = weapon.die ?? 'd4';
-    const damageBonus = weapon.damageBonus ?? 0;
+    const damageBonusBase = weapon.damageBonus ?? 0;
     const damageType = weapon.damageType === 'P' ? 'piercing'
       : weapon.damageType === 'S' ? 'slashing'
       : weapon.damageType === 'B' ? 'bludgeoning'
@@ -1581,47 +1693,42 @@ client.on('interactionCreate', async (interaction) => {
     const dieMatch = dieSize.match(/^(\d*)d(\d+)$/i);
     const numDice = dieMatch ? (parseInt(dieMatch[1]) || 1) : 1;
     const numSides = dieMatch ? parseInt(dieMatch[2]) : 4;
-    const rollDamage = () => {
-      const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
-      return { rolls, total: rolls.reduce((a, b) => a + b, 0) };
-    };
-    const damageRoll = rollDamage();
-    const damageTotal = Math.max(1, damageRoll.total + damageBonus);
+    const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
+    const damageRollSum = rolls.reduce((a, b) => a + b, 0);
+    const totalDamageBonus = damageBonusBase + attackerMods.damageBonus;
+    const damageTotal = Math.max(1, damageRollSum + totalDamageBonus);
 
-    const channelId = interaction.channel.id;
-    const enc = getEncounter(channelId);
-    let target = null;
-    let targetDegree = null;
-
-    if (targetName) {
-      if (!enc) return interaction.reply({ content: '❌ Target specified but no active encounter in this channel. Start one with `/init start`.', ephemeral: true });
-      target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-    }
-
-    const targetAc = target?.ac ?? null;
-    if (targetAc !== null) targetDegree = determineDegreeOfSuccess(attackTotal, dieRoll, targetAc);
-
+    // Build attack line
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
     const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
-    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText}${bonusText} = **${attackTotal}**`;
-    if (dieRoll === 20) attackLine += ' ⭐ Natural 20!';
-    if (dieRoll === 1)  attackLine += ' 💀 Natural 1!';
+    const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
+    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(baseAttackBonus)}${mapText}${bonusText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
+    if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
+    if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+    if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
 
+    // Build damage line
     let finalDamage = damageTotal;
+    const damageContribText = formatEffectContributions(attackerMods.activeEffects, 'damage');
+    const damageBonusDisplay = totalDamageBonus !== 0 ? fmt(totalDamageBonus) : '';
     let damageLine;
     if (targetDegree === 'crit-success') {
       finalDamage = damageTotal * 2;
-      damageLine = `**Damage (CRIT × 2)**\n${numDice}d${numSides}[${damageRoll.rolls.join(', ')}] ${fmt(damageBonus)} = ${damageTotal} × 2 = **${finalDamage} ${damageType}**`;
+      damageLine = `**Damage (CRIT × 2)**\n${numDice}d${numSides}[${rolls.join(', ')}] ${damageBonusDisplay} = ${damageTotal} × 2 = **${finalDamage} ${damageType}**`;
     } else {
-      damageLine = `**Damage**\n${numDice}d${numSides}[${damageRoll.rolls.join(', ')}] ${fmt(damageBonus)} = **${finalDamage} ${damageType}**`;
+      damageLine = `**Damage**\n${numDice}d${numSides}[${rolls.join(', ')}] ${damageBonusDisplay} = **${finalDamage} ${damageType}**`;
     }
+    if (damageContribText) damageLine += `\n*${damageContribText.trim().slice(1, -1)}*`;
 
+    // Outcome with AC breakdown
+    const acBreakdown = baseTargetAc !== null && targetMods.acBonus !== 0
+      ? ` (base ${baseTargetAc}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAc})`
+      : '';
     let outcomeLine = '';
-    if (targetDegree === 'crit-success') outcomeLine = `🎯 **Critical Hit on ${target.name}!** (AC ${targetAc})`;
-    else if (targetDegree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** (AC ${targetAc})`;
-    else if (targetDegree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** (AC ${targetAc})`;
-    else if (targetDegree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** (AC ${targetAc})`;
+    if (targetDegree === 'crit-success') outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (targetDegree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (targetDegree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+    else if (targetDegree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
     else if (target)                          outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
 
     let hpLine = '';
@@ -1649,7 +1756,7 @@ client.on('interactionCreate', async (interaction) => {
       .setColor(0xC0392B)
       .setTitle(`⚔️ ${c.name} attacks with ${weapon.display ?? weapon.name}!`)
       .setDescription(description)
-      .setFooter({ text: `${c.name} · Attack ${fmt(attackBonus)} · ${weapon.die ?? ''}${damageBonus ? fmt(damageBonus) : ''} ${damageType}` });
+      .setFooter({ text: `${c.name} · Attack ${fmt(baseAttackBonus)} · ${weapon.die ?? ''}${damageBonusBase ? fmt(damageBonusBase) : ''} ${damageType}` });
     if (charEntry.art) embed.setThumbnail(charEntry.art);
 
     const replyPayload = { embeds: [embed] };
