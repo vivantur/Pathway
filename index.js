@@ -2,6 +2,15 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
+const {
+  getEncounter,
+  createEncounter,
+  deleteEncounter,
+  addCombatant,
+  removeCombatant,
+  advanceTurn,
+  modifyHp,
+} = require('./encounters');
 
 const client = new Client({
   intents: [
@@ -140,6 +149,40 @@ function formatRollBreakdown(dieRoll, modifier, extraBonus, total, sides) {
   if (isCrit) line += '\n⭐ Natural 20!';
   if (isFumble) line += '\n💀 Natural 1!';
   return line;
+}
+
+// ── Initiative helpers ────────────────────────────────────────────────────────
+function computeCharPerception(charEntry) {
+  const c = charEntry.data;
+  const lvl = c.level ?? 1;
+  const wisMod = Math.floor(((c.abilities?.wis ?? 10) - 10) / 2);
+  const profNum = c.proficiencies?.perception ?? 0;
+  return wisMod + calcProfNum(profNum, lvl);
+}
+
+function computeCharMaxHp(charEntry) {
+  const c = charEntry.data;
+  const lvl = c.level ?? 1;
+  const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
+  return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+}
+
+function buildInitiativeEmbed(enc) {
+  const lines = enc.combatants.map((combatant, i) => {
+    const marker = i === enc.turnIndex ? '▶️ ' : '   ';
+    const hp = combatant.isNpc ? '(HP hidden)' : `${combatant.hp}/${combatant.maxHp} HP`;
+    const dead = combatant.hp === 0 ? ' 💀' : '';
+    return `${marker}**${combatant.initiative}** — ${combatant.name} ${hp}${dead}`;
+  });
+  return new EmbedBuilder()
+    .setTitle(`⚔️ Initiative — Round ${enc.round}`)
+    .setDescription(lines.join('\n') || '*No combatants yet*')
+    .setColor(0xAA0000);
+}
+
+function rollD20Plus(modifier) {
+  const roll = Math.floor(Math.random() * 20) + 1;
+  return { total: roll + modifier, roll, mod: modifier };
 }
 
 // ── Spell lookup ──────────────────────────────────────────────────────────────
@@ -1039,6 +1082,157 @@ client.on('interactionCreate', async (interaction) => {
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`✏️ ${char.name}'s Wallet — Updated`)] });
+    }
+  }
+
+  // ─── /init ───────────────────────────────────────────────────────
+  else if (commandName === 'init') {
+    const sub = interaction.options.getSubcommand();
+    const channelId = interaction.channel.id;
+    const userId = interaction.user.id;
+
+    // START
+    if (sub === 'start') {
+      if (getEncounter(channelId))
+        return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
+      createEncounter(channelId, userId);
+      return interaction.reply(
+        `⚔️ Combat started! <@${userId}> is the GM.\n` +
+        `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
+        `When everyone is in, the GM uses \`/init next\` to begin.`
+      );
+    }
+
+    const enc = getEncounter(channelId);
+    if (!enc)
+      return interaction.reply({ content: '❌ No active encounter. Start one with `/init start`.', ephemeral: true });
+
+    // ADD (player character)
+    if (sub === 'add') {
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+
+      const charName = charEntry.name;
+      if (enc.combatants.some(x => x.name.toLowerCase() === charName.toLowerCase()))
+        return interaction.reply({ content: `❌ ${charName} is already in the encounter.`, ephemeral: true });
+
+      const perception = computeCharPerception(charEntry);
+      const maxHp = computeCharMaxHp(charEntry);
+      const bonusOverride = interaction.options.getInteger('bonus');
+      const resultOverride = interaction.options.getInteger('result');
+      const bonus = bonusOverride ?? perception;
+
+      let initiative, rollText;
+      if (resultOverride !== null) {
+        initiative = resultOverride;
+        rollText = `(set to ${resultOverride})`;
+      } else {
+        const r = rollD20Plus(bonus);
+        initiative = r.total;
+        rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
+      }
+
+      addCombatant(channelId, {
+        name: charName,
+        initiative,
+        hp: maxHp,
+        maxHp,
+        ownerId: userId,
+        isNpc: false,
+      });
+
+      return interaction.reply(`✅ **${charName}** joined initiative at **${initiative}** ${rollText}.`);
+    }
+
+    // ADDNPC (GM only)
+    if (sub === 'addnpc') {
+      if (userId !== enc.gmId)
+        return interaction.reply({ content: '❌ Only the GM can add NPCs.', ephemeral: true });
+
+      const name = interaction.options.getString('name');
+      const bonus = interaction.options.getInteger('bonus');
+      const hp = interaction.options.getInteger('hp');
+      const resultOverride = interaction.options.getInteger('result');
+
+      if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase()))
+        return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
+
+      let initiative, rollText;
+      if (resultOverride !== null) {
+        initiative = resultOverride;
+        rollText = `(set to ${resultOverride})`;
+      } else {
+        const r = rollD20Plus(bonus);
+        initiative = r.total;
+        rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
+      }
+
+      addCombatant(channelId, {
+        name,
+        initiative,
+        hp,
+        maxHp: hp,
+        ownerId: userId,
+        isNpc: true,
+      });
+
+      return interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
+    }
+
+    // NEXT
+    if (sub === 'next') {
+      if (userId !== enc.gmId)
+        return interaction.reply({ content: '❌ Only the GM can advance turns.', ephemeral: true });
+      if (enc.combatants.length === 0)
+        return interaction.reply({ content: '❌ No combatants in the encounter yet.', ephemeral: true });
+
+      advanceTurn(channelId);
+      const current = enc.combatants[enc.turnIndex];
+      const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
+      return interaction.reply({
+        content: `🎯 It's **${current.name}**'s turn! ${mention}`,
+        embeds: [buildInitiativeEmbed(enc)],
+      });
+    }
+
+    // LIST
+    if (sub === 'list') {
+      return interaction.reply({ embeds: [buildInitiativeEmbed(enc)] });
+    }
+
+    // HP
+    if (sub === 'hp') {
+      const name = interaction.options.getString('name');
+      const change = interaction.options.getInteger('change');
+      const combatant = enc.combatants.find(x => x.name.toLowerCase() === name.toLowerCase());
+      if (!combatant)
+        return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
+      if (combatant.ownerId !== userId && enc.gmId !== userId)
+        return interaction.reply({ content: '❌ You can only modify HP for your own character (or any, if GM).', ephemeral: true });
+
+      modifyHp(channelId, name, change);
+      const verb = change >= 0 ? 'healed' : 'took';
+      const amount = Math.abs(change);
+      const downed = combatant.hp === 0 ? ' 💀 **Down!**' : '';
+      return interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${downed}`);
+    }
+
+    // REMOVE
+    if (sub === 'remove') {
+      const name = interaction.options.getString('name');
+      const result = removeCombatant(channelId, name);
+      if (!result)
+        return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
+      return interaction.reply(`🗑️ Removed **${name}** from initiative.`);
+    }
+
+    // END
+    if (sub === 'end') {
+      if (userId !== enc.gmId)
+        return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
+      deleteEncounter(channelId);
+      return interaction.reply('🏁 Combat ended. Well fought!');
     }
   }
 
