@@ -62,6 +62,16 @@ try {
   console.error('Could not load rules.json:', err.message);
 }
 
+let bestiaryDatabase = {};
+try {
+  const bestiaryRaw = JSON.parse(fs.readFileSync('bestiary.json', 'utf8'));
+  // File shape: { metadata: {...}, creatures: { key: {...} } }
+  bestiaryDatabase = bestiaryRaw.creatures ?? bestiaryRaw;
+  console.log(`Loaded ${Object.keys(bestiaryDatabase).length} creatures from bestiary.`);
+} catch (err) {
+  console.error('Could not load bestiary.json:', err.message);
+}
+
 function loadCharacters() {
   try { return JSON.parse(fs.readFileSync('characters.json', 'utf8')); }
   catch { return {}; }
@@ -402,6 +412,115 @@ function buildArchetypeEmbed(archetype) {
   if (archetype.prerequisites)
     embed.addFields({ name: '⚠️ Prerequisites', value: archetype.prerequisites, inline: false });
   embed.setFooter({ text: 'Pathway • PF2e Archetype Lookup' });
+  return embed;
+}
+
+// ── Bestiary lookup ───────────────────────────────────────────────────────────
+function findMonster(query) {
+  const normalize = str => String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, ' ');
+  const q = normalize(query);
+  const qSlug = q.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+  const entries = Object.entries(bestiaryDatabase);
+  if (entries.length === 0) return { monster: null, matches: [] };
+
+  // 1. Exact slug key match (e.g. "ancient_red_dragon")
+  if (bestiaryDatabase[qSlug]) return { monster: bestiaryDatabase[qSlug], matches: [] };
+
+  // 2. Exact display-name match
+  const exactName = entries.find(([, m]) => normalize(m.name) === q);
+  if (exactName) return { monster: exactName[1], matches: [] };
+
+  // 3. Starts-with match on name
+  const startsWith = entries.filter(([, m]) => normalize(m.name).startsWith(q));
+  if (startsWith.length === 1) return { monster: startsWith[0][1], matches: [] };
+  if (startsWith.length > 1 && startsWith.length <= 25) {
+    return { monster: null, matches: startsWith.map(([, m]) => m.name) };
+  }
+
+  // 4. Substring match on name
+  const contains = entries.filter(([, m]) => normalize(m.name).includes(q));
+  if (contains.length === 1) return { monster: contains[0][1], matches: [] };
+  if (contains.length > 1) {
+    // Cap suggestions so we don't explode the embed
+    const names = contains.map(([, m]) => m.name).sort();
+    return { monster: null, matches: names.slice(0, 25), total: names.length };
+  }
+
+  return { monster: null, matches: [] };
+}
+
+function buildMonsterEmbed(monster) {
+  const rarityColor = {
+    Common: 0x4a90d9,
+    Uncommon: 0xc45f00,
+    Rare: 0x6b21a8,
+    Unique: 0xb91c4a,
+  };
+  const sizeEmoji = {
+    Tiny: '🐁', Small: '🐇', Medium: '🧍', Large: '🐎',
+    Huge: '🐘', Gargantuan: '🐲',
+  };
+  const s = monster.summary ?? {};
+  const title = `${sizeEmoji[monster.size] ?? '👹'} ${monster.name}`;
+  const levelLine = s.level !== undefined && s.level !== null
+    ? `Creature ${s.level}`
+    : 'Creature';
+  const rarityLine = monster.rarity && monster.rarity !== 'Common'
+    ? ` • ${monster.rarity}`
+    : '';
+  const sizeLine = monster.size ? ` • ${monster.size}` : '';
+
+  const embed = new EmbedBuilder()
+    .setColor(rarityColor[monster.rarity] ?? 0x4a90d9)
+    .setTitle(title)
+    .setDescription(`*${levelLine}${rarityLine}${sizeLine}*`);
+
+  if (monster.traits?.length) {
+    embed.addFields({ name: '🏷️ Traits', value: monster.traits.join(', '), inline: false });
+  }
+
+  // Defenses
+  const defenseParts = [];
+  if (s.ac !== undefined && s.ac !== null) defenseParts.push(`**AC** ${s.ac}`);
+  if (s.hp?.value !== undefined && s.hp?.value !== null) {
+    const notes = s.hp.notes ? ` ${s.hp.notes}` : '';
+    defenseParts.push(`**HP** ${s.hp.value}${notes}`);
+  }
+  if (defenseParts.length) {
+    embed.addFields({ name: '🛡️ Defenses', value: defenseParts.join(' • '), inline: false });
+  }
+
+  // Saves
+  const saveParts = [];
+  if (s.fortitude !== undefined && s.fortitude !== null) saveParts.push(`**Fort** ${s.fortitude >= 0 ? '+' : ''}${s.fortitude}`);
+  if (s.reflex !== undefined && s.reflex !== null)       saveParts.push(`**Ref** ${s.reflex >= 0 ? '+' : ''}${s.reflex}`);
+  if (s.will !== undefined && s.will !== null)           saveParts.push(`**Will** ${s.will >= 0 ? '+' : ''}${s.will}`);
+  if (saveParts.length) {
+    embed.addFields({ name: '💪 Saves', value: saveParts.join(' • '), inline: true });
+  }
+
+  if (s.perception !== undefined && s.perception !== null) {
+    const percStr = `${s.perception >= 0 ? '+' : ''}${s.perception}`;
+    const sensesText = s.senses_raw ? ` (${s.senses_raw})` : '';
+    embed.addFields({ name: '👁️ Perception', value: `${percStr}${sensesText}`, inline: true });
+  }
+
+  if (s.speed_raw) {
+    embed.addFields({ name: '🏃 Speed', value: s.speed_raw, inline: false });
+  }
+
+  if (monster.family) {
+    embed.addFields({ name: '👪 Family', value: monster.family, inline: true });
+  }
+
+  const sourceText = monster.source?.raw
+    ?? (monster.source?.book ? `${monster.source.book}${monster.source.page ? ` pg. ${monster.source.page}` : ''}` : null)
+    ?? 'Unknown source';
+  embed.setFooter({ text: `${sourceText} • PF2e Bestiary Lookup` });
   return embed;
 }
 
@@ -1237,7 +1356,18 @@ client.on('interactionCreate', async (interaction) => {
     if (!rule) return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
   }
-
+  
+// ─── /monster ────────────────────────────────────────────────────
+  else if (commandName === 'monster') {
+    const input = interaction.options.getString('name');
+    const { monster, matches, total } = findMonster(input);
+    if (!monster && matches.length > 1) {
+      const more = total && total > matches.length ? `\n*…and ${total - matches.length} more. Try a more specific name.*` : '';
+      return interaction.reply({ content: `🔍 Multiple creatures match **"${input}"**:\n**${matches.join(', ')}**${more}`, ephemeral: true });
+    }
+    if (!monster) return interaction.reply({ content: `❌ No creature found for **"${input}"**. Check your spelling or try a shorter/partial name.`, ephemeral: true });
+    await interaction.reply({ embeds: [buildMonsterEmbed(monster)] });
+  }
   // ─── /bag ────────────────────────────────────────────────────────
   else if (commandName === 'bag') {
     const sub = interaction.options.getSubcommand();

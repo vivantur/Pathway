@@ -117,6 +117,10 @@ const commands = [
     options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
   },
   {
+    name: 'monster', description: 'Look up a PF2e monster/creature from the bestiary',
+    options: [{ name: 'name', description: 'Name of the creature to look up (e.g. Goblin Warrior, Ancient Red Dragon)', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
     name: 'bag', description: 'Manage your inventory bag',
     options: [
       { name: 'view', description: 'View your bag', type: ApplicationCommandOptionType.Subcommand },
