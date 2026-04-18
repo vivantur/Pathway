@@ -89,6 +89,40 @@ function saveBags(data) {
   fs.writeFileSync('bags.json', JSON.stringify(data, null, 2));
 }
 
+// ── Monster attack library helpers ────────────────────────────────────────────
+// File shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
+function loadMonsterAttacks() {
+  try { return JSON.parse(fs.readFileSync('monster_attacks.json', 'utf8')); }
+  catch { return {}; }
+}
+function saveMonsterAttacks(data) {
+  fs.writeFileSync('monster_attacks.json', JSON.stringify(data, null, 2));
+}
+function monsterKey(name) {
+  return String(name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+function getGuildMonsters(store, guildId) {
+  if (!store[guildId]) store[guildId] = {};
+  return store[guildId];
+}
+// Resolve a monster's display name, preferring the bestiary's canonical name if it matches.
+function resolveMonsterDisplayName(inputName) {
+  try {
+    const hit = findMonster(inputName);
+    if (hit.monster) return hit.monster.name;
+  } catch { /* findMonster not available yet during module init; fine */ }
+  return inputName;
+}
+// Find a saved attack on a monster by name (case-insensitive, partial).
+function findSavedAttack(monsterEntry, attackName) {
+  const q = String(attackName ?? '').toLowerCase().trim();
+  const atks = monsterEntry?.attacks ?? [];
+  return atks.find(a => a.name.toLowerCase() === q)
+      || atks.find(a => a.name.toLowerCase().startsWith(q))
+      || atks.find(a => a.name.toLowerCase().includes(q))
+      || null;
+}
+
 function getOrCreateBag(bags, userId) {
   if (!bags[userId]) {
     bags[userId] = { bagName: 'Bag 1', categories: {} };
@@ -695,6 +729,54 @@ client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!
 client.on('interactionCreate', async (interaction) => {
 
   if (interaction.isButton()) {
+    // ─── Monster-attack save roll button ────────────────────────────
+    if (interaction.customId.startsWith('msave_')) {
+      // customId shape: msave_<saveType>_<dc>
+      const [, saveType, dcStr] = interaction.customId.split('_');
+      const dc = parseInt(dcStr, 10);
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(interaction.user.id, null, characters);
+      if (error) {
+        return interaction.reply({ content: `❌ ${error}\nLoad a character with \`/char add\` first, or roll manually with \`/save type:${saveType}\`.`, ephemeral: true });
+      }
+      const c = charEntry.data;
+      const ab = c.abilities ?? {};
+      const prof = c.proficiencies ?? {};
+      const lvl = c.level ?? 1;
+      const saveAbilMap = { fortitude: 'con', reflex: 'dex', will: 'wis' };
+      const abilKey  = saveAbilMap[saveType];
+      const abilMod  = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+      const profNum  = prof[saveType] ?? 0;
+      const modifier = abilMod + calcProfNum(profNum, lvl);
+      const dieRoll  = Math.floor(Math.random() * 20) + 1;
+      const total    = dieRoll + modifier;
+      // Degree of success vs DC
+      let degree;
+      if (total >= dc + 10)      degree = 'crit-success';
+      else if (total >= dc)      degree = 'success';
+      else if (total <= dc - 10) degree = 'crit-failure';
+      else                       degree = 'failure';
+      if (dieRoll === 20) degree = degree === 'crit-failure' ? 'failure' : degree === 'failure' ? 'success' : degree === 'success' ? 'crit-success' : degree;
+      if (dieRoll === 1)  degree = degree === 'crit-success' ? 'success' : degree === 'success' ? 'failure' : degree === 'failure' ? 'crit-failure' : degree;
+      const saveDisplay = saveType.charAt(0).toUpperCase() + saveType.slice(1);
+      const outcomeMap = {
+        'crit-success': '🌟 **Critical Success** (no damage)',
+        'success':      '✅ **Success** (half damage)',
+        'failure':      '❌ **Failure** (full damage)',
+        'crit-failure': '💥 **Critical Failure** (double damage)'
+      };
+      let natLine = '';
+      if (dieRoll === 20) natLine = '\n⭐ Natural 20!';
+      if (dieRoll === 1)  natLine = '\n💀 Natural 1!';
+      const embed = new EmbedBuilder()
+        .setColor(degree === 'crit-success' ? 0x2ecc71 : degree === 'success' ? 0x27ae60 : degree === 'failure' ? 0xe67e22 : 0xe74c3c)
+        .setTitle(`${c.name} rolls a ${saveDisplay} save!`)
+        .setDescription(`1d20 (${dieRoll}) ${fmt(modifier)} = **${total}** vs DC ${dc}${natLine}\n\n${outcomeMap[degree]}`)
+        .setFooter({ text: `${c.name} · ${saveDisplay} ${fmt(modifier)}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
     if (!interaction.customId.startsWith('ancestry_')) return;
     const parts = interaction.customId.split('_');
     const pageIndex = parseInt(parts[parts.length - 1], 10);
@@ -1356,18 +1438,7 @@ client.on('interactionCreate', async (interaction) => {
     if (!rule) return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
   }
-  
-// ─── /monster ────────────────────────────────────────────────────
-  else if (commandName === 'monster') {
-    const input = interaction.options.getString('name');
-    const { monster, matches, total } = findMonster(input);
-    if (!monster && matches.length > 1) {
-      const more = total && total > matches.length ? `\n*…and ${total - matches.length} more. Try a more specific name.*` : '';
-      return interaction.reply({ content: `🔍 Multiple creatures match **"${input}"**:\n**${matches.join(', ')}**${more}`, ephemeral: true });
-    }
-    if (!monster) return interaction.reply({ content: `❌ No creature found for **"${input}"**. Check your spelling or try a shorter/partial name.`, ephemeral: true });
-    await interaction.reply({ embeds: [buildMonsterEmbed(monster)] });
-  }
+
   // ─── /bag ────────────────────────────────────────────────────────
   else if (commandName === 'bag') {
     const sub = interaction.options.getSubcommand();
@@ -1895,6 +1966,308 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply(replyPayload);
     const encForSummary = getEncounter(interaction.channel.id);
     if (encForSummary && target) await updateSummary(interaction.channel, encForSummary);
+  }
+
+  // ─── /monsterattack ──────────────────────────────────────────────
+  else if (commandName === 'monsterattack') {
+    const sub = interaction.options.getSubcommand();
+    const guildId = interaction.guildId;
+    if (!guildId) return interaction.reply({ content: '❌ `/monsterattack` only works in a server, not in DMs.', ephemeral: true });
+
+    // ── add (strike) ──
+    if (sub === 'add' || sub === 'addspell') {
+      const monsterInput = interaction.options.getString('monster');
+      const attackName = interaction.options.getString('attack').trim();
+      const bonus = interaction.options.getInteger('bonus');
+      const damage = interaction.options.getString('damage').trim();
+      const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
+      const traitsRaw = sub === 'add' ? interaction.options.getString('traits') : null;
+      const extraDamage = sub === 'add' ? interaction.options.getString('extra_damage') : null;
+      const extraType = sub === 'add' ? interaction.options.getString('extra_type') : null;
+
+      if (!rollDamageExpression(damage)) return interaction.reply({ content: `❌ Couldn't parse damage "${damage}". Use something like \`1d6+2\` or \`2d8+4\`.`, ephemeral: true });
+      if (extraDamage && !rollDamageExpression(extraDamage)) return interaction.reply({ content: `❌ Couldn't parse extra damage "${extraDamage}". Use something like \`1d6\`.`, ephemeral: true });
+
+      const traits = traitsRaw
+        ? traitsRaw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const key = monsterKey(displayName);
+      if (!guild[key]) guild[key] = { displayName, attacks: [] };
+      // Replace existing attack with same name
+      const existingIdx = guild[key].attacks.findIndex(a => a.name.toLowerCase() === attackName.toLowerCase());
+      const entry = {
+        name: attackName,
+        kind: sub === 'addspell' ? 'spell' : 'strike',
+        bonus,
+        damage,
+        damageType,
+        traits,
+        extraDamage: extraDamage || null,
+        extraType: extraType ? extraType.toLowerCase() : null
+      };
+      if (existingIdx >= 0) guild[key].attacks[existingIdx] = entry;
+      else guild[key].attacks.push(entry);
+      saveMonsterAttacks(store);
+      const verb = existingIdx >= 0 ? 'Updated' : 'Saved';
+      const kindLabel = sub === 'addspell' ? 'spell attack' : 'strike';
+      const traitText = traits.length ? ` *(${traits.join(', ')})*` : '';
+      return interaction.reply({ content: `✅ ${verb} ${kindLabel} **${attackName}** on **${displayName}**: ${fmt(bonus)}, ${damage} ${damageType}${traitText}`, ephemeral: true });
+    }
+
+    // ── addsave ──
+    if (sub === 'addsave') {
+      const monsterInput = interaction.options.getString('monster');
+      const attackName = interaction.options.getString('attack').trim();
+      const saveType = interaction.options.getString('save');
+      const dc = interaction.options.getInteger('dc');
+      const damage = interaction.options.getString('damage').trim();
+      const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
+      if (!rollDamageExpression(damage)) return interaction.reply({ content: `❌ Couldn't parse damage "${damage}". Use something like \`6d6\` or \`4d10+5\`.`, ephemeral: true });
+
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const key = monsterKey(displayName);
+      if (!guild[key]) guild[key] = { displayName, attacks: [] };
+      const existingIdx = guild[key].attacks.findIndex(a => a.name.toLowerCase() === attackName.toLowerCase());
+      const entry = { name: attackName, kind: 'save', saveType, saveDC: dc, damage, damageType };
+      if (existingIdx >= 0) guild[key].attacks[existingIdx] = entry;
+      else guild[key].attacks.push(entry);
+      saveMonsterAttacks(store);
+      const verb = existingIdx >= 0 ? 'Updated' : 'Saved';
+      return interaction.reply({ content: `✅ ${verb} save attack **${attackName}** on **${displayName}**: DC ${dc} ${saveType}, ${damage} ${damageType}`, ephemeral: true });
+    }
+
+    // ── remove ──
+    if (sub === 'remove') {
+      const monsterInput = interaction.options.getString('monster');
+      const attackName = interaction.options.getString('attack').trim();
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const key = monsterKey(displayName);
+      if (!guild[key]) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**.`, ephemeral: true });
+      const idx = guild[key].attacks.findIndex(a => a.name.toLowerCase() === attackName.toLowerCase());
+      if (idx < 0) return interaction.reply({ content: `❌ **${displayName}** has no attack named "${attackName}".`, ephemeral: true });
+      const removed = guild[key].attacks.splice(idx, 1)[0];
+      if (guild[key].attacks.length === 0) delete guild[key];
+      saveMonsterAttacks(store);
+      return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── clear ──
+    if (sub === 'clear') {
+      const monsterInput = interaction.options.getString('monster');
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const key = monsterKey(displayName);
+      if (!guild[key]) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**.`, ephemeral: true });
+      delete guild[key];
+      saveMonsterAttacks(store);
+      return interaction.reply({ content: `🗑️ Cleared all attacks for **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── list ──
+    if (sub === 'list') {
+      const monsterInput = interaction.options.getString('monster');
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      if (monsterInput) {
+        const displayName = resolveMonsterDisplayName(monsterInput);
+        const key = monsterKey(displayName);
+        const entry = guild[key];
+        if (!entry || entry.attacks.length === 0) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**.`, ephemeral: true });
+        const embed = new EmbedBuilder()
+          .setColor(0x8B0000)
+          .setTitle(`👹 ${entry.displayName} — Saved Attacks`)
+          .setFooter({ text: `${entry.attacks.length} attack${entry.attacks.length === 1 ? '' : 's'} · /monsterattack use to roll` });
+        for (const a of entry.attacks) {
+          let line;
+          if (a.kind === 'save') {
+            line = `DC ${a.saveDC} ${a.saveType} · ${a.damage} ${a.damageType}`;
+          } else {
+            const traitText = a.traits?.length ? ` *(${a.traits.join(', ')})*` : '';
+            const extra = a.extraDamage ? ` + ${a.extraDamage} ${a.extraType ?? ''}`.trimEnd() : '';
+            line = `${fmt(a.bonus)} · ${a.damage} ${a.damageType}${extra}${traitText}`;
+          }
+          const kindIcon = a.kind === 'save' ? '💨' : a.kind === 'spell' ? '✨' : '⚔️';
+          embed.addFields({ name: `${kindIcon} ${a.name}`, value: line, inline: false });
+        }
+        return interaction.reply({ embeds: [embed] });
+      }
+      // List all monsters
+      const entries = Object.values(guild);
+      if (entries.length === 0) return interaction.reply({ content: `📖 No saved monsters yet. Use \`/monsterattack add\` to save one.`, ephemeral: true });
+      entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const lines = entries.map(e => `• **${e.displayName}** — ${e.attacks.length} attack${e.attacks.length === 1 ? '' : 's'}`);
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle(`📖 Saved Monsters (${entries.length})`)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: '/monsterattack list monster:<name> to see attacks' });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ── use ──
+    if (sub === 'use') {
+      const attackerName = interaction.options.getString('attacker');
+      const monsterInput = interaction.options.getString('monster');
+      const attackQuery = interaction.options.getString('attack');
+      const targetName = interaction.options.getString('target');
+      const map = interaction.options.getInteger('map') ?? 0;
+
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const key = monsterKey(displayName);
+      const entry = guild[key];
+      if (!entry) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**. Use \`/monsterattack add\` first.`, ephemeral: true });
+      const attack = findSavedAttack(entry, attackQuery);
+      if (!attack) return interaction.reply({ content: `❌ **${displayName}** has no attack matching "${attackQuery}". Try \`/monsterattack list monster:${displayName}\`.`, ephemeral: true });
+
+      const channelId = interaction.channel.id;
+      const enc = getEncounter(channelId);
+      if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+      if (interaction.user.id !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/monsterattack use`.', ephemeral: true });
+
+      const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
+      if (!attacker) return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
+
+      let target = null;
+      if (targetName) {
+        target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+        if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+      }
+
+      // ─── Strike / Spell Attack ───
+      if (attack.kind === 'strike' || attack.kind === 'spell') {
+        if (!target) return interaction.reply({ content: `❌ **${attack.name}** is a ${attack.kind === 'spell' ? 'spell attack' : 'strike'} — you must specify a target.`, ephemeral: true });
+
+        const agile = attack.traits?.includes('agile') ?? false;
+        const mapPenalty = calculateMap(map, agile);
+        const attackerMods = sumEffectModifiers(attacker);
+        const targetMods = sumEffectModifiers(target);
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const attackTotal = dieRoll + attack.bonus + mapPenalty + attackerMods.attackBonus;
+        const baseTargetAc = target.ac ?? null;
+        const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
+        const degree = effectiveTargetAc !== null ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc) : null;
+
+        const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
+        const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
+        const rollLabel = attack.kind === 'spell' ? 'Spell Attack Roll' : 'Attack Roll';
+        let attackLine = `**${rollLabel}**\n1d20 (${dieRoll}) ${fmt(attack.bonus)}${mapText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
+        if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
+        if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+        if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
+
+        // Main damage
+        const damageResult = rollDamageExpression(attack.damage);
+        const totalDamageBonus = attackerMods.damageBonus;
+        let mainDamage = Math.max(1, damageResult.total + totalDamageBonus);
+        const damageContribText = formatEffectContributions(attackerMods.activeEffects, 'damage');
+        // Extra damage (not doubled on crit per PF2e rules for persistent/splash; but for simple extra dice we do double)
+        let extraDamageResult = null;
+        if (attack.extraDamage) extraDamageResult = rollDamageExpression(attack.extraDamage);
+
+        let damageLine;
+        let totalDealt;
+        if (degree === 'crit-success') {
+          mainDamage = mainDamage * 2;
+          const extraDoubled = extraDamageResult ? extraDamageResult.total * 2 : 0;
+          totalDealt = mainDamage + extraDoubled;
+          damageLine = `**Damage (CRIT × 2)**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = ${damageResult.total + totalDamageBonus} × 2 = **${mainDamage} ${attack.damageType}**`;
+          if (extraDamageResult) damageLine += `\n+ ${extraDamageResult.display} × 2 = **${extraDoubled} ${attack.extraType ?? ''}**`.trimEnd();
+        } else {
+          const extraBase = extraDamageResult ? extraDamageResult.total : 0;
+          totalDealt = mainDamage + extraBase;
+          damageLine = `**Damage**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = **${mainDamage} ${attack.damageType}**`;
+          if (extraDamageResult) damageLine += `\n+ ${extraDamageResult.display} = **${extraBase} ${attack.extraType ?? ''}**`.trimEnd();
+        }
+        if (damageContribText) damageLine += `\n*${damageContribText.trim().slice(1, -1)}*`;
+
+        const acBreakdown = baseTargetAc !== null && targetMods.acBonus !== 0
+          ? ` (base ${baseTargetAc}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAc})`
+          : '';
+        let outcomeLine;
+        if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+        else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+        else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+        else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+        else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
+
+        let hpLine = '';
+        let mentionLine = '';
+        if (degree === 'success' || degree === 'crit-success') {
+          modifyHp(channelId, target.name, -totalDealt);
+          const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
+          hpLine = target.isNpc
+            ? `\n❤️ **${target.name}** took ${totalDealt} damage${downed}`
+            : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
+        }
+        if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
+
+        const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
+        const description = [attackLine, '', showDamage ? damageLine : null, outcomeLine, hpLine || null].filter(s => s !== null).join('\n');
+
+        const kindIcon = attack.kind === 'spell' ? '✨' : '👹';
+        const traitFooter = attack.traits?.length ? ` · ${attack.traits.join(', ')}` : '';
+        const embed = new EmbedBuilder()
+          .setColor(attack.kind === 'spell' ? 0x9B59B6 : 0x8B0000)
+          .setTitle(`${kindIcon} ${attacker.name} uses ${attack.name}!`)
+          .setDescription(description)
+          .setFooter({ text: `${entry.displayName}${traitFooter} · ${fmt(attack.bonus)} · ${attack.damage} ${attack.damageType}` });
+
+        const replyPayload = { embeds: [embed] };
+        if (mentionLine) replyPayload.content = mentionLine;
+        await interaction.reply(replyPayload);
+        await updateSummary(interaction.channel, enc);
+        return;
+      }
+
+      // ─── Save-based (breath weapon, aura, AoE) ───
+      if (attack.kind === 'save') {
+        const damageResult = rollDamageExpression(attack.damage);
+        const saveDisplay = attack.saveType.charAt(0).toUpperCase() + attack.saveType.slice(1);
+        const targetLine = target ? ` against **${target.name}**` : '';
+        const mentionLine = (target && !target.isNpc && target.ownerId) ? `<@${target.ownerId}>` : '';
+
+        const description =
+          `**${saveDisplay} Save DC ${attack.saveDC}**${targetLine}\n\n` +
+          `**Damage Rolled:** ${damageResult.display} = **${damageResult.total} ${attack.damageType}**\n\n` +
+          `• 🌟 Crit Success → **0** damage\n` +
+          `• ✅ Success → **${Math.floor(damageResult.total / 2)}** damage (half)\n` +
+          `• ❌ Failure → **${damageResult.total}** damage (full)\n` +
+          `• 💥 Crit Failure → **${damageResult.total * 2}** damage (double)\n\n` +
+          `*${target ? target.name : 'Target(s)'}, tap the button below to roll your save — or use \`/save type:${attack.saveType}\` manually.*`;
+
+        const embed = new EmbedBuilder()
+          .setColor(0xD35400)
+          .setTitle(`💨 ${attacker.name} uses ${attack.name}!`)
+          .setDescription(description)
+          .setFooter({ text: `${entry.displayName} · DC ${attack.saveDC} ${attack.saveType} · ${attack.damage} ${attack.damageType}` });
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`msave_${attack.saveType}_${attack.saveDC}`)
+            .setLabel(`Roll ${saveDisplay} Save (DC ${attack.saveDC})`)
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🎲')
+        );
+
+        const replyPayload = { embeds: [embed], components: [row] };
+        if (mentionLine) replyPayload.content = mentionLine;
+        await interaction.reply(replyPayload);
+        return;
+      }
+
+      return interaction.reply({ content: `❌ Unknown attack kind "${attack.kind}".`, ephemeral: true });
+    }
   }
 
 });

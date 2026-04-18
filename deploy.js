@@ -316,6 +316,87 @@ const commands = [
       ]},
       { name: 'agile', description: 'Is this an agile attack? (MAP is -4/-8 instead of -5/-10)', type: ApplicationCommandOptionType.Boolean, required: false }
     ]
+  },
+  {
+    name: 'monsterattack', description: 'GM: save and use a library of monster attacks (shared per server)',
+    options: [
+      {
+        name: 'add', description: 'Save a strike attack (attack roll vs AC)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name (e.g. "Goblin Warrior" or a custom name)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'attack', description: 'Attack name (e.g. "Shortsword", "Claw", "Bite")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'bonus', description: 'Attack roll bonus', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'damage', description: 'Damage dice (e.g. "1d6+2" or "2d8+4")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'type', description: 'Damage type (piercing, slashing, fire, etc.)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'traits', description: 'Comma-separated traits (e.g. "agile, reach, finesse")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'extra_damage', description: 'Extra damage dice (e.g. "1d6")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'extra_type', description: 'Extra damage type (e.g. "fire")', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'addspell', description: 'Save a spell attack (spell attack roll vs AC)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'attack', description: 'Spell attack name (e.g. "Eldritch Blast")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'bonus', description: 'Spell attack bonus', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'damage', description: 'Damage dice (e.g. "3d6")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'type', description: 'Damage type (e.g. "force", "fire")', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'addsave', description: 'Save a save-based attack (breath weapon, aura, AoE)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'attack', description: 'Attack name (e.g. "Fire Breath")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'save', description: 'Which save the target rolls', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Fortitude', value: 'fortitude' }, { name: 'Reflex', value: 'reflex' }, { name: 'Will', value: 'will' }
+          ]},
+          { name: 'dc', description: 'Save DC', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'damage', description: 'Damage dice (e.g. "6d6")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'type', description: 'Damage type (e.g. "fire")', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove one attack from a monster',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'attack', description: 'Attack name to remove', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'clear', description: 'Remove all attacks for a monster',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'list', description: 'Show saved attacks (for one monster, or all)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name (leave blank to list all monsters)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'use', description: 'Roll a saved attack against a target in the current encounter',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'attacker', description: 'Combatant in the current encounter doing the attacking', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'monster', description: 'Monster name in the library to pull the attack from', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'attack', description: 'Saved attack name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'target', description: 'Combatant to target (required for strike/spell, optional for save)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'map', description: 'Multiple attack penalty (strike/spell only)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+            { name: 'First attack (no penalty)', value: 0 },
+            { name: 'Second attack (-5)', value: 1 },
+            { name: 'Third attack (-10)', value: 2 }
+          ]}
+        ]
+      }
+    ]
   }
 ];
 
