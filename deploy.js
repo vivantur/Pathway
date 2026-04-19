@@ -117,6 +117,13 @@ const commands = [
     options: [{ name: 'name', description: 'The background to look up (e.g. Acolyte, Acrobat, Warrior)', type: ApplicationCommandOptionType.String, required: true }]
   },
   {
+    name: 'feat', description: 'Look up a PF2e feat',
+    options: [
+      { name: 'name', description: 'The feat to look up (e.g. Power Attack, Sudden Charge)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'level', description: 'Filter by level (useful for feats with duplicate names)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 20 }
+    ]
+  },
+  {
     name: 'rule', description: 'Look up a PF2e condition, action, or trait',
     options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
   },

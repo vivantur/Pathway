@@ -63,6 +63,18 @@ try {
   console.error('Could not load background.json:', err.message);
 }
 
+let featDatabase = [];
+try {
+  const featRaw = JSON.parse(fs.readFileSync('feats.json', 'utf8'));
+  // File shape: { metadata: {...}, feats: [ {...} ] }
+  const rawFeats = Array.isArray(featRaw) ? featRaw : (featRaw.feats ?? []);
+  // Filter out parser garbage (feats with 1-character names like "U")
+  featDatabase = rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+  console.log(`Loaded ${featDatabase.length} feats from database.`);
+} catch (err) {
+  console.error('Could not load feats.json:', err.message);
+}
+
 let rulesDatabase = {};
 try {
   rulesDatabase = JSON.parse(fs.readFileSync('rules.json', 'utf8'));
@@ -513,6 +525,80 @@ function buildBackgroundEmbed(bg) {
     .setFooter({ text: `Source: ${bg.source ?? 'Unknown'} • PF2e Background Lookup` });
 
   return embed;
+}
+
+// ── Feat lookup ───────────────────────────────────────────────────────────────
+function normalizeFeatQuery(str) {
+  return String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, ' ');
+}
+
+function findFeat(query, levelFilter) {
+  const q = normalizeFeatQuery(query);
+  if (!q) return { feat: null, matches: [] };
+
+  // Narrow by level if provided
+  const pool = levelFilter != null
+    ? featDatabase.filter(f => f.level === levelFilter)
+    : featDatabase;
+
+  // 1. Exact name match (case-insensitive)
+  const exact = pool.filter(f => f.name.toLowerCase() === q);
+  if (exact.length === 1) return { feat: exact[0], matches: [] };
+  if (exact.length > 1)   return { feat: null, matches: exact, exactDuplicates: true };
+
+  // 2. Starts-with match
+  const starts = pool.filter(f => f.name.toLowerCase().startsWith(q));
+  if (starts.length === 1) return { feat: starts[0], matches: [] };
+
+  // 3. Contains match
+  const contains = pool.filter(f => f.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { feat: contains[0], matches: [] };
+  if (contains.length > 1)   return { feat: null, matches: contains };
+
+  return { feat: null, matches: [] };
+}
+
+function buildFeatEmbed(feat) {
+  const pfsColor = {
+    Standard:   0x2ecc71, // green
+    Limited:    0xf39c12, // orange
+    Restricted: 0xe74c3c, // red
+  };
+  const color = pfsColor[feat.pfs_access] ?? 0x4a90d9;
+
+  // Action type icons
+  const actionIcons = {
+    one_action:  '◆ 1 action',
+    two_actions: '◆◆ 2 actions',
+    three_actions:'◆◆◆ 3 actions',
+    reaction:    '⤾ Reaction',
+    free_action: '◇ Free Action',
+  };
+  const actionText = feat.action_tag_full ? (actionIcons[feat.action_tag_full] ?? feat.action_tag_full) : null;
+
+  // Build field list
+  const fields = [
+    { name: '📊 Level', value: feat.level != null ? String(feat.level) : 'Unknown', inline: true },
+  ];
+  if (actionText) fields.push({ name: '⚡ Activity', value: actionText, inline: true });
+  if (feat.pfs_access) fields.push({ name: '🎫 PFS', value: feat.pfs_access, inline: true });
+
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`🪄 ${feat.name}`)
+    .setDescription(feat.description || '*No description available.*')
+    .addFields(fields)
+    .setFooter({ text: 'PF2e Feat Lookup • Archives of Nethys' });
+
+  return embed;
+}
+
+function formatFeatMatchLine(feat) {
+  const lvl = feat.level != null ? ` *(Lvl ${feat.level})*` : '';
+  return `• **${feat.name}**${lvl}`;
 }
 
 // ── Bestiary lookup ───────────────────────────────────────────────────────────
@@ -1504,6 +1590,31 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (!background) return interaction.reply({ content: `❌ No background found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
     await interaction.reply({ embeds: [buildBackgroundEmbed(background)] });
+  }
+
+  // ─── /feat ───────────────────────────────────────────────────────
+  else if (commandName === 'feat') {
+    const input = interaction.options.getString('name');
+    const levelFilter = interaction.options.getInteger('level') ?? null;
+    const { feat, matches, exactDuplicates } = findFeat(input, levelFilter);
+
+    if (feat) {
+      return interaction.reply({ embeds: [buildFeatEmbed(feat)] });
+    }
+
+    if (matches && matches.length > 1) {
+      // Sort alphabetically, then by level
+      const sorted = [...matches].sort((a, b) => a.name.localeCompare(b.name) || (a.level ?? 0) - (b.level ?? 0));
+      const preview = sorted.slice(0, 20).map(formatFeatMatchLine).join('\n');
+      const extra = sorted.length > 20 ? `\n*…and ${sorted.length - 20} more. Try narrowing your search.*` : '';
+      const header = exactDuplicates
+        ? `🔍 Multiple feats share the exact name **"${input}"**. Add a level to narrow it down:`
+        : `🔍 Multiple feats match **"${input}"**. Did you mean one of these?`;
+      return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
+    }
+
+    const levelMsg = levelFilter != null ? ` at level ${levelFilter}` : '';
+    return interaction.reply({ content: `❌ No feat found for **"${input}"**${levelMsg}. Check your spelling or try another name.`, ephemeral: true });
   }
 
   // ─── /rule ───────────────────────────────────────────────────────
