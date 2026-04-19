@@ -1,0 +1,4004 @@
+{
+  "_meta": {
+    "source_file": "Pasted text.txt",
+    "source_note": "Parsed from a user-provided text export of Archives of Nethys background listings.",
+    "record_count": 221,
+    "notes": [
+      "Some entries in the provided text were truncated with an ellipsis character and are preserved as-is.",
+      "A few entries in the provided text omitted fields such as PFS availability, granted feats, or summaries; those fields are null or empty arrays here.",
+      "Duplicate background names from the source text were preserved with suffixed slugs."
+    ]
+  },
+  "backgrounds": {
+    "academy_dropout": {
+      "name": "Academy Dropout",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Arcana",
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "You were enrolled at a prestigious magical academy, but you've since dropped out. Maybe there was a momentous incident, maybe you had to return to …",
+      "source": "Secrets of Magic pg. 28",
+      "slug": "academy_dropout"
+    },
+    "acolyte": {
+      "name": "Acolyte",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Scribing Lore"
+      ],
+      "granted_feats": [
+        "Student of the Canon"
+      ],
+      "rarity": "Common",
+      "summary": "You spent your early days in a religious monastery or cloister. You may have traveled out into the world to spread the message of your religion or …",
+      "source": "Player Core pg. 84",
+      "slug": "acolyte"
+    },
+    "acrobat": {
+      "name": "Acrobat",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Acrobatics",
+        "Circus Lore"
+      ],
+      "granted_feats": [
+        "Steady Balance"
+      ],
+      "rarity": "Common",
+      "summary": "In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or …",
+      "source": "Player Core pg. 84",
+      "slug": "acrobat"
+    },
+    "acupuncturist": {
+      "name": "Acupuncturist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Acupuncture Lore"
+      ],
+      "granted_feats": [
+        "Battle Medicine"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You’ve studied qi and its abilities to heal the body through assessment and regulating qi flow. You know occult techniques that originated in Chu Ye …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "acupuncturist"
+    },
+    "aeronaut": {
+      "name": "Aeronaut",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Piloting Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You have mastered the techniques for piloting all manner of airships—balloons, dirigibles, winged vehicles, or something altogether more …",
+      "source": "Battlecry! pg. 17",
+      "slug": "aeronaut"
+    },
+    "alkenstar_outlaw": {
+      "name": "Alkenstar Outlaw",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Subtle Theft"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You're an outlaw whose first crime was stealing the guns from Alkenstar's Gunworks which allowed you to commence a crime spree of epic proportions. …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "alkenstar_outlaw"
+    },
+    "alkenstar_sojourner": {
+      "name": "Alkenstar Sojourner",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Streetwise"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You came to Alkenstar because you heard they had guns, but you stayed because of the atmosphere. Or the guns. Either way, journalism and scientific …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "alkenstar_sojourner"
+    },
+    "alloysmith": {
+      "name": "Alloysmith",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Plane of Metal Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "Blacksmithing might be an ancient profession, but you are its cutting edge. You've studied the properties of different metals, experimented with them …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "alloysmith"
+    },
+    "amnesiac": {
+      "name": "Amnesiac",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Your background is... well... honestly, you can't remember! You might have inklings deep within your mind, undercurrents of unusual emotions or …",
+      "source": "Player Core 2 pg. 52",
+      "slug": "amnesiac"
+    },
+    "animal_whisperer": {
+      "name": "Animal Whisperer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Lore related to one terrain inhabited by animals you like (such as Plains Lore or Swamp Lore)."
+      ],
+      "granted_feats": [
+        "Train Animal"
+      ],
+      "rarity": "Common",
+      "summary": "You have always felt a connection to animals, and it was only a small leap to learn to train them. As you travel, you continuously encounter …",
+      "source": "Player Core pg. 84",
+      "slug": "animal_whisperer"
+    },
+    "anti_magical": {
+      "name": "Anti-Magical",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Lore of your choice"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Magic has never worked quite right around you. Perhaps you have become a magic-user in spite of that, or perhaps you use your unique ability to fight …",
+      "source": "Secrets of Magic pg. 30",
+      "slug": "anti_magical"
+    },
+    "anti_tech_activist": {
+      "name": "Anti-Tech Activist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Guild Lore"
+      ],
+      "granted_feats": [
+        "Group Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "You've seen the sorts of things that technology brings— polluted environments, workers put out of their jobs or horribly injured, and the slow …",
+      "source": "Guns & Gears (Remastered) pg. 44",
+      "slug": "anti_tech_activist"
+    },
+    "arcane_revolutionary": {
+      "name": "Arcane Revolutionary",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Arcana",
+        "Lore related to the settlement you liberated."
+      ],
+      "granted_feats": [
+        "Quick Identification"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You have fought against oppressive leaders and governments, harnessing ancient magical energies to help liberate your community from much larger, …",
+      "source": "Battlecry! pg. 17",
+      "slug": "arcane_revolutionary"
+    },
+    "archaeologist": {
+      "name": "Archaeologist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Architecture Lore"
+      ],
+      "granted_feats": [
+        "Additional Lore"
+      ],
+      "rarity": "Common",
+      "summary": "You've excavated enough sites to know that ancient civilizations aren't lost; they're merely buried and waiting for the right scholar to unearth them …",
+      "source": "PFS Guide pg. 6",
+      "slug": "archaeologist"
+    },
+    "artisan": {
+      "name": "Artisan",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Guild Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "As an apprentice, you practiced a particular form of building or crafting, developing specialized skill. You might have been a blacksmith’s …",
+      "source": "Player Core pg. 84",
+      "slug": "artisan"
+    },
+    "artist": {
+      "name": "Artist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Art Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "Your art is your greatest passion, whatever form it takes. Adventuring might help you find inspiration, or simply be a way to survive until you …",
+      "source": "Player Core pg. 84",
+      "slug": "artist"
+    },
+    "astrologer": {
+      "name": "Astrologer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Astrology Lore"
+      ],
+      "granted_feats": [
+        "Oddity Identification"
+      ],
+      "rarity": "Common",
+      "summary": "Astrologers look to the stars for signs and portents, using their positions in the heavens to chart courses for those living beneath them. As the …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "astrologer"
+    },
+    "astrological_augur": {
+      "name": "Astrological Augur",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Astrology Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "During your formative years, you learned the stars are a gateway to mystical power or glimpses into the future. Perhaps you grew up surrounded by …",
+      "source": "Travel Guide pg. 122",
+      "slug": "astrological_augur"
+    },
+    "awful_scab": {
+      "name": "Awful Scab",
+      "pfs_availability": null,
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Fleshforged Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Prior to the Evisceration of 4707, the district of V'drysha was a lovely borough on the southern edge of Ecanus. Now, it's the Awful, a vast morass …",
+      "source": "Wake the Dead #1 pg. 26",
+      "slug": "awful_scab"
+    },
+    "bachuan_revolutionary": {
+      "name": "Bachuan Revolutionary",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Strength"
+      ],
+      "trained_skills": [
+        "Society",
+        "Law Lore"
+      ],
+      "granted_feats": [
+        "Sign Language"
+      ],
+      "rarity": "Uncommon",
+      "summary": "Your heart yearns for change and burns for your people. You refuse to conform to the laws that bind you, so you rebel in flashy ways. Your hair is …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "bachuan_revolutionary"
+    },
+    "back_alley_doctor": {
+      "name": "Back-Alley Doctor",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Risky Surgery"
+      ],
+      "rarity": "Common",
+      "summary": "You're the medic many turn to when a more official clinic or healer might not be available. You may specialize in stitching up bullet wounds or have …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "back_alley_doctor"
+    },
+    "bandit": {
+      "name": "Bandit",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Lore related to the terrain you worked in (such as Desert Lore or Plains Lore)."
+      ],
+      "granted_feats": [
+        "Group Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "Your past includes no small amount of rural banditry, robbing travelers on the road and scraping by. Whether your robbery was sanctioned by a local …",
+      "source": "Player Core pg. 84",
+      "slug": "bandit"
+    },
+    "banished_celestial": {
+      "name": "Banished Celestial",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were once something supernatural—a heavenly agent, grim reaper , immortal phoenix , or demonic tyrant. For some reason, you’ve been forced to …",
+      "source": "Tian Xia Character Guide pg. 12",
+      "slug": "banished_celestial"
+    },
+    "barber": {
+      "name": "Barber",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Surgery Lore"
+      ],
+      "granted_feats": [
+        "Risky Surgery"
+      ],
+      "rarity": "Common",
+      "summary": "Haircuts, dentistry, bloodletting, and surgery—if it takes a steady hand and a razor, you can do it. You may have taken to the road to expand your …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "barber"
+    },
+    "barkeep": {
+      "name": "Barkeep",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Alcohol Lore"
+      ],
+      "granted_feats": [
+        "Hobnobber"
+      ],
+      "rarity": "Common",
+      "summary": "You have five specialties: hefting barrels, drinking, polishing steins, drinking, and drinking. You worked in a bar, where you learned how to hold …",
+      "source": "Player Core pg. 84",
+      "slug": "barkeep"
+    },
+    "barrister": {
+      "name": "Barrister",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Group Impression"
+      ],
+      "rarity": "Common",
+      "summary": "Piles of legal manuals, stern teachers, and experience in the courtroom have instructed you in legal matters. You’re capable of mounting a …",
+      "source": "Player Core pg. 85",
+      "slug": "barrister"
+    },
+    "battle_mechanic": {
+      "name": "Battle Mechanic",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Vehicle Lore"
+      ],
+      "granted_feats": [
+        "Quick Repair"
+      ],
+      "rarity": "Common",
+      "summary": "All vehicles eventually break down, from both wear and tear and through contact with the enemy, and someone needs to fix them. You have experience …",
+      "source": "Battlecry! pg. 16",
+      "slug": "battle_mechanic"
+    },
+    "battlefield_scrounger": {
+      "name": "Battlefield Scrounger",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Improvise Tool"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You've spent years rummaging through the corpses of armies and their equipment as soon as battles were won, seeking items from the dead that you can …",
+      "source": "Battlecry! pg. 17",
+      "slug": "battlefield_scrounger"
+    },
+    "beast_blessed": {
+      "name": "Beast Blessed",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You once freed a magical beast from captivity and, whether it was intentional or a byproduct of another action, the grateful creature bestowed a …",
+      "source": "Firebrands pg. 75",
+      "slug": "beast_blessed"
+    },
+    "blessed": {
+      "name": "Blessed",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Lore associated with the deity who blessed you."
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You have been blessed by a divinity. For an unknown reason, and irrespective of your actual beliefs, a deity has granted you a boon to use for good …",
+      "source": "Player Core 2 pg. 52",
+      "slug": "blessed"
+    },
+    "bookkeeper": {
+      "name": "Bookkeeper",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Society",
+        "Accounting Lore"
+      ],
+      "granted_feats": [
+        "Eye for Numbers"
+      ],
+      "rarity": "Common",
+      "summary": "You ran the numbers on a large farm, for a merchant's endeavors, or with a major guild in the city. You kept track of expenses, payroll, profits, and …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "bookkeeper"
+    },
+    "bounty_hunter": {
+      "name": "Bounty Hunter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Experienced Tracker"
+      ],
+      "rarity": "Common",
+      "summary": "Bringing in lawbreakers lined your pockets. Maybe you had an altruistic motive and sought to bring in criminals to make the streets safer, or maybe …",
+      "source": "Player Core pg. 85",
+      "slug": "bounty_hunter"
+    },
+    "cannoneer": {
+      "name": "Cannoneer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Hefty Hauler"
+      ],
+      "rarity": "Common",
+      "summary": "You served as a crewmate aboard a military vessel or pirate ship and were responsible for the use and maintenance of the ship's cannons. A strong …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "cannoneer"
+    },
+    "charlatan": {
+      "name": "Charlatan",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Deception",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Charming Liar"
+      ],
+      "rarity": "Common",
+      "summary": "You traveled from place to place, peddling false fortunes and snake oil in one town, pretending to be royalty in exile to seduce a wealthy heir in …",
+      "source": "Player Core pg. 85",
+      "slug": "charlatan"
+    },
+    "child_of_the_twin_village": {
+      "name": "Child of the Twin Village",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Dreamlands Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": null,
+      "source": "Dark Archives (Remastered) pg. 73",
+      "slug": "child_of_the_twin_village"
+    },
+    "chosen_one": {
+      "name": "Chosen One",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Fortune-Teller Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Your birth has fulfilled a prediction, and people close to you are counting on you to do great things. There's intense pressure on you to be up to …",
+      "source": "Secrets of Magic pg. 30",
+      "slug": "chosen_one"
+    },
+    "circuit_judge": {
+      "name": "Circuit Judge",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Deception",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Lie to Me"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You're a circuit judge, a courtroom on horseback who serves a group of communities out in the Mana Wastes or a similar backwoods region. You show up …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "circuit_judge"
+    },
+    "clockfighter": {
+      "name": "Clockfighter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Gladiatorial Lore"
+      ],
+      "granted_feats": [
+        "Experienced Professional"
+      ],
+      "rarity": "Common",
+      "summary": "While others choose to use their engineering ability to heal the injured or make brilliant innovations, you've used your skill to repair and modify …",
+      "source": "Guns & Gears (Remastered) pg. 44",
+      "slug": "clockfighter"
+    },
+    "clockwork_researcher": {
+      "name": "Clockwork Researcher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Eye for Numbers"
+      ],
+      "rarity": "Common",
+      "summary": "New forms of clockwork technology are incredibly interesting to you, and you've been studying examples of them to see where else they might be best …",
+      "source": "Guns & Gears (Remastered) pg. 44",
+      "slug": "clockwork_researcher"
+    },
+    "codebreaker": {
+      "name": "Codebreaker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Society",
+        "Cryptography Lore"
+      ],
+      "granted_feats": [
+        "Glean Contents"
+      ],
+      "rarity": "Common",
+      "summary": "Whether you're employed by a military organization to decipher coded messages sent by enemy factions or work independently to crack an enigma created …",
+      "source": "Guns & Gears (Remastered) pg. 44",
+      "slug": "codebreaker"
+    },
+    "combat_carpenter": {
+      "name": "Combat Carpenter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "You have spent countless hours selecting lumber, drafting designs, and constructing all manner of wooden buildings, shields, weapons, and tools. You …",
+      "source": "Battlecry! pg. 16",
+      "slug": "combat_carpenter"
+    },
+    "combat_chaplain": {
+      "name": "Combat Chaplain",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Lore associated with the deity you worship."
+      ],
+      "granted_feats": [
+        "Recognize Spell"
+      ],
+      "rarity": "Common",
+      "summary": "As a member of the clergy, you have been responsible for tending to the spiritual and moral well-being of soldiers and their families. While you may …",
+      "source": "Battlecry! pg. 16",
+      "slug": "combat_chaplain"
+    },
+    "concordance_researcher": {
+      "name": "Concordance Researcher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Uncommon",
+      "summary": "Tasked by the Concordance of Elements to research a variety of enigmatic planar phenomena, you've acquired very specific knowledge about the planes …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "concordance_researcher"
+    },
+    "concordance_scout": {
+      "name": "Concordance Scout",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy"
+      ],
+      "granted_feats": [
+        "Hobnobber"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You were hired by the Concordance of Elements to seek out rumors of planar breaches or other evidence of planar imbalances. After reporting back to …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "concordance_scout"
+    },
+    "conscript": {
+      "name": "Conscript",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Society",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "Like many others in your settlement, you readily performed your duty and served in the army once you came of age. Much to the chagrin of the grizzled …",
+      "source": "Battlecry! pg. 16",
+      "slug": "conscript"
+    },
+    "cook": {
+      "name": "Cook",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Cooking Lore"
+      ],
+      "granted_feats": [
+        "Seasoned"
+      ],
+      "rarity": "Common",
+      "summary": "You grew up in the kitchens of a tavern or other dining establishment and excelled there, becoming an exceptional cook. Baking, cooking, a little …",
+      "source": "Player Core pg. 85",
+      "slug": "cook"
+    },
+    "courier": {
+      "name": "Courier",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Lore for your city of origin."
+      ],
+      "granted_feats": [
+        "Glean Contents"
+      ],
+      "rarity": "Common",
+      "summary": "In your youth, you earned coin running messages for persons of wealth and influence, darting through crowded city streets. Your dogged commitment to …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "courier"
+    },
+    "criminal": {
+      "name": "Criminal",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Experienced Smuggler"
+      ],
+      "rarity": "Common",
+      "summary": "As an unscrupulous independent or as a member of an underworld organization, you lived a life of crime. You might have become an adventurer to seek …",
+      "source": "Player Core pg. 85",
+      "slug": "criminal"
+    },
+    "crystal_healer": {
+      "name": "Crystal Healer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Plane of Earth Lore"
+      ],
+      "granted_feats": [
+        "Natural Medicine"
+      ],
+      "rarity": "Common",
+      "summary": "Mineral formations can be beautiful things, sparkling and arrayed in geometric configurations. To you, they are also potent natural healing aids. You …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "crystal_healer"
+    },
+    "cultist": {
+      "name": "Cultist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Lore related to your deity or cult."
+      ],
+      "granted_feats": [
+        "Schooled in Secrets"
+      ],
+      "rarity": "Common",
+      "summary": "You were (or still are) a member of a cult whose rites may involve sacred dances to ensure a strong harvest or dire rituals that call upon dark …",
+      "source": "Player Core pg. 86",
+      "slug": "cultist"
+    },
+    "curandero": {
+      "name": "Curandero",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Herbalism Lore"
+      ],
+      "granted_feats": [
+        "Inoculation"
+      ],
+      "rarity": "Common",
+      "summary": "You learned the healing arts of your community wielding your ceremonial chonta, a tool you carved yourself and imbued with sacred oils and herbs. …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "curandero"
+    },
+    "cursed": {
+      "name": "Cursed",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Curse Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You are the victim of a personal or hereditary curse. Through great effort and occult study, you have learned to fend off the curse's worst effects …",
+      "source": "Player Core 2 pg. 52",
+      "slug": "cursed"
+    },
+    "dauntless": {
+      "name": "Dauntless",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "As a child, you chose to face each of your deepest fears and, time and again, emerged victorious. You have learned to conquer fear itself, and by …",
+      "source": "Firebrands pg. 75",
+      "slug": "dauntless"
+    },
+    "deckhand": {
+      "name": "Deckhand",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Acrobatics",
+        "Sailing Lore"
+      ],
+      "granted_feats": [
+        "Cat Fall"
+      ],
+      "rarity": "Common",
+      "summary": "The rolling waves of the high seas, the constant sway of the deck underfoot, and the creaking heights of a ship's rigging are as familiar to you as …",
+      "source": "Pathfinder Beginner Box: Hero's Handbook pg. 18",
+      "slug": "deckhand"
+    },
+    "deep_sea_diver": {
+      "name": "Deep-Sea Diver",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Plane of Water Lore"
+      ],
+      "granted_feats": [
+        "Underwater Marauder"
+      ],
+      "rarity": "Common",
+      "summary": "The sapphire depths of the seas and the mysteries they hold beneath their surface have always piqued your interest. Your obsession with the ocean …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "deep_sea_diver"
+    },
+    "dendrologist": {
+      "name": "Dendrologist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Plane of Wood Lore"
+      ],
+      "granted_feats": [
+        "Terrain Expertise"
+      ],
+      "rarity": "Common",
+      "summary": "Trees grow in every biome, and your awe at their ability to conquer terrain has inspired deeper study into their workings. There are trees …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "dendrologist"
+    },
+    "deputy": {
+      "name": "Deputy",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Hunting Lore"
+      ],
+      "granted_feats": [
+        "Experienced Tracker"
+      ],
+      "rarity": "Common",
+      "summary": "While your life may have taken some twists and turns in the intervening years, you were once deputized as the lawful protector of a community. While …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "deputy"
+    },
+    "detective": {
+      "name": "Detective",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Society",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Streetwise"
+      ],
+      "rarity": "Common",
+      "summary": "You solved crimes as a police inspector or took jobs for wealthy clients as a private investigator. You might have become an adventurer as part of …",
+      "source": "Player Core pg. 86",
+      "slug": "detective"
+    },
+    "discarded_duplicate": {
+      "name": "Discarded Duplicate",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Someone created you for a specific purpose. Some important person, be they a storied royal, a contentious politician, or a stark military leader, …",
+      "source": "Guns & Gears (Remastered) pg. 46",
+      "slug": "discarded_duplicate"
+    },
+    "disciple_of_the_gear": {
+      "name": "Disciple of the Gear",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Lore for the deity you worship."
+      ],
+      "granted_feats": [
+        "Quick Repair"
+      ],
+      "rarity": "Common",
+      "summary": "While many regard science and faith as incompatible, you believe scientific advancement is your deity's will. Perhaps you're a follower of Brigh , …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "disciple_of_the_gear"
+    },
+    "doomcaller": {
+      "name": "Doomcaller",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Star Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "In the stars you see not guidance or wisdom but a twinkling door to the impending end of all things. You might have been raised in this ideology, …",
+      "source": "Travel Guide pg. 122",
+      "slug": "doomcaller"
+    },
+    "dreamer_of_the_verdant_moon": {
+      "name": "Dreamer of the Verdant Moon",
+      "pfs_availability": null,
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Zevgavizeb Lore"
+      ],
+      "granted_feats": [
+        "Ravening's Desperation"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You spent your early days in the aftermath of one of the great ravenings. You survived thanks to your resourcefulness and perhaps your patron’s …",
+      "source": "Pathfinder #153: Life's Long Shadows pg. 67",
+      "slug": "dreamer_of_the_verdant_moon"
+    },
+    "driver": {
+      "name": "Driver",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Acrobatics",
+        "Driving Lore Lore or Piloting Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "You live behind the controls of a vehicle, and can handle anything the road or waves and sky can throw at you. You adventure to test your skills with …",
+      "source": "Guns & Gears (Remastered) pg. 45, Player Core 2 pg. 50",
+      "slug": "driver"
+    },
+    "driver_2": {
+      "name": "Driver",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Acrobatics",
+        "Driving Lore or Piloting Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "You live behind the controls of a vehicle, and can handle anything the road or waves and sky can throw at you. You adventure to test your skills with …",
+      "source": "Player Core 2 pg. 50, Guns & Gears (Remastered) pg. 45",
+      "slug": "driver_2"
+    },
+    "droskari_disciple": {
+      "name": "Droskari Disciple",
+      "pfs_availability": null,
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Lore",
+        "Droskar Lore"
+      ],
+      "granted_feats": [
+        "Skill Training"
+      ],
+      "rarity": "Common",
+      "summary": "You grew up in the church of the Dark Smith, where you learned the value of hard work and achieving vocational mastery.",
+      "source": "Pathfinder #148: Fires of the Haunted City pg. 65",
+      "slug": "droskari_disciple"
+    },
+    "eagle_hunter": {
+      "name": "Eagle Hunter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Hunting Lore"
+      ],
+      "granted_feats": [
+        "Pet",
+        "Train Animal"
+      ],
+      "rarity": "Rare",
+      "summary": "You’re a hunter bonded to an eagle animal companion since youth. You’ve trained your eagle to hunt with you, simultaneously becoming an extension of …",
+      "source": "Tian Xia Character Guide pg. 12",
+      "slug": "eagle_hunter"
+    },
+    "eclipseborn": {
+      "name": "Eclipseborn",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were born at the exact moment of a solar or lunar eclipse. At the eclipse's junction, or not long after, a catastrophe fell upon the area of your …",
+      "source": "Travel Guide pg. 122",
+      "slug": "eclipseborn"
+    },
+    "eidolon_contact": {
+      "name": "Eidolon Contact",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Lore for the creature associated with your contacted eidolon (such as Angel Lore or Dragon Lore)."
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "You've come into contact with a disembodied being of magical essence known as an eidolon . You might have forged a powerful conduit with that …",
+      "source": "Secrets of Magic pg. 28",
+      "slug": "eidolon_contact"
+    },
+    "elementally_infused": {
+      "name": "Elementally Infused",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were exposed to a strong burst of elemental essence originating directly from an elemental plane, most likely caused by a planar breach. Your …",
+      "source": "Rage of Elements pg. 45",
+      "slug": "elementally_infused"
+    },
+    "emissary": {
+      "name": "Emissary",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Lore related to one city you've visited often."
+      ],
+      "granted_feats": [
+        "Multilingual"
+      ],
+      "rarity": "Common",
+      "summary": "As a diplomat or messenger, you traveled to lands far and wide. Communicating with new people and forming alliances were your stock and trade.",
+      "source": "Player Core pg. 86",
+      "slug": "emissary"
+    },
+    "empty_whispers": {
+      "name": "Empty Whispers",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Planar Rift Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": null,
+      "source": "Dark Archives (Remastered) pg. 92",
+      "slug": "empty_whispers"
+    },
+    "energy_scarred": {
+      "name": "Energy Scarred",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Lore associated with the chosen energy (such as Fire Lore)"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Exposure to a significant magical event overloaded you with magical energy. Perhaps you were exposed to dangerous levels of magical energy that left …",
+      "source": "Secrets of Magic pg. 219",
+      "slug": "energy_scarred"
+    },
+    "entertainer": {
+      "name": "Entertainer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Theater Lore"
+      ],
+      "granted_feats": [
+        "Fascinating Performance"
+      ],
+      "rarity": "Common",
+      "summary": "Through an education in the arts or sheer dogged practice, you learned to entertain crowds. You might have been an actor, a dancer, a musician, a …",
+      "source": "Player Core pg. 86",
+      "slug": "entertainer"
+    },
+    "false_medium": {
+      "name": "False Medium",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Fortune-Telling Lore"
+      ],
+      "granted_feats": [
+        "Deceptive Worship"
+      ],
+      "rarity": "Common",
+      "summary": "There are people in this world who possess the ability to pierce the veil between the world of the living and the world of the dead, allowing them to …",
+      "source": "Secrets of Magic pg. 28",
+      "slug": "false_medium"
+    },
+    "farmhand": {
+      "name": "Farmhand",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Farming Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "With a strong back and an understanding of seasonal cycles, you tilled the land and tended crops. Your farm could have been razed by invaders, you …",
+      "source": "Player Core pg. 86",
+      "slug": "farmhand"
+    },
+    "farmsteader": {
+      "name": "Farmsteader",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Farming Lore"
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Common",
+      "summary": "You built your house using wood from the trees surrounding it. Raised it up from the dirt and called it home. You thought that it would be where you …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "farmsteader"
+    },
+    "fated_rival": {
+      "name": "Fated Rival",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You are bound in an adversarial relationship with another person or creature. You might have been close once, before everything went wrong, or they …",
+      "source": "Tian Xia Character Guide pg. 12",
+      "slug": "fated_rival"
+    },
+    "favored": {
+      "name": "Favored",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You’re a trained, elegant artist or entertainer for the upper echelon of society. You might be a skilled crafter, a master performer, a highly sought …",
+      "source": "Tian Xia Character Guide pg. 12",
+      "slug": "favored"
+    },
+    "feral_child": {
+      "name": "Feral Child",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [
+        "Nature or Survival"
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Rare",
+      "summary": "You spent your youth in the wilderness, living close to or perhaps raised by animals. You have a close, mystical connection with these animals and …",
+      "source": "Player Core 2 pg. 52",
+      "slug": "feral_child"
+    },
+    "feybound": {
+      "name": "Feybound",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Fey Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You have spent time in the First World or another realm of the fey and aren't entirely the same person you were before. Perhaps you made a …",
+      "source": "Player Core 2 pg. 52",
+      "slug": "feybound"
+    },
+    "field_medic": {
+      "name": "Field Medic",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Battle Medicine"
+      ],
+      "rarity": "Common",
+      "summary": "In the chaotic rush of battle, you learned to adapt to rapidly changing conditions as you administered to battle casualties. You patched up soldiers, …",
+      "source": "Player Core pg. 86",
+      "slug": "field_medic"
+    },
+    "fightbreaker": {
+      "name": "Fightbreaker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Lore for the city or settlement you lived in when you became a Fightbreaker"
+      ],
+      "granted_feats": [
+        "Group Impression"
+      ],
+      "rarity": "Common",
+      "summary": "You have a knack for picking up on simmering tensions and calming frayed nerves. You rely on your intuition to discern how and when violence is …",
+      "source": "Highhelm pg. 86",
+      "slug": "fightbreaker"
+    },
+    "fire_warden": {
+      "name": "Fire Warden",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Plane of Fire Lore"
+      ],
+      "granted_feats": [
+        "Breath Control"
+      ],
+      "rarity": "Common",
+      "summary": "Whether you fought against fires in the wilderness or in crowded city streets, you've had your fair share of dealing with uncontrolled flames. …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "fire_warden"
+    },
+    "firebrand_follower": {
+      "name": "Firebrand Follower",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Athletics or Performance",
+        "Firebrand Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "You were once rescued or liberated from a hopeless situation by a group of Firebrands, and you have since aspired to become a Firebrand to continue …",
+      "source": "Firebrands pg. 75",
+      "slug": "firebrand_follower"
+    },
+    "fireworks_performer": {
+      "name": "Fireworks Performer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Fireworks Lore"
+      ],
+      "granted_feats": [
+        "Fascinating Performance"
+      ],
+      "rarity": "Common",
+      "summary": "Few celebrations in Tian-Xia are complete without a show of fireworks, and your job is to make sure they go off without a hitch. You load the …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "fireworks_performer"
+    },
+    "fortune_teller": {
+      "name": "Fortune Teller",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Fortune-Telling Lore"
+      ],
+      "granted_feats": [
+        "Oddity Identification"
+      ],
+      "rarity": "Common",
+      "summary": "The strands of fate are clear to you, as you have learned many traditional forms by which laypeople can divine the future. You might have used these …",
+      "source": "Player Core pg. 86",
+      "slug": "fortune_teller"
+    },
+    "free_spirit": {
+      "name": "Free Spirit",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Lore for a specific settlement or terrain you have traveled through."
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Common",
+      "summary": "You've always lived your life straying from the path laid before you. Like a leaf blowing in the wind, your journey takes you where it will, …",
+      "source": "Firebrands pg. 75",
+      "slug": "free_spirit"
+    },
+    "gambler": {
+      "name": "Gambler",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Deception",
+        "Games Lore"
+      ],
+      "granted_feats": [
+        "Lie to Me"
+      ],
+      "rarity": "Common",
+      "summary": "The thrill of the win drew you into games of chance. This might have been a lucrative sideline that paled in comparison to the real risks of …",
+      "source": "Player Core pg. 86",
+      "slug": "gambler"
+    },
+    "genie_blessed": {
+      "name": "Genie-Blessed",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Genie Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You've sought out a powerful genie and requested their blessing, hoping to increase your fortune. Your wish was vague, but fortune and the genie …",
+      "source": "Secrets of Magic pg. 30",
+      "slug": "genie_blessed"
+    },
+    "gladiator": {
+      "name": "Gladiator",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Gladiatorial Lore"
+      ],
+      "granted_feats": [
+        "Impressive Performance"
+      ],
+      "rarity": "Common",
+      "summary": "The bloody games of the arena taught you the art of combat. Before you attained true fame, you departed—or escaped—the arena to explore the world. …",
+      "source": "Player Core pg. 86",
+      "slug": "gladiator"
+    },
+    "goldhand_arms_dealer": {
+      "name": "Goldhand Arms Dealer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Mercantile Lore"
+      ],
+      "granted_feats": [
+        "Group Impression"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You're a dwarven agent of the Goldhand Lodge, a collection of dwarven merchants based out of Dongun Hold who seeks to sell guns far and wide. High …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "goldhand_arms_dealer"
+    },
+    "gossip": {
+      "name": "Gossip",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Charisma",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Lore skill of your choice."
+      ],
+      "granted_feats": [
+        "Hobnobber"
+      ],
+      "rarity": "Common",
+      "summary": "Everyone has a nosy auntie, a talkative uncle, or a gossiping relative. Just like them, you don’t mind the chatter from the eternal grapevine. …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "gossip"
+    },
+    "grave_robber": {
+      "name": "Grave Robber",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Experienced Smuggler"
+      ],
+      "rarity": "Common",
+      "summary": "Resurrectionist. Body snatcher. No matter what you're called, you know where the bodies are buried, and how many coins they'll fetch when dug up. …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "grave_robber"
+    },
+    "guard": {
+      "name": "Guard",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Legal Lore or Warfare Lore skill."
+      ],
+      "granted_feats": [
+        "Quick Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "You served in the guard, out of either patriotism or the need for coin. Either way, you know how to get a difficult suspect to talk. However you left …",
+      "source": "Player Core pg. 86",
+      "slug": "guard"
+    },
+    "gunsmith": {
+      "name": "Gunsmith",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Quick Repair"
+      ],
+      "rarity": "Common",
+      "summary": "From a young age, you apprenticed to an experienced gunsmith and over time your skill and knowledge rose to match that of your master. Today, you can …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "gunsmith"
+    },
+    "harrow_chosen": {
+      "name": "Harrow-Chosen",
+      "pfs_availability": null,
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Unbeknownst to you, a powerful divination has confirmed that you're destined for greatness. This divination hints at a great potential you're only …",
+      "source": "Pathfinder #192: Worst of All Possible Worlds pg. 67",
+      "slug": "harrow_chosen"
+    },
+    "harrow_led": {
+      "name": "Harrow-Led",
+      "pfs_availability": null,
+      "ability_boosts": [],
+      "trained_skills": [
+        "Harrow Lore"
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "You were the subject of a harrow reading at a pivotal point in your life, such as on an important birthday, or upon reaching adulthood. The reading …",
+      "source": "Pathfinder #160: Assault on Hunting Lodge Seven pg. 66",
+      "slug": "harrow_led"
+    },
+    "haunted": {
+      "name": "Haunted",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism"
+      ],
+      "granted_feats": [
+        "Diehard"
+      ],
+      "rarity": "Rare",
+      "summary": "You are followed by a spirit or entity, either from childhood or since a momentous event. You and others may have seen this entity. You have studied …",
+      "source": "Player Core 2 pg. 53",
+      "slug": "haunted"
+    },
+    "haunted_citizen": {
+      "name": "Haunted Citizen",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Lore for your home settlement."
+      ],
+      "granted_feats": [
+        "No Cause for Alarm"
+      ],
+      "rarity": "Common",
+      "summary": "You grew up in a region where undead lurk everywhere. This could be a domain as small as a vampire's fief or as vast as the nation of Ustalav. As an …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "haunted_citizen"
+    },
+    "herbalist": {
+      "name": "Herbalist",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Herbalism Lore"
+      ],
+      "granted_feats": [
+        "Natural Medicine"
+      ],
+      "rarity": "Common",
+      "summary": "As a formally trained apothecary or a rural practitioner of folk medicine, you learned the healing properties of various herbs. You’re adept at …",
+      "source": "Player Core pg. 86",
+      "slug": "herbalist"
+    },
+    "hermit": {
+      "name": "Hermit",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Nature or Occultism",
+        "Lore related to the terrain you lived in as a hermit (such as Cave Lore or Desert Lore)."
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "In an isolated place—like a cave, remote oasis, or secluded mansion—you lived a life of solitude. Adventuring might represent your first foray out …",
+      "source": "Player Core pg. 87",
+      "slug": "hermit"
+    },
+    "highborn_snoop": {
+      "name": "Highborn Snoop",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Guild Lore"
+      ],
+      "granted_feats": [
+        "Courtly Graces"
+      ],
+      "rarity": "Common",
+      "summary": "The machinations and scheming of King's Crown have trained you to be on the lookout for those who seem out of place. You've learned to spot when the …",
+      "source": "Highhelm pg. 58",
+      "slug": "highborn_snoop"
+    },
+    "hired_killer": {
+      "name": "Hired Killer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Terrain Stalker"
+      ],
+      "rarity": "Common",
+      "summary": "Your life truly began after your first kill. Maybe you killed in self-defense, maybe it was a crime of passion, or maybe it was just an accident and …",
+      "source": "Guns & Gears (Remastered) pg. 122",
+      "slug": "hired_killer"
+    },
+    "hookclaw_digger": {
+      "name": "Hookclaw Digger",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Mining Lore and the Engineering Lore skill."
+      ],
+      "granted_feats": [
+        "Improvise Tool"
+      ],
+      "rarity": "Rare",
+      "summary": "You are a digger from the Hookclaw kobold tribe, born beneath the streets of Absalom, with muscles and mind hardened by years spent tunneling through …",
+      "source": "Little Trouble in Big Absalom",
+      "slug": "hookclaw_digger"
+    },
+    "hounded_thief": {
+      "name": "Hounded Thief",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Pickpocket"
+      ],
+      "rarity": "Common",
+      "summary": "Some time ago, you stole a unique item from a strange individual. It might have been a piece of clockwork from a far-off land or some other bit of …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "hounded_thief"
+    },
+    "hunter": {
+      "name": "Hunter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Tanning Lore"
+      ],
+      "granted_feats": [
+        "Survey Wildlife"
+      ],
+      "rarity": "Common",
+      "summary": "You stalked and took down animals and other creatures of the wild. Skinning animals, harvesting their flesh, and cooking them were also part of your …",
+      "source": "Player Core pg. 87",
+      "slug": "hunter"
+    },
+    "insurgent": {
+      "name": "Insurgent",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Deception",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Lengthy Diversion"
+      ],
+      "rarity": "Common",
+      "summary": "You were more than a rebel; you were a revolutionary, fighting for the promise of a new or better country. You may or may not still believe in the …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "insurgent"
+    },
+    "jeweler": {
+      "name": "Jeweler",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Gem Lore"
+      ],
+      "granted_feats": [
+        "Crafter's Appraisal"
+      ],
+      "rarity": "Common",
+      "summary": "As an artisan by trade, your materials of choice are precious metals and stones. You’re a trained jeweler with an eye for structure and beauty. Your …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "jeweler"
+    },
+    "junk_collector": {
+      "name": "Junk Collector",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Engineering Lore or Mining Lore skill."
+      ],
+      "granted_feats": [
+        "Crafter's Appraisal"
+      ],
+      "rarity": "Common",
+      "summary": "You live by the adage that one person's trash is another's treasure. Whether by sifting through scrap heaps or digging up old battlefields, you …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "junk_collector"
+    },
+    "junker": {
+      "name": "Junker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Lore of the terrain in which you scavenge."
+      ],
+      "granted_feats": [
+        "Hefty Hauler"
+      ],
+      "rarity": "Common",
+      "summary": "You live on the outskirts of civilization, combing through the detritus left behind for interesting trinkets to sell or use in your own crafting. …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "junker"
+    },
+    "kaiju_stalker": {
+      "name": "Kaiju Stalker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "The lands of Tian Xia can be as dangerous as they are beautiful, and like any land, it calls for hunters. A normal hunter’s game varies in size, with …",
+      "source": "Tian Xia Character Guide pg. 13",
+      "slug": "kaiju_stalker"
+    },
+    "laborer": {
+      "name": "Laborer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Labor Lore"
+      ],
+      "granted_feats": [
+        "Hefty Hauler"
+      ],
+      "rarity": "Common",
+      "summary": "You’ve spent years performing arduous physical labor. It was a difficult life, but you somehow survived. You may have embraced adventuring as an …",
+      "source": "Player Core pg. 87",
+      "slug": "laborer"
+    },
+    "legacy_of_the_hammer": {
+      "name": "Legacy of the Hammer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Concealing Legerdemain"
+      ],
+      "rarity": "Uncommon",
+      "summary": null,
+      "source": "Dark Archives (Remastered) pg. 135",
+      "slug": "legacy_of_the_hammer"
+    },
+    "magical_experiment": {
+      "name": "Magical Experiment",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Academia Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "At some point in your life, powerful people performed magical experiments on you that changed you permanently. You may have signed up for this …",
+      "source": "Secrets of Magic pg. 30",
+      "slug": "magical_experiment"
+    },
+    "magical_merchant": {
+      "name": "Magical Merchant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Mercantile Lore"
+      ],
+      "granted_feats": [
+        "Crafter's Appraisal"
+      ],
+      "rarity": "Common",
+      "summary": "Selling magic items isn't like being an ordinary merchant. The wares you buy and sell are expensive, making each sale rare and lucrative. You've …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "magical_merchant"
+    },
+    "magical_misfit": {
+      "name": "Magical Misfit",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Arcana",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Trick Magic Item"
+      ],
+      "rarity": "Common",
+      "summary": "You don't understand folks who claim that magical talent is some sort of burden or great responsibility; you've always used your magic to cause …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "magical_misfit"
+    },
+    "martial_disciple": {
+      "name": "Martial Disciple",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Acrobatics or Athletics",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Cat Fall",
+        "Quick Jump"
+      ],
+      "rarity": "Common",
+      "summary": "You dedicated yourself to intense training and rigorous study to become a great warrior. The school you attended might have been a traditionalist …",
+      "source": "Player Core pg. 87",
+      "slug": "martial_disciple"
+    },
+    "martial_musician": {
+      "name": "Martial Musician",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Impressive Performance"
+      ],
+      "rarity": "Uncommon",
+      "summary": "Before you were old enough to join the actual fighting forces, you found your way onto the battlefield playing bagpipes, bugles, or drums. With …",
+      "source": "Battlecry! pg. 17",
+      "slug": "martial_musician"
+    },
+    "mechanic": {
+      "name": "Mechanic",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Quick Repair"
+      ],
+      "rarity": "Common",
+      "summary": "The intricate inner workings of machines are no stranger to you. Whether they are mundane devices or complex clockworks, you know what makes them …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "mechanic"
+    },
+    "mechanical_symbiosis": {
+      "name": "Mechanical Symbiosis",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Arcana"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Whether you purposefully took it on or had it thrust upon you, a bronze, clockwork object latched onto some part of your body. It may have sunk its …",
+      "source": "Guns & Gears (Remastered) pg. 46",
+      "slug": "mechanical_symbiosis"
+    },
+    "medicinal_clocksmith": {
+      "name": "Medicinal Clocksmith",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Risky Surgery"
+      ],
+      "rarity": "Common",
+      "summary": "While others might have looked to clockwork as a mechanical innovation, you see the potential in the technology to improve the health of patients. …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "medicinal_clocksmith"
+    },
+    "merchant": {
+      "name": "Merchant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Mercantile Lore"
+      ],
+      "granted_feats": [
+        "Bargain Hunter"
+      ],
+      "rarity": "Common",
+      "summary": "In a dusty shop, market stall, or merchant caravan, you bartered wares for coin and trade goods. The skills you picked up still apply in the …",
+      "source": "Player Core pg. 87",
+      "slug": "merchant"
+    },
+    "miner": {
+      "name": "Miner",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Mining Lore"
+      ],
+      "granted_feats": [
+        "Terrain Expertise"
+      ],
+      "rarity": "Common",
+      "summary": "You earned a living wrenching precious minerals from the lightless depths of the earth. Adventuring might have seemed lucrative or glamorous compared …",
+      "source": "Player Core pg. 87",
+      "slug": "miner"
+    },
+    "mortuarium_survivor": {
+      "name": "Mortuarium Survivor",
+      "pfs_availability": null,
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Arcana",
+        "Necromancy Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Common",
+      "summary": "You studied the necromantic arts in the clawed tower of the Mortuarium, the most prestigious university of necromancy in Yled. Although your training …",
+      "source": "Wake the Dead #5 pg. 24",
+      "slug": "mortuarium_survivor"
+    },
+    "musical_prodigy": {
+      "name": "Musical Prodigy",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Music Lore"
+      ],
+      "granted_feats": [
+        "Virtuosic Performer"
+      ],
+      "rarity": "Common",
+      "summary": "Ever since you were young, you've been almost supernaturally skilled in a particular type of music. The people around you were sure you'd grow up to …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "musical_prodigy"
+    },
+    "mystic_tutor": {
+      "name": "Mystic Tutor",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Arcana or Occultism",
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Recognize Spell"
+      ],
+      "rarity": "Rare",
+      "summary": "You spent years predicting, identifying, and harnessing the innate magical talents of those around you. A magic-rich world has taught you that you …",
+      "source": "Secrets of Magic pg. 219",
+      "slug": "mystic_tutor"
+    },
+    "necromancer_s_apprentice": {
+      "name": "Necromancer's Apprentice",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Arcana",
+        "Necromancy Lore"
+      ],
+      "granted_feats": [
+        "Quick Identification"
+      ],
+      "rarity": "Common",
+      "summary": "You apprenticed under a necromancer—a hard education in a field where a cadaver you were dissecting could suddenly animate and every magical artifact …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "necromancer_s_apprentice"
+    },
+    "night_watch": {
+      "name": "Night Watch",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Quick Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "When everyone else slumbers, you're on guard. You might have been a watch member in a teeming metropolis, the guard in an unquiet cemetery, or a …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "night_watch"
+    },
+    "noble": {
+      "name": "Noble",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Genealogy Lore or Heraldry Lore skill."
+      ],
+      "granted_feats": [
+        "Courtly Graces"
+      ],
+      "rarity": "Common",
+      "summary": "To the common folk, the life of a noble seems one of idyllic luxury, but growing up as a noble or member of the aspiring gentry, you know the …",
+      "source": "Player Core pg. 87",
+      "slug": "noble"
+    },
+    "nocturnal_navigator": {
+      "name": "Nocturnal Navigator",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You have a great affinity for the night skies. You watch the stars, and you feel they speak secret messages specifically to you, which help you …",
+      "source": "Travel Guide pg. 122",
+      "slug": "nocturnal_navigator"
+    },
+    "nomad": {
+      "name": "Nomad",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Lore related to one terrain you traveled in (such as Desert Lore or Swamp Lore)."
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "Traveling far and wide, you picked up basic tactics for surviving on the road and in unknown lands, getting by with few supplies and even fewer …",
+      "source": "Player Core pg. 88",
+      "slug": "nomad"
+    },
+    "occult_librarian": {
+      "name": "Occult Librarian",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Schooled in Secrets"
+      ],
+      "rarity": "Common",
+      "summary": "Hours spent reading numerous compendiums dedicated to various occult topics honed your knowledge of these more obscure magical arts. You might have …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "occult_librarian"
+    },
+    "ocean_diver": {
+      "name": "Ocean Diver",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Ocean Lore"
+      ],
+      "granted_feats": [
+        "Underwater Marauder"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You’re one of the sea people, the divers who inhabit the rough shorelines. Diving into foreign depths with neither magic nor air reserves, it’s your …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "ocean_diver"
+    },
+    "once_bitten": {
+      "name": "Once Bitten",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Undead Lore"
+      ],
+      "granted_feats": [
+        "Battle Medicine"
+      ],
+      "rarity": "Common",
+      "summary": "After an altercation with an undead creature, you feared you might be infected. Either through medical intervention, luck, or misunderstanding how …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "once_bitten"
+    },
+    "otherworldly_mission": {
+      "name": "Otherworldly Mission",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Religion"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You're called to serve a specific purpose—your deity told you so, and so it must be true. Maybe you grew up knowing all along, or maybe it came to …",
+      "source": "Guns & Gears (Remastered) pg. 125",
+      "slug": "otherworldly_mission"
+    },
+    "outrider": {
+      "name": "Outrider",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Plains Lore"
+      ],
+      "granted_feats": [
+        "Express Rider"
+      ],
+      "rarity": "Common",
+      "summary": "In your youth, you galloped on horseback over vast prairies, serving as a vanguard for your settlement, an army, or another group. Seeing so many …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "outrider"
+    },
+    "ozem_experience": {
+      "name": "Ozem Experience",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Courtly Graces"
+      ],
+      "rarity": "Common",
+      "summary": "You or someone close to you worked with the Knights of Ozem before Lastwall fell. In addition to knowledge of the organization's tenets and goals, …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "ozem_experience"
+    },
+    "pathfinder_recruiter": {
+      "name": "Pathfinder Recruiter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Lore related to one city you've visited often."
+      ],
+      "granted_feats": [
+        "Group Impression"
+      ],
+      "rarity": "Common",
+      "summary": "The Pathfinder Society's always on the lookout for talent, but that talent rarely just stumbles into the Grand Lodge. Whether you're professionally …",
+      "source": "PFS Guide pg. 6",
+      "slug": "pathfinder_recruiter"
+    },
+    "pilgrim": {
+      "name": "Pilgrim",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Religion"
+      ],
+      "granted_feats": [],
+      "rarity": "Common",
+      "summary": "In your youth, you made several pilgrimages to important shrines and sacred sites. You might have been a mendicant friar, a seller of religious …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "pilgrim"
+    },
+    "pillar": {
+      "name": "Pillar",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Labor Lore"
+      ],
+      "granted_feats": [
+        "Additional Lore"
+      ],
+      "rarity": "Common",
+      "summary": "Not every Knight of Lastwall contributes to the crusade through combat. Pillars provide essential upkeep and service at camps, enjoying the same rank …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "pillar"
+    },
+    "plague_doctor": {
+      "name": "Plague Doctor",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Herbalism Lore"
+      ],
+      "granted_feats": [
+        "Inoculation"
+      ],
+      "rarity": "Common",
+      "summary": "Plagues often spring from mass deaths and the vermin that multiply after such tragedies. Cities under siege can grow ill without proper nutrition …",
+      "source": "Battlecry! pg. 17",
+      "slug": "plague_doctor"
+    },
+    "planar_migrant": {
+      "name": "Planar Migrant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Your birthplace was on one of the elemental planes, but you traveled to the Universe for some reason. Maybe you left on good terms, or maybe you were …",
+      "source": "Rage of Elements pg. 45",
+      "slug": "planar_migrant"
+    },
+    "plant_whisperer": {
+      "name": "Plant Whisperer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Plant Lore"
+      ],
+      "granted_feats": [
+        "Natural Medicine"
+      ],
+      "rarity": "Common",
+      "summary": "You've always had a green thumb, allowing you to care for plants that others found too difficult to grow and tend with a skill that borders on the …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "plant_whisperer"
+    },
+    "press_ganged_g_g": {
+      "name": "Press-Ganged (G&G)",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Labor Lore"
+      ],
+      "granted_feats": [
+        "Armor Assist"
+      ],
+      "rarity": "Uncommon",
+      "summary": "Was it five shots or six? It doesn't really matter in the end, because after those nice folks bought all your drinks, you woke up on the lowest rung …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "press_ganged_g_g"
+    },
+    "printer": {
+      "name": "Printer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Scribing Lore"
+      ],
+      "granted_feats": [
+        "Multilingual"
+      ],
+      "rarity": "Common",
+      "summary": "Keeping your finger on the pulse of the city, you write a small news broadsheet to sell on street corners. You rent the use of a printing press to …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "printer"
+    },
+    "prisoner": {
+      "name": "Prisoner",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Experienced Smuggler"
+      ],
+      "rarity": "Common",
+      "summary": "You might have been imprisoned for crimes (whether you were guilty or not), or enslaved for some part of your upbringing. In your adventuring life, …",
+      "source": "Player Core pg. 88",
+      "slug": "prisoner"
+    },
+    "professional_letter_writer": {
+      "name": "Professional Letter Writer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Scribing Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting",
+        "Multilingual"
+      ],
+      "rarity": "Rare",
+      "summary": "You make a living out of reading and writing letters for people who are eager to keep in touch with their loved ones over long distances. Many of …",
+      "source": "Tian Xia Character Guide pg. 13",
+      "slug": "professional_letter_writer"
+    },
+    "pyre_tender": {
+      "name": "Pyre Tender",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Funeral Lore"
+      ],
+      "granted_feats": [
+        "Alchemical Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "You're experienced at building funeral pyres. You might have lit flaming biers in the Land of the Linnorm Kings, tended the cremation pits of Cheliax …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "pyre_tender"
+    },
+    "quartermaster": {
+      "name": "Quartermaster",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Intimidating Glare"
+      ],
+      "rarity": "Common",
+      "summary": "An army marches on its stomach, and you have been on the forefront of ensuring your troops were properly fed and supplied. Through your logistical …",
+      "source": "Battlecry! pg. 17",
+      "slug": "quartermaster"
+    },
+    "quick_refugee": {
+      "name": "Quick Refugee",
+      "pfs_availability": null,
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Undead Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "The living residents of Geb are known as the quick, and is not, overall, a very pleasant thing to be. While some of the quick choose to make their …",
+      "source": "Wake the Dead #2 pg. 28",
+      "slug": "quick_refugee"
+    },
+    "raised_by_belief": {
+      "name": "Raised by Belief",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [
+        "Lore skill with a subcategory associated with your deity (Abadar Lore",
+        "for instance)."
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "Whether in a monastery, a religious household, or just as part of your everyday life, your upbringing was steeped in the traditions of a faith or …",
+      "source": "Player Core pg. 88",
+      "slug": "raised_by_belief"
+    },
+    "reborn_soul": {
+      "name": "Reborn Soul",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": null,
+      "source": "Dark Archives (Remastered) pg. 176",
+      "slug": "reborn_soul"
+    },
+    "reclaimed": {
+      "name": "Reclaimed",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Crimson Reclaimers Lore"
+      ],
+      "granted_feats": [
+        "Group Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "A unit of Crimson Reclaimers saved you from certain death in the Gravelands. You spent time with one or more Crimson Reclaimers as they escorted you …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "reclaimed"
+    },
+    "reclaimed_investigator": {
+      "name": "Reclaimed Investigator",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Crimson Reclaimers Lore"
+      ],
+      "granted_feats": [
+        "Oddity Identification"
+      ],
+      "rarity": "Common",
+      "summary": "You believe the mysterious patron of the Crimson Reclaimers has an ulterior motive that bedevils the Knights of Lastwall. Whatever the organization …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "reclaimed_investigator"
+    },
+    "refugee": {
+      "name": "Refugee",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Society",
+        "Lore related to the settlement you came from."
+      ],
+      "granted_feats": [
+        "Streetwise"
+      ],
+      "rarity": "Common",
+      "summary": "You come from a land very distant from the one you now find yourself in, driven by war, plague, or simply in the pursuit of opportunity. Regardless …",
+      "source": "Player Core 2 pg. 50",
+      "slug": "refugee"
+    },
+    "relentless_dedication": {
+      "name": "Relentless Dedication",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Canny Acumen"
+      ],
+      "rarity": "Rare",
+      "summary": "Recruiters invite many candidates like you to train to be Knights of Lastwall, but only a select few make the cut. Whereas others lose heart, your …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "relentless_dedication"
+    },
+    "remittance_agent": {
+      "name": "Remittance Agent",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Labor Lore or Mercenary Lore."
+      ],
+      "granted_feats": [
+        "Experienced Professional"
+      ],
+      "rarity": "Common",
+      "summary": "When money, goods, or merchandise need to be moved over great distances, remittance agents are better and more trustworthy than your local mercenary. …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "remittance_agent"
+    },
+    "report_runner": {
+      "name": "Report Runner",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Stabling Lore"
+      ],
+      "granted_feats": [
+        "Express Rider"
+      ],
+      "rarity": "Common",
+      "summary": "During times of war, armies might venture far from the seats of government that send them out or get separated from their commanders by the terrain. …",
+      "source": "Battlecry! pg. 17",
+      "slug": "report_runner"
+    },
+    "returned": {
+      "name": "Returned",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Diehard",
+        "Additional Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You died and miraculously returned with knowledge of the realms beyond death and a stronger link to life. Some dead and undead souls might feel a …",
+      "source": "Player Core 2 pg. 53",
+      "slug": "returned"
+    },
+    "revenant": {
+      "name": "Revenant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Boneyard Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You died. No real doubt about that. Bullet to the brain or knife to the throat, you were dead as dead can be. Then you got back up again. Maybe you …",
+      "source": "Guns & Gears (Remastered) pg. 125",
+      "slug": "revenant"
+    },
+    "root_worker": {
+      "name": "Root Worker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Herbalism Lore"
+      ],
+      "granted_feats": [
+        "Root Magic"
+      ],
+      "rarity": "Common",
+      "summary": "Some ailments can't be cured by herbs alone. You learned ritual remedies as well, calling on nature spirits to soothe aches and ward off the evil …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "root_worker"
+    },
+    "royalty": {
+      "name": "Royalty",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society"
+      ],
+      "granted_feats": [
+        "Courtly Graces"
+      ],
+      "rarity": "Rare",
+      "summary": "You are a prominent member of a royal family. You have eschewed the daily routines of royal life and taken up an adventurous quest—perhaps you're a …",
+      "source": "Player Core 2 pg. 53",
+      "slug": "royalty"
+    },
+    "runaway_noble": {
+      "name": "Runaway Noble",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Charisma",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Genealogy Lore or Heraldry Lore."
+      ],
+      "granted_feats": [
+        "Bon Mot"
+      ],
+      "rarity": "Uncommon",
+      "summary": "There are many reasons for noble blood to abandon their responsibilities. Whether you fled for safety, for love, to sate a spontaneous spark of …",
+      "source": "Tian Xia Character Guide pg. 10",
+      "slug": "runaway_noble"
+    },
+    "runner": {
+      "name": "Runner",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Lore for the city in which you were a messenger."
+      ],
+      "granted_feats": [
+        "Quick Jump"
+      ],
+      "rarity": "Common",
+      "summary": "You served as a messenger for a specific faction, guild, house, or individual, often running those messages on a short timeline. Finding the quickest …",
+      "source": "Firebrands pg. 75",
+      "slug": "runner"
+    },
+    "saboteur": {
+      "name": "Saboteur",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Concealing Legerdemain"
+      ],
+      "rarity": "Common",
+      "summary": "Whether you do it for personal enjoyment or at the behest of a mercenary company or military organization, you have a knack for destroying things. …",
+      "source": "Guns & Gears (Remastered) pg. 45, Player Core 2 pg. 51",
+      "slug": "saboteur"
+    },
+    "saboteur_2": {
+      "name": "Saboteur",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Concealing Legerdemain"
+      ],
+      "rarity": "Common",
+      "summary": "Whether you do it for personal enjoyment or at the behest of a mercenary company or military organization, you have a knack for destroying things. …",
+      "source": "Player Core 2 pg. 51, Guns & Gears (Remastered) pg. 45",
+      "slug": "saboteur_2"
+    },
+    "sailor": {
+      "name": "Sailor",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Sailing Lore"
+      ],
+      "granted_feats": [
+        "Underwater Marauder"
+      ],
+      "rarity": "Common",
+      "summary": "You heard the call of the sea from a young age. Perhaps you signed onto a merchant’s vessel, joined the navy, or even fell in with a crew of pirates …",
+      "source": "Player Core pg. 88",
+      "slug": "sailor"
+    },
+    "saloon_entertainer": {
+      "name": "Saloon Entertainer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Lore of your choice."
+      ],
+      "granted_feats": [
+        "Virtuosic Performer"
+      ],
+      "rarity": "Common",
+      "summary": "All you want to do is entertain the people, but sure enough, bad news seems to follow you. Gunfights, brawls, robberies, and more befall …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "saloon_entertainer"
+    },
+    "saved_by_clockwork": {
+      "name": "Saved by Clockwork",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Through bloody combat, a terrible accident, or purposeful sacrifice, you've lost some piece of your body that has been replaced with a clockwork …",
+      "source": "Guns & Gears (Remastered) pg. 47",
+      "slug": "saved_by_clockwork"
+    },
+    "scavenger": {
+      "name": "Scavenger",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Lore for the settlement you grew up scavenging in."
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Common",
+      "summary": "You've made a living sorting through the things society throws away. You might have scavenged simply to survive, or plied a trade as a ragpicker, …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "scavenger"
+    },
+    "scholar": {
+      "name": "Scholar",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Assurance"
+      ],
+      "rarity": "Common",
+      "summary": "You have a knack for learning, and sequestered yourself from the outside world to learn all you could. You read about so many wondrous places and …",
+      "source": "Player Core pg. 88",
+      "slug": "scholar"
+    },
+    "scion_of_slayers": {
+      "name": "Scion of Slayers",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Undead Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were born into a lineage of undead slayers. No mere occupation, in your family slaying is a mantle of almost mystic responsibility passed from …",
+      "source": "Book of the Dead pg. 16",
+      "slug": "scion_of_slayers"
+    },
+    "scout": {
+      "name": "Scout",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Lore related to one terrain you scouted in (such as Forest Lore or Cavern Lore)."
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Common",
+      "summary": "You called the wilderness home as you found trails and guided travelers. Your wanderlust could have called you to the adventuring life, or perhaps …",
+      "source": "Player Core pg. 88",
+      "slug": "scout"
+    },
+    "seer_of_the_dead": {
+      "name": "Seer of the Dead",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Undead Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You have long been gifted with the ability to see and speak with the departed. This could have manifested at your birth or when a chance encounter …",
+      "source": "Secrets of Magic pg. 31",
+      "slug": "seer_of_the_dead"
+    },
+    "sentinel_reflectance": {
+      "name": "Sentinel Reflectance",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Shining Sentinels Lore"
+      ],
+      "granted_feats": [
+        "No Cause for Alarm"
+      ],
+      "rarity": "Common",
+      "summary": "Either through witnessing their deeds and devout heroics firsthand, or through reading chronicles of their exploits, the Shining Sentinels of the …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "sentinel_reflectance"
+    },
+    "servant": {
+      "name": "Servant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Labor Lore"
+      ],
+      "granted_feats": [
+        "Read Lips"
+      ],
+      "rarity": "Common",
+      "summary": "You held a role of servitude, waiting on nobles and engendering their trust as one of the confidantes of the household. You might have walked away on …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "servant"
+    },
+    "sewer_dragon": {
+      "name": "Sewer Dragon",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Kobold Lore"
+      ],
+      "granted_feats": [
+        "Snare Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "You are one of the Sewer Dragons, born in Absalom's sewers, strengthened by a life defending your territory.",
+      "source": "PFS Quest #10: The Broken Scales pg. 16",
+      "slug": "sewer_dragon"
+    },
+    "sheriff": {
+      "name": "Sheriff",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Hunting Lore"
+      ],
+      "granted_feats": [
+        "Group Coercion"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You hold an official title of sheriff or deputy in a small community. Those that would do harm to others flee your gaze, for they know it brings the …",
+      "source": "Guns & Gears (Remastered) pg. 124",
+      "slug": "sheriff"
+    },
+    "sign_bound": {
+      "name": "Sign Bound",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were born under a powerful manifestation of a specific constellation, and its connection to you is obvious. You tend to feel most at ease while …",
+      "source": "Travel Guide pg. 122",
+      "slug": "sign_bound"
+    },
+    "silk_farmer": {
+      "name": "Silk Farmer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Sericulture Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Uncommon",
+      "summary": "You’ve studied and mastered the art of sericulture. The cultivation of silkworms to produce silk is an important industry that requires an intense …",
+      "source": "Tian Xia Character Guide pg. 11",
+      "slug": "silk_farmer"
+    },
+    "sky_rider": {
+      "name": "Sky Rider",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Acrobatics",
+        "Plane of Air Lore"
+      ],
+      "granted_feats": [
+        "Cat Fall"
+      ],
+      "rarity": "Common",
+      "summary": "The freedom of a bird in flight is something to envy, and envy it you did, but not for long. You've borrowed mechanical gliders or sought out the …",
+      "source": "Rage of Elements pg. 44",
+      "slug": "sky_rider"
+    },
+    "song_of_the_deep": {
+      "name": "Song of the Deep",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [
+        "Athletics",
+        "Ocean Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "During a sea voyage, you washed overboard, ingested sea water, and drowned. Merfolk, kelpies, sea serpents, or another magical denizen of the sea …",
+      "source": "Secrets of Magic pg. 31",
+      "slug": "song_of_the_deep"
+    },
+    "spell_seeker": {
+      "name": "Spell Seeker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Arcana or Occultism",
+        "Library Lore"
+      ],
+      "granted_feats": [
+        "Recognize Spell"
+      ],
+      "rarity": "Common",
+      "summary": "Conventional magic can only hold your attention for so long. Instead, you've devoted yourself to understanding truly esoteric spells, which …",
+      "source": "PFS Guide pg. 6",
+      "slug": "spell_seeker"
+    },
+    "spotter": {
+      "name": "Spotter",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Stealth",
+        "Scouting Lore"
+      ],
+      "granted_feats": [
+        "Terrain Stalker"
+      ],
+      "rarity": "Common",
+      "summary": "An eye for detail, a sense for the wind, and a strong trust in your gut feelings. These qualities have set you apart from others when it comes to …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "spotter"
+    },
+    "squire": {
+      "name": "Squire",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Heraldry Lore or Warfare Lore skill."
+      ],
+      "granted_feats": [
+        "Armor Assist"
+      ],
+      "rarity": "Common",
+      "summary": "You trained at the feet of a knight, maintaining their gear and supporting them at tourneys and in battle. Now you search for a challenge that will …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "squire"
+    },
+    "starless_one": {
+      "name": "Starless One",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Astrology Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You were born on a night when not a single star was in the night sky. While this is likely due to a haze, cloud cover, or other natural phenomena, …",
+      "source": "Travel Guide pg. 123",
+      "slug": "starless_one"
+    },
+    "street_preacher": {
+      "name": "Street Preacher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Lore for your patron deity."
+      ],
+      "granted_feats": [
+        "Dubious Knowledge"
+      ],
+      "rarity": "Common",
+      "summary": "Forget the church orthodoxy and the stuffy cloisters— spreading the word of your god to the people is your calling. You've preached on the street …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "street_preacher"
+    },
+    "street_urchin": {
+      "name": "Street Urchin",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Lore for the city you lived in as a street urchin (such as Absalom Lore or Magnimar Lore)."
+      ],
+      "granted_feats": [
+        "Pickpocket"
+      ],
+      "rarity": "Common",
+      "summary": "You eked out a living by picking pockets on the streets of a major city, never knowing where you’d find your next meal. While some folk adventure for …",
+      "source": "Player Core pg. 88",
+      "slug": "street_urchin"
+    },
+    "streetfood_vendor": {
+      "name": "Streetfood Vendor",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Dexterity"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Cooking Lore"
+      ],
+      "granted_feats": [
+        "Seasoned"
+      ],
+      "rarity": "Common",
+      "summary": "You’re an inspired chef, trying to make it as big as you can out on the open road. You travel with a wood or iron cart that doubles as your portable …",
+      "source": "Tian Xia Character Guide pg. 11",
+      "slug": "streetfood_vendor"
+    },
+    "student_of_magic": {
+      "name": "Student of Magic",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Recognize Spell"
+      ],
+      "rarity": "Common",
+      "summary": "You are currently enrolled at a school of magic, where you're learning the fundamentals of your magical tradition. Whether your adventuring occurs …",
+      "source": "Secrets of Magic pg. 29",
+      "slug": "student_of_magic"
+    },
+    "sun_dancer": {
+      "name": "Sun Dancer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance"
+      ],
+      "granted_feats": [
+        "Fascinating Performance"
+      ],
+      "rarity": "Rare",
+      "summary": "You've been taught the Burning Mother's blessings could be invited through dances done under its presence, such as in welcoming the first rays of …",
+      "source": "Travel Guide pg. 123",
+      "slug": "sun_dancer"
+    },
+    "surge_investigator": {
+      "name": "Surge Investigator",
+      "pfs_availability": "Limited",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Nature or Occultism",
+        "Magical Terrain Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "From rivers that charm all who come near to forests that speak through dream messages, you have seen and studied many kinds of magical terrain. The …",
+      "source": "Secrets of Magic pg. 219",
+      "slug": "surge_investigator"
+    },
+    "tall_tale": {
+      "name": "Tall Tale",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance"
+      ],
+      "granted_feats": [
+        "Impressive Performance"
+      ],
+      "rarity": "Rare",
+      "summary": "You've ridden a tornado, lassoed a river, mooned a dragon under a full moon, and shot six zombies with one bullet. That's what the stories say, …",
+      "source": "Guns & Gears (Remastered) pg. 125",
+      "slug": "tall_tale"
+    },
+    "tax_collector": {
+      "name": "Tax Collector",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Lore for the settlement that employed you."
+      ],
+      "granted_feats": [
+        "Quick Coercion"
+      ],
+      "rarity": "Common",
+      "summary": "Reviled but required, you were sent when taxes were due. Performing your job might have required travel and persuasion, or perhaps you were …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "tax_collector"
+    },
+    "teacher": {
+      "name": "Teacher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Performance or Society",
+        "Academia Lore"
+      ],
+      "granted_feats": [
+        "Experienced Professional"
+      ],
+      "rarity": "Common",
+      "summary": "You are incredibly knowledgeable, skilled, and perhaps even trained to teach children and adults about the world and its wonders. From books to …",
+      "source": "Player Core pg. 88",
+      "slug": "teacher"
+    },
+    "tech_reliant": {
+      "name": "Tech-Reliant",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting or Medicine"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Some event, be it an accident, attack, or disaster, has left you horribly scarred by magic. Your body no longer tolerates magical healing, and you …",
+      "source": "Guns & Gears (Remastered) pg. 47",
+      "slug": "tech_reliant"
+    },
+    "thrill_seeker": {
+      "name": "Thrill-Seeker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Combat Climber"
+      ],
+      "rarity": "Common",
+      "summary": "You once survived a life-or-death situation and found it surprisingly exhilarating, so now you chase that feeling of invincibility you only get when …",
+      "source": "Firebrands pg. 75",
+      "slug": "thrill_seeker"
+    },
+    "tide_watcher": {
+      "name": "Tide Watcher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Nature",
+        "Ocean Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Where you hail from, the ocean is the lifeblood of your community; knowing how it changes according to the moon was integral to everyday life. You've …",
+      "source": "Travel Guide pg. 123",
+      "slug": "tide_watcher"
+    },
+    "tiffin_box_deliverer": {
+      "name": "Tiffin Box Deliverer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Society",
+        "Labor Lore"
+      ],
+      "granted_feats": [
+        "Streetwise"
+      ],
+      "rarity": "Uncommon",
+      "summary": "Known to some as a dabbawala, you work for a delivery service, delivering and returning sturdy tiffins with hardy lunches for those who can’t afford …",
+      "source": "Tian Xia Character Guide pg. 11",
+      "slug": "tiffin_box_deliverer"
+    },
+    "time_traveler": {
+      "name": "Time Traveler",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You come from a different time. Whether by your own doing or a terrible accident, powerful magic has resulted in you coming to this time from the …",
+      "source": "Secrets of Magic pg. 31",
+      "slug": "time_traveler"
+    },
+    "tinker": {
+      "name": "Tinker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Engineering Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "Creating all sorts of minor inventions scratches your itch for problem-solving. Your engineering skills take a particularly creative bent, and no one …",
+      "source": "Player Core pg. 88",
+      "slug": "tinker"
+    },
+    "tomb_born": {
+      "name": "Tomb Born",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Undead Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Your parents conceived you for a fell purpose at a site tainted by death, like a wight's barrow, mass grave, or ossuary. Their reasons could be a …",
+      "source": "Book of the Dead pg. 17",
+      "slug": "tomb_born"
+    },
+    "toymaker": {
+      "name": "Toymaker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Mercantile Lore"
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "You delight in making little trinkets for children of all ages, and seeing their faces light up thanks to one of your creations brings joy to your …",
+      "source": "Guns & Gears (Remastered) pg. 45",
+      "slug": "toymaker"
+    },
+    "trailblazer": {
+      "name": "Trailblazer",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Cartography Lore"
+      ],
+      "granted_feats": [
+        "Terrain Expertise"
+      ],
+      "rarity": "Common",
+      "summary": "Uncharted realms have always intrigued you, and you've explored and mapped large territories in service to merchants, governments, or your own …",
+      "source": "PFS Guide pg. 6",
+      "slug": "trailblazer"
+    },
+    "translator": {
+      "name": "Translator",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Society",
+        "Scribing Lore"
+      ],
+      "granted_feats": [
+        "Multilingual"
+      ],
+      "rarity": "Common",
+      "summary": "In your youth, you learned to transcribe books and translate scrolls to preserve knowledge or perhaps to aid wealthy merchants and politicians. …",
+      "source": "PFS Guide pg. 6",
+      "slug": "translator"
+    },
+    "traveling_gourmand": {
+      "name": "Traveling Gourmand",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Intelligence"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Cooking Lore"
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Uncommon",
+      "summary": "With plenty of time to hone your culinary skill, you can make the most out of any dish you create. You have much experience with using the most …",
+      "source": "Tian Xia Character Guide pg. 11",
+      "slug": "traveling_gourmand"
+    },
+    "tyrant_witness": {
+      "name": "Tyrant Witness",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Undead Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "When Tar-Baphon broke free of Gallowspire, you saw him emerge. When the god-slaying lich obliterated Vigil and Roslar's Coffer, you scrambled to …",
+      "source": "Knights of Lastwall pg. 73",
+      "slug": "tyrant_witness"
+    },
+    "undertaker": {
+      "name": "Undertaker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Medicine",
+        "Lore specializing in one local type of undead."
+      ],
+      "granted_feats": [
+        "Forensic Acumen"
+      ],
+      "rarity": "Common",
+      "summary": "People die. This is the unfortunate fact of life on which you've founded your business, because wherever people die, there is a demand for mortuary …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "undertaker"
+    },
+    "union_representative": {
+      "name": "Union Representative",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy",
+        "Legal Lore"
+      ],
+      "granted_feats": [
+        "Contract Negotiator"
+      ],
+      "rarity": "Common",
+      "summary": "You might have fought for fairer ore distribution for the Metalmaker's Union, higher chef's pay in the Provisioners' Union, or better mercenary …",
+      "source": "Highhelm pg. 72",
+      "slug": "union_representative"
+    },
+    "unremarkable": {
+      "name": "Unremarkable",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Deception",
+        "Acting Lore"
+      ],
+      "granted_feats": [
+        "Lengthy Diversion"
+      ],
+      "rarity": "Common",
+      "summary": "Your face is particularly unremarkable, even if your presence or actions may not be. You know how to use this to your advantage, making it difficult …",
+      "source": "Firebrands pg. 75",
+      "slug": "unremarkable"
+    },
+    "veteran": {
+      "name": "Veteran",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Athletics",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Armor Assist"
+      ],
+      "rarity": "Common",
+      "summary": "You have seen more battles than you can remember and have managed to make it through them mostly intact. Nothing surprises you anymore, except maybe …",
+      "source": "Battlecry! pg. 17",
+      "slug": "veteran"
+    },
+    "wandering_preacher": {
+      "name": "Wandering Preacher",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Religion",
+        "Lore associated with the deity you preach for (such as Pharasmin Lore)."
+      ],
+      "granted_feats": [
+        "Pilgrim's Token"
+      ],
+      "rarity": "Common",
+      "summary": "While you once spoke to a small congregation in a ramshackle church, those days are behind you now. Your church was destroyed, your congregants …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "wandering_preacher"
+    },
+    "war_orphan": {
+      "name": "War Orphan",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Thievery",
+        "Underworld Lore"
+      ],
+      "granted_feats": [
+        "Dirty Trick"
+      ],
+      "rarity": "Common",
+      "summary": "The horrors of war have left you orphaned and alone, forcing you to fend for yourself until you were taught the ways of the world by a group of …",
+      "source": "Battlecry! pg. 17",
+      "slug": "war_orphan"
+    },
+    "ward": {
+      "name": "Ward",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Performance",
+        "Genealogy Lore"
+      ],
+      "granted_feats": [
+        "Fascinating Performance"
+      ],
+      "rarity": "Common",
+      "summary": "When you were young, you became the ward of another house— boarded, fed, and educated, but never quite a part of the family. Perhaps you had to tend …",
+      "source": "Player Core 2 pg. 51",
+      "slug": "ward"
+    },
+    "warded_by_kami": {
+      "name": "Warded by Kami",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Intelligence",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Occultism",
+        "Spirit Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You’ve lived among kami , gaining a wellspring of spiritual power found deep within the Forest of Spirits. You’ve heard many rumors of what lies …",
+      "source": "Tian Xia Character Guide pg. 12",
+      "slug": "warded_by_kami"
+    },
+    "warrior": {
+      "name": "Warrior",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Constitution"
+      ],
+      "trained_skills": [
+        "Intimidation",
+        "Warfare Lore"
+      ],
+      "granted_feats": [
+        "Intimidating Glare"
+      ],
+      "rarity": "Common",
+      "summary": "In your younger days, you waded into battle as a mercenary, a warrior defending a nomadic people, or a member of a militia or army. You might have …",
+      "source": "Player Core pg. 88",
+      "slug": "warrior"
+    },
+    "waste_walker": {
+      "name": "Waste Walker",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Strength",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Survival",
+        "Mana Wastes Lore (or another similar Lore skill associated with the wastes where you grew up)."
+      ],
+      "granted_feats": [
+        "Forager"
+      ],
+      "rarity": "Common",
+      "summary": "Whether you grew up in the Mana Wastes or another similarly desolate place, you quickly learned that only the strong survive. You and your family …",
+      "source": "Guns & Gears (Remastered) pg. 123",
+      "slug": "waste_walker"
+    },
+    "weaver": {
+      "name": "Weaver",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Dexterity",
+        "Wisdom"
+      ],
+      "trained_skills": [
+        "Crafting",
+        "Basket Weaving Lore or Tapestry Lore or Textile Lore."
+      ],
+      "granted_feats": [
+        "Specialty Crafting"
+      ],
+      "rarity": "Common",
+      "summary": "You’re a skilled weaver, crafting your pieces either by hand or by loom. Whether you revere yourself as an artist or not, none can deny the beauty of …",
+      "source": "Tian Xia Character Guide pg. 11",
+      "slug": "weaver"
+    },
+    "willing_host": {
+      "name": "Willing Host",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Wisdom",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Spirit Lore"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "You speak to spirits only you can perceive: wispy shreds of lost souls, household guardians, ancestral spirits, and other entities. You can negotiate …",
+      "source": "Book of the Dead pg. 17",
+      "slug": "willing_host"
+    },
+    "wished_alive": {
+      "name": "Wished Alive",
+      "pfs_availability": "Standard",
+      "ability_boosts": [
+        "Constitution",
+        "Charisma"
+      ],
+      "trained_skills": [
+        "Diplomacy"
+      ],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Once you were a simple construct or inanimate doll, but due to a deeply felt wish, either yours or another's, you came to life, and so you're now a …",
+      "source": "Guns & Gears (Remastered) pg. 47",
+      "slug": "wished_alive"
+    },
+    "zodiac_bound": {
+      "name": "Zodiac Bound",
+      "pfs_availability": "Standard",
+      "ability_boosts": [],
+      "trained_skills": [],
+      "granted_feats": [],
+      "rarity": "Rare",
+      "summary": "Fortune tellers and oracles claim that a person’s zodiac sign influences their personality and fate, and while it might not be true for all, it seems …",
+      "source": "Tian Xia Character Guide pg. 13",
+      "slug": "zodiac_bound"
+    }
+  }
+}

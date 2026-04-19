@@ -53,6 +53,16 @@ try {
   console.error('Could not load archetypes.json:', err.message);
 }
 
+let backgroundDatabase = {};
+try {
+  const backgroundRaw = JSON.parse(fs.readFileSync('background.json', 'utf8'));
+  // File shape: { _meta: {...}, backgrounds: { key: {...} } }
+  backgroundDatabase = backgroundRaw.backgrounds ?? backgroundRaw;
+  console.log(`Loaded ${Object.keys(backgroundDatabase).length} backgrounds from database.`);
+} catch (err) {
+  console.error('Could not load background.json:', err.message);
+}
+
 let rulesDatabase = {};
 try {
   rulesDatabase = JSON.parse(fs.readFileSync('rules.json', 'utf8'));
@@ -446,6 +456,62 @@ function buildArchetypeEmbed(archetype) {
   if (archetype.prerequisites)
     embed.addFields({ name: '⚠️ Prerequisites', value: archetype.prerequisites, inline: false });
   embed.setFooter({ text: 'Pathway • PF2e Archetype Lookup' });
+  return embed;
+}
+
+// ── Background lookup ─────────────────────────────────────────────────────────
+function findBackground(query) {
+  const normalize = str => String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/\s+/g, ' ');
+  const q = normalize(query);
+  const qSlug = q.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+  // 1. Exact slug key match
+  if (backgroundDatabase[qSlug]) return { background: backgroundDatabase[qSlug], matches: [] };
+
+  // 2. Exact display-name match
+  const entries = Object.entries(backgroundDatabase);
+  const exactName = entries.find(([, b]) => normalize(b.name) === q);
+  if (exactName) return { background: exactName[1], matches: [] };
+
+  // 3. Partial match on key or name
+  const partials = entries.filter(([key, b]) =>
+    key.toLowerCase().includes(qSlug) || normalize(b.name).includes(q)
+  );
+  if (partials.length === 1) return { background: partials[0][1], matches: [] };
+  if (partials.length > 1)   return { background: null, matches: partials.map(([, b]) => b.name) };
+  return { background: null, matches: [] };
+}
+
+function buildBackgroundEmbed(bg) {
+  const rarityColor = { Common: 0x4a90d9, Uncommon: 0xc45f00, Rare: 0x6b21a8, Unique: 0x8b0000 };
+  const rarityEmoji = { Common: '⚪', Uncommon: '🟠', Rare: '🟣', Unique: '🔴' };
+  const emoji = rarityEmoji[bg.rarity] ?? '📜';
+
+  const boosts = bg.ability_boosts?.length
+    ? bg.ability_boosts.join(' or ')
+    : '*Choose any two (free)*';
+  const skills = bg.trained_skills?.length
+    ? bg.trained_skills.map(s => `• ${s}`).join('\n')
+    : '*None specified*';
+  const feats = bg.granted_feats?.length
+    ? bg.granted_feats.map(f => `✨ ${f}`).join('\n')
+    : '*None*';
+
+  const embed = new EmbedBuilder()
+    .setColor(rarityColor[bg.rarity] ?? 0x4a90d9)
+    .setTitle(`${emoji} ${bg.name}`)
+    .setDescription(bg.summary || '*No summary available.*')
+    .addFields(
+      { name: '💪 Ability Boosts',  value: boosts, inline: true },
+      { name: '🏅 Rarity',           value: bg.rarity ?? 'Common', inline: true },
+      { name: '🎫 PFS',              value: bg.pfs_availability ?? 'Unknown', inline: true },
+      { name: '🎓 Trained Skills',   value: skills, inline: false },
+      { name: '🎯 Granted Feat',     value: feats,  inline: false },
+    )
+    .setFooter({ text: `Source: ${bg.source ?? 'Unknown'} • PF2e Background Lookup` });
+
   return embed;
 }
 
@@ -1425,6 +1491,19 @@ client.on('interactionCreate', async (interaction) => {
     if (!archetype && matches.length > 1) return interaction.reply({ content: `🔍 Multiple archetypes match **"${input}"**. Did you mean one of these?\n**${matches.sort().join(', ')}**`, ephemeral: true });
     if (!archetype) return interaction.reply({ content: `❌ No archetype found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
     await interaction.reply({ embeds: [buildArchetypeEmbed(archetype)] });
+  }
+
+  // ─── /background ─────────────────────────────────────────────────
+  else if (commandName === 'background') {
+    const input = interaction.options.getString('name');
+    const { background, matches } = findBackground(input);
+    if (!background && matches.length > 1) {
+      const preview = matches.sort().slice(0, 25).join(', ');
+      const extra = matches.length > 25 ? ` *(+${matches.length - 25} more)*` : '';
+      return interaction.reply({ content: `🔍 Multiple backgrounds match **"${input}"**. Did you mean one of these?\n**${preview}**${extra}`, ephemeral: true });
+    }
+    if (!background) return interaction.reply({ content: `❌ No background found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
+    await interaction.reply({ embeds: [buildBackgroundEmbed(background)] });
   }
 
   // ─── /rule ───────────────────────────────────────────────────────

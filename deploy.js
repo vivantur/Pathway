@@ -113,6 +113,10 @@ const commands = [
     options: [{ name: 'name', description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)', type: ApplicationCommandOptionType.String, required: true }]
   },
   {
+    name: 'background', description: 'Look up a PF2e background',
+    options: [{ name: 'name', description: 'The background to look up (e.g. Acolyte, Acrobat, Warrior)', type: ApplicationCommandOptionType.String, required: true }]
+  },
+  {
     name: 'rule', description: 'Look up a PF2e condition, action, or trait',
     options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
   },
