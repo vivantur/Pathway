@@ -93,12 +93,12 @@ const commands = [
   },
   {
     name: 'spell', description: 'Look up a spell from the database',
-    options: [{ name: 'name', description: 'Name of the spell to look up', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'Name of the spell to look up', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'cast', description: 'Cast a spell with your character',
     options: [
-      { name: 'spell', description: 'Name of the spell to cast', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'spell', description: 'Name of the spell to cast', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
       { name: 'target', description: 'Combatant name to target (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'level', description: 'Level to cast the spell at (for heightening)', type: ApplicationCommandOptionType.Integer, required: false }
@@ -106,35 +106,50 @@ const commands = [
   },
   {
     name: 'ancestry', description: 'Look up a PF2e ancestry',
-    options: [{ name: 'name', description: 'The ancestry to look up (e.g. Elf, Dwarf, Gnome)', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'The ancestry to look up (e.g. Elf, Dwarf, Gnome)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'archetype', description: 'Look up a PF2e archetype',
-    options: [{ name: 'name', description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'The archetype to look up (e.g. Acrobat, Assassin, Fighter)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'background', description: 'Look up a PF2e background',
-    options: [{ name: 'name', description: 'The background to look up (e.g. Acolyte, Acrobat, Warrior)', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'The background to look up (e.g. Acolyte, Acrobat, Warrior)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'feat', description: 'Look up a PF2e feat',
     options: [
-      { name: 'name', description: 'The feat to look up (e.g. Power Attack, Sudden Charge)', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'name', description: 'The feat to look up (e.g. Power Attack, Sudden Charge)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
       { name: 'level', description: 'Filter by level (useful for feats with duplicate names)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 20 }
     ]
   },
   {
+    name: 'item', description: 'Look up a PF2e item, weapon, armor, or piece of gear',
+    options: [
+      { name: 'name',  description: 'The item to look up (e.g. Dwarven Thrower, Healing Potion, Snare Kit)', type: ApplicationCommandOptionType.String,  required: true, autocomplete: true },
+      { name: 'level', description: 'Filter by item level (useful for items with tiered versions)',          type: ApplicationCommandOptionType.Integer, required: false, min_value: 0, max_value: 25 }
+    ]
+  },
+  {
     name: 'rule', description: 'Look up a PF2e condition, action, or trait',
-    options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'What to look up (e.g. frightened, grapple, agile)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'monster', description: 'Look up a PF2e monster/creature from the bestiary',
-    options: [{ name: 'name', description: 'Name of the creature to look up (e.g. Goblin Warrior, Ancient Red Dragon)', type: ApplicationCommandOptionType.String, required: true }]
+    options: [{ name: 'name', description: 'Name of the creature to look up (e.g. Goblin Warrior, Ancient Red Dragon)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
+  },
+  {
+    name: 'deity', description: 'Look up a PF2e deity, philosophy, or pantheon',
+    options: [{ name: 'name', description: 'Name of the deity to look up (e.g. Abadar, Desna, Asmodeus)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
     name: 'bag', description: 'Manage your inventory bag',
     options: [
-      { name: 'view', description: 'View your bag', type: ApplicationCommandOptionType.Subcommand },
+      {
+        name: 'view', description: 'View your bag',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name for encumbrance (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
       {
         name: 'rename', description: 'Rename your bag',
         type: ApplicationCommandOptionType.Subcommand,
@@ -145,21 +160,23 @@ const commands = [
         type: ApplicationCommandOptionType.Subcommand,
         options: [
           { name: 'category', description: 'Category name (e.g. Potions, Weapons, Trinkets)', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item to add', type: ApplicationCommandOptionType.String, required: true }
+          { name: 'item', description: 'Item to add (auto-fills price/bulk if found in the database)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'qty', description: 'Quantity to add (default 1)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 999 }
         ]
       },
       {
         name: 'remove', description: 'Remove an item from your bag',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
-          { name: 'category', description: 'Category name', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'item', description: 'Item to remove', type: ApplicationCommandOptionType.String, required: true }
+          { name: 'category', description: 'Category name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'item', description: 'Item to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'qty', description: 'Quantity to remove (leave blank to remove the whole stack)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 999 }
         ]
       },
       {
         name: 'removecategory', description: 'Remove an entire category from your bag',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true }]
+        options: [{ name: 'category', description: 'Category to delete', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
       },
       { name: 'clear', description: 'Clear everything from your bag', type: ApplicationCommandOptionType.Subcommand }
     ]
@@ -213,6 +230,54 @@ const commands = [
           { name: 'gp', description: 'Set gold pieces', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'sp', description: 'Set silver pieces', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'cp', description: 'Set copper pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'hero', description: 'Track and use Hero Points (PF2e: max 3, start with 1 per session)',
+    options: [
+      {
+        name: 'view', description: 'View your current Hero Points',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
+      {
+        name: 'add', description: 'Award Hero Points to your character (caps at 3)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'amount', description: 'How many to award (default 1)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 10 },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'spend', description: 'Spend Hero Points (manual — e.g. for avoiding death)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'amount', description: 'How many to spend (default 1)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 10 },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'set', description: 'Set Hero Points to an exact value (GM override — can go above 3)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'value', description: 'Exact number of Hero Points', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 10 },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'reset', description: 'Reset to the session default (1 Hero Point)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+      },
+      {
+        name: 'reroll', description: 'Spend 1 Hero Point to reroll (keep the higher result)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'dice', description: 'The roll to reroll, e.g. `1d20+8` for an Athletics check', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'previous', description: 'Your previous total (optional — shows side-by-side with kept-higher result)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
         ]
       }

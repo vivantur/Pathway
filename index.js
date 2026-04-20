@@ -94,6 +94,29 @@ try {
   console.error('Could not load bestiary.json:', err.message);
 }
 
+let itemDatabase = [];
+try {
+  const itemRaw = JSON.parse(fs.readFileSync('items.json', 'utf8'));
+  // File shape: { meta: {...}, items: { slug: {...} } }
+  const itemsObj = itemRaw.items ?? itemRaw;
+  // Flatten to array and filter out any malformed entries
+  itemDatabase = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+  console.log(`Loaded ${itemDatabase.length} items from database.`);
+} catch (err) {
+  console.error('Could not load items.json:', err.message);
+}
+
+let deityDatabase = [];
+try {
+  const deityRaw = JSON.parse(fs.readFileSync('deities.json', 'utf8'));
+  // File shape: { metadata: {...}, deities: [ {...} ] }
+  const rawDeities = Array.isArray(deityRaw) ? deityRaw : (deityRaw.deities ?? []);
+  deityDatabase = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+  console.log(`Loaded ${deityDatabase.length} deities from database.`);
+} catch (err) {
+  console.error('Could not load deities.json:', err.message);
+}
+
 function loadCharacters() {
   try { return JSON.parse(fs.readFileSync('characters.json', 'utf8')); }
   catch { return {}; }
@@ -152,7 +175,78 @@ function getOrCreateBag(bags, userId) {
   return bags[userId];
 }
 
-function buildBagEmbed(userBag) {
+// ── Bag entry helpers ─────────────────────────────────────────────────────────
+// Entries may be either legacy strings ("Healing Potion") or objects ({ name, qty }).
+// All read/write paths below tolerate both, and writes always produce the object form.
+function normalizeBagEntry(entry) {
+  if (typeof entry === 'string') return { name: entry, qty: 1 };
+  if (entry && typeof entry === 'object' && entry.name) {
+    return { name: String(entry.name), qty: Math.max(1, Number(entry.qty) || 1) };
+  }
+  return null;
+}
+
+// Convert a bulk_normalized string to "light units" (1 L = 1, 1 Bulk = 10, negligible = 0).
+// Returns null if we can't parse it (e.g. parser artifacts), so we can skip it cleanly.
+function bulkToLightUnits(bulkNormalized) {
+  if (bulkNormalized == null) return 0; // treat missing as negligible
+  const s = String(bulkNormalized).trim().toLowerCase();
+  if (s === '' || s === '—' || s === '-' || s === 'negligible' || s === '0') return 0;
+  if (s === 'l' || s === 'light') return 1;
+  const n = parseFloat(s);
+  if (Number.isFinite(n)) return Math.round(n * 10);
+  return null; // unparseable (likely a parser artifact like campaign names)
+}
+
+// Format a light-unit total back into PF2e bulk notation: "3 Bulk, 2 L" / "5 L" / "—".
+function formatBulk(lightUnits) {
+  if (!lightUnits) return '—';
+  const bulk = Math.floor(lightUnits / 10);
+  const light = lightUnits % 10;
+  const parts = [];
+  if (bulk > 0)  parts.push(`${bulk} Bulk`);
+  if (light > 0) parts.push(`${light} L`);
+  return parts.join(', ');
+}
+
+// Format a copper-piece total into PF2e coinage (pp/gp/sp/cp), only showing nonzero denominations.
+function formatCp(cp) {
+  if (!cp) return '0 gp';
+  const pp = Math.floor(cp / 1000);
+  const gp = Math.floor((cp % 1000) / 100);
+  const sp = Math.floor((cp % 100) / 10);
+  const cpLeft = cp % 10;
+  const parts = [];
+  if (pp) parts.push(`${pp} pp`);
+  if (gp) parts.push(`${gp} gp`);
+  if (sp) parts.push(`${sp} sp`);
+  if (cpLeft) parts.push(`${cpLeft} cp`);
+  return parts.join(', ') || '0 gp';
+}
+
+// Look up an item in itemDatabase by name (case-insensitive exact match, then lookup_name).
+// Returns null for homebrew / unrecognized items so the caller can skip them in totals.
+function lookupItemData(name) {
+  if (!name || !Array.isArray(itemDatabase) || itemDatabase.length === 0) return null;
+  const q = String(name).toLowerCase().trim();
+  return itemDatabase.find(i => i.name.toLowerCase() === q)
+      || itemDatabase.find(i => (i.lookup_name ?? '').toLowerCase() === q)
+      || null;
+}
+
+// PF2e encumbrance: encumbered at 5 + Str mod, max at 10 + Str mod (in Bulk, i.e. ×10 light-units).
+function computeBulkLimits(character) {
+  const str = character?.abilities?.str;
+  if (typeof str !== 'number') return null;
+  const strMod = Math.floor((str - 10) / 2);
+  return {
+    strMod,
+    encumberedLu: (5 + strMod) * 10,
+    maxLu:        (10 + strMod) * 10,
+  };
+}
+
+function buildBagEmbed(userBag, character = null) {
   const embed = new EmbedBuilder()
     .setTitle(`🎒 ${userBag.bagName}`)
     .setColor(0x9B59B6)
@@ -162,12 +256,56 @@ function buildBagEmbed(userBag) {
 
   if (cats.length === 0) {
     embed.setDescription('*Your bag is empty. Use `/bag add <category> <item>` to get started!*');
-  } else {
-    for (const [cat, items] of cats) {
-      const value = items.length > 0 ? items.join('\n') : '*Empty*';
-      embed.addFields({ name: `**${cat}**`, value, inline: true });
-    }
+    return embed;
   }
+
+  let totalLu = 0;
+  let totalCp = 0;
+  let unknownBulkCount = 0;
+
+  for (const [cat, items] of cats) {
+    const lines = [];
+    for (const raw of items) {
+      const entry = normalizeBagEntry(raw);
+      if (!entry) continue;
+      const data = lookupItemData(entry.name);
+      const qtyPrefix = entry.qty > 1 ? `${entry.qty}× ` : '';
+
+      if (data) {
+        // Hydrate live from itemDatabase
+        const lu = bulkToLightUnits(data.bulk_normalized);
+        if (lu == null) unknownBulkCount += entry.qty;
+        else            totalLu += lu * entry.qty;
+
+        if (typeof data.price_cp === 'number') totalCp += data.price_cp * entry.qty;
+
+        const bulkStr = data.bulk_raw ? ` *(${data.bulk_raw})*` : '';
+        const priceStr = data.price_raw ? ` — ${data.price_raw}` : '';
+        lines.push(`${qtyPrefix}**${data.name}**${bulkStr}${priceStr}`);
+      } else {
+        // Homebrew / unknown — display as-is, don't contribute to totals
+        lines.push(`${qtyPrefix}${entry.name} *(homebrew)*`);
+      }
+    }
+    const value = lines.length > 0 ? lines.join('\n') : '*Empty*';
+    embed.addFields({ name: `**${cat}**`, value: value.slice(0, 1024), inline: false });
+  }
+
+  // Summary footer fields: Bulk (with encumbrance if character provided) and Total Value
+  const limits = computeBulkLimits(character);
+  let bulkField = formatBulk(totalLu);
+  if (limits) {
+    const status = totalLu > limits.maxLu ? ' 🚫 **Overloaded**'
+                : totalLu > limits.encumberedLu ? ' ⚠️ *Encumbered*'
+                : '';
+    bulkField += `  /  ${formatBulk(limits.encumberedLu)} encumbered  /  ${formatBulk(limits.maxLu)} max${status}`;
+  }
+  if (unknownBulkCount > 0) bulkField += `\n*(${unknownBulkCount} item${unknownBulkCount === 1 ? '' : 's'} with unknown bulk not counted)*`;
+
+  embed.addFields(
+    { name: '⚖️ Total Bulk',  value: bulkField,            inline: false },
+    { name: '💰 Total Value', value: formatCp(totalCp),    inline: true  },
+  );
 
   return embed;
 }
@@ -562,22 +700,39 @@ function findFeat(query, levelFilter) {
 }
 
 function buildFeatEmbed(feat) {
-  const pfsColor = {
-    Standard:   0x2ecc71, // green
-    Limited:    0xf39c12, // orange
-    Restricted: 0xe74c3c, // red
+  // Color priority: rarity (new) → pfs_access (legacy) → default
+  const rarityColor = {
+    Common:   0x4a90d9, // blue
+    Uncommon: 0xf39c12, // orange
+    Rare:     0xe74c3c, // red
+    Unique:   0x9b59b6, // purple
   };
-  const color = pfsColor[feat.pfs_access] ?? 0x4a90d9;
+  const pfsColor = {
+    Standard:   0x2ecc71,
+    Limited:    0xf39c12,
+    Restricted: 0xe74c3c,
+  };
+  const color = rarityColor[feat.rarity] ?? pfsColor[feat.pfs_access] ?? 0x4a90d9;
 
-  // Action type icons
+  // Action type icons (still supported if a feat has action_tag_full)
   const actionIcons = {
-    one_action:  '◆ 1 action',
-    two_actions: '◆◆ 2 actions',
-    three_actions:'◆◆◆ 3 actions',
-    reaction:    '⤾ Reaction',
-    free_action: '◇ Free Action',
+    one_action:    '◆ 1 action',
+    two_actions:   '◆◆ 2 actions',
+    three_actions: '◆◆◆ 3 actions',
+    reaction:      '⤾ Reaction',
+    free_action:   '◇ Free Action',
   };
   const actionText = feat.action_tag_full ? (actionIcons[feat.action_tag_full] ?? feat.action_tag_full) : null;
+
+  // Build a traits line for the description (shown above the summary text)
+  const traitChips = [];
+  if (feat.rarity && feat.rarity !== 'Common') traitChips.push(feat.rarity);
+  if (Array.isArray(feat.traits)) traitChips.push(...feat.traits);
+  const traitsLine = traitChips.length ? `*${traitChips.join(', ')}*` : null;
+
+  // Description: traits line + summary text
+  const desc = feat.description || '*No description available.*';
+  const fullDesc = traitsLine ? `${traitsLine}\n\n${desc}` : desc;
 
   // Build field list
   const fields = [
@@ -585,13 +740,24 @@ function buildFeatEmbed(feat) {
   ];
   if (actionText) fields.push({ name: '⚡ Activity', value: actionText, inline: true });
   if (feat.pfs_access) fields.push({ name: '🎫 PFS', value: feat.pfs_access, inline: true });
+  if (feat.prerequisites) {
+    const prereq = String(feat.prerequisites).slice(0, 1024);
+    fields.push({ name: '📋 Prerequisites', value: prereq, inline: false });
+  }
+  if (feat.notes) {
+    fields.push({ name: '📝 Notes', value: String(feat.notes).slice(0, 1024), inline: false });
+  }
+
+  // Footer: source citation (e.g. "Player Core 2 pg. 223")
+  const sourceText = feat.source
+    ?? (feat.source_book ? `${feat.source_book}${feat.source_page ? ` pg. ${feat.source_page}` : ''}` : null);
 
   const embed = new EmbedBuilder()
     .setColor(color)
     .setTitle(`🪄 ${feat.name}`)
-    .setDescription(feat.description || '*No description available.*')
+    .setDescription(fullDesc.slice(0, 4000))
     .addFields(fields)
-    .setFooter({ text: 'PF2e Feat Lookup • Archives of Nethys' });
+    .setFooter({ text: `PF2e Feat Lookup • ${sourceText ?? 'Archives of Nethys'}` });
 
   return embed;
 }
@@ -599,6 +765,225 @@ function buildFeatEmbed(feat) {
 function formatFeatMatchLine(feat) {
   const lvl = feat.level != null ? ` *(Lvl ${feat.level})*` : '';
   return `• **${feat.name}**${lvl}`;
+}
+
+// ── Item lookup ───────────────────────────────────────────────────────────────
+function normalizeItemQuery(str) {
+  return String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, ' ');
+}
+
+function findItem(query, levelFilter) {
+  const q = normalizeItemQuery(query);
+  if (!q) return { item: null, matches: [] };
+
+  const pool = levelFilter != null
+    ? itemDatabase.filter(i => i.level === levelFilter)
+    : itemDatabase;
+
+  // 1. Exact name match (prefer lookup_name, fall back to name)
+  const exact = pool.filter(i =>
+    (i.lookup_name ?? i.name).toLowerCase() === q ||
+    i.name.toLowerCase() === q
+  );
+  if (exact.length === 1) return { item: exact[0], matches: [] };
+  if (exact.length > 1)   return { item: null, matches: exact, exactDuplicates: true };
+
+  // 2. Starts-with match
+  const starts = pool.filter(i => i.name.toLowerCase().startsWith(q));
+  if (starts.length === 1) return { item: starts[0], matches: [] };
+
+  // 3. Contains match
+  const contains = pool.filter(i => i.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { item: contains[0], matches: [] };
+  if (contains.length > 1)   return { item: null, matches: contains };
+
+  return { item: null, matches: [] };
+}
+
+function buildItemEmbed(item) {
+  // Color by rarity (matches AoN conventions)
+  const rarityColor = {
+    Common:    0x4a90d9, // blue
+    Uncommon:  0xf39c12, // orange
+    Rare:      0xe74c3c, // red
+    Unique:    0x9b59b6, // purple
+  };
+  const color = rarityColor[item.rarity] ?? 0x4a90d9;
+
+  // Category emoji
+  const categoryIcons = {
+    'Weapons':          '⚔️',
+    'Armor':            '🛡️',
+    'Shields':          '🛡️',
+    'Adventuring Gear': '🎒',
+    'Alchemical Items': '⚗️',
+    'Consumables':      '🧪',
+    'Wands':            '🪄',
+    'Staves':           '🪄',
+    'Runes':            '✨',
+    'Worn Items':       '💍',
+    'Held Items':       '🤲',
+    'Snares':           '🪤',
+    'Vehicles':         '🚢',
+    'Siege Weapons':    '🏹',
+    'Materials':        '🪨',
+    'Tattoos':          '🖋️',
+    'Artifacts':        '👑',
+    'Cursed Items':     '☠️',
+  };
+  const icon = categoryIcons[item.category] ?? '📦';
+
+  // Build traits line: include rarity if not Common, then traits
+  const traitChips = [];
+  if (item.rarity && item.rarity !== 'Common') traitChips.push(item.rarity);
+  if (Array.isArray(item.traits)) traitChips.push(...item.traits);
+  const traitsDisplay = traitChips.length ? `*${traitChips.join(', ')}*` : null;
+
+  // Source line
+  const sourceText = item.source?.source_text
+    ?? (item.source?.book ? `${item.source.book}${item.source.page ? ` pg. ${item.source.page}` : ''}` : null);
+
+  // Category line (e.g. "Weapons · Specific Magic Weapons")
+  const categoryLine = [item.category, item.subcategory].filter(Boolean).join(' · ');
+
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`${icon} ${item.name}`);
+
+  // Description is the traits line (italic), since items in this dataset don't have prose descriptions
+  if (traitsDisplay) embed.setDescription(traitsDisplay);
+
+  // Top row: Level / Price / Bulk
+  const topFields = [
+    { name: '📊 Level', value: item.level != null ? String(item.level) : '—', inline: true },
+    { name: '💰 Price', value: item.price_raw || '—',                         inline: true },
+    { name: '⚖️ Bulk',  value: item.bulk_raw  || '—',                         inline: true },
+  ];
+  embed.addFields(topFields);
+
+  // Usage (held in 1 hand, worn, etc.)
+  if (item.usage) embed.addFields({ name: '✋ Usage', value: item.usage, inline: false });
+
+  // Category / subcategory
+  if (categoryLine) embed.addFields({ name: '📂 Category', value: categoryLine, inline: true });
+
+  // PFS availability
+  if (item.pfs_availability) embed.addFields({ name: '🎫 PFS', value: item.pfs_availability, inline: true });
+
+  // Campaign (e.g. Kingmaker-only items)
+  if (item.campaign) embed.addFields({ name: '📜 Campaign', value: item.campaign, inline: true });
+
+  // Notes, if present
+  if (item.notes) embed.addFields({ name: '📝 Notes', value: String(item.notes).slice(0, 1000), inline: false });
+
+  embed.setFooter({ text: `PF2e Item Lookup • ${sourceText ?? 'Archives of Nethys'}` });
+  return embed;
+}
+
+function formatItemMatchLine(item) {
+  const lvl = item.level != null ? ` *(Lvl ${item.level})*` : '';
+  const cat = item.category ? ` — ${item.category}` : '';
+  return `• **${item.name}**${lvl}${cat}`;
+}
+
+// ── Deity lookup ──────────────────────────────────────────────────────────────
+function normalizeDeityQuery(str) {
+  return String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, ' ');
+}
+
+function findDeity(query) {
+  const q = normalizeDeityQuery(query);
+  if (!q) return { deity: null, matches: [] };
+
+  // 1. Exact name match
+  const exact = deityDatabase.filter(d => d.name.toLowerCase() === q);
+  if (exact.length === 1) return { deity: exact[0], matches: [] };
+  if (exact.length > 1)   return { deity: null, matches: exact, exactDuplicates: true };
+
+  // 2. Starts-with
+  const starts = deityDatabase.filter(d => d.name.toLowerCase().startsWith(q));
+  if (starts.length === 1) return { deity: starts[0], matches: [] };
+
+  // 3. Contains
+  const contains = deityDatabase.filter(d => d.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { deity: contains[0], matches: [] };
+  if (contains.length > 1)   return { deity: null, matches: contains };
+
+  return { deity: null, matches: [] };
+}
+
+function buildDeityEmbed(deity) {
+  // Color by PFS availability
+  const pfsColor = {
+    Standard:   0x2ecc71,
+    Limited:    0xf39c12,
+    Restricted: 0xe74c3c,
+  };
+  const color = pfsColor[deity.pfs_availability] ?? 0x9b59b6;
+
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`⛪ ${deity.name}`);
+
+  // Subtitle line: PFS availability + pantheons
+  const subtitleParts = [];
+  if (deity.pfs_availability) subtitleParts.push(`PFS ${deity.pfs_availability}`);
+  if (deity.pantheons?.length) subtitleParts.push(deity.pantheons.join(', '));
+  if (subtitleParts.length) embed.setDescription(`*${subtitleParts.join(' · ')}*`);
+
+  // Edicts / Anathemas — the core flavor content
+  if (deity.edicts) {
+    embed.addFields({ name: '✅ Edicts',    value: String(deity.edicts).slice(0, 1024),    inline: false });
+  }
+  if (deity.anathemas) {
+    embed.addFields({ name: '🚫 Anathemas', value: String(deity.anathemas).slice(0, 1024), inline: false });
+  }
+
+  // Domains — comma-joined
+  if (deity.domains?.length) {
+    embed.addFields({ name: '🏛️ Domains', value: deity.domains.join(', '), inline: false });
+  }
+
+  // Mechanical stats (divine font, sanctification, attributes) — in a compact row
+  const mechanicals = [];
+  if (deity.divine_font)     mechanicals.push(`**Divine Font** ${deity.divine_font}`);
+  if (deity.sanctification)  mechanicals.push(`**Sanctification** ${deity.sanctification}`);
+  if (deity.attributes?.length) mechanicals.push(`**Attributes** ${deity.attributes.join(', ')}`);
+  if (mechanicals.length) {
+    embed.addFields({ name: '⚙️ Cleric Mechanics', value: mechanicals.join('\n'), inline: false });
+  }
+
+  // Divine skill + favored weapon
+  const gearParts = [];
+  if (deity.divine_skill)   gearParts.push(`**Skill** ${deity.divine_skill}`);
+  if (deity.favored_weapon) gearParts.push(`**Favored Weapon** ${deity.favored_weapon}`);
+  if (gearParts.length) {
+    embed.addFields({ name: '🎯 Divine Gifts', value: gearParts.join(' · '), inline: false });
+  }
+
+  // Devotee benefits (can be long — truncate if needed)
+  if (deity.devotee_benefits?.length) {
+    const benefits = deity.devotee_benefits.join(', ');
+    embed.addFields({
+      name: '✨ Sanctifications / Devotee Benefits',
+      value: benefits.length > 1024 ? benefits.slice(0, 1021) + '...' : benefits,
+      inline: false,
+    });
+  }
+
+  embed.setFooter({ text: `PF2e Deity Lookup • ${deity.source_text ?? 'Archives of Nethys'}` });
+  return embed;
+}
+
+function formatDeityMatchLine(deity) {
+  const pantheon = deity.pantheons?.[0] ? ` — ${deity.pantheons[0]}` : '';
+  return `• **${deity.name}**${pantheon}`;
 }
 
 // ── Bestiary lookup ───────────────────────────────────────────────────────────
@@ -746,6 +1131,98 @@ function buildWalletEmbed(char, charEntry) {
     .setFooter({ text: 'Use /gold add, /gold spend, or /gold convert' });
   if (charEntry.art) embed.setThumbnail(charEntry.art);
   return embed;
+}
+
+// ── Hero Points helpers ───────────────────────────────────────────────────────
+// PF2e rules: characters start with 1 HP per session, max 3 at any time.
+// Spend 1 to reroll a check (keep higher). Spend all to avoid death.
+const HERO_POINTS_MAX = 3;
+const HERO_POINTS_DEFAULT = 1;
+
+function getHeroPoints(charEntry) {
+  return charEntry.heroPoints ?? HERO_POINTS_DEFAULT;
+}
+
+// Visual representation: filled diamonds for held, hollow for empty (up to display cap).
+// If someone has >3 (via /hero set override), we just append "+N" at the end so the embed stays clean.
+function renderHeroPointsBar(points) {
+  const displayCap = HERO_POINTS_MAX;
+  const filled = Math.min(points, displayCap);
+  const empty = Math.max(0, displayCap - points);
+  const overflow = points > displayCap ? ` **+${points - displayCap}**` : '';
+  return '◆'.repeat(filled) + '◇'.repeat(empty) + overflow;
+}
+
+function buildHeroPointsEmbed(char, charEntry, note = null) {
+  const points = getHeroPoints(charEntry);
+  const bar = renderHeroPointsBar(points);
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(`⭐ ${char.name}'s Hero Points`)
+    .setDescription(`${bar}\n**${points}** / ${HERO_POINTS_MAX}${points > HERO_POINTS_MAX ? ` *(over cap)*` : ''}`)
+    .setFooter({ text: 'Spend 1 to reroll (keep higher) · Spend all to avoid death · Max 3' });
+  if (note) embed.addFields({ name: '\u200b', value: note, inline: false });
+  if (charEntry.art) embed.setThumbnail(charEntry.art);
+  return embed;
+}
+
+// Roll an expression using the exact same engine as /roll.
+// Returns { total, breakdown, error } — breakdown is the pretty display string.
+// On parse error, returns { error: "..." }; callers should surface that to the user.
+function rollDiceExpression(raw) {
+  const expr = String(raw ?? '').toLowerCase().replace(/\s+/g, '');
+  if (!/^[0-9d+\-*/]+$/.test(expr)) return { error: 'Invalid expression. Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.' };
+
+  const tokens = expr.split(/([+\-*/])/).filter(Boolean);
+  const breakdownParts = [];
+  const values = [];
+  for (const token of tokens) {
+    if (['+', '-', '*', '/'].includes(token)) {
+      breakdownParts.push(token === '*' ? '×' : token === '/' ? '÷' : token);
+      values.push(token);
+      continue;
+    }
+    if (token.includes('d')) {
+      const [numDiceStr, numSidesStr] = token.split('d');
+      const numDice = parseInt(numDiceStr) || 1;
+      const numSides = parseInt(numSidesStr);
+      if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) return { error: `Invalid dice: \`${token}\`.` };
+      const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
+      const rollTotal = rolls.reduce((a, b) => a + b, 0);
+      breakdownParts.push(numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`);
+      values.push(rollTotal);
+    } else {
+      const num = parseInt(token);
+      if (isNaN(num)) return { error: `Couldn't parse \`${token}\`.` };
+      breakdownParts.push(`${num}`);
+      values.push(num);
+    }
+  }
+  // Two-pass: handle * and / first, then + and -
+  const pass1values = [];
+  const pass1ops = [];
+  let current = values[0];
+  for (let i = 1; i < values.length; i += 2) {
+    const op = values[i];
+    const next = values[i + 1];
+    if (op === '*') current = current * next;
+    else if (op === '/') {
+      if (next === 0) return { error: 'Cannot divide by zero.' };
+      current = Math.floor(current / next);
+    } else {
+      pass1values.push(current);
+      pass1ops.push(op);
+      current = next;
+    }
+  }
+  pass1values.push(current);
+  let total = pass1values[0];
+  for (let i = 0; i < pass1ops.length; i++) {
+    if (pass1ops[i] === '+') total += pass1values[i + 1];
+    if (pass1ops[i] === '-') total -= pass1values[i + 1];
+  }
+  total = Math.floor(total);
+  return { total, breakdown: breakdownParts.join(' ') };
 }
 
 // ── Normalize spell ───────────────────────────────────────────────────────────
@@ -942,7 +1419,113 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, ancestryKey)] });
   }
 
-  if (!interaction.isChatInputCommand()) return;
+  if (!interaction.isChatInputCommand()) {
+    // ─── Autocomplete ────────────────────────────────────────────────
+    if (interaction.isAutocomplete()) {
+      try {
+        const focused = interaction.options.getFocused(true); // { name, value }
+        const q = String(focused.value ?? '').toLowerCase().trim();
+        const cmd = interaction.commandName;
+
+        // Score & slice helper: exact first, then starts-with, then contains.
+        // `names` is an array of strings (already deduped). Max 25 results.
+        const pick = (names) => {
+          const seen = new Set();
+          const out = [];
+          const push = (n) => {
+            const key = n.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            // Discord requires name ≤ 100 chars
+            const display = n.length > 100 ? n.slice(0, 97) + '...' : n;
+            out.push({ name: display, value: display });
+          };
+          if (!q) {
+            // Empty query: first 25 alphabetically so the dropdown isn't blank
+            [...names].sort((a, b) => a.localeCompare(b)).slice(0, 25).forEach(push);
+          } else {
+            const exact    = names.filter(n => n.toLowerCase() === q);
+            const starts   = names.filter(n => n.toLowerCase().startsWith(q));
+            const contains = names.filter(n => n.toLowerCase().includes(q));
+            for (const n of exact)    { if (out.length >= 25) break; push(n); }
+            for (const n of starts)   { if (out.length >= 25) break; push(n); }
+            for (const n of contains) { if (out.length >= 25) break; push(n); }
+          }
+          return out;
+        };
+
+        let suggestions = [];
+
+        if (cmd === 'item' && focused.name === 'name') {
+          suggestions = pick(itemDatabase.map(i => i.name));
+        }
+        else if ((cmd === 'spell' && focused.name === 'name') ||
+                 (cmd === 'cast'  && focused.name === 'spell')) {
+          suggestions = pick(spellDatabase.map(s => s.name).filter(Boolean));
+        }
+        else if (cmd === 'feat' && focused.name === 'name') {
+          suggestions = pick(featDatabase.map(f => f.name));
+        }
+        else if (cmd === 'rule' && focused.name === 'name') {
+          // rulesDatabase is nested { category: { key: rule } }
+          const names = [];
+          for (const category of Object.values(rulesDatabase)) {
+            for (const rule of Object.values(category)) if (rule?.name) names.push(rule.name);
+          }
+          suggestions = pick(names);
+        }
+        else if (cmd === 'ancestry' && focused.name === 'name') {
+          suggestions = pick(Object.values(ancestryDatabase).map(a => a?.name).filter(Boolean));
+        }
+        else if (cmd === 'archetype' && focused.name === 'name') {
+          suggestions = pick(Object.values(archetypeDatabase).map(a => a?.name).filter(Boolean));
+        }
+        else if (cmd === 'background' && focused.name === 'name') {
+          suggestions = pick(Object.values(backgroundDatabase).map(b => b?.name).filter(Boolean));
+        }
+        else if (cmd === 'monster' && focused.name === 'name') {
+          suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
+        else if (cmd === 'deity' && focused.name === 'name') {
+          suggestions = pick(deityDatabase.map(d => d.name));
+        }
+        else if (cmd === 'bag') {
+          const sub = interaction.options.getSubcommand(false);
+          if (sub === 'add' && focused.name === 'item') {
+            // Suggest from the full item database
+            suggestions = pick(itemDatabase.map(i => i.name));
+          } else if (sub === 'remove' && focused.name === 'item') {
+            // Suggest only from the user's own bag contents in that category (if they've picked one)
+            const bags = loadBags();
+            const userBag = bags[interaction.user.id];
+            const cat = interaction.options.getString('category');
+            const names = [];
+            if (userBag?.categories) {
+              const buckets = cat && userBag.categories[cat] ? [userBag.categories[cat]] : Object.values(userBag.categories);
+              for (const bucket of buckets) {
+                for (const raw of bucket) {
+                  const e = normalizeBagEntry(raw);
+                  if (e) names.push(e.name);
+                }
+              }
+            }
+            suggestions = pick(names);
+          } else if ((sub === 'remove' || sub === 'removecategory') && focused.name === 'category') {
+            const bags = loadBags();
+            const userBag = bags[interaction.user.id];
+            suggestions = pick(Object.keys(userBag?.categories ?? {}));
+          }
+        }
+
+        return interaction.respond(suggestions);
+      } catch (err) {
+        console.error('Autocomplete error:', err);
+        // Discord requires a response; empty array is fine as a fallback.
+        try { return interaction.respond([]); } catch { /* already responded or expired */ }
+      }
+    }
+    return;
+  }
   const { commandName } = interaction;
 
   // ─── /ping ───────────────────────────────────────────────────────
@@ -1439,73 +2022,20 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /roll ───────────────────────────────────────────────────────
   else if (commandName === 'roll') {
-    try {
-      const raw = interaction.options.getString('dice').toLowerCase().replace(/\s+/g, '');
-      if (!/^[0-9d+\-*/]+$/.test(raw)) return interaction.reply({ content: '❌ Invalid expression! Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.', ephemeral: true });
-      const tokens = raw.split(/([+\-*/])/).filter(Boolean);
-      const breakdownParts = [];
-      const values = [];
-      for (const token of tokens) {
-        if (['+', '-', '*', '/'].includes(token)) {
-          breakdownParts.push(token === '*' ? '×' : token === '/' ? '÷' : token);
-          values.push(token);
-          continue;
-        }
-        if (token.includes('d')) {
-          const [numDiceStr, numSidesStr] = token.split('d');
-          const numDice = parseInt(numDiceStr) || 1;
-          const numSides = parseInt(numSidesStr);
-          if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) return interaction.reply({ content: `❌ Invalid dice: \`${token}\`. Try something like \`2d6\` or \`1d20\`.`, ephemeral: true });
-          const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
-          const rollTotal = rolls.reduce((a, b) => a + b, 0);
-          const rollDisplay = numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`;
-          breakdownParts.push(rollDisplay);
-          values.push(rollTotal);
-        } else {
-          const num = parseInt(token);
-          if (isNaN(num)) return interaction.reply({ content: `❌ Couldn't parse \`${token}\`. Make sure your expression is valid.`, ephemeral: true });
-          breakdownParts.push(`${num}`);
-          values.push(num);
-        }
-      }
-      const pass1values = [];
-      const pass1ops = [];
-      let current = values[0];
-      for (let i = 1; i < values.length; i += 2) {
-        const op = values[i];
-        const next = values[i + 1];
-        if (op === '*') current = current * next;
-        else if (op === '/') {
-          if (next === 0) return interaction.reply({ content: '❌ Cannot divide by zero!', ephemeral: true });
-          current = Math.floor(current / next);
-        } else {
-          pass1values.push(current);
-          pass1ops.push(op);
-          current = next;
-        }
-      }
-      pass1values.push(current);
-      let total = pass1values[0];
-      for (let i = 0; i < pass1ops.length; i++) {
-        if (pass1ops[i] === '+') total += pass1values[i + 1];
-        if (pass1ops[i] === '-') total -= pass1values[i + 1];
-      }
-      total = Math.floor(total);
-      const breakdown = `${breakdownParts.join(' ')} = **${total}**`;
-      const charNameArg = interaction.options.getString('character');
-      let thumbnail = null;
-      if (charNameArg) {
-        const characters = loadCharacters();
-        thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
-      }
-      const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`🎲 ${raw}`).setDescription(breakdown);
-      if (thumbnail) embed.setThumbnail(thumbnail);
-      embed.setFooter({ text: charNameArg ?? interaction.user.username });
-      await interaction.reply({ embeds: [embed] });
-    } catch (err) {
-      console.error('Roll error:', err);
-      await interaction.reply({ content: '❌ Something went wrong parsing that expression. Try again!', ephemeral: true });
+    const raw = interaction.options.getString('dice');
+    const result = rollDiceExpression(raw);
+    if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+    const breakdown = `${result.breakdown} = **${result.total}**`;
+    const charNameArg = interaction.options.getString('character');
+    let thumbnail = null;
+    if (charNameArg) {
+      const characters = loadCharacters();
+      thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
     }
+    const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`🎲 ${raw}`).setDescription(breakdown);
+    if (thumbnail) embed.setThumbnail(thumbnail);
+    embed.setFooter({ text: charNameArg ?? interaction.user.username });
+    await interaction.reply({ embeds: [embed] });
   }
 
   // ─── /skill ──────────────────────────────────────────────────────
@@ -1617,6 +2147,35 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: `❌ No feat found for **"${input}"**${levelMsg}. Check your spelling or try another name.`, ephemeral: true });
   }
 
+  // ─── /item ───────────────────────────────────────────────────────
+  else if (commandName === 'item') {
+    const input = interaction.options.getString('name');
+    const levelFilter = interaction.options.getInteger('level') ?? null;
+    const { item, matches, exactDuplicates } = findItem(input, levelFilter);
+
+    if (item) {
+      return interaction.reply({ embeds: [buildItemEmbed(item)] });
+    }
+
+    if (matches && matches.length > 1) {
+      const sorted = [...matches].sort((a, b) =>
+        a.name.localeCompare(b.name) || (a.level ?? 0) - (b.level ?? 0)
+      );
+      const preview = sorted.slice(0, 20).map(formatItemMatchLine).join('\n');
+      const extra = sorted.length > 20 ? `\n*…and ${sorted.length - 20} more. Try narrowing your search.*` : '';
+      const header = exactDuplicates
+        ? `🔍 Multiple items share the exact name **"${input}"**. Add a level to narrow it down:`
+        : `🔍 Multiple items match **"${input}"**. Did you mean one of these?`;
+      return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
+    }
+
+    const levelMsg = levelFilter != null ? ` at level ${levelFilter}` : '';
+    return interaction.reply({
+      content: `❌ No item found for **"${input}"**${levelMsg}. Check your spelling or try another name.`,
+      ephemeral: true
+    });
+  }
+
   // ─── /rule ───────────────────────────────────────────────────────
   else if (commandName === 'rule') {
     const input = interaction.options.getString('name');
@@ -1629,6 +2188,31 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
   }
 
+  // ─── /deity ──────────────────────────────────────────────────────
+  else if (commandName === 'deity') {
+    const input = interaction.options.getString('name');
+    const { deity, matches, exactDuplicates } = findDeity(input);
+
+    if (deity) {
+      return interaction.reply({ embeds: [buildDeityEmbed(deity)] });
+    }
+
+    if (matches && matches.length > 1) {
+      const sorted = [...matches].sort((a, b) => a.name.localeCompare(b.name));
+      const preview = sorted.slice(0, 20).map(formatDeityMatchLine).join('\n');
+      const extra = sorted.length > 20 ? `\n*…and ${sorted.length - 20} more. Try narrowing your search.*` : '';
+      const header = exactDuplicates
+        ? `🔍 Multiple deities share the exact name **"${input}"**:`
+        : `🔍 Multiple deities match **"${input}"**. Did you mean one of these?`;
+      return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
+    }
+
+    return interaction.reply({
+      content: `❌ No deity found for **"${input}"**. Check your spelling or try another name.`,
+      ephemeral: true,
+    });
+  }
+
   // ─── /bag ────────────────────────────────────────────────────────
   else if (commandName === 'bag') {
     const sub = interaction.options.getSubcommand();
@@ -1636,7 +2220,17 @@ client.on('interactionCreate', async (interaction) => {
     const bags = loadBags();
     const userBag = getOrCreateBag(bags, userId);
 
-    if (sub === 'view') return interaction.reply({ embeds: [buildBagEmbed(userBag)] });
+    if (sub === 'view') {
+      // Try to resolve the user's character to show encumbrance; silent if unavailable.
+      let character = null;
+      try {
+        const characters = loadCharacters();
+        const nameArg = interaction.options.getString('character');
+        const resolved = resolveChar(userId, nameArg, characters);
+        if (!resolved.error) character = resolved.character;
+      } catch { /* no character, just skip encumbrance */ }
+      return interaction.reply({ embeds: [buildBagEmbed(userBag, character)] });
+    }
     if (sub === 'rename') {
       const newName = interaction.options.getString('name');
       userBag.bagName = newName;
@@ -1645,22 +2239,58 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (sub === 'add') {
       const category = interaction.options.getString('category').trim();
-      const item = interaction.options.getString('item').trim();
+      const itemInput = interaction.options.getString('item').trim();
+      const qty = Math.max(1, interaction.options.getInteger('qty') ?? 1);
+
+      // Prefer the canonical name from itemDatabase (so "healing potion (lesser)" -> "Healing Potion (Lesser)")
+      const data = lookupItemData(itemInput);
+      const displayName = data?.name ?? itemInput;
+
       if (!userBag.categories[category]) userBag.categories[category] = [];
-      userBag.categories[category].push(item);
+
+      // Merge with an existing stack of the same name (case-insensitive), else push a new entry.
+      const bucket = userBag.categories[category];
+      const existingIdx = bucket.findIndex(raw => {
+        const e = normalizeBagEntry(raw);
+        return e && e.name.toLowerCase() === displayName.toLowerCase();
+      });
+      if (existingIdx !== -1) {
+        const existing = normalizeBagEntry(bucket[existingIdx]);
+        bucket[existingIdx] = { name: existing.name, qty: existing.qty + qty };
+      } else {
+        bucket.push({ name: displayName, qty });
+      }
       saveBags(bags);
-      return interaction.reply({ content: `✅ Added **${item}** to **${category}**!`, ephemeral: true });
+
+      const tag = data ? '' : ' *(homebrew)*';
+      const qtyLabel = qty > 1 ? ` ×${qty}` : '';
+      return interaction.reply({ content: `✅ Added **${displayName}**${qtyLabel}${tag} to **${category}**!`, ephemeral: true });
     }
     if (sub === 'remove') {
       const category = interaction.options.getString('category').trim();
-      const item = interaction.options.getString('item').trim();
+      const itemInput = interaction.options.getString('item').trim();
+      const qty = interaction.options.getInteger('qty') ?? null; // null = remove whole stack
       if (!userBag.categories[category]) return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
-      const index = userBag.categories[category].findIndex(i => i.toLowerCase() === item.toLowerCase());
-      if (index === -1) return interaction.reply({ content: `❌ **${item}** not found in **${category}**.`, ephemeral: true });
-      userBag.categories[category].splice(index, 1);
-      if (userBag.categories[category].length === 0) delete userBag.categories[category];
+
+      const bucket = userBag.categories[category];
+      const idx = bucket.findIndex(raw => {
+        const e = normalizeBagEntry(raw);
+        return e && e.name.toLowerCase() === itemInput.toLowerCase();
+      });
+      if (idx === -1) return interaction.reply({ content: `❌ **${itemInput}** not found in **${category}**.`, ephemeral: true });
+
+      const existing = normalizeBagEntry(bucket[idx]);
+      if (qty == null || qty >= existing.qty) {
+        bucket.splice(idx, 1);
+      } else {
+        bucket[idx] = { name: existing.name, qty: existing.qty - qty };
+      }
+      if (bucket.length === 0) delete userBag.categories[category];
       saveBags(bags);
-      return interaction.reply({ content: `✅ Removed **${item}** from **${category}**!`, ephemeral: true });
+
+      const removedQty = qty == null ? existing.qty : Math.min(qty, existing.qty);
+      const qtyLabel = removedQty > 1 ? ` ×${removedQty}` : '';
+      return interaction.reply({ content: `✅ Removed **${existing.name}**${qtyLabel} from **${category}**!`, ephemeral: true });
     }
     if (sub === 'removecategory') {
       const category = interaction.options.getString('category').trim();
@@ -1747,6 +2377,118 @@ client.on('interactionCreate', async (interaction) => {
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`✏️ ${char.name}'s Wallet — Updated`)] });
+    }
+  }
+
+  // ─── /hero ───────────────────────────────────────────────────────
+  else if (commandName === 'hero') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const char = charEntry.data;
+    const current = getHeroPoints(charEntry);
+
+    if (sub === 'view') {
+      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry)] });
+    }
+
+    if (sub === 'add') {
+      const amount = interaction.options.getInteger('amount') ?? 1;
+      if (amount < 1) return interaction.reply({ content: '❌ Amount must be at least 1.', ephemeral: true });
+
+      // Cap at 3 per the rules; report how many were actually added and if any were wasted
+      const raw = current + amount;
+      const capped = Math.min(raw, HERO_POINTS_MAX);
+      charEntry.heroPoints = capped;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+
+      const actuallyAdded = capped - current;
+      const wasted = amount - actuallyAdded;
+      let note;
+      if (actuallyAdded === 0) note = `⚠️ **${char.name}** already has the max of ${HERO_POINTS_MAX}. No points added.`;
+      else if (wasted > 0)    note = `✨ Awarded **+${amount}**, but ${wasted} exceeded the cap. Now at **${capped}/${HERO_POINTS_MAX}**.`;
+      else                    note = `✨ Awarded **+${amount}**. Now at **${capped}/${HERO_POINTS_MAX}**.`;
+      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'spend') {
+      const amount = interaction.options.getInteger('amount') ?? 1;
+      if (amount < 1) return interaction.reply({ content: '❌ Amount must be at least 1.', ephemeral: true });
+      if (amount > current) return interaction.reply({ content: `❌ **${char.name}** only has **${current}** Hero Point${current === 1 ? '' : 's'}.`, ephemeral: true });
+
+      charEntry.heroPoints = current - amount;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+
+      const note = amount === current && amount >= 3
+        ? `💫 **${char.name}** spent all **${amount}** Hero Points! *(Enough to avoid death and stabilize.)*`
+        : `🎲 **${char.name}** spent **${amount}** Hero Point${amount === 1 ? '' : 's'}. **${charEntry.heroPoints}** remaining.`;
+      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'set') {
+      // Override — allows going above 3 if the GM really wants to
+      const value = interaction.options.getInteger('value');
+      if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
+      charEntry.heroPoints = value;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
+      const note = `✏️ Set to **${value}**${overflow}.`;
+      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'reset') {
+      // Reset to the session default (1)
+      charEntry.heroPoints = HERO_POINTS_DEFAULT;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const note = `🌅 Reset for a new session. **${char.name}** starts with **${HERO_POINTS_DEFAULT}**.`;
+      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'reroll') {
+      if (current < 1) return interaction.reply({ content: `❌ **${char.name}** has no Hero Points to spend. Use \`/hero add\` if the GM just awarded one.`, ephemeral: true });
+
+      const dice = interaction.options.getString('dice');
+      const previous = interaction.options.getInteger('previous'); // optional prior total for side-by-side
+
+      const result = rollDiceExpression(dice);
+      if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+
+      // Deduct 1 hero point (the reroll cost)
+      charEntry.heroPoints = current - 1;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+
+      // PF2e rule: keep the HIGHER of the two rolls. If user gave us their prior total, compare.
+      let keepLine;
+      if (previous !== null && previous !== undefined) {
+        const kept = Math.max(previous, result.total);
+        const improved = result.total > previous;
+        keepLine = improved
+          ? `**Kept: ${kept}** ✨ *(rerolled higher!)*`
+          : result.total === previous
+            ? `**Kept: ${kept}** *(tied)*`
+            : `**Kept: ${kept}** *(previous roll was better)*`;
+      } else {
+        keepLine = `**Result: ${result.total}**\n*Keep the higher of your original roll and this one.*`;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0xe67e22)
+        .setTitle(`⭐ ${char.name} spends a Hero Point to reroll!`)
+        .setDescription(
+          (previous !== null && previous !== undefined ? `**Previous:** ${previous}\n` : '') +
+          `**Reroll:** ${result.breakdown} = **${result.total}**\n\n` +
+          keepLine + '\n\n' +
+          `*Hero Points: ${renderHeroPointsBar(charEntry.heroPoints)} (${charEntry.heroPoints}/${HERO_POINTS_MAX})*`
+        )
+        .setFooter({ text: `${char.name} · 1 Hero Point spent` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
     }
   }
 
