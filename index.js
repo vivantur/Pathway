@@ -17,6 +17,7 @@ const {
   clearEffects,
 } = require('./encounters');
 const { getPreset, listPresets } = require('./effects');
+const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
 
 const client = new Client({
   intents: [
@@ -92,6 +93,69 @@ try {
   console.log(`Loaded ${Object.keys(bestiaryDatabase).length} creatures from bestiary.`);
 } catch (err) {
   console.error('Could not load bestiary.json:', err.message);
+}
+
+// ── Bestiary mutation helpers ─────────────────────────────────────────────────
+// /monsteradd writes to the global bestiary.json. Keep this locked to the bot
+// owner via BOT_OWNER_ID env var, since this bot is public and any server could
+// otherwise pollute the global dataset.
+const BOT_OWNER_ID = process.env.BOT_OWNER_ID || null;
+
+function isBotOwner(userId) {
+  return BOT_OWNER_ID && String(userId) === String(BOT_OWNER_ID);
+}
+
+// Atomic write: dump to a temp file, fsync, then rename. If anything goes wrong
+// mid-write, bestiary.json is either the old version or the new version — never
+// a half-written file.
+function persistBestiary() {
+  // Re-read metadata so we don't blow it away, and rewrite the whole file
+  // with updated creatures.
+  let metadata = null;
+  try {
+    const existing = JSON.parse(fs.readFileSync('bestiary.json', 'utf8'));
+    metadata = existing.metadata ?? null;
+  } catch (_) { /* ignore, we'll write without metadata */ }
+
+  const payload = { creatures: bestiaryDatabase };
+  if (metadata) payload.metadata = metadata;
+  // Put metadata first for readability, but JSON key order is just cosmetic
+  const ordered = metadata ? { metadata, creatures: bestiaryDatabase } : payload;
+
+  const tmp = 'bestiary.json.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(ordered, null, 2), 'utf8');
+  fs.renameSync(tmp, 'bestiary.json');
+}
+
+function addMonsterToBestiary(entry, slug) {
+  // If a key collision happens, append _2, _3, ... so we don't overwrite.
+  let finalSlug = slug;
+  let counter = 2;
+  while (bestiaryDatabase[finalSlug]) {
+    finalSlug = `${slug}_${counter}`;
+    counter++;
+  }
+  bestiaryDatabase[finalSlug] = entry;
+  persistBestiary();
+  return finalSlug;
+}
+
+function removeMonsterFromBestiary(slugOrName) {
+  // Accept either a slug or a display name. Return { removed, key } or { removed: false }.
+  if (bestiaryDatabase[slugOrName]) {
+    const removed = bestiaryDatabase[slugOrName];
+    delete bestiaryDatabase[slugOrName];
+    persistBestiary();
+    return { removed: true, key: slugOrName, name: removed.name };
+  }
+  const normalize = s => String(s ?? '').toLowerCase().trim();
+  const match = Object.entries(bestiaryDatabase).find(([, m]) => normalize(m.name) === normalize(slugOrName));
+  if (match) {
+    delete bestiaryDatabase[match[0]];
+    persistBestiary();
+    return { removed: true, key: match[0], name: match[1].name };
+  }
+  return { removed: false };
 }
 
 let itemDatabase = [];
@@ -1952,6 +2016,10 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           }
         }
+        else if (cmd === 'monsteradd' && focused.name === 'monster') {
+          // For /monsteradd remove, suggest the full bestiary.
+          suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
         else if (cmd === 'deity' && focused.name === 'name') {
           suggestions = pick(deityDatabase.map(d => d.name));
         }
@@ -2710,6 +2778,96 @@ client.on('interactionCreate', async (interaction) => {
       content: `❌ No creature found for **"${input}"**. Check your spelling or try another name.`,
       ephemeral: true,
     });
+  }
+
+  // ─── /monsteradd ─────────────────────────────────────────────────
+  // Owner-only. Parses a pasted Archives-of-Nethys stat block (or one attached
+  // as a .txt file) and inserts it into the global bestiary.json so it shows
+  // up in /monster for everyone. Also supports `remove` to roll back mistakes.
+  else if (commandName === 'monsteradd') {
+    // Gate: only the bot owner can mutate the global dataset.
+    if (!BOT_OWNER_ID) {
+      return interaction.reply({
+        content: '⚙️ `/monsteradd` is disabled: the bot operator hasn\'t set the `BOT_OWNER_ID` environment variable. Add it to `.env` and restart the bot.',
+        ephemeral: true,
+      });
+    }
+    if (!isBotOwner(interaction.user.id)) {
+      return interaction.reply({
+        content: '🔒 Only the bot owner can add creatures to the global bestiary.',
+        ephemeral: true,
+      });
+    }
+
+    const sub = interaction.options.getSubcommand();
+
+    // ── /monsteradd paste ─────────────────────────────────────────────────
+    if (sub === 'paste') {
+      const raw = interaction.options.getString('statblock');
+      await interaction.deferReply({ ephemeral: true });
+      const result = parseBestiaryStatBlock(raw);
+      if (!result.ok) {
+        return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      }
+      const slug = addMonsterToBestiary(result.entry, result.slug);
+      const preview = buildMonsterEmbed(result.entry, null);
+      const warnLine = result.warnings.length
+        ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
+        : '';
+      return interaction.editReply({
+        content: `✅ Added **${result.entry.name}** to the global bestiary (key: \`${slug}\`).${warnLine}\nUse \`/monster name:${result.entry.name}\` to view. If something looks off, use \`/monsteredit\` to fix it or \`/monsteradd remove\` to roll back.`,
+        embeds: [preview],
+      });
+    }
+
+    // ── /monsteradd file ──────────────────────────────────────────────────
+    if (sub === 'file') {
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment) return interaction.reply({ content: '❌ No file attached.', ephemeral: true });
+      // Basic sanity: only accept small text-ish files
+      if (attachment.size > 256 * 1024) {
+        return interaction.reply({ content: '❌ File is too large (256 KB max). Please paste the stat block inline instead.', ephemeral: true });
+      }
+      const ctype = (attachment.contentType || '').toLowerCase();
+      const isTexty = ctype.startsWith('text/') || /\.(txt|md|text)$/i.test(attachment.name || '');
+      if (!isTexty) {
+        return interaction.reply({ content: '❌ Only plain-text files (.txt / .md) are supported. If you have an image, retype the stat block into a .txt file or use `/monsteradd paste`.', ephemeral: true });
+      }
+      await interaction.deferReply({ ephemeral: true });
+      let body;
+      try {
+        const resp = await fetch(attachment.url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        body = await resp.text();
+      } catch (err) {
+        return interaction.editReply({ content: `❌ Could not download the attachment: ${err.message}` });
+      }
+      const result = parseBestiaryStatBlock(body);
+      if (!result.ok) {
+        return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      }
+      const slug = addMonsterToBestiary(result.entry, result.slug);
+      const preview = buildMonsterEmbed(result.entry, null);
+      const warnLine = result.warnings.length
+        ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
+        : '';
+      return interaction.editReply({
+        content: `✅ Added **${result.entry.name}** to the global bestiary (key: \`${slug}\`).${warnLine}\nUse \`/monster name:${result.entry.name}\` to view. If something looks off, use \`/monsteredit\` to fix it or \`/monsteradd remove\` to roll back.`,
+        embeds: [preview],
+      });
+    }
+
+    // ── /monsteradd remove ────────────────────────────────────────────────
+    if (sub === 'remove') {
+      const input = interaction.options.getString('monster').trim();
+      const result = removeMonsterFromBestiary(input);
+      if (!result.removed) {
+        return interaction.reply({ content: `❌ No creature found for \`${input}\` in the bestiary.`, ephemeral: true });
+      }
+      return interaction.reply({ content: `🗑️ Removed **${result.name}** (key: \`${result.key}\`) from the global bestiary.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
   }
 
   // ─── /monsterart ─────────────────────────────────────────────────

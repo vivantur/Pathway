@@ -139,6 +139,32 @@ const commands = [
     options: [{ name: 'name', description: 'Name of the creature to look up (e.g. Goblin Warrior, Ancient Red Dragon)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
+    name: 'monsteradd', description: 'Bot owner: add a missing creature to the global bestiary from a pasted stat block',
+    options: [
+      {
+        name: 'paste', description: 'Paste a full PF2e stat block as text (Archives of Nethys format)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'statblock', description: 'Full stat block text (name, traits, HP/AC, attacks, abilities, etc.)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'file', description: 'Upload a .txt file containing the full stat block',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'file', description: 'Plain-text (.txt) file with the stat block', type: ApplicationCommandOptionType.Attachment, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a user-added creature from the global bestiary',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Name or slug of the creature to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'monsterart', description: 'GM: attach a custom image to a monster\'s stat block (per-server)',
     options: [
       {
