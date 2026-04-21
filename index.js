@@ -742,6 +742,52 @@ async function clearSummary(channel, enc) {
   } catch {}
 }
 
+// ── Recovery check display helper ────────────────────────────────────────────
+// Builds the embed + optional Hero Point reroll button for a recovery check
+// result. Used by both /init next (auto-roll on dying combatant's turn start)
+// and /init recovery (manual force-roll). Returns { embeds, components }.
+// Pass in the recovery check result from ca.rollRecoveryCheck and the combatant.
+function buildRecoveryCheckPayload(rc, combatant) {
+  const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
+    : rc.outcome === 'success' ? '✅'
+    : rc.outcome === 'failure' ? '❌'
+    : '💥';
+  const embed = new EmbedBuilder()
+    .setColor(rc.died ? 0x8B0000 : rc.awoke ? 0x2ecc71 : rc.outcome === 'success' || rc.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
+    .setTitle(`💀 ${combatant.name}'s Recovery Check`)
+    .setDescription(
+      `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})\n` +
+      `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
+      `${rc.narration}`
+    );
+
+  // Hero Point reroll button for PCs with hero points remaining
+  const components = [];
+  if (!combatant.isNpc && combatant.ownerId && !rc.died) {
+    try {
+      const characters = loadCharacters();
+      const userCharacters = characters[combatant.ownerId] ?? {};
+      const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
+      const charEntry = userCharacters[charKey];
+      const heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
+      if (heroPoints > 0) {
+        const safeName = combatant.name.replace(/[^a-zA-Z0-9]/g, '_');
+        const awokeFlag = rc.awoke ? '1' : '0';
+        components.push(new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
+            .setLabel(`🎭 Hero Point Reroll (${heroPoints} available)`)
+            .setStyle(ButtonStyle.Primary),
+        ));
+      }
+    } catch (err) {
+      console.error('Recovery check: hero point lookup failed:', err);
+    }
+  }
+
+  return { embeds: [embed], components };
+}
+
 function rollD20Plus(modifier) {
   const roll = Math.floor(Math.random() * 20) + 1;
   return { total: roll + modifier, roll, mod: modifier };
@@ -1986,6 +2032,7 @@ const HELP_CATEGORIES = {
       { name: '/init next', summary: 'Advance turn. Auto-rolls persistent damage and recovery checks.', example: '/init next' },
       { name: '/init hp', summary: 'Modify a combatant\'s HP. Auto-applies dying when reduced to 0.', options: 'name, change', example: '/init hp name:Fighter change:-12' },
       { name: '/init dying', summary: 'GM: manually set a combatant\'s dying value (0–4).', options: 'name, value', example: '/init dying name:Fighter value:0' },
+      { name: '/init recovery', summary: 'Manually roll a recovery check for a dying combatant. Use if auto-roll didn\'t fire.', options: 'name', example: '/init recovery name:Fighter' },
       { name: '/init move', summary: 'Declare a combatant moves. Prompts all combatants with reactions for AoO.', options: 'name', example: '/init move name:Fighter' },
       { name: '/init reaction', summary: 'Manually prompt a specific combatant for a reaction (Shield Block, etc.).', options: 'name, reason', example: '/init reaction name:Fighter reason:Shield Block' },
       { name: '/init damage', summary: 'Manually roll persistent damage on a combatant outside the normal turn tick.', options: 'name', example: '/init damage name:Fighter' },
@@ -4659,6 +4706,9 @@ client.on('interactionCreate', async (interaction) => {
       const current = result.current;
       const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
 
+      // Diagnostic logging — helps us see what happened if auto-roll doesn't fire
+      console.log(`[init next] Advanced to ${current.name} (isNpc=${current.isNpc}, hp=${current.hp}/${current.maxHp}, dying=${current.dying ?? 0}, wounded=${current.wounded ?? 0}). recoveryCheck=${result.recoveryCheck ? 'fired' : 'not-triggered'}`);
+
       const lines = [`🎯 It's **${current.name}**'s turn! ${mention}`];
 
       // Show new round banner
@@ -4683,48 +4733,17 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
 
-      // Show recovery check for new current combatant if they were dying
+      // Hint to the GM if the combatant is dying but the check didn't fire
+      // (shouldn't happen, but diagnostic aid for the user)
+      if ((current.dying ?? 0) > 0 && !result.recoveryCheck) {
+        lines.push(`⚠️ **${current.name}** is Dying ${current.dying} but no recovery check auto-rolled. Use \`/init recovery name:${current.name}\` to force a roll.`);
+      }
+
       const replyPayload = { content: lines.join('\n') };
       if (result.recoveryCheck) {
-        const rc = result.recoveryCheck;
-        const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
-          : rc.outcome === 'success' ? '✅'
-          : rc.outcome === 'failure' ? '❌'
-          : '💥';
-        const recoveryEmbed = new EmbedBuilder()
-          .setColor(rc.died ? 0x8B0000 : rc.awoke ? 0x2ecc71 : rc.outcome === 'success' || rc.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
-          .setTitle(`💀 ${current.name}'s Recovery Check`)
-          .setDescription(
-            `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})\n` +
-            `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
-            `${rc.narration}`
-          );
-
-        // Burn-Hero-Point button if PC has hero points (skip for NPCs)
-        const components = [];
-        if (!current.isNpc && current.ownerId && !rc.died) {
-          // Look up hero points
-          const characters = loadCharacters();
-          const userCharacters = characters[current.ownerId] ?? {};
-          const charKey = current.name.toLowerCase().replace(/\s+/g, '-');
-          const charEntry = userCharacters[charKey];
-          const heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
-          if (heroPoints > 0) {
-            // Encode the original result in customId so we can restore on click
-            // customId: rcheck_reroll_<combatantSafeName>_<dyingBefore>_<dyingAfter>_<roll>_<awoke 1|0>
-            const safeName = current.name.replace(/[^a-zA-Z0-9]/g, '_');
-            const awokeFlag = rc.awoke ? '1' : '0';
-            components.push(new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-                .setLabel(`🎭 Hero Point Reroll (${heroPoints} available)`)
-                .setStyle(ButtonStyle.Primary),
-            ));
-          }
-        }
-
-        replyPayload.embeds = [recoveryEmbed];
-        if (components.length) replyPayload.components = components;
+        const payload = buildRecoveryCheckPayload(result.recoveryCheck, current);
+        replyPayload.embeds = payload.embeds;
+        if (payload.components.length) replyPayload.components = payload.components;
       }
 
       await interaction.reply(replyPayload);
@@ -5004,6 +5023,42 @@ client.on('interactionCreate', async (interaction) => {
         extra = ' ☠️ **Dead!**';
       }
       await interaction.reply(`💀 **${target.name}** dying set to ${value} (was ${before}).${extra}`);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // ── /init recovery ──
+    // Manually force a recovery check roll for a dying combatant. Useful as a
+    // reliability backup when the auto-roll on turn start doesn't fire, or to
+    // force an off-turn recovery check (e.g. "the party just stopped combat
+    // to stabilize the fallen; everyone dying rolls now"). The roll rules and
+    // display are identical to the auto-rolled version, and the Hero Point
+    // reroll button is available.
+    if (sub === 'recovery') {
+      const targetName = interaction.options.getString('name');
+      const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}".`, ephemeral: true });
+
+      // Permission: GM can roll for anyone; players can only roll for their own PC
+      const isOwner = !target.isNpc && interaction.user.id === target.ownerId;
+      const isGm = interaction.user.id === enc.gmId;
+      if (!isOwner && !isGm) {
+        return interaction.reply({ content: `❌ Only ${target.isNpc ? 'the GM' : 'the combatant\'s owner (or GM)'} can roll recovery for **${target.name}**.`, ephemeral: true });
+      }
+
+      if ((target.dying ?? 0) <= 0) {
+        return interaction.reply({ content: `❌ **${target.name}** isn't dying (Dying ${target.dying ?? 0}). No recovery check needed.\n\n*If they SHOULD be dying, a GM can use \`/init dying name:${target.name} value:1\` to set it.*`, ephemeral: true });
+      }
+
+      console.log(`[init recovery] Manual recovery check for ${target.name} (dying=${target.dying}, wounded=${target.wounded ?? 0})`);
+
+      const rc = ca.rollRecoveryCheck(channelId, target.name);
+      if (!rc) {
+        return interaction.reply({ content: `❌ Failed to roll recovery check. (This shouldn't happen — please report.)`, ephemeral: true });
+      }
+
+      const payload = buildRecoveryCheckPayload(rc, target);
+      await interaction.reply(payload);
       await updateSummary(interaction.channel, enc);
       return;
     }

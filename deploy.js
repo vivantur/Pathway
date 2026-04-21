@@ -703,6 +703,13 @@ const commands = [
           { name: 'value', description: 'New Dying value (0 = recover, 4 = dead)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 4 }
         ]
       },
+      {
+        name: 'recovery', description: 'Manually roll a recovery check for a dying combatant (backup if auto-roll did not fire)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant who is dying and needs to roll recovery', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
       { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
     ]
   },
