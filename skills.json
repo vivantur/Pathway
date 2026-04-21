@@ -1,0 +1,703 @@
+{
+  "_meta": {
+    "source": "Pathfinder 2e Remaster (Player Core)",
+    "version": "1.0",
+    "notes": "Hand-curated summary of the 16 core trained skills. Skill feat-unlocked actions are not included; this covers only the actions every character can perform based on proficiency."
+  },
+  "skills": {
+    "acrobatics": {
+      "name": "Acrobatics",
+      "keyAttribute": "Dexterity",
+      "description": "Acrobatics measures your ability to perform tasks requiring coordination and grace. When you use the Escape basic action, you can use your Acrobatics modifier instead of your unarmed attack modifier.",
+      "commonUses": [
+        "Balance on narrow or unstable surfaces",
+        "Tumble through an enemy's space without provoking",
+        "Escape a grab, restraint, or hazardous terrain",
+        "Maneuver in flight (if you have a fly Speed)",
+        "Squeeze through tight spaces"
+      ],
+      "actions": [
+        {
+          "name": "Balance",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Move across a narrow surface, slippery ground, or other unstable terrain. Attempt an Acrobatics check against the surface's Balance DC. On a success, move at half Speed; on a critical success, move at full Speed. On a failure you must stop; on a critical failure you fall."
+        },
+        {
+          "name": "Tumble Through",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Move up to your Speed through an enemy's space by attempting an Acrobatics check against the target's Reflex DC. On a success you move through without being disrupted; on a failure the enemy's space counts as difficult terrain for you."
+        },
+        {
+          "name": "Maneuver in Flight",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "(Requires a fly Speed.) Attempt a difficult maneuver in mid-air — sharp turns, evasive weaving, or sudden stops. DC depends on the maneuver's complexity."
+        },
+        {
+          "name": "Squeeze",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Move through a space too small for you. Requires repeated Acrobatics checks and takes significantly longer than normal movement."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Balance on a wide tree branch (Easy)" },
+        { "dc": 20, "example": "Balance on an icy ledge, or squeeze through a narrow crevice" },
+        { "dc": 25, "example": "Balance on a tightrope while being jostled" },
+        { "dc": 30, "example": "Tumble past a master duelist on alert" }
+      ]
+    },
+    "arcana": {
+      "name": "Arcana",
+      "keyAttribute": "Intelligence",
+      "description": "Arcana measures how much you know about arcane magic and creatures. Even if you're untrained, you can Recall Knowledge about arcane magical traditions and creatures.",
+      "commonUses": [
+        "Recall Knowledge about arcane magic, planes, or creatures",
+        "Identify an arcane spell being cast or an active magical effect",
+        "Learn or copy a new arcane spell into your spellbook",
+        "Decipher arcane writing",
+        "Research arcane topics"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall a piece of knowledge about arcane magic, magical creatures, or planes. DC is set by the subject's level and rarity."
+        },
+        {
+          "name": "Identify Magic",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Determine what a magical effect or item does. Different traditions use their own skill (Arcana, Nature, Occultism, Religion), but Arcana works for most detection tasks."
+        },
+        {
+          "name": "Learn a Spell",
+          "cost": "1 hour per spell rank",
+          "proficiency": "Trained",
+          "description": "Study an arcane spell from a source (like a scroll or another spellbook) to add it to your own repertoire or spellbook. Requires material cost and a successful check."
+        },
+        {
+          "name": "Decipher Writing",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Translate ancient, coded, or arcane writing. Each attempt takes time equal to the passage's complexity."
+        },
+        {
+          "name": "Borrow an Arcane Spell",
+          "cost": "Reaction/varies",
+          "proficiency": "Trained",
+          "description": "Prepared arcane casters can attempt to cast a spell they haven't prepared by referencing a source (like a spellbook) mid-scene."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Recall Knowledge about a common magical creature or tradition" },
+        { "dc": 20, "example": "Identify a 2nd-rank spell in progress" },
+        { "dc": 25, "example": "Learn a rare or uncommon spell" },
+        { "dc": 30, "example": "Recall Knowledge about an ancient, obscure arcane secret" }
+      ]
+    },
+    "athletics": {
+      "name": "Athletics",
+      "keyAttribute": "Strength",
+      "description": "Athletics allows you to perform deeds of physical prowess. Even if untrained, you can still attempt tasks like swimming, climbing, and shoving.",
+      "commonUses": [
+        "Climb walls, cliffs, or ropes",
+        "Swim through water or turbulent currents",
+        "Jump across gaps or onto obstacles",
+        "Shove, Trip, Grapple, or Disarm opponents",
+        "Force open doors",
+        "Lift or break objects"
+      ],
+      "actions": [
+        {
+          "name": "Climb",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Move up, down, or across a wall, rope, or other vertical surface. On a success, move up to 5 feet (or 10 feet on a critical success). A failure means you don't move; a critical failure causes you to fall."
+        },
+        {
+          "name": "Swim",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Move through water by attempting an Athletics check against the water's DC. On a success, move up to 10 feet; on a critical success, 15 feet. A critical failure means you take damage and start to drown."
+        },
+        {
+          "name": "Leap / Long Jump / High Jump",
+          "cost": "1 action (2 for a long jump)",
+          "proficiency": "Untrained",
+          "description": "Leap is a basic 5-10 ft jump, no check needed. Long Jump and High Jump use Athletics checks to exceed your normal Leap range."
+        },
+        {
+          "name": "Grapple",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Attempt to hold a creature in place. Athletics vs. the target's Fortitude DC. On a success the target becomes Grabbed; on a critical success, Restrained."
+        },
+        {
+          "name": "Shove",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Push a creature up to 5 feet away. Athletics vs. the target's Fortitude DC. A critical success pushes them 10 feet and you can Stride with them."
+        },
+        {
+          "name": "Trip",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Knock a creature prone. Athletics vs. the target's Reflex DC. On a success they fall Prone and become Off-Guard."
+        },
+        {
+          "name": "Disarm",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "Attempt to knock an item from a foe's grasp. Athletics vs. the target's Reflex DC. On a critical success you can take the item; on a success, the target is Off-Guard while holding the item until its turn."
+        },
+        {
+          "name": "Force Open",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Break open a locked or stuck door, chest, or barrier with brute strength. DC depends on the obstacle's sturdiness."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Climb a rough wall with easy handholds" },
+        { "dc": 20, "example": "Swim against a strong current, or Trip a creature your size" },
+        { "dc": 25, "example": "Climb an overhanging cliff, or Force Open a reinforced door" },
+        { "dc": 30, "example": "Leap a 20-foot gap, or Grapple an armored ogre" }
+      ]
+    },
+    "crafting": {
+      "name": "Crafting",
+      "keyAttribute": "Intelligence",
+      "description": "You can create, understand, and repair items. The formulas needed to craft items are generally easy to come by, but rare items may require rare formulas.",
+      "commonUses": [
+        "Craft new items, weapons, or armor",
+        "Repair damaged items",
+        "Earn Income through a trade",
+        "Identify the value or quality of an item",
+        "Recall Knowledge about crafting, engineering, or alchemy"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall information about crafting, alchemy, unusual materials, or items of historical significance."
+        },
+        {
+          "name": "Repair",
+          "cost": "10 minutes",
+          "proficiency": "Untrained",
+          "description": "Use a repair kit to restore Hit Points to an item. On a success, restore 5 HP (plus 5 per proficiency level above Trained)."
+        },
+        {
+          "name": "Craft",
+          "cost": "Downtime (4+ days)",
+          "proficiency": "Trained",
+          "description": "Create an item from raw materials using a formula. Requires raw materials worth at least half the item's price. The check's outcome determines how much time and cost the project takes."
+        },
+        {
+          "name": "Earn Income",
+          "cost": "Downtime (1+ days)",
+          "proficiency": "Trained",
+          "description": "Work as a crafter to make money during downtime. Payment scales with your level, proficiency, and the task DC."
+        },
+        {
+          "name": "Identify Alchemy",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Analyze an alchemical item to determine what it does. Requires an alchemist's toolkit."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Craft a common 1st-level item" },
+        { "dc": 20, "example": "Repair a broken weapon, or identify a common alchemical item" },
+        { "dc": 25, "example": "Craft an uncommon item, or Earn Income at a moderate rate" },
+        { "dc": 30, "example": "Identify the arcane signature of a masterwork piece" }
+      ]
+    },
+    "deception": {
+      "name": "Deception",
+      "keyAttribute": "Charisma",
+      "description": "You can trick and mislead others using disguises, lies, and cunning. Even if untrained, you can still attempt to Lie or Create a Diversion.",
+      "commonUses": [
+        "Lie to mislead someone",
+        "Feint in combat to catch a foe off-balance",
+        "Create a diversion to slip away or redirect attention",
+        "Impersonate another person (requires Trained)",
+        "Hide intentions or emotions"
+      ],
+      "actions": [
+        {
+          "name": "Create a Diversion",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Distract onlookers with a gesture, misdirection, or feint. Deception vs. Perception DC of observers; success makes you Unnoticed until the end of your next turn."
+        },
+        {
+          "name": "Lie",
+          "cost": "1 minute or more",
+          "proficiency": "Untrained",
+          "description": "Tell a lie. Deception vs. the target's Perception DC. Complex or implausible lies increase the DC. A lie discovered later can damage relationships or reveal deception."
+        },
+        {
+          "name": "Feint",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "Use deceptive footwork to make your opponent Off-Guard to your next melee attack. Deception vs. Perception DC; a critical success extends the Off-Guard condition to allies as well."
+        },
+        {
+          "name": "Impersonate",
+          "cost": "10 minutes or more",
+          "proficiency": "Trained",
+          "description": "Disguise yourself to pass as another person or type of creature. A disguise kit grants a bonus. Deception vs. Perception; failure can expose your identity."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Feint a clumsy guard, or lie about something plausible" },
+        { "dc": 20, "example": "Impersonate a member of a similar social class" },
+        { "dc": 25, "example": "Lie about something that contradicts what the target already believes" },
+        { "dc": 30, "example": "Impersonate a named public figure to their close associates" }
+      ]
+    },
+    "diplomacy": {
+      "name": "Diplomacy",
+      "keyAttribute": "Charisma",
+      "description": "You influence others through negotiation and charm. Even untrained, you can Gather Information and Make an Impression.",
+      "commonUses": [
+        "Gather information from townspeople and contacts",
+        "Make an impression to improve someone's attitude toward you",
+        "Request a specific favor or concession",
+        "Calm a hostile creature or de-escalate conflict"
+      ],
+      "actions": [
+        {
+          "name": "Gather Information",
+          "cost": "2 hours or more",
+          "proficiency": "Untrained",
+          "description": "Ask around a settlement to learn about a subject. DC depends on how common the information is and how willing locals are to share."
+        },
+        {
+          "name": "Make an Impression",
+          "cost": "10 minutes",
+          "proficiency": "Untrained",
+          "description": "Engage in polite conversation to shift someone's attitude. Starting attitudes are Hostile / Unfriendly / Indifferent / Friendly / Helpful — each step requires a check."
+        },
+        {
+          "name": "Request",
+          "cost": "1 action or more",
+          "proficiency": "Untrained",
+          "description": "Ask for something. The target's attitude sets the DC — Helpful NPCs almost always oblige; Hostile ones almost never. GMs adjust based on the ask's reasonableness."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Make an Indifferent NPC Friendly, or request a minor favor from a Friendly contact" },
+        { "dc": 20, "example": "Gather Information about a recent public event" },
+        { "dc": 25, "example": "Persuade a Hostile noble to grant you an audience" },
+        { "dc": 30, "example": "Make an enemy general consider a ceasefire" }
+      ]
+    },
+    "intimidation": {
+      "name": "Intimidation",
+      "keyAttribute": "Charisma",
+      "description": "You bend others to your will through threats or fear. Even untrained, you can Demoralize or Coerce.",
+      "commonUses": [
+        "Demoralize an enemy mid-combat",
+        "Coerce information from a reluctant source",
+        "Recall Knowledge about criminal organizations or threats"
+      ],
+      "actions": [
+        {
+          "name": "Demoralize",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Use fierce threats or presence to unsettle a foe. Intimidation vs. target's Will DC. Success inflicts Frightened 1 (Frightened 2 on a critical success). If you don't share a language, you take a -4 circumstance penalty."
+        },
+        {
+          "name": "Coerce",
+          "cost": "1 minute or more",
+          "proficiency": "Untrained",
+          "description": "Force a creature to comply with a specific demand. Intimidation vs. Will DC. A critical failure makes them Unfriendly (or Hostile). A creature under duress will usually resume normal behavior at the next opportunity."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Demoralize a common guard" },
+        { "dc": 20, "example": "Coerce a prisoner into revealing a name" },
+        { "dc": 25, "example": "Demoralize a seasoned veteran or elite foe" },
+        { "dc": 30, "example": "Coerce a cultist to betray their god" }
+      ]
+    },
+    "medicine": {
+      "name": "Medicine",
+      "keyAttribute": "Wisdom",
+      "description": "You can patch up wounds and help people recover from diseases and poisons. Even untrained, you can Administer First Aid.",
+      "commonUses": [
+        "Administer First Aid to stabilize a dying ally or stop bleed",
+        "Treat Wounds to restore HP over time",
+        "Treat Disease or Treat Poison (requires Trained)",
+        "Recall Knowledge about diseases, injuries, anatomy, or medicine"
+      ],
+      "actions": [
+        {
+          "name": "Administer First Aid",
+          "cost": "2 actions",
+          "proficiency": "Untrained",
+          "description": "Stop a dying ally from getting worse, or stop ongoing bleed damage. Requires you be adjacent. DC is set by the situation; success stabilizes the ally at 0 HP or ends bleed damage."
+        },
+        {
+          "name": "Treat Wounds",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Restore Hit Points to an injured ally. Requires healer's tools. DC 15 heals 2d8 (plus bonuses by proficiency); crit success heals extra. Each ally can only benefit once per hour (10 minutes with Continual Recovery feat)."
+        },
+        {
+          "name": "Treat Disease",
+          "cost": "8 hours",
+          "proficiency": "Trained",
+          "description": "Spend time tending to a diseased creature. On their next save vs. the disease, they gain a circumstance bonus based on your check outcome."
+        },
+        {
+          "name": "Treat Poison",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "Grant a poisoned creature a bonus to their next save against the poison. Requires you to be adjacent and have healer's tools."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Treat Wounds at standard DC (2d8 healing)" },
+        { "dc": 20, "example": "Treat Wounds for 2d8+10 (requires Expert, risky for Trained)" },
+        { "dc": 25, "example": "Treat a rare disease or exotic poison" },
+        { "dc": 30, "example": "Treat Wounds for 2d8+30 (requires Legendary)" }
+      ]
+    },
+    "nature": {
+      "name": "Nature",
+      "keyAttribute": "Wisdom",
+      "description": "You know about the natural world and primal magic. Even untrained, you can Recall Knowledge about wildlife, weather, and the wilderness.",
+      "commonUses": [
+        "Recall Knowledge about animals, plants, weather, or primal magic",
+        "Command an Animal (Trained)",
+        "Identify primal spells and effects",
+        "Learn a primal spell (druids and similar casters)",
+        "Navigate natural environments"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall information about animals, natural environments, plants, weather, or primal magic."
+        },
+        {
+          "name": "Command an Animal",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "Direct an animal to perform a trick it knows. Nature vs. the animal's Will DC. A mount or animal companion has its own rules."
+        },
+        {
+          "name": "Identify Magic",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Identify primal spells, magical plants, or natural phenomena caused by magic."
+        },
+        {
+          "name": "Learn a Spell",
+          "cost": "1 hour per spell rank",
+          "proficiency": "Trained",
+          "description": "Study a primal spell to add it to your repertoire or list of prepared spells."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Recall Knowledge about a common animal or plant" },
+        { "dc": 20, "example": "Command a well-trained animal to perform a risky trick" },
+        { "dc": 25, "example": "Identify a rare primal phenomenon" },
+        { "dc": 30, "example": "Recall Knowledge about an ancient druidic circle" }
+      ]
+    },
+    "occultism": {
+      "name": "Occultism",
+      "keyAttribute": "Intelligence",
+      "description": "You know about ancient philosophies, esoteric lore, obscure mysticism, and superstitions, plus occult magic. Even untrained, you can Recall Knowledge.",
+      "commonUses": [
+        "Recall Knowledge about occult topics, aberrations, spirits, or planes",
+        "Identify occult spells and magical effects",
+        "Decipher cryptic, arcane, or occult writing",
+        "Learn occult spells"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall a fact about occult topics: spirits, aberrations, mind-affecting magic, esoteric lore, philosophy, or obscure cults."
+        },
+        {
+          "name": "Identify Magic",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Identify occult spells, haunted phenomena, or objects of occult significance."
+        },
+        {
+          "name": "Decipher Writing",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Translate obscure, cryptic, or occult writings. Works for secret ciphers, philosophical riddles, or fragmented tomes."
+        },
+        {
+          "name": "Learn a Spell",
+          "cost": "1 hour per spell rank",
+          "proficiency": "Trained",
+          "description": "Study an occult spell to add it to your repertoire or prepared list."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Recall Knowledge about a common ghost story or fable" },
+        { "dc": 20, "example": "Identify an occult spell in progress" },
+        { "dc": 25, "example": "Decipher the diary of a mad cultist" },
+        { "dc": 30, "example": "Recall Knowledge about a secret occult society" }
+      ]
+    },
+    "performance": {
+      "name": "Performance",
+      "keyAttribute": "Charisma",
+      "description": "You're skilled at entertaining others — acting, dancing, playing music, or telling stories. Even untrained, you can Perform for an audience.",
+      "commonUses": [
+        "Perform for an audience or crowd",
+        "Earn Income as a traveling performer",
+        "Create a diversion through performance (instead of Deception)",
+        "Recall Knowledge about famous performers or art"
+      ],
+      "actions": [
+        {
+          "name": "Perform",
+          "cost": "1 action or more",
+          "proficiency": "Untrained",
+          "description": "Give a short performance to entertain or distract. The DC is set by the audience's sophistication and how impressive your display needs to be."
+        },
+        {
+          "name": "Earn Income",
+          "cost": "Downtime (1+ days)",
+          "proficiency": "Trained",
+          "description": "Work as a professional performer. Income scales with your level, proficiency, and the task DC."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Perform for a casual tavern crowd" },
+        { "dc": 20, "example": "Earn Income at a festival" },
+        { "dc": 25, "example": "Perform at a noble's court to sophisticated critics" },
+        { "dc": 30, "example": "Rival the greatest bards in the region" }
+      ]
+    },
+    "religion": {
+      "name": "Religion",
+      "keyAttribute": "Wisdom",
+      "description": "You know deities, religious traditions, and divine magic. Even untrained, you can Recall Knowledge about common faiths.",
+      "commonUses": [
+        "Recall Knowledge about deities, religious practices, or divine creatures",
+        "Identify divine spells or holy artifacts",
+        "Learn a divine spell (clerics and similar)",
+        "Decipher religious writings or liturgical texts"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall information about deities, religious history, divine creatures (angels, demons, celestials), or faith traditions."
+        },
+        {
+          "name": "Identify Magic",
+          "cost": "10 minutes",
+          "proficiency": "Trained",
+          "description": "Identify divine spells, holy symbols, or magical effects of divine origin."
+        },
+        {
+          "name": "Decipher Writing",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Translate religious texts, prayers, or divine inscriptions."
+        },
+        {
+          "name": "Learn a Spell",
+          "cost": "1 hour per spell rank",
+          "proficiency": "Trained",
+          "description": "Study a divine spell to add it to your prepared spell list or repertoire."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Recall Knowledge about a major deity's tenets" },
+        { "dc": 20, "example": "Identify a divine spell in progress" },
+        { "dc": 25, "example": "Decipher the sermon of a fallen prophet" },
+        { "dc": 30, "example": "Know the secret name of a specific angel or devil" }
+      ]
+    },
+    "society": {
+      "name": "Society",
+      "keyAttribute": "Intelligence",
+      "description": "You understand the people and organizations of the mortal world. Even untrained, you can Recall Knowledge about history, laws, and customs.",
+      "commonUses": [
+        "Recall Knowledge about history, governments, customs, or languages",
+        "Subsist in an urban environment",
+        "Create a Forgery (requires Trained)",
+        "Decipher codes, ciphers, or ancient writing"
+      ],
+      "actions": [
+        {
+          "name": "Recall Knowledge",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Recall information about human civilizations, history, cultural customs, laws, politics, or languages."
+        },
+        {
+          "name": "Subsist",
+          "cost": "Downtime (1+ days)",
+          "proficiency": "Untrained",
+          "description": "Find food and shelter in a city by begging, scavenging, or working odd jobs. DC depends on the city's wealth and your social standing."
+        },
+        {
+          "name": "Create a Forgery",
+          "cost": "Downtime (1+ days)",
+          "proficiency": "Trained",
+          "description": "Forge a document — letters of credit, signed edicts, legal papers. Society check sets the DC for anyone inspecting the forgery later."
+        },
+        {
+          "name": "Decipher Writing",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Translate or decode ancient languages, mundane ciphers, or legal jargon."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Recall Knowledge about a recent political event" },
+        { "dc": 20, "example": "Forge a common noble's signature" },
+        { "dc": 25, "example": "Decipher an old imperial legal document" },
+        { "dc": 30, "example": "Recall a long-forgotten historical secret" }
+      ]
+    },
+    "stealth": {
+      "name": "Stealth",
+      "keyAttribute": "Dexterity",
+      "description": "You're skilled at avoiding detection. You can Hide or Sneak even if untrained, but some effects require Trained or higher.",
+      "commonUses": [
+        "Hide from enemies behind cover or concealment",
+        "Sneak past foes without being detected",
+        "Conceal an object on your person",
+        "Palm or pilfer small items without being seen"
+      ],
+      "actions": [
+        {
+          "name": "Hide",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Attempt to become Hidden from observers. You must have cover or concealment. Stealth vs. each observer's Perception DC; success makes you Hidden, meaning attackers must succeed a DC 11 flat check to target you."
+        },
+        {
+          "name": "Sneak",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Move up to your Speed while Hidden or Undetected. Stealth vs. Perception DCs of nearby observers. On a failure, you become Observed; a critical failure reveals your exact location."
+        },
+        {
+          "name": "Conceal an Object",
+          "cost": "1 action",
+          "proficiency": "Trained",
+          "description": "Hide a small item on your person. Stealth vs. the searcher's Perception DC when later inspected. Concealing an obvious item like a longsword is impossible without special gear."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Hide from an unwary guard at night" },
+        { "dc": 20, "example": "Sneak past a watchful sentry" },
+        { "dc": 25, "example": "Conceal a dagger from a pat-down search" },
+        { "dc": 30, "example": "Stealth through the inner sanctum of an elite spymaster" }
+      ]
+    },
+    "survival": {
+      "name": "Survival",
+      "keyAttribute": "Wisdom",
+      "description": "You know how to live off the land. Even untrained, you can Subsist in the wilderness and Sense Direction.",
+      "commonUses": [
+        "Subsist in the wilderness (find food and shelter)",
+        "Sense Direction when lost",
+        "Track a creature through terrain",
+        "Cover Tracks to avoid being tracked"
+      ],
+      "actions": [
+        {
+          "name": "Sense Direction",
+          "cost": "1 minute",
+          "proficiency": "Untrained",
+          "description": "Determine cardinal directions and your approximate location. DC depends on the terrain and available landmarks."
+        },
+        {
+          "name": "Subsist",
+          "cost": "Downtime (1+ days)",
+          "proficiency": "Untrained",
+          "description": "Forage, hunt, or find shelter in the wilderness. DC depends on the terrain's harshness. A party member can Subsist for multiple allies at a higher DC."
+        },
+        {
+          "name": "Track",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Follow tracks or clues left by a creature. Repeated Survival checks as you move; the DC depends on how old and clear the trail is."
+        },
+        {
+          "name": "Cover Tracks",
+          "cost": "Exploration",
+          "proficiency": "Trained",
+          "description": "Move at half Speed while erasing your trail. Opposing Survival checks from pursuers. Useful when being hunted."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Subsist in mild forest terrain" },
+        { "dc": 20, "example": "Track a creature across soft ground half a day old" },
+        { "dc": 25, "example": "Sense Direction deep in an unfamiliar swamp" },
+        { "dc": 30, "example": "Track a skilled ranger who is actively Covering Tracks" }
+      ]
+    },
+    "thievery": {
+      "name": "Thievery",
+      "keyAttribute": "Dexterity",
+      "description": "You're adept at nimble tasks like disabling traps, picking locks, and stealing. Even untrained, you can attempt simple Palm or Steal actions.",
+      "commonUses": [
+        "Pick locks (requires Trained)",
+        "Disable Devices (traps, locks, mechanisms — requires Trained)",
+        "Steal an item from a person without being noticed",
+        "Palm a small object (sleight of hand)"
+      ],
+      "actions": [
+        {
+          "name": "Palm an Object",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Pick up a small, light object without being detected. Thievery vs. the observer's Perception DC. Taking an object from a person requires the Steal action instead."
+        },
+        {
+          "name": "Steal",
+          "cost": "1 action",
+          "proficiency": "Untrained",
+          "description": "Take an item from another creature's person without them noticing. Only works on items not being actively held. Thievery vs. Perception DC."
+        },
+        {
+          "name": "Disable a Device",
+          "cost": "2 or more actions",
+          "proficiency": "Trained",
+          "description": "Use thieves' tools to disable a lock, trap, or mechanism. DC varies by complexity. A critical failure on a trap often triggers it."
+        },
+        {
+          "name": "Pick a Lock",
+          "cost": "2 or more actions",
+          "proficiency": "Trained",
+          "description": "Open a lock without the key, using thieves' tools. The lock's complexity determines the DC and the number of successes required."
+        }
+      ],
+      "dcExamples": [
+        { "dc": 15, "example": "Pick a simple lock or Steal from a distracted merchant" },
+        { "dc": 20, "example": "Disable a poorly built trap, or pick a decent city lock" },
+        { "dc": 25, "example": "Steal from an alert wizard mid-conversation" },
+        { "dc": 30, "example": "Disable a magical rune-warded lock on a vault" }
+      ]
+    }
+  }
+}
