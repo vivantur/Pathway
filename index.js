@@ -201,6 +201,16 @@ try {
   console.error('Could not load deities.json:', err.message);
 }
 
+let skillDatabase = {};
+try {
+  const skillRaw = JSON.parse(fs.readFileSync('skills.json', 'utf8'));
+  // File shape: { _meta: {...}, skills: { key: {...} } }
+  skillDatabase = skillRaw.skills ?? skillRaw;
+  console.log(`Loaded ${Object.keys(skillDatabase).length} skills from database.`);
+} catch (err) {
+  console.error('Could not load skills.json:', err.message);
+}
+
 function loadCharacters() {
   try { return JSON.parse(fs.readFileSync('characters.json', 'utf8')); }
   catch { return {}; }
@@ -1343,6 +1353,189 @@ function formatDeityMatchLine(deity) {
   return `• **${deity.name}**${pantheon}`;
 }
 
+// ── Skill lookup ──────────────────────────────────────────────────────────────
+// Finds a skill by slug key (e.g. "athletics"), display name, or partial match.
+function findSkill(query) {
+  if (!query) return { skill: null, key: null, matches: [] };
+  const q = String(query).toLowerCase().trim();
+  const entries = Object.entries(skillDatabase);
+  if (entries.length === 0) return { skill: null, key: null, matches: [] };
+
+  // 1. Exact slug key match
+  if (skillDatabase[q]) return { skill: skillDatabase[q], key: q, matches: [] };
+
+  // 2. Exact name match
+  const exactName = entries.find(([, s]) => s.name.toLowerCase() === q);
+  if (exactName) return { skill: exactName[1], key: exactName[0], matches: [] };
+
+  // 3. Starts-with match on name
+  const startsWith = entries.filter(([, s]) => s.name.toLowerCase().startsWith(q));
+  if (startsWith.length === 1) return { skill: startsWith[0][1], key: startsWith[0][0], matches: [] };
+  if (startsWith.length > 1) return { skill: null, key: null, matches: startsWith.map(([, s]) => s.name) };
+
+  // 4. Substring match
+  const contains = entries.filter(([, s]) => s.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { skill: contains[0][1], key: contains[0][0], matches: [] };
+  if (contains.length > 1) return { skill: null, key: null, matches: contains.map(([, s]) => s.name) };
+
+  return { skill: null, key: null, matches: [] };
+}
+
+// Compute the character's modifier + proficiency for a given skill slug.
+// Returns { modifier, profLabel, profNum } or null if no character / invalid skill.
+// skillKey is the lowercase slug ("athletics"), not the display name.
+function computeCharSkillModifier(charEntry, skillKey) {
+  if (!charEntry || !skillKey) return null;
+  const c = charEntry.data;
+  if (!c) return null;
+  const ab = c.abilities ?? {};
+  const prof = c.proficiencies ?? {};
+  const lvl = c.level ?? 1;
+
+  // Map skill slug → ability used
+  const skillAbilMap = {
+    acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+    deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+    nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+    society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+  };
+  const abilKey = skillAbilMap[skillKey];
+  if (!abilKey) return null;
+  const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+  const profNum = prof[skillKey] ?? 0;
+  const modifier = abilMod + calcProfNum(profNum, lvl);
+  const profLabelMap = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
+  const profLabel = profLabelMap[profNum] ?? 'Untrained';
+  return { modifier, profLabel, profNum };
+}
+
+// Action-cost icon. Falls back to the original string for unusual costs.
+function skillActionCostIcon(cost) {
+  if (!cost) return '';
+  const c = String(cost).toLowerCase().trim();
+  const map = {
+    '1 action': '◆',
+    '2 actions': '◆◆',
+    '3 actions': '◆◆◆',
+    'reaction': '⤾',
+    '1 reaction': '⤾',
+    'free action': '◇',
+  };
+  return map[c] ?? cost;
+}
+
+// ── Skill embed builders (3-page: Overview / Actions / DCs & Examples) ──────
+const SKILL_COLORS = {
+  overview: 0x2a8fbd, // blue — the skill description
+  actions: 0xc45f00, // orange — the actions it unlocks
+  dcs: 0x7b5ea7, // purple — DC examples
+};
+
+function buildSkillOverviewPage(skill, charMod = null) {
+  const embed = new EmbedBuilder()
+    .setColor(SKILL_COLORS.overview)
+    .setTitle(`🎯 ${skill.name}`)
+    .setDescription(skill.description)
+    .setFooter({ text: `Page 1/3 • Pathfinder 2e Remaster` });
+
+  // Key attribute + (if character loaded) the character's modifier
+  const attrFields = [{ name: '🔑 Key Attribute', value: skill.keyAttribute, inline: true }];
+  if (charMod) {
+    const sign = charMod.modifier >= 0 ? '+' : '';
+    attrFields.push({
+      name: '📊 Your Modifier',
+      value: `**${sign}${charMod.modifier}** · *${charMod.profLabel}*`,
+      inline: true,
+    });
+  }
+  embed.addFields(attrFields);
+
+  // Common uses as a bullet list
+  const usesList = (skill.commonUses ?? []).map(u => `• ${u}`).join('\n');
+  if (usesList) {
+    embed.addFields({ name: '🌟 Common Uses', value: usesList.slice(0, 1024), inline: false });
+  }
+
+  return embed;
+}
+
+function buildSkillActionsPage(skill) {
+  const embed = new EmbedBuilder()
+    .setColor(SKILL_COLORS.actions)
+    .setTitle(`🎯 ${skill.name} — Actions`)
+    .setDescription(`Actions that use **${skill.name}**. Proficiency indicates the minimum rank required.`)
+    .setFooter({ text: `Page 2/3 • Pathfinder 2e Remaster` });
+
+  // Chunk the actions into fields. Each action has its own field so it stays readable.
+  const actions = skill.actions ?? [];
+  for (const action of actions) {
+    const costIcon = skillActionCostIcon(action.cost);
+    const costPart = costIcon ? `${costIcon} · ` : '';
+    const heading = `${costPart}**${action.name}** *(${action.proficiency})*`;
+    const body = String(action.description).slice(0, 950);
+    embed.addFields({
+      name: heading.slice(0, 256),
+      value: body,
+      inline: false,
+    });
+  }
+
+  if (actions.length === 0) {
+    embed.addFields({ name: '\u200b', value: '*No actions listed for this skill.*', inline: false });
+  }
+
+  return embed;
+}
+
+function buildSkillDcsPage(skill) {
+  const embed = new EmbedBuilder()
+    .setColor(SKILL_COLORS.dcs)
+    .setTitle(`🎯 ${skill.name} — DCs & Examples`)
+    .setDescription(`Example DCs for **${skill.name}** checks. Actual DCs depend on level, circumstance, and GM adjudication.`)
+    .setFooter({ text: `Page 3/3 • Pathfinder 2e Remaster` });
+
+  const examples = skill.dcExamples ?? [];
+  if (examples.length) {
+    const lines = examples.map(e => `**DC ${e.dc}** — ${e.example}`).join('\n');
+    embed.addFields({ name: '📐 Example DCs', value: lines.slice(0, 1024), inline: false });
+  }
+
+  // General PF2e DC guidance (always the same, independent of skill)
+  embed.addFields({
+    name: '📊 General DC Guide (by difficulty)',
+    value:
+      '**Trivial** — usually no check needed\n' +
+      '**Easy** — DC -2 (for the task\'s level)\n' +
+      '**Standard** — DC for the level\n' +
+      '**Hard** — DC +2\n' +
+      '**Very Hard** — DC +5\n' +
+      '**Incredibly Hard** — DC +10',
+    inline: false,
+  });
+
+  // Degree of success reminder
+  embed.addFields({
+    name: '🎲 Degrees of Success',
+    value:
+      '🌟 **Crit Success** — roll ≥ DC + 10, or nat 20 one step up\n' +
+      '✅ **Success** — roll ≥ DC\n' +
+      '❌ **Failure** — roll < DC\n' +
+      '💥 **Crit Failure** — roll ≤ DC − 10, or nat 1 one step down',
+    inline: false,
+  });
+
+  return embed;
+}
+
+function buildSkillButtons(currentPage, skillKey) {
+  const id = skillKey.toLowerCase();
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`skill_${id}_0`).setLabel('◀ Overview').setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
+    new ButtonBuilder().setCustomId(`skill_${id}_1`).setLabel('Actions').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 1),
+    new ButtonBuilder().setCustomId(`skill_${id}_2`).setLabel('DCs & Examples ▶').setStyle(ButtonStyle.Success).setDisabled(currentPage === 2),
+  );
+}
+
 // ── Bestiary lookup ───────────────────────────────────────────────────────────
 function findMonster(query) {
   const normalize = str => String(str ?? '').toLowerCase().trim()
@@ -2054,6 +2247,7 @@ const HELP_CATEGORIES = {
       { name: '/rule', summary: 'Look up a condition, action, or trait.', options: 'name', example: '/rule name:frightened' },
       { name: '/monster', summary: 'Look up a creature from the bestiary.', options: 'name', example: '/monster name:Ancient Red Dragon' },
       { name: '/deity', summary: 'Look up a deity.', options: 'name', example: '/deity name:Pharasma' },
+      { name: '/skillinfo', summary: 'Learn how a skill works: uses, actions by proficiency, DC examples. Shows your modifier if you have a character loaded.', options: 'skill, character', example: '/skillinfo skill:Athletics' },
     ],
   },
 
@@ -2317,6 +2511,34 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
+    // ─── Skill info page navigation ─────────────────────────────────
+    if (interaction.customId.startsWith('skill_')) {
+      const parts = interaction.customId.split('_');
+      const pageIndex = parseInt(parts[parts.length - 1], 10);
+      const skillKey = parts.slice(1, parts.length - 1).join('_');
+      const skill = skillDatabase[skillKey];
+      if (!skill) return interaction.update({ content: '❌ Could not reload skill data.', components: [] });
+
+      // Recompute the character's modifier for the Overview page — the user
+      // might have leveled up or added a character since this was first posted.
+      let charMod = null;
+      if (pageIndex === 0) {
+        try {
+          const characters = loadCharacters();
+          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
+          if (charEntry) charMod = computeCharSkillModifier(charEntry, skillKey);
+        } catch { /* no character, skip */ }
+      }
+
+      let newEmbed;
+      if (pageIndex === 0) newEmbed = buildSkillOverviewPage(skill, charMod);
+      else if (pageIndex === 1) newEmbed = buildSkillActionsPage(skill);
+      else if (pageIndex === 2) newEmbed = buildSkillDcsPage(skill);
+      else return interaction.update({ content: '❌ Unknown skill page.', components: [] });
+
+      return interaction.update({ embeds: [newEmbed], components: [buildSkillButtons(pageIndex, skillKey)] });
+    }
+
     if (!interaction.customId.startsWith('ancestry_')) return;
     const parts = interaction.customId.split('_');
     const pageIndex = parseInt(parts[parts.length - 1], 10);
@@ -2534,6 +2756,15 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'deity' && focused.name === 'name') {
           suggestions = pick(deityDatabase.map(d => d.name));
+        }
+        else if (cmd === 'skillinfo') {
+          if (focused.name === 'skill') {
+            suggestions = pick(Object.values(skillDatabase).map(s => s.name).filter(Boolean));
+          } else if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            suggestions = pick(own);
+          }
         }
         else if (cmd === 'bag') {
           const sub = interaction.options.getSubcommand(false);
@@ -3665,6 +3896,46 @@ client.on('interactionCreate', async (interaction) => {
       content: `❌ No deity found for **"${input}"**. Check your spelling or try another name.`,
       ephemeral: true,
     });
+  }
+
+  // ─── /skillinfo ──────────────────────────────────────────────────
+  // Rules-reference lookup for the 16 core PF2e Remaster skills. Pulls
+  // the character's current modifier in when a character is loaded.
+  // 3-page button nav: Overview / Actions / DCs & Examples.
+  else if (commandName === 'skillinfo') {
+    const input = interaction.options.getString('skill');
+    const { skill, key: skillKey, matches } = findSkill(input);
+
+    if (!skill && matches.length > 1) {
+      const preview = matches.sort().join(', ');
+      return interaction.reply({
+        content: `🔍 Multiple skills match **"${input}"**. Did you mean one of these?\n**${preview}**`,
+        ephemeral: true,
+      });
+    }
+
+    if (!skill) {
+      const allSkills = Object.values(skillDatabase).map(s => s.name).sort().join(', ');
+      return interaction.reply({
+        content: `❌ No skill found for **"${input}"**.\nAvailable: ${allSkills}`,
+        ephemeral: true,
+      });
+    }
+
+    // Optional: pull the user's current skill modifier from their character sheet
+    let charMod = null;
+    try {
+      const characters = loadCharacters();
+      const charNameArg = interaction.options.getString('character');
+      const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+      if (charEntry) {
+        charMod = computeCharSkillModifier(charEntry, skillKey);
+      }
+    } catch { /* no character loaded, that's fine — just show the reference */ }
+
+    const embed = buildSkillOverviewPage(skill, charMod);
+    const row = buildSkillButtons(0, skillKey);
+    await interaction.reply({ embeds: [embed], components: [row] });
   }
 
   // ─── /monster ────────────────────────────────────────────────────
@@ -4931,7 +5202,7 @@ client.on('interactionCreate', async (interaction) => {
             .setCustomId(`reaction_trigger_${safeName}`)
             .setLabel(`${reactor.name}: AoO`)
             .setStyle(ButtonStyle.Primary)
-            .setEmoji('⚔️'),
+            .setEmoji('🎲'),
           new ButtonBuilder()
             .setCustomId(`reaction_skip_${safeName}`)
             .setLabel('Skip')
@@ -4963,7 +5234,7 @@ client.on('interactionCreate', async (interaction) => {
           .setCustomId(`reaction_trigger_${safeName}`)
           .setLabel(`${reactor.name}: Trigger Reaction`)
           .setStyle(ButtonStyle.Primary)
-          .setEmoji('🛡️'),
+          .setEmoji('🎲'),
         new ButtonBuilder()
           .setCustomId(`reaction_skip_${safeName}`)
           .setLabel('Skip')
@@ -5222,7 +5493,7 @@ client.on('interactionCreate', async (interaction) => {
             .setCustomId(`reaction_trigger_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
             .setLabel(`${target.name}: Trigger Reaction`)
             .setStyle(ButtonStyle.Primary)
-            .setEmoji('🛡️'),
+            .setEmoji('🎲'),
           new ButtonBuilder()
             .setCustomId(`reaction_skip_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
             .setLabel('Skip')
