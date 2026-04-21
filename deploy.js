@@ -4,6 +4,18 @@ const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 const commands = [
   { name: 'ping', description: 'Check if the bot is alive' },
   {
+    name: 'help', description: 'Show a categorized list of all commands',
+    options: [
+      { name: 'topic', description: 'Jump straight to a specific category', type: ApplicationCommandOptionType.String, required: false, choices: [
+        { name: '🧙 Character', value: 'character' },
+        { name: '🔮 Spells', value: 'spells' },
+        { name: '⚔️ Combat', value: 'combat' },
+        { name: '📚 Lookup', value: 'lookup' },
+        { name: '🎲 GM Tools', value: 'gm' },
+      ]}
+    ]
+  },
+  {
     name: 'char', description: 'Character management',
     options: [
       {
@@ -102,6 +114,107 @@ const commands = [
       { name: 'target', description: 'Combatant name to target (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'level', description: 'Level to cast the spell at (for heightening)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'spells', description: 'Manage your character\'s spellbook, repertoire, and prepared spells',
+    options: [
+      {
+        name: 'learn', description: 'Add a spell to your spellbook or repertoire (permanent)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'spell', description: 'Spell to learn (autocomplete from spell database)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'caster', description: 'Which caster (required if your character has multiple)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'forget', description: 'Remove a previously-learned spell from your overlay',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'spell', description: 'Spell to forget', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'caster', description: 'Which caster', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'prepare', description: 'Prepare a spell into a slot for today (prepared casters)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'spell', description: 'Spell to prepare', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'rank', description: 'Spell rank (the slot level to fill)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 10 },
+          { name: 'caster', description: 'Which caster', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'unprepare', description: 'Remove a spell from today\'s prepared list',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'spell', description: 'Spell to unprepare', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'rank', description: 'Rank it was prepared at', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 10 },
+          { name: 'caster', description: 'Which caster', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'swap', description: 'Swap a known spell for a new one (spontaneous caster repertoire)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'remove', description: 'Spell to remove from the repertoire', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'add', description: 'Spell to add in its place', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'rank', description: 'Rank of both spells', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 10 },
+          { name: 'caster', description: 'Which caster', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'list', description: 'Show the full merged spellbook (same info as /spellbook)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'caster', description: 'Limit the list to one caster', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'rest', description: 'Long rest: refill slots, focus points, hero points, clear prepared list',
+    options: [
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+    ]
+  },
+  {
+    name: 'refocus', description: '10-minute refocus: regain 1 focus point',
+    options: [
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+    ]
+  },
+  {
+    name: 'resource', description: 'View or manually set daily resources (focus, hero points, spell slots)',
+    options: [
+      {
+        name: 'show', description: 'Display current daily resources for a character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'set', description: 'Manually override a daily resource value',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'resource', description: 'Which resource to set', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Focus points', value: 'focus' },
+            { name: 'Hero points', value: 'hero' },
+            { name: 'Spell slots (requires rank + caster)', value: 'slot' }
+          ]},
+          { name: 'value', description: 'New current value (not delta)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0 },
+          { name: 'rank', description: 'Spell rank (only for resource:slot)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 10 },
+          { name: 'caster', description: 'Which caster (only for resource:slot, or if character has multiple)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      }
     ]
   },
   {

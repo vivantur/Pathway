@@ -18,6 +18,7 @@ const {
 } = require('./encounters');
 const { getPreset, listPresets } = require('./effects');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
+const charOverlay = require('./characterOverlay');
 
 const client = new Client({
   intents: [
@@ -1848,6 +1849,155 @@ function buildAncestryButtons(currentPage, ancestryKey) {
   );
 }
 
+// ── /help system ──────────────────────────────────────────────────────────────
+// Commands are grouped into categories. Each entry has:
+//   name        - command name shown in the embed
+//   summary     - one-line what-it-does
+//   options     - short list of key options (not always exhaustive)
+//   example     - the most common usage
+// Categories are rendered one at a time via button navigation.
+
+const HELP_CATEGORIES = {
+  character: {
+    emoji: '🧙',
+    label: 'Character',
+    blurb: 'Manage your saved characters, sheets, rolls, and daily resources.',
+    commands: [
+      { name: '/char add', summary: 'Add a character from a Pathbuilder JSON export.', options: 'file', example: '/char add file:[attach .json]' },
+      { name: '/char update', summary: 'Refresh a character with a new Pathbuilder export. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
+      { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
+      { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
+      { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
+      { name: '/char feats', summary: 'Show all feats on your character.', options: 'name', example: '/char feats' },
+      { name: '/char info', summary: 'Manually set senses or languages not in the Pathbuilder export.', options: 'field, value, character', example: '/char info field:Senses value:Darkvision' },
+      { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
+      { name: '/roll', summary: 'Roll dice with full PF2e expression support (e.g. 2d6+3).', options: 'dice, character', example: '/roll dice:1d20+7' },
+      { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
+      { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
+      { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
+      { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
+      { name: '/resource set', summary: 'Manually override a daily resource value.', options: 'resource, value, rank, caster, character', example: '/resource set resource:focus value:0' },
+      { name: '/rest', summary: 'Long rest: refill slots, focus points, hero points. Clears prepared list (with confirm).', options: 'character', example: '/rest' },
+      { name: '/refocus', summary: '10-minute refocus. Regain 1 focus point.', options: 'character', example: '/refocus' },
+      { name: '/bag', summary: 'Manage your inventory beyond what\'s in the Pathbuilder export.', options: '(subcommands)', example: '/bag add category:Consumables item:Elixir of Life' },
+      { name: '/gold', summary: 'Manage currency (pp/gp/sp/cp).', options: '(subcommands)', example: '/gold add gp:10' },
+    ],
+  },
+
+  spells: {
+    emoji: '🔮',
+    label: 'Spells',
+    blurb: 'Cast, learn, prepare, and look up spells. Overlay-added spells survive Pathbuilder re-imports.',
+    commands: [
+      { name: '/spell', summary: 'Look up any spell in the database.', options: 'name', example: '/spell name:Fireball' },
+      { name: '/spellbook', summary: 'Show your character\'s full spell list grouped by rank with slot counters.', options: 'name', example: '/spellbook' },
+      { name: '/cast', summary: 'Cast a spell. Auto-spends a slot and warns if out of slots or unprepared.', options: 'spell, target, character, level', example: '/cast spell:Heal target:Fighter' },
+      { name: '/spells learn', summary: 'Add a spell to a caster\'s spellbook permanently (wizards, witches, etc.).', options: 'spell, caster, character', example: '/spells learn spell:Fireball caster:Wizard' },
+      { name: '/spells forget', summary: 'Remove a spell you previously learned via overlay.', options: 'spell, caster, character', example: '/spells forget spell:Fireball' },
+      { name: '/spells prepare', summary: 'Prepare a spell into today\'s slot (prepared casters).', options: 'spell, rank, caster, character', example: '/spells prepare spell:Heal rank:1' },
+      { name: '/spells unprepare', summary: 'Unfill a prepared slot.', options: 'spell, rank, caster, character', example: '/spells unprepare spell:Heal rank:1' },
+      { name: '/spells swap', summary: 'Swap a known spell (spontaneous caster repertoire change).', options: 'remove, add, rank, caster, character', example: '/spells swap remove:Bane add:Bless rank:1' },
+      { name: '/spells list', summary: 'Show merged spellbook with ✨ on overlay-added spells.', options: 'caster, character', example: '/spells list' },
+    ],
+  },
+
+  combat: {
+    emoji: '⚔️',
+    label: 'Combat',
+    blurb: 'Encounter tracker, initiative, attacks, and effects.',
+    commands: [
+      { name: '/init start', summary: 'Start a new encounter in this channel (GM).', example: '/init start' },
+      { name: '/init end', summary: 'End the current encounter.', example: '/init end' },
+      { name: '/init add', summary: 'Add a combatant to the current encounter.', options: 'name, initiative, hp, (gm flags)', example: '/init add name:Goblin 1 initiative:18 hp:6' },
+      { name: '/init remove', summary: 'Remove a combatant.', options: 'name', example: '/init remove name:Goblin 1' },
+      { name: '/init next', summary: 'Advance to the next turn.', example: '/init next' },
+      { name: '/init hp', summary: 'Modify a combatant\'s HP.', options: 'name, amount', example: '/init hp name:Fighter amount:-12' },
+      { name: '/init effect', summary: 'Apply or remove a status effect on a combatant.', options: '(subcommands)', example: '/init effect add name:Fighter effect:frightened-1' },
+      { name: '/attack', summary: 'Roll an attack with one of your character\'s weapons.', options: 'weapon, target, map, bonus', example: '/attack weapon:Longsword target:Goblin 1' },
+    ],
+  },
+
+  lookup: {
+    emoji: '📚',
+    label: 'Lookup',
+    blurb: 'Look up anything from the PF2e rulebooks.',
+    commands: [
+      { name: '/ancestry', summary: 'Look up a PF2e ancestry (Core, Heritages, Feats across 3 pages).', options: 'name', example: '/ancestry name:Elf' },
+      { name: '/archetype', summary: 'Look up a PF2e archetype.', options: 'name', example: '/archetype name:Assassin' },
+      { name: '/background', summary: 'Look up a PF2e background.', options: 'name', example: '/background name:Acolyte' },
+      { name: '/feat', summary: 'Look up a feat. Filter by level to disambiguate same-named feats.', options: 'name, level', example: '/feat name:Power Attack' },
+      { name: '/item', summary: 'Look up an item, weapon, armor, or gear. Filter by level for tiered versions.', options: 'name, level', example: '/item name:Healing Potion level:3' },
+      { name: '/rule', summary: 'Look up a condition, action, or trait.', options: 'name', example: '/rule name:frightened' },
+      { name: '/monster', summary: 'Look up a creature from the bestiary.', options: 'name', example: '/monster name:Ancient Red Dragon' },
+      { name: '/deity', summary: 'Look up a deity.', options: 'name', example: '/deity name:Pharasma' },
+    ],
+  },
+
+  gm: {
+    emoji: '🎲',
+    label: 'GM Tools',
+    blurb: 'Stat-block editing, monster attacks, and GM-only utilities.',
+    commands: [
+      { name: '/monsteradd paste', summary: 'Bot-owner only: add a missing creature to the global bestiary from pasted text.', options: 'statblock', example: '/monsteradd paste statblock:[paste AoN text]' },
+      { name: '/monsteradd file', summary: 'Bot-owner only: add a creature from a .txt file.', options: 'file', example: '/monsteradd file file:[.txt attachment]' },
+      { name: '/monsteradd remove', summary: 'Bot-owner only: remove a creature from the bestiary.', options: 'monster', example: '/monsteradd remove monster:Adult Bog Dragon' },
+      { name: '/monsterart set', summary: 'Attach a custom image to a monster\'s stat block for this server.', options: 'monster, url', example: '/monsterart set monster:Goblin Warrior url:https://...' },
+      { name: '/monsterart remove', summary: 'Remove the custom image for a monster on this server.', options: 'monster', example: '/monsterart remove monster:Goblin Warrior' },
+      { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
+      { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
+      { name: '/mattack', summary: 'Roll a monster attack against a target in the active encounter.', options: 'attacker, target, map', example: '/mattack attacker:Goblin target:Fighter' },
+      { name: '/monsterattack', summary: 'Save and manage a library of monster attacks (per-server).', options: '(subcommands)', example: '/monsterattack add monster:Goblin attack:Shortsword ...' },
+    ],
+  },
+};
+
+function buildHelpEmbed(categoryKey) {
+  const cat = HELP_CATEGORIES[categoryKey] ?? HELP_CATEGORIES.character;
+  const embed = new EmbedBuilder()
+    .setColor(0x4a90d9)
+    .setTitle(`${cat.emoji} Pathway Help — ${cat.label}`)
+    .setDescription(cat.blurb);
+
+  // Pack commands into fields. Discord caps each field value at 1024 chars,
+  // so group until we'd overflow, then start a new field.
+  const maxFieldLen = 1000;
+  let buf = '';
+  let partIdx = 1;
+  const emit = () => {
+    if (!buf) return;
+    const fieldName = partIdx === 1 ? 'Commands' : `Commands (cont. ${partIdx})`;
+    embed.addFields({ name: fieldName, value: buf.trim(), inline: false });
+    partIdx++;
+    buf = '';
+  };
+  for (const cmd of cat.commands) {
+    const block = `**${cmd.name}**\n${cmd.summary}` +
+      (cmd.options ? `\n  *Options:* ${cmd.options}` : '') +
+      (cmd.example ? `\n  *Example:* \`${cmd.example}\`` : '') + '\n\n';
+    if (buf.length + block.length > maxFieldLen) emit();
+    buf += block;
+  }
+  emit();
+
+  embed.setFooter({ text: 'Pick a category below • ✨ = added to your character via overlay' });
+  return embed;
+}
+
+function buildHelpButtons(currentCategory) {
+  const row = new ActionRowBuilder();
+  for (const [key, cat] of Object.entries(HELP_CATEGORIES)) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`help_${key}`)
+        .setLabel(cat.label)
+        .setEmoji(cat.emoji)
+        .setStyle(key === currentCategory ? ButtonStyle.Primary : ButtonStyle.Secondary)
+        .setDisabled(key === currentCategory),
+    );
+  }
+  return row;
+}
+
 // ── Bot ready ─────────────────────────────────────────────────────────────────
 client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!`); });
 
@@ -1901,6 +2051,50 @@ client.on('interactionCreate', async (interaction) => {
         .setFooter({ text: `${c.name} · ${saveDisplay} ${fmt(modifier)}` });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
       return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── Help category navigation ───────────────────────────────────
+    if (interaction.customId.startsWith('help_')) {
+      const category = interaction.customId.slice('help_'.length);
+      if (!HELP_CATEGORIES[category]) {
+        return interaction.update({ content: '❌ Unknown help category.', embeds: [], components: [] });
+      }
+      return interaction.update({
+        embeds: [buildHelpEmbed(category)],
+        components: [buildHelpButtons(category)],
+      });
+    }
+
+    // ─── Rest confirmation buttons ──────────────────────────────────
+    if (interaction.customId.startsWith('rest_confirm_')) {
+      // customId: rest_confirm_<userId>_<charKey>
+      const rest = interaction.customId.slice('rest_confirm_'.length);
+      const underscoreIdx = rest.indexOf('_');
+      const ownerId = rest.slice(0, underscoreIdx);
+      const charKey = rest.slice(underscoreIdx + 1);
+      if (interaction.user.id !== ownerId) {
+        return interaction.reply({ content: '❌ Only the person who used `/rest` can confirm.', ephemeral: true });
+      }
+      const characters = loadCharacters();
+      const charEntry = characters[ownerId]?.[charKey];
+      if (!charEntry) {
+        return interaction.update({ content: '❌ Could not find that character anymore.', embeds: [], components: [] });
+      }
+      charOverlay.longRest(charEntry);
+      saveCharacters(characters);
+      const focus = charOverlay.getCurrentFocus(charEntry);
+      const doneEmbed = new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle(`🌙 ${charEntry.data.name} rests and recovers`)
+        .setDescription(`All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.`);
+      return interaction.update({ embeds: [doneEmbed], components: [] });
+    }
+    if (interaction.customId.startsWith('rest_cancel_')) {
+      const ownerId = interaction.customId.slice('rest_cancel_'.length);
+      if (interaction.user.id !== ownerId) {
+        return interaction.reply({ content: '❌ Only the person who used `/rest` can cancel.', ephemeral: true });
+      }
+      return interaction.update({ content: '🚫 Rest cancelled. Nothing changed.', embeds: [], components: [] });
     }
 
     if (!interaction.customId.startsWith('ancestry_')) return;
@@ -1960,6 +2154,89 @@ client.on('interactionCreate', async (interaction) => {
                  (cmd === 'cast'  && focused.name === 'spell')) {
           suggestions = pick(spellDatabase.map(s => s.name).filter(Boolean));
         }
+        else if (cmd === 'spells') {
+          // Context-aware spell autocomplete for the various subcommands.
+          const sub = interaction.options.getSubcommand(false);
+          const charNameArg = interaction.options.getString('character');
+          // Helper: get the current character's overlay + pathbuilder spellbooks
+          const getOwnSpells = (filterPredicate) => {
+            try {
+              const characters = loadCharacters();
+              const { error, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+              if (error || !charEntry) return [];
+              const casterFilter = interaction.options.getString('caster');
+              const casters = charOverlay.getCasters(charEntry.data)
+                .filter(c => !casterFilter || c.name.toLowerCase() === casterFilter.toLowerCase());
+              const names = new Set();
+              for (const caster of casters) {
+                const merged = charOverlay.getMergedSpellbook(charEntry, caster.name);
+                if (!merged) continue;
+                for (const n of merged.cantrips) {
+                  if (!filterPredicate || filterPredicate({ name: n, rank: 0, caster, merged })) names.add(n);
+                }
+                for (const [rank, list] of Object.entries(merged.ranks)) {
+                  for (const n of list) {
+                    if (!filterPredicate || filterPredicate({ name: n, rank: Number(rank), caster, merged })) names.add(n);
+                  }
+                }
+              }
+              return [...names];
+            } catch { return []; }
+          };
+
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            suggestions = pick(own);
+          }
+          else if (focused.name === 'caster') {
+            const characters = loadCharacters();
+            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
+            suggestions = pick(names);
+          }
+          else if (focused.name === 'spell') {
+            if (sub === 'learn' || sub === 'prepare') {
+              // Suggest from the full spell database
+              suggestions = pick(spellDatabase.map(s => s.name).filter(Boolean));
+            } else if (sub === 'forget') {
+              // Only overlay-added spells can be forgotten
+              const characters = loadCharacters();
+              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+              if (charEntry) {
+                charOverlay.ensureOverlay(charEntry);
+                const casterFilter = interaction.options.getString('caster');
+                const names = charEntry.overlay.spellbook
+                  .filter(e => !casterFilter || e.caster.toLowerCase() === casterFilter.toLowerCase())
+                  .map(e => e.spell);
+                suggestions = pick([...new Set(names)]);
+              }
+            } else if (sub === 'unprepare') {
+              // Only prepared spells
+              const characters = loadCharacters();
+              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+              if (charEntry) {
+                charOverlay.ensureOverlay(charEntry);
+                const casterFilter = interaction.options.getString('caster');
+                const prepSets = Object.entries(charEntry.overlay.prepared_override ?? {});
+                const names = new Set();
+                for (const [cname, list] of prepSets) {
+                  if (casterFilter && cname.toLowerCase() !== casterFilter.toLowerCase()) continue;
+                  for (const p of list) names.add(p.spell);
+                }
+                suggestions = pick([...names]);
+              }
+            }
+          }
+          else if (focused.name === 'remove') {
+            // /spells swap: remove should only show spells the character knows
+            suggestions = pick(getOwnSpells());
+          }
+          else if (focused.name === 'add') {
+            // /spells swap: add from full spell database
+            suggestions = pick(spellDatabase.map(s => s.name).filter(Boolean));
+          }
+        }
         else if (cmd === 'feat' && focused.name === 'name') {
           suggestions = pick(featDatabase.map(f => f.name));
         }
@@ -2014,6 +2291,18 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(savedMatch || !q ? savedNames : Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           } else {
             suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          }
+        }
+        else if ((cmd === 'rest' || cmd === 'refocus' || cmd === 'resource')) {
+          const characters = loadCharacters();
+          if (focused.name === 'character') {
+            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            suggestions = pick(own);
+          } else if (focused.name === 'caster') {
+            const charNameArg = interaction.options.getString('character');
+            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
+            suggestions = pick(names);
           }
         }
         else if (cmd === 'monsteradd' && focused.name === 'monster') {
@@ -2283,20 +2572,79 @@ client.on('interactionCreate', async (interaction) => {
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
+
+    charOverlay.ensureOverlay(charEntry);
     const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`🔮 ${c.name}'s Spellbook`);
     if (charEntry.art) embed.setThumbnail(charEntry.art);
-    c.spellCasters.forEach(caster => {
-      let casterText = '';
-      (caster.spells ?? []).forEach(slotGroup => {
-        const names = slotGroup.list?.map(s => s.name).filter(Boolean).join(', ');
-        if (names) {
-          const label = slotGroup.spellLevel === 0 ? 'Cantrips' : `Level ${slotGroup.spellLevel}`;
-          casterText += `**${label}:** ${names}\n`;
+
+    for (const caster of c.spellCasters) {
+      const merged = charOverlay.getMergedSpellbook(charEntry, caster.name);
+      if (!merged) continue;
+
+      // Mark overlay-added spells with ✨
+      const fmtList = (names) =>
+        names.map(n => merged.overlayNames.has(n) ? `${n} ✨` : n).join(', ');
+
+      const sections = [];
+      if (merged.cantrips.length) {
+        sections.push(`**Cantrips:** ${fmtList(merged.cantrips)}`);
+      }
+      const ranks = Object.keys(merged.ranks).map(Number).sort((a, b) => a - b);
+      for (const rank of ranks) {
+        const spellList = merged.ranks[rank];
+        if (!spellList.length) continue;
+        // Slot counter: show only if perDay has a positive number at this rank
+        const max = Number(caster.perDay?.[rank] ?? 0);
+        let slotSuffix = '';
+        if (max > 0) {
+          const { current } = charOverlay.getSlotsRemaining(charEntry, caster.name, rank);
+          slotSuffix = ` *(${current}/${max} slots)*`;
         }
+        sections.push(`**Rank ${rank}${slotSuffix}:** ${fmtList(spellList)}`);
+      }
+
+      // Prepared override — display today's prepared list separately for prepared casters
+      const overlay = charEntry.overlay;
+      const prepList = overlay.prepared_override?.[caster.name] ?? [];
+      if (caster.spellcastingType === 'prepared' && prepList.length) {
+        const byRank = {};
+        for (const p of prepList) {
+          (byRank[p.rank] = byRank[p.rank] ?? []).push(p.spell);
+        }
+        const lines = Object.keys(byRank).map(Number).sort((a, b) => a - b)
+          .map(r => `Rank ${r}: ${byRank[r].join(', ')}`);
+        sections.push(`**📋 Prepared today:**\n${lines.join('\n')}`);
+      }
+
+      const body = sections.join('\n') || '*No spells known.*';
+      const casterType = caster.spellcastingType || 'unknown';
+      const innateTag = caster.innate ? ' · innate' : '';
+      const header = `${caster.name} (${caster.magicTradition} · ${casterType}${innateTag})`;
+      embed.addFields({ name: header, value: body.slice(0, 1024), inline: false });
+    }
+
+    // Focus spells at the bottom (separate system in Pathbuilder)
+    const focus = c.focus ?? {};
+    const focusLines = [];
+    for (const [tradition, byAbility] of Object.entries(focus)) {
+      for (const [ability, fdata] of Object.entries(byAbility)) {
+        const spells = [...(fdata.focusCantrips ?? []), ...(fdata.focusSpells ?? [])];
+        if (spells.length) {
+          focusLines.push(`**${tradition.charAt(0).toUpperCase() + tradition.slice(1)} (${ability.toUpperCase()}):** ${spells.join(', ')}`);
+        }
+      }
+    }
+    if (focusLines.length) {
+      const { current, max } = charOverlay.getCurrentFocus(charEntry);
+      embed.addFields({
+        name: `🌟 Focus Spells (${current}/${max} points)`,
+        value: focusLines.join('\n').slice(0, 1024),
+        inline: false,
       });
-      if (casterText) embed.addFields({ name: `${caster.name} (${caster.magicTradition} · ${caster.castingType})`, value: casterText.trim(), inline: false });
-    });
-    embed.setFooter({ text: 'Use /cast <spell> to cast · /spell <n> for spell details' });
+    }
+
+    embed.setFooter({ text: '✨ = added via /spells · /cast <spell> to cast · /rest to refresh' });
+    saveCharacters(characters);
     await interaction.editReply({ embeds: [embed] });
   }
 
@@ -2344,6 +2692,43 @@ client.on('interactionCreate', async (interaction) => {
     const isCantrip = spell.type === 'Cantrip';
     const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Level ${effectiveLevel}`;
     const traditionDisplay = spell.traditions?.[0] ?? '';
+
+    // ── Overlay-aware slot tracking ──
+    // Find which caster is actually casting (same match as above).
+    charOverlay.ensureOverlay(charEntry);
+    let castingCaster = null;
+    if (c.spellCasters?.length > 0) {
+      const spellTraditions = spell.traditions.map(t => t.toLowerCase());
+      castingCaster = c.spellCasters.find(sc => spellTraditions.includes(sc.magicTradition?.toLowerCase())) ?? c.spellCasters[0];
+    }
+    // Non-cantrips consume slots. Cantrips and focus spells are at-will.
+    const consumesSlot = !isCantrip && castingCaster && effectiveLevel > 0;
+    const warnings = [];
+    if (consumesSlot) {
+      const slots = charOverlay.getSlotsRemaining(charEntry, castingCaster.name, effectiveLevel);
+      if (slots && slots.max > 0 && slots.current <= 0) {
+        warnings.push(`⚠️ ${castingCaster.name} has no rank ${effectiveLevel} slots remaining (0/${slots.max}). Casting anyway — use \`/rest\` to refresh, or this might be from a wand/scroll/staff.`);
+      } else if (slots && slots.max === 0) {
+        warnings.push(`⚠️ ${castingCaster.name} has no rank ${effectiveLevel} slots at all. Casting anyway — this is likely a scroll, wand, or higher-rank slot use.`);
+      }
+      // Prepared-caster check: warn if spell isn't on today's prepared list (only if they've prepared anything)
+      if (castingCaster.spellcastingType === 'prepared') {
+        const overlay = charEntry.overlay;
+        const prep = overlay.prepared_override?.[castingCaster.name] ?? [];
+        if (prep.length > 0) {
+          const hasPrep = prep.some(p =>
+            Number(p.rank) === Number(effectiveLevel) &&
+            (p.spell || '').toLowerCase() === spell.name.toLowerCase()
+          );
+          if (!hasPrep) {
+            warnings.push(`⚠️ **${spell.name}** isn't on ${castingCaster.name}'s prepared list for today. Casting anyway.`);
+          }
+        }
+      }
+      // Spend the slot
+      charOverlay.spendSlot(charEntry, castingCaster.name, effectiveLevel);
+      saveCharacters(characters);
+    }
 
     const channelId = interaction.channel.id;
     const enc = getEncounter(channelId);
@@ -2443,12 +2828,305 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     embed.setDescription(description);
-    embed.setFooter({ text: `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}` });
+    // Build footer with spell attack + DC + remaining slots if relevant
+    let footer = `${c.name} · Spell Attack ${fmt(spellAttackBonus)} · DC ${spellDC}`;
+    if (consumesSlot && castingCaster) {
+      const slotsNow = charOverlay.getSlotsRemaining(charEntry, castingCaster.name, effectiveLevel);
+      if (slotsNow && slotsNow.max > 0) {
+        footer += ` · Rank ${effectiveLevel} slots: ${slotsNow.current}/${slotsNow.max}`;
+      }
+    }
+    embed.setFooter({ text: footer });
 
     const payload = { embeds: [embed] };
-    if (target && !target.isNpc && target.ownerId) payload.content = `<@${target.ownerId}>`;
+    if (warnings.length) payload.content = warnings.join('\n');
+    if (target && !target.isNpc && target.ownerId) payload.content = [payload.content, `<@${target.ownerId}>`].filter(Boolean).join('\n');
     await interaction.editReply(payload);
     if (target && enc) await updateSummary(interaction.channel, enc);
+  }
+
+  // ─── /help ───────────────────────────────────────────────────────
+  // Category-picker style help. Lands on the Character page by default,
+  // or jumps to a specific category if `topic:` is passed.
+  else if (commandName === 'help') {
+    const topic = interaction.options.getString('topic');
+    const startCategory = topic && HELP_CATEGORIES[topic] ? topic : 'character';
+    const embed = buildHelpEmbed(startCategory);
+    const row = buildHelpButtons(startCategory);
+    // Public in guilds, auto-ephemeral in DMs (buttons render there just fine)
+    const isDM = !interaction.guildId;
+    return interaction.reply({ embeds: [embed], components: [row], ephemeral: isDM });
+  }
+
+  // ─── /spells ─────────────────────────────────────────────────────
+  // Character spellbook/repertoire/prepared management. Subcommands:
+  //   learn  — permanent addition (wizards copying scrolls, witches learning)
+  //   forget — remove an overlay-learned spell
+  //   prepare / unprepare — today's prep for prepared casters
+  //   swap   — permanent repertoire change for spontaneous casters
+  //   list   — show the merged view (same as /spellbook)
+  else if (commandName === 'spells') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const c = charEntry.data;
+    const casters = charOverlay.getCasters(c);
+    if (!casters.length) return interaction.reply({ content: `**${c.name}** has no spellcasting!`, ephemeral: true });
+
+    // Pick which caster to operate on. If the character has multiple casters
+    // and the user didn't specify one, show a picker.
+    async function pickCaster(explicitName) {
+      if (explicitName) {
+        const found = charOverlay.findCaster(c, explicitName);
+        if (!found) {
+          return { error: `No caster named "${explicitName}" on **${c.name}**. Available: ${casters.map(x => x.name).join(', ')}` };
+        }
+        return { caster: found };
+      }
+      if (casters.length === 1) return { caster: casters[0] };
+      return { error: `**${c.name}** has multiple casters. Specify one with the \`caster\` option: ${casters.map(x => x.name).join(', ')}` };
+    }
+
+    // ── /spells learn ──
+    if (sub === 'learn') {
+      const spellName = interaction.options.getString('spell');
+      const explicitCaster = interaction.options.getString('caster');
+      const picked = await pickCaster(explicitCaster);
+      if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
+      // Validate via spellDatabase
+      const rawSpell = findSpell(spellName);
+      if (!rawSpell) return interaction.reply({ content: `❌ Couldn't find a spell called **${spellName}**.`, ephemeral: true });
+      const spell = normalizeSpell(rawSpell);
+      const rank = spell.type === 'Cantrip' ? 0 : Number(spell.level ?? 1);
+      // Tradition warning (non-blocking)
+      const casterTradition = picked.caster.magicTradition?.toLowerCase() ?? '';
+      const spellTraditions = (spell.traditions ?? []).map(t => t.toLowerCase());
+      const traditionMismatch = spellTraditions.length && !spellTraditions.includes(casterTradition);
+      const r = charOverlay.learnSpell(charEntry, picked.caster.name, spell.name, rank);
+      if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
+      saveCharacters(characters);
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`📘 ${c.name} learned ${spell.name}`)
+        .setDescription(`Added to **${picked.caster.name}**'s ${rank === 0 ? 'cantrips' : `rank ${rank} spells`}.`)
+        .setFooter({ text: 'Use /spellbook to see the full list · /spells forget to undo' });
+      if (traditionMismatch) {
+        embed.addFields({
+          name: '⚠️ Tradition note',
+          value: `**${spell.name}** is ${spell.traditions.join('/')}. **${picked.caster.name}** casts ${picked.caster.magicTradition}. Added anyway — if you meant a different caster, use \`/spells forget\` and retry with the \`caster\` option.`,
+          inline: false,
+        });
+      }
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ── /spells forget ──
+    if (sub === 'forget') {
+      const spellName = interaction.options.getString('spell');
+      const explicitCaster = interaction.options.getString('caster');
+      const picked = await pickCaster(explicitCaster);
+      if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
+      const r = charOverlay.forgetSpell(charEntry, picked.caster.name, spellName);
+      if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
+      saveCharacters(characters);
+      return interaction.reply({ content: `🗑️ **${c.name}** forgot **${spellName}** (from ${picked.caster.name}).` });
+    }
+
+    // ── /spells prepare ──
+    if (sub === 'prepare') {
+      const spellName = interaction.options.getString('spell');
+      const rank = interaction.options.getInteger('rank');
+      const explicitCaster = interaction.options.getString('caster');
+      const picked = await pickCaster(explicitCaster);
+      if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
+      const r = charOverlay.prepareSpell(charEntry, picked.caster.name, spellName, rank);
+      if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
+      saveCharacters(characters);
+      const slots = charOverlay.getSlotsRemaining(charEntry, picked.caster.name, rank);
+      return interaction.reply({ content: `📋 Prepared **${spellName}** at rank ${rank} for **${picked.caster.name}**. Slots filled this rank: ${r.slot_index + 1}/${slots.max || '?'}.` });
+    }
+
+    // ── /spells unprepare ──
+    if (sub === 'unprepare') {
+      const spellName = interaction.options.getString('spell');
+      const rank = interaction.options.getInteger('rank');
+      const explicitCaster = interaction.options.getString('caster');
+      const picked = await pickCaster(explicitCaster);
+      if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
+      const r = charOverlay.unprepareSpell(charEntry, picked.caster.name, spellName, rank);
+      if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
+      saveCharacters(characters);
+      return interaction.reply({ content: `🗑️ Unprepared **${spellName}** (rank ${rank}) from **${picked.caster.name}**.` });
+    }
+
+    // ── /spells swap ──
+    if (sub === 'swap') {
+      const removeName = interaction.options.getString('remove');
+      const addName = interaction.options.getString('add');
+      const rank = interaction.options.getInteger('rank');
+      const explicitCaster = interaction.options.getString('caster');
+      const picked = await pickCaster(explicitCaster);
+      if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
+      // Validate the replacement spell exists
+      const rawSpell = findSpell(addName);
+      if (!rawSpell) return interaction.reply({ content: `❌ Couldn't find a spell called **${addName}** in the database.`, ephemeral: true });
+      const r = charOverlay.swapRepertoire(charEntry, picked.caster.name, rank, removeName, addName);
+      if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
+      saveCharacters(characters);
+      return interaction.reply({ content: `🔄 **${picked.caster.name}** swapped **${removeName}** → **${addName}** (rank ${rank}).` });
+    }
+
+    // ── /spells list ──
+    if (sub === 'list') {
+      const explicitCaster = interaction.options.getString('caster');
+      charOverlay.ensureOverlay(charEntry);
+      const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`🔮 ${c.name}'s Spells`);
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      const showCasters = explicitCaster ? casters.filter(x => (x.name || '').toLowerCase() === explicitCaster.toLowerCase()) : casters;
+      if (!showCasters.length) return interaction.reply({ content: `No caster named "${explicitCaster}" on **${c.name}**.`, ephemeral: true });
+      for (const caster of showCasters) {
+        const merged = charOverlay.getMergedSpellbook(charEntry, caster.name);
+        if (!merged) continue;
+        const fmtList = (names) => names.map(n => merged.overlayNames.has(n) ? `${n} ✨` : n).join(', ');
+        const sections = [];
+        if (merged.cantrips.length) sections.push(`**Cantrips:** ${fmtList(merged.cantrips)}`);
+        for (const rank of Object.keys(merged.ranks).map(Number).sort((a, b) => a - b)) {
+          const max = Number(caster.perDay?.[rank] ?? 0);
+          const slotSuffix = max > 0
+            ? ` *(${charOverlay.getSlotsRemaining(charEntry, caster.name, rank).current}/${max} slots)*`
+            : '';
+          sections.push(`**Rank ${rank}${slotSuffix}:** ${fmtList(merged.ranks[rank])}`);
+        }
+        const overlay = charEntry.overlay;
+        const prepList = overlay.prepared_override?.[caster.name] ?? [];
+        if (caster.spellcastingType === 'prepared' && prepList.length) {
+          const byRank = {};
+          for (const p of prepList) (byRank[p.rank] = byRank[p.rank] ?? []).push(p.spell);
+          const lines = Object.keys(byRank).map(Number).sort((a, b) => a - b).map(r => `Rank ${r}: ${byRank[r].join(', ')}`);
+          sections.push(`**📋 Prepared today:**\n${lines.join('\n')}`);
+        }
+        const casterType = caster.spellcastingType || 'unknown';
+        const innateTag = caster.innate ? ' · innate' : '';
+        const header = `${caster.name} (${caster.magicTradition} · ${casterType}${innateTag})`;
+        embed.addFields({ name: header, value: (sections.join('\n') || '*No spells known.*').slice(0, 1024), inline: false });
+      }
+      embed.setFooter({ text: '✨ = added via /spells learn or /spells swap' });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /rest ───────────────────────────────────────────────────────
+  // Long rest: refills slots, focus, hero points → 1, clears prepared list.
+  // Shows a confirmation button first so people don't wipe today's prep accidentally.
+  else if (commandName === 'rest') {
+    const nameArg = interaction.options.getString('character');
+    const characters = loadCharacters();
+    const { error, char: charEntry, charKey } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    charOverlay.ensureOverlay(charEntry);
+    // Summarize what's going to change
+    const overlay = charEntry.overlay;
+    const preparedCount = Object.values(overlay.prepared_override || {}).reduce((a, list) => a + list.length, 0);
+    const lines = [
+      `Resting will refill all spell slots, refresh focus points to max, and reset hero points to 1.`,
+    ];
+    if (preparedCount > 0) lines.push(`⚠️ This will also **clear ${preparedCount} prepared spell(s)** from today's prep list.`);
+    const confirmEmbed = new EmbedBuilder()
+      .setColor(0xf1c40f)
+      .setTitle(`🌙 Rest — ${charEntry.data.name}?`)
+      .setDescription(lines.join('\n'));
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`rest_confirm_${interaction.user.id}_${charKey}`).setLabel('Proceed').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`rest_cancel_${interaction.user.id}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+    );
+    return interaction.reply({ embeds: [confirmEmbed], components: [row], ephemeral: true });
+  }
+
+  // ─── /refocus ────────────────────────────────────────────────────
+  else if (commandName === 'refocus') {
+    const nameArg = interaction.options.getString('character');
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const before = charOverlay.getCurrentFocus(charEntry);
+    if (before.max === 0) return interaction.reply({ content: `**${charEntry.data.name}** has no focus pool.`, ephemeral: true });
+    if (before.current >= before.max) return interaction.reply({ content: `**${charEntry.data.name}**'s focus pool is already full (${before.current}/${before.max}).`, ephemeral: true });
+    const after = charOverlay.refocus(charEntry, 1);
+    saveCharacters(characters);
+    return interaction.reply({ content: `🌀 **${charEntry.data.name}** refocuses. Focus points: ${after.current}/${after.max}.` });
+  }
+
+  // ─── /resource ───────────────────────────────────────────────────
+  else if (commandName === 'resource') {
+    const sub = interaction.options.getSubcommand();
+    const nameArg = interaction.options.getString('character');
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const c = charEntry.data;
+    charOverlay.ensureOverlay(charEntry);
+
+    if (sub === 'show') {
+      const focus = charOverlay.getCurrentFocus(charEntry);
+      const hero = charOverlay.getHeroPoints(charEntry);
+      const lines = [
+        `**🌟 Focus points:** ${focus.current}/${focus.max}`,
+        `**⭐ Hero points:** ${hero}/3`,
+      ];
+      for (const caster of charOverlay.getCasters(c)) {
+        const rankLines = [];
+        for (let rank = 1; rank <= 10; rank++) {
+          const max = Number(caster.perDay?.[rank] ?? 0);
+          if (max === 0) continue;
+          const { current } = charOverlay.getSlotsRemaining(charEntry, caster.name, rank);
+          rankLines.push(`  Rank ${rank}: ${current}/${max}`);
+        }
+        if (rankLines.length) {
+          lines.push(`**${caster.name} slots:**\n${rankLines.join('\n')}`);
+        }
+      }
+      const embed = new EmbedBuilder().setColor(0xf1c40f).setTitle(`${c.name}'s Daily Resources`).setDescription(lines.join('\n'));
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      embed.setFooter({ text: 'Use /rest to refill · /refocus for 1 focus point · /resource set to override' });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'set') {
+      const resource = interaction.options.getString('resource');
+      const value = interaction.options.getInteger('value');
+      const rank = interaction.options.getInteger('rank');
+      const explicitCaster = interaction.options.getString('caster');
+      if (resource === 'focus') {
+        const max = charOverlay.getMaxFocus(c);
+        const clamped = Math.max(0, Math.min(max, value));
+        charEntry.overlay.daily.focus_spent = max - clamped;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🌟 Focus points set to ${clamped}/${max}.` });
+      }
+      if (resource === 'hero') {
+        const v = charOverlay.setHeroPoints(charEntry, value);
+        saveCharacters(characters);
+        return interaction.reply({ content: `⭐ Hero points set to ${v}/3.` });
+      }
+      if (resource === 'slot') {
+        if (rank === null || rank === undefined) return interaction.reply({ content: '❌ The `rank` option is required when setting spell slots.', ephemeral: true });
+        const casters = charOverlay.getCasters(c);
+        const caster = explicitCaster ? charOverlay.findCaster(c, explicitCaster) : (casters.length === 1 ? casters[0] : null);
+        if (!caster) return interaction.reply({ content: `❌ Specify which caster with the \`caster\` option. Available: ${casters.map(x => x.name).join(', ')}`, ephemeral: true });
+        const max = Number(caster.perDay?.[rank] ?? 0);
+        const clamped = Math.max(0, Math.min(max, value));
+        if (!charEntry.overlay.daily.slots_used[caster.name]) charEntry.overlay.daily.slots_used[caster.name] = {};
+        charEntry.overlay.daily.slots_used[caster.name][rank] = max - clamped;
+        saveCharacters(characters);
+        return interaction.reply({ content: `✨ ${caster.name} rank ${rank} slots set to ${clamped}/${max}.` });
+      }
+      return interaction.reply({ content: '❌ Unknown resource.', ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
   }
 
   // ─── /mattack ────────────────────────────────────────────────────
