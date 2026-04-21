@@ -617,11 +617,50 @@ function computeCharMaxHp(charEntry) {
   return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
 }
 
+// ── HP status helpers for the initiative tracker ────────────────────────────
+// PF2e uses "bloodied" at ≤50% and tracks dying at 0 HP. We add a "critical"
+// band at ≤25% for tactical clarity at the table. Wounded/dying mechanics
+// aren't modeled yet — 0 HP just shows "Dying".
+function hpStatus(current, max) {
+  if (!max || max <= 0) return { label: 'Unknown', emoji: '⚪' };
+  if (current <= 0)         return { label: 'Dying',    emoji: '💀' };
+  const pct = current / max;
+  if (pct <= 0.25)          return { label: 'Critical', emoji: '🔴' };
+  if (pct <= 0.5)           return { label: 'Bloodied', emoji: '🟠' };
+  if (pct < 1.0)            return { label: 'Injured',  emoji: '🟡' };
+  return                           { label: 'Healthy',  emoji: '🟢' };
+}
+
+// Render an 8-segment HP bar. Uses filled/empty blocks so it lines up across
+// combatants regardless of HP totals. At 0 HP shows an all-empty bar with skull.
+function hpBar(current, max, segments = 8) {
+  if (!max || max <= 0) return '░'.repeat(segments);
+  if (current <= 0)     return '░'.repeat(segments);
+  const pct = Math.max(0, Math.min(1, current / max));
+  // Always show at least one filled block if the combatant isn't dead — a
+  // 1-HP-out-of-200 combatant still gets one pip, not a visually-empty bar.
+  const filled = Math.max(1, Math.round(pct * segments));
+  return '█'.repeat(filled) + '░'.repeat(segments - filled);
+}
+
 function buildInitiativeEmbed(enc) {
   const lines = enc.combatants.map((combatant, i) => {
     const marker = i === enc.turnIndex ? '▶️ ' : '   ';
-    const hp = combatant.isNpc ? '(HP hidden)' : `${combatant.hp}/${combatant.maxHp} HP`;
-    const dead = combatant.hp === 0 ? ' 💀' : '';
+    const status = hpStatus(combatant.hp, combatant.maxHp);
+
+    // PCs see their actual HP + bar; NPCs see status only (HP is hidden).
+    // Everyone (PC or NPC) shows AC so players can plan shots.
+    let hpLine;
+    if (combatant.isNpc) {
+      hpLine = `${status.emoji} ${status.label}`;
+    } else {
+      const bar = hpBar(combatant.hp, combatant.maxHp);
+      hpLine = `${status.emoji} \`${bar}\` **${combatant.hp}/${combatant.maxHp}** HP · *${status.label}*`;
+    }
+    const acPart = combatant.ac !== undefined && combatant.ac !== null
+      ? ` · **AC ${combatant.ac}**`
+      : '';
+
     let effectLine = '';
     if (combatant.effects && combatant.effects.length > 0) {
       const effectTexts = combatant.effects.map(e => {
@@ -632,7 +671,8 @@ function buildInitiativeEmbed(enc) {
       });
       effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
     }
-    return `${marker}**${combatant.initiative}** — ${combatant.name} ${hp}${dead}${effectLine}`;
+
+    return `${marker}**${combatant.initiative}** — ${combatant.name}${acPart}\n     ${hpLine}${effectLine}`;
   });
   return new EmbedBuilder()
     .setTitle(`⚔️ Initiative — Round ${enc.round}`)
