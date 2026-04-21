@@ -32,6 +32,24 @@ process.on('unhandledRejection', error => {
   console.error('Unhandled rejection:', error);
 });
 
+// Critical: discord.js emits 'error' events on the Client when something goes
+// wrong (network blips, expired interactions, rate-limit issues). If nothing
+// listens for that event, Node treats it as a fatal error and crashes the
+// process. Logging it here keeps the bot alive across transient errors.
+client.on('error', error => {
+  console.error('Discord client error:', error);
+});
+
+// Same for shard errors (if running sharded, which we're not, but defensive).
+client.on('shardError', error => {
+  console.error('Discord shard error:', error);
+});
+
+// Catch uncaught exceptions to prevent crashes from synchronous errors too.
+process.on('uncaughtException', error => {
+  console.error('Uncaught exception:', error);
+});
+
 let spellDatabase = [];
 try {
   spellDatabase = JSON.parse(fs.readFileSync('spells.json', 'utf8'));
@@ -2502,7 +2520,12 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) {
         console.error('Autocomplete error:', err);
         // Discord requires a response; empty array is fine as a fallback.
-        try { return interaction.respond([]); } catch { /* already responded or expired */ }
+        // Use await so async errors here are caught by the surrounding try.
+        try { await interaction.respond([]); } catch (innerErr) {
+          // Interaction expired or was already responded to. Just log and move on —
+          // do NOT throw, or it'll crash the process.
+          console.error('Autocomplete fallback also failed:', innerErr.message);
+        }
       }
     }
     return;
