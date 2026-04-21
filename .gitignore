@@ -1,0 +1,12 @@
+﻿# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Runtime data (per-server state, not code)
+characters.json
+bags.json
+monster_art.json
+monster_attacks.json
+monster_edits.json
