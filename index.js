@@ -195,6 +195,154 @@ function lookupMonsterArt(guildId, monsterOrName) {
   return guild[key]?.url ?? null;
 }
 
+// ── Monster edits store helpers ───────────────────────────────────────────────
+// Per-guild per-field overrides for bestiary creatures. Anything a GM sets here
+// replaces the corresponding field in the bestiary entry when /monster is shown.
+// Unset fields fall through to the bestiary as normal.
+//
+// File shape:
+// { [guildId]: { [monsterKey]: {
+//     displayName,                       // canonical name (for list/view)
+//     setBy, setAt,                      // audit fields
+//     // any of these override bestiary:
+//     description,                       // free-form flavor text
+//     abilities: [ { name, description, action_cost?, trigger?, traits? } ],
+//     items: [ "dogslicer", ... ],
+//     languages: [ "goblin", ... ],
+//     skills: { "Acrobatics": 5, ... },
+//     attacks: [ { type, name, to_hit, damage, traits } ],
+//     ability_modifiers: { str, dex, con, int, wis, cha },
+//   } } }
+function loadMonsterEdits() {
+  try { return JSON.parse(fs.readFileSync('monster_edits.json', 'utf8')); }
+  catch { return {}; }
+}
+function saveMonsterEdits(data) {
+  fs.writeFileSync('monster_edits.json', JSON.stringify(data, null, 2));
+}
+function getGuildEdits(store, guildId) {
+  if (!store[guildId]) store[guildId] = {};
+  return store[guildId];
+}
+function getMonsterEdit(guildId, displayName) {
+  if (!guildId || !displayName) return null;
+  const store = loadMonsterEdits();
+  const guild = store[guildId];
+  if (!guild) return null;
+  return guild[monsterKey(displayName)] ?? null;
+}
+// Create or fetch an edit entry for the given monster, auto-stamping the
+// audit fields. Caller is expected to mutate fields on the returned object
+// and then call saveMonsterEdits(store). Returns { store, guild, entry }.
+function ensureMonsterEdit(guildId, displayName, userId) {
+  const store = loadMonsterEdits();
+  const guild = getGuildEdits(store, guildId);
+  const key = monsterKey(displayName);
+  if (!guild[key]) {
+    guild[key] = { displayName, setBy: userId, setAt: new Date().toISOString() };
+  } else {
+    // Touch the audit timestamp on every edit
+    guild[key].setAt = new Date().toISOString();
+    guild[key].setBy = userId;
+    // If the canonical name changed (e.g. bestiary rename), update it
+    guild[key].displayName = displayName;
+  }
+  return { store, guild, entry: guild[key] };
+}
+
+// Merge a guild's monster edits onto a bestiary creature. Edits override
+// bestiary fields one-at-a-time; unset fields fall through. Returns a NEW
+// object — does not mutate the bestiary in memory. Passing a null edit or
+// a nonexistent entry returns the monster unchanged.
+function applyMonsterEdits(monster, edits) {
+  if (!edits || !monster) return monster;
+  // Start with a shallow copy so we don't corrupt the bestiary cache.
+  const merged = { ...monster };
+  // The overlay model: core stays as-is; we layer edit fields onto a
+  // virtual "rich" object. Callers read from rich/core via buildMonsterEmbed,
+  // which already knows how to merge them.
+  const baseRich = monster.rich ? { ...monster.rich } : {};
+  // Fields that override cleanly if present
+  const overlayKeys = [
+    'abilities', 'items', 'languages', 'skills', 'attacks',
+    'ability_modifiers', 'spellcasting', 'description',
+  ];
+  let overlayApplied = false;
+  for (const k of overlayKeys) {
+    if (edits[k] !== undefined) {
+      baseRich[k] = edits[k];
+      overlayApplied = true;
+    }
+  }
+  if (overlayApplied || !monster.rich) {
+    merged.rich = baseRich;
+  }
+  // Flag for the embed so we can footnote that edits are applied
+  merged._hasGuildEdits = true;
+  return merged;
+}
+
+// Pull the attacks saved via /monsterattack for this guild+monster and
+// surface them on the creature so they render on /monster alongside any
+// bestiary or edit attacks. Strike-kind entries become melee/ranged
+// bestiary-style attacks; spell and save kinds become special abilities
+// (since the bestiary's `attacks` field is strikes-only).
+function applyMonsterAttackLibrary(monster, guildId) {
+  if (!monster || !guildId) return monster;
+  const store = loadMonsterAttacks();
+  const guildLib = store[guildId];
+  if (!guildLib) return monster;
+  const entry = guildLib[monsterKey(monster.name)];
+  if (!entry || !entry.attacks?.length) return monster;
+
+  // Clone so we never mutate the bestiary in-memory
+  const merged = { ...monster };
+  const baseRich = monster.rich ? { ...monster.rich } : {};
+  const existingAttacks = Array.isArray(baseRich.attacks) ? [...baseRich.attacks] : [];
+  const existingAbilities = baseRich.abilities
+    ? { top: [...(baseRich.abilities.top ?? [])], mid: [...(baseRich.abilities.mid ?? [])], bot: [...(baseRich.abilities.bot ?? [])] }
+    : { top: [], mid: [], bot: [] };
+
+  // Track names that already exist to avoid duplicate rendering when an
+  // attack is in both the bestiary and the library (e.g. the GM re-saved
+  // it with a custom damage expression).
+  const seenAttackNames = new Set(existingAttacks.map(a => a.name?.toLowerCase()));
+
+  for (const a of entry.attacks) {
+    if (a.kind === 'strike') {
+      if (seenAttackNames.has(a.name.toLowerCase())) continue;
+      existingAttacks.push({
+        type: 'melee', // library doesn't track melee vs ranged; melee is the safe default
+        name: a.name,
+        to_hit: a.bonus,
+        damage: `${a.damage} ${a.damageType ?? ''}`.trim() + (a.extraDamage ? ` + ${a.extraDamage}${a.extraType ? ' ' + a.extraType : ''}` : ''),
+        traits: a.traits ?? [],
+        _fromLibrary: true,
+      });
+      seenAttackNames.add(a.name.toLowerCase());
+    } else if (a.kind === 'spell') {
+      // Render spell attacks as abilities so the to-hit and damage are still visible
+      existingAbilities.bot.push({
+        name: a.name,
+        description: `Spell attack ${a.bonus >= 0 ? '+' : ''}${a.bonus}, damage ${a.damage}${a.damageType ? ' ' + a.damageType : ''}.`,
+        _fromLibrary: true,
+      });
+    } else if (a.kind === 'save') {
+      const saveCap = a.saveType ? a.saveType.charAt(0).toUpperCase() + a.saveType.slice(1) : 'Save';
+      existingAbilities.bot.push({
+        name: a.name,
+        description: `DC ${a.saveDC} ${saveCap} save — ${a.damage}${a.damageType ? ' ' + a.damageType : ''}.`,
+        _fromLibrary: true,
+      });
+    }
+  }
+
+  baseRich.attacks = existingAttacks;
+  baseRich.abilities = existingAbilities;
+  merged.rich = baseRich;
+  return merged;
+}
+
 function getOrCreateBag(bags, userId) {
   if (!bags[userId]) {
     bags[userId] = { bagName: 'Bag 1', categories: {} };
@@ -1051,9 +1199,74 @@ function findMonster(query) {
   return { monster: null, matches: [] };
 }
 
+// Format a single ability score modifier for the embed (e.g. "+3", "-1").
+function fmtMod(n) {
+  if (n === undefined || n === null) return null;
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
+// Icons for PF2e action costs. Falls back to the raw string for unexpected values
+// (e.g. "1 varies", "none", campaign-specific costs).
+function actionCostIcon(cost) {
+  if (!cost) return '';
+  const c = String(cost).toLowerCase().trim();
+  const map = {
+    '1 action': '◆',
+    'single action': '◆',
+    '2 actions': '◆◆',
+    'two actions': '◆◆',
+    '3 actions': '◆◆◆',
+    'three actions': '◆◆◆',
+    '1 reaction': '⤾',
+    'reaction': '⤾',
+    '1 free': '◇',
+    'free action': '◇',
+    'none': '',
+  };
+  return map[c] ?? cost;
+}
+
+// Format one entry from the attacks array. Strikes look like:
+//   ⚔️ dogslicer +8 (agile, backstabber, finesse), 1d6 slashing
+function formatAttackLine(attack) {
+  if (!attack) return '';
+  const typeIcon = attack.type === 'ranged' ? '🏹' : '⚔️';
+  const to = attack.to_hit !== undefined && attack.to_hit !== null
+    ? ` ${attack.to_hit >= 0 ? '+' : ''}${attack.to_hit}`
+    : '';
+  const traits = Array.isArray(attack.traits) && attack.traits.length
+    ? ` *(${attack.traits.join(', ')})*`
+    : '';
+  const dmg = attack.damage ? `, ${attack.damage}` : '';
+  return `${typeIcon} **${attack.name}**${to}${traits}${dmg}`;
+}
+
+// Format one ability from the abilities.top/mid/bot arrays for the embed body.
+// Kept compact — full descriptions can run long, so we truncate to 350 chars
+// per ability to avoid blowing out the embed's 4096-char description cap.
+function formatAbilityLine(ab) {
+  if (!ab || !ab.name) return '';
+  const icon = ab.action_cost ? actionCostIcon(ab.action_cost) : '';
+  const iconPrefix = icon ? `${icon} ` : '';
+  const traits = Array.isArray(ab.traits) && ab.traits.length
+    ? ` *[${ab.traits.join(', ')}]*`
+    : '';
+  let body = '';
+  if (ab.trigger)      body += `\n  *Trigger:* ${ab.trigger}`;
+  if (ab.requirements) body += `\n  *Requirements:* ${ab.requirements}`;
+  if (ab.frequency)    body += `\n  *Frequency:* ${ab.frequency}`;
+  if (ab.description) {
+    const desc = String(ab.description);
+    body += `\n  ${desc.length > 350 ? desc.slice(0, 347) + '...' : desc}`;
+  }
+  return `${iconPrefix}**${ab.name}**${traits}${body}`;
+}
+
 // Schema-aware monster embed builder. Works with both the new merged bestiary
 // shape ({ core, rich, summary }) and the legacy summary-only shape that
-// used to live at the top level.
+// used to live at the top level. Renders the full PF2e stat block when rich
+// data is available: ability scores, skills, languages, items, attacks,
+// abilities (top/mid/bot), spellcasting, plus the embed-only lore/tactics.
 function buildMonsterEmbed(monster, artUrl = null) {
   const rarityColor = {
     Common: 0x4a90d9,
@@ -1102,13 +1315,53 @@ function buildMonsterEmbed(monster, artUrl = null) {
   const rarityLine = rarity && rarity !== 'Common' ? ` • ${rarity}` : '';
   const sizeLine = size ? ` • ${size}` : '';
 
+  // Description can come from the overlay (flavor text the GM set) or from
+  // the bestiary's own summary. Only show it if present, and keep the header
+  // block italicized so it reads as the subtitle.
+  const headerDescription = `*${levelLine}${rarityLine}${sizeLine}*`;
+  const editDescription = rich?.description ? `\n\n${String(rich.description).slice(0, 600)}` : '';
+
   const embed = new EmbedBuilder()
     .setColor(rarityColor[rarity] ?? 0x4a90d9)
     .setTitle(title)
-    .setDescription(`*${levelLine}${rarityLine}${sizeLine}*`);
+    .setDescription(`${headerDescription}${editDescription}`);
 
   if (traits.length) {
     embed.addFields({ name: '🏷️ Traits', value: traits.join(', '), inline: false });
+  }
+
+  // Languages — rich only, but if a GM edit set them they'll be here too.
+  if (rich?.languages?.length) {
+    embed.addFields({ name: '🗣️ Languages', value: rich.languages.join(', '), inline: false });
+  }
+
+  // Skills — rich only. Show as "Athletics +8, Stealth +5" etc.
+  if (rich?.skills && typeof rich.skills === 'object' && Object.keys(rich.skills).length) {
+    const skillLine = Object.entries(rich.skills)
+      .map(([name, mod]) => `${name} ${mod >= 0 ? '+' : ''}${mod}`)
+      .join(', ');
+    embed.addFields({ name: '🎯 Skills', value: skillLine.slice(0, 1024), inline: false });
+  }
+
+  // Ability scores — rich only, shown as a compact row. These are PF2e
+  // modifiers (already the ±N form), not D&D-style raw scores.
+  if (rich?.ability_modifiers && typeof rich.ability_modifiers === 'object') {
+    const m = rich.ability_modifiers;
+    const parts = [];
+    if (m.str !== undefined) parts.push(`**Str** ${fmtMod(m.str)}`);
+    if (m.dex !== undefined) parts.push(`**Dex** ${fmtMod(m.dex)}`);
+    if (m.con !== undefined) parts.push(`**Con** ${fmtMod(m.con)}`);
+    if (m.int !== undefined) parts.push(`**Int** ${fmtMod(m.int)}`);
+    if (m.wis !== undefined) parts.push(`**Wis** ${fmtMod(m.wis)}`);
+    if (m.cha !== undefined) parts.push(`**Cha** ${fmtMod(m.cha)}`);
+    if (parts.length) {
+      embed.addFields({ name: '📊 Ability Modifiers', value: parts.join(' · '), inline: false });
+    }
+  }
+
+  // Items — rich only. Simple comma-joined.
+  if (rich?.items?.length) {
+    embed.addFields({ name: '🎒 Items', value: rich.items.join(', ').slice(0, 1024), inline: false });
   }
 
   // Defenses
@@ -1118,8 +1371,30 @@ function buildMonsterEmbed(monster, artUrl = null) {
     const notes = hpNotes ? ` ${hpNotes}` : '';
     defenseParts.push(`**HP** ${hp}${notes}`);
   }
+  // Extra defensive stats that only live in the rich stat block
+  if (rich?.defenses?.hardness) defenseParts.push(`**Hardness** ${rich.defenses.hardness}`);
+  if (rich?.defenses?.hp_notes?.length) {
+    defenseParts.push(`*${rich.defenses.hp_notes.join(', ')}*`);
+  }
   if (defenseParts.length) {
     embed.addFields({ name: '🛡️ Defenses', value: defenseParts.join(' • '), inline: false });
+  }
+
+  // Immunities / weaknesses / resistances — rich only
+  if (rich?.defenses?.immunities?.length) {
+    embed.addFields({ name: '🚫 Immunities', value: rich.defenses.immunities.join(', ').slice(0, 1024), inline: false });
+  }
+  if (rich?.defenses?.weaknesses?.length) {
+    const w = rich.defenses.weaknesses.map(x =>
+      typeof x === 'string' ? x : `${x.type} ${x.value}`
+    ).join(', ');
+    embed.addFields({ name: '💔 Weaknesses', value: w.slice(0, 1024), inline: false });
+  }
+  if (rich?.defenses?.resistances?.length) {
+    const r = rich.defenses.resistances.map(x =>
+      typeof x === 'string' ? x : `${x.type} ${x.value}${x.notes ? ` (${x.notes})` : ''}`
+    ).join(', ');
+    embed.addFields({ name: '💠 Resistances', value: r.slice(0, 1024), inline: false });
   }
 
   // Saves
@@ -1141,6 +1416,74 @@ function buildMonsterEmbed(monster, artUrl = null) {
   // Speed
   if (speedText) {
     embed.addFields({ name: '🏃 Speed', value: speedText, inline: false });
+  }
+
+  // Attacks — rendered as one field with one line per attack
+  if (rich?.attacks?.length) {
+    const attackLines = rich.attacks.map(formatAttackLine).filter(Boolean);
+    if (attackLines.length) {
+      const joined = attackLines.join('\n');
+      embed.addFields({
+        name: '⚔️ Attacks',
+        value: joined.length > 1024 ? joined.slice(0, 1021) + '...' : joined,
+        inline: false,
+      });
+    }
+  }
+
+  // Abilities — rendered as separate fields per slot so the PF2e stat block
+  // reads naturally (top-of-block before HP, mid between defenses and offense,
+  // bot as the attacks/special actions region).
+  for (const [slot, label] of [['top', '✨ Special Abilities (Top)'], ['mid', '✨ Abilities'], ['bot', '✨ Offensive / Reactive']]) {
+    const list = rich?.abilities?.[slot];
+    if (!list?.length) continue;
+    const lines = list.map(formatAbilityLine).filter(Boolean);
+    if (!lines.length) continue;
+    // Discord caps individual fields at 1024 chars — chunk if needed so big
+    // creatures (dragons, liches) don't get truncated to one ability.
+    let buf = '';
+    let partIdx = 1;
+    const emit = () => {
+      if (!buf) return;
+      const suffix = partIdx > 1 ? ` (${partIdx})` : '';
+      embed.addFields({ name: `${label}${suffix}`, value: buf.trim(), inline: false });
+      partIdx++;
+      buf = '';
+    };
+    for (const line of lines) {
+      if (buf.length + line.length + 2 > 1000) emit();
+      buf += (buf ? '\n\n' : '') + line;
+    }
+    emit();
+  }
+
+  // Spellcasting — condensed summary; each caster block gets one field.
+  if (Array.isArray(rich?.spellcasting) && rich.spellcasting.length) {
+    for (const caster of rich.spellcasting) {
+      const heading = [caster.type, caster.tradition].filter(Boolean).join(' ') || 'Spells';
+      const dcBits = [];
+      if (caster.DC !== null && caster.DC !== undefined) dcBits.push(`DC ${caster.DC}`);
+      if (caster.attack_bonus !== null && caster.attack_bonus !== undefined) dcBits.push(`attack ${caster.attack_bonus >= 0 ? '+' : ''}${caster.attack_bonus}`);
+      const header = dcBits.length ? `*${dcBits.join(', ')}*\n` : '';
+      const lines = [];
+      const slots = caster.spells_by_level ?? {};
+      // Sort numerically; cantrips usually live at level 0
+      const levels = Object.keys(slots).sort((a, b) => Number(b) - Number(a));
+      for (const lvl of levels) {
+        const spellNames = (slots[lvl]?.spells ?? []).map(s => {
+          const n = s.name ?? String(s);
+          const notes = s.notes?.length ? ` *(${s.notes.join(', ')})*` : '';
+          return `${n}${notes}`;
+        });
+        if (!spellNames.length) continue;
+        const label = lvl === '0' ? 'Cantrips' : `Rank ${lvl}`;
+        lines.push(`**${label}:** ${spellNames.join(', ')}`);
+      }
+      const body = (header + lines.join('\n')).slice(0, 1024);
+      if (body.trim()) {
+        embed.addFields({ name: `🔮 ${heading.charAt(0).toUpperCase() + heading.slice(1)} Spells`, value: body, inline: false });
+      }
+    }
   }
 
   // Rich-only goodies: lore + GM tactics. These are what make Pathway
@@ -1174,7 +1517,9 @@ function buildMonsterEmbed(monster, artUrl = null) {
       ? `${rich.source_book}${rich.pdf_page ? ` pg. ${rich.pdf_page}` : ''}`
       : (rich._source_bestiary ?? null);
   }
-  embed.setFooter({ text: `${sourceText ?? 'Unknown source'} • PF2e Bestiary Lookup` });
+  // Footnote guild edits so GMs remember they're looking at a customized block
+  const footerSuffix = monster._hasGuildEdits ? ' • customized for this server' : '';
+  embed.setFooter({ text: `${sourceText ?? 'Unknown source'} • PF2e Bestiary Lookup${footerSuffix}` });
 
   // Monster art: set as the large image below the stat block so it doesn't
   // shrink the embed. GMs can set this per-guild with /monsterart set.
@@ -1587,6 +1932,23 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(savedMatch || !q ? savedNames : Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           } else {
             // 'set' — full bestiary so GMs can attach art to any creature.
+            suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          }
+        }
+        else if (cmd === 'monsteredit' && focused.name === 'monster') {
+          // For 'view', 'remove', 'reset', prefer monsters that already have
+          // edits saved on this server so the GM can find them quickly.
+          // For everything else, suggest the full bestiary so they can edit
+          // anything (and can also type homebrew names freely).
+          const sub = interaction.options.getSubcommand(false);
+          const editOnly = ['view', 'remove', 'reset'];
+          if (editOnly.includes(sub) && interaction.guildId) {
+            const store = loadMonsterEdits();
+            const guild = store[interaction.guildId] ?? {};
+            const savedNames = Object.values(guild).map(e => e.displayName);
+            const savedMatch = savedNames.some(n => n.toLowerCase().includes(q));
+            suggestions = pick(savedMatch || !q ? savedNames : Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          } else {
             suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           }
         }
@@ -2323,9 +2685,14 @@ client.on('interactionCreate', async (interaction) => {
     const { monster, matches, total } = findMonster(input);
 
     if (monster) {
-      // Look up saved art for this guild (if any) and attach it to the embed.
+      // Layer the GM's edits (if any) on top of the bestiary data, then
+      // layer the server's saved /monsterattack library on top of that
+      // so strike/spell/save attacks all appear on the stat block.
+      const edits = getMonsterEdit(interaction.guildId, monster.name);
+      const edited = applyMonsterEdits(monster, edits);
+      const withLibrary = applyMonsterAttackLibrary(edited, interaction.guildId);
       const artUrl = lookupMonsterArt(interaction.guildId, monster);
-      return interaction.reply({ embeds: [buildMonsterEmbed(monster, artUrl)] });
+      return interaction.reply({ embeds: [buildMonsterEmbed(withLibrary, artUrl)] });
     }
 
     if (matches && matches.length > 1) {
@@ -2441,6 +2808,313 @@ client.on('interactionCreate', async (interaction) => {
         .setDescription(lines.join('\n').slice(0, 4000))
         .setFooter({ text: '/monsterart view monster:<name> to see the image • /monsterart remove to delete' });
       return interaction.reply({ embeds: [embed] });
+    }
+  }
+
+  // ─── /monsteredit ────────────────────────────────────────────────
+  // Per-guild per-field overrides for bestiary entries. Each subcommand
+  // touches ONE field; untouched fields fall through to the bestiary. This
+  // lets you add a single custom ability to Lanks without rebuilding her
+  // whole stat block. Use /monsteredit paste to drop in a full JSON block
+  // (handy for homebrew creatures), and /monsteredit reset to wipe.
+  else if (commandName === 'monsteredit') {
+    const sub = interaction.options.getSubcommand();
+    const guildId = interaction.guildId;
+    if (!guildId) return interaction.reply({ content: '❌ `/monsteredit` only works in a server, not in DMs.', ephemeral: true });
+
+    // Resolve the canonical bestiary name where possible so "goblin warrior"
+    // and "Goblin Warrior" always edit the same entry. Homebrew names that
+    // don't match anything in the bestiary are accepted as-is.
+    const resolveName = (input) => {
+      const found = findMonster(input);
+      return found.monster?.name ?? input;
+    };
+
+    // ── ability: add or replace a named ability ──
+    if (sub === 'ability') {
+      const monsterInput = interaction.options.getString('monster');
+      const name = interaction.options.getString('name').trim();
+      const description = interaction.options.getString('description');
+      const actionCost = interaction.options.getString('action_cost');
+      const trigger = interaction.options.getString('trigger');
+      const traitsRaw = interaction.options.getString('traits');
+      const slot = interaction.options.getString('slot') ?? 'mid';
+
+      if (!['top', 'mid', 'bot'].includes(slot)) {
+        return interaction.reply({ content: '❌ `slot` must be one of: top, mid, bot.', ephemeral: true });
+      }
+
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+
+      // If the user hasn't edited abilities yet, seed from the bestiary so
+      // they keep Goblin Scuttle etc. and merely add Scoundrel's Feint.
+      if (!entry.abilities) {
+        const base = findMonster(monsterInput).monster?.rich?.abilities;
+        entry.abilities = base
+          ? { top: [...(base.top ?? [])], mid: [...(base.mid ?? [])], bot: [...(base.bot ?? [])] }
+          : { top: [], mid: [], bot: [] };
+      }
+
+      const newAbility = { name };
+      if (description) newAbility.description = description;
+      if (actionCost)  newAbility.action_cost = actionCost;
+      if (trigger)     newAbility.trigger = trigger;
+      if (traitsRaw)   newAbility.traits = traitsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      const bucket = entry.abilities[slot] ?? (entry.abilities[slot] = []);
+      // Replace any existing ability with the same name (case-insensitive)
+      const existingIdx = bucket.findIndex(a => a.name?.toLowerCase() === name.toLowerCase());
+      if (existingIdx >= 0) bucket[existingIdx] = newAbility;
+      else bucket.push(newAbility);
+
+      saveMonsterEdits(store);
+      const verb = existingIdx >= 0 ? 'Updated' : 'Added';
+      return interaction.reply({ content: `✅ ${verb} ability **${name}** on **${displayName}** (slot: ${slot}).`, ephemeral: true });
+    }
+
+    // ── item: add one to the carried items list ──
+    if (sub === 'item') {
+      const monsterInput = interaction.options.getString('monster');
+      const item = interaction.options.getString('item').trim();
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      if (!entry.items) {
+        const base = findMonster(monsterInput).monster?.rich?.items;
+        entry.items = Array.isArray(base) ? [...base] : [];
+      }
+      if (entry.items.some(i => String(i).toLowerCase() === item.toLowerCase())) {
+        return interaction.reply({ content: `❌ **${displayName}** already has item **${item}**.`, ephemeral: true });
+      }
+      entry.items.push(item);
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Added item **${item}** to **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── language: add one to the languages list ──
+    if (sub === 'language') {
+      const monsterInput = interaction.options.getString('monster');
+      const lang = interaction.options.getString('language').trim();
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      if (!entry.languages) {
+        const base = findMonster(monsterInput).monster?.rich?.languages;
+        entry.languages = Array.isArray(base) ? [...base] : [];
+      }
+      if (entry.languages.some(l => String(l).toLowerCase() === lang.toLowerCase())) {
+        return interaction.reply({ content: `❌ **${displayName}** already speaks **${lang}**.`, ephemeral: true });
+      }
+      entry.languages.push(lang);
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Added language **${lang}** to **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── skill: set a skill modifier (for Recall Knowledge etc.) ──
+    if (sub === 'skill') {
+      const monsterInput = interaction.options.getString('monster');
+      const skillName = interaction.options.getString('skill').trim();
+      const modifier = interaction.options.getInteger('modifier');
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      if (!entry.skills) {
+        const base = findMonster(monsterInput).monster?.rich?.skills;
+        entry.skills = base && typeof base === 'object' ? { ...base } : {};
+      }
+      const normalized = skillName.charAt(0).toUpperCase() + skillName.slice(1).toLowerCase();
+      entry.skills[normalized] = modifier;
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Set **${normalized}** ${modifier >= 0 ? '+' : ''}${modifier} on **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── attack: add a strike to the attacks array (flavor-only; for
+    // attacks you want to roll use /monsterattack instead) ──
+    if (sub === 'attack') {
+      const monsterInput = interaction.options.getString('monster');
+      const name = interaction.options.getString('name').trim();
+      const toHit = interaction.options.getInteger('to_hit');
+      const damage = interaction.options.getString('damage').trim();
+      const type = interaction.options.getString('type') ?? 'melee';
+      const traitsRaw = interaction.options.getString('traits');
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      if (!entry.attacks) {
+        const base = findMonster(monsterInput).monster?.rich?.attacks;
+        entry.attacks = Array.isArray(base) ? [...base] : [];
+      }
+      const newAtk = {
+        type,
+        name,
+        to_hit: toHit,
+        damage,
+        traits: traitsRaw ? traitsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
+      };
+      const idx = entry.attacks.findIndex(a => a.name?.toLowerCase() === name.toLowerCase());
+      if (idx >= 0) entry.attacks[idx] = newAtk;
+      else entry.attacks.push(newAtk);
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ ${idx >= 0 ? 'Updated' : 'Added'} attack **${name}** on **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── ability-score: set str/dex/con/int/wis/cha modifier ──
+    if (sub === 'ability-score') {
+      const monsterInput = interaction.options.getString('monster');
+      const which = interaction.options.getString('score');
+      const value = interaction.options.getInteger('value');
+      const valid = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+      if (!valid.includes(which)) {
+        return interaction.reply({ content: `❌ \`score\` must be one of: ${valid.join(', ')}`, ephemeral: true });
+      }
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      if (!entry.ability_modifiers) {
+        const base = findMonster(monsterInput).monster?.rich?.ability_modifiers;
+        entry.ability_modifiers = base && typeof base === 'object' ? { ...base } : {};
+      }
+      entry.ability_modifiers[which] = value;
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Set **${which.toUpperCase()}** ${value >= 0 ? '+' : ''}${value} on **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── description: set the flavor text shown under the title ──
+    if (sub === 'description') {
+      const monsterInput = interaction.options.getString('monster');
+      const description = interaction.options.getString('description').trim();
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      entry.description = description;
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Description set on **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── paste: bulk JSON paste (for homebrew creatures) ──
+    if (sub === 'paste') {
+      const monsterInput = interaction.options.getString('monster');
+      const jsonRaw = interaction.options.getString('json');
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonRaw);
+      } catch (err) {
+        return interaction.reply({ content: `❌ That's not valid JSON: ${err.message}`, ephemeral: true });
+      }
+      if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+        return interaction.reply({ content: '❌ The JSON must be an object with fields like `abilities`, `items`, `attacks`, etc.', ephemeral: true });
+      }
+      const allowed = ['abilities', 'items', 'languages', 'skills', 'attacks', 'ability_modifiers', 'spellcasting', 'description'];
+      const applied = [];
+      const displayName = resolveName(monsterInput);
+      const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
+      for (const k of allowed) {
+        if (parsed[k] !== undefined) {
+          entry[k] = parsed[k];
+          applied.push(k);
+        }
+      }
+      if (applied.length === 0) {
+        return interaction.reply({ content: `❌ JSON had none of the recognized fields: ${allowed.join(', ')}`, ephemeral: true });
+      }
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `✅ Applied fields [${applied.join(', ')}] to **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── view: dump the current edits for a monster, or list all ──
+    if (sub === 'view') {
+      const monsterInput = interaction.options.getString('monster');
+      if (monsterInput) {
+        const displayName = resolveName(monsterInput);
+        const entry = getMonsterEdit(guildId, displayName);
+        if (!entry) return interaction.reply({ content: `📭 No saved edits for **${displayName}** on this server.`, ephemeral: true });
+        const { displayName: _d, setBy: _b, setAt: _a, ...fields } = entry;
+        const body = '```json\n' + JSON.stringify(fields, null, 2).slice(0, 1800) + '\n```';
+        const embed = new EmbedBuilder()
+          .setColor(0xe67e22)
+          .setTitle(`📝 Edits for ${entry.displayName}`)
+          .setDescription(body)
+          .setFooter({ text: `Set by user ${entry.setBy} • /monsteredit reset to clear` });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+      const store = loadMonsterEdits();
+      const guild = store[guildId] ?? {};
+      const entries = Object.values(guild);
+      if (entries.length === 0) return interaction.reply({ content: '📖 No monster edits saved for this server yet.', ephemeral: true });
+      entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const lines = entries.map(e => {
+        const { displayName: _d, setBy: _b, setAt: _a, ...fields } = e;
+        const keys = Object.keys(fields);
+        return `• **${e.displayName}** — ${keys.length ? keys.join(', ') : '*empty*'}`;
+      });
+      const embed = new EmbedBuilder()
+        .setColor(0xe67e22)
+        .setTitle(`📝 Monster Edits (${entries.length})`)
+        .setDescription(lines.join('\n').slice(0, 4000))
+        .setFooter({ text: '/monsteredit view monster:<n> to see details' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // ── remove: drop one entry from a list field ──
+    if (sub === 'remove') {
+      const monsterInput = interaction.options.getString('monster');
+      const field = interaction.options.getString('field');
+      const value = interaction.options.getString('value').trim();
+      const displayName = resolveName(monsterInput);
+      const entry = getMonsterEdit(guildId, displayName);
+      if (!entry) return interaction.reply({ content: `❌ No edits to modify for **${displayName}**.`, ephemeral: true });
+
+      const store = loadMonsterEdits();
+      const liveEntry = store[guildId][monsterKey(displayName)];
+
+      if (field === 'ability') {
+        let removed = false;
+        for (const slot of ['top', 'mid', 'bot']) {
+          const list = liveEntry.abilities?.[slot];
+          if (!list) continue;
+          const idx = list.findIndex(a => a.name?.toLowerCase() === value.toLowerCase());
+          if (idx >= 0) { list.splice(idx, 1); removed = true; break; }
+        }
+        if (!removed) return interaction.reply({ content: `❌ No ability named "${value}" on **${displayName}**.`, ephemeral: true });
+      } else if (field === 'item') {
+        const list = liveEntry.items;
+        if (!list) return interaction.reply({ content: `❌ No items to remove.`, ephemeral: true });
+        const idx = list.findIndex(i => String(i).toLowerCase() === value.toLowerCase());
+        if (idx < 0) return interaction.reply({ content: `❌ **${displayName}** doesn't have item "${value}".`, ephemeral: true });
+        list.splice(idx, 1);
+      } else if (field === 'language') {
+        const list = liveEntry.languages;
+        if (!list) return interaction.reply({ content: `❌ No languages to remove.`, ephemeral: true });
+        const idx = list.findIndex(l => String(l).toLowerCase() === value.toLowerCase());
+        if (idx < 0) return interaction.reply({ content: `❌ **${displayName}** doesn't speak "${value}".`, ephemeral: true });
+        list.splice(idx, 1);
+      } else if (field === 'skill') {
+        if (!liveEntry.skills) return interaction.reply({ content: `❌ No skills to remove.`, ephemeral: true });
+        const matchKey = Object.keys(liveEntry.skills).find(k => k.toLowerCase() === value.toLowerCase());
+        if (!matchKey) return interaction.reply({ content: `❌ **${displayName}** has no edit for skill "${value}".`, ephemeral: true });
+        delete liveEntry.skills[matchKey];
+      } else if (field === 'attack') {
+        const list = liveEntry.attacks;
+        if (!list) return interaction.reply({ content: `❌ No attacks to remove.`, ephemeral: true });
+        const idx = list.findIndex(a => a.name?.toLowerCase() === value.toLowerCase());
+        if (idx < 0) return interaction.reply({ content: `❌ **${displayName}** has no attack named "${value}".`, ephemeral: true });
+        list.splice(idx, 1);
+      } else {
+        return interaction.reply({ content: `❌ \`field\` must be one of: ability, item, language, skill, attack.`, ephemeral: true });
+      }
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `🗑️ Removed ${field} **${value}** from **${displayName}**.`, ephemeral: true });
+    }
+
+    // ── reset: wipe all edits for one monster ──
+    if (sub === 'reset') {
+      const monsterInput = interaction.options.getString('monster');
+      const displayName = resolveName(monsterInput);
+      const store = loadMonsterEdits();
+      const guild = store[guildId];
+      if (!guild || !guild[monsterKey(displayName)]) {
+        return interaction.reply({ content: `📭 No saved edits for **${displayName}** on this server.`, ephemeral: true });
+      }
+      delete guild[monsterKey(displayName)];
+      if (Object.keys(guild).length === 0) delete store[guildId];
+      else store[guildId] = guild;
+      saveMonsterEdits(store);
+      return interaction.reply({ content: `🗑️ Wiped all edits for **${displayName}**.`, ephemeral: true });
     }
   }
 

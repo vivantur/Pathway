@@ -166,6 +166,136 @@ const commands = [
     ]
   },
   {
+    name: 'monsteredit', description: 'GM: override or add stat-block fields for a monster (per-server)',
+    options: [
+      {
+        name: 'ability', description: 'Add or replace a named ability (e.g. Scoundrel\'s Feint)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'name', description: 'Ability name (e.g. "Scoundrel\'s Feint", "Recall Knowledge")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'description', description: 'What the ability does', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'action_cost', description: 'Action cost', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: '1 action', value: '1 action' },
+            { name: '2 actions', value: '2 actions' },
+            { name: '3 actions', value: '3 actions' },
+            { name: 'Reaction', value: '1 reaction' },
+            { name: 'Free action', value: '1 free' },
+            { name: 'No action (passive)', value: 'none' }
+          ]},
+          { name: 'trigger', description: 'Trigger for reactions/free actions', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'traits', description: 'Comma-separated traits (e.g. "concentrate, manipulate")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'slot', description: 'Where in the stat block to show it (default: mid)', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Top (interaction/passive abilities)', value: 'top' },
+            { name: 'Mid (general abilities)', value: 'mid' },
+            { name: 'Bot (offensive/reactive, near attacks)', value: 'bot' }
+          ]}
+        ]
+      },
+      {
+        name: 'item', description: 'Add an item to the monster\'s carried gear',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'item', description: 'Item to add (e.g. "shortsword", "potion of healing (lesser)")', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'language', description: 'Add a language the monster speaks',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'language', description: 'Language (e.g. Common, Draconic, Goblin)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'skill', description: 'Set a skill modifier (useful for Recall Knowledge checks)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'skill', description: 'Skill name (e.g. Athletics, Stealth, Society)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'modifier', description: 'Modifier value (e.g. 8 or -1)', type: ApplicationCommandOptionType.Integer, required: true }
+        ]
+      },
+      {
+        name: 'attack', description: 'Add a flavor attack to the stat block (use /monsterattack to roll)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'name', description: 'Attack name (e.g. "Shortsword", "Bite")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'to_hit', description: 'Attack bonus (e.g. 8 or -1)', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'damage', description: 'Damage text (e.g. "1d6+3 piercing")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'type', description: 'Attack type', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Melee', value: 'melee' },
+            { name: 'Ranged', value: 'ranged' }
+          ]},
+          { name: 'traits', description: 'Comma-separated traits (e.g. "agile, finesse, reach")', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'ability-score', description: 'Set an ability modifier (Str/Dex/Con/Int/Wis/Cha)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'score', description: 'Which ability score', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Strength', value: 'str' },
+            { name: 'Dexterity', value: 'dex' },
+            { name: 'Constitution', value: 'con' },
+            { name: 'Intelligence', value: 'int' },
+            { name: 'Wisdom', value: 'wis' },
+            { name: 'Charisma', value: 'cha' }
+          ]},
+          { name: 'value', description: 'Modifier value (e.g. 3 or -1)', type: ApplicationCommandOptionType.Integer, required: true }
+        ]
+      },
+      {
+        name: 'description', description: 'Set flavor text shown under the monster\'s title',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'description', description: 'Flavor text (up to 600 chars will be shown)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'paste', description: 'Bulk-set fields via a JSON blob (for homebrew or mass edits)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'json', description: 'JSON with any of: abilities, items, languages, skills, attacks, ability_modifiers, description', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'view', description: 'Show current edits for a monster, or list all edits',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name (leave blank to list all edits)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove one entry from a list field (ability, item, language, skill, attack)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'field', description: 'Which field to remove from', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Ability', value: 'ability' },
+            { name: 'Item', value: 'item' },
+            { name: 'Language', value: 'language' },
+            { name: 'Skill', value: 'skill' },
+            { name: 'Attack', value: 'attack' }
+          ]},
+          { name: 'value', description: 'Value to remove (name of the ability/item/etc.)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'reset', description: 'Wipe ALL edits for a monster (back to bestiary defaults)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'deity', description: 'Look up a PF2e deity, philosophy, or pantheon',
     options: [{ name: 'name', description: 'Name of the deity to look up (e.g. Abadar, Desna, Asmodeus)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
