@@ -168,6 +168,33 @@ function findSavedAttack(monsterEntry, attackName) {
       || null;
 }
 
+// ── Monster art library helpers ───────────────────────────────────────────────
+// File shape: { [guildId]: { [monsterKey]: { displayName, url, setBy, setAt } } }
+// Per-guild so a GM on one server can't affect another's art.
+function loadMonsterArt() {
+  try { return JSON.parse(fs.readFileSync('monster_art.json', 'utf8')); }
+  catch { return {}; }
+}
+function saveMonsterArt(data) {
+  fs.writeFileSync('monster_art.json', JSON.stringify(data, null, 2));
+}
+function getGuildArt(store, guildId) {
+  if (!store[guildId]) store[guildId] = {};
+  return store[guildId];
+}
+// Look up a saved art URL for a monster in a given guild. Returns null if none.
+// The monster arg can be either a bestiary creature object (preferred) or a raw string name.
+function lookupMonsterArt(guildId, monsterOrName) {
+  if (!guildId) return null;
+  const store = loadMonsterArt();
+  const guild = store[guildId];
+  if (!guild) return null;
+  const name = typeof monsterOrName === 'string' ? monsterOrName : monsterOrName?.name;
+  if (!name) return null;
+  const key = monsterKey(name);
+  return guild[key]?.url ?? null;
+}
+
 function getOrCreateBag(bags, userId) {
   if (!bags[userId]) {
     bags[userId] = { bagName: 'Bag 1', categories: {} };
@@ -1024,7 +1051,10 @@ function findMonster(query) {
   return { monster: null, matches: [] };
 }
 
-function buildMonsterEmbed(monster) {
+// Schema-aware monster embed builder. Works with both the new merged bestiary
+// shape ({ core, rich, summary }) and the legacy summary-only shape that
+// used to live at the top level.
+function buildMonsterEmbed(monster, artUrl = null) {
   const rarityColor = {
     Common: 0x4a90d9,
     Uncommon: 0xc45f00,
@@ -1035,31 +1065,58 @@ function buildMonsterEmbed(monster) {
     Tiny: '🐁', Small: '🐇', Medium: '🧍', Large: '🐎',
     Huge: '🐘', Gargantuan: '🐲',
   };
-  const s = monster.summary ?? {};
-  const title = `${sizeEmoji[monster.size] ?? '👹'} ${monster.name}`;
-  const levelLine = s.level !== undefined && s.level !== null
-    ? `Creature ${s.level}`
-    : 'Creature';
-  const rarityLine = monster.rarity && monster.rarity !== 'Common'
-    ? ` • ${monster.rarity}`
-    : '';
-  const sizeLine = monster.size ? ` • ${monster.size}` : '';
+
+  // Prefer the flattened `core` block from the merged schema; fall back to
+  // legacy `summary` and top-level fields for older bestiary files.
+  const core = monster.core ?? {};
+  const legacySummary = monster.summary ?? {};
+  const rich = monster.rich ?? null;
+
+  const level      = core.level      ?? legacySummary.level;
+  const size       = core.size       ?? monster.size;
+  const rarity     = core.rarity     ?? monster.rarity;
+  const traits     = core.traits     ?? monster.traits ?? [];
+  const hp         = core.hp         ?? legacySummary.hp?.value;
+  const hpNotes    = legacySummary.hp?.notes ?? null;
+  const ac         = core.ac         ?? legacySummary.ac;
+  const perception = core.perception ?? legacySummary.perception;
+  const fort = core.saves?.fort ?? legacySummary.fortitude;
+  const ref  = core.saves?.ref  ?? legacySummary.reflex;
+  const will = core.saves?.will ?? legacySummary.will;
+
+  // Speed: rich has a structured object { land, fly, swim, ... };
+  // summary has a raw string like "30 feet, fly 60 feet".
+  let speedText = legacySummary.speed_raw ?? null;
+  if (!speedText && rich?.speed) {
+    speedText = Object.entries(rich.speed).map(([k, v]) => `${k} ${v} ft.`).join(', ');
+  }
+
+  // Senses: summary has senses_raw; rich has an array.
+  const sensesText = legacySummary.senses_raw
+    ?? (rich?.senses?.length ? rich.senses.join(', ') : null);
+
+  const family = monster.family ?? null;
+
+  const title = `${sizeEmoji[size] ?? '👹'} ${monster.name}`;
+  const levelLine = level !== undefined && level !== null ? `Creature ${level}` : 'Creature';
+  const rarityLine = rarity && rarity !== 'Common' ? ` • ${rarity}` : '';
+  const sizeLine = size ? ` • ${size}` : '';
 
   const embed = new EmbedBuilder()
-    .setColor(rarityColor[monster.rarity] ?? 0x4a90d9)
+    .setColor(rarityColor[rarity] ?? 0x4a90d9)
     .setTitle(title)
     .setDescription(`*${levelLine}${rarityLine}${sizeLine}*`);
 
-  if (monster.traits?.length) {
-    embed.addFields({ name: '🏷️ Traits', value: monster.traits.join(', '), inline: false });
+  if (traits.length) {
+    embed.addFields({ name: '🏷️ Traits', value: traits.join(', '), inline: false });
   }
 
   // Defenses
   const defenseParts = [];
-  if (s.ac !== undefined && s.ac !== null) defenseParts.push(`**AC** ${s.ac}`);
-  if (s.hp?.value !== undefined && s.hp?.value !== null) {
-    const notes = s.hp.notes ? ` ${s.hp.notes}` : '';
-    defenseParts.push(`**HP** ${s.hp.value}${notes}`);
+  if (ac !== undefined && ac !== null) defenseParts.push(`**AC** ${ac}`);
+  if (hp !== undefined && hp !== null) {
+    const notes = hpNotes ? ` ${hpNotes}` : '';
+    defenseParts.push(`**HP** ${hp}${notes}`);
   }
   if (defenseParts.length) {
     embed.addFields({ name: '🛡️ Defenses', value: defenseParts.join(' • '), inline: false });
@@ -1067,31 +1124,62 @@ function buildMonsterEmbed(monster) {
 
   // Saves
   const saveParts = [];
-  if (s.fortitude !== undefined && s.fortitude !== null) saveParts.push(`**Fort** ${s.fortitude >= 0 ? '+' : ''}${s.fortitude}`);
-  if (s.reflex !== undefined && s.reflex !== null)       saveParts.push(`**Ref** ${s.reflex >= 0 ? '+' : ''}${s.reflex}`);
-  if (s.will !== undefined && s.will !== null)           saveParts.push(`**Will** ${s.will >= 0 ? '+' : ''}${s.will}`);
+  if (fort !== undefined && fort !== null) saveParts.push(`**Fort** ${fort >= 0 ? '+' : ''}${fort}`);
+  if (ref  !== undefined && ref  !== null) saveParts.push(`**Ref** ${ref >= 0 ? '+' : ''}${ref}`);
+  if (will !== undefined && will !== null) saveParts.push(`**Will** ${will >= 0 ? '+' : ''}${will}`);
   if (saveParts.length) {
     embed.addFields({ name: '💪 Saves', value: saveParts.join(' • '), inline: true });
   }
 
-  if (s.perception !== undefined && s.perception !== null) {
-    const percStr = `${s.perception >= 0 ? '+' : ''}${s.perception}`;
-    const sensesText = s.senses_raw ? ` (${s.senses_raw})` : '';
-    embed.addFields({ name: '👁️ Perception', value: `${percStr}${sensesText}`, inline: true });
+  // Perception (+ senses inline)
+  if (perception !== undefined && perception !== null) {
+    const percStr = `${perception >= 0 ? '+' : ''}${perception}`;
+    const sensesSuffix = sensesText ? ` (${sensesText})` : '';
+    embed.addFields({ name: '👁️ Perception', value: `${percStr}${sensesSuffix}`, inline: true });
   }
 
-  if (s.speed_raw) {
-    embed.addFields({ name: '🏃 Speed', value: s.speed_raw, inline: false });
+  // Speed
+  if (speedText) {
+    embed.addFields({ name: '🏃 Speed', value: speedText, inline: false });
   }
 
-  if (monster.family) {
-    embed.addFields({ name: '👪 Family', value: monster.family, inline: true });
+  // Rich-only goodies: lore + GM tactics. These are what make Pathway
+  // distinctly better than Avrae.
+  if (rich?.lore_short) {
+    embed.addFields({ name: '📖 Lore', value: String(rich.lore_short).slice(0, 1024), inline: false });
+  }
+  if (rich?.tactics && typeof rich.tactics === 'object') {
+    const t = rich.tactics;
+    const tacticsLines = [];
+    if (t.role)      tacticsLines.push(`**Role:** ${t.role}`);
+    if (t.opening)   tacticsLines.push(`**Opening:** ${t.opening}`);
+    if (t.in_combat) tacticsLines.push(`**In Combat:** ${t.in_combat}`);
+    if (t.when_hurt) tacticsLines.push(`**When Hurt:** ${t.when_hurt}`);
+    const tacticsText = tacticsLines.join('\n');
+    if (tacticsText) {
+      embed.addFields({ name: '🎯 Tactics (GM)', value: tacticsText.slice(0, 1024), inline: false });
+    }
   }
 
-  const sourceText = monster.source?.raw
-    ?? (monster.source?.book ? `${monster.source.book}${monster.source.page ? ` pg. ${monster.source.page}` : ''}` : null)
-    ?? 'Unknown source';
-  embed.setFooter({ text: `${sourceText} • PF2e Bestiary Lookup` });
+  if (family) {
+    embed.addFields({ name: '👪 Family', value: family, inline: true });
+  }
+
+  // Source: rich has { source_book, pdf_page, _source_bestiary };
+  // summary has { raw, book, page }.
+  let sourceText = legacySummary.source?.raw
+    ?? (legacySummary.source?.book ? `${legacySummary.source.book}${legacySummary.source.page ? ` pg. ${legacySummary.source.page}` : ''}` : null);
+  if (!sourceText && rich) {
+    sourceText = rich.source_book
+      ? `${rich.source_book}${rich.pdf_page ? ` pg. ${rich.pdf_page}` : ''}`
+      : (rich._source_bestiary ?? null);
+  }
+  embed.setFooter({ text: `${sourceText ?? 'Unknown source'} • PF2e Bestiary Lookup` });
+
+  // Monster art: set as the large image below the stat block so it doesn't
+  // shrink the embed. GMs can set this per-guild with /monsterart set.
+  if (artUrl) embed.setImage(artUrl);
+
   return embed;
 }
 
@@ -1485,6 +1573,22 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'monster' && focused.name === 'name') {
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
+        else if (cmd === 'monsterart' && focused.name === 'monster') {
+          // For 'view' and 'remove', prefer suggesting only monsters that
+          // actually have art saved on this server; fall back to the full
+          // bestiary if the user's query doesn't match any saved art.
+          const sub = interaction.options.getSubcommand(false);
+          if ((sub === 'view' || sub === 'remove') && interaction.guildId) {
+            const store = loadMonsterArt();
+            const guild = store[interaction.guildId] ?? {};
+            const savedNames = Object.values(guild).map(e => e.displayName);
+            const savedMatch = savedNames.some(n => n.toLowerCase().includes(q));
+            suggestions = pick(savedMatch || !q ? savedNames : Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          } else {
+            // 'set' — full bestiary so GMs can attach art to any creature.
+            suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          }
         }
         else if (cmd === 'deity' && focused.name === 'name') {
           suggestions = pick(deityDatabase.map(d => d.name));
@@ -2211,6 +2315,133 @@ client.on('interactionCreate', async (interaction) => {
       content: `❌ No deity found for **"${input}"**. Check your spelling or try another name.`,
       ephemeral: true,
     });
+  }
+
+  // ─── /monster ────────────────────────────────────────────────────
+  else if (commandName === 'monster') {
+    const input = interaction.options.getString('name');
+    const { monster, matches, total } = findMonster(input);
+
+    if (monster) {
+      // Look up saved art for this guild (if any) and attach it to the embed.
+      const artUrl = lookupMonsterArt(interaction.guildId, monster);
+      return interaction.reply({ embeds: [buildMonsterEmbed(monster, artUrl)] });
+    }
+
+    if (matches && matches.length > 1) {
+      const sorted = [...matches].sort((a, b) => a.localeCompare(b));
+      const preview = sorted.slice(0, 20).map(n => `• **${n}**`).join('\n');
+      const totalCount = total ?? matches.length;
+      const extra = totalCount > 20 ? `\n*…and ${totalCount - 20} more. Try narrowing your search.*` : '';
+      return interaction.reply({
+        content: `🔍 Multiple creatures match **"${input}"**. Did you mean one of these?\n${preview}${extra}`,
+        ephemeral: true,
+      });
+    }
+
+    return interaction.reply({
+      content: `❌ No creature found for **"${input}"**. Check your spelling or try another name.`,
+      ephemeral: true,
+    });
+  }
+
+  // ─── /monsterart ─────────────────────────────────────────────────
+  // Per-guild art library for monsters. When set, the URL is attached as the
+  // bottom image on any /monster lookup. Storing per-guild means different
+  // tables can have different art without stepping on each other.
+  else if (commandName === 'monsterart') {
+    const sub = interaction.options.getSubcommand();
+    const guildId = interaction.guildId;
+    if (!guildId) return interaction.reply({ content: '❌ `/monsterart` only works in a server, not in DMs.', ephemeral: true });
+
+    if (sub === 'set') {
+      const monsterInput = interaction.options.getString('monster');
+      const url = interaction.options.getString('url').trim();
+      if (!/^https?:\/\//i.test(url)) {
+        return interaction.reply({ content: '❌ That doesn\'t look like a valid image URL. Make sure it starts with `http://` or `https://`.', ephemeral: true });
+      }
+      // Soft check for common image extensions. Discord will render any
+      // URL it can fetch as an image, but warn the user if they pass a
+      // webpage URL (e.g., a reddit thread instead of the i.redd.it link).
+      const looksLikeImage = /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
+
+      // Resolve the canonical bestiary name so "goblin warrior" and
+      // "Goblin Warrior" both key to the same entry.
+      const found = findMonster(monsterInput);
+      const displayName = found.monster?.name ?? monsterInput;
+      const key = monsterKey(displayName);
+
+      const store = loadMonsterArt();
+      const guild = getGuildArt(store, guildId);
+      guild[key] = {
+        displayName,
+        url,
+        setBy: interaction.user.id,
+        setAt: new Date().toISOString(),
+      };
+      saveMonsterArt(store);
+
+      const embed = new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle(`🖼️ Art set for ${displayName}`)
+        .setDescription(`Future \`/monster\` lookups for **${displayName}** on this server will display this image.${looksLikeImage ? '' : '\n\n⚠️ *This URL doesn\'t end in a typical image extension — if it doesn\'t render, try a direct image link (right-click → Copy Image Address).*'}`)
+        .setImage(url)
+        .setFooter({ text: `Set by ${interaction.user.username} • /monsterart remove to undo` });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'remove') {
+      const monsterInput = interaction.options.getString('monster');
+      const found = findMonster(monsterInput);
+      const displayName = found.monster?.name ?? monsterInput;
+      const key = monsterKey(displayName);
+
+      const store = loadMonsterArt();
+      const guild = store[guildId] ?? {};
+      if (!guild[key]) {
+        return interaction.reply({ content: `❌ No saved art for **${displayName}** on this server.`, ephemeral: true });
+      }
+      delete guild[key];
+      // Prune empty guild bucket so the file stays tidy.
+      if (Object.keys(guild).length === 0) delete store[guildId];
+      else store[guildId] = guild;
+      saveMonsterArt(store);
+      return interaction.reply({ content: `🗑️ Removed art for **${displayName}**.`, ephemeral: true });
+    }
+
+    if (sub === 'view') {
+      const monsterInput = interaction.options.getString('monster');
+      if (monsterInput) {
+        // Show art for one specific monster
+        const found = findMonster(monsterInput);
+        const displayName = found.monster?.name ?? monsterInput;
+        const key = monsterKey(displayName);
+        const store = loadMonsterArt();
+        const entry = store[guildId]?.[key];
+        if (!entry) return interaction.reply({ content: `❌ No saved art for **${displayName}** on this server.`, ephemeral: true });
+        const embed = new EmbedBuilder()
+          .setColor(0x9B59B6)
+          .setTitle(`🖼️ ${entry.displayName}`)
+          .setImage(entry.url)
+          .setFooter({ text: `Set by user ${entry.setBy} • /monsterart remove to delete` });
+        return interaction.reply({ embeds: [embed] });
+      }
+      // List all monsters with saved art for this server
+      const store = loadMonsterArt();
+      const guild = store[guildId] ?? {};
+      const entries = Object.values(guild);
+      if (entries.length === 0) {
+        return interaction.reply({ content: '📖 No monster art saved for this server yet. Use `/monsterart set` to add some.', ephemeral: true });
+      }
+      entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const lines = entries.map(e => `• **${e.displayName}**`);
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`🖼️ Saved Monster Art (${entries.length})`)
+        .setDescription(lines.join('\n').slice(0, 4000))
+        .setFooter({ text: '/monsterart view monster:<name> to see the image • /monsterart remove to delete' });
+      return interaction.reply({ embeds: [embed] });
+    }
   }
 
   // ─── /bag ────────────────────────────────────────────────────────

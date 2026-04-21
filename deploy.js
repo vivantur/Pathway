@@ -139,6 +139,33 @@ const commands = [
     options: [{ name: 'name', description: 'Name of the creature to look up (e.g. Goblin Warrior, Ancient Red Dragon)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
+    name: 'monsterart', description: 'GM: attach a custom image to a monster\'s stat block (per-server)',
+    options: [
+      {
+        name: 'set', description: 'Set the image that appears on /monster lookups for this creature',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name (e.g. Goblin Warrior)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'url',     description: 'Direct image URL (must end in .png, .jpg, .gif, or .webp for best results)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove the saved image for a monster',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      },
+      {
+        name: 'view', description: 'View saved art for one monster, or list all saved art on this server',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name (leave blank to list all)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'deity', description: 'Look up a PF2e deity, philosophy, or pantheon',
     options: [{ name: 'name', description: 'Name of the deity to look up (e.g. Abadar, Desna, Asmodeus)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
