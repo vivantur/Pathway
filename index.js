@@ -4963,7 +4963,7 @@ client.on('interactionCreate', async (interaction) => {
           .setCustomId(`reaction_trigger_${safeName}`)
           .setLabel(`${reactor.name}: Trigger Reaction`)
           .setStyle(ButtonStyle.Primary)
-          .setEmoji('⤾'),
+          .setEmoji('🛡️'),
         new ButtonBuilder()
           .setCustomId(`reaction_skip_${safeName}`)
           .setLabel('Skip')
@@ -5222,7 +5222,7 @@ client.on('interactionCreate', async (interaction) => {
             .setCustomId(`reaction_trigger_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
             .setLabel(`${target.name}: Trigger Reaction`)
             .setStyle(ButtonStyle.Primary)
-            .setEmoji('⤾'),
+            .setEmoji('🛡️'),
           new ButtonBuilder()
             .setCustomId(`reaction_skip_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
             .setLabel('Skip')
