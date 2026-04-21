@@ -593,7 +593,7 @@ const commands = [
         ]
       },
       {
-        name: 'addnpc', description: 'GM: add a monster/NPC to initiative',
+        name: 'addnpc', description: 'GM: add a custom NPC to initiative (for homebrew or ad-hoc monsters)',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
           { name: 'name', description: 'Monster name', type: ApplicationCommandOptionType.String, required: true },
@@ -601,6 +601,24 @@ const commands = [
           { name: 'hp', description: 'Max HP', type: ApplicationCommandOptionType.Integer, required: true },
           { name: 'ac', description: 'AC (for hit/crit determination)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'result', description: 'Use exact initiative instead of rolling', type: ApplicationCommandOptionType.Integer, required: false }
+        ]
+      },
+      {
+        name: 'addmonster', description: 'GM: add a bestiary monster (auto-fills HP, AC, perception)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'monster', description: 'Monster name from the bestiary (e.g. Goblin Warrior)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'count', description: 'How many copies to add (default 1, max 20)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 20 },
+          { name: 'init_mode', description: 'Initiative rolling: shared (one roll for all) or per copy', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Per copy (each rolls separately, default)', value: 'per_copy' },
+            { name: 'Shared (one roll, all copies use it)', value: 'shared' },
+          ]},
+          { name: 'hp_mode', description: 'HP: fixed (published number) or varied (±5 wiggle)', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Fixed (default, matches the book)', value: 'fixed' },
+            { name: 'Varied (±5 wiggle for variety)', value: 'varied' },
+          ]},
+          { name: 'bonus', description: 'Override initiative modifier (defaults to perception)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'result', description: 'Use exact initiative instead of rolling (applies to all copies)', type: ApplicationCommandOptionType.Integer, required: false }
         ]
       },
       { name: 'next', description: 'Advance to the next turn', type: ApplicationCommandOptionType.Subcommand },
@@ -655,6 +673,36 @@ const commands = [
         name: 'conditions', description: 'Show the list of available PF2e condition presets',
         type: ApplicationCommandOptionType.Subcommand
       },
+      {
+        name: 'move', description: 'Declare a combatant moves — prompts AoO from anyone with a reaction available',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant who is moving', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'reaction', description: 'Manually prompt a specific combatant for a reaction (Shield Block, etc.)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant who might react', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'reason', description: 'What just happened (shown in the prompt)', type: ApplicationCommandOptionType.String, required: false }
+        ]
+      },
+      {
+        name: 'damage', description: 'Manually roll persistent damage on a combatant (outside the normal turn-tick)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant to roll persistent damage on', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'dying', description: 'GM: manually set a combatant\'s Dying value (0–4)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Combatant name', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'value', description: 'New Dying value (0 = recover, 4 = dead)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0, max_value: 4 }
+        ]
+      },
       { name: 'end', description: 'End the encounter', type: ApplicationCommandOptionType.Subcommand }
     ]
   },
@@ -665,11 +713,12 @@ const commands = [
       { name: 'target', description: 'Combatant name to attack (requires active encounter)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
       { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false },
-      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+      { name: 'map', description: 'Override the auto-tracked MAP penalty for this attack', type: ApplicationCommandOptionType.Integer, required: false, choices: [
         { name: 'First attack (no penalty)', value: 0 },
         { name: 'Second attack (-5)', value: 1 },
         { name: 'Third attack (-10)', value: 2 }
-      ]}
+      ]},
+      { name: 'no_map', description: 'Skip MAP entirely (e.g. Flurry of Blows, free Strike)', type: ApplicationCommandOptionType.Boolean, required: false }
     ]
   },
   {
@@ -681,7 +730,7 @@ const commands = [
       { name: 'damage', description: 'Damage dice expression (e.g. "1d6+2" or "2d8+4")', type: ApplicationCommandOptionType.String, required: true },
       { name: 'target', description: 'Combatant to attack', type: ApplicationCommandOptionType.String, required: true },
       { name: 'type', description: 'Damage type (piercing, slashing, bludgeoning, fire, etc.)', type: ApplicationCommandOptionType.String, required: false },
-      { name: 'map', description: 'Multiple attack penalty (1 = -5, 2 = -10)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+      { name: 'map', description: 'Override the auto-tracked MAP penalty for this attack', type: ApplicationCommandOptionType.Integer, required: false, choices: [
         { name: 'First attack (no penalty)', value: 0 },
         { name: 'Second attack (-5)', value: 1 },
         { name: 'Third attack (-10)', value: 2 }
@@ -761,7 +810,7 @@ const commands = [
           { name: 'monster', description: 'Monster name in the library to pull the attack from', type: ApplicationCommandOptionType.String, required: true },
           { name: 'attack', description: 'Saved attack name', type: ApplicationCommandOptionType.String, required: true },
           { name: 'target', description: 'Combatant to target (required for strike/spell, optional for save)', type: ApplicationCommandOptionType.String, required: false },
-          { name: 'map', description: 'Multiple attack penalty (strike/spell only)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
+          { name: 'map', description: 'Override the auto-tracked MAP penalty (strike/spell only)', type: ApplicationCommandOptionType.Integer, required: false, choices: [
             { name: 'First attack (no penalty)', value: 0 },
             { name: 'Second attack (-5)', value: 1 },
             { name: 'Third attack (-10)', value: 2 }

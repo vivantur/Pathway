@@ -12,6 +12,12 @@
 //   noAttack: boolean,      // combatant can't attack (informational, shows warning)
 //   description: string     // human-readable description shown when applied
 // }
+//
+// Some effects have extra fields beyond modifiers:
+//   kind: 'persistent-damage' | 'condition'  (default: 'condition')
+//   dice: '1d6'               (for persistent damage)
+//   damageType: 'fire'        (for persistent damage)
+//   dc: 15                    (for persistent damage: DC of the flat check to end)
 
 // Helper: a penalty equal to -value
 const neg = v => -Math.abs(v);
@@ -20,7 +26,7 @@ const PRESETS = {
   // ── Negative conditions ─────────────────────────────────────────────────
   frightened: {
     name: 'Frightened',
-    scaling: true, // takes a value
+    scaling: true,
     build: (value) => ({
       attackBonus: neg(value),
       damageBonus: neg(value),
@@ -34,7 +40,6 @@ const PRESETS = {
     name: 'Stupefied',
     scaling: true,
     build: (value) => ({
-      // Technically only mental actions, but we apply broadly for simplicity
       attackBonus: neg(value),
       saveBonus: neg(value),
       skillBonus: neg(value),
@@ -57,7 +62,6 @@ const PRESETS = {
     name: 'Clumsy',
     scaling: true,
     build: (value) => ({
-      // Dex-based: attacks with finesse/ranged, Reflex, Acrobatics, Stealth, Thievery, AC
       attackBonus: neg(value),
       acBonus: neg(value),
       saveBonus: neg(value),
@@ -69,7 +73,6 @@ const PRESETS = {
     name: 'Enfeebled',
     scaling: true,
     build: (value) => ({
-      // Str-based: melee attacks, damage, Athletics
       attackBonus: neg(value),
       damageBonus: neg(value),
       skillBonus: neg(value),
@@ -80,8 +83,7 @@ const PRESETS = {
     name: 'Drained',
     scaling: true,
     build: (value) => ({
-      // Con-based: Fortitude saves, also reduces HP (we don't auto-reduce HP; GM handles)
-      saveBonus: neg(value), // approximation
+      saveBonus: neg(value),
       description: `Status penalty of ${neg(value)} to Constitution-based rolls and Fortitude. Also reduces max HP by ${value}×level (apply manually).`,
     }),
   },
@@ -98,7 +100,7 @@ const PRESETS = {
     scaling: false,
     build: () => ({
       attackBonus: -2,
-      acBonus: -2, // off-guard component
+      acBonus: -2,
       description: '-2 status penalty to attack rolls. Off-Guard. Can only Crawl or Stand.',
     }),
   },
@@ -114,7 +116,7 @@ const PRESETS = {
     name: 'Grabbed',
     scaling: false,
     build: () => ({
-      acBonus: -2, // off-guard
+      acBonus: -2,
       description: 'Off-Guard. Cannot move away from the grabber without a successful Escape.',
     }),
   },
@@ -122,7 +124,7 @@ const PRESETS = {
     name: 'Restrained',
     scaling: false,
     build: () => ({
-      acBonus: -2, // off-guard
+      acBonus: -2,
       description: 'Off-Guard. Cannot move, attack, or manipulate objects without a successful Escape.',
     }),
   },
@@ -139,6 +141,97 @@ const PRESETS = {
     scaling: true,
     build: (value) => ({
       description: `Lose ${value} action${value === 1 ? '' : 's'} at the start of each turn.`,
+    }),
+  },
+
+  // ── Dying / Wounded (new) ────────────────────────────────────────────────
+  // Dying and Wounded are PF2e conditions that the bot now manages automatically
+  // through combatAutomation.applyDamage / applyHealing, but we still expose them
+  // as presets so GMs can inspect or manually adjust them via /init effect.
+  dying: {
+    name: 'Dying',
+    scaling: true,
+    build: (value) => ({
+      description: `Unconscious and at 0 HP. Dying ${value}. Rolls a DC ${11 + value} recovery flat check at start of turn. Dying 4 = dead.`,
+    }),
+  },
+  wounded: {
+    name: 'Wounded',
+    scaling: true,
+    build: (value) => ({
+      description: `Previously brought to 0 HP. When brought to 0 HP again, start at Dying ${1 + value} instead of Dying 1.`,
+    }),
+  },
+
+  // ── Persistent damage (new) ──────────────────────────────────────────────
+  // These are special: they have a `kind: 'persistent-damage'` flag and are
+  // rolled at end of turn by combatAutomation.tickPersistentDamage.
+  // Use /init effect name:persistent-fire value:1 to apply 1d6 fire per turn.
+  // The value parameter is treated as number of d6s (so value=2 → 2d6).
+  'persistent-fire': {
+    name: 'Persistent damage (fire)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'fire',
+      dc: 15,
+      description: `Takes ${value}d6 fire damage at end of each turn. DC 15 flat check to end.`,
+    }),
+  },
+  'persistent-bleed': {
+    name: 'Persistent damage (bleed)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'bleed',
+      dc: 15,
+      description: `Takes ${value}d6 bleed damage at end of each turn. DC 15 flat check to end.`,
+    }),
+  },
+  'persistent-acid': {
+    name: 'Persistent damage (acid)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'acid',
+      dc: 15,
+      description: `Takes ${value}d6 acid damage at end of each turn. DC 15 flat check to end.`,
+    }),
+  },
+  'persistent-electricity': {
+    name: 'Persistent damage (electricity)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'electricity',
+      dc: 15,
+      description: `Takes ${value}d6 electricity damage at end of each turn. DC 15 flat check to end.`,
+    }),
+  },
+  'persistent-cold': {
+    name: 'Persistent damage (cold)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'cold',
+      dc: 15,
+      description: `Takes ${value}d6 cold damage at end of each turn. DC 15 flat check to end.`,
+    }),
+  },
+  'persistent-poison': {
+    name: 'Persistent damage (poison)',
+    scaling: true,
+    build: (value) => ({
+      kind: 'persistent-damage',
+      dice: `${value}d6`,
+      damageType: 'poison',
+      dc: 15,
+      description: `Takes ${value}d6 poison damage at end of each turn. DC 15 flat check to end.`,
     }),
   },
 
@@ -160,7 +253,7 @@ const PRESETS = {
   },
   heroism: {
     name: 'Heroism',
-    scaling: true, // 1/2/3 based on spell rank
+    scaling: true,
     build: (value) => ({
       attackBonus: value,
       saveBonus: value,
@@ -202,6 +295,10 @@ function getPreset(name) {
     'flat-footed': 'off-guard',
     'flatfooted': 'off-guard',
     offguard: 'off-guard',
+    'persistent-damage': 'persistent-fire',
+    'bleeding': 'persistent-bleed',
+    'burning': 'persistent-fire',
+    'on-fire': 'persistent-fire',
   };
   const resolvedKey = aliases[key] ?? key;
   return PRESETS[resolvedKey] ? { key: resolvedKey, ...PRESETS[resolvedKey] } : null;

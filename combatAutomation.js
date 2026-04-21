@@ -19,7 +19,6 @@ const {
 const { getPreset, listPresets } = require('./effects');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
 const charOverlay = require('./characterOverlay');
-const ca = require('./combatAutomation');
 
 const client = new Client({
   intents: [
@@ -620,12 +619,11 @@ function computeCharMaxHp(charEntry) {
 
 // ── HP status helpers for the initiative tracker ────────────────────────────
 // PF2e uses "bloodied" at ≤50% and tracks dying at 0 HP. We add a "critical"
-// band at ≤25% for tactical clarity at the table. Dying/wounded are now
-// proper PF2e conditions managed by combatAutomation.js.
-function hpStatus(current, max, dying = 0) {
+// band at ≤25% for tactical clarity at the table. Wounded/dying mechanics
+// aren't modeled yet — 0 HP just shows "Dying".
+function hpStatus(current, max) {
   if (!max || max <= 0) return { label: 'Unknown', emoji: '⚪' };
-  if (dying >= 4)           return { label: 'Dead',     emoji: '☠️' };
-  if (dying > 0 || current <= 0) return { label: `Dying ${dying || 1}`, emoji: '💀' };
+  if (current <= 0)         return { label: 'Dying',    emoji: '💀' };
   const pct = current / max;
   if (pct <= 0.25)          return { label: 'Critical', emoji: '🔴' };
   if (pct <= 0.5)           return { label: 'Bloodied', emoji: '🟠' };
@@ -648,7 +646,7 @@ function hpBar(current, max, segments = 8) {
 function buildInitiativeEmbed(enc) {
   const lines = enc.combatants.map((combatant, i) => {
     const marker = i === enc.turnIndex ? '▶️ ' : '   ';
-    const status = hpStatus(combatant.hp, combatant.maxHp, combatant.dying ?? 0);
+    const status = hpStatus(combatant.hp, combatant.maxHp);
 
     // PCs see their actual HP + bar; NPCs see status only (HP is hidden).
     // Everyone (PC or NPC) shows AC so players can plan shots.
@@ -663,17 +661,6 @@ function buildInitiativeEmbed(enc) {
       ? ` · **AC ${combatant.ac}**`
       : '';
 
-    // Wounded indicator (separate from dying - persists across deaths)
-    const woundedPart = (combatant.wounded ?? 0) > 0
-      ? ` · 🩸 Wounded ${combatant.wounded}`
-      : '';
-
-    // Reaction indicator: ⤾ available, ⤾⃠ used. Only show if combatant has reactions enabled.
-    let reactionPart = '';
-    if (combatant.hasReaction !== false && (combatant.dying ?? 0) === 0) {
-      reactionPart = combatant.reactionUsed ? ' · ⤾̶' : ' · ⤾';
-    }
-
     let effectLine = '';
     if (combatant.effects && combatant.effects.length > 0) {
       const effectTexts = combatant.effects.map(e => {
@@ -685,7 +672,7 @@ function buildInitiativeEmbed(enc) {
       effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
     }
 
-    return `${marker}**${combatant.initiative}** — ${combatant.name}${acPart}${woundedPart}${reactionPart}\n     ${hpLine}${effectLine}`;
+    return `${marker}**${combatant.initiative}** — ${combatant.name}${acPart}\n     ${hpLine}${effectLine}`;
   });
   return new EmbedBuilder()
     .setTitle(`⚔️ Initiative — Round ${enc.round}`)
@@ -1957,7 +1944,7 @@ const HELP_CATEGORIES = {
   combat: {
     emoji: '⚔️',
     label: 'Combat',
-    blurb: 'Encounter tracker, initiative, attacks, and effects. Now with auto-MAP, dying/wounded, persistent damage, and reaction prompts.',
+    blurb: 'Encounter tracker, initiative, attacks, and effects.',
     commands: [
       { name: '/init start', summary: 'Start a new encounter in this channel (GM).', example: '/init start' },
       { name: '/init end', summary: 'End the current encounter.', example: '/init end' },
@@ -1965,14 +1952,10 @@ const HELP_CATEGORIES = {
       { name: '/init addmonster', summary: 'GM: add a bestiary monster with auto-filled HP/AC/perception. Supports multi-spawn.', options: 'monster, count, init_mode, hp_mode, bonus', example: '/init addmonster monster:Goblin Warrior count:4' },
       { name: '/init addnpc', summary: 'GM: add a custom NPC with manual stats (for homebrew).', options: 'name, bonus, hp, ac', example: '/init addnpc name:Bandit Captain bonus:6 hp:45 ac:20' },
       { name: '/init remove', summary: 'Remove a combatant.', options: 'name', example: '/init remove name:Goblin 1' },
-      { name: '/init next', summary: 'Advance turn. Auto-rolls persistent damage and recovery checks.', example: '/init next' },
-      { name: '/init hp', summary: 'Modify a combatant\'s HP. Auto-applies dying when reduced to 0.', options: 'name, change', example: '/init hp name:Fighter change:-12' },
-      { name: '/init dying', summary: 'GM: manually set a combatant\'s dying value (0–4).', options: 'name, value', example: '/init dying name:Fighter value:0' },
-      { name: '/init move', summary: 'Declare a combatant moves. Prompts all combatants with reactions for AoO.', options: 'name', example: '/init move name:Fighter' },
-      { name: '/init reaction', summary: 'Manually prompt a specific combatant for a reaction (Shield Block, etc.).', options: 'name, reason', example: '/init reaction name:Fighter reason:Shield Block' },
-      { name: '/init damage', summary: 'Manually roll persistent damage on a combatant outside the normal turn tick.', options: 'name', example: '/init damage name:Fighter' },
-      { name: '/init effect', summary: 'Apply a status effect. Includes persistent-fire/bleed/etc. and dying/wounded.', options: '(subcommands)', example: '/init effect add name:Fighter effect:persistent-fire value:1' },
-      { name: '/attack', summary: 'Roll an attack. MAP is auto-tracked across attacks this turn.', options: 'weapon, target, map (optional), no_map, bonus', example: '/attack weapon:Longsword target:Goblin 1' },
+      { name: '/init next', summary: 'Advance to the next turn.', example: '/init next' },
+      { name: '/init hp', summary: 'Modify a combatant\'s HP.', options: 'name, amount', example: '/init hp name:Fighter amount:-12' },
+      { name: '/init effect', summary: 'Apply or remove a status effect on a combatant.', options: '(subcommands)', example: '/init effect add name:Fighter effect:frightened-1' },
+      { name: '/attack', summary: 'Roll an attack with one of your character\'s weapons.', options: 'weapon, target, map, bonus', example: '/attack weapon:Longsword target:Goblin 1' },
     ],
   },
 
@@ -2154,102 +2137,6 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: '❌ Only the person who used `/rest` can cancel.', ephemeral: true });
       }
       return interaction.update({ content: '🚫 Rest cancelled. Nothing changed.', embeds: [], components: [] });
-    }
-
-    // ─── Reaction trigger / skip buttons ────────────────────────────
-    if (interaction.customId.startsWith('reaction_trigger_') || interaction.customId.startsWith('reaction_skip_')) {
-      const isTrigger = interaction.customId.startsWith('reaction_trigger_');
-      // Recover the combatant name from the safe-encoded customId
-      const safeName = interaction.customId.slice(isTrigger ? 'reaction_trigger_'.length : 'reaction_skip_'.length);
-      const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
-      if (!enc) {
-        return interaction.update({ content: '❌ The encounter has ended.', components: [] });
-      }
-      // Find the combatant by reverse-encoding the safe name (replace _ back to . match)
-      const combatant = enc.combatants.find(c => c.name.replace(/[^a-zA-Z0-9]/g, '_') === safeName);
-      if (!combatant) {
-        return interaction.update({ content: '❌ Could not find that combatant in the encounter.', components: [] });
-      }
-      // Permission gate: only the combatant's owner (or GM) can decide
-      const isOwner = !combatant.isNpc && interaction.user.id === combatant.ownerId;
-      const isGm = interaction.user.id === enc.gmId;
-      if (!isOwner && !isGm) {
-        return interaction.reply({ content: `❌ Only ${combatant.isNpc ? 'the GM' : 'the combatant\'s owner'} can decide on this reaction.`, ephemeral: true });
-      }
-      // Update the message
-      const original = interaction.message.content || '';
-      // Strip the reaction prompt line(s) from the original content (lines starting with the combatant's mention)
-      const cleanedContent = original.split('\n').filter(line =>
-        !line.includes(`**${combatant.name}** may have a reaction available`)
-      ).join('\n').trim();
-
-      if (isTrigger) {
-        ca.consumeReaction(channelId, combatant.name);
-        const newContent = `${cleanedContent}\n⤾ **${combatant.name}** uses their reaction! *(GM: resolve the reaction now.)*`.trim();
-        await interaction.update({ content: newContent, components: [] });
-        await updateSummary(interaction.channel, enc);
-      } else {
-        const newContent = `${cleanedContent}\n*${combatant.name} declines the reaction.*`.trim();
-        await interaction.update({ content: newContent, components: [] });
-      }
-      return;
-    }
-
-    // ─── Recovery check hero-point reroll ───────────────────────────
-    if (interaction.customId.startsWith('rcheck_reroll_')) {
-      // customId: rcheck_reroll_<safeName>_<dyingBefore>_<dyingAfter>_<roll>_<awoke 1|0>
-      const tail = interaction.customId.slice('rcheck_reroll_'.length);
-      const lastUnderscore5 = tail.lastIndexOf('_');
-      const lastUnderscore4 = tail.lastIndexOf('_', lastUnderscore5 - 1);
-      const lastUnderscore3 = tail.lastIndexOf('_', lastUnderscore4 - 1);
-      const lastUnderscore2 = tail.lastIndexOf('_', lastUnderscore3 - 1);
-      const safeName = tail.slice(0, lastUnderscore2);
-      const dyingBefore = parseInt(tail.slice(lastUnderscore2 + 1, lastUnderscore3));
-      const dyingAfter = parseInt(tail.slice(lastUnderscore3 + 1, lastUnderscore4));
-      const roll = parseInt(tail.slice(lastUnderscore4 + 1, lastUnderscore5));
-      const awoke = tail.slice(lastUnderscore5 + 1) === '1';
-
-      const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
-      if (!enc) return interaction.update({ content: '❌ The encounter has ended.', components: [] });
-      const combatant = enc.combatants.find(c => c.name.replace(/[^a-zA-Z0-9]/g, '_') === safeName);
-      if (!combatant) return interaction.update({ content: '❌ Combatant not found.', components: [] });
-
-      // Only the combatant's owner can spend the hero point
-      if (combatant.isNpc || interaction.user.id !== combatant.ownerId) {
-        return interaction.reply({ content: '❌ Only the combatant\'s owner can spend the Hero Point.', ephemeral: true });
-      }
-
-      // Burn the hero point
-      const characters = loadCharacters();
-      const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
-      const charEntry = characters[combatant.ownerId]?.[charKey];
-      if (!charEntry) return interaction.reply({ content: '❌ Character not found.', ephemeral: true });
-      const currentHp = charEntry.heroPoints ?? 1;
-      if (currentHp <= 0) return interaction.reply({ content: '❌ No hero points available.', ephemeral: true });
-      charEntry.heroPoints = currentHp - 1;
-      saveCharacters(characters);
-
-      // Reroll
-      const originalResult = { dyingBefore, dyingAfter, roll, awoke };
-      const result = ca.rerollRecoveryCheck(channelId, combatant.name, originalResult);
-      const outcomeEmoji = result.outcome === 'crit-success' ? '🌟'
-        : result.outcome === 'success' ? '✅'
-        : result.outcome === 'failure' ? '❌'
-        : '💥';
-      const newEmbed = new EmbedBuilder()
-        .setColor(result.died ? 0x8B0000 : result.awoke ? 0x2ecc71 : result.outcome === 'success' || result.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
-        .setTitle(`💀 ${combatant.name}'s Recovery Check (Hero Point Reroll)`)
-        .setDescription(
-          `Original: ${originalResult.roll} · Reroll: ${result.rerollRoll}\n` +
-          `${outcomeEmoji} **${(result.outcome ?? 'unchanged').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
-          `${result.narration}\n\n` +
-          `*Hero Points: ${charEntry.heroPoints}/3*`
-        );
-      await interaction.update({ embeds: [newEmbed], components: [] });
-      await updateSummary(interaction.channel, enc);
-      return;
     }
 
     if (!interaction.customId.startsWith('ancestry_')) return;
@@ -2972,11 +2859,11 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success') && finalDamage > 0) {
-      const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
-      const dyingNote = dmgResult?.displaySuffix ?? '';
+      modifyHp(channelId, target.name, -finalDamage);
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
       description += target.isNpc
-        ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
-        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
     }
 
     const shortDesc = spell.description ?? '';
@@ -3302,7 +3189,7 @@ client.on('interactionCreate', async (interaction) => {
     const damageExpr = interaction.options.getString('damage');
     const targetName = interaction.options.getString('target');
     const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
-    const explicitMap = interaction.options.getInteger('map'); // null if unset
+    const map = interaction.options.getInteger('map') ?? 0;
     const agile = interaction.options.getBoolean('agile') ?? false;
 
     const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
@@ -3317,16 +3204,7 @@ client.on('interactionCreate', async (interaction) => {
     const attackerMods = sumEffectModifiers(attacker);
     const targetMods = sumEffectModifiers(target);
 
-    // Auto-MAP if not explicitly provided
-    let mapPenalty, mapNoteText;
-    if (explicitMap !== null) {
-      mapPenalty = calculateMap(explicitMap, agile);
-      mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
-    } else {
-      const mapInfo = ca.computeMapForNextAttack(attacker, agile);
-      mapPenalty = mapInfo.penalty;
-      mapNoteText = mapInfo.noteText;
-    }
+    const mapPenalty = calculateMap(map, agile);
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const attackTotal = dieRoll + attackBonus + mapPenalty + attackerMods.attackBonus;
 
@@ -3340,7 +3218,6 @@ client.on('interactionCreate', async (interaction) => {
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
     const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
     let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
-    if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
     if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
     if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
     if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
@@ -3371,11 +3248,11 @@ client.on('interactionCreate', async (interaction) => {
     let hpLine = '';
     let mentionLine = '';
     if (degree === 'success' || degree === 'crit-success') {
-      const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
-      const dyingNote = dmgResult?.displaySuffix ?? '';
+      modifyHp(channelId, target.name, -finalDamage);
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
       hpLine = target.isNpc
-        ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
-        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
     }
     if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -3397,10 +3274,6 @@ client.on('interactionCreate', async (interaction) => {
     const replyPayload = { embeds: [embed] };
     if (mentionLine) replyPayload.content = mentionLine;
     await interaction.reply(replyPayload);
-    // Record attack for MAP tracking (only if MAP wasn't manually overridden)
-    if (explicitMap === null) {
-      ca.recordAttack(channelId, attacker.name);
-    }
     await updateSummary(interaction.channel, enc);
   }
 
@@ -4629,82 +4502,17 @@ client.on('interactionCreate', async (interaction) => {
       if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can advance turns.', ephemeral: true });
       if (enc.combatants.length === 0) return interaction.reply({ content: '❌ No combatants in the encounter yet.', ephemeral: true });
 
-      // ca.processTurnTransition handles: persistent damage tick on outgoing
-      // combatant, advanceTurn (effect duration ticks), MAP/reaction reset, and
-      // recovery check on incoming combatant if dying.
-      const result = ca.processTurnTransition(channelId);
+      const result = advanceTurn(channelId);
       const current = result.current;
       const mention = current.isNpc ? `<@${enc.gmId}>` : `<@${current.ownerId}>`;
 
-      const lines = [`🎯 It's **${current.name}**'s turn! ${mention}`];
-
-      // Show new round banner
-      if (result.newRound) {
-        lines.push(`🔄 **Round ${enc.round}** — all reactions refreshed.`);
-      }
-
-      // Show expired effects
+      let content = `🎯 It's **${current.name}**'s turn! ${mention}`;
       if (result.expiredEffects && result.expiredEffects.length > 0) {
         const expiredText = result.expiredEffects.map(x => `**${x.effect.name}** on **${x.combatantName}**`).join(', ');
-        lines.push(`⏳ Expired: ${expiredText}`);
+        content += `\n⏳ Expired: ${expiredText}`;
       }
 
-      // Show persistent damage results from outgoing combatant
-      if (result.persistentResults && result.persistentResults.length > 0) {
-        for (const pr of result.persistentResults) {
-          const flatStatus = pr.ended
-            ? `🩹 *Flat check ${pr.flatRoll} ≥ ${pr.flatDc} — condition ends.*`
-            : `🔁 *Flat check ${pr.flatRoll} < ${pr.flatDc} — persists.*`;
-          const dyingTag = pr.died ? ' ☠️ **Dead!**' : pr.wentDown ? ` 💀 (Dying ${pr.dying})` : '';
-          lines.push(`🩸 **${pr.name}** ticks: ${pr.damageDice}[${pr.damageRolls.join(',')}] = ${pr.damage} ${pr.damageType} damage${dyingTag}\n${flatStatus}`);
-        }
-      }
-
-      // Show recovery check for new current combatant if they were dying
-      const replyPayload = { content: lines.join('\n') };
-      if (result.recoveryCheck) {
-        const rc = result.recoveryCheck;
-        const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
-          : rc.outcome === 'success' ? '✅'
-          : rc.outcome === 'failure' ? '❌'
-          : '💥';
-        const recoveryEmbed = new EmbedBuilder()
-          .setColor(rc.died ? 0x8B0000 : rc.awoke ? 0x2ecc71 : rc.outcome === 'success' || rc.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
-          .setTitle(`💀 ${current.name}'s Recovery Check`)
-          .setDescription(
-            `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})\n` +
-            `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
-            `${rc.narration}`
-          );
-
-        // Burn-Hero-Point button if PC has hero points (skip for NPCs)
-        const components = [];
-        if (!current.isNpc && current.ownerId && !rc.died) {
-          // Look up hero points
-          const characters = loadCharacters();
-          const userCharacters = characters[current.ownerId] ?? {};
-          const charKey = current.name.toLowerCase().replace(/\s+/g, '-');
-          const charEntry = userCharacters[charKey];
-          const heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
-          if (heroPoints > 0) {
-            // Encode the original result in customId so we can restore on click
-            // customId: rcheck_reroll_<combatantSafeName>_<dyingBefore>_<dyingAfter>_<roll>_<awoke 1|0>
-            const safeName = current.name.replace(/[^a-zA-Z0-9]/g, '_');
-            const awokeFlag = rc.awoke ? '1' : '0';
-            components.push(new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-                .setLabel(`🎭 Hero Point Reroll (${heroPoints} available)`)
-                .setStyle(ButtonStyle.Primary),
-            ));
-          }
-        }
-
-        replyPayload.embeds = [recoveryEmbed];
-        if (components.length) replyPayload.components = components;
-      }
-
-      await interaction.reply(replyPayload);
+      await interaction.reply({ content });
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -4718,12 +4526,11 @@ client.on('interactionCreate', async (interaction) => {
       if (!combatant) return interaction.reply({ content: `❌ No combatant named "${name}".`, ephemeral: true });
       if (combatant.ownerId !== userId && enc.gmId !== userId) return interaction.reply({ content: '❌ You can only modify HP for your own character (or any, if GM).', ephemeral: true });
 
-      // Use ca.applyHpChange so dying/wounded transitions are handled automatically.
-      const result = ca.applyHpChange(channelId, name, change);
+      modifyHp(channelId, name, change);
       const verb = change >= 0 ? 'healed' : 'took';
       const amount = Math.abs(change);
-      const dyingNote = result?.displaySuffix ?? '';
-      await interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${dyingNote}`);
+      const downed = combatant.hp === 0 ? ' 💀 **Down!**' : '';
+      await interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${downed}`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -4861,129 +4668,6 @@ client.on('interactionCreate', async (interaction) => {
       deleteEncounter(channelId);
       return interaction.reply('🏁 Combat ended. Well fought!');
     }
-
-    // ── /init move ──
-    // Manual movement trigger for Attacks of Opportunity. Since the bot
-    // doesn't know positioning, the GM/player calls this when someone
-    // moves out of an enemy's reach. Bot prompts all combatants with
-    // reactions available.
-    if (sub === 'move') {
-      const moverName = interaction.options.getString('name');
-      const mover = enc.combatants.find(x => x.name.toLowerCase() === moverName.toLowerCase());
-      if (!mover) return interaction.reply({ content: `❌ No combatant named "${moverName}".`, ephemeral: true });
-
-      const reactors = ca.findPotentialReactors(channelId, moverName);
-      if (reactors.length === 0) {
-        return interaction.reply(`🏃 **${mover.name}** moves. No combatants have reactions available.`);
-      }
-
-      // Build a single message with one row per reactor (max 5 due to Discord button limit)
-      const lines = [`🏃 **${mover.name}** moves — provoking attacks of opportunity?`];
-      const components = [];
-      for (const reactor of reactors.slice(0, 5)) {
-        const reactorMention = reactor.isNpc ? `<@${enc.gmId}>` : (reactor.ownerId ? `<@${reactor.ownerId}>` : '');
-        lines.push(`${reactorMention} **${reactor.name}** has a reaction available.`);
-        const safeName = reactor.name.replace(/[^a-zA-Z0-9]/g, '_');
-        components.push(new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`reaction_trigger_${safeName}`)
-            .setLabel(`${reactor.name}: AoO`)
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('⚔️'),
-          new ButtonBuilder()
-            .setCustomId(`reaction_skip_${safeName}`)
-            .setLabel('Skip')
-            .setStyle(ButtonStyle.Secondary),
-        ));
-      }
-      if (reactors.length > 5) {
-        lines.push(`*…and ${reactors.length - 5} more (Discord caps at 5 buttons per message). Use \`/init reaction\` for the rest.*`);
-      }
-      return interaction.reply({ content: lines.join('\n'), components });
-    }
-
-    // ── /init reaction ──
-    // Manual reaction prompt for any edge case (Shield Block, Reactive Shield,
-    // narrative triggers, etc.) Lets the GM ping a specific combatant.
-    if (sub === 'reaction') {
-      const reactorName = interaction.options.getString('name');
-      const reason = interaction.options.getString('reason') ?? 'something just happened';
-      const reactor = enc.combatants.find(x => x.name.toLowerCase() === reactorName.toLowerCase());
-      if (!reactor) return interaction.reply({ content: `❌ No combatant named "${reactorName}".`, ephemeral: true });
-      if (!ca.hasReactionAvailable(reactor)) {
-        return interaction.reply({ content: `⚠️ **${reactor.name}** has already used their reaction this round (or is dying).`, ephemeral: true });
-      }
-
-      const reactorMention = reactor.isNpc ? `<@${enc.gmId}>` : (reactor.ownerId ? `<@${reactor.ownerId}>` : '');
-      const safeName = reactor.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`reaction_trigger_${safeName}`)
-          .setLabel(`${reactor.name}: Trigger Reaction`)
-          .setStyle(ButtonStyle.Primary)
-          .setEmoji('⤾'),
-        new ButtonBuilder()
-          .setCustomId(`reaction_skip_${safeName}`)
-          .setLabel('Skip')
-          .setStyle(ButtonStyle.Secondary),
-      );
-      return interaction.reply({
-        content: `${reactorMention} ⤾ **${reactor.name}** — reaction prompt: *${reason}*`,
-        components: [row],
-      });
-    }
-
-    // ── /init damage ──
-    // Manually trigger persistent damage roll for a combatant outside the
-    // normal turn-end tick. Useful when a GM forgot to /init next or wants
-    // to apply a one-off dot.
-    if (sub === 'damage') {
-      const targetName = interaction.options.getString('name');
-      const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}".`, ephemeral: true });
-      const persistentResults = ca.tickPersistentDamage(channelId, target.name);
-      if (persistentResults.length === 0) {
-        return interaction.reply({ content: `**${target.name}** has no persistent damage to roll.`, ephemeral: true });
-      }
-      const lines = [`🩸 Manually rolling persistent damage on **${target.name}**:`];
-      for (const pr of persistentResults) {
-        const flatStatus = pr.ended
-          ? `🩹 *Flat check ${pr.flatRoll} ≥ ${pr.flatDc} — condition ends.*`
-          : `🔁 *Flat check ${pr.flatRoll} < ${pr.flatDc} — persists.*`;
-        const dyingTag = pr.died ? ' ☠️ **Dead!**' : pr.wentDown ? ` 💀 (Dying ${pr.dying})` : '';
-        lines.push(`**${pr.name}**: ${pr.damageDice}[${pr.damageRolls.join(',')}] = ${pr.damage} ${pr.damageType}${dyingTag}\n${flatStatus}`);
-      }
-      await interaction.reply(lines.join('\n'));
-      await updateSummary(interaction.channel, enc);
-      return;
-    }
-
-    // ── /init dying ──
-    // Manually set a combatant's dying value (override the auto-applied value
-    // for cases like a critical effect that bumps dying directly).
-    if (sub === 'dying') {
-      if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can override dying values.', ephemeral: true });
-      const targetName = interaction.options.getString('name');
-      const value = interaction.options.getInteger('value');
-      const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-      if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}".`, ephemeral: true });
-      if (value < 0 || value > 4) return interaction.reply({ content: '❌ Dying value must be 0–4.', ephemeral: true });
-
-      const before = target.dying ?? 0;
-      target.dying = value;
-      let extra = '';
-      if (value === 0 && before > 0) {
-        // Recovered — bump wounded
-        target.wounded = (target.wounded ?? 0) + 1;
-        if (target.hp <= 0) target.hp = 1;
-        extra = ` ✨ Recovered (now Wounded ${target.wounded}, HP 1)`;
-      } else if (value >= 4) {
-        extra = ' ☠️ **Dead!**';
-      }
-      await interaction.reply(`💀 **${target.name}** dying set to ${value} (was ${before}).${extra}`);
-      await updateSummary(interaction.channel, enc);
-      return;
-    }
   }
 
   // ─── /attack ─────────────────────────────────────────────────────
@@ -4991,8 +4675,7 @@ client.on('interactionCreate', async (interaction) => {
     const weaponName = interaction.options.getString('weapon');
     const targetName = interaction.options.getString('target');
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
-    const explicitMap = interaction.options.getInteger('map'); // null if unset
-    const noMap = interaction.options.getBoolean('no_map') ?? false;
+    const map = interaction.options.getInteger('map') ?? 0;
     const characters = loadCharacters();
 
     const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
@@ -5009,34 +4692,14 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const hasAgile = (weapon.traits ?? []).map(t => t.toLowerCase()).includes('agile');
+    const mapPenalty = map === 0 ? 0 : map === 1 ? (hasAgile ? -4 : -5) : (hasAgile ? -8 : -10);
 
     const channelId = interaction.channel.id;
     const enc = getEncounter(channelId);
 
-    // Look up attacker in encounter to get their active effects + MAP state
+    // Look up attacker in encounter to get their active effects
     const attackerCombatant = enc ? enc.combatants.find(x => x.name.toLowerCase() === c.name.toLowerCase()) : null;
     const attackerMods = sumEffectModifiers(attackerCombatant);
-
-    // ── Auto-MAP ──
-    // If user passed map: explicitly, honor it. Otherwise, compute from
-    // attacksThisTurn tracked on the combatant. The no_map flag (e.g. for
-    // Flurry of Blows) skips MAP entirely.
-    let mapPenalty, mapNoteText;
-    if (noMap) {
-      mapPenalty = 0;
-      mapNoteText = null;
-    } else if (explicitMap !== null) {
-      mapPenalty = explicitMap === 0 ? 0 : explicitMap === 1 ? (hasAgile ? -4 : -5) : (hasAgile ? -8 : -10);
-      mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
-    } else if (attackerCombatant) {
-      const mapInfo = ca.computeMapForNextAttack(attackerCombatant, hasAgile);
-      mapPenalty = mapInfo.penalty;
-      mapNoteText = mapInfo.noteText;
-    } else {
-      // Not in an encounter — no MAP tracking possible
-      mapPenalty = 0;
-      mapNoteText = null;
-    }
 
     // Look up target
     let target = null;
@@ -5075,13 +4738,11 @@ client.on('interactionCreate', async (interaction) => {
     const totalDamageBonus = damageBonusBase + attackerMods.damageBonus;
     const damageTotal = Math.max(1, damageRollSum + totalDamageBonus);
 
-    // Build attack line. Auto-MAP shows "Attack #2 this turn · MAP -5" instead
-    // of just "-5" so the player learns where the penalty came from.
+    // Build attack line
     const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
     const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
     const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
     let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(baseAttackBonus)}${mapText}${bonusText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
-    if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
     if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
     if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
     if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
@@ -5113,44 +4774,14 @@ client.on('interactionCreate', async (interaction) => {
     let hpLine = '';
     let mentionLine = '';
     if (target && (targetDegree === 'success' || targetDegree === 'crit-success')) {
-      const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
-      const dyingNote = dmgResult?.displaySuffix ?? '';
+      modifyHp(channelId, target.name, -finalDamage);
+      const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
       hpLine = target.isNpc
-        ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
-        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+        ? `\n❤️ **${target.name}** took ${finalDamage} damage${downed}`
+        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
       if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}> `;
     } else if (target && !target.isNpc && target.ownerId) {
       mentionLine = `<@${target.ownerId}> `;
-    }
-
-    // Record attack for MAP tracking (after the attack resolves so the next one gets the bumped value)
-    if (attackerCombatant && !noMap && explicitMap === null) {
-      ca.recordAttack(channelId, c.name);
-    }
-
-    // ── Reaction prompts ──
-    // Only prompt for a target's reactions (Reactive Strike triggers on attacks
-    // by adjacent enemies). We can't know adjacency, so we only prompt for the
-    // direct target — that's the simplest case where a reaction is plausible.
-    let reactionPromptRow = null;
-    let reactionPromptContent = '';
-    if (target && target.hasReaction !== false && ca.hasReactionAvailable(target)) {
-      // Skip if target is the attacker themselves
-      if (target.name.toLowerCase() !== c.name.toLowerCase()) {
-        const reactorMention = target.isNpc ? `<@${enc.gmId}>` : (target.ownerId ? `<@${target.ownerId}>` : '');
-        reactionPromptContent = `\n${reactorMention} **${target.name}** may have a reaction available (e.g. Reactive Strike, Shield Block).`;
-        reactionPromptRow = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`reaction_trigger_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
-            .setLabel(`${target.name}: Trigger Reaction`)
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('⤾'),
-          new ButtonBuilder()
-            .setCustomId(`reaction_skip_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
-            .setLabel('Skip')
-            .setStyle(ButtonStyle.Secondary),
-        );
-      }
     }
 
     const description = [
@@ -5169,10 +4800,7 @@ client.on('interactionCreate', async (interaction) => {
     if (charEntry.art) embed.setThumbnail(charEntry.art);
 
     const replyPayload = { embeds: [embed] };
-    let content = (mentionLine || '').trim();
-    if (reactionPromptContent) content = (content + reactionPromptContent).trim();
-    if (content) replyPayload.content = content;
-    if (reactionPromptRow) replyPayload.components = [reactionPromptRow];
+    if (mentionLine) replyPayload.content = mentionLine.trim();
 
     await interaction.reply(replyPayload);
     const encForSummary = getEncounter(interaction.channel.id);
@@ -5330,7 +4958,7 @@ client.on('interactionCreate', async (interaction) => {
       const monsterInput = interaction.options.getString('monster');
       const attackQuery = interaction.options.getString('attack');
       const targetName = interaction.options.getString('target');
-      const explicitMap = interaction.options.getInteger('map'); // null if unset
+      const map = interaction.options.getInteger('map') ?? 0;
 
       const store = loadMonsterAttacks();
       const guild = getGuildMonsters(store, guildId);
@@ -5360,16 +4988,7 @@ client.on('interactionCreate', async (interaction) => {
         if (!target) return interaction.reply({ content: `❌ **${attack.name}** is a ${attack.kind === 'spell' ? 'spell attack' : 'strike'} — you must specify a target.`, ephemeral: true });
 
         const agile = attack.traits?.includes('agile') ?? false;
-        // Auto-MAP unless explicitly provided
-        let mapPenalty, mapNoteText;
-        if (explicitMap !== null) {
-          mapPenalty = calculateMap(explicitMap, agile);
-          mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
-        } else {
-          const mapInfo = ca.computeMapForNextAttack(attacker, agile);
-          mapPenalty = mapInfo.penalty;
-          mapNoteText = mapInfo.noteText;
-        }
+        const mapPenalty = calculateMap(map, agile);
         const attackerMods = sumEffectModifiers(attacker);
         const targetMods = sumEffectModifiers(target);
         const dieRoll = Math.floor(Math.random() * 20) + 1;
@@ -5382,7 +5001,6 @@ client.on('interactionCreate', async (interaction) => {
         const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
         const rollLabel = attack.kind === 'spell' ? 'Spell Attack Roll' : 'Attack Roll';
         let attackLine = `**${rollLabel}**\n1d20 (${dieRoll}) ${fmt(attack.bonus)}${mapText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
-        if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
         if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
         if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
         if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
@@ -5425,11 +5043,11 @@ client.on('interactionCreate', async (interaction) => {
         let hpLine = '';
         let mentionLine = '';
         if (degree === 'success' || degree === 'crit-success') {
-          const dmgResult = ca.applyDamage(channelId, target.name, totalDealt);
-          const dyingNote = dmgResult?.displaySuffix ?? '';
+          modifyHp(channelId, target.name, -totalDealt);
+          const downed = target.hp === 0 ? ' 💀 **Down!**' : '';
           hpLine = target.isNpc
-            ? `\n❤️ **${target.name}** took ${totalDealt} damage${dyingNote}`
-            : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+            ? `\n❤️ **${target.name}** took ${totalDealt} damage${downed}`
+            : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${downed}`;
         }
         if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -5447,10 +5065,6 @@ client.on('interactionCreate', async (interaction) => {
         const replyPayload = { embeds: [embed] };
         if (mentionLine) replyPayload.content = mentionLine;
         await interaction.reply(replyPayload);
-        // Record attack for MAP tracking (only if MAP wasn't manually overridden)
-        if (explicitMap === null) {
-          ca.recordAttack(channelId, attacker.name);
-        }
         await updateSummary(interaction.channel, enc);
         return;
       }
