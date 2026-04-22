@@ -29,6 +29,16 @@ const commands = [
         options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
+        name: 'import', description: 'Import a character by Pathbuilder ID (Menu → Export JSON in Pathbuilder)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'id', description: '6-digit code from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.Integer, required: true, min_value: 1 }]
+      },
+      {
+        name: 'sync', description: 'Update an existing character by Pathbuilder ID (keeps hero points, XP, HP, notes)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'id', description: '6-digit code from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.Integer, required: true, min_value: 1 }]
+      },
+      {
         name: 'remove', description: 'Remove a saved character',
         type: ApplicationCommandOptionType.Subcommand,
         options: [{ name: 'name', description: 'Name of the character to remove', type: ApplicationCommandOptionType.String, required: true }]
