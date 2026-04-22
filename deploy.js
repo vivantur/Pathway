@@ -58,6 +58,16 @@ const commands = [
           { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
           { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
         ]
+      },
+      {
+        name: 'active', description: 'Set a default character so commands don\'t prompt you every time',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Character to make active (leave blank to view current)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'action', description: 'Other actions (clear removes the default)', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Clear active character', value: 'clear' }
+          ]}
+        ]
       }
     ]
   },
@@ -90,6 +100,21 @@ const commands = [
         { name: 'Survival', value: 'survival' }, { name: 'Thievery', value: 'thievery' }
       ]},
       { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'perception', description: 'Roll a Perception check (Wis + proficiency)',
+    options: [
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+      { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
+    ]
+  },
+  {
+    name: 'initiative', description: 'Roll initiative (defaults to Perception; supports skill overrides for ambushes/social)',
+    options: [
+      { name: 'skill', description: 'Override skill (Stealth for ambush, Diplomacy for social, etc.) — defaults to Perception', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+      { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
       { name: 'bonus', description: 'Extra bonus or penalty to add (e.g. 2 or -1)', type: ApplicationCommandOptionType.Integer, required: false }
     ]
   },
@@ -583,6 +608,37 @@ const commands = [
           { name: 'previous', description: 'Your previous total (optional — shows side-by-side with kept-higher result)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
         ]
+      }
+    ]
+  },
+  {
+    name: 'hp', description: 'Track character HP outside of combat (use /init hp during combat)',
+    options: [
+      {
+        name: 'view', description: 'Show current and max HP',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
+      },
+      {
+        name: 'set', description: 'Set exact HP value (clamped to [0, max])',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'value', description: 'New HP value (0 to max)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0 },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'add', description: 'Heal (positive) or damage (negative) HP',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'value', description: 'Amount to change (e.g. 10 to heal, -5 to damage)', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'reset', description: 'Restore HP to max (like a full rest, without affecting other things)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
       }
     ]
   },
