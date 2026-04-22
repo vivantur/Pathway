@@ -2081,6 +2081,157 @@ function buildLevelUpEmbed(char, charEntry, oldXp, newXp) {
   return embed;
 }
 
+// ── Session Notes (per-character notebooks) ──────────────────────────────────
+// Storage: notes.json keyed by "<ownerId>:<charKey>" → { nextId, notes: [] }.
+// Each note: { id, category, text, pinned, createdAt, editedAt, authorId, authorName }.
+// Only the character's owner can add, edit, remove, pin. Anyone can view/search.
+
+const NOTE_CATEGORIES = {
+  npcs:         { label: 'NPCs',         icon: '🧑', color: 0x3498db },
+  locations:    { label: 'Locations',    icon: '🗺️', color: 0x2ecc71 },
+  'plot-threads': { label: 'Plot Threads', icon: '🎭', color: 0x9b59b6 },
+  influence:    { label: 'Influence',    icon: '🤝', color: 0xf39c12 },
+  items:        { label: 'Items',        icon: '💎', color: 0xe91e63 },
+};
+const NOTE_CATEGORY_ORDER = ['npcs', 'locations', 'plot-threads', 'influence', 'items'];
+
+function loadNotes() {
+  try { return JSON.parse(fs.readFileSync('notes.json', 'utf8')); }
+  catch { return { _meta: { version: 1 } }; }
+}
+
+function saveNotes(notes) {
+  try {
+    fs.writeFileSync('notes.json', JSON.stringify(notes, null, 2));
+    return true;
+  } catch (err) {
+    console.error('Failed to save notes.json:', err);
+    return false;
+  }
+}
+
+// Compose the storage key for a character's notebook
+function noteKey(ownerId, charKey) {
+  return `${ownerId}:${charKey}`;
+}
+
+// Get (or initialize) the notebook for a character
+function getNotebook(notesData, ownerId, charKey) {
+  const key = noteKey(ownerId, charKey);
+  if (!notesData[key]) notesData[key] = { nextId: 1, notes: [] };
+  return notesData[key];
+}
+
+// Add a note. Returns the new note object.
+function addNote(notesData, ownerId, charKey, { category, text, pinned, authorId, authorName }) {
+  const book = getNotebook(notesData, ownerId, charKey);
+  const note = {
+    id: book.nextId++,
+    category,
+    text,
+    pinned: !!pinned,
+    createdAt: new Date().toISOString(),
+    editedAt: null,
+    authorId,
+    authorName,
+  };
+  book.notes.push(note);
+  return note;
+}
+
+// Sort order: pinned first (within each category), then newest first.
+function sortNotes(notes) {
+  return [...notes].sort((a, b) => {
+    if (a.pinned !== b.pinned) return b.pinned ? 1 : -1; // pinned true first
+    // Newer createdAt later in the list? Actually: newer first (desc).
+    return String(b.createdAt).localeCompare(String(a.createdAt));
+  });
+}
+
+// Truncate text for list previews (preserves word boundaries when possible)
+function truncateNote(text, max = 120) {
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  const lastSpace = slice.lastIndexOf(' ');
+  return (lastSpace > max * 0.7 ? slice.slice(0, lastSpace) : slice) + '…';
+}
+
+// Format a single note line for a list display
+function formatNoteLine(note) {
+  const pinTag = note.pinned ? '📌 ' : '';
+  const preview = truncateNote(note.text, 100);
+  return `\`#${note.id}\` ${pinTag}${preview}`;
+}
+
+// Build the notebook listing embed. If categoryFilter is set, only show that
+// category. If pinnedOnly, only show pinned notes.
+function buildNotebookEmbed(char, notes, { categoryFilter, pinnedOnly } = {}) {
+  const categoriesToShow = categoryFilter
+    ? [categoryFilter]
+    : NOTE_CATEGORY_ORDER;
+
+  const filtered = pinnedOnly ? notes.filter(n => n.pinned) : notes;
+
+  const embed = new EmbedBuilder()
+    .setColor(0x7b5ea7)
+    .setTitle(`📓 ${char.name}'s Notebook`);
+
+  let descParts = [];
+  if (categoryFilter) {
+    const cat = NOTE_CATEGORIES[categoryFilter];
+    descParts.push(`Filtered by **${cat.icon} ${cat.label}**`);
+  }
+  if (pinnedOnly) descParts.push('Pinned notes only');
+  if (descParts.length) embed.setDescription(descParts.join(' · '));
+
+  let totalShown = 0;
+  for (const catKey of categoriesToShow) {
+    const cat = NOTE_CATEGORIES[catKey];
+    const inCat = sortNotes(filtered.filter(n => n.category === catKey));
+    if (inCat.length === 0) continue;
+    const lines = inCat.map(formatNoteLine).join('\n');
+    // Discord field max is 1024 chars — if we'd exceed, truncate with a note
+    const value = lines.length > 1020
+      ? lines.slice(0, 1020) + '\n*…more. Use `/notes search` or `/notes list` with a filter.*'
+      : lines;
+    embed.addFields({
+      name: `${cat.icon} ${cat.label} (${inCat.length})`,
+      value,
+      inline: false,
+    });
+    totalShown += inCat.length;
+  }
+
+  if (totalShown === 0) {
+    embed.setDescription(
+      (descParts.length ? descParts.join(' · ') + '\n\n' : '') +
+      '*No notes yet. Add one with `/notes add`.*'
+    );
+  }
+
+  embed.setFooter({ text: `/notes view id:<n> for full detail · /notes add to contribute` });
+  if (char.art || notes.charArt) embed.setThumbnail(char.art || notes.charArt);
+  return embed;
+}
+
+// Build a single-note detail embed (for /notes view)
+function buildNoteDetailEmbed(char, note) {
+  const cat = NOTE_CATEGORIES[note.category];
+  const embed = new EmbedBuilder()
+    .setColor(cat?.color ?? 0x95a5a6)
+    .setTitle(`${cat?.icon ?? '📝'} Note #${note.id} · ${cat?.label ?? 'Uncategorized'}`)
+    .setDescription(note.text.slice(0, 4000));
+
+  const meta = [];
+  if (note.pinned) meta.push('📌 Pinned');
+  meta.push(`By **${note.authorName}**`);
+  meta.push(`Added ${new Date(note.createdAt).toLocaleDateString()}`);
+  if (note.editedAt) meta.push(`*edited ${new Date(note.editedAt).toLocaleDateString()}*`);
+  embed.setFooter({ text: meta.join(' · ') });
+  embed.setAuthor({ name: `${char.name}'s notebook` });
+  return embed;
+}
+
 // Roll an expression using the exact same engine as /roll.
 // Returns { total, breakdown, error } — breakdown is the pretty display string.
 // On parse error, returns { error: "..." }; callers should surface that to the user.
@@ -2293,6 +2444,7 @@ const HELP_CATEGORIES = {
       { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
       { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
       { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80 reason:Defeated the goblin chief' },
+      { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items. Owner-only write, public read.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:Influence text:+1 with Lady Aldori after the banquet pin:true' },
       { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
       { name: '/resource set', summary: 'Manually override a daily resource value.', options: 'resource, value, rank, caster, character', example: '/resource set resource:focus value:0' },
       { name: '/rest', summary: 'Long rest: refill slots, focus points, hero points. Clears prepared list (with confirm).', options: 'character', example: '/rest' },
@@ -2859,6 +3011,55 @@ client.on('interactionCreate', async (interaction) => {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
           suggestions = pick(own);
+        }
+        else if (cmd === 'notes') {
+          if (focused.name === 'character') {
+            // Suggest ALL characters on the server (notebooks are public-read)
+            const characters = loadCharacters();
+            const allNames = [];
+            for (const userChars of Object.values(characters)) {
+              for (const entry of Object.values(userChars)) {
+                if (entry?.name) allNames.push(entry.name);
+              }
+            }
+            suggestions = pick(allNames);
+          } else if (focused.name === 'id') {
+            // Suggest note IDs from the selected character's book
+            try {
+              const charNameArg = interaction.options.getString('character');
+              const characters = loadCharacters();
+              // Find the character the user is asking about
+              let ownerId = null, charKey = null;
+              if (!charNameArg) {
+                const own = resolveChar(interaction.user.id, null, characters);
+                if (!own.error) { ownerId = interaction.user.id; charKey = own.charKey; }
+              } else {
+                const target = String(charNameArg).toLowerCase();
+                outer2: for (const [oId, userChars] of Object.entries(characters)) {
+                  for (const [k, e] of Object.entries(userChars)) {
+                    if (e.name.toLowerCase() === target) { ownerId = oId; charKey = k; break outer2; }
+                  }
+                }
+              }
+              if (ownerId && charKey) {
+                const notesData = loadNotes();
+                const book = notesData[noteKey(ownerId, charKey)] ?? { notes: [] };
+                // Show most recent first, with a short preview label
+                const sorted = sortNotes(book.notes);
+                const q = String(focused.value ?? '').toLowerCase();
+                const out = [];
+                for (const n of sorted) {
+                  if (out.length >= 25) break;
+                  const label = `#${n.id} · ${NOTE_CATEGORIES[n.category]?.label ?? '?'}: ${truncateNote(n.text, 60)}`;
+                  const display = label.length > 100 ? label.slice(0, 97) + '...' : label;
+                  if (!q || display.toLowerCase().includes(q) || String(n.id) === q) {
+                    out.push({ name: display, value: n.id });
+                  }
+                }
+                suggestions = out;
+              }
+            } catch { suggestions = []; }
+          }
         }
         else if (cmd === 'init' && focused.name === 'monster') {
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
@@ -4926,6 +5127,176 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       const note = `🌅 Reset XP to **0** (was ${oldXp}). Good luck on the road to the next level!`;
       return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
+    }
+  }
+
+  // ─── /notes ──────────────────────────────────────────────────────
+  // Per-character session notebook. Categorized (NPCs/Locations/Plot Threads/
+  // Influence/Items). Only the character's owner can add/edit/remove/pin;
+  // anyone can view/search/list.
+  else if (commandName === 'notes') {
+    const sub = interaction.options.getSubcommand();
+    const charNameArg = interaction.options.getString('character');
+    const characters = loadCharacters();
+
+    // Find the character — could be ANY character on the server, not just the
+    // invoker's. We search every user's characters.
+    let charOwnerId = null;
+    let charKey = null;
+    let charEntry = null;
+
+    if (!charNameArg) {
+      // No character specified — try to resolve the invoker's own default character.
+      const own = resolveChar(interaction.user.id, null, characters);
+      if (!own.error) {
+        charOwnerId = interaction.user.id;
+        charKey = own.charKey;
+        charEntry = own.char;
+      }
+    } else {
+      // Search across every user's characters for one with this name
+      const target = String(charNameArg).toLowerCase();
+      outer: for (const [ownerId, userChars] of Object.entries(characters)) {
+        for (const [key, entry] of Object.entries(userChars)) {
+          if (entry.name.toLowerCase() === target) {
+            charOwnerId = ownerId;
+            charKey = key;
+            charEntry = entry;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if (!charEntry) {
+      return interaction.reply({
+        content: charNameArg
+          ? `❌ No character named **"${charNameArg}"** found on this server.`
+          : `❌ You don't have a character loaded. Specify one with \`character:<name>\`, or load one with \`/char add\`.`,
+        ephemeral: true,
+      });
+    }
+
+    const char = charEntry.data;
+    const isOwner = interaction.user.id === charOwnerId;
+    const notesData = loadNotes();
+    const book = getNotebook(notesData, charOwnerId, charKey);
+
+    // Helper: find note by id in this book, or return null
+    const findNote = (id) => book.notes.find(n => n.id === id) ?? null;
+
+    if (sub === 'add') {
+      if (!isOwner) {
+        return interaction.reply({ content: `❌ Only **${char.name}**'s owner can add notes to their notebook.`, ephemeral: true });
+      }
+      const category = interaction.options.getString('category');
+      const text = interaction.options.getString('text');
+      const pinned = interaction.options.getBoolean('pin') ?? false;
+      if (!NOTE_CATEGORIES[category]) {
+        return interaction.reply({ content: `❌ Invalid category. Choose one of: ${Object.values(NOTE_CATEGORIES).map(c => c.label).join(', ')}.`, ephemeral: true });
+      }
+      if (text.length > 1800) {
+        return interaction.reply({ content: `❌ Note too long (${text.length} chars, max 1800).`, ephemeral: true });
+      }
+      const note = addNote(notesData, charOwnerId, charKey, {
+        category, text, pinned,
+        authorId: interaction.user.id,
+        authorName: interaction.user.username,
+      });
+      if (!saveNotes(notesData)) {
+        return interaction.reply({ content: `❌ Failed to save the note. Try again?`, ephemeral: true });
+      }
+      const cat = NOTE_CATEGORIES[category];
+      return interaction.reply({
+        content: `${cat.icon} Added note \`#${note.id}\` to **${char.name}**'s ${cat.label}${pinned ? ' *(pinned)*' : ''}.\n> ${truncateNote(text, 200)}`,
+      });
+    }
+
+    if (sub === 'list') {
+      const categoryFilter = interaction.options.getString('category');
+      const pinnedOnly = interaction.options.getBoolean('pinned') ?? false;
+      if (categoryFilter && !NOTE_CATEGORIES[categoryFilter]) {
+        return interaction.reply({ content: `❌ Invalid category filter.`, ephemeral: true });
+      }
+      const embed = buildNotebookEmbed(char, book.notes, { categoryFilter, pinnedOnly });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'view') {
+      const id = interaction.options.getInteger('id');
+      const note = findNote(id);
+      if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}** in **${char.name}**'s notebook.`, ephemeral: true });
+      return interaction.reply({ embeds: [buildNoteDetailEmbed(char, note)] });
+    }
+
+    if (sub === 'search') {
+      const query = interaction.options.getString('query').toLowerCase();
+      const matches = book.notes.filter(n => n.text.toLowerCase().includes(query));
+      if (matches.length === 0) {
+        return interaction.reply({ content: `🔍 No notes matching **"${query}"** in **${char.name}**'s notebook.`, ephemeral: true });
+      }
+      const sorted = sortNotes(matches);
+      const embed = new EmbedBuilder()
+        .setColor(0x7b5ea7)
+        .setTitle(`🔍 Search: "${query}" in ${char.name}'s notebook`)
+        .setDescription(`Found **${matches.length}** matching note${matches.length === 1 ? '' : 's'}.`);
+
+      // Group matches by category for readability
+      for (const catKey of NOTE_CATEGORY_ORDER) {
+        const inCat = sorted.filter(n => n.category === catKey);
+        if (inCat.length === 0) continue;
+        const cat = NOTE_CATEGORIES[catKey];
+        const lines = inCat.map(formatNoteLine).join('\n');
+        embed.addFields({
+          name: `${cat.icon} ${cat.label} (${inCat.length})`,
+          value: lines.length > 1020 ? lines.slice(0, 1020) + '\n*…more.*' : lines,
+          inline: false,
+        });
+      }
+      embed.setFooter({ text: `Tip: /notes view id:<n> for full detail` });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'edit') {
+      if (!isOwner) return interaction.reply({ content: `❌ Only **${char.name}**'s owner can edit notes in their notebook.`, ephemeral: true });
+      const id = interaction.options.getInteger('id');
+      const newText = interaction.options.getString('text');
+      const note = findNote(id);
+      if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}**.`, ephemeral: true });
+      if (note.authorId !== interaction.user.id) {
+        return interaction.reply({ content: `❌ Only the person who wrote note **#${id}** (${note.authorName}) can edit it.`, ephemeral: true });
+      }
+      if (newText.length > 1800) return interaction.reply({ content: `❌ Note too long (${newText.length} chars, max 1800).`, ephemeral: true });
+      note.text = newText;
+      note.editedAt = new Date().toISOString();
+      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      return interaction.reply({ embeds: [buildNoteDetailEmbed(char, note)] });
+    }
+
+    if (sub === 'remove') {
+      if (!isOwner) return interaction.reply({ content: `❌ Only **${char.name}**'s owner can remove notes from their notebook.`, ephemeral: true });
+      const id = interaction.options.getInteger('id');
+      const note = findNote(id);
+      if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}**.`, ephemeral: true });
+      if (note.authorId !== interaction.user.id) {
+        return interaction.reply({ content: `❌ Only the person who wrote note **#${id}** (${note.authorName}) can remove it.`, ephemeral: true });
+      }
+      book.notes = book.notes.filter(n => n.id !== id);
+      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      const cat = NOTE_CATEGORIES[note.category];
+      return interaction.reply({ content: `🗑️ Removed note \`#${id}\` from **${char.name}**'s ${cat.label}.` });
+    }
+
+    if (sub === 'pin') {
+      if (!isOwner) return interaction.reply({ content: `❌ Only **${char.name}**'s owner can pin notes in their notebook.`, ephemeral: true });
+      const id = interaction.options.getInteger('id');
+      const note = findNote(id);
+      if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}**.`, ephemeral: true });
+      note.pinned = !note.pinned;
+      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      return interaction.reply({
+        content: `${note.pinned ? '📌' : '📍'} Note \`#${id}\` is now ${note.pinned ? '**pinned**' : '**unpinned**'}.`,
+      });
     }
   }
 

@@ -619,6 +619,83 @@ const commands = [
     ]
   },
   {
+    name: 'notes', description: 'Per-character session notebook (NPCs, Locations, Plot Threads, Influence, Items)',
+    options: [
+      {
+        name: 'add', description: 'Add a note to your character\'s notebook',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Which section this note belongs to', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'NPCs', value: 'npcs' },
+            { name: 'Locations', value: 'locations' },
+            { name: 'Plot Threads', value: 'plot-threads' },
+            { name: 'Influence', value: 'influence' },
+            { name: 'Items', value: 'items' },
+          ]},
+          { name: 'text', description: 'The note itself (up to 1800 chars)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'pin', description: 'Pin this note to the top of its category', type: ApplicationCommandOptionType.Boolean, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'list', description: 'List notes in a character\'s notebook (public-read)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Character whose notebook to view', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'category', description: 'Filter to one category', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'NPCs', value: 'npcs' },
+            { name: 'Locations', value: 'locations' },
+            { name: 'Plot Threads', value: 'plot-threads' },
+            { name: 'Influence', value: 'influence' },
+            { name: 'Items', value: 'items' },
+          ]},
+          { name: 'pinned', description: 'Show only pinned notes', type: ApplicationCommandOptionType.Boolean, required: false }
+        ]
+      },
+      {
+        name: 'view', description: 'Show full detail of a single note',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'id', description: 'Note ID (use /notes list to find it)', type: ApplicationCommandOptionType.Integer, required: true, autocomplete: true },
+          { name: 'character', description: 'Character whose notebook it\'s in', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'search', description: 'Search notes by keyword',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'query', description: 'Text to search for', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character whose notebook to search', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'edit', description: 'Edit the text of a note you wrote',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'id', description: 'Note ID to edit', type: ApplicationCommandOptionType.Integer, required: true, autocomplete: true },
+          { name: 'text', description: 'New note text (up to 1800 chars)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'character', description: 'Character whose notebook it\'s in', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a note you wrote',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'id', description: 'Note ID to remove', type: ApplicationCommandOptionType.Integer, required: true, autocomplete: true },
+          { name: 'character', description: 'Character whose notebook it\'s in', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'pin', description: 'Pin or unpin a note (toggle)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'id', description: 'Note ID to pin/unpin', type: ApplicationCommandOptionType.Integer, required: true, autocomplete: true },
+          { name: 'character', description: 'Character whose notebook it\'s in', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'init', description: 'Initiative tracker for combat',
     options: [
       { name: 'start', description: 'Start a new encounter in this channel', type: ApplicationCommandOptionType.Subcommand },
