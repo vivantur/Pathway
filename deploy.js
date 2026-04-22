@@ -439,6 +439,13 @@ const commands = [
     options: [{ name: 'name', description: 'Name of the deity to look up (e.g. Abadar, Desna, Asmodeus)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
   },
   {
+    name: 'skillinfo', description: 'Look up how a PF2e skill works — uses, actions, and DC examples',
+    options: [
+      { name: 'skill', description: 'Skill name (e.g. Athletics, Arcana, Stealth)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+      { name: 'character', description: 'Character to show your modifier for (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+    ]
+  },
+  {
     name: 'bag', description: 'Manage your inventory bag',
     options: [
       {
@@ -576,6 +583,38 @@ const commands = [
           { name: 'previous', description: 'Your previous total (optional — shows side-by-side with kept-higher result)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
         ]
+      }
+    ]
+  },
+  {
+    name: 'xp', description: 'Track experience points (per character) and level progression',
+    options: [
+      {
+        name: 'view', description: 'Show current XP, level progress, and recent awards',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
+      },
+      {
+        name: 'award', description: 'Award XP to a character (positive to give, negative to take away)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'amount', description: 'XP to award (e.g. 80 for a moderate encounter)', type: ApplicationCommandOptionType.Integer, required: true },
+          { name: 'reason', description: 'Why (e.g. "Defeated goblin chief")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'set', description: 'Manually set exact XP value (overrides any tracked total)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'amount', description: 'New exact XP value (0+)', type: ApplicationCommandOptionType.Integer, required: true, min_value: 0 },
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'reset', description: 'Zero out XP and clear the award log (use after leveling up + /char update)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
       }
     ]
   },

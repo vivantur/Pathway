@@ -1974,6 +1974,113 @@ function buildHeroPointsEmbed(char, charEntry, note = null) {
   return embed;
 }
 
+// ── XP helpers ────────────────────────────────────────────────────────────────
+// PF2e: 1000 XP = 1 level. Bot-managed XP is stored on charEntry.xp (overlay-style),
+// falling back to Pathbuilder's c.xp if the bot has never touched it. Awards are
+// recorded in charEntry.xpLog as a list of { amount, reason, at, awardedBy }.
+const XP_PER_LEVEL = 1000;
+
+function getCharacterXp(charEntry) {
+  // charEntry.xp is the bot-managed value; it wins over the Pathbuilder value.
+  // If no bot value is set, fall back to the Pathbuilder-exported value.
+  if (typeof charEntry.xp === 'number') return charEntry.xp;
+  return charEntry.data?.xp ?? 0;
+}
+
+function setCharacterXp(charEntry, newValue) {
+  charEntry.xp = Math.max(0, Math.floor(newValue));
+  return charEntry.xp;
+}
+
+// Award XP. Returns { newXp, leveledUp, oldXp }. leveledUp is true if the award
+// pushed the total past a 1000 XP boundary (the PC should level up in Pathbuilder).
+function awardXp(charEntry, amount, reason, awarderId) {
+  const oldXp = getCharacterXp(charEntry);
+  const newXp = Math.max(0, Math.floor(oldXp + amount));
+  charEntry.xp = newXp;
+  // Track the award in a simple log so /xp view can show recent awards.
+  // Cap the log at 20 entries to keep the JSON file from ballooning over a campaign.
+  if (!Array.isArray(charEntry.xpLog)) charEntry.xpLog = [];
+  charEntry.xpLog.push({
+    amount: Math.floor(amount),
+    reason: reason ?? null,
+    at: new Date().toISOString(),
+    awardedBy: awarderId ?? null,
+  });
+  while (charEntry.xpLog.length > 20) charEntry.xpLog.shift();
+  // Leveled up if we crossed a 1000 XP threshold this award
+  const oldLevels = Math.floor(oldXp / XP_PER_LEVEL);
+  const newLevels = Math.floor(newXp / XP_PER_LEVEL);
+  const leveledUp = newLevels > oldLevels;
+  return { oldXp, newXp, leveledUp };
+}
+
+// Visual progress bar for XP: filled blocks for earned XP in the current level,
+// empty blocks for remaining. Always 10 segments so 100 XP = 1 block.
+function renderXpBar(xp, segments = 10) {
+  const progressInLevel = xp % XP_PER_LEVEL;
+  const filled = Math.min(segments, Math.round((progressInLevel / XP_PER_LEVEL) * segments));
+  return '█'.repeat(filled) + '░'.repeat(segments - filled);
+}
+
+function buildXpEmbed(char, charEntry, { note, showLog } = {}) {
+  const xp = getCharacterXp(charEntry);
+  const currentSheetLevel = charEntry.data?.level ?? 1;
+  // Level "earned" by XP = currentSheetLevel + number of 1000-XP thresholds crossed since last /char update
+  const levelsEarnedSinceUpdate = Math.floor(xp / XP_PER_LEVEL);
+  const effectiveLevel = currentSheetLevel + levelsEarnedSinceUpdate;
+  const progress = xp % XP_PER_LEVEL;
+  const bar = renderXpBar(xp);
+
+  const embed = new EmbedBuilder()
+    .setColor(0xf1c40f)
+    .setTitle(`⭐ ${char.name}'s Experience`)
+    .setDescription(
+      `\`${bar}\` **${progress} / ${XP_PER_LEVEL}** XP this level\n` +
+      `**Sheet Level:** ${currentSheetLevel}` +
+      (levelsEarnedSinceUpdate > 0
+        ? `\n**Ready to level up:** ${levelsEarnedSinceUpdate} time${levelsEarnedSinceUpdate === 1 ? '' : 's'} — level up in Pathbuilder, then \`/char update\``
+        : ''
+      ),
+    );
+
+  if (note) embed.addFields({ name: '\u200b', value: note, inline: false });
+
+  if (showLog && Array.isArray(charEntry.xpLog) && charEntry.xpLog.length > 0) {
+    const entries = charEntry.xpLog.slice(-5).reverse();
+    const lines = entries.map(e => {
+      const sign = e.amount >= 0 ? '+' : '';
+      const date = e.at ? new Date(e.at).toLocaleDateString() : '';
+      const reason = e.reason ? ` — ${e.reason}` : '';
+      return `\`${sign}${e.amount} XP\` *(${date})*${reason}`;
+    });
+    embed.addFields({ name: '📜 Recent Awards', value: lines.join('\n').slice(0, 1024), inline: false });
+  }
+
+  embed.setFooter({ text: '/xp award to give XP · /xp view character:<name> · 1000 XP = level up' });
+  if (charEntry.art) embed.setThumbnail(charEntry.art);
+  return embed;
+}
+
+function buildLevelUpEmbed(char, charEntry, oldXp, newXp) {
+  const newLevel = (charEntry.data?.level ?? 1) + Math.floor(newXp / XP_PER_LEVEL);
+  const embed = new EmbedBuilder()
+    .setColor(0xf39c12)
+    .setTitle(`🎉 ${char.name} leveled up!`)
+    .setDescription(
+      `**${char.name}** crossed ${XP_PER_LEVEL} XP — they're ready to become **Level ${newLevel}**!\n\n` +
+      `Level up in Pathbuilder, then run \`/char update\` to sync the new sheet. ` +
+      `Use \`/xp set character:${char.name} amount:0\` once the update is imported to reset progress toward the next level.`,
+    )
+    .addFields({
+      name: 'XP',
+      value: `${oldXp} → **${newXp}**`,
+      inline: true,
+    });
+  if (charEntry.art) embed.setThumbnail(charEntry.art);
+  return embed;
+}
+
 // Roll an expression using the exact same engine as /roll.
 // Returns { total, breakdown, error } — breakdown is the pretty display string.
 // On parse error, returns { error: "..." }; callers should surface that to the user.
@@ -2185,6 +2292,7 @@ const HELP_CATEGORIES = {
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
       { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
+      { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80 reason:Defeated the goblin chief' },
       { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
       { name: '/resource set', summary: 'Manually override a daily resource value.', options: 'resource, value, rank, caster, character', example: '/resource set resource:focus value:0' },
       { name: '/rest', summary: 'Long rest: refill slots, focus points, hero points. Clears prepared list (with confirm).', options: 'character', example: '/rest' },
@@ -2747,6 +2855,11 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(names);
           }
         }
+        else if (cmd === 'xp' && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+          suggestions = pick(own);
+        }
         else if (cmd === 'init' && focused.name === 'monster') {
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
         }
@@ -2937,7 +3050,7 @@ client.on('interactionCreate', async (interaction) => {
       const lvl = c.level ?? 1;
       const ab = c.abilities ?? {};
       const prof = c.proficiencies ?? {};
-      const currentXP = c.xp ?? 0;
+      const currentXP = getCharacterXp(charEntry);
       const xpDisplay = `${currentXP} / ${xpToNextLevel(lvl)} XP`;
       const conMod = Math.floor(((ab.con ?? 10) - 10) / 2);
       const totalHP = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
@@ -4743,6 +4856,76 @@ client.on('interactionCreate', async (interaction) => {
         .setFooter({ text: `${char.name} · 1 Hero Point spent` });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
       return interaction.reply({ embeds: [embed] });
+    }
+  }
+
+  // ─── /xp ─────────────────────────────────────────────────────────
+  // Per-character XP tracking. GM manually awards; bot auto-detects
+  // level-up thresholds (every 1000 XP) and prompts to level up in
+  // Pathbuilder. Bot never edits sheet data directly.
+  else if (commandName === 'xp') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+
+    // All /xp subcommands need a character, but the character arg is optional
+    // (defaults to the user's only loaded char, if they have exactly one).
+    const charNameArg = interaction.options.getString('character');
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const char = charEntry.data;
+
+    if (sub === 'view') {
+      return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { showLog: true })] });
+    }
+
+    if (sub === 'award') {
+      const amount = interaction.options.getInteger('amount');
+      const reason = interaction.options.getString('reason');
+      if (amount === 0) return interaction.reply({ content: '❌ Amount cannot be 0.', ephemeral: true });
+
+      const { oldXp, newXp, leveledUp } = awardXp(charEntry, amount, reason, interaction.user.id);
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+
+      const sign = amount >= 0 ? '+' : '';
+      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
+      const replyPayload = { embeds: [buildXpEmbed(char, charEntry, { note, showLog: false })] };
+
+      // If they crossed a 1000 XP threshold, post a celebratory level-up embed too
+      if (leveledUp) {
+        replyPayload.embeds.push(buildLevelUpEmbed(char, charEntry, oldXp, newXp));
+        // Ping the owner if someone else (e.g. GM) awarded the XP
+        if (charEntry.ownerId && charEntry.ownerId !== interaction.user.id) {
+          replyPayload.content = `<@${charEntry.ownerId}>`;
+        } else if (interaction.user.id) {
+          // Self-award still pings for visibility
+          replyPayload.content = `<@${interaction.user.id}>`;
+        }
+      }
+      return interaction.reply(replyPayload);
+    }
+
+    if (sub === 'set') {
+      const amount = interaction.options.getInteger('amount');
+      if (amount < 0) return interaction.reply({ content: '❌ XP cannot be negative.', ephemeral: true });
+      const oldXp = getCharacterXp(charEntry);
+      setCharacterXp(charEntry, amount);
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const note = `✏️ Set XP to **${amount}** (was ${oldXp}).`;
+      return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
+    }
+
+    if (sub === 'reset') {
+      // Zero the XP AND the log. Use this after leveling up in Pathbuilder
+      // and running /char update, to start fresh toward the next level.
+      const oldXp = getCharacterXp(charEntry);
+      charEntry.xp = 0;
+      charEntry.xpLog = [];
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const note = `🌅 Reset XP to **0** (was ${oldXp}). Good luck on the road to the next level!`;
+      return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
     }
   }
 
