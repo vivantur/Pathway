@@ -211,6 +211,16 @@ try {
   console.error('Could not load skills.json:', err.message);
 }
 
+let companionDatabase = [];
+try {
+  const companionRaw = JSON.parse(fs.readFileSync('companions.json', 'utf8'));
+  // File shape: { _meta: {...}, companions: [ {...} ] }
+  companionDatabase = companionRaw.companions ?? (Array.isArray(companionRaw) ? companionRaw : []);
+  console.log(`Loaded ${companionDatabase.length} companions from database.`);
+} catch (err) {
+  console.error('Could not load companions.json:', err.message);
+}
+
 function loadCharacters() {
   try { return JSON.parse(fs.readFileSync('characters.json', 'utf8')); }
   catch { return {}; }
@@ -1426,6 +1436,237 @@ function findSkill(query) {
   return { skill: null, key: null, matches: [] };
 }
 
+// ── Companion lookup ─────────────────────────────────────────────────────────
+// Finds a companion by name. Similar shape to findSkill (exact → starts-with →
+// contains), with case-insensitive matching and multi-match handling.
+function findCompanion(query) {
+  if (!query) return { companion: null, matches: [] };
+  const q = String(query).toLowerCase().trim();
+  if (companionDatabase.length === 0) return { companion: null, matches: [] };
+
+  // 1. Exact name match
+  const exact = companionDatabase.find(c => c.name.toLowerCase() === q);
+  if (exact) return { companion: exact, matches: [] };
+
+  // 2. Starts-with match
+  const starts = companionDatabase.filter(c => c.name.toLowerCase().startsWith(q));
+  if (starts.length === 1) return { companion: starts[0], matches: [] };
+  if (starts.length > 1) return { companion: null, matches: starts.map(c => c.name) };
+
+  // 3. Contains match
+  const contains = companionDatabase.filter(c => c.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { companion: contains[0], matches: [] };
+  if (contains.length > 1) return { companion: null, matches: contains.map(c => c.name) };
+
+  return { companion: null, matches: [] };
+}
+
+// Format an attack line for the companion embed:
+//   "◆ **jaws** (finesse) — 1d8 piercing"
+function formatCompanionAttack(atk) {
+  const costIcon = atk.actionCost === 'one-action' ? '◆'
+    : atk.actionCost === 'two-actions' ? '◆◆'
+    : atk.actionCost === 'three-actions' ? '◆◆◆'
+    : atk.actionCost === 'reaction' ? '⤾'
+    : atk.actionCost === 'free-action' ? '◇'
+    : `[${atk.actionCost}]`;
+  const traits = atk.traits && atk.traits.length ? ` *(${atk.traits.join(', ')})*` : '';
+  const damage = atk.damage ? ` — ${atk.damage}` : '';
+  return `${costIcon} **${atk.name}**${traits}${damage}`;
+}
+
+// Format the ability scores line: "Str +2, Dex +3, Con +2, Int -4, Wis +1, Cha +0"
+function formatCompanionAbilities(abilities) {
+  const order = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+  return order.map(a => {
+    const v = abilities[a] ?? 0;
+    const sign = v >= 0 ? '+' : '';
+    return `**${a.toUpperCase()}** ${sign}${v}`;
+  }).join(' · ');
+}
+
+// Build the companion info embed. Shows the full Young-tier statblock with
+// description, abilities, defenses, offense, support benefit, and maneuver.
+function buildCompanionEmbed(companion) {
+  // Category → color: Animal green, Construct gray, Plant forest, Undead crimson
+  const colorByCategory = {
+    Animal: 0x2ecc71,
+    Construct: 0x95a5a6,
+    Plant: 0x16a085,
+    Undead: 0x8B0000,
+  };
+  const color = colorByCategory[companion.category] ?? 0x7289DA;
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`🐾 ${companion.name}`)
+    .setFooter({ text: `${companion.category} Companion · ${companion.source ?? 'Pathfinder 2e'}` });
+
+  // Header line: traits + size + PFS
+  const traitsLine = companion.traits.length ? `*${companion.traits.join(' ')}*` : '';
+  const sizeLine = companion.size ? `**Size:** ${companion.size}` : '';
+  const header = [traitsLine, sizeLine].filter(Boolean).join(' · ');
+  const descParts = [];
+  if (header) descParts.push(header);
+  if (companion.description) descParts.push(companion.description);
+  if (companion.access) descParts.push(`**Access:** ${companion.access}`);
+  if (descParts.length) embed.setDescription(descParts.join('\n\n').slice(0, 4000));
+
+  // Abilities (inline)
+  embed.addFields({
+    name: '📊 Abilities',
+    value: formatCompanionAbilities(companion.abilities),
+    inline: false,
+  });
+
+  // Defenses: HP + senses
+  const defParts = [];
+  if (companion.hp !== null) defParts.push(`**HP** ${companion.hp}`);
+  if (companion.speed) defParts.push(`**Speed** ${companion.speed}`);
+  if (companion.skill) defParts.push(`**Skill** ${companion.skill}`);
+  if (companion.senses && companion.senses.length) defParts.push(`**Senses** ${companion.senses.join(', ')}`);
+  if (defParts.length) {
+    embed.addFields({ name: '🛡️ Stats', value: defParts.join(' · '), inline: false });
+  }
+
+  // Attacks
+  const attackLines = [];
+  for (const a of companion.melee) attackLines.push('Melee: ' + formatCompanionAttack(a));
+  for (const a of companion.ranged) attackLines.push('Ranged: ' + formatCompanionAttack(a));
+  if (attackLines.length) {
+    embed.addFields({ name: '⚔️ Attacks', value: attackLines.join('\n'), inline: false });
+  }
+
+  // Special abilities
+  if (companion.special) {
+    embed.addFields({ name: '✨ Special', value: companion.special.slice(0, 1020), inline: false });
+  }
+
+  // Support Benefit
+  if (companion.support) {
+    embed.addFields({ name: '🤝 Support Benefit', value: companion.support.slice(0, 1020), inline: false });
+  }
+
+  // Advanced Maneuver
+  if (companion.maneuver) {
+    const m = companion.maneuver;
+    const actions = m.actions ? m.actions.replace(/\[([^\]]+)\]/, '$1') : '';
+    const traits = m.traits && m.traits.length ? ` · *${m.traits.join(' ')}*` : '';
+    const heading = `💥 Advanced Maneuver: ${m.name}${actions ? ` (${actions})` : ''}${traits}`;
+    const body = m.description ?
+      m.description.replace(/^Source .+?pg\.\s*\d+\s*/i, '').slice(0, 1020) :
+      '*No description available.*';
+    embed.addFields({ name: heading.slice(0, 256), value: body, inline: false });
+  }
+
+  return embed;
+}
+
+// Build a paginated list embed of companions, optionally filtered by category.
+function buildCompanionListEmbed(category, page = 0) {
+  const filtered = category
+    ? companionDatabase.filter(c => c.category.toLowerCase() === category.toLowerCase())
+    : companionDatabase;
+  const perPage = 40; // just list names, so we can fit a lot
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const actualPage = Math.min(page, totalPages - 1);
+  const start = actualPage * perPage;
+  const slice = filtered.slice(start, start + perPage);
+
+  const title = category
+    ? `🐾 ${category} Companions`
+    : `🐾 Animal Companions`;
+  const embed = new EmbedBuilder()
+    .setColor(0x2ecc71)
+    .setTitle(title)
+    .setDescription(slice.map(c => `• **${c.name}**${c.traits.includes('Uncommon') ? ' *(uncommon)*' : c.traits.includes('Rare') ? ' *(rare)*' : ''}`).join('\n') || '*No companions match this filter.*')
+    .setFooter({ text: `${filtered.length} total${totalPages > 1 ? ` · Page ${actualPage + 1}/${totalPages}` : ''} · Use /companion info name:<name> for details` });
+  return embed;
+}
+
+
+// Scale a companion's combat stats by character level + form.
+function scaleCompanion(comp, char) {
+  const lvl = char.level ?? 1;
+  const form = comp.form ?? 'young';
+  let baseHp, abilities, attacks, size, speed;
+  if (comp.baseType === 'custom' && comp.customStats) {
+    // Use a per-level HP base (default 6, or customStats.hpPerLevel if set).
+    // The raw hp from the bestiary is the creature's FULL HP, not a per-level base.
+    // For custom companions, we approximate size-based per-level HP.
+    baseHp = comp.customStats.hpPerLevel ?? (() => {
+      const s = (comp.customStats.size ?? 'Medium').toLowerCase();
+      if (s === 'tiny') return 4;
+      if (s === 'small') return 6;
+      if (s === 'medium') return 8;
+      if (s === 'large') return 10;
+      if (s === 'huge') return 12;
+      return 8;
+    })();
+    abilities = comp.customStats.abilities ?? {};
+    attacks = comp.customStats.attacks ?? [];
+    size = comp.customStats.size ?? 'Medium';
+    speed = comp.customStats.speed ?? '25 feet';
+  } else {
+    const { companion: base } = findCompanion(comp.baseType);
+    if (!base) return { maxHp: 10, ac: 10, attackBonus: 0, damageDice: '1d4', form, abilities: {}, saves: { fort: 0, ref: 0, will: 0 }, size: 'Medium', speed: '25 feet', damageType: '', damageBonus: 0, attacks: [], primaryAttack: null };
+    baseHp = base.hp ?? 6;
+    abilities = base.abilities ?? {};
+    attacks = [...(base.melee ?? []), ...(base.ranged ?? [])];
+    if (attacks.length === 0 && Array.isArray(base.attacks)) attacks = base.attacks;
+    size = base.size ?? 'Medium';
+    speed = base.speed ?? '25 feet';
+  }
+  const conMod = abilities.con ?? 0;
+  let maxHp;
+  if (form === 'young') maxHp = baseHp * lvl;
+  else if (form === 'mature') maxHp = (baseHp + conMod) * lvl;
+  else maxHp = (baseHp + conMod + 1) * lvl;
+  if (maxHp < baseHp) maxHp = baseHp;
+  let profBonus;
+  if (form === 'young') profBonus = lvl;
+  else if (form === 'mature') profBonus = lvl + 2;
+  else profBonus = lvl + 4;
+  const dexMod = abilities.dex ?? 0;
+  const ac = 10 + dexMod + profBonus;
+  const saves = { fort: profBonus + conMod, ref: profBonus + dexMod, will: profBonus + (abilities.wis ?? 0) };
+  const primary = attacks[0];
+  const isFinesse = primary?.traits?.includes('finesse');
+  const strMod = abilities.str ?? 0;
+  const abilForAttack = isFinesse && dexMod > strMod ? dexMod : strMod;
+  const attackBonus = profBonus + abilForAttack;
+  let damageDice = '1d4', damageType = '';
+  if (primary?.damage) {
+    const m = primary.damage.match(/(\d+)d(\d+)\s*(\w*)/);
+    if (m) {
+      let dieSize = parseInt(m[2], 10);
+      if (form === 'savage') dieSize = Math.min(12, dieSize + 2);
+      damageDice = `${m[1]}d${dieSize}`;
+      damageType = m[3] || '';
+    }
+  }
+  return { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks };
+}
+
+function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
+  const embed = new EmbedBuilder()
+    .setColor(isActive ? 0xf39c12 : 0x7289DA)
+    .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
+    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? (comp.customStats?.fromBestiary ?? 'custom') : comp.baseType} companion*`);
+  const hp = comp.currentHp ?? scaled.maxHp;
+  embed.addFields({ name: '🛡️ Defenses', value: `**HP** ${hp}/${scaled.maxHp} · **AC** ${scaled.ac} · **Size** ${scaled.size} · **Speed** ${scaled.speed}`, inline: false });
+  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)} · **Ref** ${fmt(scaled.saves.ref)} · **Will** ${fmt(scaled.saves.will)}`, inline: false });
+  const ab = scaled.abilities;
+  embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)} · Dex ${fmt(ab.dex ?? 0)} · Con ${fmt(ab.con ?? 0)} · Int ${fmt(ab.int ?? -4)} · Wis ${fmt(ab.wis ?? 0)} · Cha ${fmt(ab.cha ?? 0)}`, inline: false });
+  if (scaled.primaryAttack) {
+    const traits = scaled.primaryAttack.traits?.length ? ` *(${scaled.primaryAttack.traits.join(', ')})*` : '';
+    const dmgBonus = scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : `${scaled.damageBonus}`) : '';
+    embed.addFields({ name: '⚔️ Primary Attack', value: `**${scaled.primaryAttack.name}**${traits}\n**+${scaled.attackBonus}** to hit · **${scaled.damageDice}${dmgBonus}** ${scaled.damageType}`, inline: false });
+  }
+  if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
+  embed.setFooter({ text: `Character: ${char.name} · /companion swap to change · /companion form to advance` });
+  return embed;
+}
+
 // Compute the character's modifier + proficiency for a given skill slug.
 // Returns { modifier, profLabel, profNum } or null if no character / invalid skill.
 // skillKey is the lowercase slug ("athletics"), not the display name.
@@ -2559,6 +2800,7 @@ const HELP_CATEGORIES = {
       { name: '/monster', summary: 'Look up a creature from the bestiary.', options: 'name', example: '/monster name:Ancient Red Dragon' },
       { name: '/deity', summary: 'Look up a deity.', options: 'name', example: '/deity name:Pharasma' },
       { name: '/skillinfo', summary: 'Learn how a skill works: uses, actions by proficiency, DC examples. Shows your modifier if you have a character loaded.', options: 'skill, character', example: '/skillinfo skill:Athletics' },
+      { name: '/companion', summary: 'Look up animal/plant/undead companions. Shows stats, support benefit, and advanced maneuver.', options: '(subcommands: info, list)', example: '/companion info name:Wolf' },
     ],
   },
 
@@ -3150,6 +3392,9 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           }
         }
+        else if (cmd === 'companion' && focused.name === 'name') {
+          suggestions = pick(companionDatabase.map(c => c.name));
+        }
         else if (cmd === 'bag') {
           const sub = interaction.options.getSubcommand(false);
           if (sub === 'add' && focused.name === 'item') {
@@ -3178,6 +3423,45 @@ client.on('interactionCreate', async (interaction) => {
           }
         }
 
+
+        else if (cmd === 'companion') {
+          const sub2 = interaction.options.getSubcommand(false);
+          if (focused.name === 'name') {
+            suggestions = pick(companionDatabase.map(c => c.name));
+          } else if (focused.name === 'base') {
+            const custom = interaction.options.getBoolean('custom');
+            if (custom) suggestions = pick(Object.values(bestiaryDatabase ?? {}).map(m => m?.name).filter(Boolean));
+            else suggestions = pick(companionDatabase.map(c => c.name));
+          } else if (focused.name === 'companion') {
+            const characters = loadCharacters();
+            const { char: ce } = resolveChar(interaction.user.id, null, characters);
+            const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
+            suggestions = pick(comps);
+          } else if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          }
+        }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          } else if (focused.name === 'name') {
+            // Suggest from feat database (full list is ~5000, filter by typed input)
+            const q = String(focused.value ?? '').toLowerCase();
+            if (q.length >= 2 && typeof featDatabase !== 'undefined') {
+              suggestions = pick(featDatabase.filter(f => f.name && f.name.toLowerCase().includes(q)).map(f => f.name));
+            }
+          }
+        }
+        else if (cmd === 'init' && focused.name === 'companion') {
+          const characters = loadCharacters();
+          const { char: ce } = resolveChar(interaction.user.id, null, characters);
+          const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
+          suggestions = pick(comps);
+        }
         return interaction.respond(suggestions);
       } catch (err) {
         console.error('Autocomplete error:', err);
@@ -3204,6 +3488,39 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'add') {
+
+      // If a companion: option is specified, add the user's companion to init
+      // as an NPC-controlled combatant with scaled stats.
+      const compArg = interaction.options.getString('companion');
+      if (compArg) {
+        const characters = loadCharacters();
+        const { error: cerr, char: ce } = resolveChar(userId, null, characters);
+        if (cerr) return interaction.reply({ content: cerr, ephemeral: true });
+        if (!ce.companions || Object.keys(ce.companions).length === 0) return interaction.reply({ content: `❌ **${ce.data.name}** has no companions. Add one with \`/companion add\`.`, ephemeral: true });
+        const compKey = compArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const comp = ce.companions[compKey] ?? (compArg === 'active' || compArg === '' ? ce.companions[ce.activeCompanion] : null);
+        if (!comp) return interaction.reply({ content: `❌ No companion "${compArg}" found for **${ce.data.name}**.`, ephemeral: true });
+        const scaled = scaleCompanion(comp, ce.data);
+        const initBonus = interaction.options.getInteger('bonus') ?? 0;
+        // Companions usually use Perception for initiative — use wis as approximation
+        const wisMod = scaled.abilities.wis ?? 0;
+        const initMod = scaled.form === 'young' ? (ce.data.level ?? 1) + wisMod : (scaled.form === 'mature' ? (ce.data.level ?? 1) + 2 + wisMod : (ce.data.level ?? 1) + 4 + wisMod);
+        const initRoll = Math.floor(Math.random() * 20) + 1 + initMod + initBonus;
+        const addResult = addCombatant(channelId, {
+          name: comp.displayName,
+          initiative: initRoll,
+          hp: comp.currentHp ?? scaled.maxHp,
+          maxHp: scaled.maxHp,
+          ac: scaled.ac,
+          ownerId: userId,
+          isNpc: false,
+          companionOf: ce.data.name,
+        });
+        if (!addResult) return interaction.reply({ content: '❌ Could not add companion to initiative.', ephemeral: true });
+        await interaction.reply({ content: `🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins combat with initiative **${initRoll}**! (HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac})` });
+        await updateSummary(interaction.channel, enc);
+        return;
+      }
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
       if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
@@ -3473,6 +3790,45 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       const charName = characters[userId][charKey].name;
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
+    }
+
+    else if (sub === 'feat') {
+      const action = interaction.options.getString('action'); // add or remove
+      const featName = interaction.options.getString('name');
+      const featLevel = interaction.options.getInteger('level') ?? charEntry.data?.level ?? 1;
+      const userId = interaction.user.id;
+      const characters2 = loadCharacters();
+      const { error: e2, charKey: ck2, char: ce2 } = resolveChar(userId, interaction.options.getString('character'), characters2);
+      if (e2) return interaction.reply({ content: e2, ephemeral: true });
+      if (!ce2.data.feats) ce2.data.feats = [];
+      if (action === 'add') {
+        // Pathbuilder stores feats as arrays: [name, sourceText, level, ...]
+        ce2.data.feats.push([featName, '', featLevel, '']);
+        characters2[userId][ck2] = ce2;
+        saveCharacters(characters2);
+        return interaction.reply({ content: `✅ Added feat **${featName}** (level ${featLevel}) to **${ce2.data.name}**.` });
+      }
+      if (action === 'remove') {
+        const before = ce2.data.feats.length;
+        ce2.data.feats = ce2.data.feats.filter(f => {
+          const name = Array.isArray(f) ? f[0] : (f.name ?? f);
+          return String(name).toLowerCase() !== featName.toLowerCase();
+        });
+        if (ce2.data.feats.length === before) return interaction.reply({ content: `❌ Feat "${featName}" not found on **${ce2.data.name}**.`, ephemeral: true });
+        characters2[userId][ck2] = ce2;
+        saveCharacters(characters2);
+        return interaction.reply({ content: `🗑️ Removed feat **${featName}** from **${ce2.data.name}**.` });
+      }
+      if (action === 'list') {
+        const feats = ce2.data.feats ?? [];
+        if (feats.length === 0) return interaction.reply({ content: `**${ce2.data.name}** has no feats recorded.`, ephemeral: true });
+        const lines = feats.map(f => {
+          if (Array.isArray(f)) return `• **${f[0]}** ${f[2] ? '*(lvl ' + f[2] + ')*' : ''}`;
+          return `• **${f.name ?? f}**`;
+        });
+        const embed = new EmbedBuilder().setColor(0x9b59b6).setTitle(`📜 ${ce2.data.name}'s Feats`).setDescription(lines.join('\n').slice(0, 4000));
+        return interaction.reply({ embeds: [embed] });
+      }
     }
   }
 
@@ -4563,6 +4919,158 @@ client.on('interactionCreate', async (interaction) => {
     const embed = buildSkillOverviewPage(skill, charMod);
     const row = buildSkillButtons(0, skillKey);
     await interaction.reply({ embeds: [embed], components: [row] });
+  }
+
+  // ─── /companion ──────────────────────────────────────────────────
+  // Phase 1: lookup only. Future phases will add per-character attachment,
+  // level scaling, combat integration, and homebrew companions.
+    else if (commandName === 'companion') {
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'info') {
+      const input = interaction.options.getString('name');
+      const { companion, matches } = findCompanion(input);
+      if (!companion && matches.length > 1) {
+        const preview = matches.sort().slice(0, 15).join(', ');
+        return interaction.reply({ content: `🔍 Multiple companions match **"${input}"**. Did you mean:\n**${preview}**`, ephemeral: true });
+      }
+      if (!companion) return interaction.reply({ content: `❌ No companion found for **"${input}"**. Use \`/companion list\`.`, ephemeral: true });
+      return interaction.reply({ embeds: [buildCompanionEmbed(companion)] });
+    }
+
+    if (sub === 'list') {
+      const category = interaction.options.getString('category');
+      return interaction.reply({ embeds: [buildCompanionListEmbed(category)] });
+    }
+
+    // Tracking subcommands require a character
+    const characters = loadCharacters();
+    const charNameArg = interaction.options.getString('character');
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const char = charEntry.data;
+    if (!charEntry.companions) charEntry.companions = {};
+
+    if (sub === 'add') {
+      const displayName = interaction.options.getString('name');
+      const baseInput = interaction.options.getString('base');
+      const form = interaction.options.getString('form') ?? 'young';
+      const custom = interaction.options.getBoolean('custom') ?? false;
+      const compKey = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (charEntry.companions[compKey]) return interaction.reply({ content: `❌ **${char.name}** already has a companion named **${displayName}**.`, ephemeral: true });
+      let baseType, customStats = null;
+      if (custom) {
+        const { monster } = findMonster(baseInput);
+        if (monster) {
+          customStats = {
+            fromBestiary: monster.name,
+            size: monster.size ?? 'Medium',
+            speed: monster.speed ?? '25 feet',
+            hp: monster.hp ?? 20,
+            ac: monster.ac ?? 15,
+            attacks: (monster.attacks ?? []).slice(0, 3),
+            abilities: { str: monster.str ?? 0, dex: monster.dex ?? 0, con: monster.con ?? 0, int: monster.int ?? -4, wis: monster.wis ?? 0, cha: monster.cha ?? 0 },
+          };
+          baseType = 'custom';
+        } else {
+          return interaction.reply({ content: `❌ Custom companion base "${baseInput}" not found in bestiary.`, ephemeral: true });
+        }
+      } else {
+        const { companion } = findCompanion(baseInput);
+        if (!companion) return interaction.reply({ content: `❌ Companion type "${baseInput}" not found. Use \`/companion list\` or set custom:true for homebrew.`, ephemeral: true });
+        baseType = companion.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+      charEntry.companions[compKey] = { displayName, baseType, form, notes: '', customStats, currentHp: null };
+      if (!charEntry.activeCompanion) charEntry.activeCompanion = compKey;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `🐾 **${displayName}** (${custom ? 'custom: ' + baseInput : baseInput}, ${form}) added to **${char.name}**'s companions!${charEntry.activeCompanion === compKey ? ' *(active)*' : ''}\nUse \`/companion sheet\` to view.` });
+    }
+
+    if (sub === 'mine') {
+      const mine = Object.entries(charEntry.companions);
+      if (mine.length === 0) return interaction.reply({ content: `**${char.name}** has no companions. Add one with \`/companion add\`.`, ephemeral: true });
+      const activeKey = charEntry.activeCompanion;
+      const lines = mine.map(([k, c]) => {
+        const active = k === activeKey ? ' ⭐ *(active)*' : '';
+        const customTag = c.baseType === 'custom' && c.customStats?.fromBestiary ? ` *(custom: ${c.customStats.fromBestiary})*` : '';
+        return `• **${c.displayName}** — ${c.form}${customTag}${active}`;
+      });
+      const embed = new EmbedBuilder().setColor(0x2ecc71).setTitle(`🐾 ${char.name}'s Companions`).setDescription(lines.join('\n'));
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === 'sheet') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) return interaction.reply({ content: `❌ ${compNameArg ? 'No companion named "' + compNameArg + '"' : char.name + ' has no active companion'}.`, ephemeral: true });
+      const comp = charEntry.companions[compKey];
+      const scaled = scaleCompanion(comp, char);
+      if (comp.currentHp === null || comp.currentHp === undefined) {
+        comp.currentHp = scaled.maxHp;
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+      }
+      return interaction.reply({ embeds: [buildCompanionSheetEmbed(comp, scaled, char, charEntry, compKey === charEntry.activeCompanion)] });
+    }
+
+    if (sub === 'swap') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
+      charEntry.activeCompanion = compKey;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `⭐ **${charEntry.companions[compKey].displayName}** is now **${char.name}**'s active companion.` });
+    }
+
+    if (sub === 'form') {
+      const compNameArg = interaction.options.getString('companion');
+      const newForm = interaction.options.getString('form');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      const oldForm = charEntry.companions[compKey].form;
+      charEntry.companions[compKey].form = newForm;
+      const scaled = scaleCompanion(charEntry.companions[compKey], char);
+      if (charEntry.companions[compKey].currentHp && charEntry.companions[compKey].currentHp > scaled.maxHp) {
+        charEntry.companions[compKey].currentHp = scaled.maxHp;
+      }
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `🔄 **${charEntry.companions[compKey].displayName}**: **${oldForm}** → **${newForm}**.\nNew max HP: **${scaled.maxHp}** · Attack: **+${scaled.attackBonus}** · AC: **${scaled.ac}**` });
+    }
+
+    if (sub === 'hp') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      const comp = charEntry.companions[compKey];
+      const scaled = scaleCompanion(comp, char);
+      const change = interaction.options.getInteger('change');
+      const setValue = interaction.options.getInteger('set');
+      if (setValue !== null && setValue !== undefined) comp.currentHp = Math.max(0, Math.min(scaled.maxHp, setValue));
+      else if (change !== null && change !== undefined) comp.currentHp = Math.max(0, Math.min(scaled.maxHp, (comp.currentHp ?? scaled.maxHp) + change));
+      else comp.currentHp = scaled.maxHp;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `❤️ **${comp.displayName}**: ${comp.currentHp}/${scaled.maxHp} HP.` });
+    }
+
+    if (sub === 'remove') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
+      const name = charEntry.companions[compKey].displayName;
+      delete charEntry.companions[compKey];
+      if (charEntry.activeCompanion === compKey) {
+        const remaining = Object.keys(charEntry.companions);
+        charEntry.activeCompanion = remaining[0] ?? null;
+      }
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `🗑️ Removed **${name}** from **${char.name}**'s companions.` });
+    }
   }
 
   // ─── /monster ────────────────────────────────────────────────────

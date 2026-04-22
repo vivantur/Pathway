@@ -78,6 +78,20 @@ const commands = [
             { name: 'Clear active character', value: 'clear' }
           ]}
         ]
+      },
+      {
+        name: 'feat', description: 'Add, remove, or list feats that did not import from Pathbuilder',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'action', description: 'Add, remove, or list feats', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Add', value: 'add' },
+            { name: 'Remove', value: 'remove' },
+            { name: 'List', value: 'list' }
+          ]},
+          { name: 'name', description: 'Feat name (required for add/remove)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'level', description: 'Character level when feat was taken (default: current level)', type: ApplicationCommandOptionType.Integer, required: false, min_value: 1, max_value: 20 },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
       }
     ]
   },
@@ -481,6 +495,96 @@ const commands = [
     ]
   },
   {
+    name: 'companion', description: 'Look up and track PF2e animal/plant/undead companions',
+    options: [
+      {
+        name: 'info', description: 'Show the full statblock for a companion',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'name', description: 'Companion name (e.g. Wolf, Bear, Ape)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }]
+      },
+      {
+        name: 'list', description: 'Browse all companions, optionally filtered by category',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'category', description: 'Filter to one category', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Animal', value: 'Animal' },
+            { name: 'Plant', value: 'Plant' },
+            { name: 'Undead', value: 'Undead' }
+          ]}
+        ]
+      },
+      {
+        name: 'add', description: 'Add a companion to one of your characters',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Your name for this companion (e.g. "Scout", "Mr. Wigglesworth")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'base', description: 'Companion type (or bestiary creature if custom:true)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'form', description: 'Current form (young, mature, nimble, savage)', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: 'Young (base)', value: 'young' },
+            { name: 'Mature', value: 'mature' },
+            { name: 'Nimble (Dex-focused)', value: 'nimble' },
+            { name: 'Savage (Str-focused, bigger dice)', value: 'savage' }
+          ]},
+          { name: 'custom', description: 'Set true for homebrew companions (uses bestiary creature as base)', type: ApplicationCommandOptionType.Boolean, required: false },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'mine', description: "List your character's companions",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
+      },
+      {
+        name: 'sheet', description: "Show a companion's full sheet with scaled stats",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'swap', description: 'Set which companion is currently active',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'companion', description: 'Companion name to make active', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'form', description: "Advance a companion's form (young → mature → nimble/savage)",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'form', description: 'New form', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Young (base)', value: 'young' },
+            { name: 'Mature', value: 'mature' },
+            { name: 'Nimble (Dex-focused)', value: 'nimble' },
+            { name: 'Savage (Str-focused, bigger dice)', value: 'savage' }
+          ]},
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'hp', description: "Adjust a companion's HP",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'change', description: 'HP change (+ heals, - damages). Leave all blank to full-heal.', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'set', description: 'Set exact HP value', type: ApplicationCommandOptionType.Integer, required: false, min_value: 0 },
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a companion from your character',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'companion', description: 'Companion name to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'bag', description: 'Manage your inventory bag',
     options: [
       {
@@ -766,12 +870,13 @@ const commands = [
     options: [
       { name: 'start', description: 'Start a new encounter in this channel', type: ApplicationCommandOptionType.Subcommand },
       {
-        name: 'add', description: 'Add your loaded character to initiative',
+        name: 'add', description: 'Add your loaded character (or companion) to initiative',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
           { name: 'bonus', description: 'Override initiative bonus (defaults to Perception)', type: ApplicationCommandOptionType.Integer, required: false },
           { name: 'result', description: 'Use this exact initiative result instead of rolling', type: ApplicationCommandOptionType.Integer, required: false },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
+          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'companion', description: 'Add a companion instead of your character (name, or "active" for the active one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
         ]
       },
       {
