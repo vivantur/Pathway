@@ -592,21 +592,28 @@ function fmt(n) { return n >= 0 ? `+${n}` : `${n}`; }
 function xpToNextLevel() { return 1000; }
 
 function resolveChar(userId, nameArg, characters) {
-  if (!characters[userId] || Object.keys(characters[userId]).length === 0)
+  if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
   let charKey;
   if (!nameArg) {
-    const keys = Object.keys(characters[userId]);
+    // Filter out underscore-prefixed metadata keys (like _activeChar)
+    const keys = Object.keys(characters[userId]).filter(k => !k.startsWith('_'));
     if (keys.length === 1) { charKey = keys[0]; }
     else {
-      const names = Object.values(characters[userId]).map(c => c.name).join(', ');
-      return { error: `You have multiple characters! Specify one.\nYour characters: ${names}` };
+      // Multiple characters — check for an active character setting first.
+      const activeKey = characters[userId]._activeChar;
+      if (activeKey && characters[userId][activeKey]) {
+        charKey = activeKey;
+      } else {
+        const names = keys.map(k => characters[userId][k].name).join(', ');
+        return { error: `You have multiple characters! Specify one with \`character:<name>\`, or set a default with \`/char active character:<name>\`.\nYour characters: ${names}` };
+      }
     }
   } else {
     charKey = nameArg.toLowerCase().replace(/\s+/g, '-');
   }
   if (!characters[userId][charKey]) {
-    const names = Object.values(characters[userId]).map(c => c.name).join(', ');
+    const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
     return { error: `Couldn't find that character. Your characters: ${names}` };
   }
   return { charKey, char: characters[userId][charKey] };
@@ -644,6 +651,44 @@ function computeCharMaxHp(charEntry) {
   const lvl = c.level ?? 1;
   const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
   return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+}
+
+// ── Character HP overlay helpers ─────────────────────────────────────────────
+// Current HP is stored on charEntry.hp as a bot-managed overlay, defaulting to
+// max HP from the sheet if not set. Changes are clamped to [0, max]. Used by
+// /hp and /rest; the in-combat tracker uses its own separate combatant.hp.
+function getCharacterHp(charEntry) {
+  const maxHp = computeCharMaxHp(charEntry);
+  if (typeof charEntry.hp === 'number') return Math.max(0, Math.min(maxHp, charEntry.hp));
+  return maxHp; // no overlay set yet = full HP
+}
+
+function setCharacterHp(charEntry, value) {
+  const maxHp = computeCharMaxHp(charEntry);
+  charEntry.hp = Math.max(0, Math.min(maxHp, Math.floor(value)));
+  return charEntry.hp;
+}
+
+function buildCharHpEmbed(char, charEntry, note = null) {
+  const maxHp = computeCharMaxHp(charEntry);
+  const currentHp = getCharacterHp(charEntry);
+  const pct = maxHp > 0 ? currentHp / maxHp : 0;
+  // 10-segment HP bar
+  const segments = 10;
+  const filled = Math.max(currentHp > 0 ? 1 : 0, Math.round(pct * segments));
+  const bar = '█'.repeat(filled) + '░'.repeat(segments - filled);
+  // Pick a color based on how hurt they are
+  const color = pct <= 0 ? 0x8B0000 : pct <= 0.25 ? 0xe74c3c : pct <= 0.5 ? 0xe67e22 : pct < 1 ? 0xf1c40f : 0x2ecc71;
+  const status = pct <= 0 ? '💀 Down!' : pct <= 0.25 ? '🔴 Critical' : pct <= 0.5 ? '🟠 Bloodied' : pct < 1 ? '🟡 Injured' : '🟢 Healthy';
+
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`❤️ ${char.name}'s Hit Points`)
+    .setDescription(`\`${bar}\`\n**${currentHp} / ${maxHp}** HP · *${status}*`);
+  if (note) embed.addFields({ name: '\u200b', value: note, inline: false });
+  embed.setFooter({ text: '/hp set, /hp add, /rest to restore · Combat uses /init hp' });
+  if (charEntry.art) embed.setThumbnail(charEntry.art);
+  return embed;
 }
 
 // ── HP status helpers for the initiative tracker ────────────────────────────
@@ -2441,8 +2486,12 @@ const HELP_CATEGORIES = {
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/roll', summary: 'Roll dice with full PF2e expression support (e.g. 2d6+3).', options: 'dice, character', example: '/roll dice:1d20+7' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
+      { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
+      { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
       { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
       { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
+      { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset)', example: '/hp add value:-5' },
+      { name: '/char active', summary: 'Set a default character so you don\'t have to type character: every time.', options: 'character (or action:clear)', example: '/char active character:Hylia' },
       { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80 reason:Defeated the goblin chief' },
       { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items. Owner-only write, public read.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:Influence text:+1 with Lady Aldori after the banquet pin:true' },
       { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
@@ -2659,12 +2708,15 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.update({ content: '❌ Could not find that character anymore.', embeds: [], components: [] });
       }
       charOverlay.longRest(charEntry);
+      // Restore HP to max as part of a full rest
+      const maxHp = computeCharMaxHp(charEntry);
+      charEntry.hp = maxHp;
       saveCharacters(characters);
       const focus = charOverlay.getCurrentFocus(charEntry);
       const doneEmbed = new EmbedBuilder()
         .setColor(0x2ecc71)
         .setTitle(`🌙 ${charEntry.data.name} rests and recovers`)
-        .setDescription(`All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.`);
+        .setDescription(`HP restored to **${maxHp}/${maxHp}**. All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.`);
       return interaction.update({ embeds: [doneEmbed], components: [] });
     }
     if (interaction.customId.startsWith('rest_cancel_')) {
@@ -2888,7 +2940,7 @@ client.on('interactionCreate', async (interaction) => {
 
           if (focused.name === 'character') {
             const characters = loadCharacters();
-            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           }
           else if (focused.name === 'caster') {
@@ -2998,7 +3050,7 @@ client.on('interactionCreate', async (interaction) => {
         else if ((cmd === 'rest' || cmd === 'refocus' || cmd === 'resource')) {
           const characters = loadCharacters();
           if (focused.name === 'character') {
-            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           } else if (focused.name === 'caster') {
             const charNameArg = interaction.options.getString('character');
@@ -3009,7 +3061,22 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'xp' && focused.name === 'character') {
           const characters = loadCharacters();
-          const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative') && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if (cmd === 'initiative' && focused.name === 'skill') {
+          // Suggest Perception + the 16 core skills for initiative overrides
+          const skills = ['Perception', 'Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
+          suggestions = pick(skills);
+        }
+        else if (cmd === 'char' && focused.name === 'character' && interaction.options.getSubcommand(false) === 'active') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
         else if (cmd === 'notes') {
@@ -3037,6 +3104,7 @@ client.on('interactionCreate', async (interaction) => {
                 const target = String(charNameArg).toLowerCase();
                 outer2: for (const [oId, userChars] of Object.entries(characters)) {
                   for (const [k, e] of Object.entries(userChars)) {
+                    if (k.startsWith('_') || !e || !e.name) continue;
                     if (e.name.toLowerCase() === target) { ownerId = oId; charKey = k; break outer2; }
                   }
                 }
@@ -3076,7 +3144,7 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(Object.values(skillDatabase).map(s => s.name).filter(Boolean));
           } else if (focused.name === 'character') {
             const characters = loadCharacters();
-            const own = Object.values(characters[interaction.user.id] ?? {}).map(e => e.name);
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           }
         }
@@ -3167,11 +3235,33 @@ client.on('interactionCreate', async (interaction) => {
         const userId = interaction.user.id;
         const key = char.name.toLowerCase().replace(/\s+/g, '-');
         if (!characters[userId]?.[key]) return interaction.editReply(`Couldn't find **${char.name}**. Use \`/char add\` first.`);
-        const existingArt    = characters[userId][key].art ?? null;
-        const existingSenses = characters[userId][key].senses ?? null;
-        characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+
+        // Preserve ALL bot-managed overlay fields across the update so hero
+        // points, XP, HP, notes etc. aren't wiped by the re-import.
+        const prev = characters[userId][key];
+        const preserved = {
+          art: prev.art ?? null,
+          senses: prev.senses ?? null,
+          heroPoints: prev.heroPoints,
+          xp: prev.xp,
+          xpLog: prev.xpLog,
+          hp: prev.hp,
+          overlay: prev.overlay,
+        };
+
+        characters[userId][key] = { name: char.name, data: char, saved: new Date().toISOString(), ...preserved };
+
+        // Clamp current HP to new max if the sheet update lowered the max for any reason.
+        // Recompute max from the new sheet data.
+        if (typeof preserved.hp === 'number') {
+          const newMax = computeCharMaxHp(characters[userId][key]);
+          if (newMax > 0 && preserved.hp > newMax) {
+            characters[userId][key].hp = newMax;
+          }
+        }
+
         saveCharacters(characters);
-        await interaction.editReply(`✅ **${char.name}** updated to level ${char.level}!`);
+        await interaction.editReply(`✅ **${char.name}** updated to level ${char.level}! *(hero points, XP, current HP, and bag preserved.)*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
@@ -3180,11 +3270,13 @@ client.on('interactionCreate', async (interaction) => {
       const characters = loadCharacters();
       const charKey = interaction.options.getString('name').toLowerCase().replace(/\s+/g, '-');
       if (!characters[userId]?.[charKey]) {
-        const names = Object.values(characters[userId] ?? {}).map(c => c.name).join(', ');
+        const names = Object.keys(characters[userId] ?? {}).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
         return interaction.reply(`Couldn't find that character. Your characters: ${names}`);
       }
       const name = characters[userId][charKey].name;
       delete characters[userId][charKey];
+      // If the removed character was the active one, clear that pointer.
+      if (characters[userId]._activeChar === charKey) delete characters[userId]._activeChar;
       saveCharacters(characters);
       await interaction.reply(`✅ **${name}** has been removed.`);
     }
@@ -3192,9 +3284,17 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'list') {
       const userId = interaction.user.id;
       const characters = loadCharacters();
-      if (!characters[userId] || Object.keys(characters[userId]).length === 0)
+      const userChars = characters[userId] ?? {};
+      const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
+      if (charKeys.length === 0)
         return interaction.reply('You have no saved characters! Use `/char add` to add one.');
-      const list = Object.values(characters[userId]).map(c => `• **${c.name}**${c.art ? ' 🖼️' : ''}`).join('\n');
+      const activeKey = userChars._activeChar;
+      const list = charKeys.map(k => {
+        const c = userChars[k];
+        const activeTag = k === activeKey ? ' 📌 *(active)*' : '';
+        const artTag = c.art ? ' 🖼️' : '';
+        return `• **${c.name}**${activeTag}${artTag}`;
+      }).join('\n');
       await interaction.reply(`Your characters:\n${list}`);
     }
 
@@ -3236,6 +3336,50 @@ client.on('interactionCreate', async (interaction) => {
       const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
       await interaction.reply({ content: `✅ **${fieldLabel}** updated for **${charName}**:\n${parsed.join(', ')}`, ephemeral: true });
     }
+
+    // ── /char active ──
+    // Set (or clear, or view) the user's active/default character. When set,
+    // any command that takes a `character:` option will fall through to this
+    // character if the user doesn't specify one. Per-user, applies globally.
+    else if (sub === 'active') {
+      const userId = interaction.user.id;
+      const characters = loadCharacters();
+      if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0) {
+        return interaction.reply({ content: 'You have no saved characters! Use `/char add` to add one.', ephemeral: true });
+      }
+      const nameArg = interaction.options.getString('character');
+      const action = interaction.options.getString('action'); // optional: 'clear' or null
+
+      // /char active action:clear
+      if (action === 'clear') {
+        delete characters[userId]._activeChar;
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Active character cleared. Commands will now prompt you to choose when you have multiple characters.`, ephemeral: true });
+      }
+
+      // /char active (no args) — view current active
+      if (!nameArg) {
+        const activeKey = characters[userId]._activeChar;
+        if (activeKey && characters[userId][activeKey]) {
+          const name = characters[userId][activeKey].name;
+          return interaction.reply({ content: `📌 Active character: **${name}**\n*Use \`/char active character:<n>\` to change, or \`/char active action:clear\` to clear.*`, ephemeral: true });
+        } else {
+          const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
+          return interaction.reply({ content: `📌 No active character set.\n*Your characters: ${names}*\n*Use \`/char active character:<n>\` to set one.*`, ephemeral: true });
+        }
+      }
+
+      // /char active character:<n> — set active
+      const charKey = nameArg.toLowerCase().replace(/\s+/g, '-');
+      if (!characters[userId][charKey]) {
+        const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
+        return interaction.reply({ content: `❌ Couldn't find **${nameArg}**.\nYour characters: ${names}`, ephemeral: true });
+      }
+      characters[userId]._activeChar = charKey;
+      saveCharacters(characters);
+      const charName = characters[userId][charKey].name;
+      return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
+    }
   }
 
   // ─── /sheet ──────────────────────────────────────────────────────
@@ -3255,6 +3399,9 @@ client.on('interactionCreate', async (interaction) => {
       const xpDisplay = `${currentXP} / ${xpToNextLevel(lvl)} XP`;
       const conMod = Math.floor(((ab.con ?? 10) - 10) / 2);
       const totalHP = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+      // If the bot has been tracking HP (via /hp), show current/max; otherwise just max.
+      const currentHP = getCharacterHp(charEntry);
+      const hpDisplay = (currentHP < totalHP) ? `${currentHP}/${totalHP}` : `${totalHP}`;
       const profBonus = Math.floor(lvl / 4) + 2;
       const wisMod = Math.floor(((ab.wis ?? 10) - 10) / 2);
       const percMod = wisMod + calcProfNum(prof.perception ?? 0, lvl);
@@ -3320,7 +3467,7 @@ client.on('interactionCreate', async (interaction) => {
           `**XP:** ${xpDisplay}`
         )
         .addFields(
-          { name: '⚔️ Combat Stats', value: `**AC** ${c.acTotal?.acTotal ?? '?'} · **HP** ${totalHP} · **Speed** ${c.attributes?.speed ?? 30} ft · **Perception** ${fmt(percMod)}\n**Prof Bonus** +${profBonus}` + (spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : ''), inline: false },
+          { name: '⚔️ Combat Stats', value: `**AC** ${c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${c.attributes?.speed ?? 30} ft · **Perception** ${fmt(percMod)}\n**Prof Bonus** +${profBonus}` + (spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : ''), inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
@@ -4064,6 +4211,78 @@ client.on('interactionCreate', async (interaction) => {
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const skillDisplay = skillName.charAt(0).toUpperCase() + skillName.slice(1);
     await interaction.editReply({ embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: charEntry.art ?? null })] });
+  }
+
+  // ─── /perception ─────────────────────────────────────────────────
+  // Roll a Perception check (Wis + proficiency). Used for spotting things,
+  // Seeking, resisting illusions, and by default for Initiative too.
+  else if (commandName === 'perception') {
+    await interaction.deferReply();
+    const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.editReply(error);
+    const c = charEntry.data;
+    const modifier = computeCharPerception(charEntry);
+    const profNum = c.proficiencies?.perception ?? 0;
+    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const total = dieRoll + modifier + extraBonus;
+    await interaction.editReply({ embeds: [buildRollEmbed({
+      title: `👁️ ${c.name} rolls Perception!`,
+      breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
+      charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} Perception (${fmt(modifier)})`,
+      thumbnail: charEntry.art ?? null,
+    })] });
+  }
+
+  // ─── /initiative ─────────────────────────────────────────────────
+  // Roll initiative. Defaults to Perception-based initiative (the PF2e
+  // standard). Allows an optional `skill:` override (e.g. stealth for an
+  // ambush, diplomacy for a social scene). Does NOT add you to an active
+  // encounter — use /init add for that. This is just for rolling.
+  else if (commandName === 'initiative') {
+    await interaction.deferReply();
+    const skillOverride = interaction.options.getString('skill'); // optional
+    const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.editReply(error);
+    const c = charEntry.data;
+    const ab = c.abilities ?? {};
+    const prof = c.proficiencies ?? {};
+    const lvl = c.level ?? 1;
+
+    // Compute the modifier based on skill override or default perception.
+    // Same skill map used by /skill so the two stay consistent.
+    const skillMap = {
+      acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+      deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+      nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+      society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+    };
+    let modifier, profNum, sourceLabel;
+    if (skillOverride && skillOverride.toLowerCase() !== 'perception' && skillMap[skillOverride.toLowerCase()]) {
+      const key = skillOverride.toLowerCase();
+      const abilKey = skillMap[key];
+      const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+      profNum = prof[key] ?? 0;
+      modifier = abilMod + calcProfNum(profNum, lvl);
+      sourceLabel = skillOverride.charAt(0).toUpperCase() + skillOverride.slice(1);
+    } else {
+      modifier = computeCharPerception(charEntry);
+      profNum = prof.perception ?? 0;
+      sourceLabel = 'Perception';
+    }
+    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const total = dieRoll + modifier + extraBonus;
+    await interaction.editReply({ embeds: [buildRollEmbed({
+      title: `⚔️ ${c.name} rolls Initiative!`,
+      breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
+      charName: `${c.name} · ${sourceLabel} (${fmt(modifier)}) · ${profLabels[profNum] ?? 'Untrained'}`,
+      thumbnail: charEntry.art ?? null,
+    })] });
   }
 
   // ─── /save ───────────────────────────────────────────────────────
@@ -5060,6 +5279,65 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
+  // ─── /hp ─────────────────────────────────────────────────────────
+  // Out-of-combat HP tracking. Persists on charEntry.hp (bot-managed overlay),
+  // clamped to [0, maxHp]. In-combat HP uses /init hp instead (tracked on the
+  // combatant, not the character entry). This command is for between-combat
+  // use: setting HP after a fight that wasn't tracked, healing over time, etc.
+  else if (commandName === 'hp') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+    const charNameArg = interaction.options.getString('character');
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const char = charEntry.data;
+
+    if (sub === 'view') {
+      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry)] });
+    }
+
+    if (sub === 'set') {
+      const value = interaction.options.getInteger('value');
+      if (value < 0) return interaction.reply({ content: '❌ HP cannot be negative.', ephemeral: true });
+      const maxHp = computeCharMaxHp(charEntry);
+      const oldHp = getCharacterHp(charEntry);
+      const newHp = setCharacterHp(charEntry, value);
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      let note;
+      if (value > maxHp) note = `✏️ Set to **${newHp}/${maxHp}** (clamped from requested ${value}).`;
+      else note = `✏️ Set to **${newHp}/${maxHp}** (was ${oldHp}).`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'add') {
+      const value = interaction.options.getInteger('value');
+      if (value === 0) return interaction.reply({ content: '❌ Amount cannot be 0.', ephemeral: true });
+      const maxHp = computeCharMaxHp(charEntry);
+      const oldHp = getCharacterHp(charEntry);
+      const newHp = setCharacterHp(charEntry, oldHp + value);
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const sign = value >= 0 ? '+' : '';
+      const actuallyChanged = newHp - oldHp;
+      let note;
+      if (actuallyChanged === 0 && value > 0) note = `💚 Already at full HP (${maxHp}/${maxHp}).`;
+      else if (actuallyChanged === 0 && value < 0) note = `💀 Already at 0 HP.`;
+      else if (value > 0) note = `💚 Healed **+${actuallyChanged}** HP: ${oldHp} → **${newHp}**/${maxHp}.`;
+      else note = `💔 Took **${value}** damage: ${oldHp} → **${newHp}**/${maxHp}.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+    }
+
+    if (sub === 'reset') {
+      const maxHp = computeCharMaxHp(charEntry);
+      charEntry.hp = maxHp;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const note = `🌅 Fully healed: **${maxHp}/${maxHp}** HP.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+    }
+  }
+
   // ─── /xp ─────────────────────────────────────────────────────────
   // Per-character XP tracking. GM manually awards; bot auto-detects
   // level-up thresholds (every 1000 XP) and prompts to level up in
@@ -5158,6 +5436,7 @@ client.on('interactionCreate', async (interaction) => {
       const target = String(charNameArg).toLowerCase();
       outer: for (const [ownerId, userChars] of Object.entries(characters)) {
         for (const [key, entry] of Object.entries(userChars)) {
+          if (key.startsWith('_') || !entry || !entry.name) continue;
           if (entry.name.toLowerCase() === target) {
             charOwnerId = ownerId;
             charKey = key;
