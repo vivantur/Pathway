@@ -118,11 +118,11 @@ const commands = [
     name: 'snippet', description: 'Manage your personal roll snippets (shortcuts for /roll)',
     options: [
       {
-        name: 'create', description: 'Create or update a snippet (e.g. sneaky = +2d6[sneak])',
+        name: 'create', description: 'Create or update a personal snippet. Use %1, %2 for arguments.',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
           { name: 'name',   description: 'Snippet name (letters, numbers, underscores; e.g. "sneaky")', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'expand', description: 'What the snippet expands to (e.g. "+2d6[sneak]" or "+5")',   type: ApplicationCommandOptionType.String, required: true }
+          { name: 'expand', description: 'Expansion text. Use %1, %2 for args; %1:2 sets default 2. e.g. "+%1:2d6[sneak]"', type: ApplicationCommandOptionType.String, required: true }
         ]
       },
       {
@@ -138,6 +138,37 @@ const commands = [
       },
       {
         name: 'delete', description: 'Delete a snippet you created',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Snippet name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'serversnippet', description: 'Manage server-wide roll snippets (anyone can use; GM-only to create/delete)',
+    options: [
+      {
+        name: 'create', description: 'Create or update a server-wide snippet (requires Manage Server)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name',   description: 'Snippet name (letters, numbers, underscores)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'expand', description: 'Expansion text. Use %1, %2 for args; %1:2 sets default 2. e.g. "+%1:2d6[sneak]"', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'list', description: 'List all server-wide snippets for this server',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'view', description: 'Show what a server snippet expands to',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Snippet name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      },
+      {
+        name: 'delete', description: 'Delete a server-wide snippet (requires Manage Server)',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
           { name: 'name', description: 'Snippet name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }

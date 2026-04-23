@@ -404,13 +404,49 @@ function validateSnippetName(name) {
 function validateSnippetExpansion(expansion) {
   if (!expansion || typeof expansion !== 'string') return 'Expansion is required.';
   if (expansion.length > 200) return 'Expansion must be 200 characters or fewer.';
-  // Must contain valid characters only — the same set rollAdvanced validates,
-  // plus allow leading +/- and labels in brackets.
-  const stripped = expansion.toLowerCase().replace(/\[[^\]]+\]/g, '').replace(/\s+/g, '');
+  // Validate: strip brackets (labels), placeholders like %1 or %1:default, whitespace.
+  // What's left must be dice-expression characters only.
+  const stripped = expansion
+    .toLowerCase()
+    .replace(/\[[^\]]+\]/g, '')              // strip [labels]
+    .replace(/%\d+(?::[0-9.]+)?/g, '0')     // replace placeholders with 0
+    .replace(/\s+/g, '');
   if (!/^[0-9dkhlb+\-*/().]*$/.test(stripped)) {
-    return 'Expansion contains invalid characters. Use dice, numbers, +/-/*//, and optional [labels].';
+    return 'Expansion contains invalid characters. Use dice, numbers, +/-/*//, `%N` placeholders, and optional [labels].';
+  }
+  // Check: placeholder numbers must be sequential starting from 1.
+  // (i.e. %1 must exist if %2 is used; no gaps.)
+  const placeholders = [...expansion.matchAll(/%(\d+)(?::([0-9.]+))?/g)];
+  if (placeholders.length > 0) {
+    const nums = placeholders.map(m => parseInt(m[1]));
+    const maxArg = Math.max(...nums);
+    if (maxArg > 9) return 'Placeholder numbers must be between 1 and 9 (e.g. %1, %2).';
+    for (let i = 1; i <= maxArg; i++) {
+      if (!nums.includes(i)) return `Placeholders must be sequential. You used %${maxArg} but no %${i}.`;
+    }
   }
   return null;
+}
+
+// ── Server (guild) snippet helpers ───────────────────────────────────────────
+// File shape: { [guildId]: { [snippetName]: "expansion" } }
+// Only users with the ManageGuild permission can create/delete. Everyone
+// in the server can use them. Personal snippets take precedence over
+// server snippets with the same name.
+function loadServerSnippets() {
+  try { return JSON.parse(fs.readFileSync(dataPath('server_snippets.json'), 'utf8')); }
+  catch { return {}; }
+}
+function saveServerSnippets(data) {
+  fs.writeFileSync(dataPath('server_snippets.json'), JSON.stringify(data, null, 2));
+}
+// Merge personal + server snippets for a given user+guild. Personal wins
+// on name collision. Returns { [name]: expansion }.
+function mergedSnippetsFor(userId, guildId) {
+  const personal = (loadSnippets()[userId] ?? {});
+  const server = guildId ? (loadServerSnippets()[guildId] ?? {}) : {};
+  // Server first, personal override
+  return { ...server, ...personal };
 }
 
 // ── Monster attack library helpers ────────────────────────────────────────────
@@ -2916,20 +2952,112 @@ function rollDiceExpression(raw) {
 function rollAdvanced(raw, userSnippets = {}) {
   if (!raw || typeof raw !== 'string') return { error: 'Empty roll expression.' };
 
-  // ── 1. Expand user snippets ─────────────────────────────────────────────
-  // Snippets are whole-word matches, case-insensitive. We walk the string
-  // and replace any bare word that matches a snippet name with its expansion.
-  let expanded = raw.trim();
-  const snippetNames = Object.keys(userSnippets);
-  if (snippetNames.length) {
-    // Sort longest first so "sneak_attack" beats "sneak" when both exist.
-    snippetNames.sort((a, b) => b.length - a.length);
-    for (const name of snippetNames) {
-      // Match the name as a standalone token (bounded by word boundaries or
-      // common delimiters). Don't replace inside `[labels]` or inside dice.
-      const pattern = new RegExp(`(?<![a-z0-9_])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9_])`, 'gi');
-      expanded = expanded.replace(pattern, userSnippets[name]);
+  // ── 1. Expand snippets with optional arguments ──────────────────────────
+  // Snippets are resolved in source order. A snippet name followed by bare
+  // numbers (or simple dice like 3d6) can "consume" those as positional
+  // args if the snippet's expansion contains %1, %2, ... placeholders.
+  //
+  // Example: snippet `sneak` = "+%1:2d6[sneak]"
+  //   /roll 1d20 sneak      → /roll 1d20 +2d6[sneak]     (default %1=2)
+  //   /roll 1d20 sneak 4    → /roll 1d20 +4d6[sneak]
+  //
+  // Modifiers (adv, crit, rr1...) and other snippet names break the arg run.
+  //
+  // Snippets are case-insensitive. We lower-case names for the lookup table.
+  const snippetTable = {};
+  for (const [name, expansion] of Object.entries(userSnippets)) {
+    snippetTable[name.toLowerCase()] = expansion;
+  }
+  const snippetNames = Object.keys(snippetTable);
+
+  // Reserved tokens that should not be treated as args or snippets.
+  const RESERVED_TOKENS = new Set([
+    'adv', 'advantage', 'dis', 'disadvantage', 'disadv',
+    'crit', 'critical',
+  ]);
+  function isReservedToken(tok) {
+    const low = tok.toLowerCase();
+    if (RESERVED_TOKENS.has(low)) return true;
+    if (/^rr\d+$/.test(low) || /^rr<\d+$/.test(low)) return true;
+    if (/^kh\d+$/.test(low) || /^kl\d+$/.test(low)) return true;
+    return false;
+  }
+  // A valid argument value is a bare number or simple NdM. Anything else
+  // (operators, modifiers, other snippet names, dice expressions with
+  // arithmetic) ends the arg run.
+  function isSnippetArg(tok) {
+    if (!tok) return false;
+    if (isReservedToken(tok)) return false;
+    if (snippetTable[tok.toLowerCase()]) return false;
+    if (/^\d+$/.test(tok)) return true;
+    if (/^\d*d\d+$/i.test(tok)) return true;
+    return false;
+  }
+  // Apply arguments to an expansion. Replaces %N and %N:default with args[N-1]
+  // (or the default if arg not provided). Returns { expansion, consumed,
+  // warnings } where `consumed` is the number of args actually used.
+  function applyArgs(expansion, args) {
+    const placeholders = [...expansion.matchAll(/%(\d+)(?::([0-9.]+))?/g)];
+    // No placeholders: snippet doesn't take args. Consume nothing.
+    if (placeholders.length === 0) return { expansion, consumed: 0, warnings: [] };
+    const maxArg = Math.max(...placeholders.map(m => parseInt(m[1])));
+    const warnings = [];
+    const missing = [];
+    // Only use args up to maxArg. Extras are left for the caller to decide
+    // (our caller consumes exactly maxArg, so extras fall through as
+    // normal tokens — which means they'll error out if they're not valid
+    // dice expression tokens).
+    const usedArgs = args.slice(0, maxArg);
+    const replaced = expansion.replace(/%(\d+)(?::([0-9.]+))?/g, (_, numStr, def) => {
+      const idx = parseInt(numStr) - 1;
+      if (usedArgs[idx] !== undefined) return usedArgs[idx];
+      if (def !== undefined) return def;
+      missing.push(numStr);
+      return '0';
+    });
+    if (missing.length) {
+      warnings.push(`Missing argument(s) ${missing.map(n => '%' + n).join(', ')} — used 0. Provide defaults with \`%N:default\` syntax.`);
     }
+    return { expansion: replaced, consumed: usedArgs.length, warnings };
+  }
+
+  // Pre-compute placeholder counts for each snippet so the walker knows
+  // how many args to grab.
+  const snippetMaxArgs = {};
+  for (const [name, expansion] of Object.entries(snippetTable)) {
+    const phs = [...expansion.matchAll(/%(\d+)(?::([0-9.]+))?/g)];
+    snippetMaxArgs[name] = phs.length ? Math.max(...phs.map(m => parseInt(m[1]))) : 0;
+  }
+
+  const expansionWarnings = [];
+  let expanded;
+  {
+    const allTokens = raw.trim().split(/\s+/).filter(Boolean);
+    const outTokens = [];
+    let i = 0;
+    while (i < allTokens.length) {
+      const tok = allTokens[i];
+      const low = tok.toLowerCase();
+      if (snippetTable[low]) {
+        // Found a snippet name. Peek ahead for args, but only as many as
+        // the snippet's placeholder count.
+        const maxArgs = snippetMaxArgs[low];
+        const collected = [];
+        let j = i + 1;
+        while (j < allTokens.length && collected.length < maxArgs && isSnippetArg(allTokens[j])) {
+          collected.push(allTokens[j]);
+          j++;
+        }
+        const { expansion, consumed, warnings } = applyArgs(snippetTable[low], collected);
+        expansionWarnings.push(...warnings);
+        outTokens.push(expansion);
+        i += 1 + consumed;
+      } else {
+        outTokens.push(tok);
+        i++;
+      }
+    }
+    expanded = outTokens.join(' ');
   }
 
   // ── 2. Extract iteration prefix (N#...) ────────────────────────────────
@@ -2964,7 +3092,18 @@ function rollAdvanced(raw, userSnippets = {}) {
   }
   if (mods.adv && mods.dis) return { error: 'Cannot apply both `adv` and `dis` to the same roll.' };
 
-  let expr = exprTokens.join('');
+  // Join tokens, but insert an implicit `+` between any two adjacent tokens
+  // where the second doesn't start with an operator. This handles cases like
+  // `1d20 +2d6 3` (snippet expansion followed by a bare number) — we want
+  // `1d20+2d6+3`, not `1d20+2d63`.
+  let expr = '';
+  for (let k = 0; k < exprTokens.length; k++) {
+    const tok = exprTokens[k];
+    if (k > 0 && !/^[+\-*/)]/.test(tok) && !/[+\-*/(]$/.test(exprTokens[k - 1])) {
+      expr += '+';
+    }
+    expr += tok;
+  }
   if (!expr) return { error: 'No dice expression found. Example: `1d20+5 adv`' };
 
   // Collapse double operators that can happen when a snippet expansion
@@ -3174,7 +3313,7 @@ function rollAdvanced(raw, userSnippets = {}) {
     summary = `Sum: **${grandTotal}** · Min: ${min} · Max: ${max} · Avg: ${avg}`;
   }
 
-  return { iterations: results, grandTotal, summary, expanded, mods };
+  return { iterations: results, grandTotal, summary, expanded, mods, warnings: expansionWarnings };
 }
 
 // ── Normalize spell ───────────────────────────────────────────────────────────
@@ -3328,11 +3467,15 @@ const HELP_CATEGORIES = {
       { name: '/char info', summary: 'Manually set senses or languages not in the Pathbuilder export.', options: 'field, value, character', example: '/char info field:Senses value:Darkvision' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
-      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv' },
-      { name: '/snippet create', summary: 'Create a per-user roll snippet, e.g. `sneaky` => `+2d6[sneak]`.', options: 'name, expand', example: '/snippet create name:sneaky expand:+2d6[sneak]' },
-      { name: '/snippet list', summary: 'List all your roll snippets.', options: '', example: '/snippet list' },
-      { name: '/snippet view', summary: 'Show what a snippet expands to.', options: 'name', example: '/snippet view name:sneaky' },
-      { name: '/snippet delete', summary: 'Delete one of your snippets.', options: 'name', example: '/snippet delete name:sneaky' },
+      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
+      { name: '/snippet create', summary: 'Create a personal roll snippet. Use `%1`, `%2` etc. for args (e.g. `+%1:2d6[sneak]`).', options: 'name, expand', example: '/snippet create name:sneaky expand:+%1:2d6[sneak]' },
+      { name: '/snippet list', summary: 'List all your personal roll snippets.', options: '', example: '/snippet list' },
+      { name: '/snippet view', summary: 'Show what a personal snippet expands to, and its arguments.', options: 'name', example: '/snippet view name:sneaky' },
+      { name: '/snippet delete', summary: 'Delete one of your personal snippets.', options: 'name', example: '/snippet delete name:sneaky' },
+      { name: '/serversnippet create', summary: 'GM only: create a server-wide snippet everyone on this server can use. Requires Manage Server.', options: 'name, expand', example: '/serversnippet create name:bless expand:+1d4' },
+      { name: '/serversnippet list', summary: 'Show all server-wide snippets for this server.', options: '', example: '/serversnippet list' },
+      { name: '/serversnippet view', summary: 'Show what a server snippet expands to.', options: 'name', example: '/serversnippet view name:bless' },
+      { name: '/serversnippet delete', summary: 'GM only: remove a server-wide snippet. Requires Manage Server.', options: 'name', example: '/serversnippet delete name:bless' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
       { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
@@ -3958,6 +4101,12 @@ client.on('interactionCreate', async (interaction) => {
           const all = loadSnippets();
           const own = Object.keys(all[interaction.user.id] ?? {});
           suggestions = pick(own);
+        }
+        else if (cmd === 'serversnippet' && focused.name === 'name') {
+          // Autocomplete this guild's snippets
+          const all = loadServerSnippets();
+          const here = Object.keys(all[interaction.guildId] ?? {});
+          suggestions = pick(here);
         }
         else if (cmd === 'initiative' && focused.name === 'skill') {
           // Suggest Perception + the 16 core skills for initiative overrides
@@ -4663,8 +4812,15 @@ client.on('interactionCreate', async (interaction) => {
       const existed = !!userSnippets[name.toLowerCase()];
       snippets[interaction.user.id] = { ...userSnippets, [name.toLowerCase()]: expansion };
       saveSnippets(snippets);
+      // Detect arg count to give an accurate usage hint
+      const argCount = (expansion.match(/%\d+/g) ?? []).length
+        ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
+        : 0;
+      const usageHint = argCount > 0
+        ? `Use like: \`/roll 1d20+5 ${name} ${Array.from({ length: argCount }, (_, i) => `<arg${i + 1}>`).join(' ')}\``
+        : `Use like: \`/roll 1d20+5 ${name}\``;
       return interaction.reply({
-        content: `${existed ? '✏️ Updated' : '✅ Created'} snippet **${name}** = \`${expansion}\`\nUse it like: \`/roll 1d20+5 ${name}\``,
+        content: `${existed ? '✏️ Updated' : '✅ Created'} snippet **${name}** = \`${expansion}\`\n${usageHint}`,
         ephemeral: true,
       });
     }
@@ -4673,17 +4829,20 @@ client.on('interactionCreate', async (interaction) => {
       const entries = Object.entries(userSnippets);
       if (entries.length === 0) {
         return interaction.reply({
-          content: '📭 You have no snippets yet. Create one with `/snippet create name:sneaky expand:+2d6[sneak]`',
+          content: '📭 You have no personal snippets yet. Create one with `/snippet create name:sneaky expand:+2d6[sneak]`\n\nTip: use `%1`, `%2`, etc. for arguments. Example: `+%1:2d6[sneak]` lets you do `/roll 1d20 sneaky 4` for 4d6.',
           ephemeral: true,
         });
       }
       entries.sort(([a], [b]) => a.localeCompare(b));
-      const lines = entries.map(([n, v]) => `• **${n}** → \`${v}\``);
+      const lines = entries.map(([n, v]) => {
+        const hasArgs = /%\d+/.test(v);
+        return `• **${n}**${hasArgs ? ' *(takes args)*' : ''} → \`${v}\``;
+      });
       const embed = new EmbedBuilder()
         .setColor(0x7289DA)
         .setTitle(`📋 Your Snippets (${entries.length}/50)`)
         .setDescription(lines.join('\n'))
-        .setFooter({ text: 'Use any snippet name in /roll, e.g. /roll 1d20 sneaky' });
+        .setFooter({ text: 'Use any snippet name in /roll. Snippets with args take numbers after the name.' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -4691,8 +4850,19 @@ client.on('interactionCreate', async (interaction) => {
       const name = interaction.options.getString('name').trim().toLowerCase();
       const expansion = userSnippets[name];
       if (!expansion) return interaction.reply({ content: `❌ No snippet named \`${name}\`.`, ephemeral: true });
+      const phs = [...expansion.matchAll(/%(\d+)(?::([0-9.]+))?/g)];
+      let argInfo = '';
+      if (phs.length > 0) {
+        const maxArg = Math.max(...phs.map(m => parseInt(m[1])));
+        const argLines = [];
+        for (let i = 1; i <= maxArg; i++) {
+          const match = phs.find(m => parseInt(m[1]) === i);
+          argLines.push(`  • \`%${i}\`${match?.[2] ? ` (default: ${match[2]})` : ' *required*'}`);
+        }
+        argInfo = `\n**Arguments:**\n${argLines.join('\n')}`;
+      }
       return interaction.reply({
-        content: `**${name}** → \`${expansion}\``,
+        content: `**${name}** → \`${expansion}\`${argInfo}`,
         ephemeral: true,
       });
     }
@@ -4704,6 +4874,110 @@ client.on('interactionCreate', async (interaction) => {
       snippets[interaction.user.id] = userSnippets;
       saveSnippets(snippets);
       return interaction.reply({ content: `🗑️ Deleted snippet **${name}**.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /serversnippet ───────────────────────────────────────────────
+  // Server-wide snippets, available to everyone in the server. Creation
+  // and deletion require the ManageGuild permission (typically GMs/mods).
+  // Personal snippets override server snippets with the same name.
+  else if (commandName === 'serversnippet') {
+    if (!interaction.guildId) {
+      return interaction.reply({ content: '❌ Server snippets can only be used in a server, not in DMs.', ephemeral: true });
+    }
+    const sub = interaction.options.getSubcommand();
+    const all = loadServerSnippets();
+    const guildSnippets = all[interaction.guildId] ?? {};
+
+    // Helper: can the user manage server snippets?
+    const { PermissionFlagsBits } = require('discord.js');
+    function canManage() {
+      return interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
+    }
+
+    if (sub === 'create') {
+      if (!canManage()) {
+        return interaction.reply({ content: '🔒 Only users with the **Manage Server** permission can create server snippets.', ephemeral: true });
+      }
+      const name = interaction.options.getString('name').trim();
+      const expansion = interaction.options.getString('expand').trim();
+      const nameErr = validateSnippetName(name);
+      if (nameErr) return interaction.reply({ content: `❌ ${nameErr}`, ephemeral: true });
+      const expErr = validateSnippetExpansion(expansion);
+      if (expErr) return interaction.reply({ content: `❌ ${expErr}`, ephemeral: true });
+
+      if (!guildSnippets[name.toLowerCase()] && Object.keys(guildSnippets).length >= 100) {
+        return interaction.reply({ content: '❌ This server has reached the 100 server-snippet limit.', ephemeral: true });
+      }
+
+      const existed = !!guildSnippets[name.toLowerCase()];
+      all[interaction.guildId] = { ...guildSnippets, [name.toLowerCase()]: expansion };
+      saveServerSnippets(all);
+      const argCount = (expansion.match(/%\d+/g) ?? []).length
+        ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
+        : 0;
+      const usageHint = argCount > 0
+        ? `Anyone on this server can use: \`/roll 1d20+5 ${name} ${Array.from({ length: argCount }, (_, i) => `<arg${i + 1}>`).join(' ')}\``
+        : `Anyone on this server can use: \`/roll 1d20+5 ${name}\``;
+      return interaction.reply({
+        content: `${existed ? '✏️ Updated' : '✅ Created'} server snippet **${name}** = \`${expansion}\`\n${usageHint}`,
+      });
+    }
+
+    if (sub === 'list') {
+      const entries = Object.entries(guildSnippets);
+      if (entries.length === 0) {
+        return interaction.reply({
+          content: '📭 This server has no snippets yet. A GM can create one with `/serversnippet create`.',
+          ephemeral: true,
+        });
+      }
+      entries.sort(([a], [b]) => a.localeCompare(b));
+      const lines = entries.map(([n, v]) => {
+        const hasArgs = /%\d+/.test(v);
+        return `• **${n}**${hasArgs ? ' *(takes args)*' : ''} → \`${v}\``;
+      });
+      const embed = new EmbedBuilder()
+        .setColor(0x43B581)
+        .setTitle(`📋 ${interaction.guild?.name ?? 'Server'} Snippets (${entries.length}/100)`)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: 'Everyone on this server can use these. Personal snippets override same-name server snippets.' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'view') {
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      const expansion = guildSnippets[name];
+      if (!expansion) return interaction.reply({ content: `❌ No server snippet named \`${name}\`.`, ephemeral: true });
+      const phs = [...expansion.matchAll(/%(\d+)(?::([0-9.]+))?/g)];
+      let argInfo = '';
+      if (phs.length > 0) {
+        const maxArg = Math.max(...phs.map(m => parseInt(m[1])));
+        const argLines = [];
+        for (let i = 1; i <= maxArg; i++) {
+          const match = phs.find(m => parseInt(m[1]) === i);
+          argLines.push(`  • \`%${i}\`${match?.[2] ? ` (default: ${match[2]})` : ' *required*'}`);
+        }
+        argInfo = `\n**Arguments:**\n${argLines.join('\n')}`;
+      }
+      return interaction.reply({
+        content: `**${name}** → \`${expansion}\`${argInfo}`,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'delete') {
+      if (!canManage()) {
+        return interaction.reply({ content: '🔒 Only users with the **Manage Server** permission can delete server snippets.', ephemeral: true });
+      }
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      if (!guildSnippets[name]) return interaction.reply({ content: `❌ No server snippet named \`${name}\`.`, ephemeral: true });
+      delete guildSnippets[name];
+      all[interaction.guildId] = guildSnippets;
+      saveServerSnippets(all);
+      return interaction.reply({ content: `🗑️ Deleted server snippet **${name}**.` });
     }
 
     return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
@@ -5394,8 +5668,8 @@ client.on('interactionCreate', async (interaction) => {
   // ─── /roll ───────────────────────────────────────────────────────
   else if (commandName === 'roll') {
     const raw = interaction.options.getString('dice');
-    const userSnippets = loadSnippets()[interaction.user.id] ?? {};
-    const result = rollAdvanced(raw, userSnippets);
+    const snippets = mergedSnippetsFor(interaction.user.id, interaction.guildId);
+    const result = rollAdvanced(raw, snippets);
     if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
 
     const charNameArg = interaction.options.getString('character');
@@ -5413,6 +5687,9 @@ client.on('interactionCreate', async (interaction) => {
     );
     let description = lines.join('\n');
     if (result.summary) description += `\n\n${result.summary}`;
+    if (result.warnings?.length) {
+      description += '\n\n⚠️ ' + result.warnings.join('\n⚠️ ');
+    }
 
     // If the input had snippets expanded, show the expansion in the footer
     // so users can see what actually got rolled.
