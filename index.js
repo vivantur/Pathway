@@ -1855,7 +1855,45 @@ function scaleCompanion(comp, char) {
       damageType = m[3] || '';
     }
   }
-  return { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks };
+  const result = { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks };
+
+  // Apply per-companion overrides. Any field set to a non-null value in
+  // comp.overrides replaces the computed value. This lets players tweak
+  // stats (e.g. boost AC, change ability scores, fix odd HP totals) without
+  // losing the automatic scaling for untouched fields.
+  const ov = comp.overrides ?? {};
+  if (ov.hp != null)           result.maxHp = ov.hp;
+  if (ov.ac != null)           result.ac = ov.ac;
+  if (ov.attackBonus != null)  result.attackBonus = ov.attackBonus;
+  if (ov.damageDice)           result.damageDice = ov.damageDice;
+  if (ov.damageBonus != null)  result.damageBonus = ov.damageBonus;
+  if (ov.speed)                result.speed = ov.speed;
+  if (ov.size)                 result.size = ov.size;
+  if (ov.abilities) {
+    result.abilities = { ...result.abilities };
+    for (const key of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
+      if (ov.abilities[key] != null) result.abilities[key] = ov.abilities[key];
+    }
+  }
+  if (ov.saves) {
+    result.saves = { ...result.saves };
+    for (const key of ['fort', 'ref', 'will']) {
+      if (ov.saves[key] != null) result.saves[key] = ov.saves[key];
+    }
+  }
+  // Track which fields were overridden so the sheet can flag them visually
+  result.overriddenFields = [];
+  if (ov.hp != null) result.overriddenFields.push('HP');
+  if (ov.ac != null) result.overriddenFields.push('AC');
+  if (ov.attackBonus != null) result.overriddenFields.push('attack');
+  if (ov.damageDice) result.overriddenFields.push('damage');
+  if (ov.damageBonus != null) result.overriddenFields.push('dmg bonus');
+  if (ov.speed) result.overriddenFields.push('speed');
+  if (ov.size) result.overriddenFields.push('size');
+  if (ov.abilities && Object.values(ov.abilities).some(v => v != null)) result.overriddenFields.push('abilities');
+  if (ov.saves && Object.values(ov.saves).some(v => v != null)) result.overriddenFields.push('saves');
+
+  return result;
 }
 
 function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
@@ -1863,18 +1901,31 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
     .setColor(isActive ? 0xf39c12 : 0x7289DA)
     .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
     .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? (comp.customStats?.fromBestiary ?? 'custom') : comp.baseType} companion*`);
+
+  // Show portrait if set. Prefer companion.art, fall back to character art.
+  if (comp.art) embed.setThumbnail(comp.art);
+  else if (charEntry.art) embed.setThumbnail(charEntry.art);
+
+  // Mark overridden fields with a small asterisk in the label
+  const ov = comp.overrides ?? {};
+  const flag = (key) => ov[key] != null ? ' ✏️' : '';
+  const abFlag = (key) => (ov.abilities && ov.abilities[key] != null) ? '\\*' : '';
+  const saveFlag = (key) => (ov.saves && ov.saves[key] != null) ? '\\*' : '';
+
   const hp = comp.currentHp ?? scaled.maxHp;
-  embed.addFields({ name: '🛡️ Defenses', value: `**HP** ${hp}/${scaled.maxHp} · **AC** ${scaled.ac} · **Size** ${scaled.size} · **Speed** ${scaled.speed}`, inline: false });
-  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)} · **Ref** ${fmt(scaled.saves.ref)} · **Will** ${fmt(scaled.saves.will)}`, inline: false });
+  embed.addFields({ name: '🛡️ Defenses', value: `**HP** ${hp}/${scaled.maxHp}${flag('hp')} · **AC** ${scaled.ac}${flag('ac')} · **Size** ${scaled.size}${flag('size')} · **Speed** ${scaled.speed}${flag('speed')}`, inline: false });
+  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)}${saveFlag('fort')} · **Ref** ${fmt(scaled.saves.ref)}${saveFlag('ref')} · **Will** ${fmt(scaled.saves.will)}${saveFlag('will')}`, inline: false });
   const ab = scaled.abilities;
-  embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)} · Dex ${fmt(ab.dex ?? 0)} · Con ${fmt(ab.con ?? 0)} · Int ${fmt(ab.int ?? -4)} · Wis ${fmt(ab.wis ?? 0)} · Cha ${fmt(ab.cha ?? 0)}`, inline: false });
+  embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)}${abFlag('str')} · Dex ${fmt(ab.dex ?? 0)}${abFlag('dex')} · Con ${fmt(ab.con ?? 0)}${abFlag('con')} · Int ${fmt(ab.int ?? -4)}${abFlag('int')} · Wis ${fmt(ab.wis ?? 0)}${abFlag('wis')} · Cha ${fmt(ab.cha ?? 0)}${abFlag('cha')}`, inline: false });
   if (scaled.primaryAttack) {
     const traits = scaled.primaryAttack.traits?.length ? ` *(${scaled.primaryAttack.traits.join(', ')})*` : '';
     const dmgBonus = scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : `${scaled.damageBonus}`) : '';
-    embed.addFields({ name: '⚔️ Primary Attack', value: `**${scaled.primaryAttack.name}**${traits}\n**+${scaled.attackBonus}** to hit · **${scaled.damageDice}${dmgBonus}** ${scaled.damageType}`, inline: false });
+    embed.addFields({ name: '⚔️ Primary Attack', value: `**${scaled.primaryAttack.name}**${traits}\n**+${scaled.attackBonus}**${flag('attackBonus')} to hit · **${scaled.damageDice}${flag('damageDice')}${dmgBonus}${flag('damageBonus')}** ${scaled.damageType}`, inline: false });
   }
   if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
-  embed.setFooter({ text: `Character: ${char.name} · /companion swap to change · /companion form to advance` });
+  const hasOverrides = (scaled.overriddenFields ?? []).length > 0;
+  const footerExtra = hasOverrides ? ` · ✏️ = overridden` : '';
+  embed.setFooter({ text: `Character: ${char.name} · /companion set to customize${footerExtra}` });
   return embed;
 }
 
@@ -3550,6 +3601,10 @@ const HELP_CATEGORIES = {
       { name: '/skillinfo', summary: 'Learn how a skill works: uses, actions by proficiency, DC examples. Shows your modifier if you have a character loaded.', options: 'skill, character', example: '/skillinfo skill:Athletics' },
       { name: '/class', summary: 'Look up a PF2e class with 5-page navigation: overview, proficiencies, features, class feats, subclass.', options: 'class, character', example: '/class class:Fighter' },
       { name: '/companion', summary: 'Look up animal/plant/undead companions. Shows stats, support benefit, and advanced maneuver.', options: '(subcommands: info, list)', example: '/companion info name:Wolf' },
+      { name: '/companion art', summary: 'Set a portrait image URL for one of your companions. Shows on the sheet.', options: 'url, companion, character', example: '/companion art url:https://... companion:Fluffy' },
+      { name: '/companion set', summary: 'Override any companion stat (ability scores, AC, HP, saves, attack, damage, speed, size).', options: 'stat, value, companion, character', example: '/companion set stat:ac value:22 companion:Fluffy' },
+      { name: '/companion reset', summary: 'Clear one override so the stat auto-scales again.', options: 'stat, companion, character', example: '/companion reset stat:ac companion:Fluffy' },
+      { name: '/companion resetall', summary: 'Clear ALL stat overrides on a companion (keeps art and notes).', options: 'companion, character', example: '/companion resetall companion:Fluffy' },
     ],
   },
 
@@ -4246,7 +4301,10 @@ client.on('interactionCreate', async (interaction) => {
             else suggestions = pick(companionDatabase.map(c => c.name));
           } else if (focused.name === 'companion') {
             const characters = loadCharacters();
-            const { char: ce } = resolveChar(interaction.user.id, null, characters);
+            // If the user has partially filled the character: field, use that
+            // character's companions; otherwise default to the active one.
+            const charArg = interaction.options.getString('character');
+            const { char: ce } = resolveChar(interaction.user.id, charArg, characters);
             const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
             suggestions = pick(comps);
           } else if (focused.name === 'character') {
@@ -6182,6 +6240,169 @@ client.on('interactionCreate', async (interaction) => {
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       return interaction.reply({ content: `🗑️ Removed **${name}** from **${char.name}**'s companions.` });
+    }
+
+    // ── /companion art — set portrait URL ──────────────────────────────
+    if (sub === 'art') {
+      const compNameArg = interaction.options.getString('companion');
+      const url = interaction.options.getString('url');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found. Use \`/companion mine\` to see your companions.`, ephemeral: true });
+      }
+      // Empty / "clear" / "none" wipes the art
+      if (!url || /^(clear|none|remove|off)$/i.test(url.trim())) {
+        delete charEntry.companions[compKey].art;
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🗑️ Cleared portrait for **${charEntry.companions[compKey].displayName}**.`, ephemeral: true });
+      }
+      // Basic URL validation — must start with http(s) and point at a plausible image host
+      if (!/^https?:\/\/\S+\.\S+/.test(url)) {
+        return interaction.reply({ content: `❌ That doesn't look like a valid URL. Use a direct image link (e.g. https://i.imgur.com/abc.png).`, ephemeral: true });
+      }
+      charEntry.companions[compKey].art = url.trim();
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `🖼️ Updated portrait for **${charEntry.companions[compKey].displayName}**.\nView it with \`/companion sheet\`.`, ephemeral: true });
+    }
+
+    // ── /companion set — override any stat field ───────────────────────
+    // stat choice values:
+    //   str, dex, con, int, wis, cha   → overrides.abilities[key]
+    //   ac, hp, speed, size            → overrides[key]
+    //   fort, ref, will                → overrides.saves[key]
+    //   attack, damage_dice, damage_bonus → overrides[key]
+    if (sub === 'set') {
+      const compNameArg = interaction.options.getString('companion');
+      const stat = interaction.options.getString('stat');
+      const rawValue = interaction.options.getString('value');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found. Use \`/companion mine\` to see your companions.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      if (!comp.overrides) comp.overrides = { abilities: {}, saves: {} };
+      if (!comp.overrides.abilities) comp.overrides.abilities = {};
+      if (!comp.overrides.saves) comp.overrides.saves = {};
+
+      // Classify the stat and validate the value.
+      const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+      const saveKeys = ['fort', 'ref', 'will'];
+      const numericKeys = ['ac', 'hp', 'attack', 'damage_bonus'];
+      const stringKeys = ['speed', 'size', 'damage_dice'];
+
+      function parseIntStrict(s) {
+        // Accept leading +/- and whitespace; reject anything non-numeric
+        const cleaned = String(s).trim();
+        if (!/^[+-]?\d+$/.test(cleaned)) return null;
+        return parseInt(cleaned);
+      }
+
+      let displayLabel, displayValue;
+      if (abilityKeys.includes(stat)) {
+        const n = parseIntStrict(rawValue);
+        if (n === null) return interaction.reply({ content: `❌ \`${stat}\` expects a number (ability modifier, e.g. 3 or -1).`, ephemeral: true });
+        if (n < -5 || n > 10) return interaction.reply({ content: `❌ Ability modifier ${n} is out of range (-5 to +10).`, ephemeral: true });
+        comp.overrides.abilities[stat] = n;
+        displayLabel = stat.toUpperCase();
+        displayValue = fmt(n);
+      }
+      else if (saveKeys.includes(stat)) {
+        const n = parseIntStrict(rawValue);
+        if (n === null) return interaction.reply({ content: `❌ \`${stat}\` expects a number (total save bonus, e.g. 12).`, ephemeral: true });
+        if (n < -5 || n > 50) return interaction.reply({ content: `❌ Save bonus ${n} is out of range (-5 to +50).`, ephemeral: true });
+        comp.overrides.saves[stat] = n;
+        displayLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
+        displayValue = fmt(n);
+      }
+      else if (stat === 'ac' || stat === 'hp' || stat === 'attack' || stat === 'damage_bonus') {
+        const n = parseIntStrict(rawValue);
+        if (n === null) return interaction.reply({ content: `❌ \`${stat}\` expects a number.`, ephemeral: true });
+        const bounds = { ac: [0, 80], hp: [0, 2000], attack: [-5, 60], damage_bonus: [-5, 40] };
+        const [lo, hi] = bounds[stat];
+        if (n < lo || n > hi) return interaction.reply({ content: `❌ ${stat} ${n} is out of range (${lo} to ${hi}).`, ephemeral: true });
+        const keyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus' };
+        comp.overrides[keyMap[stat]] = n;
+        displayLabel = stat === 'damage_bonus' ? 'Damage bonus' : stat.toUpperCase();
+        displayValue = stat === 'attack' || stat === 'damage_bonus' ? fmt(n) : String(n);
+      }
+      else if (stat === 'damage_dice') {
+        if (!/^\d+d\d+$/i.test(rawValue.trim())) {
+          return interaction.reply({ content: `❌ \`damage_dice\` expects a dice expression like \`2d6\` or \`1d10\`.`, ephemeral: true });
+        }
+        comp.overrides.damageDice = rawValue.trim().toLowerCase();
+        displayLabel = 'Damage dice';
+        displayValue = comp.overrides.damageDice;
+      }
+      else if (stat === 'speed') {
+        if (rawValue.length > 60) return interaction.reply({ content: `❌ Speed text is too long (60 chars max).`, ephemeral: true });
+        comp.overrides.speed = rawValue.trim();
+        displayLabel = 'Speed';
+        displayValue = comp.overrides.speed;
+      }
+      else if (stat === 'size') {
+        const normalized = rawValue.trim().charAt(0).toUpperCase() + rawValue.trim().slice(1).toLowerCase();
+        if (!['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'].includes(normalized)) {
+          return interaction.reply({ content: `❌ Size must be one of: Tiny, Small, Medium, Large, Huge, Gargantuan.`, ephemeral: true });
+        }
+        comp.overrides.size = normalized;
+        displayLabel = 'Size';
+        displayValue = normalized;
+      }
+      else {
+        return interaction.reply({ content: `❌ Unknown stat \`${stat}\`.`, ephemeral: true });
+      }
+
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `✏️ **${comp.displayName}** — ${displayLabel} set to **${displayValue}**.\nView with \`/companion sheet\`. Undo with \`/companion reset stat:${stat}\`.`, ephemeral: true });
+    }
+
+    // ── /companion reset — clear one override ──────────────────────────
+    if (sub === 'reset') {
+      const compNameArg = interaction.options.getString('companion');
+      const stat = interaction.options.getString('stat');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      if (!comp.overrides) {
+        return interaction.reply({ content: `ℹ️ **${comp.displayName}** has no overrides to reset.`, ephemeral: true });
+      }
+
+      const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+      const saveKeys = ['fort', 'ref', 'will'];
+      const topKeyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus', damage_dice: 'damageDice', speed: 'speed', size: 'size' };
+
+      if (abilityKeys.includes(stat)) {
+        if (comp.overrides.abilities) delete comp.overrides.abilities[stat];
+      } else if (saveKeys.includes(stat)) {
+        if (comp.overrides.saves) delete comp.overrides.saves[stat];
+      } else if (topKeyMap[stat]) {
+        delete comp.overrides[topKeyMap[stat]];
+      } else {
+        return interaction.reply({ content: `❌ Unknown stat \`${stat}\`.`, ephemeral: true });
+      }
+
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `↺ Reset \`${stat}\` on **${comp.displayName}** to auto-calculated.`, ephemeral: true });
+    }
+
+    // ── /companion resetall — clear all overrides ──────────────────────
+    if (sub === 'resetall') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      comp.overrides = { abilities: {}, saves: {} };
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `↺ Cleared all stat overrides on **${comp.displayName}**. Using auto-calculated stats again.`, ephemeral: true });
     }
   }
 

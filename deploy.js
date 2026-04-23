@@ -706,6 +706,76 @@ const commands = [
           { name: 'companion', description: 'Companion name to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
           { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
         ]
+      },
+      {
+        name: 'art', description: 'Set or clear a portrait image for your companion',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'url', description: 'Direct image URL (or "clear" to remove)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'set', description: 'Override a companion stat (AC, HP, ability scores, saves, attack, damage, etc.)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'stat', description: 'Which stat to override', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Strength (mod)',  value: 'str' },
+            { name: 'Dexterity (mod)', value: 'dex' },
+            { name: 'Constitution (mod)', value: 'con' },
+            { name: 'Intelligence (mod)', value: 'int' },
+            { name: 'Wisdom (mod)',    value: 'wis' },
+            { name: 'Charisma (mod)',  value: 'cha' },
+            { name: 'AC',              value: 'ac' },
+            { name: 'Max HP',          value: 'hp' },
+            { name: 'Fortitude save',  value: 'fort' },
+            { name: 'Reflex save',     value: 'ref' },
+            { name: 'Will save',       value: 'will' },
+            { name: 'Attack bonus',    value: 'attack' },
+            { name: 'Damage dice (e.g. 2d6)', value: 'damage_dice' },
+            { name: 'Damage bonus',    value: 'damage_bonus' },
+            { name: 'Speed (text)',    value: 'speed' },
+            { name: 'Size',            value: 'size' },
+          ]},
+          { name: 'value', description: 'Value to set (numbers: 3 or -1 · damage_dice: 2d6 · speed: 40 feet · size: Medium)', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'reset', description: 'Clear a single stat override so the value auto-scales again',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'stat', description: 'Which stat to clear', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Strength',     value: 'str' },
+            { name: 'Dexterity',    value: 'dex' },
+            { name: 'Constitution', value: 'con' },
+            { name: 'Intelligence', value: 'int' },
+            { name: 'Wisdom',       value: 'wis' },
+            { name: 'Charisma',     value: 'cha' },
+            { name: 'AC',           value: 'ac' },
+            { name: 'Max HP',       value: 'hp' },
+            { name: 'Fortitude',    value: 'fort' },
+            { name: 'Reflex',       value: 'ref' },
+            { name: 'Will',         value: 'will' },
+            { name: 'Attack bonus', value: 'attack' },
+            { name: 'Damage dice',  value: 'damage_dice' },
+            { name: 'Damage bonus', value: 'damage_bonus' },
+            { name: 'Speed',        value: 'speed' },
+            { name: 'Size',         value: 'size' },
+          ]},
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'resetall', description: 'Clear ALL stat overrides on a companion (keeps art and notes)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
       }
     ]
   },
