@@ -100,6 +100,10 @@ const commands = [
     options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
   },
   {
+    name: 'portrait', description: 'Show your character\'s current portrait/art',
+    options: [{ name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }]
+  },
+  {
     name: 'spellbook', description: 'Show all spells for your character',
     options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
   },

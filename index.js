@@ -2977,6 +2977,7 @@ const HELP_CATEGORIES = {
       { name: '/char feats', summary: 'Show all feats on your character.', options: 'name', example: '/char feats' },
       { name: '/char info', summary: 'Manually set senses or languages not in the Pathbuilder export.', options: 'field, value, character', example: '/char info field:Senses value:Darkvision' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
+      { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/roll', summary: 'Roll dice with full PF2e expression support (e.g. 2d6+3).', options: 'dice, character', example: '/roll dice:1d20+7' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
@@ -3593,7 +3594,7 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
-        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative') && focused.name === 'character') {
+        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -4234,6 +4235,47 @@ client.on('interactionCreate', async (interaction) => {
       console.error(err);
       await interaction.editReply('Something went wrong. Check the terminal for details!');
     }
+  }
+
+  // ─── /portrait ─────────────────────────────────────────────────
+  // Show the current active art for a character, large. Defaults to the
+  // caller's active character; takes an optional `character:` arg to pick
+  // one by name. If no art is set, points the user at `/char art`.
+  else if (commandName === 'portrait') {
+    const characters = loadCharacters();
+    const nameArg = interaction.options.getString('character');
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+
+    const c = charEntry.data ?? {};
+    const charName = charEntry.name || c.name || 'Unknown';
+
+    if (!charEntry.art) {
+      return interaction.reply({
+        content: `🖼️ **${charName}** doesn't have a portrait set yet. Use \`/char art url:<image-url> character:${charName}\` to add one.`,
+        ephemeral: true,
+      });
+    }
+
+    const lvl = c.level ?? '?';
+    const ancestryDisplay = `${c.ancestry ?? ''} ${c.heritage ?? ''}`.trim();
+    const classDisplay = c.class ?? '';
+    const dualClass = c.dualClass ? ` / ${c.dualClass}` : '';
+    const subtitleParts = [
+      ancestryDisplay || null,
+      classDisplay ? `${classDisplay}${dualClass}` : null,
+      lvl !== '?' ? `Level ${lvl}` : null,
+    ].filter(Boolean);
+    const subtitle = subtitleParts.length ? `*${subtitleParts.join(' · ')}*` : null;
+
+    const embed = new EmbedBuilder()
+      .setColor(0x7289DA)
+      .setTitle(`🖼️ ${charName}`)
+      .setImage(charEntry.art);
+    if (subtitle) embed.setDescription(subtitle);
+    embed.setFooter({ text: 'Update with /char art · Showing current portrait' });
+
+    await interaction.reply({ embeds: [embed] });
   }
 
   // ─── /spellbook ──────────────────────────────────────────────────
