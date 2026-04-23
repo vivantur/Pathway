@@ -19,21 +19,29 @@ const commands = [
     name: 'char', description: 'Character management',
     options: [
       {
-        name: 'add', description: 'Add a character from a Pathbuilder JSON export',
+        name: 'add', description: 'Add a character from a Pathbuilder .json or .txt file',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'file', description: 'Your Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+        options: [{ name: 'file', description: 'Your Pathbuilder JSON export (.json or .txt)', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
-        name: 'update', description: 'Update an existing character with a fresh Pathbuilder JSON export',
+        name: 'update', description: 'Update an existing character with a fresh Pathbuilder export (keeps HP/XP/notes)',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
+        options: [{ name: 'file', description: 'Your updated Pathbuilder JSON (.json or .txt)', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
-        name: 'paste', description: 'Paste your Pathbuilder JSON into a popup — easiest method on mobile (no file picker)',
+        name: 'paste', description: 'Paste your Pathbuilder JSON into a popup (small characters only)',
         type: ApplicationCommandOptionType.Subcommand
       },
       {
-        name: 'pasteupdate', description: 'Update an existing character by pasting fresh JSON (keeps hero points, XP, HP, notes)',
+        name: 'pasteupdate', description: 'Update an existing character via paste popup (keeps HP/XP/notes)',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'pastemsg', description: 'Import by posting JSON as a chat message (best method on mobile)',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'pastemsgupdate', description: 'Update by posting JSON as a chat message (keeps HP/XP/notes)',
         type: ApplicationCommandOptionType.Subcommand
       },
       {
