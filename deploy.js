@@ -327,6 +327,58 @@ const commands = [
     ]
   },
   {
+    name: 'spelladd', description: 'Bot owner: add a homebrew spell to the global spell database',
+    options: [
+      {
+        name: 'paste', description: 'Paste a full PF2e spell statblock as text (AoN format)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'statblock', description: 'Full statblock text (name, Spell/Cantrip N, traits, cast, range, description, heightened, etc.)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'file', description: 'Upload a .txt file containing the full spell statblock',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'file', description: 'Plain-text (.txt) file with the spell statblock', type: ApplicationCommandOptionType.Attachment, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a homebrew spell from the global database',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'spell', description: 'Name of the homebrew spell to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'itemadd', description: 'Bot owner: add a homebrew item to the global item database',
+    options: [
+      {
+        name: 'paste', description: 'Paste a full PF2e item statblock as text (AoN format)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'statblock', description: 'Full statblock text (name, Item N, traits, Price, Usage, Bulk, description, etc.)', type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'file', description: 'Upload a .txt file containing the full item statblock',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'file', description: 'Plain-text (.txt) file with the item statblock', type: ApplicationCommandOptionType.Attachment, required: true }
+        ]
+      },
+      {
+        name: 'remove', description: 'Remove a homebrew item from the global database',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'item', description: 'Name of the homebrew item to remove', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
+    ]
+  },
+  {
     name: 'monsterart', description: 'GM: attach a custom image to a monster\'s stat block (per-server)',
     options: [
       {

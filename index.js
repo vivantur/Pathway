@@ -18,6 +18,8 @@ const {
 } = require('./encounters');
 const { getPreset, listPresets } = require('./effects');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
+const { parseSpellStatBlock, toSlug: spellSlug } = require('./spellParser');
+const { parseItemStatBlock,  toSlug: itemSlug  } = require('./itemParser');
 const charOverlay = require('./characterOverlay');
 const ca = require('./combatAutomation');
 
@@ -178,6 +180,43 @@ function removeMonsterFromBestiary(slugOrName) {
   return { removed: false };
 }
 
+// ── Spell database mutation helpers ───────────────────────────────────────────
+// spells.json is a flat array on disk. Atomic temp-file write, same as bestiary.
+function persistSpells() {
+  const tmp = 'spells.json.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(spellDatabase, null, 2), 'utf8');
+  fs.renameSync(tmp, 'spells.json');
+}
+
+function addSpellToDatabase(entry) {
+  const normalize = s => String(s ?? '').toLowerCase().trim();
+  let finalName = entry.name;
+  let counter = 1;
+  while (spellDatabase.some(s => normalize(s.name) === normalize(finalName))) {
+    counter++;
+    finalName = counter === 2 ? `${entry.name} (Homebrew)` : `${entry.name} (Homebrew ${counter})`;
+  }
+  entry.name = finalName;
+  spellDatabase.push(entry);
+  persistSpells();
+  return finalName;
+}
+
+function removeSpellFromDatabase(nameOrSlug) {
+  const normalize = s => String(s ?? '').toLowerCase().trim();
+  const q = normalize(nameOrSlug);
+  const idx = spellDatabase.findIndex(s => normalize(s.name) === q);
+  if (idx < 0) return { removed: false };
+  const removed = spellDatabase[idx];
+  // Only allow removal of entries flagged as homebrew. Core spells are protected.
+  if (!removed._homebrew) {
+    return { removed: false, protected: true, name: removed.name };
+  }
+  spellDatabase.splice(idx, 1);
+  persistSpells();
+  return { removed: true, name: removed.name };
+}
+
 let itemDatabase = [];
 try {
   const itemRaw = JSON.parse(fs.readFileSync('items.json', 'utf8'));
@@ -188,6 +227,62 @@ try {
   console.log(`Loaded ${itemDatabase.length} items from database.`);
 } catch (err) {
   console.error('Could not load items.json:', err.message);
+}
+
+// ── Item database mutation helpers ────────────────────────────────────────────
+// itemDatabase is a flat array in memory, but items.json on disk is
+// { meta, items: { slug: {...} } }. Persist rebuilds the map from the array.
+function persistItems() {
+  let meta = null;
+  try {
+    const existing = JSON.parse(fs.readFileSync('items.json', 'utf8'));
+    meta = existing.meta ?? null;
+  } catch (_) { /* ignore */ }
+
+  const itemsMap = {};
+  for (const item of itemDatabase) {
+    const key = item.id || itemSlug(item.name);
+    itemsMap[key] = item;
+  }
+  const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
+
+  const tmp = 'items.json.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
+  fs.renameSync(tmp, 'items.json');
+}
+
+function addItemToDatabase(entry) {
+  const normalize = s => String(s ?? '').toLowerCase().trim();
+  let finalName = entry.name;
+  let finalId = entry.id;
+  let counter = 1;
+  while (itemDatabase.some(i => normalize(i.name) === normalize(finalName) || i.id === finalId)) {
+    counter++;
+    finalName = counter === 2 ? `${entry.name} (Homebrew)` : `${entry.name} (Homebrew ${counter})`;
+    finalId = `${entry.id}-homebrew${counter === 2 ? '' : '-' + counter}`;
+  }
+  entry.name = finalName;
+  entry.id = finalId;
+  entry.lookup_name = finalName.toLowerCase();
+  itemDatabase.push(entry);
+  persistItems();
+  return finalName;
+}
+
+function removeItemFromDatabase(nameOrSlug) {
+  const normalize = s => String(s ?? '').toLowerCase().trim();
+  const q = normalize(nameOrSlug);
+  const idx = itemDatabase.findIndex(i =>
+    normalize(i.name) === q || i.id === nameOrSlug || normalize(i.lookup_name) === q
+  );
+  if (idx < 0) return { removed: false };
+  const removed = itemDatabase[idx];
+  if (!removed._homebrew) {
+    return { removed: false, protected: true, name: removed.name };
+  }
+  itemDatabase.splice(idx, 1);
+  persistItems();
+  return { removed: true, name: removed.name };
 }
 
 let deityDatabase = [];
@@ -2968,6 +3063,12 @@ const HELP_CATEGORIES = {
       { name: '/monsteradd paste', summary: 'Bot-owner only: add a missing creature to the global bestiary from pasted text.', options: 'statblock', example: '/monsteradd paste statblock:[paste AoN text]' },
       { name: '/monsteradd file', summary: 'Bot-owner only: add a creature from a .txt file.', options: 'file', example: '/monsteradd file file:[.txt attachment]' },
       { name: '/monsteradd remove', summary: 'Bot-owner only: remove a creature from the bestiary.', options: 'monster', example: '/monsteradd remove monster:Adult Bog Dragon' },
+      { name: '/spelladd paste', summary: 'Bot-owner only: add a homebrew spell to the global database from pasted text.', options: 'statblock', example: '/spelladd paste statblock:[paste AoN text]' },
+      { name: '/spelladd file', summary: 'Bot-owner only: add a homebrew spell from a .txt file.', options: 'file', example: '/spelladd file file:[.txt attachment]' },
+      { name: '/spelladd remove', summary: 'Bot-owner only: remove a homebrew spell from the database.', options: 'spell', example: '/spelladd remove spell:Mind Lash' },
+      { name: '/itemadd paste', summary: 'Bot-owner only: add a homebrew item to the global database from pasted text.', options: 'statblock', example: '/itemadd paste statblock:[paste AoN text]' },
+      { name: '/itemadd file', summary: 'Bot-owner only: add a homebrew item from a .txt file.', options: 'file', example: '/itemadd file file:[.txt attachment]' },
+      { name: '/itemadd remove', summary: 'Bot-owner only: remove a homebrew item from the database.', options: 'item', example: '/itemadd remove item:Flaming Rapier' },
       { name: '/monsterart set', summary: 'Attach a custom image to a monster\'s stat block for this server.', options: 'monster, url', example: '/monsterart set monster:Goblin Warrior url:https://...' },
       { name: '/monsterart remove', summary: 'Remove the custom image for a monster on this server.', options: 'monster', example: '/monsterart remove monster:Goblin Warrior' },
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
@@ -3563,6 +3664,14 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'monsteradd' && focused.name === 'monster') {
           // For /monsteradd remove, suggest the full bestiary.
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
+        else if (cmd === 'spelladd' && focused.name === 'spell') {
+          // Only suggest homebrew spells for removal.
+          suggestions = pick(spellDatabase.filter(s => s._homebrew).map(s => s.name).filter(Boolean));
+        }
+        else if (cmd === 'itemadd' && focused.name === 'item') {
+          // Only suggest homebrew items for removal.
+          suggestions = pick(itemDatabase.filter(i => i._homebrew).map(i => i.name).filter(Boolean));
         }
         else if (cmd === 'deity' && focused.name === 'name') {
           suggestions = pick(deityDatabase.map(d => d.name));
@@ -5424,6 +5533,159 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ No creature found for \`${input}\` in the bestiary.`, ephemeral: true });
       }
       return interaction.reply({ content: `🗑️ Removed **${result.name}** (key: \`${result.key}\`) from the global bestiary.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /spelladd ────────────────────────────────────────────────────────────
+  // Owner-only. Parses a pasted statblock (or attached .txt) and appends it to
+  // spells.json so it shows up in /spell and autocomplete for everyone.
+  else if (commandName === 'spelladd') {
+    if (!BOT_OWNER_ID) {
+      return interaction.reply({
+        content: '⚙️ `/spelladd` is disabled: the bot operator hasn\'t set the `BOT_OWNER_ID` environment variable. Add it to `.env` and restart the bot.',
+        ephemeral: true,
+      });
+    }
+    if (!isBotOwner(interaction.user.id)) {
+      return interaction.reply({
+        content: '🔒 Only the bot owner can add homebrew spells to the global database.',
+        ephemeral: true,
+      });
+    }
+
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'paste') {
+      const raw = interaction.options.getString('statblock');
+      await interaction.deferReply({ ephemeral: true });
+      const result = parseSpellStatBlock(raw);
+      if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      const finalName = addSpellToDatabase(result.entry);
+      const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
+      return interaction.editReply({
+        content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view. Remove with \`/spelladd remove spell:${finalName}\`.`,
+        embeds: [buildSpellEmbed(result.entry)],
+      });
+    }
+
+    if (sub === 'file') {
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment) return interaction.reply({ content: '❌ No file attached.', ephemeral: true });
+      if (attachment.size > 256 * 1024) {
+        return interaction.reply({ content: '❌ File is too large (256 KB max). Please paste the statblock inline instead.', ephemeral: true });
+      }
+      const ctype = (attachment.contentType || '').toLowerCase();
+      const isTexty = ctype.startsWith('text/') || /\.(txt|md|text)$/i.test(attachment.name || '');
+      if (!isTexty) {
+        return interaction.reply({ content: '❌ Only plain-text files (.txt / .md) are supported.', ephemeral: true });
+      }
+      await interaction.deferReply({ ephemeral: true });
+      let body;
+      try {
+        const resp = await fetch(attachment.url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        body = await resp.text();
+      } catch (err) {
+        return interaction.editReply({ content: `❌ Could not download the attachment: ${err.message}` });
+      }
+      const result = parseSpellStatBlock(body);
+      if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      const finalName = addSpellToDatabase(result.entry);
+      const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
+      return interaction.editReply({
+        content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view.`,
+        embeds: [buildSpellEmbed(result.entry)],
+      });
+    }
+
+    if (sub === 'remove') {
+      const input = interaction.options.getString('spell').trim();
+      const result = removeSpellFromDatabase(input);
+      if (result.protected) {
+        return interaction.reply({ content: `🛡️ **${result.name}** is part of the core spell database (not homebrew) and cannot be removed via \`/spelladd remove\`.`, ephemeral: true });
+      }
+      if (!result.removed) {
+        return interaction.reply({ content: `❌ No homebrew spell found matching \`${input}\`.`, ephemeral: true });
+      }
+      return interaction.reply({ content: `🗑️ Removed homebrew spell **${result.name}** from the database.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /itemadd ─────────────────────────────────────────────────────────────
+  // Owner-only. Same shape as /spelladd, for items.
+  else if (commandName === 'itemadd') {
+    if (!BOT_OWNER_ID) {
+      return interaction.reply({
+        content: '⚙️ `/itemadd` is disabled: the bot operator hasn\'t set the `BOT_OWNER_ID` environment variable.',
+        ephemeral: true,
+      });
+    }
+    if (!isBotOwner(interaction.user.id)) {
+      return interaction.reply({
+        content: '🔒 Only the bot owner can add homebrew items to the global database.',
+        ephemeral: true,
+      });
+    }
+
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'paste') {
+      const raw = interaction.options.getString('statblock');
+      await interaction.deferReply({ ephemeral: true });
+      const result = parseItemStatBlock(raw);
+      if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      const finalName = addItemToDatabase(result.entry);
+      const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
+      return interaction.editReply({
+        content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view. Remove with \`/itemadd remove item:${finalName}\`.`,
+        embeds: [buildItemEmbed(result.entry)],
+      });
+    }
+
+    if (sub === 'file') {
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment) return interaction.reply({ content: '❌ No file attached.', ephemeral: true });
+      if (attachment.size > 256 * 1024) {
+        return interaction.reply({ content: '❌ File is too large (256 KB max). Please paste the statblock inline instead.', ephemeral: true });
+      }
+      const ctype = (attachment.contentType || '').toLowerCase();
+      const isTexty = ctype.startsWith('text/') || /\.(txt|md|text)$/i.test(attachment.name || '');
+      if (!isTexty) {
+        return interaction.reply({ content: '❌ Only plain-text files (.txt / .md) are supported.', ephemeral: true });
+      }
+      await interaction.deferReply({ ephemeral: true });
+      let body;
+      try {
+        const resp = await fetch(attachment.url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        body = await resp.text();
+      } catch (err) {
+        return interaction.editReply({ content: `❌ Could not download the attachment: ${err.message}` });
+      }
+      const result = parseItemStatBlock(body);
+      if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      const finalName = addItemToDatabase(result.entry);
+      const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
+      return interaction.editReply({
+        content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view.`,
+        embeds: [buildItemEmbed(result.entry)],
+      });
+    }
+
+    if (sub === 'remove') {
+      const input = interaction.options.getString('item').trim();
+      const result = removeItemFromDatabase(input);
+      if (result.protected) {
+        return interaction.reply({ content: `🛡️ **${result.name}** is part of the core item database (not homebrew) and cannot be removed via \`/itemadd remove\`.`, ephemeral: true });
+      }
+      if (!result.removed) {
+        return interaction.reply({ content: `❌ No homebrew item found matching \`${input}\`.`, ephemeral: true });
+      }
+      return interaction.reply({ content: `🗑️ Removed homebrew item **${result.name}** from the database.`, ephemeral: true });
     }
 
     return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
