@@ -2,6 +2,39 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
+const path = require('path');
+
+// ── Persistent-data directory ────────────────────────────────────────────────
+// On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so
+// user state (characters, bags, monster art/edits, notes, homebrew DB adds)
+// survives redeploys. When DATA_DIR is unset (local dev), falls back to the
+// project root so behavior matches the old layout.
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+try {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+} catch (_) { /* ignore — e.g. volume not writable yet */ }
+
+// Returns an absolute path inside DATA_DIR for a given filename. For files
+// that ship with the repo as base content (bestiary, spells, items), we
+// seed the data-dir copy on first boot by copying from the repo.
+function dataPath(filename, { seedFromRepo = false } = {}) {
+  const target = path.join(DATA_DIR, filename);
+  if (seedFromRepo && !fs.existsSync(target)) {
+    const repoCopy = path.join(__dirname, filename);
+    if (fs.existsSync(repoCopy)) {
+      try {
+        fs.copyFileSync(repoCopy, target);
+        console.log(`Seeded ${filename} from repo into DATA_DIR.`);
+      } catch (err) {
+        console.error(`Failed to seed ${filename} into DATA_DIR:`, err.message);
+      }
+    }
+  }
+  return target;
+}
+
+console.log(`DATA_DIR: ${DATA_DIR}`);
+
 const {
   getEncounter,
   createEncounter,
@@ -54,7 +87,7 @@ process.on('uncaughtException', error => {
 
 let spellDatabase = [];
 try {
-  spellDatabase = JSON.parse(fs.readFileSync('spells.json', 'utf8'));
+  spellDatabase = JSON.parse(fs.readFileSync(dataPath('spells.json', { seedFromRepo: true }), 'utf8'));
   console.log(`Loaded ${spellDatabase.length} spells from database.`);
 } catch (err) {
   console.error('Could not load spells.json:', err.message);
@@ -109,7 +142,7 @@ try {
 
 let bestiaryDatabase = {};
 try {
-  const bestiaryRaw = JSON.parse(fs.readFileSync('bestiary.json', 'utf8'));
+  const bestiaryRaw = JSON.parse(fs.readFileSync(dataPath('bestiary.json', { seedFromRepo: true }), 'utf8'));
   // File shape: { metadata: {...}, creatures: { key: {...} } }
   bestiaryDatabase = bestiaryRaw.creatures ?? bestiaryRaw;
   console.log(`Loaded ${Object.keys(bestiaryDatabase).length} creatures from bestiary.`);
@@ -135,7 +168,7 @@ function persistBestiary() {
   // with updated creatures.
   let metadata = null;
   try {
-    const existing = JSON.parse(fs.readFileSync('bestiary.json', 'utf8'));
+    const existing = JSON.parse(fs.readFileSync(dataPath('bestiary.json'), 'utf8'));
     metadata = existing.metadata ?? null;
   } catch (_) { /* ignore, we'll write without metadata */ }
 
@@ -144,9 +177,9 @@ function persistBestiary() {
   // Put metadata first for readability, but JSON key order is just cosmetic
   const ordered = metadata ? { metadata, creatures: bestiaryDatabase } : payload;
 
-  const tmp = 'bestiary.json.tmp';
+  const tmp = dataPath('bestiary.json.tmp');
   fs.writeFileSync(tmp, JSON.stringify(ordered, null, 2), 'utf8');
-  fs.renameSync(tmp, 'bestiary.json');
+  fs.renameSync(tmp, dataPath('bestiary.json'));
 }
 
 function addMonsterToBestiary(entry, slug) {
@@ -183,9 +216,9 @@ function removeMonsterFromBestiary(slugOrName) {
 // ── Spell database mutation helpers ───────────────────────────────────────────
 // spells.json is a flat array on disk. Atomic temp-file write, same as bestiary.
 function persistSpells() {
-  const tmp = 'spells.json.tmp';
+  const tmp = dataPath('spells.json.tmp');
   fs.writeFileSync(tmp, JSON.stringify(spellDatabase, null, 2), 'utf8');
-  fs.renameSync(tmp, 'spells.json');
+  fs.renameSync(tmp, dataPath('spells.json'));
 }
 
 function addSpellToDatabase(entry) {
@@ -219,7 +252,7 @@ function removeSpellFromDatabase(nameOrSlug) {
 
 let itemDatabase = [];
 try {
-  const itemRaw = JSON.parse(fs.readFileSync('items.json', 'utf8'));
+  const itemRaw = JSON.parse(fs.readFileSync(dataPath('items.json', { seedFromRepo: true }), 'utf8'));
   // File shape: { meta: {...}, items: { slug: {...} } }
   const itemsObj = itemRaw.items ?? itemRaw;
   // Flatten to array and filter out any malformed entries
@@ -235,7 +268,7 @@ try {
 function persistItems() {
   let meta = null;
   try {
-    const existing = JSON.parse(fs.readFileSync('items.json', 'utf8'));
+    const existing = JSON.parse(fs.readFileSync(dataPath('items.json'), 'utf8'));
     meta = existing.meta ?? null;
   } catch (_) { /* ignore */ }
 
@@ -246,9 +279,9 @@ function persistItems() {
   }
   const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
 
-  const tmp = 'items.json.tmp';
+  const tmp = dataPath('items.json.tmp');
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
-  fs.renameSync(tmp, 'items.json');
+  fs.renameSync(tmp, dataPath('items.json'));
 }
 
 function addItemToDatabase(entry) {
@@ -326,30 +359,30 @@ try {
 }
 
 function loadCharacters() {
-  try { return JSON.parse(fs.readFileSync('characters.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('characters.json'), 'utf8')); }
   catch { return {}; }
 }
 function saveCharacters(data) {
-  fs.writeFileSync('characters.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataPath('characters.json'), JSON.stringify(data, null, 2));
 }
 
 // ── Bag helpers ───────────────────────────────────────────────────────────────
 function loadBags() {
-  try { return JSON.parse(fs.readFileSync('bags.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('bags.json'), 'utf8')); }
   catch { return {}; }
 }
 function saveBags(data) {
-  fs.writeFileSync('bags.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataPath('bags.json'), JSON.stringify(data, null, 2));
 }
 
 // ── Monster attack library helpers ────────────────────────────────────────────
 // File shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
 function loadMonsterAttacks() {
-  try { return JSON.parse(fs.readFileSync('monster_attacks.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('monster_attacks.json'), 'utf8')); }
   catch { return {}; }
 }
 function saveMonsterAttacks(data) {
-  fs.writeFileSync('monster_attacks.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataPath('monster_attacks.json'), JSON.stringify(data, null, 2));
 }
 function monsterKey(name) {
   return String(name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -380,11 +413,11 @@ function findSavedAttack(monsterEntry, attackName) {
 // File shape: { [guildId]: { [monsterKey]: { displayName, url, setBy, setAt } } }
 // Per-guild so a GM on one server can't affect another's art.
 function loadMonsterArt() {
-  try { return JSON.parse(fs.readFileSync('monster_art.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('monster_art.json'), 'utf8')); }
   catch { return {}; }
 }
 function saveMonsterArt(data) {
-  fs.writeFileSync('monster_art.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataPath('monster_art.json'), JSON.stringify(data, null, 2));
 }
 function getGuildArt(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -422,11 +455,11 @@ function lookupMonsterArt(guildId, monsterOrName) {
 //     ability_modifiers: { str, dex, con, int, wis, cha },
 //   } } }
 function loadMonsterEdits() {
-  try { return JSON.parse(fs.readFileSync('monster_edits.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('monster_edits.json'), 'utf8')); }
   catch { return {}; }
 }
 function saveMonsterEdits(data) {
-  fs.writeFileSync('monster_edits.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataPath('monster_edits.json'), JSON.stringify(data, null, 2));
 }
 function getGuildEdits(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -2632,13 +2665,13 @@ const NOTE_CATEGORIES = {
 const NOTE_CATEGORY_ORDER = ['npcs', 'locations', 'plot-threads', 'influence', 'items'];
 
 function loadNotes() {
-  try { return JSON.parse(fs.readFileSync('notes.json', 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(dataPath('notes.json'), 'utf8')); }
   catch { return { _meta: { version: 1 } }; }
 }
 
 function saveNotes(notes) {
   try {
-    fs.writeFileSync('notes.json', JSON.stringify(notes, null, 2));
+    fs.writeFileSync(dataPath('notes.json'), JSON.stringify(notes, null, 2));
     return true;
   } catch (err) {
     console.error('Failed to save notes.json:', err);
