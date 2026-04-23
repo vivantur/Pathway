@@ -495,6 +495,13 @@ const commands = [
     ]
   },
   {
+    name: 'class', description: 'Look up a PF2e class: overview, proficiencies, features, feats, subclasses',
+    options: [
+      { name: 'class', description: 'Class name (e.g. Fighter, Wizard) — leave blank to use your character\'s class', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+      { name: 'character', description: 'Character whose class to show (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+    ]
+  },
+  {
     name: 'companion', description: 'Look up and track PF2e animal/plant/undead companions',
     options: [
       {

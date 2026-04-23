@@ -211,6 +211,15 @@ try {
   console.error('Could not load skills.json:', err.message);
 }
 
+let classDatabase = {};
+try {
+  const classRaw = JSON.parse(fs.readFileSync('classes.json', 'utf8'));
+  classDatabase = classRaw.classes ?? classRaw;
+  console.log(`Loaded ${Object.keys(classDatabase).length} classes from database.`);
+} catch (err) {
+  console.error('Could not load classes.json:', err.message);
+}
+
 let companionDatabase = [];
 try {
   const companionRaw = JSON.parse(fs.readFileSync('companions.json', 'utf8'));
@@ -1822,6 +1831,152 @@ function buildSkillButtons(currentPage, skillKey) {
   );
 }
 
+// ── Class lookup ──────────────────────────────────────────────────────────────
+function findClass(query) {
+  if (!query) return { cls: null, key: null, matches: [] };
+  const q = String(query).toLowerCase().trim();
+  const entries = Object.entries(classDatabase);
+  if (classDatabase[q]) return { cls: classDatabase[q], key: q, matches: [] };
+  const exact = entries.find(([, c]) => c.name.toLowerCase() === q);
+  if (exact) return { cls: exact[1], key: exact[0], matches: [] };
+  const starts = entries.filter(([, c]) => c.name.toLowerCase().startsWith(q));
+  if (starts.length === 1) return { cls: starts[0][1], key: starts[0][0], matches: [] };
+  if (starts.length > 1) return { cls: null, key: null, matches: starts.map(([, c]) => c.name) };
+  const contains = entries.filter(([, c]) => c.name.toLowerCase().includes(q));
+  if (contains.length === 1) return { cls: contains[0][1], key: contains[0][0], matches: [] };
+  return { cls: null, key: null, matches: contains.map(([, c]) => c.name) };
+}
+
+// Chunk a long text into Discord-safe field values (max 1024 chars each)
+function chunkText(text, max = 1020) {
+  if (!text) return [];
+  const out = [];
+  let rest = text;
+  while (rest.length > max) {
+    // Break at last paragraph/sentence within max
+    let cut = rest.lastIndexOf('\n', max);
+    if (cut < max * 0.5) cut = rest.lastIndexOf('. ', max);
+    if (cut < max * 0.5) cut = max;
+    out.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) out.push(rest);
+  return out;
+}
+
+function buildClassOverviewPage(cls, userCharName = null) {
+  const embed = new EmbedBuilder()
+    .setColor(0x8e44ad)
+    .setTitle(`⚔️ ${cls.name}`)
+    .setDescription((cls.description || '*No description available.*').slice(0, 4000));
+  const metaBits = [];
+  if (cls.keyAttribute) metaBits.push(`**🔑 Key Attribute:** ${cls.keyAttribute}`);
+  if (cls.hitPoints) metaBits.push(`**❤️ Hit Points:** ${cls.hitPoints}`);
+  if (cls.source) metaBits.push(`**📖 Source:** ${cls.source}`);
+  if (userCharName) metaBits.push(`*Your character: ${userCharName}*`);
+  if (metaBits.length) embed.addFields({ name: 'Class Basics', value: metaBits.join('\n'), inline: false });
+  if (Array.isArray(cls.keyTerms) && cls.keyTerms.length > 0) {
+    const termText = cls.keyTerms.map(t => `**${t.name}**: ${t.description}`).join('\n\n');
+    const chunks = chunkText(termText, 1020);
+    chunks.slice(0, 2).forEach((chunk, i) => {
+      embed.addFields({ name: i === 0 ? '📚 Key Terms' : '📚 Key Terms (cont.)', value: chunk, inline: false });
+    });
+  }
+  embed.setFooter({ text: `Page 1/5 • Pathfinder 2e` });
+  return embed;
+}
+
+function buildClassProficienciesPage(cls) {
+  const embed = new EmbedBuilder()
+    .setColor(0x2980b9)
+    .setTitle(`⚔️ ${cls.name} — Proficiencies`)
+    .setDescription(`Initial proficiencies at 1st level.`);
+  const order = ['perception', 'savingthrows', 'skills', 'attacks', 'defenses', 'classdc', 'armor', 'spellattacks', 'spelldcs'];
+  const labels = { perception: '👁️ Perception', savingthrows: '💪 Saving Throws', skills: '🎯 Skills', attacks: '⚔️ Attacks', defenses: '🛡️ Defenses', classdc: '🎲 Class DC', armor: '🛡️ Armor', spellattacks: '✨ Spell Attacks', spelldcs: '✨ Spell DCs' };
+  for (const key of order) {
+    if (cls.proficiencies?.[key]) {
+      embed.addFields({ name: labels[key] ?? key, value: String(cls.proficiencies[key]).slice(0, 1020), inline: false });
+    }
+  }
+  if (Object.keys(cls.proficiencies ?? {}).length === 0) {
+    embed.setDescription('*No proficiency data available for this class.*');
+  }
+  embed.setFooter({ text: `Page 2/5 • Pathfinder 2e` });
+  return embed;
+}
+
+function buildClassFeaturesPage(cls) {
+  const embed = new EmbedBuilder()
+    .setColor(0xc0392b)
+    .setTitle(`⚔️ ${cls.name} — Class Features`)
+    .setDescription(`Features gained as you level up. Level-by-level progression is printed in the class's Archives of Nethys entry.`);
+  if (Array.isArray(cls.classFeatures) && cls.classFeatures.length > 0) {
+    const text = cls.classFeatures.join('\n');
+    const chunks = chunkText(text, 1020);
+    chunks.slice(0, 4).forEach((chunk, i) => {
+      embed.addFields({ name: i === 0 ? '📋 Features' : '📋 Features (cont.)', value: chunk, inline: false });
+    });
+  } else {
+    embed.setDescription('*No structured class features parsed. Check the Archives of Nethys entry for a full list.*');
+  }
+  embed.setFooter({ text: `Page 3/5 • Pathfinder 2e` });
+  return embed;
+}
+
+function buildClassFeatsPage(cls) {
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(`⚔️ ${cls.name} — Class Feats`)
+    .setDescription(`Class-specific feats available to ${cls.name}s. Full descriptions are on Archives of Nethys; this is a level-organized summary.`);
+  if (Array.isArray(cls.classFeatsRaw) && cls.classFeatsRaw.length > 0) {
+    // The raw lines are a mix of feat names and descriptions; we just chunk and render them.
+    const text = cls.classFeatsRaw.join('\n');
+    const chunks = chunkText(text, 1020);
+    chunks.slice(0, 4).forEach((chunk, i) => {
+      embed.addFields({ name: i === 0 ? '📜 Feats' : '📜 Feats (cont.)', value: chunk, inline: false });
+    });
+    if (chunks.length > 4) {
+      embed.addFields({ name: '…', value: `*${chunks.length - 4} more sections — see Archives of Nethys for the complete list.*`, inline: false });
+    }
+  } else {
+    embed.setDescription('*No class feats parsed. Check Archives of Nethys for the full feat list.*');
+  }
+  embed.setFooter({ text: `Page 4/5 • Pathfinder 2e` });
+  return embed;
+}
+
+function buildClassSubclassPage(cls) {
+  const label = cls.subclassLabel ?? 'Subclasses';
+  const embed = new EmbedBuilder()
+    .setColor(0x16a085)
+    .setTitle(`⚔️ ${cls.name} — ${label}`)
+    .setDescription(`${cls.name} subclass options.`);
+  if (Array.isArray(cls.subclassesRaw) && cls.subclassesRaw.length > 0) {
+    const text = cls.subclassesRaw.join('\n');
+    const chunks = chunkText(text, 1020);
+    chunks.slice(0, 4).forEach((chunk, i) => {
+      embed.addFields({ name: i === 0 ? `🎭 ${label}` : `🎭 ${label} (cont.)`, value: chunk, inline: false });
+    });
+  } else if (cls.subclassLabel) {
+    embed.setDescription(`*${label} data not parsed cleanly. Check Archives of Nethys.*`);
+  } else {
+    embed.setDescription(`*${cls.name} doesn't have a formal subclass structure. Check Archives of Nethys for ${cls.name}-specific options.*`);
+  }
+  embed.setFooter({ text: `Page 5/5 • Pathfinder 2e` });
+  return embed;
+}
+
+function buildClassButtons(currentPage, classKey) {
+  const id = classKey.toLowerCase();
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`class_${id}_0`).setLabel('Overview').setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
+    new ButtonBuilder().setCustomId(`class_${id}_1`).setLabel('Proficiencies').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 1),
+    new ButtonBuilder().setCustomId(`class_${id}_2`).setLabel('Features').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 2),
+    new ButtonBuilder().setCustomId(`class_${id}_3`).setLabel('Class Feats').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 3),
+    new ButtonBuilder().setCustomId(`class_${id}_4`).setLabel('Subclasses').setStyle(ButtonStyle.Success).setDisabled(currentPage === 4),
+  );
+}
+
 // ── Bestiary lookup ───────────────────────────────────────────────────────────
 function findMonster(query) {
   const normalize = str => String(str ?? '').toLowerCase().trim()
@@ -2800,6 +2955,7 @@ const HELP_CATEGORIES = {
       { name: '/monster', summary: 'Look up a creature from the bestiary.', options: 'name', example: '/monster name:Ancient Red Dragon' },
       { name: '/deity', summary: 'Look up a deity.', options: 'name', example: '/deity name:Pharasma' },
       { name: '/skillinfo', summary: 'Learn how a skill works: uses, actions by proficiency, DC examples. Shows your modifier if you have a character loaded.', options: 'skill, character', example: '/skillinfo skill:Athletics' },
+      { name: '/class', summary: 'Look up a PF2e class with 5-page navigation: overview, proficiencies, features, class feats, subclass.', options: 'class, character', example: '/class class:Fighter' },
       { name: '/companion', summary: 'Look up animal/plant/undead companions. Shows stats, support benefit, and advanced maneuver.', options: '(subcommands: info, list)', example: '/companion info name:Wolf' },
     ],
   },
@@ -3095,6 +3251,34 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.update({ embeds: [newEmbed], components: [buildSkillButtons(pageIndex, skillKey)] });
     }
 
+    // Class page navigation: class_<key>_<pageIndex>
+    if (interaction.customId.startsWith('class_')) {
+      const parts = interaction.customId.split('_');
+      const pageIndex = parseInt(parts[parts.length - 1], 10);
+      const classKey = parts.slice(1, parts.length - 1).join('_');
+      const cls = classDatabase[classKey];
+      if (!cls) return interaction.update({ content: '❌ Could not reload class data.', components: [] });
+      // Try to get user's character name for the overview page
+      let userCharName = null;
+      if (pageIndex === 0) {
+        try {
+          const characters = loadCharacters();
+          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
+          if (charEntry?.data?.class?.toLowerCase() === cls.name.toLowerCase()) {
+            userCharName = charEntry.data.name;
+          }
+        } catch { /* skip */ }
+      }
+      let newEmbed;
+      if (pageIndex === 0) newEmbed = buildClassOverviewPage(cls, userCharName);
+      else if (pageIndex === 1) newEmbed = buildClassProficienciesPage(cls);
+      else if (pageIndex === 2) newEmbed = buildClassFeaturesPage(cls);
+      else if (pageIndex === 3) newEmbed = buildClassFeatsPage(cls);
+      else if (pageIndex === 4) newEmbed = buildClassSubclassPage(cls);
+      else return interaction.update({ content: '❌ Unknown class page.', components: [] });
+      return interaction.update({ embeds: [newEmbed], components: [buildClassButtons(pageIndex, classKey)] });
+    }
+
     if (!interaction.customId.startsWith('ancestry_')) return;
     const parts = interaction.customId.split('_');
     const pageIndex = parseInt(parts[parts.length - 1], 10);
@@ -3386,6 +3570,15 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'skillinfo') {
           if (focused.name === 'skill') {
             suggestions = pick(Object.values(skillDatabase).map(s => s.name).filter(Boolean));
+          } else if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          }
+        }
+        else if (cmd === 'class') {
+          if (focused.name === 'class') {
+            suggestions = pick(Object.values(classDatabase).map(c => c.name).filter(Boolean));
           } else if (focused.name === 'character') {
             const characters = loadCharacters();
             const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
@@ -4921,10 +5114,50 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply({ embeds: [embed], components: [row] });
   }
 
+  // ─── /class ──────────────────────────────────────────────────────
+  // Class lookup. 5 pages: Overview / Proficiencies / Features / Class Feats / Subclasses.
+  // Optionally auto-selects the user's character's class if class: isn't specified.
+  else if (commandName === 'class') {
+    let input = interaction.options.getString('class');
+    let userCharName = null;
+    // If no class specified, try to pull from character
+    if (!input) {
+      try {
+        const characters = loadCharacters();
+        const charArg = interaction.options.getString('character');
+        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
+        if (charEntry?.data?.class) {
+          input = charEntry.data.class;
+          userCharName = charEntry.data.name;
+        }
+      } catch { /* fall through to error below */ }
+    } else {
+      // Still try to pull user's character name for display
+      try {
+        const characters = loadCharacters();
+        const charArg = interaction.options.getString('character');
+        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
+        if (charEntry?.data?.class && charEntry.data.class.toLowerCase() === input.toLowerCase()) {
+          userCharName = charEntry.data.name;
+        }
+      } catch { /* no character loaded, that's fine */ }
+    }
+    if (!input) return interaction.reply({ content: '❌ Specify a class with `class:<name>`, or load a character first.', ephemeral: true });
+    const { cls, key, matches } = findClass(input);
+    if (!cls && matches.length > 1) {
+      return interaction.reply({ content: `🔍 Multiple classes match **"${input}"**: ${matches.slice(0, 10).join(', ')}`, ephemeral: true });
+    }
+    if (!cls) {
+      const all = Object.values(classDatabase).map(c => c.name).sort().join(', ');
+      return interaction.reply({ content: `❌ No class found for **"${input}"**.\nAvailable: ${all}`, ephemeral: true });
+    }
+    const embed = buildClassOverviewPage(cls, userCharName);
+    const buttons = buildClassButtons(0, key);
+    return interaction.reply({ embeds: [embed], components: [buttons] });
+  }
+
   // ─── /companion ──────────────────────────────────────────────────
-  // Phase 1: lookup only. Future phases will add per-character attachment,
-  // level scaling, combat integration, and homebrew companions.
-    else if (commandName === 'companion') {
+  else if (commandName === 'companion') {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'info') {
