@@ -351,8 +351,20 @@ try {
 let companionDatabase = [];
 try {
   const companionRaw = JSON.parse(fs.readFileSync('companions.json', 'utf8'));
-  // File shape: { _meta: {...}, companions: [ {...} ] }
-  companionDatabase = companionRaw.companions ?? (Array.isArray(companionRaw) ? companionRaw : []);
+  // File shape: either { _meta, companions: { slug: {...} } } (keyed object),
+  // { _meta, companions: [ {...} ] } (array), or the raw array/object itself.
+  // Normalize to an array in all cases.
+  const inner = companionRaw.companions ?? companionRaw;
+  if (Array.isArray(inner)) {
+    companionDatabase = inner;
+  } else if (inner && typeof inner === 'object') {
+    // Keyed object: use the slug as a fallback id, keep the object's own name.
+    companionDatabase = Object.entries(inner).map(([slug, comp]) => ({
+      slug,
+      ...comp,
+    }));
+  }
+  companionDatabase = companionDatabase.filter(c => c && typeof c.name === 'string' && c.name.length > 0);
   console.log(`Loaded ${companionDatabase.length} companions from database.`);
 } catch (err) {
   console.error('Could not load companions.json:', err.message);
