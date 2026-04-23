@@ -3012,6 +3012,56 @@
         "description": "Your wood elemental surrounds a foe with branches, grabbing it in place. Your wood elemental makes a branch Strike; on a success, the target is also grabbed by the wood elemental until the end of your next turn unless your wood elemental moves or the target Escapes."
       }
     },
+    "wyvern": {
+      "name": "Wyvern",
+      "legacy": false,
+      "rarity": "Uncommon",
+      "tags": [
+        "Dragon",
+        "Minion"
+      ],
+      "source": "Howl of the Wild pg. 76",
+      "description": "Your companion is a wyvern, a savage draconic predator with a venomous sting and powerful wings.",
+      "size": "Medium",
+      "attacks": [
+        {
+          "type": "melee",
+          "actionCost": "one-action",
+          "name": "jaws",
+          "traits": [],
+          "damage": "1d8 piercing"
+        },
+        {
+          "type": "melee",
+          "actionCost": "one-action",
+          "name": "talon",
+          "traits": [
+            "agile",
+            "finesse"
+          ],
+          "damage": "1d6 slashing"
+        }
+      ],
+      "abilities": {
+        "str": 3,
+        "dex": 2,
+        "con": 2,
+        "int": -4,
+        "wis": 1,
+        "cha": 0
+      },
+      "hp": 8,
+      "skill": "Acrobatics",
+      "senses": "darkvision, scent (imprecise, 30 feet)",
+      "speed": "25 feet, fly 30 feet",
+      "special": "Wyvern Venom Your wyvern companion's jaws deal an additional 1d4 persistent poison damage on a hit.",
+      "support": "Your wyvern bears down on a foe, its shadow and menacing glare unsettling them. Until the start of your next turn, if your wyvern is adjacent to a creature or flying over it, your Strikes against that creature deal 1 additional persistent poison damage for each weapon damage die (or 2 additional per die on a critical hit).",
+      "maneuver": {
+        "name": "Flyby Attack",
+        "actionCost": "two-actions",
+        "description": "Your wyvern Flies up to its fly Speed and makes a Strike at any point during the movement. The Strike doesn't trigger reactions from the creature targeted by the Strike or any creatures the wyvern moved past."
+      }
+    },
     "yzobu": {
       "name": "Yzobu",
       "legacy": false,

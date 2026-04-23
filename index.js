@@ -1893,6 +1893,12 @@ function scaleCompanion(comp, char) {
       if (ov.saves[key] != null) result.saves[key] = ov.saves[key];
     }
   }
+  // Compute a default Perception bonus from the final (post-override) wisdom
+  // + proficiency bonus by form. Then apply the override if set.
+  const finalWis = (ov.abilities && ov.abilities.wis != null) ? ov.abilities.wis : (abilities.wis ?? 0);
+  result.perception = profBonus + finalWis;
+  if (ov.perception != null) result.perception = ov.perception;
+
   // Track which fields were overridden so the sheet can flag them visually
   result.overriddenFields = [];
   if (ov.hp != null) result.overriddenFields.push('HP');
@@ -1902,6 +1908,7 @@ function scaleCompanion(comp, char) {
   if (ov.damageBonus != null) result.overriddenFields.push('dmg bonus');
   if (ov.speed) result.overriddenFields.push('speed');
   if (ov.size) result.overriddenFields.push('size');
+  if (ov.perception != null) result.overriddenFields.push('perception');
   if (ov.abilities && Object.values(ov.abilities).some(v => v != null)) result.overriddenFields.push('abilities');
   if (ov.saves && Object.values(ov.saves).some(v => v != null)) result.overriddenFields.push('saves');
 
@@ -1918,7 +1925,7 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
   if (comp.art) embed.setThumbnail(comp.art);
   else if (charEntry.art) embed.setThumbnail(charEntry.art);
 
-  // Mark overridden fields with a small asterisk in the label
+  // Mark overridden fields with a small visible flag
   const ov = comp.overrides ?? {};
   const flag = (key) => ov[key] != null ? ' ✏️' : '';
   const abFlag = (key) => (ov.abilities && ov.abilities[key] != null) ? '\\*' : '';
@@ -1926,14 +1933,50 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
 
   const hp = comp.currentHp ?? scaled.maxHp;
   embed.addFields({ name: '🛡️ Defenses', value: `**HP** ${hp}/${scaled.maxHp}${flag('hp')} · **AC** ${scaled.ac}${flag('ac')} · **Size** ${scaled.size}${flag('size')} · **Speed** ${scaled.speed}${flag('speed')}`, inline: false });
-  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)}${saveFlag('fort')} · **Ref** ${fmt(scaled.saves.ref)}${saveFlag('ref')} · **Will** ${fmt(scaled.saves.will)}${saveFlag('will')}`, inline: false });
+  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)}${saveFlag('fort')} · **Ref** ${fmt(scaled.saves.ref)}${saveFlag('ref')} · **Will** ${fmt(scaled.saves.will)}${saveFlag('will')} · **Perception** ${fmt(scaled.perception)}${flag('perception')}`, inline: false });
   const ab = scaled.abilities;
   embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)}${abFlag('str')} · Dex ${fmt(ab.dex ?? 0)}${abFlag('dex')} · Con ${fmt(ab.con ?? 0)}${abFlag('con')} · Int ${fmt(ab.int ?? -4)}${abFlag('int')} · Wis ${fmt(ab.wis ?? 0)}${abFlag('wis')} · Cha ${fmt(ab.cha ?? 0)}${abFlag('cha')}`, inline: false });
+
+  // Skills (override-only). Display alphabetically.
+  const skills = comp.skills ?? {};
+  const skillEntries = Object.entries(skills).sort(([a], [b]) => a.localeCompare(b));
+  if (skillEntries.length > 0) {
+    const line = skillEntries.map(([name, bonus]) => `**${name}** ${fmt(bonus)}`).join(' · ');
+    embed.addFields({ name: '🎯 Skills', value: line.slice(0, 1020), inline: false });
+  }
+
+  // Attacks: primary (from catalog/custom, with scaling) + any custom attacks
+  // added via /companion attack add. Show all of them.
+  const attackLines = [];
   if (scaled.primaryAttack) {
     const traits = scaled.primaryAttack.traits?.length ? ` *(${scaled.primaryAttack.traits.join(', ')})*` : '';
     const dmgBonus = scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : `${scaled.damageBonus}`) : '';
-    embed.addFields({ name: '⚔️ Primary Attack', value: `**${scaled.primaryAttack.name}**${traits}\n**+${scaled.attackBonus}**${flag('attackBonus')} to hit · **${scaled.damageDice}${flag('damageDice')}${dmgBonus}${flag('damageBonus')}** ${scaled.damageType}`, inline: false });
+    attackLines.push(`**${scaled.primaryAttack.name}**${traits} — **+${scaled.attackBonus}**${flag('attackBonus')} to hit · **${scaled.damageDice}${flag('damageDice')}${dmgBonus}${flag('damageBonus')}** ${scaled.damageType}`);
   }
+  if (Array.isArray(comp.customAttacks) && comp.customAttacks.length) {
+    for (const atk of comp.customAttacks) {
+      const traits = atk.traits?.length ? ` *(${atk.traits.join(', ')})*` : '';
+      const bonusText = atk.bonus != null ? `**${fmt(atk.bonus)}** to hit · ` : '';
+      const dmgText = atk.damage ? `**${atk.damage}** ${atk.damageType ?? ''}` : '';
+      attackLines.push(`**${atk.name}**${traits} — ${bonusText}${dmgText}`);
+    }
+  }
+  if (attackLines.length) {
+    embed.addFields({ name: '⚔️ Attacks', value: attackLines.join('\n').slice(0, 1020), inline: false });
+  }
+
+  // Abilities: free-form text abilities + structured maneuver-style ones
+  if (Array.isArray(comp.customAbilities) && comp.customAbilities.length) {
+    const abilityLines = comp.customAbilities.map(a => {
+      if (a.actionCost) {
+        const costIcon = { 'one-action': '◆', 'two-actions': '◆◆', 'three-actions': '◆◆◆', 'reaction': '⤾', 'free-action': '◇' }[a.actionCost] ?? a.actionCost;
+        return `**${a.name}** ${costIcon} — ${a.description}`;
+      }
+      return `**${a.name}** — ${a.description}`;
+    });
+    embed.addFields({ name: '✨ Abilities', value: abilityLines.join('\n').slice(0, 1020), inline: false });
+  }
+
   if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
   const hasOverrides = (scaled.overriddenFields ?? []).length > 0;
   const footerExtra = hasOverrides ? ` · ✏️ = overridden` : '';
@@ -3617,6 +3660,10 @@ const HELP_CATEGORIES = {
       { name: '/companion set', summary: 'Override any companion stat (ability scores, AC, HP, saves, attack, damage, speed, size).', options: 'stat, value, companion, character', example: '/companion set stat:ac value:22 companion:Fluffy' },
       { name: '/companion reset', summary: 'Clear one override so the stat auto-scales again.', options: 'stat, companion, character', example: '/companion reset stat:ac companion:Fluffy' },
       { name: '/companion resetall', summary: 'Clear ALL stat overrides on a companion (keeps art and notes).', options: 'companion, character', example: '/companion resetall companion:Fluffy' },
+      { name: '/companion attack', summary: 'Add, remove, or list custom attacks for a companion.', options: 'action, name, bonus, damage, type, traits, companion, character', example: '/companion attack action:add name:breath bonus:12 damage:3d6 type:fire' },
+      { name: '/companion ability', summary: 'Add, remove, or list abilities (free-form text or structured actions).', options: 'action, name, description, action_cost, companion, character', example: '/companion ability action:add name:Pack Attack description:+1 circumstance bonus when adjacent ally threatens' },
+      { name: '/companion skill', summary: 'Set, clear, or list skill bonuses on a companion. Free-form (any skill name).', options: 'action, name, bonus, companion, character', example: '/companion skill action:set name:Athletics bonus:8' },
+      { name: '/companion notes', summary: 'Set or clear free-form notes on a companion.', options: 'text, companion, character', example: '/companion notes text:Bonded in the dragon\'s lair' },
     ],
   },
 
@@ -4384,9 +4431,9 @@ client.on('interactionCreate', async (interaction) => {
         if (!comp) return interaction.reply({ content: `❌ No companion "${compArg}" found for **${ce.data.name}**.`, ephemeral: true });
         const scaled = scaleCompanion(comp, ce.data);
         const initBonus = interaction.options.getInteger('bonus') ?? 0;
-        // Companions usually use Perception for initiative — use wis as approximation
-        const wisMod = scaled.abilities.wis ?? 0;
-        const initMod = scaled.form === 'young' ? (ce.data.level ?? 1) + wisMod : (scaled.form === 'mature' ? (ce.data.level ?? 1) + 2 + wisMod : (ce.data.level ?? 1) + 4 + wisMod);
+        // Companions roll initiative using Perception (standard PF2e rule).
+        // scaled.perception already factors in the user's perception override.
+        const initMod = scaled.perception;
         const initRoll = Math.floor(Math.random() * 20) + 1 + initMod + initBonus;
         const addResult = addCombatant(channelId, {
           name: comp.displayName,
@@ -6328,16 +6375,16 @@ client.on('interactionCreate', async (interaction) => {
         displayLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
         displayValue = fmt(n);
       }
-      else if (stat === 'ac' || stat === 'hp' || stat === 'attack' || stat === 'damage_bonus') {
+      else if (stat === 'ac' || stat === 'hp' || stat === 'attack' || stat === 'damage_bonus' || stat === 'perception') {
         const n = parseIntStrict(rawValue);
         if (n === null) return interaction.reply({ content: `❌ \`${stat}\` expects a number.`, ephemeral: true });
-        const bounds = { ac: [0, 80], hp: [0, 2000], attack: [-5, 60], damage_bonus: [-5, 40] };
+        const bounds = { ac: [0, 80], hp: [0, 2000], attack: [-5, 60], damage_bonus: [-5, 40], perception: [-5, 50] };
         const [lo, hi] = bounds[stat];
         if (n < lo || n > hi) return interaction.reply({ content: `❌ ${stat} ${n} is out of range (${lo} to ${hi}).`, ephemeral: true });
-        const keyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus' };
+        const keyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus', perception: 'perception' };
         comp.overrides[keyMap[stat]] = n;
-        displayLabel = stat === 'damage_bonus' ? 'Damage bonus' : stat.toUpperCase();
-        displayValue = stat === 'attack' || stat === 'damage_bonus' ? fmt(n) : String(n);
+        displayLabel = stat === 'damage_bonus' ? 'Damage bonus' : stat === 'perception' ? 'Perception' : stat.toUpperCase();
+        displayValue = (stat === 'attack' || stat === 'damage_bonus' || stat === 'perception') ? fmt(n) : String(n);
       }
       else if (stat === 'damage_dice') {
         if (!/^\d+d\d+$/i.test(rawValue.trim())) {
@@ -6386,7 +6433,7 @@ client.on('interactionCreate', async (interaction) => {
 
       const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
       const saveKeys = ['fort', 'ref', 'will'];
-      const topKeyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus', damage_dice: 'damageDice', speed: 'speed', size: 'size' };
+      const topKeyMap = { ac: 'ac', hp: 'hp', attack: 'attackBonus', damage_bonus: 'damageBonus', damage_dice: 'damageDice', speed: 'speed', size: 'size', perception: 'perception' };
 
       if (abilityKeys.includes(stat)) {
         if (comp.overrides.abilities) delete comp.overrides.abilities[stat];
@@ -6415,6 +6462,209 @@ client.on('interactionCreate', async (interaction) => {
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       return interaction.reply({ content: `↺ Cleared all stat overrides on **${comp.displayName}**. Using auto-calculated stats again.`, ephemeral: true });
+    }
+
+    // ── /companion attack — add/remove/list custom attacks ─────────────
+    // Custom attacks are APPENDED to the base (catalog) attack; they don't
+    // replace it. This lets a wyvern keep its base jaws while adding a
+    // player-homebrewed breath weapon, for example.
+    if (sub === 'attack') {
+      const action = interaction.options.getString('action');
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      if (!Array.isArray(comp.customAttacks)) comp.customAttacks = [];
+
+      if (action === 'add') {
+        const atkName = interaction.options.getString('name')?.trim();
+        const bonus = interaction.options.getInteger('bonus');
+        const damage = interaction.options.getString('damage')?.trim();
+        const damageType = interaction.options.getString('type')?.trim() ?? '';
+        const traitsText = interaction.options.getString('traits')?.trim() ?? '';
+        if (!atkName) return interaction.reply({ content: `❌ Attack name is required.`, ephemeral: true });
+        if (atkName.length > 40) return interaction.reply({ content: `❌ Attack name too long (40 chars max).`, ephemeral: true });
+        if (damage && damage.length > 40) return interaction.reply({ content: `❌ Damage too long (40 chars max).`, ephemeral: true });
+        if (comp.customAttacks.length >= 10) return interaction.reply({ content: `❌ Max 10 custom attacks per companion. Remove one first.`, ephemeral: true });
+        if (comp.customAttacks.some(a => a.name.toLowerCase() === atkName.toLowerCase())) {
+          return interaction.reply({ content: `❌ An attack named **${atkName}** already exists. Remove it first or use a different name.`, ephemeral: true });
+        }
+        const traits = traitsText ? traitsText.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).slice(0, 8) : [];
+        comp.customAttacks.push({
+          name: atkName,
+          bonus: bonus ?? null,
+          damage: damage || null,
+          damageType: damageType || null,
+          traits,
+        });
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `⚔️ Added **${atkName}** to **${comp.displayName}**'s attacks.`, ephemeral: true });
+      }
+
+      if (action === 'remove') {
+        const atkName = interaction.options.getString('name')?.trim();
+        if (!atkName) return interaction.reply({ content: `❌ Attack name is required.`, ephemeral: true });
+        const idx = comp.customAttacks.findIndex(a => a.name.toLowerCase() === atkName.toLowerCase());
+        if (idx < 0) return interaction.reply({ content: `❌ No custom attack named **${atkName}** on **${comp.displayName}**.`, ephemeral: true });
+        const [removed] = comp.customAttacks.splice(idx, 1);
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s attacks.`, ephemeral: true });
+      }
+
+      if (action === 'list') {
+        if (comp.customAttacks.length === 0) return interaction.reply({ content: `${comp.displayName} has no custom attacks. Add one with \`/companion attack action:add name:... bonus:... damage:...\`.`, ephemeral: true });
+        const lines = comp.customAttacks.map(a => {
+          const traits = a.traits?.length ? ` *(${a.traits.join(', ')})*` : '';
+          const bonusText = a.bonus != null ? `**${fmt(a.bonus)}** to hit · ` : '';
+          const dmgText = a.damage ? `**${a.damage}** ${a.damageType ?? ''}` : '';
+          return `• **${a.name}**${traits} — ${bonusText}${dmgText}`;
+        });
+        return interaction.reply({ content: `**${comp.displayName}'s custom attacks:**\n${lines.join('\n')}`, ephemeral: true });
+      }
+
+      return interaction.reply({ content: `❌ Unknown action.`, ephemeral: true });
+    }
+
+    // ── /companion ability — add/remove/list custom abilities ──────────
+    // Abilities can be free-form text or structured with an action cost.
+    if (sub === 'ability') {
+      const action = interaction.options.getString('action');
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      if (!Array.isArray(comp.customAbilities)) comp.customAbilities = [];
+
+      if (action === 'add') {
+        const abName = interaction.options.getString('name')?.trim();
+        const description = interaction.options.getString('description')?.trim();
+        const actionCost = interaction.options.getString('action_cost'); // optional
+        if (!abName) return interaction.reply({ content: `❌ Ability name is required.`, ephemeral: true });
+        if (!description) return interaction.reply({ content: `❌ Description is required.`, ephemeral: true });
+        if (abName.length > 50) return interaction.reply({ content: `❌ Name too long (50 chars max).`, ephemeral: true });
+        if (description.length > 500) return interaction.reply({ content: `❌ Description too long (500 chars max).`, ephemeral: true });
+        if (comp.customAbilities.length >= 20) return interaction.reply({ content: `❌ Max 20 abilities per companion. Remove one first.`, ephemeral: true });
+        if (comp.customAbilities.some(a => a.name.toLowerCase() === abName.toLowerCase())) {
+          return interaction.reply({ content: `❌ An ability named **${abName}** already exists.`, ephemeral: true });
+        }
+        comp.customAbilities.push({
+          name: abName,
+          description,
+          actionCost: actionCost || null,
+        });
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `✨ Added **${abName}** to **${comp.displayName}**'s abilities.`, ephemeral: true });
+      }
+
+      if (action === 'remove') {
+        const abName = interaction.options.getString('name')?.trim();
+        if (!abName) return interaction.reply({ content: `❌ Ability name is required.`, ephemeral: true });
+        const idx = comp.customAbilities.findIndex(a => a.name.toLowerCase() === abName.toLowerCase());
+        if (idx < 0) return interaction.reply({ content: `❌ No ability named **${abName}** on **${comp.displayName}**.`, ephemeral: true });
+        const [removed] = comp.customAbilities.splice(idx, 1);
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s abilities.`, ephemeral: true });
+      }
+
+      if (action === 'list') {
+        if (comp.customAbilities.length === 0) return interaction.reply({ content: `${comp.displayName} has no custom abilities. Add one with \`/companion ability action:add name:... description:...\`.`, ephemeral: true });
+        const lines = comp.customAbilities.map(a => {
+          if (a.actionCost) {
+            const costIcon = { 'one-action': '◆', 'two-actions': '◆◆', 'three-actions': '◆◆◆', 'reaction': '⤾', 'free-action': '◇' }[a.actionCost] ?? a.actionCost;
+            return `• **${a.name}** ${costIcon} — ${a.description}`;
+          }
+          return `• **${a.name}** — ${a.description}`;
+        });
+        return interaction.reply({ content: `**${comp.displayName}'s abilities:**\n${lines.join('\n')}`.slice(0, 1990), ephemeral: true });
+      }
+
+      return interaction.reply({ content: `❌ Unknown action.`, ephemeral: true });
+    }
+
+    // ── /companion skill — set/clear/list custom skills ────────────────
+    // Skills are override-only: users pick any skill name and assign a number.
+    // No auto-calc. This lets people add PF2e-standard skills (Athletics, etc.)
+    // OR custom lores (Lore: Dragons, etc.) without restriction.
+    if (sub === 'skill') {
+      const action = interaction.options.getString('action');
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      if (!comp.skills || typeof comp.skills !== 'object') comp.skills = {};
+
+      if (action === 'set') {
+        const skillName = interaction.options.getString('name')?.trim();
+        const bonusRaw = interaction.options.getString('bonus')?.trim();
+        if (!skillName) return interaction.reply({ content: `❌ Skill name is required.`, ephemeral: true });
+        if (skillName.length > 40) return interaction.reply({ content: `❌ Skill name too long (40 chars max).`, ephemeral: true });
+        if (!bonusRaw || !/^[+-]?\d+$/.test(bonusRaw)) return interaction.reply({ content: `❌ Bonus must be a number (e.g. 8 or -1).`, ephemeral: true });
+        const bonus = parseInt(bonusRaw);
+        if (bonus < -10 || bonus > 50) return interaction.reply({ content: `❌ Bonus ${bonus} is out of range (-10 to +50).`, ephemeral: true });
+        if (Object.keys(comp.skills).length >= 20 && !(skillName in comp.skills)) {
+          return interaction.reply({ content: `❌ Max 20 skills per companion. Remove one first.`, ephemeral: true });
+        }
+        // Title-case the skill name for nicer display
+        const displayName = skillName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        comp.skills[displayName] = bonus;
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🎯 Set **${displayName}** to **${fmt(bonus)}** on **${comp.displayName}**.`, ephemeral: true });
+      }
+
+      if (action === 'clear') {
+        const skillName = interaction.options.getString('name')?.trim();
+        if (!skillName) return interaction.reply({ content: `❌ Skill name is required.`, ephemeral: true });
+        // Match case-insensitively
+        const foundKey = Object.keys(comp.skills).find(k => k.toLowerCase() === skillName.toLowerCase());
+        if (!foundKey) return interaction.reply({ content: `❌ No skill named **${skillName}** on **${comp.displayName}**.`, ephemeral: true });
+        delete comp.skills[foundKey];
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🗑️ Cleared **${foundKey}** from **${comp.displayName}**.`, ephemeral: true });
+      }
+
+      if (action === 'list') {
+        const entries = Object.entries(comp.skills);
+        if (entries.length === 0) return interaction.reply({ content: `${comp.displayName} has no skills set. Add one with \`/companion skill action:set name:Athletics bonus:8\`.`, ephemeral: true });
+        entries.sort(([a], [b]) => a.localeCompare(b));
+        const lines = entries.map(([n, b]) => `• **${n}** ${fmt(b)}`);
+        return interaction.reply({ content: `**${comp.displayName}'s skills:**\n${lines.join('\n')}`, ephemeral: true });
+      }
+
+      return interaction.reply({ content: `❌ Unknown action.`, ephemeral: true });
+    }
+
+    // ── /companion notes — set/clear free-form notes ───────────────────
+    if (sub === 'notes') {
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ Companion not found.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      const text = interaction.options.getString('text');
+      if (!text || /^(clear|none|remove|off)$/i.test(text.trim())) {
+        comp.notes = '';
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        return interaction.reply({ content: `🗑️ Cleared notes on **${comp.displayName}**.`, ephemeral: true });
+      }
+      if (text.length > 1000) return interaction.reply({ content: `❌ Notes too long (1000 chars max).`, ephemeral: true });
+      comp.notes = text;
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ content: `📝 Updated notes on **${comp.displayName}**.`, ephemeral: true });
     }
   }
 

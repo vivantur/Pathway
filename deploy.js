@@ -737,6 +737,7 @@ const commands = [
             { name: 'Damage bonus',    value: 'damage_bonus' },
             { name: 'Speed (text)',    value: 'speed' },
             { name: 'Size',            value: 'size' },
+            { name: 'Perception',      value: 'perception' },
           ]},
           { name: 'value', description: 'Value to set (numbers: 3 or -1 · damage_dice: 2d6 · speed: 40 feet · size: Medium)', type: ApplicationCommandOptionType.String, required: true },
           { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
@@ -764,6 +765,7 @@ const commands = [
             { name: 'Damage bonus', value: 'damage_bonus' },
             { name: 'Speed',        value: 'speed' },
             { name: 'Size',         value: 'size' },
+            { name: 'Perception',   value: 'perception' },
           ]},
           { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
           { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
@@ -773,6 +775,70 @@ const commands = [
         name: 'resetall', description: 'Clear ALL stat overrides on a companion (keeps art and notes)',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'attack', description: 'Add, remove, or list custom attacks on a companion',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'action', description: 'What to do', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Add',    value: 'add' },
+            { name: 'Remove', value: 'remove' },
+            { name: 'List',   value: 'list' },
+          ]},
+          { name: 'name', description: 'Attack name (required for add/remove)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'bonus', description: 'Attack bonus (add only, e.g. 15)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'damage', description: 'Damage expression (add only, e.g. "2d8+5")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'type',   description: 'Damage type (add only, e.g. "piercing", "fire")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'traits', description: 'Comma-separated traits (add only, e.g. "agile, finesse, reach")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'ability', description: 'Add, remove, or list custom abilities on a companion',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'action', description: 'What to do', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Add',    value: 'add' },
+            { name: 'Remove', value: 'remove' },
+            { name: 'List',   value: 'list' },
+          ]},
+          { name: 'name',        description: 'Ability name (required for add/remove)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'description', description: 'Full description (add only)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'action_cost', description: 'Optional action cost (makes it a structured action)', type: ApplicationCommandOptionType.String, required: false, choices: [
+            { name: '1 Action',    value: 'one-action' },
+            { name: '2 Actions',   value: 'two-actions' },
+            { name: '3 Actions',   value: 'three-actions' },
+            { name: 'Reaction',    value: 'reaction' },
+            { name: 'Free Action', value: 'free-action' },
+          ]},
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'skill', description: 'Set, clear, or list skills on a companion (override-only)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'action', description: 'What to do', type: ApplicationCommandOptionType.String, required: true, choices: [
+            { name: 'Set',   value: 'set' },
+            { name: 'Clear', value: 'clear' },
+            { name: 'List',  value: 'list' },
+          ]},
+          { name: 'name',  description: 'Skill name (e.g. "Athletics", "Lore: Dragons")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'bonus', description: 'Total skill bonus (set only, e.g. "8" or "-1")', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+          { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
+        ]
+      },
+      {
+        name: 'notes', description: 'Set or clear free-form notes on a companion',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'text', description: 'Note text (or "clear" to remove). Leave blank to clear.', type: ApplicationCommandOptionType.String, required: false },
           { name: 'companion', description: 'Companion name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
           { name: 'character', description: 'Character name (leave blank for active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true }
         ]
