@@ -1937,7 +1937,15 @@ function buildCompanionEmbed(companion) {
     .setFooter({ text: `${companion.category} Companion · ${companion.source ?? 'Pathfinder 2e'}` });
 
   // Header line: traits + size + PFS
-  const traitsLine = companion.traits.length ? `*${companion.traits.join(' ')}*` : '';
+  // Normalize across the two catalog shapes (current uses tags + rarity,
+  // older homebrew may use a traits array) into a single display list.
+  // Excluding 'Common' rarity since it's the default and noise on the embed.
+  const displayTraits = [
+    ...(companion.rarity && String(companion.rarity).toLowerCase() !== 'common' ? [companion.rarity] : []),
+    ...(Array.isArray(companion.tags) ? companion.tags : []),
+    ...(Array.isArray(companion.traits) ? companion.traits : []),
+  ];
+  const traitsLine = displayTraits.length ? `*${displayTraits.join(', ')}*` : '';
   const sizeLine = companion.size ? `**Size:** ${companion.size}` : '';
   const header = [traitsLine, sizeLine].filter(Boolean).join(' · ');
   const descParts = [];
@@ -2013,7 +2021,18 @@ function buildCompanionListEmbed(category, page = 0) {
   const embed = new EmbedBuilder()
     .setColor(0x2ecc71)
     .setTitle(title)
-    .setDescription(slice.map(c => `• **${c.name}**${c.traits.includes('Uncommon') ? ' *(uncommon)*' : c.traits.includes('Rare') ? ' *(rare)*' : ''}`).join('\n') || '*No companions match this filter.*')
+    .setDescription(slice.map(c => {
+      // Your catalog stores rarity as a top-level string ("Common", "Uncommon",
+      // "Rare", "Unique") and tags as a separate array. Older code assumed a
+      // single traits array containing both. Normalize defensively so a
+      // missing field never crashes the embed build.
+      const rarity = String(c.rarity ?? '').toLowerCase();
+      const tag = rarity === 'uncommon' ? ' *(uncommon)*'
+                : rarity === 'rare'     ? ' *(rare)*'
+                : rarity === 'unique'   ? ' *(unique)*'
+                : '';
+      return `• **${c.name}**${tag}`;
+    }).join('\n') || '*No companions match this filter.*')
     .setFooter({ text: `${filtered.length} total${totalPages > 1 ? ` · Page ${actualPage + 1}/${totalPages}` : ''} · Use /companion info name:<name> for details` });
   return embed;
 }
