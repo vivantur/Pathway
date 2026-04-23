@@ -375,6 +375,44 @@ function saveBags(data) {
   fs.writeFileSync(dataPath('bags.json'), JSON.stringify(data, null, 2));
 }
 
+// ── Snippet helpers ──────────────────────────────────────────────────────────
+// File shape: { [userId]: { [snippetName]: "expansion string" } }
+// Snippets are per-user text substitutions applied to /roll expressions.
+// Example: user creates `sneaky` => `+2d6[sneak]`, then /roll 1d20+5 sneaky
+// expands to /roll 1d20+5 +2d6[sneak] before parsing.
+function loadSnippets() {
+  try { return JSON.parse(fs.readFileSync(dataPath('snippets.json'), 'utf8')); }
+  catch { return {}; }
+}
+function saveSnippets(data) {
+  fs.writeFileSync(dataPath('snippets.json'), JSON.stringify(data, null, 2));
+}
+// Validate a snippet name: letters/numbers/underscore only, 1-24 chars, not
+// colliding with reserved roll modifiers.
+const RESERVED_SNIPPET_NAMES = new Set([
+  'adv', 'advantage', 'dis', 'disadvantage', 'disadv',
+  'crit', 'critical', 'rr1', 'rr2', 'rr3', 'rr4', 'rr5',
+  'kh1', 'kh2', 'kh3', 'kh4', 'kl1', 'kl2', 'kl3', 'd',
+]);
+function validateSnippetName(name) {
+  if (!name || typeof name !== 'string') return 'Name is required.';
+  if (name.length < 1 || name.length > 24) return 'Name must be 1-24 characters.';
+  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) return 'Name must start with a letter and contain only letters, numbers, and underscores.';
+  if (RESERVED_SNIPPET_NAMES.has(name.toLowerCase())) return `\`${name}\` is a reserved roll modifier keyword.`;
+  return null;
+}
+function validateSnippetExpansion(expansion) {
+  if (!expansion || typeof expansion !== 'string') return 'Expansion is required.';
+  if (expansion.length > 200) return 'Expansion must be 200 characters or fewer.';
+  // Must contain valid characters only — the same set rollAdvanced validates,
+  // plus allow leading +/- and labels in brackets.
+  const stripped = expansion.toLowerCase().replace(/\[[^\]]+\]/g, '').replace(/\s+/g, '');
+  if (!/^[0-9dkhlb+\-*/().]*$/.test(stripped)) {
+    return 'Expansion contains invalid characters. Use dice, numbers, +/-/*//, and optional [labels].';
+  }
+  return null;
+}
+
 // ── Monster attack library helpers ────────────────────────────────────────────
 // File shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
 function loadMonsterAttacks() {
@@ -2860,6 +2898,285 @@ function rollDiceExpression(raw) {
   return { total, breakdown: breakdownParts.join(' ') };
 }
 
+// ── Advanced roll engine ──────────────────────────────────────────────────────
+// Supports modifiers beyond basic dice arithmetic:
+//   adv / dis        — roll everything twice, take higher / lower of each die
+//   crit             — double the number of dice (5e-style; bonuses unchanged)
+//   rr1              — reroll any die that shows a 1, once, keep new value
+//   rr<N             — reroll any die <= N, once, keep new value
+//   kh<N> / kl<N>    — keep highest / lowest N dice of a given roll group
+//   N#expr           — iteration prefix: roll the expression N times
+//   [label]          — after any dice term, annotates the result (e.g. +2d6[sneak])
+//   {snippet}        — user snippet reference, expanded before parsing
+//
+// Returns { error } on failure, or { iterations: [{ total, breakdown }, ...],
+// grandTotal, summary, expanded } on success. `expanded` is the raw text
+// after snippet expansion, useful for showing in the embed.
+
+function rollAdvanced(raw, userSnippets = {}) {
+  if (!raw || typeof raw !== 'string') return { error: 'Empty roll expression.' };
+
+  // ── 1. Expand user snippets ─────────────────────────────────────────────
+  // Snippets are whole-word matches, case-insensitive. We walk the string
+  // and replace any bare word that matches a snippet name with its expansion.
+  let expanded = raw.trim();
+  const snippetNames = Object.keys(userSnippets);
+  if (snippetNames.length) {
+    // Sort longest first so "sneak_attack" beats "sneak" when both exist.
+    snippetNames.sort((a, b) => b.length - a.length);
+    for (const name of snippetNames) {
+      // Match the name as a standalone token (bounded by word boundaries or
+      // common delimiters). Don't replace inside `[labels]` or inside dice.
+      const pattern = new RegExp(`(?<![a-z0-9_])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9_])`, 'gi');
+      expanded = expanded.replace(pattern, userSnippets[name]);
+    }
+  }
+
+  // ── 2. Extract iteration prefix (N#...) ────────────────────────────────
+  let iterations = 1;
+  const iterMatch = expanded.match(/^\s*(\d+)\s*#\s*(.+)$/);
+  if (iterMatch) {
+    iterations = parseInt(iterMatch[1]);
+    if (iterations < 1 || iterations > 25) {
+      return { error: 'Iteration count must be between 1 and 25.' };
+    }
+    expanded = iterMatch[2];
+  }
+
+  // ── 3. Extract modifier keywords ──────────────────────────────────────
+  // These are space-separated tokens at any position. We strip them out
+  // and leave only the dice expression for evaluation.
+  const mods = { adv: false, dis: false, crit: false, rrThreshold: 0, keep: null };
+  const tokens = expanded.split(/\s+/).filter(Boolean);
+  const exprTokens = [];
+  for (const tok of tokens) {
+    const low = tok.toLowerCase();
+    if (low === 'adv' || low === 'advantage') { mods.adv = true; continue; }
+    if (low === 'dis' || low === 'disadvantage' || low === 'disadv') { mods.dis = true; continue; }
+    if (low === 'crit' || low === 'critical') { mods.crit = true; continue; }
+    const rrMatch = low.match(/^rr(\d+)$/) || low.match(/^rr<(\d+)$/);
+    if (rrMatch) { mods.rrThreshold = Math.max(mods.rrThreshold, parseInt(rrMatch[1])); continue; }
+    const khMatch = low.match(/^kh(\d+)$/);
+    if (khMatch) { mods.keep = { mode: 'high', n: parseInt(khMatch[1]) }; continue; }
+    const klMatch = low.match(/^kl(\d+)$/);
+    if (klMatch) { mods.keep = { mode: 'low', n: parseInt(klMatch[1]) }; continue; }
+    exprTokens.push(tok);
+  }
+  if (mods.adv && mods.dis) return { error: 'Cannot apply both `adv` and `dis` to the same roll.' };
+
+  let expr = exprTokens.join('');
+  if (!expr) return { error: 'No dice expression found. Example: `1d20+5 adv`' };
+
+  // Collapse double operators that can happen when a snippet expansion
+  // starts with a sign (e.g. `str` -> `+3`, and input is `1d20+str` -> `1d20++3`)
+  expr = expr
+    .replace(/\+\s*\+/g, '+')
+    .replace(/-\s*\+/g, '-')
+    .replace(/\+\s*-/g, '-')
+    .replace(/-\s*-/g, '+');
+
+  // ── 4. Extract labels like [name] from dice terms ──────────────────────
+  // Walk the expression; every time we see a NdM[label] pattern, stash the
+  // label in a map keyed by a unique sentinel we embed in its place.
+  const labelMap = {}; // sentinel -> label text
+  let sentinelCounter = 0;
+  expr = expr.replace(/\[([^\]]+)\]/g, (_, lbl) => {
+    const sentinel = `LBL${sentinelCounter++}`;
+    labelMap[sentinel] = lbl;
+    return `_${sentinel}_`;
+  });
+
+  // ── 5. Validate characters ─────────────────────────────────────────────
+  // Allow k/h/l/b for kh/kl dice suffixes and "lbl" label sentinels,
+  // plus underscores for the sentinels themselves.
+  const cleaned = expr.toLowerCase().replace(/\s+/g, '');
+  if (!/^[0-9dkhlb_+\-*/().]+$/.test(cleaned)) {
+    return { error: `Invalid characters in expression: \`${expr}\`` };
+  }
+
+  // ── 6. Apply crit modifier: double every NdM dice count ────────────────
+  let workExpr = cleaned;
+  if (mods.crit) {
+    // Only double the leading dice-count number, not things inside sentinels
+    workExpr = workExpr.replace(/(\d+)d(\d+)/g, (_, n, m) => `${parseInt(n) * 2}d${m}`);
+  }
+
+  // ── 7. Roll evaluator ──────────────────────────────────────────────────
+  function rollOneDie(sides) {
+    return Math.floor(Math.random() * sides) + 1;
+  }
+
+  function rollDiceGroup(numDice, numSides, localMods) {
+    let rolls;
+    if (localMods.adv || localMods.dis) {
+      rolls = [];
+      const rollsShown = [];
+      for (let i = 0; i < numDice; i++) {
+        const a = rollOneDie(numSides);
+        const b = rollOneDie(numSides);
+        const picked = localMods.adv ? Math.max(a, b) : Math.min(a, b);
+        rolls.push(picked);
+        rollsShown.push({ a, b, picked });
+      }
+      if (localMods.rrThreshold > 0) {
+        for (let i = 0; i < rolls.length; i++) {
+          if (rolls[i] <= localMods.rrThreshold) {
+            const newVal = rollOneDie(numSides);
+            rollsShown[i].rerolled = { from: rolls[i], to: newVal };
+            rolls[i] = newVal;
+          }
+        }
+      }
+      return { rolls, rollsShown, advDisplay: true };
+    }
+    rolls = Array.from({ length: numDice }, () => rollOneDie(numSides));
+    const rerollInfo = [];
+    if (localMods.rrThreshold > 0) {
+      for (let i = 0; i < rolls.length; i++) {
+        if (rolls[i] <= localMods.rrThreshold) {
+          const newVal = rollOneDie(numSides);
+          rerollInfo.push({ idx: i, from: rolls[i], to: newVal });
+          rolls[i] = newVal;
+        }
+      }
+    }
+    return { rolls, rerollInfo };
+  }
+
+  function evalOnce() {
+    // Split on operators; labels-as-sentinels stay attached to their dice term
+    const tokens = workExpr.split(/([+\-*/()])/).filter(t => t && t.trim());
+    const breakdownParts = [];
+    const values = [];
+    for (const token of tokens) {
+      if ('+-*/()'.includes(token)) {
+        const disp = token === '*' ? '×' : token === '/' ? '÷' : token;
+        breakdownParts.push(disp);
+        values.push(token);
+        continue;
+      }
+      // Pull a trailing label sentinel off this token, if any
+      let cleanTok = token;
+      let labelText = null;
+      const sentMatch = cleanTok.match(/_lbl(\d+)_$/i);
+      if (sentMatch) {
+        labelText = labelMap[`LBL${sentMatch[1]}`] ?? null;
+        cleanTok = cleanTok.replace(/_lbl\d+_$/i, '');
+      }
+
+      if (cleanTok.includes('d')) {
+        const diceMatch = cleanTok.match(/^(\d*)d(\d+)(kh\d+|kl\d+)?$/);
+        if (!diceMatch) return { error: `Could not parse dice \`${cleanTok}\`.` };
+        const numDice = parseInt(diceMatch[1]) || 1;
+        const numSides = parseInt(diceMatch[2]);
+        const localKeep = diceMatch[3] ? parseKeep(diceMatch[3]) : null;
+        if (numSides < 2 || numDice < 1 || numDice > 100) {
+          return { error: `Invalid dice \`${cleanTok}\`.` };
+        }
+        const { rolls, rollsShown, rerollInfo, advDisplay } = rollDiceGroup(numDice, numSides, mods);
+        let keptIndices = null;
+        if (localKeep) keptIndices = pickKeep(rolls, localKeep);
+        const finalRolls = keptIndices ? keptIndices.map(i => rolls[i]) : rolls;
+        const rollTotal = finalRolls.reduce((a, b) => a + b, 0);
+
+        let diceDisplay;
+        if (advDisplay) {
+          const parts = rollsShown.map(r => {
+            const pStr = `**${r.picked}**`;
+            const oStr = r.picked === r.a ? `~~${r.b}~~` : `~~${r.a}~~`;
+            const ordered = r.a === r.picked ? `${pStr},${oStr}` : `${oStr},${pStr}`;
+            let s = `(${ordered})`;
+            if (r.rerolled) s += `→↻${r.rerolled.to}`;
+            return s;
+          }).join(',');
+          diceDisplay = `${numDice}d${numSides}${mods.adv ? '↑' : '↓'}[${parts}]`;
+        } else {
+          if (keptIndices) {
+            const display = rolls.map((v, i) => keptIndices.includes(i) ? `**${v}**` : `~~${v}~~`);
+            diceDisplay = `${numDice}d${numSides}${diceMatch[3] || ''}[${display.join(', ')}]`;
+          } else {
+            const parts = rolls.map((v, i) => {
+              const rer = (rerollInfo || []).find(r => r.idx === i);
+              return rer ? `~~${rer.from}~~→${v}` : `${v}`;
+            });
+            diceDisplay = numDice > 1
+              ? `${numDice}d${numSides}[${parts.join(', ')}]`
+              : `${numDice}d${numSides}(${parts[0]})`;
+          }
+        }
+        if (labelText) diceDisplay += ` *[${labelText}]*`;
+        breakdownParts.push(diceDisplay);
+        values.push(rollTotal);
+      } else {
+        const num = parseInt(cleanTok);
+        if (isNaN(num)) return { error: `Couldn't parse \`${cleanTok}\`.` };
+        breakdownParts.push(`${num}`);
+        values.push(num);
+      }
+    }
+
+    // Math evaluator (same as rollDiceExpression: × ÷ first, then + -)
+    const flat = values.filter(v => v !== '(' && v !== ')');
+    if (flat.length === 0) return { error: 'Empty evaluation.' };
+    const pass1values = [];
+    const pass1ops = [];
+    let current = flat[0];
+    for (let i = 1; i < flat.length; i += 2) {
+      const op = flat[i];
+      const next = flat[i + 1];
+      if (op === '*') current = current * next;
+      else if (op === '/') {
+        if (next === 0) return { error: 'Cannot divide by zero.' };
+        current = Math.floor(current / next);
+      } else {
+        pass1values.push(current);
+        pass1ops.push(op);
+        current = next;
+      }
+    }
+    pass1values.push(current);
+    let total = pass1values[0];
+    for (let i = 0; i < pass1ops.length; i++) {
+      if (pass1ops[i] === '+') total += pass1values[i + 1];
+      if (pass1ops[i] === '-') total -= pass1values[i + 1];
+    }
+    return { total: Math.floor(total), breakdown: breakdownParts.join(' ') };
+  }
+
+  function parseKeep(suffix) {
+    const m = suffix.match(/^(kh|kl)(\d+)$/);
+    if (!m) return null;
+    return { mode: m[1] === 'kh' ? 'high' : 'low', n: parseInt(m[2]) };
+  }
+  function pickKeep(rolls, keep) {
+    const indexed = rolls.map((v, i) => ({ v, i }));
+    indexed.sort((a, b) => keep.mode === 'high' ? b.v - a.v : a.v - b.v);
+    return indexed.slice(0, keep.n).map(x => x.i).sort((a, b) => a - b);
+  }
+
+  // ── 8. Run iterations ─────────────────────────────────────────────────
+  const results = [];
+  let grandTotal = 0;
+  for (let i = 0; i < iterations; i++) {
+    const r = evalOnce();
+    if (r.error) return { error: r.error };
+    results.push(r);
+    grandTotal += r.total;
+  }
+
+  // Build a summary line — useful for iteration rolls
+  let summary = null;
+  if (iterations > 1) {
+    const totals = results.map(r => r.total);
+    const min = Math.min(...totals);
+    const max = Math.max(...totals);
+    const avg = Math.round(totals.reduce((a, b) => a + b, 0) / totals.length * 10) / 10;
+    summary = `Sum: **${grandTotal}** · Min: ${min} · Max: ${max} · Avg: ${avg}`;
+  }
+
+  return { iterations: results, grandTotal, summary, expanded, mods };
+}
+
 // ── Normalize spell ───────────────────────────────────────────────────────────
 function normalizeSpell(spell) {
   let level = spell.level;
@@ -3011,7 +3328,11 @@ const HELP_CATEGORIES = {
       { name: '/char info', summary: 'Manually set senses or languages not in the Pathbuilder export.', options: 'field, value, character', example: '/char info field:Senses value:Darkvision' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
-      { name: '/roll', summary: 'Roll dice with full PF2e expression support (e.g. 2d6+3).', options: 'dice, character', example: '/roll dice:1d20+7' },
+      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv' },
+      { name: '/snippet create', summary: 'Create a per-user roll snippet, e.g. `sneaky` => `+2d6[sneak]`.', options: 'name, expand', example: '/snippet create name:sneaky expand:+2d6[sneak]' },
+      { name: '/snippet list', summary: 'List all your roll snippets.', options: '', example: '/snippet list' },
+      { name: '/snippet view', summary: 'Show what a snippet expands to.', options: 'name', example: '/snippet view name:sneaky' },
+      { name: '/snippet delete', summary: 'Delete one of your snippets.', options: 'name', example: '/snippet delete name:sneaky' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
       { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
@@ -3630,6 +3951,12 @@ client.on('interactionCreate', async (interaction) => {
         else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if (cmd === 'snippet' && focused.name === 'name') {
+          // Autocomplete user's own snippets for view/delete subcommands.
+          const all = loadSnippets();
+          const own = Object.keys(all[interaction.user.id] ?? {});
           suggestions = pick(own);
         }
         else if (cmd === 'initiative' && focused.name === 'skill') {
@@ -4309,6 +4636,77 @@ client.on('interactionCreate', async (interaction) => {
     embed.setFooter({ text: 'Update with /char art · Showing current portrait' });
 
     await interaction.reply({ embeds: [embed] });
+  }
+
+  // ─── /snippet ─────────────────────────────────────────────────────
+  // Per-user text substitutions for /roll. Create shortcuts like `sneaky`
+  // = `+2d6[sneak]` so users can type `/roll 1d20+5 sneaky` instead of
+  // the full expression every time.
+  else if (commandName === 'snippet') {
+    const sub = interaction.options.getSubcommand();
+    const snippets = loadSnippets();
+    const userSnippets = snippets[interaction.user.id] ?? {};
+
+    if (sub === 'create') {
+      const name = interaction.options.getString('name').trim();
+      const expansion = interaction.options.getString('expand').trim();
+      const nameErr = validateSnippetName(name);
+      if (nameErr) return interaction.reply({ content: `❌ ${nameErr}`, ephemeral: true });
+      const expErr = validateSnippetExpansion(expansion);
+      if (expErr) return interaction.reply({ content: `❌ ${expErr}`, ephemeral: true });
+
+      // Limit per-user snippet count so someone can't bloat the file.
+      if (!userSnippets[name.toLowerCase()] && Object.keys(userSnippets).length >= 50) {
+        return interaction.reply({ content: '❌ You\'ve reached the 50-snippet limit. Delete one with `/snippet delete` to make room.', ephemeral: true });
+      }
+
+      const existed = !!userSnippets[name.toLowerCase()];
+      snippets[interaction.user.id] = { ...userSnippets, [name.toLowerCase()]: expansion };
+      saveSnippets(snippets);
+      return interaction.reply({
+        content: `${existed ? '✏️ Updated' : '✅ Created'} snippet **${name}** = \`${expansion}\`\nUse it like: \`/roll 1d20+5 ${name}\``,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'list') {
+      const entries = Object.entries(userSnippets);
+      if (entries.length === 0) {
+        return interaction.reply({
+          content: '📭 You have no snippets yet. Create one with `/snippet create name:sneaky expand:+2d6[sneak]`',
+          ephemeral: true,
+        });
+      }
+      entries.sort(([a], [b]) => a.localeCompare(b));
+      const lines = entries.map(([n, v]) => `• **${n}** → \`${v}\``);
+      const embed = new EmbedBuilder()
+        .setColor(0x7289DA)
+        .setTitle(`📋 Your Snippets (${entries.length}/50)`)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: 'Use any snippet name in /roll, e.g. /roll 1d20 sneaky' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'view') {
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      const expansion = userSnippets[name];
+      if (!expansion) return interaction.reply({ content: `❌ No snippet named \`${name}\`.`, ephemeral: true });
+      return interaction.reply({
+        content: `**${name}** → \`${expansion}\``,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'delete') {
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      if (!userSnippets[name]) return interaction.reply({ content: `❌ No snippet named \`${name}\`.`, ephemeral: true });
+      delete userSnippets[name];
+      snippets[interaction.user.id] = userSnippets;
+      saveSnippets(snippets);
+      return interaction.reply({ content: `🗑️ Deleted snippet **${name}**.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
   }
 
   // ─── /spellbook ──────────────────────────────────────────────────
@@ -4996,18 +5394,38 @@ client.on('interactionCreate', async (interaction) => {
   // ─── /roll ───────────────────────────────────────────────────────
   else if (commandName === 'roll') {
     const raw = interaction.options.getString('dice');
-    const result = rollDiceExpression(raw);
+    const userSnippets = loadSnippets()[interaction.user.id] ?? {};
+    const result = rollAdvanced(raw, userSnippets);
     if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-    const breakdown = `${result.breakdown} = **${result.total}**`;
+
     const charNameArg = interaction.options.getString('character');
     let thumbnail = null;
     if (charNameArg) {
       const characters = loadCharacters();
       thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
     }
-    const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`🎲 ${raw}`).setDescription(breakdown);
+
+    // Build description: one line per iteration, then summary if multi-iter
+    const lines = result.iterations.map((iter, i) =>
+      result.iterations.length > 1
+        ? `**${i + 1}.** ${iter.breakdown} = **${iter.total}**`
+        : `${iter.breakdown} = **${iter.total}**`
+    );
+    let description = lines.join('\n');
+    if (result.summary) description += `\n\n${result.summary}`;
+
+    // If the input had snippets expanded, show the expansion in the footer
+    // so users can see what actually got rolled.
+    const expandedChanged = result.expanded.trim() !== raw.trim();
+
+    const embed = new EmbedBuilder()
+      .setColor(0x7289DA)
+      .setTitle(`🎲 ${raw}`)
+      .setDescription(description);
     if (thumbnail) embed.setThumbnail(thumbnail);
-    embed.setFooter({ text: charNameArg ?? interaction.user.username });
+    const footerParts = [charNameArg ?? interaction.user.username];
+    if (expandedChanged) footerParts.push(`Expanded: ${result.expanded}`);
+    embed.setFooter({ text: footerParts.join(' · ') });
     await interaction.reply({ embeds: [embed] });
   }
 

@@ -108,10 +108,41 @@ const commands = [
     options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
   },
   {
-    name: 'roll', description: 'Roll dice (e.g. 1d20+5)',
+    name: 'roll', description: 'Roll dice with modifiers: adv, dis, crit, rr1, 4#1d20 for iterations, plus your snippets',
     options: [
-      { name: 'dice', description: 'Dice expression e.g. 1d20+5 or 2d6', type: ApplicationCommandOptionType.String, required: true },
+      { name: 'dice', description: 'e.g. 1d20+5 adv · 2d6+3 crit · 4#1d20+5 · 1d20+7 sneaky', type: ApplicationCommandOptionType.String, required: true },
       { name: 'character', description: 'Character name to show on the result (optional)', type: ApplicationCommandOptionType.String, required: false }
+    ]
+  },
+  {
+    name: 'snippet', description: 'Manage your personal roll snippets (shortcuts for /roll)',
+    options: [
+      {
+        name: 'create', description: 'Create or update a snippet (e.g. sneaky = +2d6[sneak])',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name',   description: 'Snippet name (letters, numbers, underscores; e.g. "sneaky")', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'expand', description: 'What the snippet expands to (e.g. "+2d6[sneak]" or "+5")',   type: ApplicationCommandOptionType.String, required: true }
+        ]
+      },
+      {
+        name: 'list', description: 'List all your snippets',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'view', description: 'Show what a snippet expands to',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Snippet name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      },
+      {
+        name: 'delete', description: 'Delete a snippet you created',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Snippet name', type: ApplicationCommandOptionType.String, required: true, autocomplete: true }
+        ]
+      }
     ]
   },
   {
