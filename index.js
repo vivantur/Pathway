@@ -4715,39 +4715,6 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'add') {
-
-      // If a companion: option is specified, add the user's companion to init
-      // as an NPC-controlled combatant with scaled stats.
-      const compArg = interaction.options.getString('companion');
-      if (compArg) {
-        const characters = loadCharacters();
-        const { error: cerr, char: ce } = resolveChar(userId, null, characters);
-        if (cerr) return interaction.reply({ content: cerr, ephemeral: true });
-        if (!ce.companions || Object.keys(ce.companions).length === 0) return interaction.reply({ content: `❌ **${ce.data.name}** has no companions. Add one with \`/companion add\`.`, ephemeral: true });
-        const compKey = compArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const comp = ce.companions[compKey] ?? (compArg === 'active' || compArg === '' ? ce.companions[ce.activeCompanion] : null);
-        if (!comp) return interaction.reply({ content: `❌ No companion "${compArg}" found for **${ce.data.name}**.`, ephemeral: true });
-        const scaled = scaleCompanion(comp, ce.data);
-        const initBonus = interaction.options.getInteger('bonus') ?? 0;
-        // Companions roll initiative using Perception (standard PF2e rule).
-        // scaled.perception already factors in the user's perception override.
-        const initMod = scaled.perception;
-        const initRoll = Math.floor(Math.random() * 20) + 1 + initMod + initBonus;
-        const addResult = addCombatant(channelId, {
-          name: comp.displayName,
-          initiative: initRoll,
-          hp: comp.currentHp ?? scaled.maxHp,
-          maxHp: scaled.maxHp,
-          ac: scaled.ac,
-          ownerId: userId,
-          isNpc: false,
-          companionOf: ce.data.name,
-        });
-        if (!addResult) return interaction.reply({ content: '❌ Could not add companion to initiative.', ephemeral: true });
-        await interaction.reply({ content: `🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins combat with initiative **${initRoll}**! (HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac})` });
-        await updateSummary(interaction.channel, enc);
-        return;
-      }
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
       if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
@@ -8427,6 +8394,72 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'add') {
       const characters = loadCharacters();
+
+      // ── Companion path ─────────────────────────────────────────────
+      // If `companion:` is specified, add the user's companion to init as
+      // their own combatant (ownedby the user, not NPC-controlled). Uses
+      // the companion's Perception for the initiative roll (standard PF2e).
+      const compArg = interaction.options.getString('companion');
+      if (compArg) {
+        const { error: cerr, char: ce } = resolveChar(userId, interaction.options.getString('character'), characters);
+        if (cerr) return interaction.reply({ content: cerr, ephemeral: true });
+        if (!ce.companions || Object.keys(ce.companions).length === 0) {
+          return interaction.reply({ content: `❌ **${ce.data.name}** has no companions. Add one with \`/companion add\`.`, ephemeral: true });
+        }
+        // Resolve the companion: by slug/name, falling back to active.
+        const compKey = compArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        let comp = ce.companions[compKey];
+        if (!comp && (compArg === 'active' || !compArg.trim())) {
+          comp = ce.companions[ce.activeCompanion];
+        }
+        // Try matching by displayName too, in case the user typed the actual
+        // shown name (slug-ified may not match if it contains non-ASCII).
+        if (!comp) {
+          const byDisplay = Object.values(ce.companions).find(
+            c => c.displayName.toLowerCase() === compArg.toLowerCase()
+          );
+          if (byDisplay) comp = byDisplay;
+        }
+        if (!comp) return interaction.reply({ content: `❌ No companion "${compArg}" found for **${ce.data.name}**.`, ephemeral: true });
+
+        if (enc.combatants.some(x => x.name.toLowerCase() === comp.displayName.toLowerCase())) {
+          return interaction.reply({ content: `❌ **${comp.displayName}** is already in the encounter.`, ephemeral: true });
+        }
+
+        const scaled = scaleCompanion(comp, ce.data);
+        const initBonus = interaction.options.getInteger('bonus') ?? 0;
+        const resultOverride = interaction.options.getInteger('result');
+        // Companions roll initiative using Perception (standard PF2e rule).
+        // scaled.perception already factors in any perception override the user set.
+        const initMod = scaled.perception ?? 0;
+        let initiative, rollText;
+        if (resultOverride !== null) {
+          initiative = resultOverride;
+          rollText = `(set to ${resultOverride})`;
+        } else {
+          const r = rollD20Plus(initMod + initBonus);
+          initiative = r.total;
+          rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
+        }
+
+        addCombatant(channelId, {
+          name: comp.displayName,
+          initiative,
+          hp: comp.currentHp ?? scaled.maxHp,
+          maxHp: scaled.maxHp,
+          ac: scaled.ac,
+          ownerId: userId,
+          isNpc: false,
+          companionOf: ce.data.name,
+          effects: [],
+        });
+
+        await interaction.reply(`🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins initiative at **${initiative}** ${rollText}. HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac}`);
+        await updateSummary(interaction.channel, enc);
+        return;
+      }
+
+      // ── Character path (default) ───────────────────────────────────
       const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
