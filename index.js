@@ -4966,44 +4966,56 @@ client.on('interactionCreate', async (interaction) => {
     // bot can't fetch by ID. Users have to paste the text themselves. Modals
     // are mobile-friendly and don't require file-picker navigation.
     else if (sub === 'paste') {
-      const modal = new ModalBuilder()
-        .setCustomId('char_paste_modal')
-        .setTitle('Paste Pathbuilder JSON');
+      try {
+        const modal = new ModalBuilder()
+          .setCustomId('char_paste_modal')
+          .setTitle('Paste Pathbuilder JSON');
 
-      const parts = [];
-      for (let i = 1; i <= 5; i++) {
-        const input = new TextInputBuilder()
-          .setCustomId(`json_part_${i}`)
-          .setLabel(i === 1 ? 'JSON (paste here; continue in Part 2-5 if long)' : `Part ${i} (continuation, leave blank if not needed)`)
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(i === 1)
-          .setMaxLength(4000)
-          .setPlaceholder(i === 1 ? '{"success":true,"build":{"name":"..."}}' : 'Only fill if Part ' + (i - 1) + ' was full');
-        parts.push(new ActionRowBuilder().addComponents(input));
+        const parts = [];
+        for (let i = 1; i <= 5; i++) {
+          // Discord modal labels are capped at 45 chars. Keep these short.
+          const input = new TextInputBuilder()
+            .setCustomId(`json_part_${i}`)
+            .setLabel(i === 1 ? 'Paste JSON here' : `Continuation part ${i}`)
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(i === 1)
+            .setMaxLength(4000)
+            .setPlaceholder(i === 1 ? '{"success":true,"build":{...}}' : `Only fill if part ${i - 1} was full`);
+          parts.push(new ActionRowBuilder().addComponents(input));
+        }
+        modal.addComponents(...parts);
+        return await interaction.showModal(modal);
+      } catch (err) {
+        console.error('/char paste showModal failed:', err);
+        return interaction.reply({ content: `❌ Couldn't open the paste popup: ${err.message}. Please report this.`, ephemeral: true });
       }
-      modal.addComponents(...parts);
-      return interaction.showModal(modal);
     }
 
     // /char pasteupdate — same as paste but for refreshing an existing character
     // (preserves hero points, XP, HP, notes, overlay).
     else if (sub === 'pasteupdate') {
-      const modal = new ModalBuilder()
-        .setCustomId('char_pasteupdate_modal')
-        .setTitle('Paste Pathbuilder JSON (update)');
-      const parts = [];
-      for (let i = 1; i <= 5; i++) {
-        const input = new TextInputBuilder()
-          .setCustomId(`json_part_${i}`)
-          .setLabel(i === 1 ? 'Updated JSON (paste here; continue in Part 2-5 if long)' : `Part ${i} (continuation)`)
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(i === 1)
-          .setMaxLength(4000)
-          .setPlaceholder(i === 1 ? '{"success":true,"build":{"name":"..."}}' : 'Only fill if needed');
-        parts.push(new ActionRowBuilder().addComponents(input));
+      try {
+        const modal = new ModalBuilder()
+          .setCustomId('char_pasteupdate_modal')
+          .setTitle('Paste Updated JSON');
+        const parts = [];
+        for (let i = 1; i <= 5; i++) {
+          // Discord modal labels cap at 45 chars.
+          const input = new TextInputBuilder()
+            .setCustomId(`json_part_${i}`)
+            .setLabel(i === 1 ? 'Paste updated JSON here' : `Continuation part ${i}`)
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(i === 1)
+            .setMaxLength(4000)
+            .setPlaceholder(i === 1 ? '{"success":true,"build":{...}}' : `Only fill if part ${i - 1} was full`);
+          parts.push(new ActionRowBuilder().addComponents(input));
+        }
+        modal.addComponents(...parts);
+        return await interaction.showModal(modal);
+      } catch (err) {
+        console.error('/char pasteupdate showModal failed:', err);
+        return interaction.reply({ content: `❌ Couldn't open the paste popup: ${err.message}. Please report this.`, ephemeral: true });
       }
-      modal.addComponents(...parts);
-      return interaction.showModal(modal);
     }
 
     // /char howto — platform-specific guidance for getting JSON into the bot
