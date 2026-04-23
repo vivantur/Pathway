@@ -387,7 +387,7 @@
     "level": "1st",
     "heightened": "=+1",
     "summary": "Throw divine energy that deals spirit damage.",
-    "description": "You unleash a beam of divine energy. Make a ranged spell attack against the target's AC. On a hit, the target takes 2d4 spirit damage (double damage on a critical hit).",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -410,7 +410,8 @@
         "type": "attack",
         "stat": "spell_attack"
       }
-    ]
+    ],
+    "_homebrew_modified": true
   },
   {
     "name": "Draw Moisture",
@@ -592,7 +593,7 @@
     "level": "1st",
     "heightened": "6th",
     "summary": "Protect an ally against one specific enemy.",
-    "description": "You ward an ally against the attacks and hostile spells from the target enemy. The target ally gains a +1 status bonus to Armor Class and saving throws against the target enemy's attacks, spells, and other effects.",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 ally and 1 enemy",
@@ -601,7 +602,7 @@
     "duration": "sustained up to 1 minute",
     "defense": "",
     "damage": null,
-    "heightening": "+2 to the bonus at 6th level",
+    "heightening": null,
     "rolls": []
   },
   {
@@ -797,7 +798,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "Divine guidance improves one roll.",
-    "description": "You ask for the guidance of supernatural entities, granting the target a +1 status bonus to one attack roll, Perception check, saving throw, or skill check the target attempts before the duration ends. The target chooses which roll to use the bonus on before rolling. If the target uses the bonus, the spell ends. Either way, the target is then temporarily immune for 1 hour.",
+    "description": "",
     "cast": "[one-action]",
     "trigger": "",
     "target": "1 creature",
@@ -1384,16 +1385,16 @@
     "level": "1st",
     "heightened": "=+2",
     "summary": "Shield your eidolon or minion from harm.",
-    "description": "You extend your aura, as a magical shield that protects your eidolon or minion. The target gains a +1 circumstance bonus to AC until the start of your next turn. You gain the following reaction; after using the reaction, the spell ends and you can't cast protect companion again for 10 minutes.",
+    "description": "",
     "cast": "[one-action]",
-    "trigger": "Life Block [reaction]: The spell's target would take damage; Effect Reduce the triggering damage by 10, but you lose 5 Hit Points. Even if this reduces the damage to 0, the target still takes any effects that would come with the damage, such as the poison on a viper's fangs Strike.",
+    "trigger": "",
     "target": "your eidolon, or a creature with the minion trait under your control",
     "range": "30 feet",
     "area": "",
     "duration": "until the start of your next turn",
     "defense": "",
     "damage": null,
-    "heightening": "The reaction reduces the damage by another 10, and you lose 5 more Hit Points. If you want to lose fewer Hit Points, you can choose to lower the damage reduction and HP lost to what any lower-level version of the spell could do without lowering the spell's actual level.",
+    "heightening": null,
     "rolls": []
   },
   {
@@ -1620,7 +1621,7 @@
     "level": "1st",
     "heightened": "=+2",
     "summary": "A shield of magical force blocks attacks and spells.",
-    "description": "You raise a magical shield of force. This counts as using the Raise a Shield action, giving you a +1 circumstance bonus to AC until the start of your next turn, but it doesn't require a hand to use. While the spell is in effect, you can use the Shield Block reaction with your magic shield. The shield has Hardness 5. You can use the spell's reaction to reduce damage from any spell or magical effect, even if it doesn't deal physical damage. After you use Shield Block, the spell ends and you can't cast it again for 10 minutes.",
+    "description": "",
     "cast": "[one-action]",
     "trigger": "",
     "target": "",
@@ -1629,7 +1630,7 @@
     "duration": "until the start of your next turn",
     "defense": "",
     "damage": null,
-    "heightening": "The shield's Hardness increases by 5.",
+    "heightening": null,
     "rolls": []
   },
   {
@@ -2115,7 +2116,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "When you Cast the Spell, you gain a perfect sense of time.",
-    "description": "When you Cast the Spell, you gain a perfect sense of time. You can learn exactly what time it is, down to the second. You can instead choose to gain a perfect sense of the calendar if you have knowledge in that area - if you're trained in Nature, you can learn exactly how long it is until sunrise and how many days until the next solstice. If you're trained in Astronomy Lore, you can learn precisely when any known predictable astronomical conjunction will begin and end, and so on. You can gain a +1 status bonus to one attack roll, Perception check, saving throw, or skill check you take on the same turn you cast time sense that requires extremely precise timing. If you choose to gain this bonus, you can't gain it again for 1 hour.",
+    "description": "",
     "cast": "[one-action]",
     "trigger": "",
     "target": "",
@@ -13540,7 +13541,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "Weaken enemies' attacks in an aura around you.",
-    "description": "You fill the minds of your enemies with doubt. Enemies in the area must succeed at a Will save or take a –1 status penalty to attack rolls as long as they are in the area. Once per round on subsequent turns, you can Sustain the spell to increase the emanation's radius by 10 feet and force enemies in the area that weren't yet affected to attempt another saving throw. Bane can counteract bless.",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "",
@@ -14226,7 +14227,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "Make a creature do the same thing repeatedly.",
-    "description": "You loop a thought process in the target's mind, forcing it to repeat a moment's worth of actions. the target must attempt a Will save. If the target fails, whatever actions the target uses on its next turn, it must repeat on its following turn. the actions must be repeated in the same order and as close to the same specifics as possible. For example, if the target makes an attack, it must repeat the attack against the same creature, if possible, and if the target moves, it must move the same distance and direction, if possible, on its next turn. If the target can't repeat an action, such as Casting a Spell that has been exhausted or needing to target a creature that has died, it can act as it chooses for that action but becomes stupefied 1 until the end of its turn.",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -14402,7 +14403,7 @@
     "level": "1st",
     "heightened": "=+1",
     "summary": "You speak about the consequences of actions people take against each other and how it’s possible to break cycles of violence simply by making a different choice.",
-    "description": "You speak about the consequences of actions people take against each other and how it's possible to break cycles of violence simply by making a different choice. The targets regain 1d4 Hit Points at the end of their own turns while the spell is in effect. If a target uses a hostile action against the other target, the spell ends for the target that used the hostile action.",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "creatures who are hostile toward each other",
@@ -14411,7 +14412,7 @@
     "duration": "5 rounds",
     "defense": "",
     "damage": null,
-    "heightening": "The targets regain an additional 1d4 Hit Points at the end of their own turns.",
+    "heightening": null,
     "rolls": []
   },
   {
@@ -14910,9 +14911,7 @@
     "level": "1st",
     "heightened": "=+1",
     "summary": "Vital energy heals the living or harms the undead, either a single creature or all in a burst.",
-    "description": "You channel vital energy to heal the living or damage the undead. If the target is a willing living creature, you restore 1d8 Hit Points. If the target is undead, you deal that amount of vitality damage to it, and it gets a basic Fortitude save. The number of actions you spend when Casting this Spell determines its targets, range, area, and other parameters. 
-    **One Action:**The spell has a range of touch. **Two Actions: (concentrate) The spell has a range of 30 feet. If you're healing a living creature, increase the Hit Points restored by 8. 
-    **Three Actions:** (concentrate) You disperse vital energy in a 30-foot emanation. This targets all living and undead creatures in the burst",
+    "description": "",
     "cast": "[one-action] to [three-actions]",
     "trigger": "",
     "target": "1 willing living creature or 1 undead creature",
@@ -15048,10 +15047,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "Curse a creature with misfortune.",
-    "description": "The target is struck with misfortune, which throws it off balance. The target must attempt a Will save.
-**Success:** The target is unaffected.
-**Failure:** The first time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.
-**Critical Failure:** Every time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.",
+    "description": "",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",

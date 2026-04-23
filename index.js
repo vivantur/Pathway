@@ -17,16 +17,113 @@ try {
 // Returns an absolute path inside DATA_DIR for a given filename. For files
 // that ship with the repo as base content (bestiary, spells, items), we
 // seed the data-dir copy on first boot by copying from the repo.
+//
+// FORCE-RESEED MECHANISM:
+// The seeded content (bestiary/spells/items) normally stays forever on the
+// volume — a content update you push to git WON'T reach the running bot,
+// because the seeder only copies when the volume file is absent. To push
+// fresh content from the repo to the volume, set one of these env vars
+// before redeploying, then unset after the first successful boot:
+//
+//   FORCE_RESEED=all             → overwrite all seed-from-repo files
+//   FORCE_RESEED_SPELLS=1        → overwrite just spells.json
+//   FORCE_RESEED_BESTIARY=1      → overwrite just bestiary.json
+//   FORCE_RESEED_ITEMS=1         → overwrite just items.json
+//
+// Homebrew additions (flagged _homebrew: true) are preserved across reseeds:
+// the seeder splices them back into the repo copy before writing to the volume.
+const FORCE_RESEED_KEYS = {
+  'spells.json': 'FORCE_RESEED_SPELLS',
+  'bestiary.json': 'FORCE_RESEED_BESTIARY',
+  'items.json': 'FORCE_RESEED_ITEMS',
+};
+function shouldForceReseed(filename) {
+  if (process.env.FORCE_RESEED === 'all' || process.env.FORCE_RESEED === '1') return true;
+  const key = FORCE_RESEED_KEYS[filename];
+  return key && (process.env[key] === '1' || process.env[key] === 'true');
+}
+
+// Splice homebrew entries from the volume copy back into the repo copy
+// before overwriting. Different file shapes need different logic.
+function preserveHomebrewDuringReseed(filename, volumeCopy, repoCopy) {
+  try {
+    if (filename === 'spells.json') {
+      // Flat array; homebrew entries have _homebrew: true
+      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
+      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
+      if (!Array.isArray(old) || !Array.isArray(fresh)) return null;
+      const homebrew = old.filter(s => s?._homebrew);
+      if (homebrew.length === 0) return null;
+      // Drop any repo entry that collides with a homebrew name, then append homebrew
+      const homebrewNames = new Set(homebrew.map(s => String(s.name).toLowerCase()));
+      const merged = fresh.filter(s => !homebrewNames.has(String(s.name).toLowerCase())).concat(homebrew);
+      return JSON.stringify(merged, null, 2);
+    }
+    if (filename === 'bestiary.json') {
+      // { metadata, creatures: { slug: {...} } }; homebrew have _homebrew: true
+      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
+      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
+      const oldCreatures = old.creatures ?? old;
+      const freshCreatures = fresh.creatures ?? fresh;
+      const homebrewEntries = {};
+      for (const [slug, entry] of Object.entries(oldCreatures)) {
+        if (entry?._homebrew) homebrewEntries[slug] = entry;
+      }
+      if (Object.keys(homebrewEntries).length === 0) return null;
+      const merged = { ...freshCreatures, ...homebrewEntries };
+      const payload = fresh.metadata ? { metadata: fresh.metadata, creatures: merged } : { creatures: merged };
+      return JSON.stringify(payload, null, 2);
+    }
+    if (filename === 'items.json') {
+      // { meta, items: { slug: {...} } }; homebrew have _homebrew: true
+      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
+      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
+      const oldItems = old.items ?? old;
+      const freshItems = fresh.items ?? fresh;
+      const homebrewEntries = {};
+      for (const [slug, entry] of Object.entries(oldItems)) {
+        if (entry?._homebrew) homebrewEntries[slug] = entry;
+      }
+      if (Object.keys(homebrewEntries).length === 0) return null;
+      const merged = { ...freshItems, ...homebrewEntries };
+      const payload = fresh.meta ? { meta: fresh.meta, items: merged } : { items: merged };
+      return JSON.stringify(payload, null, 2);
+    }
+  } catch (err) {
+    console.error(`Homebrew-preserve step failed for ${filename}:`, err.message);
+  }
+  return null;
+}
+
 function dataPath(filename, { seedFromRepo = false } = {}) {
   const target = path.join(DATA_DIR, filename);
-  if (seedFromRepo && !fs.existsSync(target)) {
-    const repoCopy = path.join(__dirname, filename);
-    if (fs.existsSync(repoCopy)) {
+  const repoCopy = path.join(__dirname, filename);
+
+  if (seedFromRepo) {
+    const volumeExists = fs.existsSync(target);
+    const forceReseed = volumeExists && shouldForceReseed(filename);
+
+    if (!volumeExists && fs.existsSync(repoCopy)) {
+      // First-time seed: just copy.
       try {
         fs.copyFileSync(repoCopy, target);
         console.log(`Seeded ${filename} from repo into DATA_DIR.`);
       } catch (err) {
         console.error(`Failed to seed ${filename} into DATA_DIR:`, err.message);
+      }
+    } else if (forceReseed && fs.existsSync(repoCopy)) {
+      // Force reseed: preserve homebrew, overwrite with repo content.
+      try {
+        const merged = preserveHomebrewDuringReseed(filename, target, repoCopy);
+        if (merged !== null) {
+          fs.writeFileSync(target, merged, 'utf8');
+          console.log(`🔄 Force-reseeded ${filename} from repo (homebrew entries preserved).`);
+        } else {
+          fs.copyFileSync(repoCopy, target);
+          console.log(`🔄 Force-reseeded ${filename} from repo.`);
+        }
+      } catch (err) {
+        console.error(`Failed to force-reseed ${filename}:`, err.message);
       }
     }
   }
@@ -3538,16 +3635,29 @@ function normalizeSpell(spell) {
   if (traits.map(t => t.toLowerCase()).includes('cantrip')) type = 'Cantrip';
   if (level === 0) type = 'Cantrip';
 
-  // Parse defense into save type + basic flag.
-  // "basic Reflex" → { save: "Reflex", basic: true }
-  // "Will" → { save: "Will", basic: false }
-  // null → null
+  // Parse defense into save type + basic flag, OR detect attack-roll spells.
+  // PF2e signals:
+  //   defense: "basic Reflex"       → save spell (basic), save = Reflex
+  //   defense: "Will"               → save spell (non-basic)
+  //   defense: "AC"                 → ATTACK-ROLL spell (spell attack vs AC)
+  //   rolls[].type === "attack"     → ATTACK-ROLL spell (alternate signal)
+  //   attack: true                  → ATTACK-ROLL spell (legacy signal)
   let savingThrow = null;
   let saveIsBasic = false;
+  let isAttackSpell = !!spell.attack;
   if (spell.defense && String(spell.defense).trim()) {
     const raw = String(spell.defense).trim();
-    saveIsBasic = /^basic\s+/i.test(raw);
-    savingThrow = raw.replace(/^basic\s+/i, '').trim();
+    if (/^ac$/i.test(raw)) {
+      isAttackSpell = true;
+    } else {
+      saveIsBasic = /^basic\s+/i.test(raw);
+      savingThrow = raw.replace(/^basic\s+/i, '').trim();
+    }
+  }
+  if (!isAttackSpell && Array.isArray(spell.rolls)) {
+    if (spell.rolls.some(r => r?.type === 'attack' || r?.stat === 'spell_attack')) {
+      isAttackSpell = true;
+    }
   }
 
   const target = spell.target ?? spell.targets ?? null;
@@ -3590,7 +3700,7 @@ function normalizeSpell(spell) {
   let description = spell.description?.trim() || spell.summary?.trim() || '*No description available.*';
   return {
     ...spell, level, traditions, traits, type,
-    savingThrow, saveIsBasic,
+    savingThrow, saveIsBasic, isAttackSpell,
     target, damage, damageBase, damageType, damageExtra,
     heightening, description,
   };
@@ -3618,7 +3728,14 @@ function buildSpellEmbed(rawSpell) {
     spell.duration ? `**Duration** ${spell.duration}` : null,
   ].filter(Boolean);
   if (metaLines.length > 0) embed.addFields({ name: 'Meta', value: metaLines.join('\n'), inline: false });
-  if (spell.savingThrow) embed.addFields({ name: 'Saving Throw', value: spell.savingThrow, inline: false });
+  // "Defense" field matches AoN. Shows "AC" for attack-roll spells, or the
+  // save type (with "basic " prefix for basic saves) for save spells.
+  if (spell.isAttackSpell) {
+    embed.addFields({ name: 'Defense', value: 'AC', inline: false });
+  } else if (spell.savingThrow) {
+    const basicPrefix = spell.saveIsBasic ? 'basic ' : '';
+    embed.addFields({ name: 'Defense', value: `${basicPrefix}${spell.savingThrow}`, inline: false });
+  }
   if (spell.damage)      embed.addFields({ name: 'Damage', value: spell.damage, inline: false });
   if (spell.heightening && typeof spell.heightening === 'object') {
     let htText = '';
@@ -5370,7 +5487,7 @@ client.on('interactionCreate', async (interaction) => {
     const keyMod = Math.floor(((ab[keyAbility] ?? 10) - 10) / 2);
     const spellAttackBonus = keyMod + calcProfNum(spellProfNum, lvl);
     const spellDC = 10 + keyMod + calcProfNum(spellProfNum, lvl);
-    const isAttackSpell = !!spell.attack;
+    const isAttackSpell = spell.isAttackSpell === true;
     const saveType = spell.savingThrow ?? null;
     const effectiveLevel = castLevel ?? spell.level ?? 1;
     const isCantrip = spell.type === 'Cantrip';
