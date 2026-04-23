@@ -1113,6 +1113,108 @@ function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   return degree;
 }
 
+// Damage type → emoji. Falls back to ⚔️ for unknown types. PF2e has a fixed
+// set of damage types; these cover every canonical type in the Player Core.
+const DAMAGE_TYPE_EMOJI = {
+  acid: '🧪', bleed: '🩸', bludgeoning: '🔨', chaotic: '🌀', cold: '❄️',
+  electricity: '⚡', evil: '😈', fire: '🔥', force: '✨', good: '🌟',
+  lawful: '⚖️', mental: '🧠', negative: '💀', physical: '💥', piercing: '🏹',
+  poison: '☠️', positive: '✨', slashing: '🗡️', sonic: '🔊', spirit: '👻',
+  untyped: '⚔️', vitality: '💖', void: '🕳️',
+};
+function damageTypeEmoji(type) {
+  if (!type) return '⚔️';
+  const key = String(type).toLowerCase().trim();
+  // Handle "persistent fire", "precision", etc. — strip qualifiers, match main word
+  for (const [k, emoji] of Object.entries(DAMAGE_TYPE_EMOJI)) {
+    if (key.includes(k)) return emoji;
+  }
+  return '⚔️';
+}
+
+// Find a save bonus for a combatant. Checks in order:
+//   1. Character-sheet data (PC combatants)
+//   2. Bestiary data (NPC combatants matched by name to a monster)
+//   3. Stored combatant overrides (from /init addnpc with manual stats)
+// Returns { bonus, source } or null if no info.
+// saveType must be one of 'fortitude' / 'reflex' / 'will' (case-insensitive).
+function getTargetSaveBonus(target, saveType, loadedCharacters) {
+  if (!target || !saveType) return null;
+  const key = String(saveType).toLowerCase();
+  const normalized = key.startsWith('fort') ? 'fort' : key.startsWith('ref') ? 'ref' : key.startsWith('will') ? 'will' : null;
+  if (!normalized) return null;
+
+  // Combatants may have saveBonuses attached from /init addmonster integration.
+  // Preferred source — matches whatever the bestiary/GM configured.
+  if (target.saveBonuses && target.saveBonuses[normalized] != null) {
+    return { bonus: target.saveBonuses[normalized], source: 'stored' };
+  }
+
+  // PC combatants: look up their character sheet
+  if (!target.isNpc && target.ownerId) {
+    const characters = loadedCharacters ?? loadCharacters();
+    const userChars = characters[target.ownerId] ?? {};
+    for (const charEntry of Object.values(userChars)) {
+      if (charEntry?.data?.name && charEntry.data.name.toLowerCase() === target.name.toLowerCase()) {
+        const c = charEntry.data;
+        const ab = c.abilities ?? {};
+        const prof = c.proficiencies ?? {};
+        const lvl = c.level ?? 1;
+        const abilityFor = { fort: 'con', ref: 'dex', will: 'wis' };
+        const profKey = { fort: 'fortitude', ref: 'reflex', will: 'will' };
+        const abilMod = Math.floor(((ab[abilityFor[normalized]] ?? 10) - 10) / 2);
+        const profNum = prof[profKey[normalized]] ?? 0;
+        const itemBonus = (c.overlay?.saveItemBonuses?.[normalized]) ?? 0;
+        return { bonus: abilMod + calcProfNum(profNum, lvl) + itemBonus, source: 'character' };
+      }
+    }
+  }
+
+  // NPC combatants: try the bestiary
+  if (target.isNpc) {
+    const { monster } = findMonster(target.name) || {};
+    if (monster) {
+      const rich = monster.rich ?? null;
+      const coreSaves = monster.core?.saves ?? {};
+      const legacySaves = monster.summary?.summary ?? {};
+      const saveMap = { fort: ['fort', 'fortitude'], ref: ['ref', 'reflex'], will: ['will'] };
+      for (const k of saveMap[normalized]) {
+        if (coreSaves[k] != null) return { bonus: coreSaves[k], source: 'bestiary' };
+        if (legacySaves[k] != null) return { bonus: legacySaves[k], source: 'bestiary' };
+        if (rich?.defenses?.saves?.[k.charAt(0).toUpperCase() + k.slice(1)] != null) {
+          return { bonus: rich.defenses.saves[k.charAt(0).toUpperCase() + k.slice(1)], source: 'bestiary' };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+// Roll a save and compute the degree of success vs the given DC.
+// Returns { dieRoll, total, degree } — degree is 'crit-success' | 'success' |
+// 'failure' | 'crit-failure'. Uses the same DoS table as attack rolls.
+function rollSaveForTarget(bonus, dc) {
+  const dieRoll = Math.floor(Math.random() * 20) + 1;
+  const total = dieRoll + bonus;
+  const degree = determineDegreeOfSuccess(total, dieRoll, dc);
+  return { dieRoll, total, degree };
+}
+
+// Given a spell's damage and a basic-save degree of success, return the final
+// damage amount. Per PF2e Remaster:
+//   crit-success → 0 damage
+//   success → half damage (rounded down)
+//   failure → full damage
+//   crit-failure → double damage (ALL dice and bonuses)
+function basicSaveDamage(fullDamage, degree) {
+  if (degree === 'crit-success') return 0;
+  if (degree === 'success')      return Math.floor(fullDamage / 2);
+  if (degree === 'failure')      return fullDamage;
+  if (degree === 'crit-failure') return fullDamage * 2;
+  return fullDamage;
+}
+
 function calculateMap(mapLevel, agile) {
   if (mapLevel === 0 || !mapLevel) return 0;
   if (mapLevel === 1) return agile ? -4 : -5;
@@ -3435,17 +3537,63 @@ function normalizeSpell(spell) {
   let type = spell.type ?? 'Spell';
   if (traits.map(t => t.toLowerCase()).includes('cantrip')) type = 'Cantrip';
   if (level === 0) type = 'Cantrip';
+
+  // Parse defense into save type + basic flag.
+  // "basic Reflex" → { save: "Reflex", basic: true }
+  // "Will" → { save: "Will", basic: false }
+  // null → null
   let savingThrow = null;
-  if (spell.defense && spell.defense.trim()) savingThrow = spell.defense.replace(/^basic\s+/i, '').trim();
+  let saveIsBasic = false;
+  if (spell.defense && String(spell.defense).trim()) {
+    const raw = String(spell.defense).trim();
+    saveIsBasic = /^basic\s+/i.test(raw);
+    savingThrow = raw.replace(/^basic\s+/i, '').trim();
+  }
+
   const target = spell.target ?? spell.targets ?? null;
+
+  // Damage: preserve both the string form (for display) and the structured form
+  // (base dice, type, extra) when available, so the caster can roll dice and
+  // label them with their damage type.
   let damage = spell.damage;
+  let damageBase = null;
+  let damageType = null;
+  let damageExtra = null;
   if (damage && typeof damage === 'object') {
+    damageBase = damage.base || null;
+    damageType = damage.type || null;
+    damageExtra = damage.extra || null;
     const parts = [damage.base, damage.type].filter(Boolean).join(' ');
     damage = (parts + (damage.extra ? ` + ${damage.extra}` : '')).trim() || null;
+  } else if (damage && typeof damage === 'string' && damage.trim()) {
+    // String form: try to pick out the leading dice expression and type from it
+    // (e.g. "6d6 fire" or "1d4 persistent bleed")
+    const m = damage.trim().match(/^(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s+([a-zA-Z ]+?)(?:\s*\+\s*(.+))?$/);
+    if (m) {
+      damageBase = m[1].replace(/\s+/g, '');
+      damageType = m[2].trim();
+      damageExtra = m[3]?.trim() ?? null;
+    } else {
+      // Fall back to just using the string as damageBase with no known type
+      damageBase = damage.trim();
+    }
   }
   if (!damage || (typeof damage === 'string' && !damage.trim())) damage = null;
+
+  // Heightening info: normalize to { perRank: <dice>, fixed: {rank: <dice>}, extraText }
+  // so we can compute scaled damage at cast time.
+  let heightening = null;
+  if (spell.heightening) {
+    heightening = spell.heightening;
+  }
+
   let description = spell.description?.trim() || spell.summary?.trim() || '*No description available.*';
-  return { ...spell, level, traditions, traits, type, savingThrow, target, damage, description };
+  return {
+    ...spell, level, traditions, traits, type,
+    savingThrow, saveIsBasic,
+    target, damage, damageBase, damageType, damageExtra,
+    heightening, description,
+  };
 }
 
 function buildSpellEmbed(rawSpell) {
@@ -5311,27 +5459,104 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (saveType) {
-      if (target) description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}** — ${target.name} must roll \`/save type:${saveType}\`\n\n`;
-      else description += `**${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save DC: ${spellDC}**\n\n`;
+      const humanSave = saveType.charAt(0).toUpperCase() + saveType.slice(1);
+      const basicLabel = spell.saveIsBasic ? 'basic ' : '';
+      description += `**${basicLabel}${humanSave} Save DC ${spellDC}**\n`;
+      if (!target) description += `Target(s) should roll \`/save type:${saveType}\`.\n`;
+      description += '\n';
     }
 
+    // ── Damage: roll dice (with heightening) and track type ─────────────
+    // For catalog spells, damageBase is the dice expression and damageType is
+    // e.g. "fire". For homebrew or text-damage spells, fall back to the
+    // string form. If `heightening.damage_bonus` exists, add the per-rank
+    // extra dice based on effectiveLevel minus the base level.
     let damageResult = null;
     let finalDamage = 0;
-    if (spell.damage && typeof spell.damage === 'string') damageResult = rollDamageExpression(spell.damage);
+    let damageTypeLabel = spell.damageType ?? null;
+    let damageExpressionDisplay = null;
 
+    if (spell.damageBase) {
+      let diceExpr = spell.damageBase;
+      // Handle heightening.damage_bonus (e.g. "2d6" per rank above base)
+      const baseLevel = spell.level || 0;
+      const bonusRanks = Math.max(0, effectiveLevel - baseLevel);
+      if (bonusRanks > 0 && spell.heightening?.damage_bonus && spell.heightening.type !== 'fixed') {
+        const step = spell.heightening.step ?? 1;
+        const steps = Math.floor(bonusRanks / step);
+        if (steps > 0) {
+          // Parse "2d6" → multiply dice count
+          const m = String(spell.heightening.damage_bonus).match(/^(\d+)d(\d+)$/i);
+          if (m) {
+            const addedDice = parseInt(m[1]) * steps;
+            diceExpr = `${diceExpr} + ${addedDice}d${m[2]}`;
+          } else {
+            // Non-dice bonus (e.g. flat +X) — append as-is
+            diceExpr = `${diceExpr} + ${spell.heightening.damage_bonus}`;
+          }
+        }
+      }
+      damageResult = rollDamageExpression(diceExpr);
+      damageExpressionDisplay = diceExpr;
+    } else if (spell.damage && typeof spell.damage === 'string') {
+      damageResult = rollDamageExpression(spell.damage);
+      damageExpressionDisplay = spell.damage;
+    }
+
+    // ── Auto-resolve save (basic or non-basic) on a single target ──────
+    // For BASIC saves: auto-apply damage based on the target's rolled degree
+    // of success. For NON-BASIC saves: report the degree but don't auto-apply
+    // any effect (most non-basic saves have narrative effects the GM adjudicates).
+    let saveResult = null;
+    let saveDegreeApplied = null;
+    if (saveType && target && !isAttackSpell) {
+      const bonusInfo = getTargetSaveBonus(target, saveType, characters);
+      if (bonusInfo) {
+        saveResult = rollSaveForTarget(bonusInfo.bonus, spellDC);
+        saveDegreeApplied = saveResult.degree;
+        const targetDesc = target.isNpc ? target.name : `**${target.name}**`;
+        const degreeEmoji = { 'crit-success': '🌟', 'success': '✅', 'failure': '❌', 'crit-failure': '💥' };
+        const degreeLabel = { 'crit-success': 'Critical Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Critical Failure' };
+        description += `${targetDesc}'s ${saveType.charAt(0).toUpperCase() + saveType.slice(1)} Save: 1d20 (${saveResult.dieRoll}) ${fmt(bonusInfo.bonus)} = **${saveResult.total}** vs DC ${spellDC}\n`;
+        description += `${degreeEmoji[saveDegreeApplied] ?? '•'} **${degreeLabel[saveDegreeApplied] ?? saveDegreeApplied}**\n\n`;
+      } else {
+        // No save bonus available — fall back to asking them to roll manually
+        description += `${target.name}'s save bonus unknown — please roll \`/save type:${saveType}\` manually.\n\n`;
+      }
+    }
+
+    // ── Render damage breakdown + compute final damage to apply ─────────
     if (damageResult) {
+      const typeBadge = damageTypeLabel ? `${damageTypeEmoji(damageTypeLabel)} **${damageTypeLabel}**` : '';
+      const headerSuffix = typeBadge ? ` — ${typeBadge}` : '';
+
       if (isAttackSpell && target && attackDegree) {
+        // Attack-roll spell path: existing crit-double logic
         if (attackDegree === 'crit-success') {
           finalDamage = damageResult.total * 2;
-          description += `**Damage (CRIT × 2)**\n${damageResult.display} = ${damageResult.total} × 2 = **${finalDamage}**\n`;
+          description += `**Damage (CRIT ×2)**${headerSuffix}\n${damageResult.display} = ${damageResult.total} × 2 = **${finalDamage}**\n`;
         } else if (attackDegree === 'success') {
           finalDamage = damageResult.total;
-          description += `**Damage**\n${damageResult.display} = **${finalDamage}**\n`;
+          description += `**Damage**${headerSuffix}\n${damageResult.display} = **${finalDamage}**\n`;
+        } else {
+          description += `*No damage (missed)*\n`;
         }
+      } else if (spell.saveIsBasic && saveDegreeApplied) {
+        // Basic-save path: apply degree-based scaling to the rolled damage
+        const rolledTotal = damageResult.total;
+        finalDamage = basicSaveDamage(rolledTotal, saveDegreeApplied);
+        const multiplier = { 'crit-success': '× 0', 'success': '÷ 2', 'failure': '(full)', 'crit-failure': '× 2' }[saveDegreeApplied];
+        description += `**Damage** ${multiplier}${headerSuffix}\n${damageResult.display} = ${rolledTotal} → **${finalDamage}**\n`;
       } else {
+        // No target / manual resolution: show the rolled damage and scaling hints
         finalDamage = damageResult.total;
-        description += `**Damage:** ${damageResult.display} = **${finalDamage}**\n`;
-        if (saveType && target) description += `*(On a failed save, apply ${finalDamage} damage. Crit fail = ${finalDamage * 2}, success = ${Math.floor(finalDamage / 2)}, crit success = 0)*\n`;
+        description += `**Damage**${headerSuffix}\n${damageResult.display} = **${finalDamage}**\n`;
+        if (saveType && !target) {
+          const scaleNote = spell.saveIsBasic
+            ? `Basic save: crit-success 0 · success ${Math.floor(finalDamage / 2)} · failure ${finalDamage} · crit-fail ${finalDamage * 2}`
+            : `Non-basic save — see spell text for effect per degree`;
+          description += `*${scaleNote}*\n`;
+        }
       }
     } else if (spell.damage) {
       description += `**Damage:** ${spell.damage}\n`;
@@ -5349,7 +5574,13 @@ client.on('interactionCreate', async (interaction) => {
       else                                       description += `\n🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
     }
 
-    if (target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success') && finalDamage > 0) {
+    // ── Apply damage to target ─────────────────────────────────────────
+    // Two paths lead here:
+    //   1. Attack spell hit: attackDegree is success or crit-success
+    //   2. Basic-save spell: saveDegreeApplied exists and finalDamage > 0
+    const attackHit = target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success');
+    const basicSaveDealsDamage = target && !isAttackSpell && spell.saveIsBasic && saveDegreeApplied && finalDamage > 0;
+    if ((attackHit || basicSaveDealsDamage) && finalDamage > 0) {
       const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
       const dyingNote = dmgResult?.displaySuffix ?? '';
       description += target.isNpc
