@@ -1328,9 +1328,7 @@
     "level": "1st",
     "heightened": "=+1",
     "summary": "You point your finger and project a bolt of magical energy that stutters in and out of phase until it reaches the target.",
-    "description": "You point your finger and project a bolt of magical energy that stutters in and out of phase until it reaches the target. Make a ranged spell attack roll against your target's AC; if the target has any circumstance bonuses to AC (such as from a shield or cover), reduce that bonus by 2 for this attack. On a success, you deal 3d4 piercing damage.
-**Critical Success:** The target takes double damage.
-**Success:** The target takes full damage.",
+    "description": "You point your finger and project a bolt of magical energy that stutters in and out of phase until it reaches the target. Make a ranged spell attack roll against your target's AC; if the target has any circumstance bonuses to AC (such as from a shield or cover), reduce that bonus by 2 for this attack. On a success, you deal 3d4 piercing damage.\n**Critical Success:** The target takes double damage.\n**Success:** The target takes full damage.",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -1365,14 +1363,7 @@
     "level": "1st",
     "heightened": "",
     "summary": "Perform a minor magical trick.",
-    "description": "The simplest magic does your bidding. You can perform simple magical effects for as long as you Sustain the spell. Each time you Sustain the spell, you can choose one of four options.
-
-    Cook Cool, warm, or flavor 1 pound of nonliving material.
-    Lift Slowly lift an unattended object of light Bulk or less 1 foot off the ground.
-    Make Create a temporary object of negligible Bulk, made of congealed magical substance. The object looks crude and artificial and is extremely fragile—it can't be used as a tool, weapon, or locus or cost for a spell.
-    Tidy Color, clean, or soil an object of light Bulk or less. You can affect an object of 1 Bulk with 10 rounds of concentration, and a larger object a 1 minute per Bulk.
-
-Prestidigitation can't deal damage or cause adverse conditions. Any actual change to an object (beyond what is noted above) persists only as long as you Sustain the spell. ",
+    "description": "The simplest magic does your bidding. You can perform simple magical effects for as long as you Sustain the spell. Each time you Sustain the spell, you can choose one of four options.\n\n    Cook Cool, warm, or flavor 1 pound of nonliving material.\n    Lift Slowly lift an unattended object of light Bulk or less 1 foot off the ground.\n    Make Create a temporary object of negligible Bulk, made of congealed magical substance. The object looks crude and artificial and is extremely fragile—it can't be used as a tool, weapon, or locus or cost for a spell.\n    Tidy Color, clean, or soil an object of light Bulk or less. You can affect an object of 1 Bulk with 10 rounds of concentration, and a larger object a 1 minute per Bulk.\n\nPrestidigitation can't deal damage or cause adverse conditions. Any actual change to an object (beyond what is noted above) persists only as long as you Sustain the spell. ",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 object (cook, lift, or tidy only)",
@@ -1718,12 +1709,7 @@ Prestidigitation can't deal damage or cause adverse conditions. Any actual chang
     "level": "1st",
     "heightened": "=+1",
     "summary": "Cut creatures with ripples of air.",
-    "description": "You slash your hand through the air, channeling miniature ripples of air from each finger to slice your enemy. If you have two hands free, you can target two creatures with this spell; otherwise, you target one.
-
-Make a spell attack roll against each target's AC. This deals 2d4 slashing damage. On a critical success, a target also takes 1d4 persistent bleed damage. If you're attacking two creatures, this counts as two attacks for your multiple attack penalty, but the penalty doesn't increase until after both attacks.
-
-**Critical Success:** The target takes double damage and 1d4 persistent bleed damage.
-**Success:** The target takes full damage.",
+    "description": "You slash your hand through the air, channeling miniature ripples of air from each finger to slice your enemy. If you have two hands free, you can target two creatures with this spell; otherwise, you target one.\n\nMake a spell attack roll against each target's AC. This deals 2d4 slashing damage. On a critical success, a target also takes 1d4 persistent bleed damage. If you're attacking two creatures, this counts as two attacks for your multiple attack penalty, but the penalty doesn't increase until after both attacks.\n\n**Critical Success:** The target takes double damage and 1d4 persistent bleed damage.\n**Success:** The target takes full damage.",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 or 2 creatures",
@@ -13889,12 +13875,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "level": "1st",
     "heightened": "4th, 8th",
     "summary": "A creature becomes more friendly to you.",
-    "description": "To the target, your words are honey and your visage seems bathed in a dreamy haze. It must attempt a Will save, with a +4 circumstance bonus if you or your allies recently threatened it or used hostile actions against it. You can Dismiss the spell. If you use hostile actions against the target, the spell ends. When the spell ends, the target doesn't necessarily realize it was charmed unless its friendship with you or the actions you convinced it to take clash with its expectations, meaning you could potentially convince the target to continue being your friend via mundane means.
-
-**Critical Success:** The target is unaffected and aware you tried to charm it.
-**Success:** The target is unaffected but thinks your spell was something harmless instead of charm, unless it identifies the spell.
-**Failure:** The target's attitude becomes friendly toward you. If it was friendly, it becomes helpful. It can't use hostile actions against you.
-**Critical Failure:** The target's attitude becomes helpful toward you, and it can't use hostile actions against you.",
+    "description": "To the target, your words are honey and your visage seems bathed in a dreamy haze. It must attempt a Will save, with a +4 circumstance bonus if you or your allies recently threatened it or used hostile actions against it. You can Dismiss the spell. If you use hostile actions against the target, the spell ends. When the spell ends, the target doesn't necessarily realize it was charmed unless its friendship with you or the actions you convinced it to take clash with its expectations, meaning you could potentially convince the target to continue being your friend via mundane means.\n\n**Critical Success:** The target is unaffected and aware you tried to charm it.\n**Success:** The target is unaffected but thinks your spell was something harmless instead of charm, unless it identifies the spell.\n**Failure:** The target's attitude becomes friendly toward you. If it was friendly, it becomes helpful. It can't use hostile actions against you.\n**Critical Failure:** The target's attitude becomes helpful toward you, and it can't use hostile actions against you.",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -13903,8 +13884,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "duration": "1 hour",
     "defense": "Will",
     "damage": null,
-    "heightening": "**Heightened (4th):** The duration lasts until your next daily preparations.
-**Heightened (8th):** The duration lasts until your next daily preparations, and you can target up to 10 creatures.",
+    "heightening": "**Heightened (4th):** The duration lasts until your next daily preparations.\n**Heightened (8th):** The duration lasts until your next daily preparations, and you can target up to 10 creatures.",
     "rolls": []
   },
   {
@@ -14783,10 +14763,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "level": "1st",
     "heightened": "",
     "summary": "Pull one or more creatures towards you using gravity.",
-    "description": "By suddenly altering gravity, you pull the target toward you. The target is pulled 10 feet closer to you unless it succeeds at a Fortitude save. On a critical failure, it's also knocked prone. The effects of this spell change depending on the number of actions you spend when you Cast this Spell.
-[one-action] (somatic) The spell targets one creature.
-[two-actions] (somatic, verbal) The spell targets one creature and pulls the target 20 feet instead of 10.
-[three-actions] (material, somatic, verbal) The spell targets up to 5 creatures.",
+    "description": "By suddenly altering gravity, you pull the target toward you. The target is pulled 10 feet closer to you unless it succeeds at a Fortitude save. On a critical failure, it's also knocked prone. The effects of this spell change depending on the number of actions you spend when you Cast this Spell.\n[one-action] (somatic) The spell targets one creature.\n[two-actions] (somatic, verbal) The spell targets one creature and pulls the target 20 feet instead of 10.\n[three-actions] (material, somatic, verbal) The spell targets up to 5 creatures.",
     "cast": "[one-action] to [three-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -14934,10 +14911,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "level": "1st",
     "heightened": "=+1",
     "summary": "Vital energy heals the living or harms the undead, either a single creature or all in a burst.",
-    "description": "You channel vital energy to heal the living or damage the undead. If the target is a willing living creature, you restore 1d8 Hit Points. If the target is undead, you deal that amount of vitality damage to it, and it gets a basic Fortitude save. The number of actions you spend when Casting this Spell determines its targets, range, area, and other parameters. 
-    **One Action:** The spell has a range of touch.
-    **Two Actions:** (concentrate) The spell has a range of 30 feet. If you're healing a living creature, increase the Hit Points restored by 8.
-    **Three Actions:** (concentrate) You disperse vital energy in a 30-foot emanation. This targets all living and undead creatures in the burst.",
+    "description": "You channel vital energy to heal the living or damage the undead. If the target is a willing living creature, you restore 1d8 Hit Points. If the target is undead, you deal that amount of vitality damage to it, and it gets a basic Fortitude save. The number of actions you spend when Casting this Spell determines its targets, range, area, and other parameters. \n    **One Action:** The spell has a range of touch.\n    **Two Actions:** (concentrate) The spell has a range of 30 feet. If you're healing a living creature, increase the Hit Points restored by 8.\n    **Three Actions:** (concentrate) You disperse vital energy in a 30-foot emanation. This targets all living and undead creatures in the burst.",
     "cast": "[one-action] to [three-actions]",
     "trigger": "",
     "target": "1 willing living creature or 1 undead creature",
@@ -15073,10 +15047,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "level": "1st",
     "heightened": "",
     "summary": "Curse a creature with misfortune.",
-    "description": "The target is struck with misfortune, which throws it off balance. The target must attempt a Will save.
-**Success:** The target is unaffected.
-**Failure:** The first time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.
-**Critical Failure:** Every time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.",
+    "description": "The target is struck with misfortune, which throws it off balance. The target must attempt a Will save.\n**Success:** The target is unaffected.\n**Failure:** The first time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.\n**Critical Failure:** Every time during the duration that the target attempts an attack roll or skill check, it must roll twice and use the worse result.",
     "cast": "[two-actions]",
     "trigger": "",
     "target": "1 creature",
@@ -15613,10 +15584,7 @@ Make a spell attack roll against each target's AC. This deals 2d4 slashing damag
     "duration": "until your next daily preparations",
     "defense": "",
     "damage": null,
-    "heightening": "Heightened (4th) You gain a +1 item bonus to saving throws.
-Heightened (6th) The item bonus to AC increases to +2, and you gain a +1 item bonus to saving throws.
-Heightened (8th) The item bonus to AC increases to +2, and you gain a +2 item bonus to saving throws.
-Heightened (10th) The item bonus to AC increases to +3, and you gain a +3 item bonus to saving throws.",
+    "heightening": "Heightened (4th) You gain a +1 item bonus to saving throws.\nHeightened (6th) The item bonus to AC increases to +2, and you gain a +1 item bonus to saving throws.\nHeightened (8th) The item bonus to AC increases to +2, and you gain a +2 item bonus to saving throws.\nHeightened (10th) The item bonus to AC increases to +3, and you gain a +3 item bonus to saving throws.",
     "rolls": []
   },
   {
@@ -16709,15 +16677,7 @@ Heightened (10th) The item bonus to AC increases to +3, and you gain a +3 item b
     "duration": "sustained up to 1 minute",
     "defense": "",
     "damage": null,
-    "heightening": "Heightened (2nd) Level 1.
-Heightened (3rd) Level 2.
-Heightened (4th) Level 3.
-Heightened (5th) Level 5.
-Heightened (6th) Level 7.
-Heightened (7th) Level 9.
-Heightened (8th) Level 11.
-Heightened (9th) Level 13.
-Heightened (10th) Level 15.",
+    "heightening": "Heightened (2nd) Level 1.\nHeightened (3rd) Level 2.\nHeightened (4th) Level 3.\nHeightened (5th) Level 5.\nHeightened (6th) Level 7.\nHeightened (7th) Level 9.\nHeightened (8th) Level 11.\nHeightened (9th) Level 13.\nHeightened (10th) Level 15.",
     "rolls": []
   },
   {
