@@ -29,14 +29,14 @@ const commands = [
         options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
-        name: 'import', description: 'Import a character by Pathbuilder ID (Menu → Export JSON in Pathbuilder)',
+        name: 'import', description: 'Import a character by Pathbuilder ID or URL (great for mobile users)',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'id', description: '6-digit code from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.Integer, required: true, min_value: 1 }]
+        options: [{ name: 'from', description: 'The 6-digit code OR full URL from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.String, required: true }]
       },
       {
-        name: 'sync', description: 'Update an existing character by Pathbuilder ID (keeps hero points, XP, HP, notes)',
+        name: 'sync', description: 'Update an existing character by Pathbuilder ID or URL (keeps hero points, XP, HP, notes)',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'id', description: '6-digit code from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.Integer, required: true, min_value: 1 }]
+        options: [{ name: 'from', description: 'The 6-digit code OR full URL from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.String, required: true }]
       },
       {
         name: 'remove', description: 'Remove a saved character',
@@ -105,6 +105,10 @@ const commands = [
   },
   {
     name: 'spellbook', description: 'Show all spells for your character',
+    options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+  },
+  {
+    name: 'prepared', description: "Show today's prepared spells for your character (prepared casters only)",
     options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
   },
   {

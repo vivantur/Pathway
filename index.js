@@ -921,6 +921,61 @@ function calcProfNum(profNum, level) {
 function fmt(n) { return n >= 0 ? `+${n}` : `${n}`; }
 function xpToNextLevel() { return 1000; }
 
+// Parse a Pathbuilder import reference from user input. Accepts either:
+//   - a 4-8 digit ID (e.g. "122550")
+//   - a full URL (e.g. "https://pathbuilder2e.com/json.php?id=122550")
+//   - a shortened form with query string (e.g. "pathbuilder2e.com/json.php?id=122550")
+// Returns { id } on success or { error } on failure.
+function parsePathbuilderRef(raw) {
+  if (!raw || typeof raw !== 'string') return { error: 'Please provide a Pathbuilder ID or export URL.' };
+  const trimmed = raw.trim();
+  // Pure number
+  if (/^\d{4,8}$/.test(trimmed)) return { id: trimmed };
+  // URL with id=NNNN query param (handles http/https, with or without www, with any path)
+  const urlMatch = trimmed.match(/[?&]id=(\d{4,8})(?:&|$)/);
+  if (urlMatch) return { id: urlMatch[1] };
+  // Just a number inside some other text (last resort — extract the only digit run if unambiguous)
+  const numbers = trimmed.match(/\d{4,8}/g);
+  if (numbers && numbers.length === 1) return { id: numbers[0] };
+  return {
+    error: 'Could not find a Pathbuilder ID in that input. Paste either the 6-digit code (e.g. `122550`) or the full URL from Pathbuilder\'s Export JSON (e.g. `https://pathbuilder2e.com/json.php?id=122550`).',
+  };
+}
+
+// Fetch a character by Pathbuilder ID. Returns { char, id } or { error }.
+// Centralizes the fetch/parse/error-handling so /char import and /char sync
+// don't drift apart.
+async function fetchPathbuilderCharacter(id) {
+  const url = `https://pathbuilder2e.com/json.php?id=${encodeURIComponent(id)}`;
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (err) {
+    return { error: `❌ Couldn't reach Pathbuilder: ${err.message}. Try again in a minute.` };
+  }
+  if (!response.ok) {
+    return { error: `❌ Pathbuilder responded with HTTP ${response.status}. Try again in a minute.` };
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    return { error: '❌ Pathbuilder gave back an invalid response. Try re-exporting from the app.' };
+  }
+  if (!payload.success) {
+    return {
+      error:
+        `❌ Pathbuilder says ID **${id}** isn't valid. IDs expire after about 24 hours.\n` +
+        `Get a fresh one:\n1. Open Pathbuilder\n2. Menu → **Export JSON**\n3. Paste the new ID or URL here.`,
+    };
+  }
+  const char = payload.build;
+  if (!char || !char.name) {
+    return { error: '❌ Got a response, but no character data in it. Try again with a fresh ID.' };
+  }
+  return { char, id };
+}
+
 function resolveChar(userId, nameArg, characters) {
   if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
@@ -3859,9 +3914,9 @@ const HELP_CATEGORIES = {
     label: 'Character',
     blurb: 'Manage your saved characters, sheets, rolls, and daily resources.',
     commands: [
-      { name: '/char import', summary: 'Import a character by Pathbuilder ID (easier than uploading a file). Get the ID from Pathbuilder → Menu → Export JSON.', options: 'id', example: '/char import id:123456' },
-      { name: '/char sync', summary: 'Update an existing character by Pathbuilder ID. Keeps hero points, XP, HP, notes.', options: 'id', example: '/char sync id:123456' },
-      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder JSON file (file-based fallback).', options: 'file', example: '/char add file:[attach .json]' },
+      { name: '/char import', summary: 'Import a character by Pathbuilder ID or export URL. No file uploads — paste and go. **Recommended for mobile.**', options: 'from', example: '/char import from:122550' },
+      { name: '/char sync', summary: 'Update an existing character by Pathbuilder ID or URL. Keeps hero points, XP, HP, notes.', options: 'from', example: '/char sync from:122550' },
+      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder JSON file. (If you\'re on mobile, try `/char import` instead — it\'s easier.)', options: 'file', example: '/char add file:[attach .json]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
       { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
       { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
@@ -4731,7 +4786,7 @@ client.on('interactionCreate', async (interaction) => {
         const existingSenses = characters[userId][key]?.senses ?? null;
         characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
         saveCharacters(characters);
-        await interaction.editReply(`✅ **${char.name}** saved! Use \`/sheet\` to view them.`);
+        await interaction.editReply(`✅ **${char.name}** saved! Use \`/sheet\` to view them.\n*Tip: next time, try \`/char import from:<ID>\` — no file upload needed (great on mobile).*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
@@ -4778,96 +4833,69 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
-    // /char import id:<n>
-    // Fetch character directly from Pathbuilder's server using their 6-digit
-    // reference code. Much easier for mobile Discord users than "download JSON,
-    // re-upload to Discord". IDs expire after about 24 hours.
+    // /char import from:<url-or-id>
+    // Fetch character directly from Pathbuilder's server using their export
+    // code. Accepts either the 6-digit ID or the full URL (easier for mobile
+    // users to copy-paste from Pathbuilder's share UI). IDs expire after ~24h.
     else if (sub === 'import') {
       await interaction.deferReply();
-      const id = interaction.options.getInteger('id');
-      if (!id || id < 1) return interaction.editReply('❌ Invalid ID. Get a 6-digit code from Pathbuilder via Menu → Export JSON.');
-      try {
-        const url = `https://pathbuilder2e.com/json.php?id=${encodeURIComponent(id)}`;
-        const response = await fetch(url);
-        if (!response.ok) return interaction.editReply(`❌ Couldn't reach Pathbuilder (HTTP ${response.status}). Try again in a minute.`);
-        const payload = await response.json();
-        // Pathbuilder returns { success: false } for expired or invalid IDs.
-        if (!payload.success) {
-          return interaction.editReply(
-            `❌ Pathbuilder says ID **${id}** isn't valid. IDs expire after about 24 hours — generate a fresh one:\n` +
-            `1. Open Pathbuilder\n2. Menu → **Export JSON**\n3. Use the new 6-digit code here.`,
-          );
-        }
-        const char = payload.build;
-        if (!char || !char.name) return interaction.editReply('❌ Got a response, but no character data in it. Try again with a fresh ID.');
+      const raw = interaction.options.getString('from');
+      const parsed = parsePathbuilderRef(raw);
+      if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
+      const fetched = await fetchPathbuilderCharacter(parsed.id);
+      if (fetched.error) return interaction.editReply(fetched.error);
+      const char = fetched.char;
 
-        const characters = loadCharacters();
-        const userId = interaction.user.id;
-        if (!characters[userId]) characters[userId] = {};
-        const key = char.name.toLowerCase().replace(/\s+/g, '-');
-        // Preserve art/senses if the character already existed
-        const existingArt    = characters[userId][key]?.art ?? null;
-        const existingSenses = characters[userId][key]?.senses ?? null;
-        characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
-        saveCharacters(characters);
-        await interaction.editReply(`✅ **${char.name}** imported from Pathbuilder (ID ${id}). Use \`/sheet\` to view them.`);
-      } catch (err) {
-        console.error('/char import error:', err);
-        await interaction.editReply('❌ Something went wrong fetching from Pathbuilder. Double-check the ID is correct and try again.');
-      }
+      const characters = loadCharacters();
+      const userId = interaction.user.id;
+      if (!characters[userId]) characters[userId] = {};
+      const key = char.name.toLowerCase().replace(/\s+/g, '-');
+      // Preserve art/senses if the character already existed under the same name
+      const existingArt    = characters[userId][key]?.art ?? null;
+      const existingSenses = characters[userId][key]?.senses ?? null;
+      characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+      saveCharacters(characters);
+      await interaction.editReply(`✅ **${char.name}** imported from Pathbuilder (ID ${parsed.id}). Use \`/sheet\` to view them.\n*Tip: next time, use \`/char sync from:${parsed.id}\` to refresh without losing HP/XP/notes.*`);
     }
 
-    // /char sync id:<n>
-    // Same as /char update, but pulls from Pathbuilder by ID instead of file
-    // upload. Preserves hero points, XP, HP, xpLog, overlay — same as update.
+    // /char sync from:<url-or-id>
+    // Same as /char update, but pulls from Pathbuilder by URL or ID instead
+    // of a file upload. Preserves hero points, XP, HP, xpLog, overlay.
     else if (sub === 'sync') {
       await interaction.deferReply();
-      const id = interaction.options.getInteger('id');
-      if (!id || id < 1) return interaction.editReply('❌ Invalid ID. Get a 6-digit code from Pathbuilder via Menu → Export JSON.');
-      try {
-        const url = `https://pathbuilder2e.com/json.php?id=${encodeURIComponent(id)}`;
-        const response = await fetch(url);
-        if (!response.ok) return interaction.editReply(`❌ Couldn't reach Pathbuilder (HTTP ${response.status}). Try again in a minute.`);
-        const payload = await response.json();
-        if (!payload.success) {
-          return interaction.editReply(
-            `❌ Pathbuilder says ID **${id}** isn't valid. IDs expire after about 24 hours — generate a fresh one:\n` +
-            `1. Open Pathbuilder\n2. Menu → **Export JSON**\n3. Use the new 6-digit code here.`,
-          );
-        }
-        const char = payload.build;
-        if (!char || !char.name) return interaction.editReply('❌ Got a response, but no character data in it. Try again with a fresh ID.');
+      const raw = interaction.options.getString('from');
+      const parsed = parsePathbuilderRef(raw);
+      if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
+      const fetched = await fetchPathbuilderCharacter(parsed.id);
+      if (fetched.error) return interaction.editReply(fetched.error);
+      const char = fetched.char;
 
-        const characters = loadCharacters();
-        const userId = interaction.user.id;
-        const key = char.name.toLowerCase().replace(/\s+/g, '-');
-        if (!characters[userId]?.[key]) return interaction.editReply(`❌ Couldn't find **${char.name}** in your saved characters. Use \`/char import\` first to add them, then \`/char sync\` on future updates.`);
+      const characters = loadCharacters();
+      const userId = interaction.user.id;
+      const key = char.name.toLowerCase().replace(/\s+/g, '-');
+      if (!characters[userId]?.[key]) return interaction.editReply(`❌ Couldn't find **${char.name}** in your saved characters. Use \`/char import\` first to add them, then \`/char sync\` on future updates.`);
 
-        // Preserve bot-managed overlay state across the update (same pattern as /char update).
-        const prev = characters[userId][key];
-        const preserved = {
-          art: prev.art ?? null,
-          senses: prev.senses ?? null,
-          heroPoints: prev.heroPoints,
-          xp: prev.xp,
-          xpLog: prev.xpLog,
-          hp: prev.hp,
-          overlay: prev.overlay,
-        };
-        characters[userId][key] = { name: char.name, data: char, saved: new Date().toISOString(), ...preserved };
-        // Clamp current HP to new max if the sheet changed.
-        if (typeof preserved.hp === 'number') {
-          const newMax = computeCharMaxHp(characters[userId][key]);
-          if (newMax > 0 && preserved.hp > newMax) {
-            characters[userId][key].hp = newMax;
-          }
+      // Preserve bot-managed overlay state across the update (same pattern as /char update).
+      const prev = characters[userId][key];
+      const preserved = {
+        art: prev.art ?? null,
+        senses: prev.senses ?? null,
+        heroPoints: prev.heroPoints,
+        xp: prev.xp,
+        xpLog: prev.xpLog,
+        hp: prev.hp,
+        overlay: prev.overlay,
+      };
+      characters[userId][key] = { name: char.name, data: char, saved: new Date().toISOString(), ...preserved };
+      // Clamp current HP to new max if the sheet changed.
+      if (typeof preserved.hp === 'number') {
+        const newMax = computeCharMaxHp(characters[userId][key]);
+        if (newMax > 0 && preserved.hp > newMax) {
+          characters[userId][key].hp = newMax;
         }
-        saveCharacters(characters);
-        await interaction.editReply(`✅ **${char.name}** synced to level ${char.level} from Pathbuilder (ID ${id}). *(hero points, XP, current HP, and bag preserved.)*`);
-      } catch (err) {
-        console.error('/char sync error:', err);
-        await interaction.editReply('❌ Something went wrong fetching from Pathbuilder. Double-check the ID is correct and try again.');
       }
+      saveCharacters(characters);
+      await interaction.editReply(`✅ **${char.name}** synced to level ${char.level} from Pathbuilder (ID ${parsed.id}). *(hero points, XP, current HP, and bag preserved.)*`);
     }
 
     else if (sub === 'remove') {
