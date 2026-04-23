@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
@@ -926,6 +926,92 @@ function xpToNextLevel() { return 1000; }
 //   - a full URL (e.g. "https://pathbuilder2e.com/json.php?id=122550")
 //   - a shortened form with query string (e.g. "pathbuilder2e.com/json.php?id=122550")
 // Returns { id } on success or { error } on failure.
+// Save a parsed Pathbuilder character object into the user's store. Creates
+// or updates. Returns { ok, key, replaced } or { error }.
+// sourceInfo is a human-readable string like "from file upload" or
+// "pasted" that gets shown in the reply.
+function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
+  const char = rawChar?.build ?? rawChar;
+  if (!char || !char.name) {
+    return { error: 'Pathbuilder data is missing a character name. Re-export and try again.' };
+  }
+  const characters = loadCharacters();
+  if (!characters[userId]) characters[userId] = {};
+  const key = char.name.toLowerCase().replace(/\s+/g, '-');
+  const prev = characters[userId][key];
+  const existed = !!prev;
+
+  // Always preserve art and senses (user-set flavor that shouldn't be wiped).
+  const existingArt    = prev?.art ?? null;
+  const existingSenses = prev?.senses ?? null;
+  const baseEntry = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+
+  if (preserveOverlay && prev) {
+    // /char update / /char sync path: keep all bot-managed state.
+    const preserved = {
+      heroPoints: prev.heroPoints,
+      xp: prev.xp,
+      xpLog: prev.xpLog,
+      hp: prev.hp,
+      overlay: prev.overlay,
+    };
+    characters[userId][key] = { ...baseEntry, ...preserved };
+    // Clamp current HP if max dropped.
+    if (typeof preserved.hp === 'number') {
+      const newMax = computeCharMaxHp(characters[userId][key]);
+      if (newMax > 0 && preserved.hp > newMax) {
+        characters[userId][key].hp = newMax;
+      }
+    }
+  } else {
+    characters[userId][key] = baseEntry;
+  }
+
+  saveCharacters(characters);
+  return { ok: true, key, name: char.name, level: char.level, replaced: existed };
+}
+
+// Try to parse a JSON string that may have extra wrapping (code blocks,
+// leading/trailing text, nested `{"success":true,"build":{...}}` wrapper).
+// Returns { char } or { error }.
+function parsePastedPathbuilderJSON(rawText) {
+  if (!rawText || typeof rawText !== 'string') return { error: 'Paste is empty.' };
+
+  let text = rawText.trim();
+
+  // Strip common code-block wrappers: ```json ... ``` or ``` ... ```
+  const codeBlockMatch = text.match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/);
+  if (codeBlockMatch) text = codeBlockMatch[1].trim();
+
+  // If the user pasted multiple lines with non-JSON preamble, find the first { and last }
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    return { error: 'That paste doesn\'t contain valid JSON. Make sure you copied the entire export from Pathbuilder.' };
+  }
+  text = text.slice(firstBrace, lastBrace + 1);
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    // Truncation/incomplete paste usually surfaces as "Unexpected end" or
+    // "Unterminated string" — point the user toward the multi-field fix.
+    const isTruncation = /Unexpected end|Unterminated string|Expected/.test(err.message);
+    if (isTruncation) {
+      return { error: 'Your paste looks cut off. Pathbuilder JSONs for high-level characters can be over 4000 chars — continue in Part 2, 3, 4, 5 of the popup to fit the whole thing.' };
+    }
+    return { error: `Couldn't parse that JSON: ${err.message}. Double-check you copied the entire export from Pathbuilder's Menu → Export JSON.` };
+  }
+
+  // Unwrap { success, build } if present
+  const char = parsed.build ?? parsed;
+  if (!char || !char.name) {
+    return { error: 'Got valid JSON but no character data. Make sure you exported from Pathbuilder\'s Menu → Export JSON.' };
+  }
+  return { char };
+}
+
 function parsePathbuilderRef(raw) {
   if (!raw || typeof raw !== 'string') return { error: 'Please provide a Pathbuilder ID or export URL.' };
   const trimmed = raw.trim();
@@ -3914,9 +4000,10 @@ const HELP_CATEGORIES = {
     label: 'Character',
     blurb: 'Manage your saved characters, sheets, rolls, and daily resources.',
     commands: [
-      { name: '/char import', summary: 'Import a character by Pathbuilder ID or export URL. No file uploads — paste and go. **Recommended for mobile.**', options: 'from', example: '/char import from:122550' },
-      { name: '/char sync', summary: 'Update an existing character by Pathbuilder ID or URL. Keeps hero points, XP, HP, notes.', options: 'from', example: '/char sync from:122550' },
-      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder JSON file. (If you\'re on mobile, try `/char import` instead — it\'s easier.)', options: 'file', example: '/char add file:[attach .json]' },
+      { name: '/char paste', summary: 'Paste your Pathbuilder JSON into a popup. **Easiest method on mobile** — no file picker.', options: '(opens modal)', example: '/char paste' },
+      { name: '/char pasteupdate', summary: 'Refresh a character by pasting updated JSON. Keeps hero points, XP, HP, notes.', options: '(opens modal)', example: '/char pasteupdate' },
+      { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
+      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder JSON file (desktop-friendly). On mobile, prefer `/char paste`.', options: 'file', example: '/char add file:[attach .json]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
       { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
       { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
@@ -4359,6 +4446,50 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (!interaction.isChatInputCommand()) {
+    // ─── Modal submissions ───────────────────────────────────────────
+    // Discord returns the user's text from a showModal() call as a separate
+    // interaction. We check the customId to route to the right handler.
+    if (interaction.isModalSubmit?.()) {
+      try {
+        if (interaction.customId === 'char_paste_modal' || interaction.customId === 'char_pasteupdate_modal') {
+          await interaction.deferReply({ ephemeral: true });
+          const isUpdate = interaction.customId === 'char_pasteupdate_modal';
+          // Concatenate all 5 parts (unused parts come back as empty strings)
+          const parts = [];
+          for (let i = 1; i <= 5; i++) {
+            try { parts.push(interaction.fields.getTextInputValue(`json_part_${i}`)); }
+            catch { /* empty field */ }
+          }
+          const joined = parts.join('').trim();
+          if (!joined) return interaction.editReply('❌ No JSON provided. Try again and paste into Part 1.');
+
+          const parsed = parsePastedPathbuilderJSON(joined);
+          if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
+
+          if (isUpdate) {
+            // Verify the character already exists before running as update
+            const chars = loadCharacters();
+            const key = parsed.char.name.toLowerCase().replace(/\s+/g, '-');
+            if (!chars[interaction.user.id]?.[key]) {
+              return interaction.editReply(`❌ No existing character named **${parsed.char.name}**. Use \`/char paste\` to add them first.`);
+            }
+          }
+
+          const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
+          if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+
+          const verb = isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved');
+          const levelNote = saved.level ? ` (Level ${saved.level})` : '';
+          const preservedNote = isUpdate ? ' *(hero points, XP, current HP, and notes preserved.)*' : '';
+          return interaction.editReply(`✅ **${saved.name}**${levelNote} ${verb}!${preservedNote}\nUse \`/sheet\` to view them.`);
+        }
+      } catch (err) {
+        console.error('Modal submit error:', err);
+        try { await interaction.editReply('❌ Something went wrong processing your paste. Try again.'); } catch {}
+      }
+      return;
+    }
+
     // ─── Autocomplete ────────────────────────────────────────────────
     if (interaction.isAutocomplete()) {
       try {
@@ -4772,21 +4903,13 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'add') {
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
-      if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.');
+      if (!attachment.name.endsWith('.json')) return interaction.editReply('Please attach a `.json` file exported from Pathbuilder.\n\n**On mobile?** Try `/char paste` instead — no file picker needed.');
       try {
         const response = await fetch(attachment.url);
         const data = await response.json();
-        const char = data.build ?? data;
-        if (!char || !char.name) return interaction.editReply('Could not read that file.');
-        const characters = loadCharacters();
-        const userId = interaction.user.id;
-        if (!characters[userId]) characters[userId] = {};
-        const key = char.name.toLowerCase().replace(/\s+/g, '-');
-        const existingArt    = characters[userId][key]?.art ?? null;
-        const existingSenses = characters[userId][key]?.senses ?? null;
-        characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
-        saveCharacters(characters);
-        await interaction.editReply(`✅ **${char.name}** saved! Use \`/sheet\` to view them.\n*Tip: next time, try \`/char import from:<ID>\` — no file upload needed (great on mobile).*`);
+        const saved = saveImportedCharacter(interaction.user.id, data, { preserveOverlay: false });
+        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? Next time try \`/char paste\` — paste your JSON into a popup instead of hunting for files.*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
@@ -4833,69 +4956,86 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
-    // /char import from:<url-or-id>
-    // Fetch character directly from Pathbuilder's server using their export
-    // code. Accepts either the 6-digit ID or the full URL (easier for mobile
-    // users to copy-paste from Pathbuilder's share UI). IDs expire after ~24h.
-    else if (sub === 'import') {
-      await interaction.deferReply();
-      const raw = interaction.options.getString('from');
-      const parsed = parsePathbuilderRef(raw);
-      if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-      const fetched = await fetchPathbuilderCharacter(parsed.id);
-      if (fetched.error) return interaction.editReply(fetched.error);
-      const char = fetched.char;
+    // /char paste
+    // Opens a modal with 5 paragraph text inputs. Users paste their Pathbuilder
+    // JSON into Part 1 (small chars fit entirely) or chunk across Part 1-5
+    // for big characters (up to ~20KB across all fields).
+    //
+    // Why this instead of /char import: Pathbuilder's json.php endpoint blocks
+    // server-to-server requests (returns 403 "Host not in allowlist"), so the
+    // bot can't fetch by ID. Users have to paste the text themselves. Modals
+    // are mobile-friendly and don't require file-picker navigation.
+    else if (sub === 'paste') {
+      const modal = new ModalBuilder()
+        .setCustomId('char_paste_modal')
+        .setTitle('Paste Pathbuilder JSON');
 
-      const characters = loadCharacters();
-      const userId = interaction.user.id;
-      if (!characters[userId]) characters[userId] = {};
-      const key = char.name.toLowerCase().replace(/\s+/g, '-');
-      // Preserve art/senses if the character already existed under the same name
-      const existingArt    = characters[userId][key]?.art ?? null;
-      const existingSenses = characters[userId][key]?.senses ?? null;
-      characters[userId][key] = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
-      saveCharacters(characters);
-      await interaction.editReply(`✅ **${char.name}** imported from Pathbuilder (ID ${parsed.id}). Use \`/sheet\` to view them.\n*Tip: next time, use \`/char sync from:${parsed.id}\` to refresh without losing HP/XP/notes.*`);
+      const parts = [];
+      for (let i = 1; i <= 5; i++) {
+        const input = new TextInputBuilder()
+          .setCustomId(`json_part_${i}`)
+          .setLabel(i === 1 ? 'JSON (paste here; continue in Part 2-5 if long)' : `Part ${i} (continuation, leave blank if not needed)`)
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(i === 1)
+          .setMaxLength(4000)
+          .setPlaceholder(i === 1 ? '{"success":true,"build":{"name":"..."}}' : 'Only fill if Part ' + (i - 1) + ' was full');
+        parts.push(new ActionRowBuilder().addComponents(input));
+      }
+      modal.addComponents(...parts);
+      return interaction.showModal(modal);
     }
 
-    // /char sync from:<url-or-id>
-    // Same as /char update, but pulls from Pathbuilder by URL or ID instead
-    // of a file upload. Preserves hero points, XP, HP, xpLog, overlay.
-    else if (sub === 'sync') {
-      await interaction.deferReply();
-      const raw = interaction.options.getString('from');
-      const parsed = parsePathbuilderRef(raw);
-      if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-      const fetched = await fetchPathbuilderCharacter(parsed.id);
-      if (fetched.error) return interaction.editReply(fetched.error);
-      const char = fetched.char;
-
-      const characters = loadCharacters();
-      const userId = interaction.user.id;
-      const key = char.name.toLowerCase().replace(/\s+/g, '-');
-      if (!characters[userId]?.[key]) return interaction.editReply(`❌ Couldn't find **${char.name}** in your saved characters. Use \`/char import\` first to add them, then \`/char sync\` on future updates.`);
-
-      // Preserve bot-managed overlay state across the update (same pattern as /char update).
-      const prev = characters[userId][key];
-      const preserved = {
-        art: prev.art ?? null,
-        senses: prev.senses ?? null,
-        heroPoints: prev.heroPoints,
-        xp: prev.xp,
-        xpLog: prev.xpLog,
-        hp: prev.hp,
-        overlay: prev.overlay,
-      };
-      characters[userId][key] = { name: char.name, data: char, saved: new Date().toISOString(), ...preserved };
-      // Clamp current HP to new max if the sheet changed.
-      if (typeof preserved.hp === 'number') {
-        const newMax = computeCharMaxHp(characters[userId][key]);
-        if (newMax > 0 && preserved.hp > newMax) {
-          characters[userId][key].hp = newMax;
-        }
+    // /char pasteupdate — same as paste but for refreshing an existing character
+    // (preserves hero points, XP, HP, notes, overlay).
+    else if (sub === 'pasteupdate') {
+      const modal = new ModalBuilder()
+        .setCustomId('char_pasteupdate_modal')
+        .setTitle('Paste Pathbuilder JSON (update)');
+      const parts = [];
+      for (let i = 1; i <= 5; i++) {
+        const input = new TextInputBuilder()
+          .setCustomId(`json_part_${i}`)
+          .setLabel(i === 1 ? 'Updated JSON (paste here; continue in Part 2-5 if long)' : `Part ${i} (continuation)`)
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(i === 1)
+          .setMaxLength(4000)
+          .setPlaceholder(i === 1 ? '{"success":true,"build":{"name":"..."}}' : 'Only fill if needed');
+        parts.push(new ActionRowBuilder().addComponents(input));
       }
-      saveCharacters(characters);
-      await interaction.editReply(`✅ **${char.name}** synced to level ${char.level} from Pathbuilder (ID ${parsed.id}). *(hero points, XP, current HP, and bag preserved.)*`);
+      modal.addComponents(...parts);
+      return interaction.showModal(modal);
+    }
+
+    // /char howto — platform-specific guidance for getting JSON into the bot
+    else if (sub === 'howto') {
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('📥 How to import your character')
+        .setDescription('Pick whichever method matches your device. **`/char paste` is the easiest on mobile** — no file picker.')
+        .addFields(
+          {
+            name: '📱 iPhone / iPad — recommended: `/char paste`',
+            value: '1. Open Pathbuilder app or website\n2. Menu (≡) → **Export JSON**\n3. Tap **Copy JSON** (or select-all + copy from the text area)\n4. In Discord: `/char paste` → paste into Part 1 → Submit\n5. If the paste is too long, continue in Part 2-5',
+            inline: false,
+          },
+          {
+            name: '🤖 Android — recommended: `/char paste`',
+            value: '1. Open Pathbuilder app or website\n2. Menu (≡) → **Export JSON**\n3. Long-press → Copy All\n4. In Discord: `/char paste` → paste into Part 1 → Submit',
+            inline: false,
+          },
+          {
+            name: '💻 Desktop — `/char add` (file upload) works best',
+            value: '1. Pathbuilder website → Menu → **Export JSON** → Download\n2. Discord: `/char add` → attach the `.json` file\n3. OR use `/char paste` if you prefer copy-paste',
+            inline: false,
+          },
+          {
+            name: '🔄 Updating an existing character',
+            value: 'After leveling up in Pathbuilder, use `/char update` (file) or `/char pasteupdate` (paste).\nThis keeps your hero points, XP, current HP, and notes.',
+            inline: false,
+          },
+        )
+        .setFooter({ text: 'Paste method works around the 24h Pathbuilder ID expiry too — once you have the JSON, you have it.' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     else if (sub === 'remove') {

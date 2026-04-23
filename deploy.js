@@ -29,14 +29,16 @@ const commands = [
         options: [{ name: 'file', description: 'Your updated Pathbuilder JSON file', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
-        name: 'import', description: 'Import a character by Pathbuilder ID or URL (great for mobile users)',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'from', description: 'The 6-digit code OR full URL from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.String, required: true }]
+        name: 'paste', description: 'Paste your Pathbuilder JSON into a popup — easiest method on mobile (no file picker)',
+        type: ApplicationCommandOptionType.Subcommand
       },
       {
-        name: 'sync', description: 'Update an existing character by Pathbuilder ID or URL (keeps hero points, XP, HP, notes)',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'from', description: 'The 6-digit code OR full URL from Pathbuilder\'s Export JSON', type: ApplicationCommandOptionType.String, required: true }]
+        name: 'pasteupdate', description: 'Update an existing character by pasting fresh JSON (keeps hero points, XP, HP, notes)',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'howto', description: 'Show platform-specific instructions for getting your character into the bot',
+        type: ApplicationCommandOptionType.Subcommand
       },
       {
         name: 'remove', description: 'Remove a saved character',
