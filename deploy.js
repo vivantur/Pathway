@@ -67,6 +67,24 @@ const commands = [
         ],
       },
       {
+        name: 'lore', description: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon, Lore: Farming)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'topic', description: 'The lore topic (e.g. Dragon, Farming, Absalom). The "Lore:" prefix is added automatically.', type: ApplicationCommandOptionType.String, required: true },
+          { name: 'rank', description: 'Proficiency rank', type: ApplicationCommandOptionType.String, required: false,
+            choices: [
+              { name: 'Trained', value: 'trained' },
+              { name: 'Expert', value: 'expert' },
+              { name: 'Master', value: 'master' },
+              { name: 'Legendary', value: 'legendary' },
+            ],
+          },
+          { name: 'total', description: 'Flat total bonus override (optional)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'remove', description: 'Remove this lore from the character (ignores rank/total)', type: ApplicationCommandOptionType.Boolean, required: false },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
         name: 'howto', description: 'Show platform-specific instructions for getting your character into the bot',
         type: ApplicationCommandOptionType.Subcommand
       },

@@ -1041,10 +1041,20 @@ function pdfDeduplicateBoldLetters(text) {
   //   - Digits in bare values: "HP 22" stays as "HP 22" (NOT bold-doubled)
   //
   // Strategy: dedupe all letters and punctuation always. Dedupe digits only
-  // when they're part of a header (first line) or ordinal suffix (before st/nd/rd/th).
-  const firstNewline = text.indexOf('\n');
-  const header = firstNewline >= 0 ? text.slice(0, firstNewline) : text;
-  const body = firstNewline >= 0 ? text.slice(firstNewline) : '';
+  // when they're part of a header (first non-empty line) or ordinal suffix.
+  //
+  // Different pdf-parse versions produce different leading whitespace:
+  //   - pdf-parse v1.1.1 (classic): prepends two empty lines before the real header
+  //   - pdf-parse v2.x: no leading blanks
+  // We find the first non-empty line and treat that as the header, preserving
+  // any leading blank content as-is.
+  const lines = text.split('\n');
+  let headerIdx = 0;
+  while (headerIdx < lines.length && lines[headerIdx].trim() === '') headerIdx++;
+  // Rebuild with splits
+  const leading = lines.slice(0, headerIdx).join('\n') + (headerIdx > 0 ? '\n' : '');
+  const header = lines[headerIdx] ?? '';
+  const rest = lines.slice(headerIdx + 1).join('\n');
 
   const dedupePass = (str, dedupeDigitsGlobally) => {
     let out = '';
@@ -1072,7 +1082,7 @@ function pdfDeduplicateBoldLetters(text) {
     return out;
   };
 
-  return dedupePass(header, true) + dedupePass(body, false);
+  return leading + dedupePass(header, true) + (rest ? '\n' + dedupePass(rest, false) : '');
 }
 
 function pdfRestoreDoubledWords(text) {
@@ -1450,7 +1460,29 @@ function parsePathbuilderStatblockPDF(rawText) {
     })),
     equipment: items.map(i => [i, 1]),
     specials,
-    lores: [],
+    // Extract Lore entries from the skill totals. Format from statblock is
+    // "Lore: Dragon +9" — we convert to [topic, profRank] tuples matching
+    // Pathbuilder JSON shape. Rank is inferred: total - intMod - level gives
+    // the bare proficiency bonus, which maps to rank (2/4/6/8).
+    lores: (() => {
+      const intMod = abilities.int ?? 0;
+      const out = [];
+      for (const [skillName, skillTotal] of Object.entries(skills)) {
+        if (!skillName.startsWith('Lore:')) continue;
+        const topic = skillName.replace(/^Lore:\s*/, '').trim();
+        // Back out rank from: total = intMod + level + rank
+        const rankBonus = skillTotal - intMod - level;
+        // Map to standard ranks; anything non-matching stored as 2 (trained) as fallback
+        let rank = 2;
+        if (rankBonus >= 8) rank = 8;
+        else if (rankBonus >= 6) rank = 6;
+        else if (rankBonus >= 4) rank = 4;
+        else if (rankBonus >= 2) rank = 2;
+        else continue; // skip untrained/negative (shouldn't show up in statblock anyway)
+        out.push([topic, rank]);
+      }
+      return out;
+    })(),
     formula: [],
     pets: [],
     spellCasters: spellcasters.map(sc => ({
@@ -4475,6 +4507,7 @@ const HELP_CATEGORIES = {
       { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
       { name: '/char edit', summary: 'Edit background, deity, languages, senses on your active character (opens a popup).', options: '', example: '/char edit' },
       { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total. Useful for PDF imports.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
+      { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
@@ -5349,6 +5382,11 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'lore' && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
             const characters = loadCharacters();
@@ -5687,6 +5725,74 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: msg, ephemeral: true });
     }
 
+    // /char lore — add, edit, or remove a Lore skill (e.g. Lore: Farming, Lore: Dragons).
+    // Unlike /char skill, lore topics are arbitrary strings — no autocomplete, no
+    // fixed list. Stored in charEntry.edits.lores so they're preserved across JSON
+    // re-imports. To remove one: pass `remove:True`.
+    else if (sub === 'lore') {
+      const charNameArg = interaction.options.getString('character');
+      const topic = interaction.options.getString('topic').trim();
+      const rankStr = interaction.options.getString('rank'); // optional
+      const total = interaction.options.getInteger('total'); // optional
+      const shouldRemove = interaction.options.getBoolean('remove') ?? false;
+
+      if (!topic) {
+        return interaction.reply({ content: '❌ Please provide a lore topic (e.g. "Dragon", "Farming", "Absalom").', ephemeral: true });
+      }
+
+      const rankMap = { untrained: 0, trained: 2, expert: 4, master: 6, legendary: 8 };
+      if (!shouldRemove && rankStr === null && total === null) {
+        return interaction.reply({ content: '❌ When adding/editing, provide `rank` (trained/expert/master/legendary) or `total`, or both. To delete an existing lore, pass `remove:True`.', ephemeral: true });
+      }
+      if (rankStr !== null && !(rankStr.toLowerCase() in rankMap)) {
+        return interaction.reply({ content: `❌ Invalid rank "${rankStr}". Use: untrained, trained, expert, master, or legendary.`, ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.lores) charEntry.edits.lores = [];
+
+      const topicLower = topic.toLowerCase();
+      const existingIdx = charEntry.edits.lores.findIndex(l => l.name.toLowerCase() === topicLower);
+
+      if (shouldRemove) {
+        if (existingIdx === -1) {
+          return interaction.reply({ content: `❌ No lore "${topic}" to remove on **${charEntry.name}**. Use \`/sheet\` to see their current lores.`, ephemeral: true });
+        }
+        charEntry.edits.lores.splice(existingIdx, 1);
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Removed **Lore: ${topic}** from **${charEntry.name}**.`, ephemeral: true });
+      }
+
+      // Build the lore entry
+      const loreEntry = { name: topic };
+      if (rankStr !== null) loreEntry.rank = rankMap[rankStr.toLowerCase()];
+      if (total !== null)   loreEntry.total = total;
+
+      if (existingIdx >= 0) {
+        // Merge with existing — keep fields that aren't being overwritten
+        const existing = charEntry.edits.lores[existingIdx];
+        charEntry.edits.lores[existingIdx] = {
+          name: topic, // use new casing if user retyped
+          rank: (rankStr !== null) ? loreEntry.rank : existing.rank,
+          total: (total !== null) ? loreEntry.total : existing.total,
+        };
+      } else {
+        charEntry.edits.lores.push(loreEntry);
+      }
+      saveCharacters(characters);
+
+      const parts = [];
+      if (rankStr !== null) parts.push(`rank **${rankStr.toLowerCase()}**`);
+      if (total !== null)   parts.push(`flat total **${total >= 0 ? '+' : ''}${total}**`);
+      const verb = existingIdx >= 0 ? 'Updated' : 'Added';
+      return interaction.reply({ content: `✅ ${verb} **Lore: ${topic}** on **${charEntry.name}** (${parts.join(' and ')}). Use \`/sheet\` to see it.`, ephemeral: true });
+    }
+
     else if (sub === 'howto') {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
@@ -5709,8 +5815,8 @@ client.on('interactionCreate', async (interaction) => {
             inline: false,
           },
           {
-            name: '✏️ Fixing or customising details — `/char edit` and `/char skill`',
-            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a proficiency rank, or use `total:9` for a flat override.\nEdits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
+            name: '✏️ Fixing or customising details — `/char edit`, `/char skill`, `/char lore`',
+            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a standard skill\'s rank, or use `total:9` for a flat override.\n`/char lore topic:Dragon rank:trained` adds or edits a Lore skill (any topic). Pass `remove:True` to delete one.\nAll edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
             inline: false,
           },
           {
@@ -5948,11 +6054,27 @@ client.on('interactionCreate', async (interaction) => {
           trainedSkills.push(`${icon} ${skill.charAt(0).toUpperCase() + skill.slice(1)} ${fmt(total)}`);
         }
       }
-      // Lore skills (unchanged — lore overrides not supported yet)
-      const loreSkills = (c.lores ?? []).map(([loreName, profNum]) => {
+      // Lore skills: combine c.lores (from JSON) with edits.lores (user-added
+      // via /char lore add). If the same topic appears in both, the edit wins.
+      const jsonLores = c.lores ?? [];
+      const editLores = (charEntry.edits?.lores) ?? [];
+      const loreMap = new Map();
+      for (const [name, profNum] of jsonLores) {
+        loreMap.set(name.toLowerCase(), { name, rank: profNum, total: null });
+      }
+      for (const lore of editLores) {
+        loreMap.set(lore.name.toLowerCase(), {
+          name: lore.name,
+          rank: lore.rank ?? 0,
+          total: (typeof lore.total === 'number') ? lore.total : null,
+        });
+      }
+      const loreSkills = [...loreMap.values()].map(lore => {
         const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
-        const total = intMod + calcProfNum(profNum, lvl);
-        return `${profIcons[profNum] || '◑'} Lore: ${loreName} ${fmt(total)}`;
+        const computedTotal = intMod + calcProfNum(lore.rank, lvl);
+        const total = (lore.total !== null) ? lore.total : computedTotal;
+        const icon = profIcons[lore.rank] || (lore.total !== null ? '◔' : '◑');
+        return `${icon} Lore: ${lore.name} ${fmt(total)}`;
       });
       const allTrainedSkills = [...trainedSkills, ...loreSkills];
       const half = Math.ceil(allTrainedSkills.length / 2);
