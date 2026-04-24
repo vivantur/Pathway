@@ -4707,6 +4707,8 @@ const HELP_CATEGORIES = {
       { name: '/char edit', summary: 'Edit background, deity, languages, senses on your active character (opens a popup).', options: '', example: '/char edit' },
       { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total. Useful for PDF imports.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
       { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
+      { name: '/char stat', summary: 'Override a combat stat: AC, HP max, saves, Perception, Speed. Use `action:clear` to revert.', options: 'field, value, action', example: '/char stat field:ac value:19' },
+      { name: '/char weapon', summary: 'Add, edit, or remove weapons/attacks. Fill gaps from PDF imports or track new gear.', options: 'action, name, attack, damage, type, traits', example: '/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
@@ -5591,6 +5593,28 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'stat' && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'weapon') {
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          } else if (focused.name === 'name') {
+            // Autocomplete from existing weapons on the active character (for edit/remove)
+            const characters = loadCharacters();
+            const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
+            if (ce) {
+              const c = ce.data ?? {};
+              const jsonWeapons = (c.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
+              const editWeapons = (ce.edits?.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
+              suggestions = pick([...new Set([...jsonWeapons, ...editWeapons])]);
+            }
+          }
+        }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
             const characters = loadCharacters();
@@ -6020,6 +6044,131 @@ client.on('interactionCreate', async (interaction) => {
     // /char template — send the user a blank fill-in-the-blanks character
     // template as a .txt attachment. They edit it in any text editor and
     // re-upload via /char add.
+    // /char stat — set or clear a combat stat override (AC, HP max, Fort/Ref/Will,
+    // Perception, Speed). These are stored in edits.stats and shown on /sheet with
+    // a warning that the JSON value is being ignored.
+    else if (sub === 'stat') {
+      const charNameArg = interaction.options.getString('character');
+      const field = interaction.options.getString('field');
+      const action = interaction.options.getString('action') ?? 'set';
+      const value = interaction.options.getInteger('value');
+
+      const validFields = ['ac', 'hpMax', 'fortitude', 'reflex', 'will', 'perception', 'speed'];
+      if (!validFields.includes(field)) {
+        return interaction.reply({ content: `❌ Invalid field "${field}". Valid: ${validFields.join(', ')}.`, ephemeral: true });
+      }
+      if (action === 'set' && value === null) {
+        return interaction.reply({ content: `❌ Provide a \`value\` when setting a stat (or use \`action:clear\` to revert).`, ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.stats) charEntry.edits.stats = {};
+
+      if (action === 'clear') {
+        delete charEntry.edits.stats[field];
+        saveCharacters(characters);
+        const fieldLabel = { ac: 'AC', hpMax: 'HP max', fortitude: 'Fort save', reflex: 'Reflex save', will: 'Will save', perception: 'Perception', speed: 'Speed' }[field];
+        return interaction.reply({ content: `✅ Cleared **${fieldLabel}** override on **${charEntry.name}**. JSON value will show on \`/sheet\`.`, ephemeral: true });
+      }
+
+      charEntry.edits.stats[field] = value;
+      saveCharacters(characters);
+      const fieldLabel = { ac: 'AC', hpMax: 'HP max', fortitude: 'Fort save', reflex: 'Reflex save', will: 'Will save', perception: 'Perception', speed: 'Speed' }[field];
+      return interaction.reply({ content: `✅ Set **${fieldLabel}** to **${value}** on **${charEntry.name}**. Use \`/sheet\` to see it.`, ephemeral: true });
+    }
+
+    // /char weapon — add, edit, or remove weapons/attacks. Follows the same
+    // layered pattern as /char lore: edits.weapons for user-added, edits.hiddenWeapons
+    // for JSON-sourced ones to hide.
+    else if (sub === 'weapon') {
+      const charNameArg = interaction.options.getString('character');
+      const action = interaction.options.getString('action');
+      const name = interaction.options.getString('name')?.trim();
+
+      if (!['add', 'remove', 'edit'].includes(action)) {
+        return interaction.reply({ content: '❌ action must be `add`, `remove`, or `edit`.', ephemeral: true });
+      }
+      if (!name) {
+        return interaction.reply({ content: '❌ Please provide a weapon name.', ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+      const c = charEntry.data ?? {};
+
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.weapons) charEntry.edits.weapons = [];
+
+      const nameLower = name.toLowerCase();
+      const existingIdx = charEntry.edits.weapons.findIndex(w =>
+        ((w.display ?? w.name) || '').toLowerCase() === nameLower
+      );
+      const inJson = (c.weapons ?? []).some(w =>
+        ((w.display ?? w.name) || '').toLowerCase() === nameLower
+      );
+
+      if (action === 'remove') {
+        // Same three-case logic as /char lore remove
+        if (!inJson && existingIdx === -1) {
+          return interaction.reply({ content: `❌ No weapon "${name}" to remove on **${charEntry.name}**. Use \`/sheet\` to see current weapons.`, ephemeral: true });
+        }
+        if (existingIdx !== -1) {
+          charEntry.edits.weapons.splice(existingIdx, 1);
+        }
+        if (inJson) {
+          if (!charEntry.edits.hiddenWeapons) charEntry.edits.hiddenWeapons = [];
+          if (!charEntry.edits.hiddenWeapons.some(h => h.toLowerCase() === nameLower)) {
+            charEntry.edits.hiddenWeapons.push(name);
+          }
+        }
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Removed **${name}** from **${charEntry.name}**.`, ephemeral: true });
+      }
+
+      // add/edit: collect the weapon fields
+      const attack = interaction.options.getInteger('attack');
+      const damage = interaction.options.getString('damage');
+      const damageType = interaction.options.getString('type'); // B/P/S or word
+      const traitsRaw = interaction.options.getString('traits');
+
+      if (action === 'add' && (attack === null || !damage || !damageType)) {
+        return interaction.reply({ content: '❌ When adding a weapon, `attack`, `damage`, and `type` are all required.', ephemeral: true });
+      }
+
+      // If the user is un-hiding a weapon by re-adding it, remove from hiddenWeapons
+      if (charEntry.edits.hiddenWeapons) {
+        charEntry.edits.hiddenWeapons = charEntry.edits.hiddenWeapons.filter(h => h.toLowerCase() !== nameLower);
+      }
+
+      const newWeapon = existingIdx !== -1
+        ? { ...charEntry.edits.weapons[existingIdx] }
+        : { name, display: name, attack: 0, damageBonus: 0, die: '1d4', damageType: 'B', traits: [], strikingRune: '', potencyRune: 0, runes: [] };
+
+      newWeapon.name = name;
+      newWeapon.display = name;
+      if (attack !== null) newWeapon.attack = attack;
+      if (damage) newWeapon.die = damage;
+      if (damageType) newWeapon.damageType = damageType;
+      if (traitsRaw !== null) newWeapon.traits = traitsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      if (existingIdx !== -1) {
+        charEntry.edits.weapons[existingIdx] = newWeapon;
+      } else {
+        charEntry.edits.weapons.push(newWeapon);
+      }
+      saveCharacters(characters);
+
+      const verb = action === 'add' ? (existingIdx !== -1 ? 'Updated' : 'Added') : 'Updated';
+      return interaction.reply({ content: `✅ ${verb} **${name}** on **${charEntry.name}** (${newWeapon.attack >= 0 ? '+' : ''}${newWeapon.attack} to hit, ${newWeapon.die} ${newWeapon.damageType}). Use \`/sheet\` to see it.`, ephemeral: true });
+    }
+
     else if (sub === 'template') {
       try {
         const content = getBlankCharacterTemplate();
@@ -6112,8 +6261,8 @@ client.on('interactionCreate', async (interaction) => {
             inline: false,
           },
           {
-            name: '✏️ Fixing or customising details — `/char edit`, `/char skill`, `/char lore`',
-            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a standard skill\'s rank, or use `total:9` for a flat override.\n`/char lore topic:Dragon rank:trained` adds or edits a Lore skill (any topic). Pass `remove:True` to delete one.\nAll edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
+            name: '✏️ Fixing or customising details — `/char edit`, `/char skill`, `/char lore`, `/char stat`, `/char weapon`',
+            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a standard skill\'s rank, or use `total:9` for a flat override.\n`/char lore topic:Dragon rank:trained` adds or edits a Lore skill (any topic). Pass `remove:True` to delete one.\n`/char stat field:ac value:19` overrides a combat stat (AC, HP max, Fort/Ref/Will, Perception, Speed). Use `action:clear` to revert.\n`/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S` adds or replaces weapons/attacks.\nAll edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
             inline: false,
           },
           {
@@ -6298,13 +6447,17 @@ client.on('interactionCreate', async (interaction) => {
       const currentXP = getCharacterXp(charEntry);
       const xpDisplay = `${currentXP} / ${xpToNextLevel(lvl)} XP`;
       const conMod = Math.floor(((ab.con ?? 10) - 10) / 2);
-      const totalHP = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+      const totalHPComputed = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+      // Apply HP max override if set via /char stat
+      const statOverridesPre = charEntry.edits?.stats ?? {};
+      const totalHP = statOverridesPre.hpMax ?? totalHPComputed;
       // If the bot has been tracking HP (via /hp), show current/max; otherwise just max.
       const currentHP = getCharacterHp(charEntry);
       const hpDisplay = (currentHP < totalHP) ? `${currentHP}/${totalHP}` : `${totalHP}`;
       const profBonus = Math.floor(lvl / 4) + 2;
       const wisMod = Math.floor(((ab.wis ?? 10) - 10) / 2);
-      const percMod = wisMod + calcProfNum(prof.perception ?? 0, lvl);
+      const percComputed = wisMod + calcProfNum(prof.perception ?? 0, lvl);
+      const percMod = statOverridesPre.perception ?? percComputed;
       let spellAttackBonus = null, spellDC = null;
       if (c.spellCasters?.length > 0) {
         const caster = c.spellCasters[0];
@@ -6317,9 +6470,24 @@ client.on('interactionCreate', async (interaction) => {
         spellAttackBonus = keyMod + spellProfMod;
         spellDC = 10 + keyMod + spellProfMod;
       }
-      const fortMod   = Math.floor(((ab.con ?? 10) - 10) / 2) + calcProfNum(prof.fortitude ?? 0, lvl);
-      const reflexMod = Math.floor(((ab.dex ?? 10) - 10) / 2) + calcProfNum(prof.reflex ?? 0, lvl);
-      const willMod   = Math.floor(((ab.wis ?? 10) - 10) / 2) + calcProfNum(prof.will ?? 0, lvl);
+      // Stat overrides: user-set values via /char stat. These win over the
+      // computed values from c.data. Track which ones are overridden so we
+      // can mark them in the display with a warning.
+      const statOverrides = charEntry.edits?.stats ?? {};
+      const overriddenFields = [];
+      const fortModComputed   = Math.floor(((ab.con ?? 10) - 10) / 2) + calcProfNum(prof.fortitude ?? 0, lvl);
+      const reflexModComputed = Math.floor(((ab.dex ?? 10) - 10) / 2) + calcProfNum(prof.reflex ?? 0, lvl);
+      const willModComputed   = Math.floor(((ab.wis ?? 10) - 10) / 2) + calcProfNum(prof.will ?? 0, lvl);
+      const fortMod   = statOverrides.fortitude ?? fortModComputed;
+      const reflexMod = statOverrides.reflex ?? reflexModComputed;
+      const willMod   = statOverrides.will ?? willModComputed;
+      if (statOverrides.fortitude !== undefined) overriddenFields.push('Fort');
+      if (statOverrides.reflex !== undefined)    overriddenFields.push('Ref');
+      if (statOverrides.will !== undefined)      overriddenFields.push('Will');
+      if (statOverrides.hpMax !== undefined)     overriddenFields.push('HP max');
+      if (statOverrides.perception !== undefined) overriddenFields.push('Perception');
+      if (statOverrides.ac !== undefined)        overriddenFields.push('AC');
+      if (statOverrides.speed !== undefined)     overriddenFields.push('Speed');
       const skillMap = {
         acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
         deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
@@ -6383,9 +6551,27 @@ client.on('interactionCreate', async (interaction) => {
       const col1 = allTrainedSkills.slice(0, half);
       const col2 = allTrainedSkills.slice(half);
       const skillCols = col1.map((s, i) => `${s.padEnd(24)}${col2[i] ?? ''}`).join('\n');
+      // Weapons: merge c.weapons (JSON-sourced) with edits.weapons (user-added
+      // via /char weapon add). Hide any in edits.hiddenWeapons. User-edited
+      // versions of the same-named weapon override the JSON version.
+      const jsonWeapons = c.weapons ?? [];
+      const editWeapons = charEntry.edits?.weapons ?? [];
+      const hiddenWeapons = new Set((charEntry.edits?.hiddenWeapons ?? []).map(n => n.toLowerCase()));
+      const weaponMap = new Map();
+      for (const w of jsonWeapons) {
+        const key = (w.display ?? w.name ?? '').toLowerCase();
+        if (!key || hiddenWeapons.has(key)) continue;
+        weaponMap.set(key, w);
+      }
+      for (const w of editWeapons) {
+        const key = (w.display ?? w.name ?? '').toLowerCase();
+        if (!key || hiddenWeapons.has(key)) continue;
+        weaponMap.set(key, w); // edits win over JSON at same name
+      }
+      const mergedWeapons = [...weaponMap.values()];
       let attackLines = '';
-      if (c.weapons?.length > 0) {
-        c.weapons.forEach(w => {
+      if (mergedWeapons.length > 0) {
+        mergedWeapons.forEach(w => {
           const atkBonus = w.attack ?? 0;
           const dmgBonus = w.damageBonus > 0 ? `+${w.damageBonus}` : w.damageBonus < 0 ? `${w.damageBonus}` : '';
           const dmgType = w.damageType === 'P' ? 'Piercing' : w.damageType === 'S' ? 'Slashing' : w.damageType === 'B' ? 'Bludgeoning' : w.damageType ?? '';
@@ -6413,13 +6599,14 @@ client.on('interactionCreate', async (interaction) => {
           `**XP:** ${xpDisplay}`
         )
         .addFields(
-          { name: '⚔️ Combat Stats', value: `**AC** ${c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${c.attributes?.speed ?? 30} ft · **Perception** ${fmt(percMod)}\n**Prof Bonus** +${profBonus}` + (spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : ''), inline: false },
+          { name: '⚔️ Combat Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${statOverrides.speed ?? c.attributes?.speed ?? 30} ft · **Perception** ${fmt(percMod)}\n**Prof Bonus** +${profBonus}` + (spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : ''), inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
           ...(attackLines ? [{ name: '⚔️ Attacks', value: attackLines.trim(), inline: false }] : []),
-          { name: '🌐 Languages', value: languages.length > 0 ? languages.join(', ') : 'None set — use `/char info`', inline: true },
-          { name: '👁️ Senses', value: senses.length > 0 ? senses.join(', ') : 'None set — use `/char info`', inline: true },
+          { name: '🌐 Languages', value: languages.length > 0 ? languages.join(', ') : 'None set — use `/char edit`', inline: true },
+          { name: '👁️ Senses', value: senses.length > 0 ? senses.join(', ') : 'None set — use `/char edit`', inline: true },
+          ...(overriddenFields.length > 0 ? [{ name: '⚠️ Manual overrides', value: `The following values are manually set (ignoring JSON): ${overriddenFields.join(', ')}. Use \`/char stat field:<field> action:clear\` to revert.`, inline: false }] : []),
         )
         .setFooter({ text: `Pathfinder 2e · Saved ${charEntry.saved?.split('T')[0] ?? ''}` });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
