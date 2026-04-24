@@ -5329,14 +5329,25 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           }
         }
-        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'skill' && focused.name === 'name') {
-          // Autocomplete skill name from PF2e's standard 16 skills
-          const pfSkills = [
-            'Acrobatics','Arcana','Athletics','Crafting','Deception','Diplomacy',
-            'Intimidation','Medicine','Nature','Occultism','Performance','Religion',
-            'Society','Stealth','Survival','Thievery',
-          ];
-          suggestions = pick(pfSkills);
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'skill') {
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          } else if (focused.name === 'name') {
+            // Autocomplete skill name from PF2e's standard 16 skills
+            const pfSkills = [
+              'Acrobatics','Arcana','Athletics','Crafting','Deception','Diplomacy',
+              'Intimidation','Medicine','Nature','Occultism','Performance','Religion',
+              'Society','Stealth','Survival','Thievery',
+            ];
+            suggestions = pick(pfSkills);
+          }
+        }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'edit' && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
         }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
@@ -5549,15 +5560,11 @@ client.on('interactionCreate', async (interaction) => {
     // Edits are stored in charEntry.edits and preserved across JSON re-imports.
     else if (sub === 'edit') {
       try {
-        // Find the user's active character (or first if none active)
+        const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const userChars = characters[interaction.user.id] ?? {};
-        const keys = Object.keys(userChars).filter(k => !k.startsWith('_'));
-        if (keys.length === 0) {
-          return interaction.reply({ content: '❌ You have no characters yet. Import one with `/char pastemsg`, `/char add`, or `/char pdf` first.', ephemeral: true });
-        }
-        const activeKey = userChars._active && userChars[userChars._active] ? userChars._active : keys[0];
-        const charEntry = userChars[activeKey];
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+        const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
         const edits = charEntry.edits ?? {};
 
@@ -5572,8 +5579,8 @@ client.on('interactionCreate', async (interaction) => {
           : (charEntry.senses ?? []).join(', ');
 
         const modal = new ModalBuilder()
-          .setCustomId(`char_edit_modal:${activeKey}`)
-          .setTitle(`Edit ${c.name ?? 'Character'}`.slice(0, 45));
+          .setCustomId(`char_edit_modal:${charKey}`)
+          .setTitle(`Edit ${c.name ?? charEntry.name ?? 'Character'}`.slice(0, 45));
 
         // All Discord modal labels must be ≤ 45 chars. These are fine.
         const bgInput = new TextInputBuilder()
@@ -5627,6 +5634,7 @@ client.on('interactionCreate', async (interaction) => {
     // If `total` is provided, we store it as a flat override that wins over rank.
     // Use 'untrained' rank to clear an existing override.
     else if (sub === 'skill') {
+      const charNameArg = interaction.options.getString('character');
       const skillName = interaction.options.getString('name');
       const rankStr = interaction.options.getString('rank'); // optional
       const total = interaction.options.getInteger('total'); // optional
@@ -5648,15 +5656,10 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ Invalid rank "${rankStr}". Use: untrained, trained, expert, master, or legendary.`, ephemeral: true });
       }
 
-      // Find the user's active character
       const characters = loadCharacters();
-      const userChars = characters[interaction.user.id] ?? {};
-      const keys = Object.keys(userChars).filter(k => !k.startsWith('_'));
-      if (keys.length === 0) {
-        return interaction.reply({ content: '❌ You have no characters. Import one first.', ephemeral: true });
-      }
-      const activeKey = userChars._active && userChars[userChars._active] ? userChars._active : keys[0];
-      const charEntry = userChars[activeKey];
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { charKey, char: charEntry } = resolved;
 
       if (!charEntry.edits) charEntry.edits = {};
       if (!charEntry.edits.skillOverrides) charEntry.edits.skillOverrides = {};

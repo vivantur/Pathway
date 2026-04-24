@@ -43,7 +43,10 @@ const commands = [
       },
       {
         name: 'edit', description: 'Edit your character: background, deity, languages, senses (opens a popup)',
-        type: ApplicationCommandOptionType.Subcommand
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Which character to edit (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
       },
       {
         name: 'skill', description: 'Set a skill\'s proficiency rank or flat total (for PDF imports or corrections)',
@@ -60,6 +63,7 @@ const commands = [
             ],
           },
           { name: 'total', description: 'Flat total bonus override (optional — wins over rank if both set)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
         ],
       },
       {
