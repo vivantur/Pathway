@@ -29,20 +29,17 @@ const commands = [
         options: [{ name: 'file', description: 'Your updated Pathbuilder JSON (.json or .txt)', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
-        name: 'paste', description: 'Paste your Pathbuilder JSON into a popup (small characters only)',
-        type: ApplicationCommandOptionType.Subcommand
-      },
-      {
-        name: 'pasteupdate', description: 'Update an existing character via paste popup (keeps HP/XP/notes)',
-        type: ApplicationCommandOptionType.Subcommand
-      },
-      {
         name: 'pastemsg', description: 'Import by posting JSON as a chat message (best method on mobile)',
         type: ApplicationCommandOptionType.Subcommand
       },
       {
         name: 'pastemsgupdate', description: 'Update by posting JSON as a chat message (keeps HP/XP/notes)',
         type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'pdf', description: 'Import a character from a Pathbuilder statblock PDF (partial import)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [{ name: 'file', description: 'Pathbuilder statblock PDF (Menu → Export → View Statblock → Save as PDF)', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
         name: 'howto', description: 'Show platform-specific instructions for getting your character into the bot',

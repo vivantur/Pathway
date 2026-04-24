@@ -1017,6 +1017,460 @@ function parsePastedPathbuilderJSON(rawText) {
   return { char };
 }
 
+
+// ─── PDF STATBLOCK PARSER ─────────────────────────────────────────────
+function pdfDeduplicateBoldLetters(text) {
+  // Pathbuilder statblocks render bold LETTERS with each character doubled by
+  // pdf-parse. Observed patterns:
+  //   - Capitals: "G\tGuardian" (capital, tab, same capital, rest of word)
+  //   - Lowercase: "Guuaarrddiiaann" (each char doubled)
+  //   - Punctuation inside bold: "((Runelord))", ",," — these DO double
+  //   - Digits in header: "33" for level 3 in "Guardian 33\tKhyber" (larger font)
+  //   - Digits in ordinals: "11sstt" for bold "1st" in "Arcane Prepared Spells ... 1st"
+  //   - Digits in bare values: "HP 22" stays as "HP 22" (NOT bold-doubled)
+  //
+  // Strategy: dedupe all letters and punctuation always. Dedupe digits only
+  // when they're part of a header (first line) or ordinal suffix (before st/nd/rd/th).
+  const firstNewline = text.indexOf('\n');
+  const header = firstNewline >= 0 ? text.slice(0, firstNewline) : text;
+  const body = firstNewline >= 0 ? text.slice(firstNewline) : '';
+
+  const dedupePass = (str, dedupeDigitsGlobally) => {
+    let out = '';
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i], next = str[i + 1], after = str[i + 2];
+      if (/[A-Z]/.test(ch) && next === '\t' && after === ch) {
+        out += ch; i += 2; continue;
+      }
+      // Letters and bold-rendered punctuation always dedupe
+      if (/[a-zA-Z()[\]+\-]/.test(ch) && next === ch) {
+        out += ch; i += 1; continue;
+      }
+      // Digits: dedupe in header, OR when this digit is part of an ordinal
+      // (followed by sstt/nndd/rrdd/tthh double-suffix pattern).
+      if (/\d/.test(ch) && next === ch) {
+        const ordinalCheck = str.slice(i + 2, i + 6);
+        const isBoldOrdinal = /^(ssttt?t?|nnddd?d?|rrddd?d?|tthhh?h?)/.test(ordinalCheck) ||
+                              /^(st|nd|rd|th)/.test(str.slice(i + 2, i + 4));
+        if (dedupeDigitsGlobally || isBoldOrdinal) {
+          out += ch; i += 1; continue;
+        }
+      }
+      out += ch;
+    }
+    return out;
+  };
+
+  return dedupePass(header, true) + dedupePass(body, false);
+}
+
+function pdfRestoreDoubledWords(text) {
+  // Our simple deduplication collapses legitimate double letters in words
+  // like "Additional", "Occultism", "Common". Restore known Pathbuilder
+  // statblock vocabulary that has doubled letters in it.
+  //
+  // All patterns use word boundaries to prevent cascading matches. Without
+  // \b, a rule like "cal → call" would incorrectly match the "cal" inside
+  // "Magical" and produce "Magicall". Rules are applied simultaneously via
+  // a single regex so order doesn't create cascades.
+  const map = {
+    // Languages / common short words (all word-boundary-safe)
+    'Comon': 'Common',
+    'comon': 'common',
+    'Aditional': 'Additional',
+    'aditional': 'additional',
+    'Ocultism': 'Occultism',
+    'ocultism': 'occultism',
+    'Dragonblod': 'Dragonblood',
+    'Resurection': 'Resurrection',
+    'resurection': 'resurrection',
+    'Spelcasting': 'Spellcasting',
+    'spelcasting': 'spellcasting',
+    'Spelbok': 'Spellbook',
+    'spelbok': 'spellbook',
+    'Schol': 'School',
+    'schol': 'school',
+    'Tolkit': 'Toolkit',
+    'tolkit': 'toolkit',
+    'Barage': 'Barrage',
+    'barage': 'barrage',
+    'Magicall': 'Magical',
+    'magicall': 'magical',
+    'Physicall': 'Physical',
+    'physicall': 'physical',
+    'Batle': 'Battle',
+    'batle': 'battle',
+    'Sadle': 'Saddle',
+    'sadle': 'saddle',
+    'Uncomon': 'Uncommon',
+    'uncomon': 'uncommon',
+    'Finese': 'Finesse',
+    'finese': 'finesse',
+    'Pary': 'Parry',
+    'pary': 'parry',
+    'Swep': 'Sweep',
+    'swep': 'sweep',
+    'Kil': 'Kill',
+    'kil': 'kill',
+    'Skil': 'Skill',
+    'skil': 'skill',
+    'Skillls': 'Skills', // triple-L artifact of bold Skills label
+    'Spels': 'Spells',
+    'spels': 'spells',
+    'Spel': 'Spell',
+    'spel': 'spell',
+    // Body/description text
+    'atack': 'attack',
+    'Atack': 'Attack',
+    'sucess': 'success',
+    'Sucess': 'Success',
+    'efect': 'effect',
+    'Efect': 'Effect',
+    'Bedrol': 'Bedroll',
+    'bedrol': 'bedroll',
+    'Stel': 'Steel',
+    'Hardnes': 'Hardness',
+    'aly': 'ally',
+    'Aly': 'Ally',
+    'trigering': 'triggering',
+    'Trigering': 'Triggering',
+    'fet': 'feet',
+    'roled': 'rolled',
+    'Roled': 'Rolled',
+    'cal': 'call',
+    'Cal': 'Call',
+    'posibly': 'possibly',
+    'Posibly': 'Possibly',
+    'Steping': 'Stepping',
+    'steping': 'stepping',
+    'stil': 'still',
+    'Stil': 'Still',
+    'imunities': 'immunities',
+    'Imunities': 'Immunities',
+    'weakneses': 'weaknesses',
+    'Weakneses': 'Weaknesses',
+    'Aply': 'Apply',
+    'aply': 'apply',
+    'atempt': 'attempt',
+    'Atempt': 'Attempt',
+    'Spelshape': 'Spellshape',
+    'spelshape': 'spellshape',
+    'Rot': 'Root',
+  };
+
+  // Build a single alternation regex so replacements happen simultaneously,
+  // preventing cascading (e.g. "cal"→"call" then another rule matching "call").
+  // \b ensures we only match whole words, so "cal" inside "Magical" won't match.
+  const keys = Object.keys(map).sort((a, b) => b.length - a.length); // longest-first
+  const pattern = new RegExp('\\b(' + keys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
+  let out = text.replace(pattern, (m) => map[m] ?? m);
+
+  // Handle special cases that don't fit \b-word-boundary:
+  // "Dam\tmage" → "Damage" (tab in middle of word)
+  out = out.replace(/Dam\tmage/g, 'Damage');
+  out = out.replace(/Item\tms/g, 'Items');
+  // "Rot Reading" → "Root Reading" (Rot on its own isn't uniquely restorable)
+  out = out.replace(/\bRot\s+Reading\b/g, 'Root Reading');
+
+  return out;
+}
+
+function pdfParseMod(s) {
+  const m = String(s).trim().match(/^([+-]?\d+)$/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+function pdfModToScore(mod) { return mod * 2 + 10; }
+
+// Split on commas, keeping parenthesized groups together. Used for items
+// and similar lists where entries contain internal commas inside parens.
+function splitOnCommasRespectingParens(text) {
+  const parts = [];
+  let depth = 0, buf = '';
+  for (const ch of text) {
+    if (ch === '(' || ch === '[') { depth++; buf += ch; continue; }
+    if (ch === ')' || ch === ']') { depth--; buf += ch; continue; }
+    if (ch === ',' && depth === 0) {
+      const t = buf.trim();
+      if (t) parts.push(t);
+      buf = '';
+      continue;
+    }
+    buf += ch;
+  }
+  const tail = buf.trim();
+  if (tail) parts.push(tail);
+  return parts;
+}
+
+function parsePathbuilderStatblockPDF(rawText) {
+  if (!rawText || typeof rawText !== 'string' || rawText.length < 100) {
+    return { error: 'That PDF doesn\'t look like a Pathbuilder statblock. Make sure you used Pathbuilder\'s Menu → Export → View Statblock → Save as PDF (not the character sheet PDF).' };
+  }
+
+  const warnings = [];
+  const cleaned = pdfRestoreDoubledWords(pdfDeduplicateBoldLetters(rawText));
+  const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // 1) Header
+  const headerLine = lines[0] ?? '';
+  const headerMatch = headerLine.match(/^([A-Za-z][A-Za-z ]*?)(?:\s*\(([^)]+)\))?\s+(\d+)\s*\t?\s*(.+)$/);
+  if (!headerMatch) {
+    return { error: `Couldn't read the statblock header. First line was: "${headerLine}". Expected format like "Wizard (Runelord) 2\\tAurelius".` };
+  }
+  const charClass = headerMatch[1].trim();
+  const subclass = headerMatch[2]?.trim() ?? null;
+  const level = parseInt(headerMatch[3], 10);
+  const name = headerMatch[4].trim();
+
+  // 2) Creature type line (line 2)
+  const typeLine = lines[1] ?? '';
+  const typeParts = typeLine.split(/\s+/).filter(Boolean);
+  const sizes = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
+  let size = 'Medium', ancestry = '', heritage = '', creatureType = 'Humanoid';
+  if (sizes.includes(typeParts[0])) {
+    size = typeParts[0];
+    const rest = typeParts.slice(1);
+    if (rest.length >= 1) creatureType = rest[rest.length - 1];
+    if (rest.length >= 2) ancestry = rest[0];
+    if (rest.length >= 3) heritage = rest.slice(1, -1).join(' ');
+  } else {
+    warnings.push(`Couldn't parse size/ancestry from: "${typeLine}"`);
+  }
+
+  // 3) Field-based extraction. Use the single-line joined form for easier regex.
+  const joined = lines.join(' ');
+
+  // Perception
+  let perception = 0, senses = '';
+  const percM = joined.match(/Perception\s+([+-]?\d+)(?:\s*;\s*(.+?))?\s+(?:Languages|Skills|Str\s+[+-])/);
+  if (percM) {
+    perception = pdfParseMod(percM[1]);
+    senses = (percM[2] ?? '').trim();
+  } else warnings.push('Perception line not found');
+
+  // Languages (may be "None selected" or "None")
+  let languages = [];
+  const langM = joined.match(/Languages\s+(.+?)\s+(?:Skills|Str\s+[+-]|Items)/);
+  if (langM) {
+    const raw = langM[1].trim();
+    if (!/^(None|None selected)$/i.test(raw)) {
+      languages = raw.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+    }
+  }
+
+  // Skills
+  const skills = {};
+  const skillM = joined.match(/Skills\s+(.+?)\s+Str\s+[+-]/);
+  if (skillM) {
+    const skillRe = /(Lore:\s*[A-Z][A-Za-z' ]*|[A-Z][A-Za-z]*)\s+([+-]\d+)/g;
+    let m;
+    while ((m = skillRe.exec(skillM[1])) !== null) {
+      skills[m[1].replace(/\s+/g, ' ').trim()] = pdfParseMod(m[2]);
+    }
+  }
+
+  // Abilities
+  const abilities = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+  const abilRe = /(Str|Dex|Con|Int|Wis|Cha)\s+([+-]?\d+)(?=[,\s])/g;
+  let am;
+  while ((am = abilRe.exec(joined)) !== null) {
+    abilities[am[1].toLowerCase()] = pdfParseMod(am[2]);
+  }
+
+  // Items — split on commas but keep parenthesized groups together
+  let items = [];
+  const itemsM = joined.match(/Items\s+(.+?)\s+AC\s+\d/);
+  if (itemsM) {
+    items = splitOnCommasRespectingParens(itemsM[1]);
+  }
+
+  // AC
+  let ac = 10;
+  const acM = joined.match(/AC\s+(\d+)(?:\s*\([^)]+\))?;\s*Fort/);
+  if (acM) ac = parseInt(acM[1], 10);
+
+  // Saves
+  let fort = 0, ref = 0, will = 0;
+  const savM = joined.match(/Fort\s+([+-]?\d+),?\s+Ref\s+([+-]?\d+),?\s+Will\s+([+-]?\d+)/);
+  if (savM) {
+    fort = pdfParseMod(savM[1]);
+    ref = pdfParseMod(savM[2]);
+    will = pdfParseMod(savM[3]);
+  }
+
+  // HP (match "HP NN" where the NN comes AFTER Will save to avoid matching
+  // the shield's "HP 6" in the Items line)
+  let hp = 0;
+  let resistances = [], weaknesses = [], immunities = [];
+  const hpM = joined.match(/Will\s+[+-]?\d+\s+HP\s+(\d+)(?:\s*;\s*(.+?))?(?=\s+(?:Speed|Shield|Intercept|Warding|Melee|Ranged|Reach|Drain|Recognize|Breath|Taunt|Arcane|Divine|Occult|Primal|Focus|Additional|$))/);
+  if (hpM) {
+    hp = parseInt(hpM[1], 10);
+    const extras = (hpM[2] ?? '').trim();
+    const rM = extras.match(/Resistances?:?\s+([^;]+?)(?=\s*(?:Weaknesses|Immunities|$))/i);
+    if (rM) resistances = rM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+    const wM = extras.match(/Weaknesses?:?\s+([^;]+?)(?=\s*(?:Resistances|Immunities|$))/i);
+    if (wM) weaknesses = wM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+    const iM = extras.match(/Immunities?:?\s+([^;]+?)(?=\s*(?:Resistances|Weaknesses|$))/i);
+    if (iM) immunities = iM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  }
+
+  // Speed
+  let speed = 25;
+  const spdM = joined.match(/Speed\s+(\d+)\s*feet/);
+  if (spdM) speed = parseInt(spdM[1], 10);
+
+  // Weapons. Line format: "Melee|Ranged <name> +N (<traits>), Damage <dice+N> <type>"
+  // <type> is 1-3 uppercase letters (B, P, S, B/P, B/P/S, fire, etc.)
+  const weapons = [];
+  const wRe = /(Melee|Ranged)\s+(.+?)\s+([+-]\d+)\s*\(([^)]*)\),?\s*Damage\s+(\S+)\s+([A-Za-z/]+)/g;
+  let wm;
+  while ((wm = wRe.exec(joined)) !== null) {
+    weapons.push({
+      type: wm[1].toLowerCase(),
+      name: wm[2].trim(),
+      attackBonus: pdfParseMod(wm[3]),
+      traits: wm[4].split(/,\s*/).map(s => s.trim()).filter(Boolean),
+      damage: wm[5].trim(),
+      damageType: wm[6].trim(),
+    });
+  }
+
+  // Spellcasting
+  const spellcasters = [];
+  const traditions = ['Arcane', 'Divine', 'Occult', 'Primal'];
+  const kinds = ['Prepared', 'Spontaneous', 'Innate', 'Focus'];
+  for (const tradition of traditions) {
+    for (const kind of kinds) {
+      if (kind === 'Focus') continue;
+      const kindRe = new RegExp(
+        `${tradition}\\s+${kind}\\s+Spells\\s+DC\\s+(\\d+),?\\s*attack\\s+([+-]?\\d+);?\\s*(.+?)(?=\\s+(?:Arcane|Divine|Occult|Primal)\\s+(?:Prepared|Spontaneous|Innate)\\s+Spells\\s+DC|\\s+Focus Spells|\\s+Additional (?:Feats|Specials)|\\s+Rituals|$)`,
+        'i'
+      );
+      const scM = joined.match(kindRe);
+      if (scM) {
+        const dc = parseInt(scM[1], 10);
+        const attackBonus = pdfParseMod(scM[2]);
+        const block = scM[3];
+
+        // Spell slots by rank
+        const spellsByRank = {};
+        const rankRe = /(\d+)(?:st|nd|rd|th)\s+((?:[^,;]+,\s*)*[^,;]+?)(?=\s*;|\s+Cantrips|\s+\d+(?:st|nd|rd|th)|$)/g;
+        let rm;
+        while ((rm = rankRe.exec(block)) !== null) {
+          const rank = parseInt(rm[1], 10);
+          const spells = rm[2].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+          spellsByRank[rank] = spells;
+        }
+
+        // Cantrips
+        let cantrips = [];
+        const ctM = block.match(/Cantrips\s+(.+?)(?:;|$)/i);
+        if (ctM) cantrips = ctM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+
+        spellcasters.push({
+          tradition: tradition.toLowerCase(),
+          kind: kind.toLowerCase(),
+          dc,
+          attackBonus,
+          cantrips,
+          spellsByRank,
+        });
+      }
+    }
+  }
+
+  // Focus spells (one line: "Focus Spells (N points) Spell1, Spell2")
+  let focusPoints = 0;
+  let focusSpells = [];
+  const fM = joined.match(/Focus Spells\s*\((\d+)\s+points?\)\s+(.+?)(?=\s+Additional\s+(?:Feats|Specials)|$)/);
+  if (fM) {
+    focusPoints = parseInt(fM[1], 10);
+    focusSpells = fM[2].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  }
+
+  // Additional Feats
+  let feats = [];
+  const featsM = joined.match(/Additional Feats\s+(.+?)(?=\s+Additional Specials|\s+Pathbuilder 2e|$)/);
+  if (featsM) {
+    feats = featsM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  }
+
+  // Additional Specials
+  let specials = [];
+  const spM = joined.match(/Additional Specials\s+(.+?)(?=\s+Pathbuilder 2e|$)/);
+  if (spM) {
+    specials = spM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  }
+
+  // Build a Pathbuilder-JSON-shaped output.
+  const char = {
+    name, class: charClass, dualClass: null, level,
+    ancestry, heritage, background: '', alignment: 'N',
+    gender: '', age: '', deity: '', size: 0,
+    keyability: '', languages,
+    attributes: { ancestryhp: 0, classhp: 0, bonushp: 0, bonushpPerLevel: 0, speed, speedBonus: 0 },
+    abilities: {
+      str: pdfModToScore(abilities.str),
+      dex: pdfModToScore(abilities.dex),
+      con: pdfModToScore(abilities.con),
+      int: pdfModToScore(abilities.int),
+      wis: pdfModToScore(abilities.wis),
+      cha: pdfModToScore(abilities.cha),
+      breakdown: { ancestryFree: [], ancestryBoosts: [], ancestryFlaws: [], backgroundBoosts: [], classBoosts: [], mapLevelledBoosts: {} },
+    },
+    proficiencies: {
+      classDC: 0, perception, fortitude: fort, reflex: ref, will,
+      heavy: 0, medium: 0, light: 0, unarmored: 0,
+      advanced: 0, martial: 0, simple: 0, unarmed: 0,
+      castingArcane: spellcasters.find(c => c.tradition === 'arcane')?.attackBonus ?? 0,
+      castingDivine: spellcasters.find(c => c.tradition === 'divine')?.attackBonus ?? 0,
+      castingOccult: spellcasters.find(c => c.tradition === 'occult')?.attackBonus ?? 0,
+      castingPrimal: spellcasters.find(c => c.tradition === 'primal')?.attackBonus ?? 0,
+    },
+    acTotal: { acTotal: ac, acProfBonus: 0, acAbilityBonus: 0, acItemBonus: 0, acValue: ac },
+    feats: feats.map(f => [f, null, null, null]),
+    specificProficiencies: {},
+    money: { cp: 0, sp: 0, gp: 0, pp: 0 },
+    armor: [],
+    weapons: weapons.map(w => ({
+      name: w.name, display: w.name, attack: w.attackBonus, damageBonus: 0,
+      die: w.damage, damageType: w.damageType, traits: w.traits,
+      strikingRune: '', potencyRune: 0, runes: [],
+    })),
+    equipment: items.map(i => [i, 1]),
+    specials,
+    lores: [],
+    formula: [],
+    pets: [],
+    spellCasters: spellcasters.map(sc => ({
+      name: `${sc.tradition.charAt(0).toUpperCase() + sc.tradition.slice(1)} ${sc.kind.charAt(0).toUpperCase() + sc.kind.slice(1)}`,
+      magicTradition: sc.tradition,
+      spellcastingType: sc.kind,
+      innate: sc.kind === 'innate',
+      attack: sc.attackBonus, dc: sc.dc, keyAbility: '',
+      spells: Object.entries(sc.spellsByRank).map(([r, l]) => ({ spellLevel: parseInt(r, 10), list: l })),
+      prepared: sc.kind === 'prepared' ? Object.entries(sc.spellsByRank).map(([r, l]) => ({ spellLevel: parseInt(r, 10), list: l })) : [],
+      blendedSpells: [],
+      perDay: Object.fromEntries(Object.keys(sc.spellsByRank).map(r => [r, sc.spellsByRank[r].length])),
+      cantrips: sc.cantrips,
+    })),
+    focus: focusPoints > 0 ? { focusPoints, spells: focusSpells } : {},
+    senses,
+    // PDF-specific metadata so the bot knows this is a partial import
+    _source: 'pdf',
+    _pdfWarnings: warnings,
+    _displayMods: abilities,
+    _skillTotals: skills,
+    _hpMaxOverride: hp,
+    _resistances: resistances,
+    _weaknesses: weaknesses,
+    _immunities: immunities,
+    _subclass: subclass,
+  };
+
+  return { char, warnings };
+}
+
 function parsePathbuilderRef(raw) {
   if (!raw || typeof raw !== 'string') return { error: 'Please provide a Pathbuilder ID or export URL.' };
   const trimmed = raw.trim();
@@ -4007,8 +4461,7 @@ const HELP_CATEGORIES = {
     commands: [
       { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
       { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
-      { name: '/char paste', summary: 'Paste JSON into a popup modal. Small characters only (~4000 chars).', options: '(opens modal)', example: '/char paste' },
-      { name: '/char pasteupdate', summary: 'Refresh via paste modal. Keeps HP/XP/notes.', options: '(opens modal)', example: '/char pasteupdate' },
+      { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
@@ -4453,50 +4906,6 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (!interaction.isChatInputCommand()) {
-    // ─── Modal submissions ───────────────────────────────────────────
-    // Discord returns the user's text from a showModal() call as a separate
-    // interaction. We check the customId to route to the right handler.
-    if (interaction.isModalSubmit?.()) {
-      try {
-        if (interaction.customId === 'char_paste_modal' || interaction.customId === 'char_pasteupdate_modal') {
-          await interaction.deferReply({ ephemeral: true });
-          const isUpdate = interaction.customId === 'char_pasteupdate_modal';
-          // Concatenate all 5 parts (unused parts come back as empty strings)
-          const parts = [];
-          for (let i = 1; i <= 5; i++) {
-            try { parts.push(interaction.fields.getTextInputValue(`json_part_${i}`)); }
-            catch { /* empty field */ }
-          }
-          const joined = parts.join('').trim();
-          if (!joined) return interaction.editReply('❌ No JSON provided. Try again and paste into Part 1.');
-
-          const parsed = parsePastedPathbuilderJSON(joined);
-          if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-
-          if (isUpdate) {
-            // Verify the character already exists before running as update
-            const chars = loadCharacters();
-            const key = parsed.char.name.toLowerCase().replace(/\s+/g, '-');
-            if (!chars[interaction.user.id]?.[key]) {
-              return interaction.editReply(`❌ No existing character named **${parsed.char.name}**. Use \`/char paste\` to add them first.`);
-            }
-          }
-
-          const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
-          if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-
-          const verb = isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved');
-          const levelNote = saved.level ? ` (Level ${saved.level})` : '';
-          const preservedNote = isUpdate ? ' *(hero points, XP, current HP, and notes preserved.)*' : '';
-          return interaction.editReply(`✅ **${saved.name}**${levelNote} ${verb}!${preservedNote}\nUse \`/sheet\` to view them.`);
-        }
-      } catch (err) {
-        console.error('Modal submit error:', err);
-        try { await interaction.editReply('❌ Something went wrong processing your paste. Try again.'); } catch {}
-      }
-      return;
-    }
-
     // ─── Autocomplete ────────────────────────────────────────────────
     if (interaction.isAutocomplete()) {
       try {
@@ -4923,7 +5332,7 @@ client.on('interactionCreate', async (interaction) => {
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
         const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? You can also try \`/char paste\` to paste directly into a popup, or \`/char pastemsg\` to paste as a chat message.*`);
+        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? Next time try \`/char pastemsg\` — paste the JSON as a chat message instead of wrangling files.*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
@@ -4946,73 +5355,11 @@ client.on('interactionCreate', async (interaction) => {
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
 
-    // /char paste
-    // Opens a modal with 5 paragraph text inputs. Users paste their Pathbuilder
-    // JSON into Part 1 (small chars fit entirely) or chunk across Part 1-5
-    // for big characters (up to ~20KB across all fields).
-    //
-    // Why this instead of /char import: Pathbuilder's json.php endpoint blocks
-    // server-to-server requests (returns 403 "Host not in allowlist"), so the
-    // bot can't fetch by ID. Users have to paste the text themselves. Modals
-    // are mobile-friendly and don't require file-picker navigation.
-    else if (sub === 'paste') {
-      try {
-        const modal = new ModalBuilder()
-          .setCustomId('char_paste_modal')
-          .setTitle('Paste Pathbuilder JSON');
-
-        const parts = [];
-        for (let i = 1; i <= 5; i++) {
-          // Discord modal labels are capped at 45 chars. Keep these short.
-          const input = new TextInputBuilder()
-            .setCustomId(`json_part_${i}`)
-            .setLabel(i === 1 ? 'Paste JSON here' : `Continuation part ${i}`)
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(i === 1)
-            .setMaxLength(4000)
-            .setPlaceholder(i === 1 ? '{"success":true,"build":{...}}' : `Only fill if part ${i - 1} was full`);
-          parts.push(new ActionRowBuilder().addComponents(input));
-        }
-        modal.addComponents(...parts);
-        return await interaction.showModal(modal);
-      } catch (err) {
-        console.error('/char paste showModal failed:', err);
-        return interaction.reply({ content: `❌ Couldn't open the paste popup: ${err.message}. Please report this.`, ephemeral: true });
-      }
-    }
-
-    // /char pasteupdate — same as paste but for refreshing an existing character
-    // (preserves hero points, XP, HP, notes, overlay).
-    else if (sub === 'pasteupdate') {
-      try {
-        const modal = new ModalBuilder()
-          .setCustomId('char_pasteupdate_modal')
-          .setTitle('Paste Updated JSON');
-        const parts = [];
-        for (let i = 1; i <= 5; i++) {
-          // Discord modal labels cap at 45 chars.
-          const input = new TextInputBuilder()
-            .setCustomId(`json_part_${i}`)
-            .setLabel(i === 1 ? 'Paste updated JSON here' : `Continuation part ${i}`)
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(i === 1)
-            .setMaxLength(4000)
-            .setPlaceholder(i === 1 ? '{"success":true,"build":{...}}' : `Only fill if part ${i - 1} was full`);
-          parts.push(new ActionRowBuilder().addComponents(input));
-        }
-        modal.addComponents(...parts);
-        return await interaction.showModal(modal);
-      } catch (err) {
-        console.error('/char pasteupdate showModal failed:', err);
-        return interaction.reply({ content: `❌ Couldn't open the paste popup: ${err.message}. Please report this.`, ephemeral: true });
-      }
-    }
-
     // /char pastemsg — import by scanning recent channel messages for JSON
     // Flow: user posts a Discord message with their JSON (as code block,
     // plain text, or `.txt` attachment), then runs `/char pastemsg`. Bot
     // reads recent messages and picks the first one with parseable JSON.
-    // Works better than the modal for mobile users because:
+    // Works better than a modal for mobile users because:
     //   - regular messages handle up to 2000 chars natively
     //   - `.txt` attachments allow any size via Discord's 10MB file cap
     //   - mobile Discord's paste-into-message UX is smooth
@@ -5074,20 +5421,71 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     // /char howto — platform-specific guidance for getting JSON into the bot
+    // /char pdf — import from a Pathbuilder statblock PDF
+    // Flow: user exports Pathbuilder character as statblock PDF (Menu →
+    // Export → View Statblock → Print/Save as PDF), uploads it here.
+    // Uses pdf-parse to extract text, then parsePathbuilderStatblockPDF
+    // to turn it into a character object. Best-effort — fills in what the
+    // PDF contains but leaves JSON-only fields empty. Marked _source:'pdf'.
+    //
+    // Why this instead of printable character sheet PDF: the printable sheet
+    // has form labels and values interleaved in random order that's basically
+    // unparseable. The statblock PDF uses the consistent monster-statblock
+    // format that we already handle for /monsteradd.
+    else if (sub === 'pdf') {
+      await interaction.deferReply();
+      const attachment = interaction.options.getAttachment('file');
+      if (!attachment.name.toLowerCase().endsWith('.pdf')) {
+        return interaction.editReply('❌ Please attach a `.pdf` file. For non-PDF imports, use `/char add` (JSON/TXT) or `/char pastemsg` (paste as message).');
+      }
+      try {
+        const response = await fetch(attachment.url);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        let pdfText;
+        try {
+          const { PDFParse } = require('pdf-parse');
+          const p = new PDFParse({ data: buffer });
+          const r = await p.getText();
+          pdfText = r.text ?? '';
+        } catch (err) {
+          console.error('PDF text extraction failed:', err);
+          return interaction.editReply('❌ Could not read that PDF. It may be encrypted, image-only (scanned), or corrupted. Try re-exporting from Pathbuilder.');
+        }
+
+        const parsed = parsePathbuilderStatblockPDF(pdfText);
+        if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
+
+        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
+        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+
+        // Warn the user about PDF-import limitations — it's a partial character
+        const warnLines = parsed.warnings.length
+          ? `\n*Parser warnings: ${parsed.warnings.join('; ')}*`
+          : '';
+        await interaction.editReply(
+          `✅ **${saved.name}** (Level ${saved.level}) imported from PDF!${warnLines}\n\n` +
+          `⚠️ **PDF imports are partial.** Skill proficiency ranks, class features by level, ` +
+          `and some details the statblock doesn't print aren't captured. Features that depend on ` +
+          `the full Pathbuilder JSON (leveling up, sync) won't work as well as with \`/char add\` or \`/char pastemsg\`.\n\n` +
+          `Use \`/sheet\` to view them. For full data, re-import later via JSON.`
+        );
+      } catch (err) {
+        console.error('/char pdf error:', err);
+        await interaction.editReply('❌ Something went wrong processing that PDF. Check the Railway logs and report the error.');
+      }
+    }
+
     else if (sub === 'howto') {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setTitle('📥 How to import your character')
-        .setDescription('Pick whichever method matches your device and character size.')
+        .setDescription('Pick whichever method matches your device.')
         .addFields(
           {
             name: '📱 Mobile — easiest: `/char pastemsg`',
             value: '1. Pathbuilder app → Menu (≡) → **Export JSON** → **Copy JSON**\n2. Paste as a regular Discord chat message here\n3. Run `/char pastemsg` — bot reads your last message\n4. Delete the pasted message after (optional)\n\n**For big characters:** save the JSON as a `.txt` file first (Notes app → Share → Save to Files → rename to `.txt`), attach it to a Discord message, then run `/char pastemsg`.',
-            inline: false,
-          },
-          {
-            name: '📝 `/char paste` — popup modal (small characters only)',
-            value: 'Opens a popup with 5 text fields. Works for characters under ~4000 chars. Bigger characters need to be chunked across parts, which is finicky — prefer `/char pastemsg` instead.',
             inline: false,
           },
           {
@@ -5096,8 +5494,13 @@ client.on('interactionCreate', async (interaction) => {
             inline: false,
           },
           {
+            name: '📄 PDF fallback — `/char pdf` (partial import)',
+            value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks, detailed class features, and some metadata. Use this when you don\'t have access to the JSON. Does **not** work with the printable character sheet PDF, only the statblock format.',
+            inline: false,
+          },
+          {
             name: '🔄 Updating an existing character',
-            value: 'After leveling up, refresh with:\n• `/char pastemsg` → `/char pastemsgupdate` (same flow, preserves HP/XP/notes)\n• `/char update` → re-upload file (keeps state)\n• `/char pasteupdate` → popup modal',
+            value: 'After leveling up, refresh with:\n• `/char pastemsgupdate` — paste updated JSON as a chat message\n• `/char update` — re-upload the updated file\n\nBoth preserve hero points, XP, current HP, and notes.',
             inline: false,
           },
         )
