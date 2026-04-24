@@ -4,131 +4,17 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-// ── Persistent-data directory ────────────────────────────────────────────────
-// On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so
-// user state (characters, bags, monster art/edits, notes, homebrew DB adds)
-// survives redeploys. When DATA_DIR is unset (local dev), falls back to the
-// project root so behavior matches the old layout.
-const DATA_DIR = process.env.DATA_DIR || __dirname;
-try {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-} catch (_) { /* ignore — e.g. volume not writable yet */ }
-
-// Returns an absolute path inside DATA_DIR for a given filename. For files
-// that ship with the repo as base content (bestiary, spells, items), we
-// seed the data-dir copy on first boot by copying from the repo.
-//
-// FORCE-RESEED MECHANISM:
-// The seeded content (bestiary/spells/items) normally stays forever on the
-// volume — a content update you push to git WON'T reach the running bot,
-// because the seeder only copies when the volume file is absent. To push
-// fresh content from the repo to the volume, set one of these env vars
-// before redeploying, then unset after the first successful boot:
-//
-//   FORCE_RESEED=all             → overwrite all seed-from-repo files
-//   FORCE_RESEED_SPELLS=1        → overwrite just spells.json
-//   FORCE_RESEED_BESTIARY=1      → overwrite just bestiary.json
-//   FORCE_RESEED_ITEMS=1         → overwrite just items.json
-//
-// Homebrew additions (flagged _homebrew: true) are preserved across reseeds:
-// the seeder splices them back into the repo copy before writing to the volume.
-const FORCE_RESEED_KEYS = {
-  'spells.json': 'FORCE_RESEED_SPELLS',
-  'bestiary.json': 'FORCE_RESEED_BESTIARY',
-  'items.json': 'FORCE_RESEED_ITEMS',
-};
-function shouldForceReseed(filename) {
-  if (process.env.FORCE_RESEED === 'all' || process.env.FORCE_RESEED === '1') return true;
-  const key = FORCE_RESEED_KEYS[filename];
-  return key && (process.env[key] === '1' || process.env[key] === 'true');
-}
-
-// Splice homebrew entries from the volume copy back into the repo copy
-// before overwriting. Different file shapes need different logic.
-function preserveHomebrewDuringReseed(filename, volumeCopy, repoCopy) {
-  try {
-    if (filename === 'spells.json') {
-      // Flat array; homebrew entries have _homebrew: true
-      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
-      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
-      if (!Array.isArray(old) || !Array.isArray(fresh)) return null;
-      const homebrew = old.filter(s => s?._homebrew);
-      if (homebrew.length === 0) return null;
-      // Drop any repo entry that collides with a homebrew name, then append homebrew
-      const homebrewNames = new Set(homebrew.map(s => String(s.name).toLowerCase()));
-      const merged = fresh.filter(s => !homebrewNames.has(String(s.name).toLowerCase())).concat(homebrew);
-      return JSON.stringify(merged, null, 2);
-    }
-    if (filename === 'bestiary.json') {
-      // { metadata, creatures: { slug: {...} } }; homebrew have _homebrew: true
-      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
-      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
-      const oldCreatures = old.creatures ?? old;
-      const freshCreatures = fresh.creatures ?? fresh;
-      const homebrewEntries = {};
-      for (const [slug, entry] of Object.entries(oldCreatures)) {
-        if (entry?._homebrew) homebrewEntries[slug] = entry;
-      }
-      if (Object.keys(homebrewEntries).length === 0) return null;
-      const merged = { ...freshCreatures, ...homebrewEntries };
-      const payload = fresh.metadata ? { metadata: fresh.metadata, creatures: merged } : { creatures: merged };
-      return JSON.stringify(payload, null, 2);
-    }
-    if (filename === 'items.json') {
-      // { meta, items: { slug: {...} } }; homebrew have _homebrew: true
-      const old = JSON.parse(fs.readFileSync(volumeCopy, 'utf8'));
-      const fresh = JSON.parse(fs.readFileSync(repoCopy, 'utf8'));
-      const oldItems = old.items ?? old;
-      const freshItems = fresh.items ?? fresh;
-      const homebrewEntries = {};
-      for (const [slug, entry] of Object.entries(oldItems)) {
-        if (entry?._homebrew) homebrewEntries[slug] = entry;
-      }
-      if (Object.keys(homebrewEntries).length === 0) return null;
-      const merged = { ...freshItems, ...homebrewEntries };
-      const payload = fresh.meta ? { meta: fresh.meta, items: merged } : { items: merged };
-      return JSON.stringify(payload, null, 2);
-    }
-  } catch (err) {
-    console.error(`Homebrew-preserve step failed for ${filename}:`, err.message);
-  }
-  return null;
-}
-
-function dataPath(filename, { seedFromRepo = false } = {}) {
-  const target = path.join(DATA_DIR, filename);
-  const repoCopy = path.join(__dirname, filename);
-
-  if (seedFromRepo) {
-    const volumeExists = fs.existsSync(target);
-    const forceReseed = volumeExists && shouldForceReseed(filename);
-
-    if (!volumeExists && fs.existsSync(repoCopy)) {
-      // First-time seed: just copy.
-      try {
-        fs.copyFileSync(repoCopy, target);
-        console.log(`Seeded ${filename} from repo into DATA_DIR.`);
-      } catch (err) {
-        console.error(`Failed to seed ${filename} into DATA_DIR:`, err.message);
-      }
-    } else if (forceReseed && fs.existsSync(repoCopy)) {
-      // Force reseed: preserve homebrew, overwrite with repo content.
-      try {
-        const merged = preserveHomebrewDuringReseed(filename, target, repoCopy);
-        if (merged !== null) {
-          fs.writeFileSync(target, merged, 'utf8');
-          console.log(`🔄 Force-reseeded ${filename} from repo (homebrew entries preserved).`);
-        } else {
-          fs.copyFileSync(repoCopy, target);
-          console.log(`🔄 Force-reseeded ${filename} from repo.`);
-        }
-      } catch (err) {
-        console.error(`Failed to force-reseed ${filename}:`, err.message);
-      }
-    }
-  }
-  return target;
-}
+// ── Persistent-data directory + JSON loader ─────────────────────────────────
+// Moved to utils/storage.js. See that file for the full force-reseed and
+// homebrew-preservation logic. On Railway, set DATA_DIR env var to your mounted
+// volume path (e.g. /app/data) so user state survives redeploys.
+const {
+  DATA_DIR,
+  dataPath,
+  atomicWriteJson,
+  loadJson,
+  saveJson,
+} = require('./utils/storage');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
@@ -197,70 +83,64 @@ process.on('uncaughtException', error => {
   console.error('Uncaught exception:', error);
 });
 
-let spellDatabase = [];
-try {
-  spellDatabase = JSON.parse(fs.readFileSync(dataPath('spells.json', { seedFromRepo: true }), 'utf8'));
-  console.log(`Loaded ${spellDatabase.length} spells from database.`);
-} catch (err) {
-  console.error('Could not load spells.json:', err.message);
-}
+let spellDatabase = loadJson('spells.json', {
+  default: [],
+  seedFromRepo: true,
+  label: 'spells from database',
+  count: arr => arr.length,
+});
 
-let ancestryDatabase = {};
-try {
-  ancestryDatabase = JSON.parse(fs.readFileSync('ancestries.json', 'utf8'));
-  console.log(`Loaded ${Object.keys(ancestryDatabase).length} ancestries from database.`);
-} catch (err) {
-  console.error('Could not load ancestries.json:', err.message);
-}
+let ancestryDatabase = loadJson('ancestries.json', {
+  default: {},
+  fromRepo: true,
+  label: 'ancestries from database',
+  count: obj => Object.keys(obj).length,
+});
 
-let archetypeDatabase = {};
-try {
-  archetypeDatabase = JSON.parse(fs.readFileSync('archetypes.json', 'utf8'));
-  console.log(`Loaded ${Object.keys(archetypeDatabase).length} archetypes from database.`);
-} catch (err) {
-  console.error('Could not load archetypes.json:', err.message);
-}
+let archetypeDatabase = loadJson('archetypes.json', {
+  default: {},
+  fromRepo: true,
+  label: 'archetypes from database',
+  count: obj => Object.keys(obj).length,
+});
 
-let backgroundDatabase = {};
-try {
-  const backgroundRaw = JSON.parse(fs.readFileSync('background.json', 'utf8'));
-  // File shape: { _meta: {...}, backgrounds: { key: {...} } }
-  backgroundDatabase = backgroundRaw.backgrounds ?? backgroundRaw;
-  console.log(`Loaded ${Object.keys(backgroundDatabase).length} backgrounds from database.`);
-} catch (err) {
-  console.error('Could not load background.json:', err.message);
-}
+// File shape: { _meta: {...}, backgrounds: { key: {...} } }
+let backgroundDatabase = loadJson('background.json', {
+  default: {},
+  fromRepo: true,
+  label: 'backgrounds from database',
+  transform: raw => raw.backgrounds ?? raw,
+  count: obj => Object.keys(obj).length,
+});
 
-let featDatabase = [];
-try {
-  const featRaw = JSON.parse(fs.readFileSync('feats.json', 'utf8'));
-  // File shape: { metadata: {...}, feats: [ {...} ] }
-  const rawFeats = Array.isArray(featRaw) ? featRaw : (featRaw.feats ?? []);
-  // Filter out parser garbage (feats with 1-character names like "U")
-  featDatabase = rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
-  console.log(`Loaded ${featDatabase.length} feats from database.`);
-} catch (err) {
-  console.error('Could not load feats.json:', err.message);
-}
+// File shape: { metadata: {...}, feats: [ {...} ] }
+// Filters out parser garbage (feats with 1-character names like "U")
+let featDatabase = loadJson('feats.json', {
+  default: [],
+  fromRepo: true,
+  label: 'feats from database',
+  transform: raw => {
+    const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
+    return rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+  },
+  count: arr => arr.length,
+});
 
-let rulesDatabase = {};
-try {
-  rulesDatabase = JSON.parse(fs.readFileSync('rules.json', 'utf8'));
-  const total = Object.values(rulesDatabase).reduce((sum, cat) => sum + Object.keys(cat).length, 0);
-  console.log(`Loaded ${total} rules entries from database.`);
-} catch (err) {
-  console.error('Could not load rules.json:', err.message);
-}
+let rulesDatabase = loadJson('rules.json', {
+  default: {},
+  fromRepo: true,
+  label: 'rules entries from database',
+  count: obj => Object.values(obj).reduce((sum, cat) => sum + Object.keys(cat).length, 0),
+});
 
-let bestiaryDatabase = {};
-try {
-  const bestiaryRaw = JSON.parse(fs.readFileSync(dataPath('bestiary.json', { seedFromRepo: true }), 'utf8'));
-  // File shape: { metadata: {...}, creatures: { key: {...} } }
-  bestiaryDatabase = bestiaryRaw.creatures ?? bestiaryRaw;
-  console.log(`Loaded ${Object.keys(bestiaryDatabase).length} creatures from bestiary.`);
-} catch (err) {
-  console.error('Could not load bestiary.json:', err.message);
-}
+// File shape: { metadata: {...}, creatures: { key: {...} } }
+let bestiaryDatabase = loadJson('bestiary.json', {
+  default: {},
+  seedFromRepo: true,
+  label: 'creatures from bestiary',
+  transform: raw => raw.creatures ?? raw,
+  count: obj => Object.keys(obj).length,
+});
 
 // ── Bestiary mutation helpers ─────────────────────────────────────────────────
 // /monsteradd writes to the global bestiary.json. Keep this locked to the bot
@@ -362,17 +242,18 @@ function removeSpellFromDatabase(nameOrSlug) {
   return { removed: true, name: removed.name };
 }
 
-let itemDatabase = [];
-try {
-  const itemRaw = JSON.parse(fs.readFileSync(dataPath('items.json', { seedFromRepo: true }), 'utf8'));
-  // File shape: { meta: {...}, items: { slug: {...} } }
-  const itemsObj = itemRaw.items ?? itemRaw;
-  // Flatten to array and filter out any malformed entries
-  itemDatabase = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
-  console.log(`Loaded ${itemDatabase.length} items from database.`);
-} catch (err) {
-  console.error('Could not load items.json:', err.message);
-}
+// File shape: { meta: {...}, items: { slug: {...} } }
+// Flattens to array and filters out malformed entries.
+let itemDatabase = loadJson('items.json', {
+  default: [],
+  seedFromRepo: true,
+  label: 'items from database',
+  transform: raw => {
+    const itemsObj = raw.items ?? raw;
+    return Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+  },
+  count: arr => arr.length,
+});
 
 // ── Item database mutation helpers ────────────────────────────────────────────
 // itemDatabase is a flat array in memory, but items.json on disk is
@@ -430,57 +311,54 @@ function removeItemFromDatabase(nameOrSlug) {
   return { removed: true, name: removed.name };
 }
 
-let deityDatabase = [];
-try {
-  const deityRaw = JSON.parse(fs.readFileSync('deities.json', 'utf8'));
-  // File shape: { metadata: {...}, deities: [ {...} ] }
-  const rawDeities = Array.isArray(deityRaw) ? deityRaw : (deityRaw.deities ?? []);
-  deityDatabase = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-  console.log(`Loaded ${deityDatabase.length} deities from database.`);
-} catch (err) {
-  console.error('Could not load deities.json:', err.message);
-}
+// File shape: { metadata: {...}, deities: [ {...} ] }
+let deityDatabase = loadJson('deities.json', {
+  default: [],
+  fromRepo: true,
+  label: 'deities from database',
+  transform: raw => {
+    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
+    return rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+  },
+  count: arr => arr.length,
+});
 
-let skillDatabase = {};
-try {
-  const skillRaw = JSON.parse(fs.readFileSync('skills.json', 'utf8'));
-  // File shape: { _meta: {...}, skills: { key: {...} } }
-  skillDatabase = skillRaw.skills ?? skillRaw;
-  console.log(`Loaded ${Object.keys(skillDatabase).length} skills from database.`);
-} catch (err) {
-  console.error('Could not load skills.json:', err.message);
-}
+// File shape: { _meta: {...}, skills: { key: {...} } }
+let skillDatabase = loadJson('skills.json', {
+  default: {},
+  fromRepo: true,
+  label: 'skills from database',
+  transform: raw => raw.skills ?? raw,
+  count: obj => Object.keys(obj).length,
+});
 
-let classDatabase = {};
-try {
-  const classRaw = JSON.parse(fs.readFileSync('classes.json', 'utf8'));
-  classDatabase = classRaw.classes ?? classRaw;
-  console.log(`Loaded ${Object.keys(classDatabase).length} classes from database.`);
-} catch (err) {
-  console.error('Could not load classes.json:', err.message);
-}
+let classDatabase = loadJson('classes.json', {
+  default: {},
+  fromRepo: true,
+  label: 'classes from database',
+  transform: raw => raw.classes ?? raw,
+  count: obj => Object.keys(obj).length,
+});
 
-let companionDatabase = [];
-try {
-  const companionRaw = JSON.parse(fs.readFileSync('companions.json', 'utf8'));
-  // File shape: either { _meta, companions: { slug: {...} } } (keyed object),
-  // { _meta, companions: [ {...} ] } (array), or the raw array/object itself.
-  // Normalize to an array in all cases.
-  const inner = companionRaw.companions ?? companionRaw;
-  if (Array.isArray(inner)) {
-    companionDatabase = inner;
-  } else if (inner && typeof inner === 'object') {
-    // Keyed object: use the slug as a fallback id, keep the object's own name.
-    companionDatabase = Object.entries(inner).map(([slug, comp]) => ({
-      slug,
-      ...comp,
-    }));
-  }
-  companionDatabase = companionDatabase.filter(c => c && typeof c.name === 'string' && c.name.length > 0);
-  console.log(`Loaded ${companionDatabase.length} companions from database.`);
-} catch (err) {
-  console.error('Could not load companions.json:', err.message);
-}
+// File shape: either { _meta, companions: { slug: {...} } } (keyed object),
+// { _meta, companions: [ {...} ] } (array), or the raw array/object itself.
+// Normalized to an array in all cases.
+let companionDatabase = loadJson('companions.json', {
+  default: [],
+  fromRepo: true,
+  label: 'companions from database',
+  transform: raw => {
+    const inner = raw.companions ?? raw;
+    let arr = [];
+    if (Array.isArray(inner)) {
+      arr = inner;
+    } else if (inner && typeof inner === 'object') {
+      arr = Object.entries(inner).map(([slug, comp]) => ({ slug, ...comp }));
+    }
+    return arr.filter(c => c && typeof c.name === 'string' && c.name.length > 0);
+  },
+  count: arr => arr.length,
+});
 
 function loadCharacters() {
   try { return JSON.parse(fs.readFileSync(dataPath('characters.json'), 'utf8')); }
