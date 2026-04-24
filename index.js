@@ -946,10 +946,20 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
   const prev = characters[userId][key];
   const existed = !!prev;
 
-  // Always preserve art and senses (user-set flavor that shouldn't be wiped).
+  // Always preserve art, senses, and user edits (background/deity/skill overrides).
+  // These are user-set flavor and manual corrections that shouldn't be wiped on
+  // re-import even when not using /char update.
   const existingArt    = prev?.art ?? null;
   const existingSenses = prev?.senses ?? null;
-  const baseEntry = { name: char.name, data: char, art: existingArt, senses: existingSenses, saved: new Date().toISOString() };
+  const existingEdits  = prev?.edits ?? null;
+  const baseEntry = {
+    name: char.name,
+    data: char,
+    art: existingArt,
+    senses: existingSenses,
+    edits: existingEdits,
+    saved: new Date().toISOString(),
+  };
 
   if (preserveOverlay && prev) {
     // /char update / /char sync path: keep all bot-managed state.
@@ -959,6 +969,7 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
       xpLog: prev.xpLog,
       hp: prev.hp,
       overlay: prev.overlay,
+      languages: prev.languages, // languages overlay, separate from `edits.languages`
     };
     characters[userId][key] = { ...baseEntry, ...preserved };
     // Clamp current HP if max dropped.
@@ -4462,6 +4473,8 @@ const HELP_CATEGORIES = {
       { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
       { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
       { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
+      { name: '/char edit', summary: 'Edit background, deity, languages, senses on your active character (opens a popup).', options: '', example: '/char edit' },
+      { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total. Useful for PDF imports.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
@@ -4906,6 +4919,50 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (!interaction.isChatInputCommand()) {
+    // ─── Modal submissions ───────────────────────────────────────────
+    // Only /char edit uses modals now (the old /char paste modal was removed).
+    // customId format: "char_edit_modal:<charKey>" so we know which character
+    // the user was editing at the time the modal opened.
+    if (interaction.isModalSubmit?.()) {
+      try {
+        if (interaction.customId.startsWith('char_edit_modal:')) {
+          await interaction.deferReply({ ephemeral: true });
+          const charKey = interaction.customId.slice('char_edit_modal:'.length);
+
+          const characters = loadCharacters();
+          const userChars = characters[interaction.user.id] ?? {};
+          const charEntry = userChars[charKey];
+          if (!charEntry) {
+            return interaction.editReply('❌ Character not found. Did you delete them while the popup was open?');
+          }
+
+          const background = interaction.fields.getTextInputValue('background').trim();
+          const deity      = interaction.fields.getTextInputValue('deity').trim();
+          const langRaw    = interaction.fields.getTextInputValue('languages').trim();
+          const sensesRaw  = interaction.fields.getTextInputValue('senses').trim();
+
+          if (!charEntry.edits) charEntry.edits = {};
+          // Only set overrides when the user actually typed something; empty
+          // strings clear the override so the original JSON value shows again.
+          if (background) charEntry.edits.background = background;
+          else delete charEntry.edits.background;
+          if (deity) charEntry.edits.deity = deity;
+          else delete charEntry.edits.deity;
+          if (langRaw) charEntry.edits.languages = langRaw.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+          else delete charEntry.edits.languages;
+          if (sensesRaw) charEntry.edits.senses = sensesRaw.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+          else delete charEntry.edits.senses;
+
+          saveCharacters(characters);
+          return interaction.editReply(`✅ Updated **${charEntry.name}**. Use \`/sheet\` to see the changes.`);
+        }
+      } catch (err) {
+        console.error('Modal submit error:', err);
+        try { await interaction.editReply('❌ Something went wrong saving your edits. Try again.'); } catch {}
+      }
+      return;
+    }
+
     // ─── Autocomplete ────────────────────────────────────────────────
     if (interaction.isAutocomplete()) {
       try {
@@ -5272,6 +5329,15 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           }
         }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'skill' && focused.name === 'name') {
+          // Autocomplete skill name from PF2e's standard 16 skills
+          const pfSkills = [
+            'Acrobatics','Arcana','Athletics','Crafting','Deception','Diplomacy',
+            'Intimidation','Medicine','Nature','Occultism','Performance','Religion',
+            'Society','Stealth','Survival','Thievery',
+          ];
+          suggestions = pick(pfSkills);
+        }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
             const characters = loadCharacters();
@@ -5477,6 +5543,147 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 
+    // /char edit — open a modal with free-text fields users may want to edit:
+    // Background, Deity, Languages (comma-separated), Senses (comma-separated).
+    // Pre-fills with current values so users can see and correct.
+    // Edits are stored in charEntry.edits and preserved across JSON re-imports.
+    else if (sub === 'edit') {
+      try {
+        // Find the user's active character (or first if none active)
+        const characters = loadCharacters();
+        const userChars = characters[interaction.user.id] ?? {};
+        const keys = Object.keys(userChars).filter(k => !k.startsWith('_'));
+        if (keys.length === 0) {
+          return interaction.reply({ content: '❌ You have no characters yet. Import one with `/char pastemsg`, `/char add`, or `/char pdf` first.', ephemeral: true });
+        }
+        const activeKey = userChars._active && userChars[userChars._active] ? userChars._active : keys[0];
+        const charEntry = userChars[activeKey];
+        const c = charEntry.data ?? {};
+        const edits = charEntry.edits ?? {};
+
+        // Pre-fill values: overlay first, then original data
+        const prefillBackground = edits.background ?? c.background ?? '';
+        const prefillDeity      = edits.deity ?? c.deity ?? '';
+        const prefillLanguages  = (edits.languages && edits.languages.length)
+          ? edits.languages.join(', ')
+          : (charEntry.languages ?? c.languages ?? []).join(', ');
+        const prefillSenses     = (edits.senses && edits.senses.length)
+          ? edits.senses.join(', ')
+          : (charEntry.senses ?? []).join(', ');
+
+        const modal = new ModalBuilder()
+          .setCustomId(`char_edit_modal:${activeKey}`)
+          .setTitle(`Edit ${c.name ?? 'Character'}`.slice(0, 45));
+
+        // All Discord modal labels must be ≤ 45 chars. These are fine.
+        const bgInput = new TextInputBuilder()
+          .setCustomId('background')
+          .setLabel('Background')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(false)
+          .setMaxLength(100)
+          .setValue(prefillBackground.slice(0, 100));
+        const deityInput = new TextInputBuilder()
+          .setCustomId('deity')
+          .setLabel('Deity')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(false)
+          .setMaxLength(100)
+          .setValue(prefillDeity.slice(0, 100));
+        const langInput = new TextInputBuilder()
+          .setCustomId('languages')
+          .setLabel('Languages (comma-separated)')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(false)
+          .setMaxLength(500)
+          .setValue(prefillLanguages.slice(0, 500));
+        const sensesInput = new TextInputBuilder()
+          .setCustomId('senses')
+          .setLabel('Senses (comma-separated)')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(false)
+          .setMaxLength(500)
+          .setValue(prefillSenses.slice(0, 500));
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(bgInput),
+          new ActionRowBuilder().addComponents(deityInput),
+          new ActionRowBuilder().addComponents(langInput),
+          new ActionRowBuilder().addComponents(sensesInput),
+        );
+        return await interaction.showModal(modal);
+      } catch (err) {
+        console.error('/char edit showModal failed:', err);
+        return interaction.reply({ content: `❌ Couldn't open the edit popup: ${err.message}`, ephemeral: true });
+      }
+    }
+
+    // /char skill — set proficiency rank or flat total for a specific skill.
+    // Kept separate from /char edit because:
+    //   - There are too many skills (16+ in PF2e) to fit in a modal
+    //   - Skills need structured input (rank dropdown or integer), not free text
+    //   - Autocomplete on skill name makes discovery easy
+    // If `rank` is provided, we compute total = ability_mod + (rank + level).
+    // If `total` is provided, we store it as a flat override that wins over rank.
+    // Use 'untrained' rank to clear an existing override.
+    else if (sub === 'skill') {
+      const skillName = interaction.options.getString('name');
+      const rankStr = interaction.options.getString('rank'); // optional
+      const total = interaction.options.getInteger('total'); // optional
+
+      const rankMap = { untrained: 0, trained: 2, expert: 4, master: 6, legendary: 8 };
+      const skillKeyLower = skillName.toLowerCase();
+      const validSkills = new Set([
+        'acrobatics','arcana','athletics','crafting','deception','diplomacy',
+        'intimidation','medicine','nature','occultism','performance','religion',
+        'society','stealth','survival','thievery',
+      ]);
+      if (!validSkills.has(skillKeyLower)) {
+        return interaction.reply({ content: `❌ Unknown skill "${skillName}". Valid: ${[...validSkills].join(', ')}.`, ephemeral: true });
+      }
+      if (rankStr === null && total === null) {
+        return interaction.reply({ content: '❌ Provide either `rank` (trained/expert/master/legendary/untrained) or `total` (flat bonus), or both. If both, total wins.', ephemeral: true });
+      }
+      if (rankStr !== null && !(rankStr.toLowerCase() in rankMap)) {
+        return interaction.reply({ content: `❌ Invalid rank "${rankStr}". Use: untrained, trained, expert, master, or legendary.`, ephemeral: true });
+      }
+
+      // Find the user's active character
+      const characters = loadCharacters();
+      const userChars = characters[interaction.user.id] ?? {};
+      const keys = Object.keys(userChars).filter(k => !k.startsWith('_'));
+      if (keys.length === 0) {
+        return interaction.reply({ content: '❌ You have no characters. Import one first.', ephemeral: true });
+      }
+      const activeKey = userChars._active && userChars[userChars._active] ? userChars._active : keys[0];
+      const charEntry = userChars[activeKey];
+
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.skillOverrides) charEntry.edits.skillOverrides = {};
+
+      const override = {};
+      if (rankStr !== null) override.rank = rankMap[rankStr.toLowerCase()];
+      if (total !== null)   override.total = total;
+
+      // If user sets untrained AND no total, they probably want to clear the override
+      if (rankStr?.toLowerCase() === 'untrained' && total === null) {
+        delete charEntry.edits.skillOverrides[skillKeyLower];
+      } else {
+        charEntry.edits.skillOverrides[skillKeyLower] = override;
+      }
+
+      saveCharacters(characters);
+
+      // Build confirmation message
+      const parts = [];
+      if (rankStr !== null) parts.push(`rank **${rankStr.toLowerCase()}**`);
+      if (total !== null)   parts.push(`flat total **${total >= 0 ? '+' : ''}${total}**`);
+      const msg = (rankStr?.toLowerCase() === 'untrained' && total === null)
+        ? `✅ Cleared override for **${skillName}** on **${charEntry.name}**.`
+        : `✅ Set **${skillName}** on **${charEntry.name}** to ${parts.join(' and ')}. Use \`/sheet\` to see it.`;
+      return interaction.reply({ content: msg, ephemeral: true });
+    }
+
     else if (sub === 'howto') {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
@@ -5495,12 +5702,17 @@ client.on('interactionCreate', async (interaction) => {
           },
           {
             name: '📄 PDF fallback — `/char pdf` (partial import)',
-            value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks, detailed class features, and some metadata. Use this when you don\'t have access to the JSON. Does **not** work with the printable character sheet PDF, only the statblock format.',
+            value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks and some metadata. Use `/char edit` to set background/deity/languages/senses and `/char skill` to set proficiency ranks on the skills that matter. Does **not** work with the printable character sheet PDF, only the statblock format.',
+            inline: false,
+          },
+          {
+            name: '✏️ Fixing or customising details — `/char edit` and `/char skill`',
+            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a proficiency rank, or use `total:9` for a flat override.\nEdits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
             inline: false,
           },
           {
             name: '🔄 Updating an existing character',
-            value: 'After leveling up, refresh with:\n• `/char pastemsgupdate` — paste updated JSON as a chat message\n• `/char update` — re-upload the updated file\n\nBoth preserve hero points, XP, current HP, and notes.',
+            value: 'After leveling up, refresh with:\n• `/char pastemsgupdate` — paste updated JSON as a chat message\n• `/char update` — re-upload the updated file\n\nBoth preserve hero points, XP, current HP, notes, and any `/char edit` or `/char skill` overrides.',
             inline: false,
           },
         )
@@ -5709,13 +5921,31 @@ client.on('interactionCreate', async (interaction) => {
         society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
       };
       const profIcons = { 2: '◑', 4: '●', 6: '★', 8: '⭐' };
-      const trainedSkills = Object.entries(prof)
-        .filter(([skill, profNum]) => skillMap[skill] && profNum > 0)
-        .map(([skill, profNum]) => {
-          const abilMod = Math.floor(((ab[skillMap[skill]] ?? 10) - 10) / 2);
-          const total = abilMod + calcProfNum(profNum, lvl);
-          return `${profIcons[profNum] || '◑'} ${skill.charAt(0).toUpperCase() + skill.slice(1)} ${fmt(total)}`;
-        });
+      // Skill overrides layer on top of c.proficiencies. A user can set:
+      //   { rank: 2|4|6|8 } — proficiency rank (trained/expert/master/legendary)
+      //   { total: N }      — flat bonus override (ignores rank math)
+      // If both present, total wins.
+      const skillOverrides = (charEntry.edits?.skillOverrides) ?? {};
+      const trainedSkills = [];
+      // Collect all skills the character might have: base keys plus override keys
+      const skillKeys = new Set([
+        ...Object.keys(skillMap),
+        ...Object.keys(skillOverrides).filter(k => skillMap[k.toLowerCase()]).map(k => k.toLowerCase()),
+      ]);
+      for (const skill of skillKeys) {
+        const override = skillOverrides[skill] ?? null;
+        const jsonRank = prof[skill] ?? 0;
+        const effectiveRank = override?.rank ?? jsonRank;
+        const abilMod = Math.floor(((ab[skillMap[skill]] ?? 10) - 10) / 2);
+        const computedTotal = abilMod + calcProfNum(effectiveRank, lvl);
+        const total = (typeof override?.total === 'number') ? override.total : computedTotal;
+        // Only include if trained (rank > 0) or explicitly overridden
+        if (effectiveRank > 0 || override) {
+          const icon = profIcons[effectiveRank] || (override ? '◔' : '◑'); // ◔ for override-only
+          trainedSkills.push(`${icon} ${skill.charAt(0).toUpperCase() + skill.slice(1)} ${fmt(total)}`);
+        }
+      }
+      // Lore skills (unchanged — lore overrides not supported yet)
       const loreSkills = (c.lores ?? []).map(([loreName, profNum]) => {
         const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
         const total = intMod + calcProfNum(profNum, lvl);
@@ -5735,8 +5965,15 @@ client.on('interactionCreate', async (interaction) => {
           attackLines += `**${w.display ?? w.name}** ${fmt(atkBonus)} to hit · ${w.die ?? '1d4'}${dmgBonus} ${dmgType}\n`;
         });
       }
-      const languages = charEntry.languages ?? c.languages ?? [];
-      const senses = charEntry.senses ?? [];
+      // Edits overlay: user-set overrides for fields that Pathbuilder provides
+      // but the user might want to customize (background, deity) or that PDF
+      // imports might not capture (skill ranks). charEntry.edits is populated
+      // by /char edit and /char skill.
+      const edits = charEntry.edits ?? {};
+      const languages = (edits.languages && edits.languages.length) ? edits.languages : (charEntry.languages ?? c.languages ?? []);
+      const senses    = (edits.senses && edits.senses.length)       ? edits.senses    : (charEntry.senses ?? []);
+      const background = edits.background ?? c.background ?? 'Unknown';
+      const deity      = edits.deity ?? c.deity ?? 'None';
       const ancestryDisplay = `${c.ancestry ?? ''} ${c.heritage ?? ''}`.trim();
       const classDisplay = c.class ?? 'Unknown';
       const dualClass = c.dualClass ? ` / ${c.dualClass}` : '';
@@ -5745,7 +5982,7 @@ client.on('interactionCreate', async (interaction) => {
         .setTitle(c.name)
         .setDescription(
           `*${ancestryDisplay} · ${classDisplay}${dualClass} · Level ${lvl}*\n` +
-          `**Background:** ${c.background ?? 'Unknown'} · **Deity:** ${c.deity ?? 'None'}\n` +
+          `**Background:** ${background} · **Deity:** ${deity}\n` +
           `**XP:** ${xpDisplay}`
         )
         .addFields(

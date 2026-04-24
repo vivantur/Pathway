@@ -42,6 +42,27 @@ const commands = [
         options: [{ name: 'file', description: 'Pathbuilder statblock PDF (Menu → Export → View Statblock → Save as PDF)', type: ApplicationCommandOptionType.Attachment, required: true }]
       },
       {
+        name: 'edit', description: 'Edit your character: background, deity, languages, senses (opens a popup)',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'skill', description: 'Set a skill\'s proficiency rank or flat total (for PDF imports or corrections)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'name', description: 'Skill name (e.g. Athletics, Arcana)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'rank', description: 'Proficiency rank (optional — use this or total)', type: ApplicationCommandOptionType.String, required: false,
+            choices: [
+              { name: 'Untrained (clears override)', value: 'untrained' },
+              { name: 'Trained', value: 'trained' },
+              { name: 'Expert', value: 'expert' },
+              { name: 'Master', value: 'master' },
+              { name: 'Legendary', value: 'legendary' },
+            ],
+          },
+          { name: 'total', description: 'Flat total bonus override (optional — wins over rank if both set)', type: ApplicationCommandOptionType.Integer, required: false },
+        ],
+      },
+      {
         name: 'howto', description: 'Show platform-specific instructions for getting your character into the bot',
         type: ApplicationCommandOptionType.Subcommand
       },
