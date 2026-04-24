@@ -4697,34 +4697,66 @@ const HELP_CATEGORIES = {
   character: {
     emoji: '🧙',
     label: 'Character',
-    blurb: 'Manage your saved characters, sheets, rolls, and daily resources.',
+    blurb: 'Import, display, and manage your saved characters. For editing fields, see the Edit category.',
     commands: [
       { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
       { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
+      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
+      { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
       { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
+      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
+      { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
+      { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
+      { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
+      { name: '/char active', summary: 'Set a default character so you don\'t have to type character: every time.', options: 'character (or action:clear)', example: '/char active character:Hylia' },
+      { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
+      { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
+      { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
+      { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset)', example: '/hp add value:-5' },
+      { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80' },
+      { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
+      { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:NPCs text:Met Lord Aldori' },
+      { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
+      { name: '/resource set', summary: 'Manually override a daily resource value.', options: 'resource, value, rank, caster, character', example: '/resource set resource:focus value:0' },
+      { name: '/rest', summary: 'Long rest: refill slots, focus points, hero points. Clears prepared list (with confirm).', options: 'character', example: '/rest' },
+      { name: '/refocus', summary: '10-minute refocus. Regain 1 focus point.', options: 'character', example: '/refocus' },
+      { name: '/bag', summary: 'Manage your inventory beyond what\'s in the Pathbuilder export.', options: '(subcommands)', example: '/bag add category:Consumables item:Elixir of Life' },
+      { name: '/gold', summary: 'Manage currency (pp/gp/sp/cp).', options: '(subcommands)', example: '/gold add gp:10' },
+    ],
+  },
+
+  charedit: {
+    emoji: '✏️',
+    label: 'Edit',
+    blurb: 'Edit individual character fields: skills, abilities, stats, weapons, items. Edits are preserved across re-imports.',
+    commands: [
       { name: '/char edit', summary: 'Edit background, deity, languages, senses on your active character (opens a popup).', options: '', example: '/char edit' },
-      { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total. Useful for PDF imports.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
-      { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
-      { name: '/char stat', summary: 'Override a combat stat: AC, HP max, saves, Perception, Speed. Use `action:clear` to revert.', options: 'field, value, action', example: '/char stat field:ac value:19' },
-      { name: '/char weapon', summary: 'Add, edit, or remove weapons/attacks. Fill gaps from PDF imports or track new gear.', options: 'action, name, attack, damage, type, traits', example: '/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S' },
       { name: '/char identity', summary: 'Popup to edit class, subclass, level, ancestry, heritage.', options: '', example: '/char identity' },
       { name: '/char misc', summary: 'Popup to edit gender, age, size, alignment, key ability.', options: '', example: '/char misc' },
       { name: '/char ability', summary: 'Override an ability score (STR/DEX/CON/INT/WIS/CHA). Use actual score (18 = +4 mod).', options: 'field, value, action', example: '/char ability field:str value:18' },
-      { name: '/char money', summary: 'Set coin counts (gp, sp, cp, pp). Use action:clear to revert.', options: 'gp, sp, cp, pp, action', example: '/char money gp:55 sp:10' },
-      { name: '/char item', summary: 'Add, edit, or remove non-weapon inventory items.', options: 'action, name, quantity', example: '/char item action:add name:"Rope" quantity:1' },
+      { name: '/char stat', summary: 'Override a combat stat: AC, HP max, saves, Perception, Speed. Use `action:clear` to revert.', options: 'field, value, action', example: '/char stat field:ac value:19' },
+      { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
+      { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
+      { name: '/char weapon', summary: 'Add, edit, or remove weapons/attacks. Fill gaps from PDF imports or track new gear.', options: 'action, name, attack, damage, type, traits', example: '/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S' },
       { name: '/char spellcasting', summary: 'Override spell DC, attack, tradition, or key ability on the primary spellcaster.', options: 'field, value, text_value, action', example: '/char spellcasting field:dc value:18' },
-      { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
-      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
-      { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
-      { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
-      { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
-      { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
-      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
-      { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
-      { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
+      { name: '/char item', summary: 'Add, edit, or remove non-weapon inventory items.', options: 'action, name, quantity', example: '/char item action:add name:"Rope" quantity:1' },
+      { name: '/char money', summary: 'Set coin counts (gp, sp, cp, pp). Use action:clear to revert.', options: 'gp, sp, cp, pp, action', example: '/char money gp:55 sp:10' },
+      { name: '/char feat', summary: 'Add or remove feats that didn\'t come through the import.', options: 'action, name, level, character', example: '/char feat action:add name:"Power Attack"' },
+    ],
+  },
+
+  roll: {
+    emoji: '🎲',
+    label: 'Rolls',
+    blurb: 'Dice rolling, skill checks, saves, and reusable snippets.',
+    commands: [
       { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
+      { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
+      { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
+      { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
+      { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
       { name: '/snippet create', summary: 'Create a personal roll snippet. Use `%1`, `%2` etc. for args (e.g. `+%1:2d6[sneak]`).', options: 'name, expand', example: '/snippet create name:sneaky expand:+%1:2d6[sneak]' },
       { name: '/snippet list', summary: 'List all your personal roll snippets.', options: '', example: '/snippet list' },
       { name: '/snippet view', summary: 'Show what a personal snippet expands to, and its arguments.', options: 'name', example: '/snippet view name:sneaky' },
@@ -4733,21 +4765,6 @@ const HELP_CATEGORIES = {
       { name: '/serversnippet list', summary: 'Show all server-wide snippets for this server.', options: '', example: '/serversnippet list' },
       { name: '/serversnippet view', summary: 'Show what a server snippet expands to.', options: 'name', example: '/serversnippet view name:bless' },
       { name: '/serversnippet delete', summary: 'GM only: remove a server-wide snippet. Requires Manage Server.', options: 'name', example: '/serversnippet delete name:bless' },
-      { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
-      { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
-      { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
-      { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
-      { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
-      { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset)', example: '/hp add value:-5' },
-      { name: '/char active', summary: 'Set a default character so you don\'t have to type character: every time.', options: 'character (or action:clear)', example: '/char active character:Hylia' },
-      { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80 reason:Defeated the goblin chief' },
-      { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items. Owner-only write, public read.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:Influence text:+1 with Lady Aldori after the banquet pin:true' },
-      { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },
-      { name: '/resource set', summary: 'Manually override a daily resource value.', options: 'resource, value, rank, caster, character', example: '/resource set resource:focus value:0' },
-      { name: '/rest', summary: 'Long rest: refill slots, focus points, hero points. Clears prepared list (with confirm).', options: 'character', example: '/rest' },
-      { name: '/refocus', summary: '10-minute refocus. Regain 1 focus point.', options: 'character', example: '/refocus' },
-      { name: '/bag', summary: 'Manage your inventory beyond what\'s in the Pathbuilder export.', options: '(subcommands)', example: '/bag add category:Consumables item:Elixir of Life' },
-      { name: '/gold', summary: 'Manage currency (pp/gp/sp/cp).', options: '(subcommands)', example: '/gold add gp:10' },
     ],
   },
 
@@ -4849,11 +4866,11 @@ const HELP_CATEGORIES = {
 // A single Discord message supports up to 10 embeds so this is plenty of room.
 function buildHelpEmbeds(categoryKey) {
   const cat = HELP_CATEGORIES[categoryKey] ?? HELP_CATEGORIES.character;
-  // Discord limits (with safety margin):
-  //   - single embed total: 6000 (we target 5500 to leave room for description/footer/title)
-  //   - single field value: 1024 (we target 1000)
-  const maxEmbedTotalLen = 5500;
-  const maxFieldLen = 1000;
+  // Discord limits (tight safety margins; the previous 5500 target hit edge cases):
+  //   - single embed total: 6000 (we target 5000, hard cap enforced)
+  //   - single field value: 1024 (we target 950)
+  const maxEmbedTotalLen = 5000;
+  const maxFieldLen = 950;
 
   const embeds = [];
   let embed = null;
@@ -4883,7 +4900,6 @@ function buildHelpEmbeds(categoryKey) {
     if (!fieldBuf) return;
     const fieldName = fieldPartIdx === 1 ? 'Commands' : `Commands (cont. ${fieldPartIdx})`;
     const addedLen = fieldName.length + fieldBuf.length;
-    // If adding this field would overflow, start a new embed first
     if (embed === null || embedTotalLen + addedLen > maxEmbedTotalLen) {
       startNewEmbed();
     }
@@ -4903,8 +4919,7 @@ function buildHelpEmbeds(categoryKey) {
   }
   flushField();
 
-  // Add footer only to the last embed
-  embeds[embeds.length - 1].setFooter({ text: 'Pick a category below • ✨ = added to your character via overlay' });
+  embeds[embeds.length - 1].setFooter({ text: 'Pick a category below' });
   return embeds;
 }
 
@@ -4914,18 +4929,26 @@ function buildHelpEmbed(categoryKey) {
 }
 
 function buildHelpButtons(currentCategory) {
-  const row = new ActionRowBuilder();
-  for (const [key, cat] of Object.entries(HELP_CATEGORIES)) {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`help_${key}`)
-        .setLabel(cat.label)
-        .setEmoji(cat.emoji)
-        .setStyle(key === currentCategory ? ButtonStyle.Primary : ButtonStyle.Secondary)
-        .setDisabled(key === currentCategory),
-    );
+  // Discord limits a single ActionRow to 5 buttons. We now have 7 categories,
+  // so split across two rows. Return an array of rows; callers need to spread
+  // this into the `components` array.
+  const entries = Object.entries(HELP_CATEGORIES);
+  const rows = [];
+  for (let i = 0; i < entries.length; i += 5) {
+    const row = new ActionRowBuilder();
+    for (const [key, cat] of entries.slice(i, i + 5)) {
+      row.addComponents(
+        new ButtonBuilder()
+          .setCustomId(`help_${key}`)
+          .setLabel(cat.label)
+          .setEmoji(cat.emoji)
+          .setStyle(key === currentCategory ? ButtonStyle.Primary : ButtonStyle.Secondary)
+          .setDisabled(key === currentCategory),
+      );
+    }
+    rows.push(row);
   }
-  return row;
+  return rows;
 }
 
 // ── Bot ready ─────────────────────────────────────────────────────────────────
@@ -4991,7 +5014,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       return interaction.update({
         embeds: buildHelpEmbeds(category),
-        components: [buildHelpButtons(category)],
+        components: buildHelpButtons(category),
       });
     }
 
@@ -7791,10 +7814,10 @@ client.on('interactionCreate', async (interaction) => {
     const topic = interaction.options.getString('topic');
     const startCategory = topic && HELP_CATEGORIES[topic] ? topic : 'character';
     const embeds = buildHelpEmbeds(startCategory);
-    const row = buildHelpButtons(startCategory);
+    const rows = buildHelpButtons(startCategory);
     // Public in guilds, auto-ephemeral in DMs (buttons render there just fine)
     const isDM = !interaction.guildId;
-    return interaction.reply({ embeds, components: [row], ephemeral: isDM });
+    return interaction.reply({ embeds, components: rows, ephemeral: isDM });
   }
 
   // ─── /spells ─────────────────────────────────────────────────────

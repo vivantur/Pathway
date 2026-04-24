@@ -8,6 +8,8 @@ const commands = [
     options: [
       { name: 'topic', description: 'Jump straight to a specific category', type: ApplicationCommandOptionType.String, required: false, choices: [
         { name: '🧙 Character', value: 'character' },
+        { name: '✏️ Edit Character', value: 'charedit' },
+        { name: '🎲 Rolls & Snippets', value: 'roll' },
         { name: '🔮 Spells', value: 'spells' },
         { name: '⚔️ Combat', value: 'combat' },
         { name: '📚 Lookup', value: 'lookup' },
