@@ -165,7 +165,15 @@ const client = new Client({
   ]
 });
 
+// Helper: is this a "dead interaction" error? These happen when Discord's 3-second
+// window expires before we replied, which we can't recover from. No need to spam
+// the logs — just move on.
+function isDeadInteractionError(err) {
+  return err?.code === 10062 || err?.rawError?.code === 10062;
+}
+
 process.on('unhandledRejection', error => {
+  if (isDeadInteractionError(error)) return; // silently ignore
   console.error('Unhandled rejection:', error);
 });
 
@@ -174,11 +182,13 @@ process.on('unhandledRejection', error => {
 // listens for that event, Node treats it as a fatal error and crashes the
 // process. Logging it here keeps the bot alive across transient errors.
 client.on('error', error => {
+  if (isDeadInteractionError(error)) return;
   console.error('Discord client error:', error);
 });
 
 // Same for shard errors (if running sharded, which we're not, but defensive).
 client.on('shardError', error => {
+  if (isDeadInteractionError(error)) return;
   console.error('Discord shard error:', error);
 });
 
@@ -5816,18 +5826,34 @@ client.on('interactionCreate', async (interaction) => {
   // Avrae-style visual divider for play-by-post games. With no args, it
   // prints a plain separator bar. With a title, it embeds the title
   // between two dividers for labeled scene transitions.
+  //
+  // Deferred immediately because Railway cold starts can otherwise push
+  // past Discord's 3-second reply window and cause 10062 errors.
   else if (commandName === 'br') {
-    const title = interaction.options.getString('title');
-    const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    if (title) {
-      // Use an embed so the title renders centered and bold
-      const embed = new EmbedBuilder()
-        .setColor(0x4a90d9)
-        .setTitle(`✦  ${title}  ✦`)
-        .setDescription(bar);
-      await interaction.reply({ embeds: [embed] });
-    } else {
-      await interaction.reply(bar);
+    try {
+      await interaction.deferReply();
+      const title = interaction.options.getString('title');
+      const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+      if (title) {
+        const embed = new EmbedBuilder()
+          .setColor(0x4a90d9)
+          .setTitle(`✦  ${title}  ✦`)
+          .setDescription(bar);
+        await interaction.editReply({ embeds: [embed] });
+      } else {
+        await interaction.editReply(bar);
+      }
+    } catch (err) {
+      if (!isDeadInteractionError(err)) {
+        console.error('/br error:', err);
+      }
+      // Try to tell the user something went wrong, but only if the
+      // interaction is still alive. If it's already dead, nothing we can do.
+      try {
+        if (interaction.deferred || interaction.replied) {
+          await interaction.editReply('❌ Something went wrong with /br. Try again.');
+        }
+      } catch {}
     }
   }
 
