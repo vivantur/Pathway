@@ -4843,36 +4843,74 @@ const HELP_CATEGORIES = {
   },
 };
 
-function buildHelpEmbed(categoryKey) {
+// Build one or more help embeds for a given category. Returns an array because
+// Discord caps a single embed's total character count at 6000, so popular
+// categories (character now has 49 commands) need to be split across embeds.
+// A single Discord message supports up to 10 embeds so this is plenty of room.
+function buildHelpEmbeds(categoryKey) {
   const cat = HELP_CATEGORIES[categoryKey] ?? HELP_CATEGORIES.character;
-  const embed = new EmbedBuilder()
-    .setColor(0x4a90d9)
-    .setTitle(`${cat.emoji} Pathway Help — ${cat.label}`)
-    .setDescription(cat.blurb);
-
-  // Pack commands into fields. Discord caps each field value at 1024 chars,
-  // so group until we'd overflow, then start a new field.
+  // Discord limits (with safety margin):
+  //   - single embed total: 6000 (we target 5500 to leave room for description/footer/title)
+  //   - single field value: 1024 (we target 1000)
+  const maxEmbedTotalLen = 5500;
   const maxFieldLen = 1000;
-  let buf = '';
-  let partIdx = 1;
-  const emit = () => {
-    if (!buf) return;
-    const fieldName = partIdx === 1 ? 'Commands' : `Commands (cont. ${partIdx})`;
-    embed.addFields({ name: fieldName, value: buf.trim(), inline: false });
-    partIdx++;
-    buf = '';
+
+  const embeds = [];
+  let embed = null;
+  let embedPartIdx = 1;
+  let embedTotalLen = 0;
+  let fieldBuf = '';
+  let fieldPartIdx = 1;
+
+  const title = `${cat.emoji} Pathway Help — ${cat.label}`;
+  const blurb = cat.blurb ?? '';
+
+  const startNewEmbed = () => {
+    embed = new EmbedBuilder().setColor(0x4a90d9);
+    if (embedPartIdx === 1) {
+      embed.setTitle(title).setDescription(blurb);
+      embedTotalLen = title.length + blurb.length;
+    } else {
+      embed.setTitle(`${title} (part ${embedPartIdx})`);
+      embedTotalLen = title.length + 10;
+    }
+    embeds.push(embed);
+    embedPartIdx++;
+    fieldPartIdx = 1;
   };
+
+  const flushField = () => {
+    if (!fieldBuf) return;
+    const fieldName = fieldPartIdx === 1 ? 'Commands' : `Commands (cont. ${fieldPartIdx})`;
+    const addedLen = fieldName.length + fieldBuf.length;
+    // If adding this field would overflow, start a new embed first
+    if (embed === null || embedTotalLen + addedLen > maxEmbedTotalLen) {
+      startNewEmbed();
+    }
+    embed.addFields({ name: fieldName, value: fieldBuf.trim(), inline: false });
+    embedTotalLen += addedLen;
+    fieldPartIdx++;
+    fieldBuf = '';
+  };
+
+  startNewEmbed();
   for (const cmd of cat.commands) {
     const block = `**${cmd.name}**\n${cmd.summary}` +
       (cmd.options ? `\n  *Options:* ${cmd.options}` : '') +
       (cmd.example ? `\n  *Example:* \`${cmd.example}\`` : '') + '\n\n';
-    if (buf.length + block.length > maxFieldLen) emit();
-    buf += block;
+    if (fieldBuf.length + block.length > maxFieldLen) flushField();
+    fieldBuf += block;
   }
-  emit();
+  flushField();
 
-  embed.setFooter({ text: 'Pick a category below • ✨ = added to your character via overlay' });
-  return embed;
+  // Add footer only to the last embed
+  embeds[embeds.length - 1].setFooter({ text: 'Pick a category below • ✨ = added to your character via overlay' });
+  return embeds;
+}
+
+// Backwards-compat shim for any remaining call sites that want a single embed.
+function buildHelpEmbed(categoryKey) {
+  return buildHelpEmbeds(categoryKey)[0];
 }
 
 function buildHelpButtons(currentCategory) {
@@ -4952,7 +4990,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.update({ content: '❌ Unknown help category.', embeds: [], components: [] });
       }
       return interaction.update({
-        embeds: [buildHelpEmbed(category)],
+        embeds: buildHelpEmbeds(category),
         components: [buildHelpButtons(category)],
       });
     }
@@ -7752,11 +7790,11 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'help') {
     const topic = interaction.options.getString('topic');
     const startCategory = topic && HELP_CATEGORIES[topic] ? topic : 'character';
-    const embed = buildHelpEmbed(startCategory);
+    const embeds = buildHelpEmbeds(startCategory);
     const row = buildHelpButtons(startCategory);
     // Public in guilds, auto-ephemeral in DMs (buttons render there just fine)
     const isDM = !interaction.guildId;
-    return interaction.reply({ embeds: [embed], components: [row], ephemeral: isDM });
+    return interaction.reply({ embeds, components: [row], ephemeral: isDM });
   }
 
   // ─── /spells ─────────────────────────────────────────────────────
