@@ -5812,6 +5812,25 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply('Pong! 🏓 Bot is alive and running.');
   }
 
+  // ─── /br — scene break ─────────────────────────────────────────────
+  // Avrae-style visual divider for play-by-post games. With no args, it
+  // prints a plain separator bar. With a title, it embeds the title
+  // between two dividers for labeled scene transitions.
+  else if (commandName === 'br') {
+    const title = interaction.options.getString('title');
+    const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    if (title) {
+      // Use an embed so the title renders centered and bold
+      const embed = new EmbedBuilder()
+        .setColor(0x4a90d9)
+        .setTitle(`✦  ${title}  ✦`)
+        .setDescription(bar);
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      await interaction.reply(bar);
+    }
+  }
+
   // ─── /char ───────────────────────────────────────────────────────
   else if (commandName === 'char') {
     const sub = interaction.options.getSubcommand();
