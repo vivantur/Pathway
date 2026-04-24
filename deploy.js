@@ -143,6 +143,91 @@ const commands = [
         ],
       },
       {
+        name: 'identity', description: 'Edit class, subclass, level, ancestry, heritage (opens a popup)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
+        name: 'misc', description: 'Edit gender, age, size, alignment, key ability (opens a popup)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
+        name: 'ability', description: 'Set an ability score (STR/DEX/CON/INT/WIS/CHA). Scores typically 8-20.',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'field', description: 'Which ability', type: ApplicationCommandOptionType.String, required: true,
+            choices: [
+              { name: 'Strength (STR)', value: 'str' },
+              { name: 'Dexterity (DEX)', value: 'dex' },
+              { name: 'Constitution (CON)', value: 'con' },
+              { name: 'Intelligence (INT)', value: 'int' },
+              { name: 'Wisdom (WIS)', value: 'wis' },
+              { name: 'Charisma (CHA)', value: 'cha' },
+            ],
+          },
+          { name: 'value', description: 'Ability score (e.g. 18 for a +4 modifier). Leave blank + action:clear to revert.', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'action', description: 'Use clear to remove an override', type: ApplicationCommandOptionType.String, required: false,
+            choices: [{ name: 'Clear override (revert to JSON)', value: 'clear' }],
+          },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
+        name: 'money', description: 'Set your character\'s coin counts (cp, sp, gp, pp)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'gp', description: 'Gold pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'sp', description: 'Silver pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'cp', description: 'Copper pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'pp', description: 'Platinum pieces', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'action', description: 'Use clear to remove all money overrides', type: ApplicationCommandOptionType.String, required: false,
+            choices: [{ name: 'Clear all (revert to JSON)', value: 'clear' }],
+          },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
+        name: 'item', description: 'Add, edit, or remove an inventory item (non-weapon)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'action', description: 'What to do', type: ApplicationCommandOptionType.String, required: true,
+            choices: [
+              { name: 'Add new item', value: 'add' },
+              { name: 'Edit (change quantity)', value: 'edit' },
+              { name: 'Remove item', value: 'remove' },
+            ],
+          },
+          { name: 'name', description: 'Item name (e.g. Rope, Healing Potion)', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+          { name: 'quantity', description: 'How many (default 1)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
+        name: 'spellcasting', description: 'Override spellcasting stats (DC, attack, tradition, key ability) on the primary caster',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true,
+            choices: [
+              { name: 'Spell DC', value: 'dc' },
+              { name: 'Spell attack bonus', value: 'attack' },
+              { name: 'Tradition (arcane/divine/occult/primal)', value: 'tradition' },
+              { name: 'Key ability (str/dex/con/int/wis/cha)', value: 'keyAbility' },
+            ],
+          },
+          { name: 'value', description: 'Numeric value (for DC or attack)', type: ApplicationCommandOptionType.Integer, required: false },
+          { name: 'text_value', description: 'Text value (for tradition or key ability)', type: ApplicationCommandOptionType.String, required: false },
+          { name: 'action', description: 'Use clear to remove an override', type: ApplicationCommandOptionType.String, required: false,
+            choices: [{ name: 'Clear override (revert to JSON)', value: 'clear' }],
+          },
+          { name: 'character', description: 'Which character (defaults to your active character)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
         name: 'template', description: 'Get a blank fill-in-the-blanks character template (.txt file) to build a character manually',
         type: ApplicationCommandOptionType.Subcommand
       },

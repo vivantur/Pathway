@@ -4709,6 +4709,12 @@ const HELP_CATEGORIES = {
       { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
       { name: '/char stat', summary: 'Override a combat stat: AC, HP max, saves, Perception, Speed. Use `action:clear` to revert.', options: 'field, value, action', example: '/char stat field:ac value:19' },
       { name: '/char weapon', summary: 'Add, edit, or remove weapons/attacks. Fill gaps from PDF imports or track new gear.', options: 'action, name, attack, damage, type, traits', example: '/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S' },
+      { name: '/char identity', summary: 'Popup to edit class, subclass, level, ancestry, heritage.', options: '', example: '/char identity' },
+      { name: '/char misc', summary: 'Popup to edit gender, age, size, alignment, key ability.', options: '', example: '/char misc' },
+      { name: '/char ability', summary: 'Override an ability score (STR/DEX/CON/INT/WIS/CHA). Use actual score (18 = +4 mod).', options: 'field, value, action', example: '/char ability field:str value:18' },
+      { name: '/char money', summary: 'Set coin counts (gp, sp, cp, pp). Use action:clear to revert.', options: 'gp, sp, cp, pp, action', example: '/char money gp:55 sp:10' },
+      { name: '/char item', summary: 'Add, edit, or remove non-weapon inventory items.', options: 'action, name, quantity', example: '/char item action:add name:"Rope" quantity:1' },
+      { name: '/char spellcasting', summary: 'Override spell DC, attack, tradition, or key ability on the primary spellcaster.', options: 'field, value, text_value, action', example: '/char spellcasting field:dc value:18' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
@@ -5190,6 +5196,81 @@ client.on('interactionCreate', async (interaction) => {
           saveCharacters(characters);
           return interaction.editReply(`✅ Updated **${charEntry.name}**. Use \`/sheet\` to see the changes.`);
         }
+
+        // /char identity modal: class, subclass, level, ancestry, heritage
+        else if (interaction.customId.startsWith('char_identity_modal:')) {
+          await interaction.deferReply({ ephemeral: true });
+          const charKey = interaction.customId.slice('char_identity_modal:'.length);
+          const characters = loadCharacters();
+          const charEntry = (characters[interaction.user.id] ?? {})[charKey];
+          if (!charEntry) return interaction.editReply('❌ Character not found.');
+
+          if (!charEntry.edits) charEntry.edits = {};
+          if (!charEntry.edits.identity) charEntry.edits.identity = {};
+          const id = charEntry.edits.identity;
+
+          const setOrClear = (fieldId, target) => {
+            const raw = interaction.fields.getTextInputValue(fieldId).trim();
+            if (raw) id[target] = raw;
+            else delete id[target];
+          };
+          setOrClear('class', 'class');
+          setOrClear('subclass', 'subclass');
+          setOrClear('ancestry', 'ancestry');
+          setOrClear('heritage', 'heritage');
+          // Level is an integer
+          const lvlRaw = interaction.fields.getTextInputValue('level').trim();
+          if (lvlRaw) {
+            const n = parseInt(lvlRaw, 10);
+            if (Number.isFinite(n) && n >= 1 && n <= 20) id.level = n;
+            else return interaction.editReply(`❌ Level must be a whole number 1-20. Got "${lvlRaw}".`);
+          } else {
+            delete id.level;
+          }
+
+          saveCharacters(characters);
+          return interaction.editReply(`✅ Updated identity for **${charEntry.name}**. Use \`/sheet\` to see it.`);
+        }
+
+        // /char misc modal: gender, age, size, alignment, keyability
+        else if (interaction.customId.startsWith('char_misc_modal:')) {
+          await interaction.deferReply({ ephemeral: true });
+          const charKey = interaction.customId.slice('char_misc_modal:'.length);
+          const characters = loadCharacters();
+          const charEntry = (characters[interaction.user.id] ?? {})[charKey];
+          if (!charEntry) return interaction.editReply('❌ Character not found.');
+
+          if (!charEntry.edits) charEntry.edits = {};
+          if (!charEntry.edits.misc) charEntry.edits.misc = {};
+          const m = charEntry.edits.misc;
+
+          const setOrClear = (fieldId, target) => {
+            const raw = interaction.fields.getTextInputValue(fieldId).trim();
+            if (raw) m[target] = raw;
+            else delete m[target];
+          };
+          setOrClear('gender', 'gender');
+          setOrClear('age', 'age');
+          setOrClear('alignment', 'alignment');
+          setOrClear('keyability', 'keyability');
+          // Size: accept number or friendly name
+          const sizeRaw = interaction.fields.getTextInputValue('size').trim().toLowerCase();
+          if (sizeRaw) {
+            const sizeMap = { tiny: -2, small: -1, medium: 0, large: 1, huge: 2, gargantuan: 3 };
+            if (sizeRaw in sizeMap) {
+              m.size = sizeMap[sizeRaw];
+            } else {
+              const n = parseInt(sizeRaw, 10);
+              if (Number.isFinite(n) && n >= -2 && n <= 3) m.size = n;
+              else return interaction.editReply(`❌ Size must be a number (-2 to 3) or a name (Tiny/Small/Medium/Large/Huge/Gargantuan). Got "${sizeRaw}".`);
+            }
+          } else {
+            delete m.size;
+          }
+
+          saveCharacters(characters);
+          return interaction.editReply(`✅ Updated misc details for **${charEntry.name}**. Use \`/sheet\` to see it.`);
+        }
       } catch (err) {
         console.error('Modal submit error:', err);
         try { await interaction.editReply('❌ Something went wrong saving your edits. Try again.'); } catch {}
@@ -5597,6 +5678,22 @@ client.on('interactionCreate', async (interaction) => {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
+        }
+        else if (cmd === 'char' && ['identity', 'misc', 'ability', 'money', 'item', 'spellcasting'].includes(interaction.options.getSubcommand(false)) && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'item' && focused.name === 'name') {
+          // For edit/remove actions: autocomplete from existing items
+          const characters = loadCharacters();
+          const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
+          if (ce) {
+            const c = ce.data ?? {};
+            const jsonItems = (c.equipment ?? []).map(e => Array.isArray(e) ? e[0] : e).filter(Boolean);
+            const editItems = (ce.edits?.items ?? []).map(e => Array.isArray(e) ? e[0] : e).filter(Boolean);
+            suggestions = pick([...new Set([...jsonItems, ...editItems])]);
+          }
         }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'weapon') {
           if (focused.name === 'character') {
@@ -6169,6 +6266,247 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `✅ ${verb} **${name}** on **${charEntry.name}** (${newWeapon.attack >= 0 ? '+' : ''}${newWeapon.attack} to hit, ${newWeapon.die} ${newWeapon.damageType}). Use \`/sheet\` to see it.`, ephemeral: true });
     }
 
+    // /char identity — modal for class/subclass/level/ancestry/heritage
+    // All 5 slots used. Pre-fills with current values (merged from overrides).
+    else if (sub === 'identity') {
+      try {
+        const charNameArg = interaction.options.getString('character');
+        const characters = loadCharacters();
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+        const { charKey, char: charEntry } = resolved;
+        const c = charEntry.data ?? {};
+        const identity = charEntry.edits?.identity ?? {};
+
+        const modal = new ModalBuilder()
+          .setCustomId(`char_identity_modal:${charKey}`)
+          .setTitle(`Identity: ${c.name ?? charEntry.name ?? 'Character'}`.slice(0, 45));
+        const mk = (id, label, defaultValue, maxLen = 100) => new TextInputBuilder()
+          .setCustomId(id).setLabel(label.slice(0, 45))
+          .setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(maxLen)
+          .setValue(String(defaultValue ?? '').slice(0, maxLen));
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(mk('class', 'Class', identity.class ?? c.class)),
+          new ActionRowBuilder().addComponents(mk('subclass', 'Subclass / Archetype', identity.subclass ?? c.subclass)),
+          new ActionRowBuilder().addComponents(mk('level', 'Level (number)', identity.level ?? c.level, 3)),
+          new ActionRowBuilder().addComponents(mk('ancestry', 'Ancestry (e.g. Human, Elf)', identity.ancestry ?? c.ancestry)),
+          new ActionRowBuilder().addComponents(mk('heritage', 'Heritage (e.g. Versatile Human)', identity.heritage ?? c.heritage)),
+        );
+        return await interaction.showModal(modal);
+      } catch (err) {
+        console.error('/char identity showModal failed:', err);
+        return interaction.reply({ content: `❌ Couldn\'t open the popup: ${err.message}`, ephemeral: true });
+      }
+    }
+
+    // /char misc — modal for gender/age/size/alignment/keyability
+    else if (sub === 'misc') {
+      try {
+        const charNameArg = interaction.options.getString('character');
+        const characters = loadCharacters();
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+        const { charKey, char: charEntry } = resolved;
+        const c = charEntry.data ?? {};
+        const misc = charEntry.edits?.misc ?? {};
+
+        const modal = new ModalBuilder()
+          .setCustomId(`char_misc_modal:${charKey}`)
+          .setTitle(`Misc: ${c.name ?? charEntry.name ?? 'Character'}`.slice(0, 45));
+        const mk = (id, label, defaultValue, maxLen = 60, placeholder) => {
+          const b = new TextInputBuilder()
+            .setCustomId(id).setLabel(label.slice(0, 45))
+            .setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(maxLen)
+            .setValue(String(defaultValue ?? '').slice(0, maxLen));
+          if (placeholder) b.setPlaceholder(placeholder);
+          return b;
+        };
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(mk('gender', 'Gender / Pronouns', misc.gender ?? c.gender)),
+          new ActionRowBuilder().addComponents(mk('age', 'Age', misc.age ?? c.age, 20)),
+          new ActionRowBuilder().addComponents(mk('size', 'Size (number or name)', (misc.size !== undefined ? misc.size : c.size), 20, '0=Medium, -1=Small, 1=Large, etc.')),
+          new ActionRowBuilder().addComponents(mk('alignment', 'Alignment (e.g. LG, N, CE)', misc.alignment ?? c.alignment, 10)),
+          new ActionRowBuilder().addComponents(mk('keyability', 'Key ability (str/dex/int/etc.)', misc.keyability ?? c.keyability, 10)),
+        );
+        return await interaction.showModal(modal);
+      } catch (err) {
+        console.error('/char misc showModal failed:', err);
+        return interaction.reply({ content: `❌ Couldn\'t open the popup: ${err.message}`, ephemeral: true });
+      }
+    }
+
+    // /char ability — set one ability score. Stored as SCORE (not mod).
+    // Quick conversion: mod = (score - 10) / 2, so +4 mod = 18 score.
+    else if (sub === 'ability') {
+      const charNameArg = interaction.options.getString('character');
+      const field = interaction.options.getString('field');
+      const action = interaction.options.getString('action') ?? 'set';
+      const value = interaction.options.getInteger('value');
+
+      const validFields = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+      if (!validFields.includes(field)) {
+        return interaction.reply({ content: `❌ Invalid ability "${field}". Valid: ${validFields.join(', ')}.`, ephemeral: true });
+      }
+      if (action === 'set' && value === null) {
+        return interaction.reply({ content: `❌ Provide a \`value\` when setting (or use \`action:clear\` to revert). Ability scores are typically 8-20 (a +4 modifier is a score of 18).`, ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.abilities) charEntry.edits.abilities = {};
+
+      if (action === 'clear') {
+        delete charEntry.edits.abilities[field];
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Cleared **${field.toUpperCase()}** override on **${charEntry.name}**. JSON value will show on \`/sheet\`.`, ephemeral: true });
+      }
+
+      charEntry.edits.abilities[field] = value;
+      saveCharacters(characters);
+      const mod = Math.floor((value - 10) / 2);
+      const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+      return interaction.reply({ content: `✅ Set **${field.toUpperCase()}** to **${value}** (${modStr} mod) on **${charEntry.name}**.`, ephemeral: true });
+    }
+
+    // /char money — set or adjust coin counts
+    else if (sub === 'money') {
+      const charNameArg = interaction.options.getString('character');
+      const action = interaction.options.getString('action') ?? 'set';
+      const cp = interaction.options.getInteger('cp');
+      const sp = interaction.options.getInteger('sp');
+      const gp = interaction.options.getInteger('gp');
+      const pp = interaction.options.getInteger('pp');
+
+      if (action === 'set' && cp === null && sp === null && gp === null && pp === null) {
+        return interaction.reply({ content: '❌ Provide at least one coin value (`cp`, `sp`, `gp`, or `pp`) or use `action:clear`.', ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.money) charEntry.edits.money = {};
+
+      if (action === 'clear') {
+        charEntry.edits.money = {};
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Cleared all money overrides on **${charEntry.name}**. JSON values will show on \`/sheet\`.`, ephemeral: true });
+      }
+
+      const set = {};
+      if (cp !== null) { charEntry.edits.money.cp = cp; set.cp = cp; }
+      if (sp !== null) { charEntry.edits.money.sp = sp; set.sp = sp; }
+      if (gp !== null) { charEntry.edits.money.gp = gp; set.gp = gp; }
+      if (pp !== null) { charEntry.edits.money.pp = pp; set.pp = pp; }
+      saveCharacters(characters);
+      const parts = Object.entries(set).map(([k, v]) => `${v} ${k}`).join(', ');
+      return interaction.reply({ content: `✅ Set ${parts} on **${charEntry.name}**.`, ephemeral: true });
+    }
+
+    // /char item — add / remove / edit a non-weapon inventory item.
+    // Mirrors /char weapon pattern: edits.items adds new, edits.hiddenItems hides JSON ones.
+    else if (sub === 'item') {
+      const charNameArg = interaction.options.getString('character');
+      const action = interaction.options.getString('action');
+      const name = interaction.options.getString('name')?.trim();
+      const quantity = interaction.options.getInteger('quantity') ?? 1;
+
+      if (!['add', 'remove', 'edit'].includes(action)) {
+        return interaction.reply({ content: '❌ action must be `add`, `remove`, or `edit`.', ephemeral: true });
+      }
+      if (!name) {
+        return interaction.reply({ content: '❌ Please provide an item name.', ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+      const c = charEntry.data ?? {};
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.items) charEntry.edits.items = [];
+
+      const nameLower = name.toLowerCase();
+      // c.equipment is [name, quantity] tuples in Pathbuilder JSON
+      const jsonItems = c.equipment ?? [];
+      const existingJsonIdx = jsonItems.findIndex(([n]) => (n || '').toLowerCase() === nameLower);
+      const existingEditIdx = charEntry.edits.items.findIndex(([n]) => (n || '').toLowerCase() === nameLower);
+
+      if (action === 'remove') {
+        if (existingJsonIdx === -1 && existingEditIdx === -1) {
+          return interaction.reply({ content: `❌ No item "${name}" on **${charEntry.name}**.`, ephemeral: true });
+        }
+        if (existingEditIdx !== -1) charEntry.edits.items.splice(existingEditIdx, 1);
+        if (existingJsonIdx !== -1) {
+          if (!charEntry.edits.hiddenItems) charEntry.edits.hiddenItems = [];
+          if (!charEntry.edits.hiddenItems.some(h => h.toLowerCase() === nameLower)) {
+            charEntry.edits.hiddenItems.push(name);
+          }
+        }
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Removed **${name}** from **${charEntry.name}**.`, ephemeral: true });
+      }
+
+      // add/edit: un-hide if previously hidden, then set quantity
+      if (charEntry.edits.hiddenItems) {
+        charEntry.edits.hiddenItems = charEntry.edits.hiddenItems.filter(h => h.toLowerCase() !== nameLower);
+      }
+      if (existingEditIdx !== -1) {
+        charEntry.edits.items[existingEditIdx] = [name, quantity];
+      } else {
+        charEntry.edits.items.push([name, quantity]);
+      }
+      saveCharacters(characters);
+      const verb = (existingEditIdx !== -1 || existingJsonIdx !== -1) ? 'Updated' : 'Added';
+      return interaction.reply({ content: `✅ ${verb} **${name}** (x${quantity}) on **${charEntry.name}**.`, ephemeral: true });
+    }
+
+    // /char spellcasting — set DC, attack, tradition, key ability on the character's
+    // primary spellcaster (c.spellCasters[0]). Stored in edits.spellcasting, merged
+    // at display/cast time.
+    else if (sub === 'spellcasting') {
+      const charNameArg = interaction.options.getString('character');
+      const field = interaction.options.getString('field');
+      const action = interaction.options.getString('action') ?? 'set';
+      const valueInt = interaction.options.getInteger('value');
+      const valueStr = interaction.options.getString('text_value');
+
+      const numericFields = ['dc', 'attack'];
+      const textFields = ['tradition', 'keyAbility'];
+      const valid = [...numericFields, ...textFields];
+      if (!valid.includes(field)) {
+        return interaction.reply({ content: `❌ Invalid field "${field}". Valid: ${valid.join(', ')}.`, ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+      const { char: charEntry } = resolved;
+      if (!charEntry.edits) charEntry.edits = {};
+      if (!charEntry.edits.spellcasting) charEntry.edits.spellcasting = {};
+
+      if (action === 'clear') {
+        delete charEntry.edits.spellcasting[field];
+        saveCharacters(characters);
+        return interaction.reply({ content: `✅ Cleared spellcasting **${field}** override on **${charEntry.name}**.`, ephemeral: true });
+      }
+
+      if (numericFields.includes(field)) {
+        if (valueInt === null) return interaction.reply({ content: `❌ Provide a \`value\` (integer) when setting ${field}.`, ephemeral: true });
+        charEntry.edits.spellcasting[field] = valueInt;
+      } else {
+        if (!valueStr) return interaction.reply({ content: `❌ Provide a \`text_value\` (e.g. "arcane", "int") when setting ${field}.`, ephemeral: true });
+        charEntry.edits.spellcasting[field] = valueStr.toLowerCase();
+      }
+      saveCharacters(characters);
+      const val = numericFields.includes(field) ? valueInt : valueStr.toLowerCase();
+      return interaction.reply({ content: `✅ Set spellcasting **${field}** to **${val}** on **${charEntry.name}**.`, ephemeral: true });
+    }
+
     else if (sub === 'template') {
       try {
         const content = getBlankCharacterTemplate();
@@ -6261,8 +6599,13 @@ client.on('interactionCreate', async (interaction) => {
             inline: false,
           },
           {
-            name: '✏️ Fixing or customising details — `/char edit`, `/char skill`, `/char lore`, `/char stat`, `/char weapon`',
-            value: '`/char edit` opens a popup to change **background, deity, languages, senses** on your active character.\n`/char skill name:Athletics rank:expert` sets a standard skill\'s rank, or use `total:9` for a flat override.\n`/char lore topic:Dragon rank:trained` adds or edits a Lore skill (any topic). Pass `remove:True` to delete one.\n`/char stat field:ac value:19` overrides a combat stat (AC, HP max, Fort/Ref/Will, Perception, Speed). Use `action:clear` to revert.\n`/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S` adds or replaces weapons/attacks.\nAll edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections.',
+            name: '✏️ Fixing or customising details',
+            value: '**Quick tweaks (modals):** `/char edit` (background, deity, languages, senses), `/char identity` (class, level, ancestry, heritage), `/char misc` (gender, age, size, alignment, key ability)\n' +
+              '**Combat stats:** `/char stat` (AC, HP max, saves, Perception, Speed), `/char weapon` (add/edit/remove attacks), `/char ability` (ability scores), `/char spellcasting` (DC, attack, tradition)\n' +
+              '**Skills:** `/char skill` (16 standard skills), `/char lore` (Lore skills — any topic, remove:True deletes)\n' +
+              '**Inventory:** `/char item` (add/remove/edit non-weapon items), `/char money` (set coin counts)\n' +
+              '**Feats:** `/char feat action:add/remove`\n\n' +
+              'All edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections. Use `action:clear` on most commands to revert overrides.',
             inline: false,
           },
           {
@@ -6440,7 +6783,30 @@ client.on('interactionCreate', async (interaction) => {
     const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
     if (error) return interaction.editReply(error);
     try {
-      const c = charEntry.data;
+      // Merge overrides from charEntry.edits into a display-only view of c.
+      // Original c.data is untouched so JSON re-imports don't lose user edits
+      // (preserved via `edits` overlay which saveImportedCharacter keeps).
+      const rawC = charEntry.data;
+      const identityOv = charEntry.edits?.identity ?? {};
+      const miscOv     = charEntry.edits?.misc ?? {};
+      const abilityOv  = charEntry.edits?.abilities ?? {};
+      const moneyOv    = charEntry.edits?.money ?? {};
+      const c = {
+        ...rawC,
+        class:      identityOv.class     ?? rawC.class,
+        subclass:   identityOv.subclass  ?? rawC.subclass,
+        level:      identityOv.level     ?? rawC.level,
+        dualClass:  identityOv.dualClass ?? rawC.dualClass,
+        ancestry:   identityOv.ancestry  ?? rawC.ancestry,
+        heritage:   identityOv.heritage  ?? rawC.heritage,
+        gender:     miscOv.gender     ?? rawC.gender,
+        age:        miscOv.age        ?? rawC.age,
+        size:       (miscOv.size !== undefined) ? miscOv.size : rawC.size,
+        alignment:  miscOv.alignment  ?? rawC.alignment,
+        keyability: miscOv.keyability ?? rawC.keyability,
+        abilities:  { ...(rawC.abilities ?? {}), ...abilityOv },
+        money:      { ...(rawC.money ?? {}), ...moneyOv },
+      };
       const lvl = c.level ?? 1;
       const ab = c.abilities ?? {};
       const prof = c.proficiencies ?? {};
@@ -6463,12 +6829,18 @@ client.on('interactionCreate', async (interaction) => {
         const caster = c.spellCasters[0];
         const tradAbilMap = { arcane: 'int', divine: 'wis', occult: 'cha', primal: 'wis' };
         const traditionProfMap = { arcane: 'castingArcane', divine: 'castingDivine', occult: 'castingOccult', primal: 'castingPrimal' };
-        const tradKey = traditionProfMap[caster.magicTradition?.toLowerCase()] ?? 'castingArcane';
-        const keyAbility = caster.ability?.toLowerCase() ?? tradAbilMap[caster.magicTradition?.toLowerCase()] ?? 'int';
+        const spellOv = charEntry.edits?.spellcasting ?? {};
+        const effectiveTradition = spellOv.tradition ?? caster.magicTradition?.toLowerCase();
+        const tradKey = traditionProfMap[effectiveTradition] ?? 'castingArcane';
+        const keyAbility = (spellOv.keyAbility ?? caster.ability?.toLowerCase()) ?? tradAbilMap[effectiveTradition] ?? 'int';
         const keyMod = Math.floor(((ab[keyAbility] ?? 10) - 10) / 2);
         const spellProfMod = calcProfNum(prof[tradKey] ?? 0, lvl);
-        spellAttackBonus = keyMod + spellProfMod;
-        spellDC = 10 + keyMod + spellProfMod;
+        spellAttackBonus = spellOv.attack ?? (keyMod + spellProfMod);
+        spellDC = spellOv.dc ?? (10 + keyMod + spellProfMod);
+        if (spellOv.attack !== undefined)   overriddenFields.push('Spell atk');
+        if (spellOv.dc !== undefined)       overriddenFields.push('Spell DC');
+        if (spellOv.tradition !== undefined)  overriddenFields.push('Tradition');
+        if (spellOv.keyAbility !== undefined) overriddenFields.push('Spell key');
       }
       // Stat overrides: user-set values via /char stat. These win over the
       // computed values from c.data. Track which ones are overridden so we
@@ -6488,6 +6860,21 @@ client.on('interactionCreate', async (interaction) => {
       if (statOverrides.perception !== undefined) overriddenFields.push('Perception');
       if (statOverrides.ac !== undefined)        overriddenFields.push('AC');
       if (statOverrides.speed !== undefined)     overriddenFields.push('Speed');
+      // Identity / misc / ability / money overrides
+      for (const [k, label] of [
+        ['class', 'Class'], ['subclass', 'Subclass'], ['level', 'Level'],
+        ['dualClass', 'Dual Class'], ['ancestry', 'Ancestry'], ['heritage', 'Heritage'],
+      ]) if (identityOv[k] !== undefined && identityOv[k] !== null && identityOv[k] !== '') overriddenFields.push(label);
+      for (const [k, label] of [
+        ['gender', 'Gender'], ['age', 'Age'], ['size', 'Size'],
+        ['alignment', 'Alignment'], ['keyability', 'Key ability'],
+      ]) if (miscOv[k] !== undefined && miscOv[k] !== null && miscOv[k] !== '') overriddenFields.push(label);
+      for (const ab_ of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
+        if (abilityOv[ab_] !== undefined) overriddenFields.push(ab_.toUpperCase());
+      }
+      for (const coin of ['cp', 'sp', 'gp', 'pp']) {
+        if (moneyOv[coin] !== undefined) overriddenFields.push(coin.toUpperCase());
+      }
       const skillMap = {
         acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
         deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
