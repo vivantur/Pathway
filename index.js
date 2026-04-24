@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
@@ -935,6 +935,197 @@ function xpToNextLevel() { return 1000; }
 // or updates. Returns { ok, key, replaced } or { error }.
 // sourceInfo is a human-readable string like "from file upload" or
 // "pasted" that gets shown in the reply.
+function getBlankCharacterTemplate() {
+  return `// Pathway Character Template
+// =====================================================================
+// This is a fill-in-the-blanks character template.
+//
+// HOW TO USE:
+//   1. Open this file in Notepad (Windows) / TextEdit (Mac) / any text editor
+//   2. Replace the placeholder values with your character's data
+//   3. Leave fields you don't need as their defaults — the bot ignores empty
+//      or zero fields gracefully
+//   4. Save the file (keep the .txt extension)
+//   5. In Discord, run:  /char add file:<this-edited-file>
+//      (or /char update  to refresh an existing character with the same name)
+//
+// EDITING TIPS:
+//   - Lines that start with // are comments. You can leave them or delete them.
+//   - Fields starting with _comment are explanation hints. Leave them; they're
+//     ignored by the bot.
+//   - All numbers must stay as numbers (no quotes around them).
+//   - All text must stay wrapped in "quotes".
+//   - Lists use square brackets: ["item1", "item2", "item3"].
+//   - Tradition options: "arcane", "divine", "occult", "primal".
+//   - Spellcasting type: "prepared" (wizard/cleric) or "spontaneous" (sorcerer/bard).
+//   - Proficiency ranks: 0 = untrained, 2 = trained, 4 = expert, 6 = master, 8 = legendary.
+//   - Ability scores use the actual SCORE (18 = +4 mod). To convert a mod to a
+//     score: score = (mod * 2) + 10.  +4 mod → 18, +3 mod → 16, etc.
+//
+// If you only need to make quick edits to an existing character, skip this
+// template and use /char edit, /char skill, or /char lore instead.
+// =====================================================================
+
+{
+  "_comment_IDENTITY": "== CHARACTER IDENTITY ==",
+  "name": "Your Character Name",
+  "class": "Fighter",
+  "dualClass": null,
+  "level": 1,
+  "ancestry": "Human",
+  "heritage": "Versatile Human",
+  "background": "Warrior",
+  "alignment": "N",
+  "gender": "",
+  "age": "",
+  "deity": "",
+  "_comment_size": "size: -2=Tiny, -1=Small, 0=Medium, 1=Large, 2=Huge, 3=Gargantuan",
+  "size": 0,
+  "keyability": "str",
+  "languages": ["Common"],
+
+  "_comment_ATTRIBUTES": "== HP + SPEED ==",
+  "_comment_hp": "HP is computed as ancestryhp + classhp + (bonushp * level) + (conMod * level). For a level 1 Fighter with Con +2: 8 + 10 + 0 + 2 = 20 HP.",
+  "attributes": {
+    "ancestryhp": 8,
+    "classhp": 10,
+    "bonushp": 0,
+    "bonushpPerLevel": 0,
+    "speed": 25,
+    "speedBonus": 0
+  },
+
+  "_comment_ABILITIES": "== ABILITY SCORES (use score not mod; +4 mod = 18 score) ==",
+  "abilities": {
+    "str": 18,
+    "dex": 14,
+    "con": 14,
+    "int": 10,
+    "wis": 12,
+    "cha": 10,
+    "breakdown": { "ancestryFree": [], "ancestryBoosts": [], "ancestryFlaws": [], "backgroundBoosts": [], "classBoosts": [], "mapLevelledBoosts": {} }
+  },
+
+  "_comment_PROFICIENCIES": "== PROFICIENCIES (0=untrained, 2=trained, 4=expert, 6=master, 8=legendary) ==",
+  "_comment_spellcasting_profs": "castingArcane/Divine/Occult/Primal are spell attack/DC proficiency. Leave at 0 for non-casters.",
+  "proficiencies": {
+    "classDC": 2,
+    "perception": 2,
+    "fortitude": 4,
+    "reflex": 2,
+    "will": 2,
+    "heavy": 2, "medium": 2, "light": 2, "unarmored": 2,
+    "advanced": 0, "martial": 2, "simple": 2, "unarmed": 2,
+    "castingArcane": 0, "castingDivine": 0, "castingOccult": 0, "castingPrimal": 0,
+    "acrobatics": 0, "arcana": 0, "athletics": 2, "crafting": 0,
+    "deception": 0, "diplomacy": 0, "intimidation": 2, "medicine": 0,
+    "nature": 0, "occultism": 0, "performance": 0, "religion": 0,
+    "society": 0, "stealth": 0, "survival": 0, "thievery": 0
+  },
+
+  "_comment_AC": "== ARMOR CLASS (acTotal is what /sheet shows; value should match acTotal) ==",
+  "acTotal": { "acTotal": 18, "acProfBonus": 3, "acAbilityBonus": 2, "acItemBonus": 3, "acValue": 18 },
+
+  "_comment_LORES": "== LORE SKILLS as [name, rank] pairs. rank: 2=trained, 4=expert, 6=master, 8=legendary ==",
+  "lores": [],
+
+  "_comment_WEAPONS": "== WEAPONS ==",
+  "_comment_weapon_fields": "attack is the full to-hit bonus including str/dex + prof + item. die is damage dice like '1d8+4' or '2d6'. damageType: B=Bludgeoning, P=Piercing, S=Slashing.",
+  "weapons": [
+    {
+      "name": "Longsword",
+      "display": "Longsword",
+      "attack": 7,
+      "damageBonus": 0,
+      "die": "1d8+4",
+      "damageType": "S",
+      "traits": ["Versatile P"],
+      "strikingRune": "",
+      "potencyRune": 0,
+      "runes": []
+    }
+  ],
+
+  "_comment_FEATS": "== FEATS as [name, null, null, null]. Only the first element (name) matters. ==",
+  "feats": [
+    ["Power Attack", null, null, null]
+  ],
+
+  "_comment_SPECIALS": "== CLASS FEATURES / ANCESTRY FEATURES by name ==",
+  "specials": [
+    "Attack of Opportunity",
+    "Shield Block"
+  ],
+
+  "_comment_EQUIPMENT": "== INVENTORY as [name, quantity] pairs ==",
+  "equipment": [
+    ["Longsword", 1],
+    ["Chain Mail", 1],
+    ["Shield", 1],
+    ["Backpack", 1],
+    ["Bedroll", 1],
+    ["Rations (1 week)", 1]
+  ],
+
+  "_comment_MONEY": "== COINS ==",
+  "money": { "cp": 0, "sp": 0, "gp": 15, "pp": 0 },
+
+  "_comment_SPELLCASTING": "== SPELLCASTING (leave spellCasters empty [] for non-casters) ==",
+  "_comment_spellcaster_fields": "magicTradition: arcane/divine/occult/primal. spellcastingType: prepared or spontaneous. attack = spell attack bonus. dc = spell DC. cantrips is the list of known/prepared cantrips. spells is list of {spellLevel, list} per rank. perDay is {rankNumber: slotCount}.",
+  "spellCasters": [],
+
+  "_comment_FOCUS": "== FOCUS SPELLS. Leave as {} if no focus pool. Example: { \\"focusPoints\\": 2, \\"spells\\": [\\"Lay on Hands\\"] } ==",
+  "focus": {},
+
+  "_comment_UNUSED": "These fields exist for Pathbuilder compatibility but the bot doesn't use them heavily:",
+  "specificProficiencies": {},
+  "armor": [],
+  "formula": [],
+  "pets": [],
+  "senses": ""
+}
+
+// =====================================================================
+// EXAMPLE: WIZARD SPELLCASTER
+// =====================================================================
+// To turn this into a wizard, you'd change these fields:
+//
+//   "class": "Wizard",
+//   "keyability": "int",
+//   "attributes": { "ancestryhp": 8, "classhp": 6, ... },     // wizards have classhp 6
+//   "abilities": { "str": 10, "dex": 14, ..., "int": 18, ...},
+//   "proficiencies": {
+//     ...
+//     "castingArcane": 2,            // trained in arcane spell attack/DC
+//     "arcana": 2,                   // trained in Arcana skill
+//     "light": 0, "medium": 0, "heavy": 0,
+//     "simple": 2, "martial": 0,
+//     ...
+//   },
+//   "spellCasters": [
+//     {
+//       "name": "Arcane Prepared",
+//       "magicTradition": "arcane",
+//       "spellcastingType": "prepared",
+//       "innate": false,
+//       "attack": 7,
+//       "dc": 17,
+//       "keyAbility": "int",
+//       "cantrips": ["Electric Arc", "Detect Magic", "Light", "Read Aura", "Shield"],
+//       "spells": [
+//         { "spellLevel": 1, "list": ["Magic Missile", "Mystic Armor"] }
+//       ],
+//       "prepared": [
+//         { "spellLevel": 1, "list": ["Magic Missile", "Mystic Armor"] }
+//       ],
+//       "blendedSpells": [],
+//       "perDay": { "1": 2 }
+//     }
+//   ]
+// =====================================================================
+`;
+}
+
 function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
   const char = rawChar?.build ?? rawChar;
   if (!char || !char.name) {
@@ -999,6 +1190,12 @@ function parsePastedPathbuilderJSON(rawText) {
   const codeBlockMatch = text.match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/);
   if (codeBlockMatch) text = codeBlockMatch[1].trim();
 
+  // Strip any line-level // comments. Our /char template uses these for
+  // instructions, and users might add their own while editing. We only strip
+  // lines that BEGIN with optional whitespace + // (we don't touch // that
+  // appears mid-line, which might be legitimate data like a URL).
+  text = text.split('\n').filter(line => !/^\s*\/\//.test(line)).join('\n').trim();
+
   // If the user pasted multiple lines with non-JSON preamble, find the first { and last }
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
@@ -1015,7 +1212,7 @@ function parsePastedPathbuilderJSON(rawText) {
     // "Unterminated string" — point the user toward the multi-field fix.
     const isTruncation = /Unexpected end|Unterminated string|Expected/.test(err.message);
     if (isTruncation) {
-      return { error: 'Your paste looks cut off. Pathbuilder JSONs for high-level characters can be over 4000 chars — continue in Part 2, 3, 4, 5 of the popup to fit the whole thing.' };
+      return { error: 'Your paste looks cut off. If you\'re using a template, make sure the file wasn\'t truncated. Otherwise check for missing commas or brackets near the end.' };
     }
     return { error: `Couldn't parse that JSON: ${err.message}. Double-check you copied the entire export from Pathbuilder's Menu → Export JSON.` };
   }
@@ -4505,6 +4702,8 @@ const HELP_CATEGORIES = {
       { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
       { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
       { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
+      { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
+      { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
       { name: '/char edit', summary: 'Edit background, deity, languages, senses on your active character (opens a popup).', options: '', example: '/char edit' },
       { name: '/char skill', summary: 'Set a skill\'s proficiency rank (trained/expert/...) or flat total. Useful for PDF imports.', options: 'name, rank, total', example: '/char skill name:Athletics rank:expert' },
       { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
@@ -5387,6 +5586,11 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'dump' && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
             const characters = loadCharacters();
@@ -5760,12 +5964,32 @@ client.on('interactionCreate', async (interaction) => {
       const existingIdx = charEntry.edits.lores.findIndex(l => l.name.toLowerCase() === topicLower);
 
       if (shouldRemove) {
-        if (existingIdx === -1) {
+        // Three cases:
+        //   (a) Lore exists only in edits.lores → splice it out
+        //   (b) Lore exists only in c.lores (JSON/PDF-sourced) → add to hiddenLores
+        //   (c) Both → remove from edits AND hide the JSON one
+        const c = charEntry.data ?? {};
+        const inJson = (c.lores ?? []).some(([n]) => n.toLowerCase() === topicLower);
+        const wasInEdits = existingIdx !== -1;
+        if (!inJson && !wasInEdits) {
           return interaction.reply({ content: `❌ No lore "${topic}" to remove on **${charEntry.name}**. Use \`/sheet\` to see their current lores.`, ephemeral: true });
         }
-        charEntry.edits.lores.splice(existingIdx, 1);
+        if (wasInEdits) {
+          charEntry.edits.lores.splice(existingIdx, 1);
+        }
+        if (inJson) {
+          if (!charEntry.edits.hiddenLores) charEntry.edits.hiddenLores = [];
+          // Keep the hidden list case-insensitive-unique
+          const alreadyHidden = charEntry.edits.hiddenLores.some(h => h.toLowerCase() === topicLower);
+          if (!alreadyHidden) charEntry.edits.hiddenLores.push(topic);
+        }
         saveCharacters(characters);
         return interaction.reply({ content: `✅ Removed **Lore: ${topic}** from **${charEntry.name}**.`, ephemeral: true });
+      }
+
+      // If the user is editing a lore that was previously hidden, un-hide it
+      if (charEntry.edits.hiddenLores) {
+        charEntry.edits.hiddenLores = charEntry.edits.hiddenLores.filter(h => h.toLowerCase() !== topicLower);
       }
 
       // Build the lore entry
@@ -5793,6 +6017,74 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `✅ ${verb} **Lore: ${topic}** on **${charEntry.name}** (${parts.join(' and ')}). Use \`/sheet\` to see it.`, ephemeral: true });
     }
 
+    // /char template — send the user a blank fill-in-the-blanks character
+    // template as a .txt attachment. They edit it in any text editor and
+    // re-upload via /char add.
+    else if (sub === 'template') {
+      try {
+        const content = getBlankCharacterTemplate();
+        const buffer = Buffer.from(content, 'utf8');
+        const attachment = new AttachmentBuilder(buffer, { name: 'pathway_character_template.txt' });
+        await interaction.reply({
+          content: '📝 **Blank character template attached.**\n\n' +
+            '**How to use:**\n' +
+            '1. Download the file\n' +
+            '2. Open it in any text editor (Notepad, TextEdit, phone notes app, etc.)\n' +
+            '3. Fill in your character\'s details — the `//` comments explain each field\n' +
+            '4. Save (keep the `.txt` extension)\n' +
+            '5. Run `/char add file:<the-edited-file>` to import them\n\n' +
+            '*You can keep the `// comments` or delete them — the bot ignores them either way.*\n' +
+            '*For small changes to an existing character, `/char edit`, `/char skill`, and `/char lore` are faster.*',
+          files: [attachment],
+          ephemeral: true,
+        });
+      } catch (err) {
+        console.error('/char template error:', err);
+        await interaction.reply({ content: `❌ Couldn\'t generate the template: ${err.message}`, ephemeral: true });
+      }
+    }
+
+    // /char dump — export the user's current character as a template-formatted
+    // .txt file. For heavy modifications: dump → edit locally → re-import.
+    else if (sub === 'dump') {
+      try {
+        const charNameArg = interaction.options.getString('character');
+        const characters = loadCharacters();
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
+        const { char: charEntry } = resolved;
+        const c = charEntry.data ?? {};
+
+        // Serialize with the same pretty format as the template. Strip
+        // _comment_* fields only when dumping (they're useful in the template
+        // but the user's real character shouldn't carry them).
+        const cleaned = {};
+        for (const [k, v] of Object.entries(c)) {
+          if (k.startsWith('_comment')) continue;
+          cleaned[k] = v;
+        }
+
+        const header = `// Pathway Character Export — ${charEntry.name}\n` +
+          `// =====================================================================\n` +
+          `// Exported: ${new Date().toISOString().split('T')[0]}\n` +
+          `// To re-import after editing: /char update file:<this-edited-file>\n` +
+          `// (Or /char add to import as a new character with a different name.)\n` +
+          `// =====================================================================\n\n`;
+        const body = JSON.stringify(cleaned, null, 2);
+        const buffer = Buffer.from(header + body, 'utf8');
+        const safeName = (charEntry.name || 'character').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const attachment = new AttachmentBuilder(buffer, { name: `${safeName}.txt` });
+        await interaction.reply({
+          content: `📤 **${charEntry.name}** exported. Edit and re-import with \`/char update file:<the-edited-file>\` to apply changes.`,
+          files: [attachment],
+          ephemeral: true,
+        });
+      } catch (err) {
+        console.error('/char dump error:', err);
+        await interaction.reply({ content: `❌ Couldn\'t export that character: ${err.message}`, ephemeral: true });
+      }
+    }
+
     else if (sub === 'howto') {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
@@ -5812,6 +6104,11 @@ client.on('interactionCreate', async (interaction) => {
           {
             name: '📄 PDF fallback — `/char pdf` (partial import)',
             value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks and some metadata. Use `/char edit` to set background/deity/languages/senses and `/char skill` to set proficiency ranks on the skills that matter. Does **not** work with the printable character sheet PDF, only the statblock format.',
+            inline: false,
+          },
+          {
+            name: '📝 No Pathbuilder? — `/char template` (build from scratch)',
+            value: 'For NPCs, homebrew characters, or anyone without Pathbuilder access:\n1. `/char template` — bot sends you a blank fill-in-the-blanks `.txt` file\n2. Edit it in any text editor (Notepad, phone notes, etc.). Comments explain every field.\n3. `/char add file:<the-edited-file>` imports your character.\n\nTo heavily modify an existing character: `/char dump character:<name>` exports them as an editable file. Edit, then `/char update file:<edited>` to apply changes.',
             inline: false,
           },
           {
@@ -6055,14 +6352,19 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
       // Lore skills: combine c.lores (from JSON) with edits.lores (user-added
-      // via /char lore add). If the same topic appears in both, the edit wins.
+      // via /char lore). If the same topic appears in both, the edit wins.
+      // edits.hiddenLores hides lores (used to remove JSON/PDF-sourced lores
+      // that the user wants gone, since we don't mutate c.lores directly).
       const jsonLores = c.lores ?? [];
       const editLores = (charEntry.edits?.lores) ?? [];
+      const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => s.toLowerCase()));
       const loreMap = new Map();
       for (const [name, profNum] of jsonLores) {
+        if (hiddenLores.has(name.toLowerCase())) continue;
         loreMap.set(name.toLowerCase(), { name, rank: profNum, total: null });
       }
       for (const lore of editLores) {
+        if (hiddenLores.has(lore.name.toLowerCase())) continue;
         loreMap.set(lore.name.toLowerCase(), {
           name: lore.name,
           rank: lore.rank ?? 0,

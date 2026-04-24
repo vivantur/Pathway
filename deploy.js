@@ -85,6 +85,17 @@ const commands = [
         ],
       },
       {
+        name: 'template', description: 'Get a blank fill-in-the-blanks character template (.txt file) to build a character manually',
+        type: ApplicationCommandOptionType.Subcommand
+      },
+      {
+        name: 'dump', description: 'Export your character as an editable .txt file (for heavy modifications)',
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          { name: 'character', description: 'Which character to export (defaults to active)', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
+        ],
+      },
+      {
         name: 'howto', description: 'Show platform-specific instructions for getting your character into the bot',
         type: ApplicationCommandOptionType.Subcommand
       },
