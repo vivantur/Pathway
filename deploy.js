@@ -252,9 +252,11 @@ const commands = [
         type: ApplicationCommandOptionType.Subcommand
       },
       {
-        name: 'feats', description: 'Show all feats for your character',
+        name: 'import', description: 'Import a character by Pathbuilder 6-digit JSON ID (experimental — may fail from server)',
         type: ApplicationCommandOptionType.Subcommand,
-        options: [{ name: 'name', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }]
+        options: [
+          { name: 'id', description: 'The 6-digit JSON ID from Pathbuilder (Menu → Export JSON)', type: ApplicationCommandOptionType.Integer, required: true },
+        ]
       },
       {
         name: 'art', description: 'Set character art for your character',

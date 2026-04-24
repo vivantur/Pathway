@@ -4721,7 +4721,7 @@ const HELP_CATEGORIES = {
       { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
       { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
-      { name: '/char feats', summary: 'Show all feats on your character.', options: 'name', example: '/char feats' },
+      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
@@ -6650,16 +6650,79 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply(`Your characters:\n${list}`);
     }
 
-    else if (sub === 'feats') {
-      await interaction.deferReply();
-      const characters = loadCharacters();
-      const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
-      if (error) return interaction.editReply(error);
-      const c = charEntry.data;
-      const allFeats = (c.feats ?? []).map(f => Array.isArray(f) ? f[0] : f).filter(Boolean);
-      const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(`✨ ${c.name}'s Feats`).setDescription(allFeats.length > 0 ? allFeats.join('\n') : 'No feats found');
-      if (charEntry.art) embed.setThumbnail(charEntry.art);
-      await interaction.editReply({ embeds: [embed] });
+    // /char import — fetch from Pathbuilder's JSON ID endpoint.
+    // EXPERIMENTAL: Pathbuilder maintains a host allowlist. From Foundry VTT and
+    // browser contexts this works, but from a Railway/Heroku/other hosting provider
+    // it typically returns 403 "Host not in allowlist" — see the catch branch for
+    // guidance shown to the user in that case.
+    else if (sub === 'import') {
+      await interaction.deferReply({ ephemeral: true });
+      const id = interaction.options.getInteger('id');
+      // Pathbuilder IDs are 6 digits (e.g. 122550). Allow a broader range in case
+      // of older or future formats, but warn on obviously wrong shapes.
+      if (id < 1 || id > 99999999) {
+        return interaction.editReply(`❌ That doesn't look like a valid Pathbuilder ID. Expected a 6-digit number like \`122550\`.`);
+      }
+
+      const url = `https://pathbuilder2e.com/json.php?id=${id}`;
+      try {
+        // Try a browser-like User-Agent in case Pathbuilder's allowlist is partly
+        // UA-based. In my testing it isn't — the block is host/IP-based — but it
+        // costs nothing to try.
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          },
+        });
+        const rawText = await response.text();
+
+        // Pathbuilder returns 403 "Host not in allowlist" when the server isn't
+        // whitelisted. Detect that specifically so we can give useful guidance.
+        if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
+          return interaction.editReply(
+            `❌ **Pathbuilder blocked the request.** The endpoint returned: \`${rawText.slice(0, 100)}\`\n\n` +
+            `Pathbuilder only allows requests from specific servers (Roland's allowlist). This bot's server isn't on it.\n\n` +
+            `**Workarounds:**\n` +
+            `• Use \`/char pastemsg\` — copy the JSON from Pathbuilder and paste it as a chat message, then run the command. Works identically to this and won't be blocked.\n` +
+            `• Use \`/char add\` with the JSON as a file upload.\n\n` +
+            `If you want this feature to work, you can email \`pathbuilder2e@gmail.com\` and ask Roland to allowlist this bot's host. Include a log of this error.`
+          );
+        }
+        if (!response.ok) {
+          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again later, or use \`/char pastemsg\`.`);
+        }
+
+        // Parse what we got. Pathbuilder returns { success: true, build: {...} } on
+        // valid IDs, or { success: false, error: ... } on lookup failures.
+        let parsed;
+        try {
+          parsed = JSON.parse(rawText);
+        } catch {
+          return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again or use \`/char pastemsg\`.`);
+        }
+
+        if (parsed.success === false) {
+          return interaction.editReply(`❌ Pathbuilder couldn't find ID \`${id}\`. Double-check the number (it's the 6-digit code shown after you export JSON in Pathbuilder).`);
+        }
+        const rawChar = parsed.build ?? parsed;
+        if (!rawChar || !rawChar.name) {
+          return interaction.editReply(`❌ Got a response from Pathbuilder but no character data. The ID may be invalid or expired.`);
+        }
+
+        // Import via the same path /char add uses
+        const saved = saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
+        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+        return interaction.editReply(
+          `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
+          `*Tip: Pathbuilder's IDs expire after a while. If you re-export, use \`/char import id:<new-id>\` or just \`/char pastemsg\` to refresh.*`
+        );
+      } catch (err) {
+        console.error('/char import fetch error:', err);
+        return interaction.editReply(
+          `❌ Couldn\'t reach Pathbuilder: \`${err.message}\`\n\n` +
+          `Try \`/char pastemsg\` instead — copy the JSON from Pathbuilder and paste it as a chat message, then run the command.`
+        );
+      }
     }
 
     else if (sub === 'art') {
