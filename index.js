@@ -4722,7 +4722,6 @@ const HELP_CATEGORIES = {
       { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
       { name: '/char feats', summary: 'Show all feats on your character.', options: 'name', example: '/char feats' },
-      { name: '/char info', summary: 'Manually set senses or languages not in the Pathbuilder export.', options: 'field, value, character', example: '/char info field:Senses value:Darkvision' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
@@ -6673,21 +6672,6 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       const charName = characters[interaction.user.id][charKey].name;
       await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
-    }
-
-    else if (sub === 'info') {
-      const field = interaction.options.getString('field');
-      const value = interaction.options.getString('value');
-      const nameArg = interaction.options.getString('character');
-      const characters = loadCharacters();
-      const { error, charKey } = resolveChar(interaction.user.id, nameArg, characters);
-      if (error) return interaction.reply({ content: error, ephemeral: true });
-      const parsed = value.split(',').map(v => v.trim()).filter(Boolean);
-      characters[interaction.user.id][charKey][field] = parsed;
-      saveCharacters(characters);
-      const charName = characters[interaction.user.id][charKey].name;
-      const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
-      await interaction.reply({ content: `✅ **${fieldLabel}** updated for **${charName}**:\n${parsed.join(', ')}`, ephemeral: true });
     }
 
     // ── /char active ──

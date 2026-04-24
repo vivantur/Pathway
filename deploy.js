@@ -265,15 +265,6 @@ const commands = [
         ]
       },
       {
-        name: 'info', description: 'Manually set senses or languages not in Pathbuilder JSON',
-        type: ApplicationCommandOptionType.Subcommand,
-        options: [
-          { name: 'field', description: 'What to set', type: ApplicationCommandOptionType.String, required: true, choices: [{ name: 'Senses', value: 'senses' }, { name: 'Languages', value: 'languages' }] },
-          { name: 'value', description: 'Comma-separated values (e.g. "Low-light vision, Darkvision")', type: ApplicationCommandOptionType.String, required: true },
-          { name: 'character', description: 'Character name (leave blank if you only have one)', type: ApplicationCommandOptionType.String, required: false }
-        ]
-      },
-      {
         name: 'active', description: 'Set a default character so commands don\'t prompt you every time',
         type: ApplicationCommandOptionType.Subcommand,
         options: [
