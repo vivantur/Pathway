@@ -36,6 +36,7 @@ const {
   rejoinFromDelay,
 } = encounters;
 const { getPreset, listPresets } = require('./effects');
+const downtime = require('./downtime');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
 const { parseSpellStatBlock, toSlug: spellSlug } = require('./spellParser');
 const { parseItemStatBlock,  toSlug: itemSlug  } = require('./itemParser');
@@ -369,6 +370,18 @@ function loadCharacters() {
 }
 function saveCharacters(data) {
   fs.writeFileSync(dataPath('characters.json'), JSON.stringify(data, null, 2));
+}
+
+// ── Downtime helpers ──────────────────────────────────────────────────────────
+// Downtime activities and the per-character bank of downtime days are stored
+// in downtime.json (separate from characters.json so character imports don't
+// blow them away). See downtime.js for the data shape.
+function loadDowntime() {
+  try { return JSON.parse(fs.readFileSync(dataPath('downtime.json'), 'utf8')); }
+  catch { return {}; }
+}
+function saveDowntime(data) {
+  fs.writeFileSync(dataPath('downtime.json'), JSON.stringify(data, null, 2));
 }
 
 // ── Bag helpers ───────────────────────────────────────────────────────────────
@@ -5845,6 +5858,44 @@ client.on('interactionCreate', async (interaction) => {
           const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
           suggestions = pick(comps);
         }
+        else if (cmd === 'downtime' && focused.name === 'activity'
+                 && interaction.options.getSubcommand(false) === 'start') {
+          // For /downtime start, autocomplete the activity TYPE (earn-income, etc.)
+          const names = Object.entries(downtime.ACTIVITIES).map(([k, def]) => def.name);
+          suggestions = pick(names).map(o => ({
+            // Map display name back to the key the handler expects
+            name: o.name,
+            value: Object.keys(downtime.ACTIVITIES).find(
+              k => downtime.ACTIVITIES[k].name === o.name
+            ) || o.value,
+          }));
+        }
+        else if (cmd === 'downtime' && focused.name === 'activity') {
+          // For /downtime complete/cancel/spend, autocomplete with the player's
+          // active entry IDs paired with a friendly description.
+          const characters = loadCharacters();
+          const { charKey } = resolveChar(interaction.user.id, null, characters);
+          if (charKey) {
+            const store = loadDowntime();
+            const active = downtime.listActiveEntries(store, interaction.user.id, charKey);
+            // Show "earn-income (crafting) day 3/7 [abc123]" style entries
+            suggestions = active
+              .map(e => {
+                const def = downtime.ACTIVITIES[e.activity];
+                const skill = e.params?.skill ? ` (${e.params.skill})` : '';
+                const ready = e.status === 'ready-to-complete' ? ' ✅' : '';
+                return {
+                  name: `${def.name}${skill} day ${e.elapsedDays}/${e.plannedDays}${ready} [${e.id}]`.slice(0, 100),
+                  value: e.id,
+                };
+              })
+              .slice(0, 25);
+          }
+        }
+        else if (cmd === 'downtime' && focused.name === 'skill') {
+          const skills = ['Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
+          suggestions = pick(skills);
+        }
         // Await respond so any rejection (network blip, expired interaction,
         // already-acknowledged etc.) is caught by the local try/catch instead
         // of escaping to the unhandledRejection handler. The catch block
@@ -8704,8 +8755,17 @@ client.on('interactionCreate', async (interaction) => {
     // Tracking subcommands require a character
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
+    // ── DIAGNOSTIC: log what /companion is seeing ──────────────────
+    console.log(`[companion DEBUG] sub=${sub}, userId=${interaction.user.id}, charNameArg=${charNameArg}`);
+    console.log(`[companion DEBUG] characters[userId] keys: ${Object.keys(characters[interaction.user.id] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[companion DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
+    console.log(`[companion DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) {
+      console.log(`[companion DEBUG] resolveChar returned error: ${error}`);
+      return interaction.reply({ content: error, ephemeral: true });
+    }
+    console.log(`[companion DEBUG] resolveChar succeeded: charKey=${charKey}, name=${charEntry?.name}`);
     const char = charEntry.data;
     if (!charEntry.companions) charEntry.companions = {};
 
@@ -10481,6 +10541,18 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'add') {
       const characters = loadCharacters();
+      // ── DIAGNOSTIC: log what we loaded and who's calling ───────────
+      // Remove this block once the companion-bug debugging is done.
+      console.log(`[init add DEBUG] userId=${userId}, compArg=${interaction.options.getString('companion')}, charArg=${interaction.options.getString('character')}`);
+      console.log(`[init add DEBUG] characters.json keys for user: ${Object.keys(characters[userId] ?? {}).join(', ') || '(none)'}`);
+      console.log(`[init add DEBUG] total users in characters.json: ${Object.keys(characters).length}`);
+      console.log(`[init add DEBUG] dataPath says: ${dataPath('characters.json')}`);
+      try {
+        const stats = fs.statSync(dataPath('characters.json'));
+        console.log(`[init add DEBUG] file size: ${stats.size} bytes, modified: ${stats.mtime.toISOString()}`);
+      } catch (e) {
+        console.log(`[init add DEBUG] file stat failed: ${e.message}`);
+      }
 
       // ── Companion path ─────────────────────────────────────────────
       // If `companion:` is specified, add the user's companion to init as
@@ -10489,7 +10561,10 @@ client.on('interactionCreate', async (interaction) => {
       const compArg = interaction.options.getString('companion');
       if (compArg) {
         const { error: cerr, char: ce } = resolveChar(userId, interaction.options.getString('character'), characters);
-        if (cerr) return interaction.reply({ content: cerr, ephemeral: true });
+        if (cerr) {
+          console.log(`[init add DEBUG] resolveChar returned error: ${cerr}`);
+          return interaction.reply({ content: cerr, ephemeral: true });
+        }
         if (!ce.companions || Object.keys(ce.companions).length === 0) {
           return interaction.reply({ content: `❌ **${ce.data.name}** has no companions. Add one with \`/companion add\`.`, ephemeral: true });
         }
@@ -11807,6 +11882,318 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `❌ Unknown attack kind "${attack.kind}".`, ephemeral: true });
     }
   }
+
+  // ─── /downtime ────────────────────────────────────────────────────
+  // PF2e downtime activity tracker. Real-life days advance activities
+  // automatically; the GM can also award banked downtime days as quest
+  // rewards. Currently supports Earn Income; more activities coming later.
+  else if (commandName === 'downtime') {
+    const sub = interaction.options.getSubcommand();
+    const userId = interaction.user.id;
+    const characters = loadCharacters();
+    let store = loadDowntime();
+
+    // ─── /downtime list — show available activities ───
+    if (sub === 'list') {
+      const lines = Object.entries(downtime.ACTIVITIES).map(([key, def]) =>
+        `• **${def.name}** \`(${key})\` — ${def.summary} *(${def.source})*`
+      );
+      const embed = new EmbedBuilder()
+        .setColor(0x6f4e37)
+        .setTitle('🛠️ Available Downtime Activities')
+        .setDescription(lines.join('\n') || 'No activities defined yet.')
+        .setFooter({ text: 'Start with /downtime start' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // For all other subcommands, we need the player's character.
+    const charNameArg = interaction.options.getString('character');
+    const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+    const c = charEntry.data;
+
+    // ─── /downtime start ──────────────────────────────
+    if (sub === 'start') {
+      const activityKey = interaction.options.getString('activity');
+      const def = downtime.ACTIVITIES[activityKey];
+      if (!def) {
+        return interaction.reply({ content: `❌ Unknown activity "${activityKey}". Use \`/downtime list\` to see options.`, ephemeral: true });
+      }
+
+      // Currently only Earn Income — branch here when more activities exist.
+      if (activityKey === 'earn-income') {
+        const skillName = interaction.options.getString('skill');
+        const taskLevel = interaction.options.getInteger('tasklevel');
+        const plannedDays = interaction.options.getInteger('days');
+        const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+
+        // Validate skill (use same map as /skill, plus Crafting/Lore-as-text)
+        const skillMap = {
+          acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+          deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+          nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+          society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+        };
+        const lowerSkill = skillName.toLowerCase();
+        if (!(lowerSkill in skillMap)) {
+          return interaction.reply({ content: `❌ Unknown skill "${skillName}". Earn Income uses skills like Crafting, Performance, or any Lore.`, ephemeral: true });
+        }
+
+        // Compute character's modifier for the chosen skill
+        const ab = c.abilities ?? {};
+        const prof = c.proficiencies ?? {};
+        const lvl = c.level ?? 1;
+        const abilKey = skillMap[lowerSkill];
+        const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+        const profNum = prof[lowerSkill] ?? 0;
+        const modifier = abilMod + calcProfNum(profNum, lvl);
+
+        if (profNum === 0) {
+          return interaction.reply({ content: `❌ **${c.name}** is not trained in ${skillName}. Earn Income generally requires being at least Trained.`, ephemeral: true });
+        }
+
+        // Roll the initial check
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + modifier + extraBonus;
+        const dc = downtime.taskLevelDC(taskLevel);
+
+        // Determine outcome
+        let outcome;
+        if (total >= dc + 10) outcome = 'crit-success';
+        else if (total >= dc) outcome = 'success';
+        else if (total <= dc - 10) outcome = 'crit-failure';
+        else outcome = 'failure';
+        // Nat 20 / Nat 1 shift the outcome by one step
+        if (dieRoll === 20) {
+          outcome = outcome === 'crit-failure' ? 'failure' : outcome === 'failure' ? 'success' : 'crit-success';
+        } else if (dieRoll === 1) {
+          outcome = outcome === 'crit-success' ? 'success' : outcome === 'success' ? 'failure' : 'crit-failure';
+        }
+
+        const dailyCp = downtime.dailyIncomeCopper({ taskLevel, profRank: profNum, outcome });
+
+        // On a critical failure, the activity ends immediately (fired & reputation hit).
+        if (outcome === 'crit-failure') {
+          const embed = new EmbedBuilder()
+            .setColor(0xC0392B)
+            .setTitle(`💼 ${c.name} attempts Earn Income (${skillName})`)
+            .setDescription(
+              `🎲 **Rolled:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+              `💥 **Critical Failure!**\n\n` +
+              `*${c.name} is fired immediately and earns nothing. Their reputation in this community suffers — the GM may make future Earn Income harder here.*`
+            )
+            .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+          return interaction.reply({ embeds: [embed] });
+        }
+
+        // Start the entry
+        const result = downtime.startEntry(store, userId, charKey, 'earn-income', {
+          skill: skillName,
+          taskLevel,
+          profRank: profNum,
+          modifier,
+          dieRoll,
+          rolledTotal: total,
+          dc,
+          outcome,
+          dailyIncomeCp: dailyCp,
+        }, plannedDays);
+
+        if (!result.ok) {
+          return interaction.reply({ content: `❌ Could not start activity: ${result.reason}`, ephemeral: true });
+        }
+        saveDowntime(store);
+
+        const outcomeEmoji = { 'crit-success': '🌟', success: '✅', failure: '⚠️' }[outcome];
+        const outcomeLabel = { 'crit-success': 'Critical Success!', success: 'Success', failure: 'Failure (shoddy work)' }[outcome];
+        const embed = new EmbedBuilder()
+          .setColor(outcome === 'crit-success' ? 0xF1C40F : outcome === 'success' ? 0x27AE60 : 0xE67E22)
+          .setTitle(`💼 ${c.name} starts Earn Income (${skillName})`)
+          .setDescription(
+            `🎲 **Initial Check:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+            `${outcomeEmoji} **${outcomeLabel}**\n\n` +
+            `**Daily payout:** ${downtime.formatCopper(dailyCp)}\n` +
+            `**Planned duration:** ${plannedDays} day${plannedDays === 1 ? '' : 's'}\n` +
+            `**Activity ID:** \`${result.entry.id}\`\n\n` +
+            `Each real-life day will automatically credit a downtime day.\n` +
+            `Use \`/downtime check\` to see progress, or \`/downtime complete activity:${result.entry.id}\` when done.`
+          )
+          .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+        if (charEntry.art) embed.setThumbnail(charEntry.art);
+        return interaction.reply({ embeds: [embed] });
+      }
+
+      return interaction.reply({ content: `❌ Activity "${activityKey}" not yet implemented.`, ephemeral: true });
+    }
+
+    // ─── /downtime check — auto-advance and show status ───
+    if (sub === 'check') {
+      // Auto-advance everything for this character first
+      const advances = downtime.autoAdvanceAll(store, userId, charKey);
+      const active = downtime.listActiveEntries(store, userId, charKey);
+
+      if (active.length === 0) {
+        const bank = downtime.getBank(store, userId, charKey).bank;
+        return interaction.reply({
+          content: `**${c.name}** has no active downtime activities. Banked days: **${bank}**.\nStart one with \`/downtime start\`.`,
+          ephemeral: true,
+        });
+      }
+
+      saveDowntime(store);
+
+      const lines = active.map(entry => {
+        const def = downtime.ACTIVITIES[entry.activity];
+        const adv = advances.find(a => a.entry.id === entry.id);
+        const advText = adv && adv.addedDays > 0
+          ? ` *(+${adv.addedDays} day${adv.addedDays === 1 ? '' : 's'} since last check, +${downtime.formatCopper(adv.addedCp)})*`
+          : '';
+        const statusBadge = entry.status === 'ready-to-complete' ? ' ✅ **READY TO COMPLETE**' : '';
+        const earnedText = entry.result?.totalEarnedCp != null
+          ? `Earned: **${downtime.formatCopper(entry.result.totalEarnedCp)}**`
+          : '';
+        return `• **${def.name}** (${entry.params.skill ?? '?'}) — ID \`${entry.id}\`${statusBadge}\n` +
+               `  Day ${entry.elapsedDays}/${entry.plannedDays} · ${earnedText}${advText}`;
+      });
+
+      const bank = downtime.getBank(store, userId, charKey).bank;
+      const embed = new EmbedBuilder()
+        .setColor(0x6f4e37)
+        .setTitle(`🛠️ ${c.name}'s Downtime`)
+        .setDescription(lines.join('\n\n'))
+        .setFooter({ text: `Banked downtime days: ${bank}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime complete ───────────────────────────
+    if (sub === 'complete') {
+      const entryId = interaction.options.getString('activity');
+      // Auto-advance first so we know if it's actually done
+      downtime.autoAdvanceAll(store, userId, charKey);
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      if (entry.status === 'completed') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` is already completed.`, ephemeral: true });
+      }
+      if (entry.status === 'cancelled') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` was cancelled.`, ephemeral: true });
+      }
+
+      // Allow completing early — partial credit for partial days.
+      const result = downtime.completeEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
+      const earned = entry.result?.totalEarnedCp ?? 0;
+      const earlyNote = entry.elapsedDays < entry.plannedDays
+        ? `\n*(Completed early at day ${entry.elapsedDays}/${entry.plannedDays}.)*`
+        : '';
+      const embed = new EmbedBuilder()
+        .setColor(0x2ECC71)
+        .setTitle(`✅ ${c.name} completes ${def.name}`)
+        .setDescription(
+          `**Total earned:** ${downtime.formatCopper(earned)}\n` +
+          `**Days worked:** ${entry.elapsedDays}\n` +
+          `**Skill used:** ${entry.params.skill}${earlyNote}\n\n` +
+          `*Add this to your character's coin pouch with \`/coin add\` (or however you track money).*`
+        )
+        .setFooter({ text: `Activity ID: ${entry.id}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime cancel ─────────────────────────────
+    if (sub === 'cancel') {
+      const entryId = interaction.options.getString('activity');
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      const result = downtime.cancelEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
+      return interaction.reply({
+        content: `🚫 Cancelled **${def.name}** (\`${entry.id}\`). ${entry.result?.totalEarnedCp ? `Forfeited ${downtime.formatCopper(entry.result.totalEarnedCp)}.` : 'No earnings forfeited.'}`,
+      });
+    }
+
+    // ─── /downtime spend — apply banked days to an activity ───
+    if (sub === 'spend') {
+      const entryId = interaction.options.getString('activity');
+      const days = interaction.options.getInteger('days');
+      const result = downtime.spendBankedDays(store, userId, charKey, entryId, days);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[result.entry.activity];
+      const completedNote = result.entry.status === 'ready-to-complete'
+        ? `\n✅ **Activity is now ready to complete!** Use \`/downtime complete activity:${result.entry.id}\`.`
+        : '';
+      return interaction.reply({
+        content: `🪙 Applied **${result.daysApplied}** banked day${result.daysApplied === 1 ? '' : 's'} to ${def.name} (\`${result.entry.id}\`).\n` +
+                 `Earned **+${downtime.formatCopper(result.addedCp)}** (total: ${downtime.formatCopper(result.entry.result?.totalEarnedCp ?? 0)}).\n` +
+                 `Days now ${result.entry.elapsedDays}/${result.entry.plannedDays}. Bank balance: **${store[userId][charKey].bank}**.${completedNote}`,
+      });
+    }
+
+    // ─── /downtime bank — show banked days + recent history ───
+    if (sub === 'bank') {
+      const { bank, history } = downtime.getBank(store, userId, charKey);
+      const recent = history.slice(-10).reverse();
+      const histLines = recent.length === 0
+        ? '*No history yet.*'
+        : recent.map(h => {
+            const sign = h.delta > 0 ? '+' : '';
+            const date = h.ts.slice(0, 10);
+            return `${date} · **${sign}${h.delta}** — ${h.reason}`;
+          }).join('\n');
+      const embed = new EmbedBuilder()
+        .setColor(0xF39C12)
+        .setTitle(`🪙 ${c.name}'s Downtime Bank`)
+        .setDescription(`**Banked days:** ${bank}\n\n**Recent activity:**\n${histLines}`)
+        .setFooter({ text: 'GMs award days with /downtime award' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // ─── /downtime award — GM grants days to a player's character ───
+    // Permission: anyone can use this. (We could restrict to GMs but downtime
+    // awards are usually announced openly anyway. Easy to add a check later.)
+    if (sub === 'award') {
+      // The character we resolved above is the AWARDER's character.
+      // The award target is a different player's character — read from options.
+      const targetPlayer = interaction.options.getUser('player');
+      const targetCharName = interaction.options.getString('targetcharacter');
+      const days = interaction.options.getInteger('days');
+      const reason = interaction.options.getString('reason') ?? 'GM award';
+
+      if (!targetPlayer) {
+        return interaction.reply({ content: '❌ Specify a `player:` (and `targetcharacter:` if they have multiple).', ephemeral: true });
+      }
+      if (days === 0) {
+        return interaction.reply({ content: '❌ Award amount must be non-zero. Use a negative number to remove days.', ephemeral: true });
+      }
+
+      const targetCharacters = loadCharacters(); // re-read so we have fresh data
+      const { error: terr, charKey: tCharKey, char: tCharEntry } = resolveChar(targetPlayer.id, targetCharName, targetCharacters);
+      if (terr) return interaction.reply({ content: `❌ Couldn't find that character: ${terr}`, ephemeral: true });
+
+      const newBalance = downtime.awardDays(store, targetPlayer.id, tCharKey, days, reason);
+      saveDowntime(store);
+
+      const sign = days > 0 ? '+' : '';
+      const verb = days > 0 ? 'awarded' : 'removed';
+      return interaction.reply({
+        content: `🪙 ${verb === 'awarded' ? 'Awarded' : 'Removed'} **${sign}${days}** downtime day${Math.abs(days) === 1 ? '' : 's'} ${days > 0 ? 'to' : 'from'} <@${targetPlayer.id}>'s **${tCharEntry.data.name}**${reason ? `: *${reason}*` : ''}.\nNew balance: **${newBalance}**.`,
+      });
+    }
+  }
+
 
 });
 
