@@ -7046,8 +7046,19 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('name');
+    // ── DIAGNOSTIC ── temporary logging to track down /sheet failures.
+    // Remove these console.logs after the bug is fixed.
+    console.log(`[sheet DEBUG] userId=${userId}, nameArg=${JSON.stringify(nameArg)}`);
+    console.log(`[sheet DEBUG] characters[userId] exists: ${!!characters[userId]}`);
+    console.log(`[sheet DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[sheet DEBUG] total userIds in file: ${Object.keys(characters).length}`);
+    console.log(`[sheet DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
-    if (error) return interaction.editReply(error);
+    if (error) {
+      console.log(`[sheet DEBUG] resolveChar returned error: ${error}`);
+      return interaction.editReply(error);
+    }
+    console.log(`[sheet DEBUG] resolveChar succeeded: charKey=${charKey}`);
     try {
       // Merge overrides from charEntry.edits into a display-only view of c.
       // Original c.data is untouched so JSON re-imports don't lose user edits
