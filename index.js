@@ -11908,8 +11908,18 @@ client.on('interactionCreate', async (interaction) => {
 
     // For all other subcommands, we need the player's character.
     const charNameArg = interaction.options.getString('character');
+    // ── DIAGNOSTIC ──
+    console.log(`[downtime DEBUG] sub=${sub}, userId=${userId}, charNameArg=${JSON.stringify(charNameArg)}`);
+    console.log(`[downtime DEBUG] characters[userId] exists: ${!!characters[userId]}`);
+    console.log(`[downtime DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[downtime DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
+    console.log(`[downtime DEBUG] all options: ${JSON.stringify(interaction.options.data)}`);
     const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) {
+      console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
+      return interaction.reply({ content: error, ephemeral: true });
+    }
+    console.log(`[downtime DEBUG] resolveChar succeeded: charKey=${charKey}`);
     const c = charEntry.data;
 
     // ─── /downtime start ──────────────────────────────
