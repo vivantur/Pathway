@@ -33,7 +33,14 @@ function addCombatant(channelId, combatant) {
   if (!combatant.effects) combatant.effects = [];
   enc.combatants.push(combatant);
   enc.combatants.sort((a, b) => {
+    // Primary: higher initiative first
     if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+    // PF2e RAW (Player Core p. 469): "When PCs and NPCs end up with the same
+    // initiative, the NPCs go first." NPCs sort before PCs on ties.
+    if (a.isNpc !== b.isNpc) return a.isNpc ? -1 : 1;
+    // Stable secondary tiebreakers when both are PCs or both are NPCs:
+    // higher max HP, then alphabetical. Players (or GM) can manually reorder
+    // in play; this is just a deterministic default.
     if (b.maxHp !== a.maxHp) return b.maxHp - a.maxHp;
     return a.name.localeCompare(b.name);
   });
@@ -54,33 +61,47 @@ function removeCombatant(channelId, name) {
 }
 
 // Advance the turn. Tick down effects on the NEW current combatant (start-of-turn timing).
+// Skips combatants who have set themselves aside via Delay (delayed: true).
 // Returns { enc, current, expiredEffects } where expiredEffects is an array of effects that just ended.
 function advanceTurn(channelId) {
   const enc = encounters.get(channelId);
   if (!enc || enc.combatants.length === 0) return null;
-  enc.turnIndex++;
-  if (enc.turnIndex >= enc.combatants.length) {
-    enc.turnIndex = 0;
-    enc.round++;
-  }
-  const current = enc.combatants[enc.turnIndex];
+
   const expiredEffects = [];
+  // Loop until we land on a non-delayed combatant. Safety cap: try once per
+  // combatant; if everyone's delayed (shouldn't happen), just return current.
+  let safety = enc.combatants.length + 1;
+  while (safety-- > 0) {
+    enc.turnIndex++;
+    if (enc.turnIndex >= enc.combatants.length) {
+      enc.turnIndex = 0;
+      enc.round++;
+    }
+    const current = enc.combatants[enc.turnIndex];
+    if (!current) break;
 
-  // Tick down effects on the current combatant (their turn is starting)
-  if (current.effects && current.effects.length > 0) {
-    current.effects = current.effects.filter(effect => {
-      // Effects with duration null/undefined are "permanent until removed"
-      if (effect.duration === null || effect.duration === undefined) return true;
-      effect.duration -= 1;
-      if (effect.duration <= 0) {
-        expiredEffects.push({ combatantName: current.name, effect });
-        return false;
-      }
-      return true;
-    });
+    if (current.delayed) {
+      // Skip this combatant — they've set themselves aside.
+      continue;
+    }
+
+    // Tick down effects on the current combatant (their turn is starting)
+    if (current.effects && current.effects.length > 0) {
+      current.effects = current.effects.filter(effect => {
+        if (effect.duration === null || effect.duration === undefined) return true;
+        effect.duration -= 1;
+        if (effect.duration <= 0) {
+          expiredEffects.push({ combatantName: current.name, effect });
+          return false;
+        }
+        return true;
+      });
+    }
+
+    return { enc, current, expiredEffects };
   }
-
-  return { enc, current, expiredEffects };
+  // All combatants delayed; return current with no advance (defensive)
+  return { enc, current: enc.combatants[enc.turnIndex], expiredEffects };
 }
 
 function modifyHp(channelId, name, delta) {
@@ -155,6 +176,83 @@ function clearEffects(channelId, combatantName) {
   return count;
 }
 
+// ── Delay / Rejoin (PF2e action: Delay) ──────────────────────────────────
+// Per Player Core p. 469: when it's your turn, you may take the Delay action.
+// Your turn ends, you're set aside, and you can choose to take your turn at
+// any point before the start of your next normal turn. When you do, your new
+// initiative is whatever you choose (usually right before or right after some
+// other combatant's turn).
+//
+// Implementation:
+//   delayCombatant(channelId): the current combatant declares Delay.
+//     Sets `delayed: true`, advances turn (skipping them in normal rotation).
+//   rejoinFromDelay(channelId, name, beforeName): combatant re-enters before
+//     the named target (or at the bottom of the round if no target).
+
+function delayCombatant(channelId) {
+  const enc = encounters.get(channelId);
+  if (!enc || enc.combatants.length === 0) return null;
+  const current = enc.combatants[enc.turnIndex];
+  if (!current) return null;
+  current.delayed = true;
+  // Stash original initiative so we can restore it if needed
+  current.initiativeBeforeDelay = current.initiative;
+  // Advance to next combatant. advanceTurn now skips delayed combatants
+  // automatically, so we can just delegate to it.
+  return advanceTurn(channelId);
+}
+
+function rejoinFromDelay(channelId, combatantName, beforeName = null) {
+  const enc = encounters.get(channelId);
+  if (!enc) return null;
+  const c = findCombatant(enc, combatantName);
+  if (!c || !c.delayed) return { ok: false, reason: 'not-delayed' };
+
+  // Compute the new initiative value. If beforeName is given, we set this
+  // combatant's initiative to (before's initiative + 0.001) so they go just
+  // before the named combatant. If not given, we put them at the start of the
+  // CURRENT combatant's slot (i.e., they act now, before the current turn
+  // continues).
+  let newInit;
+  if (beforeName) {
+    const before = findCombatant(enc, beforeName);
+    if (!before) return { ok: false, reason: 'before-not-found' };
+    newInit = before.initiative + 0.001;
+  } else {
+    const cur = enc.combatants[enc.turnIndex];
+    newInit = cur ? cur.initiative + 0.001 : 0;
+  }
+
+  c.delayed = false;
+  c.initiative = newInit;
+  delete c.initiativeBeforeDelay;
+
+  // Re-sort the combatants array. We need to find the rejoiner's new index
+  // and set turnIndex to it (since they're acting NOW).
+  const sortedNames = enc.combatants.map(x => x.name);
+  enc.combatants.sort((a, b) => {
+    if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+    if (a.isNpc !== b.isNpc) return a.isNpc ? -1 : 1;
+    if (b.maxHp !== a.maxHp) return b.maxHp - a.maxHp;
+    return a.name.localeCompare(b.name);
+  });
+  // Update turnIndex to point at the rejoiner
+  enc.turnIndex = enc.combatants.findIndex(x => x.name === combatantName);
+  return { ok: true, combatant: c, newInit };
+}
+
+// Helper: advance turn while skipping any delayed combatants.
+// (Currently unused — advanceTurn() handles this directly. Kept here as a
+// reference and in case we want to expose it separately later.)
+function _advancePastDelayed(enc) {
+  // Delegates to advanceTurn via channelId lookup
+  let channelId = null;
+  for (const [k, v] of encounters.entries()) {
+    if (v === enc) { channelId = k; break; }
+  }
+  return channelId ? advanceTurn(channelId) : null;
+}
+
 module.exports = {
   getEncounter,
   createEncounter,
@@ -168,4 +266,6 @@ module.exports = {
   addEffect,
   removeEffect,
   clearEffects,
+  delayCombatant,
+  rejoinFromDelay,
 };

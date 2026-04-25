@@ -18,6 +18,7 @@ const {
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
+const encounters = require('./encounters');
 const {
   getEncounter,
   createEncounter,
@@ -31,7 +32,9 @@ const {
   addEffect,
   removeEffect,
   clearEffects,
-} = require('./encounters');
+  delayCombatant,
+  rejoinFromDelay,
+} = encounters;
 const { getPreset, listPresets } = require('./effects');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
 const { parseSpellStatBlock, toSlug: spellSlug } = require('./spellParser');
@@ -1753,10 +1756,13 @@ function buildCharHpEmbed(char, charEntry, note = null) {
 // PF2e uses "bloodied" at ≤50% and tracks dying at 0 HP. We add a "critical"
 // band at ≤25% for tactical clarity at the table. Dying/wounded are now
 // proper PF2e conditions managed by combatAutomation.js.
-function hpStatus(current, max, dying = 0) {
+function hpStatus(current, max, dying = 0, doomed = 0, unconscious = false) {
   if (!max || max <= 0) return { label: 'Unknown', emoji: '⚪' };
-  if (dying >= 4)           return { label: 'Dead',     emoji: '☠️' };
-  if (dying > 0 || current <= 0) return { label: `Dying ${dying || 1}`, emoji: '💀' };
+  const maxDying = Math.max(1, 4 - doomed);
+  if (dying >= maxDying)    return { label: 'Dead',     emoji: '☠️' };
+  if (dying > 0)            return { label: `Dying ${dying}`, emoji: '💀' };
+  if (current <= 0 && unconscious) return { label: 'Unconscious', emoji: '😴' };
+  if (current <= 0)         return { label: 'Down',     emoji: '💤' };
   const pct = current / max;
   if (pct <= 0.25)          return { label: 'Critical', emoji: '🔴' };
   if (pct <= 0.5)           return { label: 'Bloodied', emoji: '🟠' };
@@ -1776,10 +1782,31 @@ function hpBar(current, max, segments = 8) {
   return '█'.repeat(filled) + '░'.repeat(segments - filled);
 }
 
+// Format a single effect for the initiative embed line. Handles persistent
+// damage specially so it shows the dice and damage type, not just the name.
+function formatEffectForEmbed(e) {
+  if (e.kind === 'persistent-damage' || e.modifiers?.kind === 'persistent-damage') {
+    const dice = e.modifiers?.dice ?? e.dice ?? '?';
+    const dtype = e.modifiers?.damageType ?? e.damageType ?? 'damage';
+    return `🩸 ${dice} ${dtype}`;
+  }
+  let text = e.name;
+  if (e.value !== null && e.value !== undefined) text += ` ${e.value}`;
+  if (e.duration !== null && e.duration !== undefined) text += ` (${e.duration}r)`;
+  return text;
+}
+
 function buildInitiativeEmbed(enc) {
   const lines = enc.combatants.map((combatant, i) => {
-    const marker = i === enc.turnIndex ? '▶️ ' : '   ';
-    const status = hpStatus(combatant.hp, combatant.maxHp, combatant.dying ?? 0);
+    const isCurrent = i === enc.turnIndex;
+    const marker = isCurrent ? '▶️ ' : '   ';
+    const status = hpStatus(
+      combatant.hp,
+      combatant.maxHp,
+      combatant.dying ?? 0,
+      combatant.doomed ?? 0,
+      combatant.unconscious === true,
+    );
 
     // PCs see their actual HP + bar; NPCs see status only (HP is hidden).
     // Everyone (PC or NPC) shows AC so players can plan shots.
@@ -1794,29 +1821,43 @@ function buildInitiativeEmbed(enc) {
       ? ` · **AC ${combatant.ac}**`
       : '';
 
-    // Wounded indicator (separate from dying - persists across deaths)
+    // Wounded persists across deaths/recoveries (separate from current dying state)
     const woundedPart = (combatant.wounded ?? 0) > 0
       ? ` · 🩸 Wounded ${combatant.wounded}`
       : '';
+    // Doomed reduces death threshold; surface it prominently
+    const doomedPart = (combatant.doomed ?? 0) > 0
+      ? ` · ⚰️ Doomed ${combatant.doomed}`
+      : '';
+    // Delayed indicator — they've set themselves aside and aren't in rotation
+    const delayedPart = combatant.delayed ? ' · ⏸️ *Delayed*' : '';
 
-    // Reaction indicator: ⤾ available, ⤾⃠ used. Only show if combatant has reactions enabled.
+    // Reaction indicator: ⤾ available, ⌀ used. Use a clean cross-platform
+    // glyph instead of the combining strikethrough that doesn't render on mobile.
     let reactionPart = '';
-    if (combatant.hasReaction !== false && (combatant.dying ?? 0) === 0) {
-      reactionPart = combatant.reactionUsed ? ' · ⤾̶' : ' · ⤾';
+    if (combatant.hasReaction !== false && (combatant.dying ?? 0) === 0 && !combatant.delayed) {
+      reactionPart = combatant.reactionUsed ? ' · ⌀' : ' · ⤾';
     }
 
     let effectLine = '';
     if (combatant.effects && combatant.effects.length > 0) {
-      const effectTexts = combatant.effects.map(e => {
-        let text = e.name;
-        if (e.value !== null && e.value !== undefined) text += ` ${e.value}`;
-        if (e.duration !== null && e.duration !== undefined) text += ` (${e.duration}r)`;
-        return text;
+      // Skip dying/wounded/doomed in the effect line — they have their own pips.
+      // (The combatant-field versions are what the engine reads; effect-list
+      // duplicates would be confusing.)
+      const visible = combatant.effects.filter(e => {
+        const k = e.presetKey;
+        return k !== 'dying' && k !== 'wounded' && k !== 'doomed' && k !== 'unconscious';
       });
-      effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
+      if (visible.length > 0) {
+        const effectTexts = visible.map(formatEffectForEmbed);
+        effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
+      }
     }
 
-    return `${marker}**${combatant.initiative}** — ${combatant.name}${acPart}${woundedPart}${reactionPart}\n     ${hpLine}${effectLine}`;
+    // Bold the current combatant's name to make it pop more than just ▶️
+    const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
+
+    return `${marker}**${combatant.initiative}** — ${nameDisplay}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}\n     ${hpLine}${effectLine}`;
   });
   return new EmbedBuilder()
     .setTitle(`⚔️ Initiative — Round ${enc.round}`)
@@ -1856,48 +1897,83 @@ async function clearSummary(channel, enc) {
 }
 
 // ── Recovery check display helper ────────────────────────────────────────────
-// Builds the embed + optional Hero Point reroll button for a recovery check
-// result. Used by both /init next (auto-roll on dying combatant's turn start)
-// and /init recovery (manual force-roll). Returns { embeds, components }.
+// Builds the embed + optional Hero Point buttons for a recovery check result.
+// Used by both /init next (auto-roll on dying combatant's turn start) and
+// /init recovery (manual force-roll). Returns { embeds, components }.
+//
+// Hero Point options shown to PCs:
+//   - Reroll (if dying value WORSENED and HP ≥ 1): one-button reroll
+//   - Escape death (if died OR dying increased): spend ALL hero points to
+//     stabilize at 0 HP without gaining wounded
+//
 // Pass in the recovery check result from ca.rollRecoveryCheck and the combatant.
 function buildRecoveryCheckPayload(rc, combatant) {
   const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
     : rc.outcome === 'success' ? '✅'
     : rc.outcome === 'failure' ? '❌'
     : '💥';
+
+  // Build the embed description with all the Remaster details
+  const lines = [
+    `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})`,
+    `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**`,
+    rc.narration,
+  ];
+  if (rc.doomed && rc.doomed > 0) {
+    lines.splice(1, 0, `*Doomed ${rc.doomed} → death threshold is Dying ${rc.maxDying}*`);
+  }
+
   const embed = new EmbedBuilder()
     .setColor(rc.died ? 0x8B0000 : rc.awoke ? 0x2ecc71 : rc.outcome === 'success' || rc.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
     .setTitle(`💀 ${combatant.name}'s Recovery Check`)
-    .setDescription(
-      `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})\n` +
-      `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
-      `${rc.narration}`
-    );
+    .setDescription(lines.join('\n'));
 
-  // Hero Point reroll button for PCs with hero points remaining
   const components = [];
-  if (!combatant.isNpc && combatant.ownerId && !rc.died) {
-    try {
-      const characters = loadCharacters();
-      const userCharacters = characters[combatant.ownerId] ?? {};
-      const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
-      const charEntry = userCharacters[charKey];
-      const heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
-      if (heroPoints > 0) {
-        const safeName = combatant.name.replace(/[^a-zA-Z0-9]/g, '_');
-        const awokeFlag = rc.awoke ? '1' : '0';
-        components.push(new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-            .setLabel(`🎭 Hero Point Reroll (${heroPoints} available)`)
-            .setStyle(ButtonStyle.Primary),
-        ));
-      }
-    } catch (err) {
-      console.error('Recovery check: hero point lookup failed:', err);
-    }
+  if (combatant.isNpc || !combatant.ownerId) return { embeds: [embed], components };
+
+  // Look up hero points (PCs only)
+  let heroPoints = 0;
+  try {
+    const characters = loadCharacters();
+    const userCharacters = characters[combatant.ownerId] ?? {};
+    const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
+    const charEntry = userCharacters[charKey];
+    heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
+  } catch (err) {
+    console.error('Recovery check: hero point lookup failed:', err);
   }
 
+  if (heroPoints <= 0) return { embeds: [embed], components };
+
+  const safeName = combatant.name.replace(/[^a-zA-Z0-9]/g, '_');
+  const buttons = [];
+
+  // "Reroll" button — only when not dead. Reroll one die, keep better.
+  if (!rc.died) {
+    const awokeFlag = rc.awoke ? '1' : '0';
+    buttons.push(
+      new ButtonBuilder()
+        .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
+        .setLabel(`🎭 Reroll (1 HP)`)
+        .setStyle(ButtonStyle.Primary)
+    );
+  }
+
+  // "Spend all to escape death" button — show whenever they got worse OR died.
+  // PF2e RAW: triggers at start of turn OR when dying value would increase.
+  const dyingWentUp = rc.dyingAfter > rc.dyingBefore;
+  if (rc.died || dyingWentUp) {
+    buttons.push(
+      new ButtonBuilder()
+        .setCustomId(`rcheck_stabilize_${safeName}`)
+        .setLabel(`🛡️ Escape Death (spend all ${heroPoints} HP)`)
+        .setStyle(rc.died ? ButtonStyle.Danger : ButtonStyle.Secondary)
+    );
+  }
+
+  if (buttons.length > 0) {
+    components.push(new ActionRowBuilder().addComponents(...buttons));
+  }
   return { embeds: [embed], components };
 }
 
@@ -5037,6 +5113,57 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
+    // ─── Hero Point: Spend ALL to escape death ──────────────────────────────
+    // PF2e Player Core p. 411: "If you have at least 1 Hero Point, you can spend
+    // all of your remaining Hero Points at the start of your turn or when your
+    // dying value would increase. You lose the dying condition entirely and
+    // stabilize with 0 Hit Points. You don't gain the wounded condition."
+    if (interaction.customId.startsWith('rcheck_stabilize_')) {
+      const safeName = interaction.customId.slice('rcheck_stabilize_'.length);
+      const channelId = interaction.channel.id;
+      const enc = getEncounter(channelId);
+      if (!enc) return interaction.update({ content: '❌ The encounter has ended.', components: [] });
+      const combatant = enc.combatants.find(c => c.name.replace(/[^a-zA-Z0-9]/g, '_') === safeName);
+      if (!combatant) return interaction.update({ content: '❌ Combatant not found.', components: [] });
+
+      // Only the combatant's owner can spend their hero points
+      if (combatant.isNpc || interaction.user.id !== combatant.ownerId) {
+        return interaction.reply({ content: '❌ Only the combatant\'s owner can spend Hero Points.', ephemeral: true });
+      }
+
+      // Look up character + hero points; require at least 1
+      const characters = loadCharacters();
+      const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
+      const charEntry = characters[combatant.ownerId]?.[charKey];
+      if (!charEntry) return interaction.reply({ content: '❌ Character not found.', ephemeral: true });
+      const currentHp = charEntry.heroPoints ?? 1;
+      if (currentHp <= 0) return interaction.reply({ content: '❌ No Hero Points to spend.', ephemeral: true });
+
+      // Burn ALL hero points and stabilize
+      const spent = currentHp;
+      charEntry.heroPoints = 0;
+      saveCharacters(characters);
+
+      const stab = ca.stabilizeWithHeroPoints(channelId, combatant.name);
+      if (!stab || !stab.ok) {
+        // Refund (shouldn't happen — guard rail)
+        charEntry.heroPoints = currentHp;
+        saveCharacters(characters);
+        return interaction.reply({ content: `❌ Could not stabilize **${combatant.name}**: not currently dying.`, ephemeral: true });
+      }
+
+      const newEmbed = new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle(`🛡️ ${combatant.name} Cheats Death`)
+        .setDescription(
+          `${stab.narration}\n\n` +
+          `*Spent ${spent} Hero Point${spent === 1 ? '' : 's'}. Hero Points: 0/3.*`
+        );
+      await interaction.update({ embeds: [newEmbed], components: [] });
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
     // ─── Skill info page navigation ─────────────────────────────────
     if (interaction.customId.startsWith('skill_')) {
       const parts = interaction.customId.split('_');
@@ -5504,6 +5631,45 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'init' && focused.name === 'monster') {
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
+        else if (cmd === 'init' && focused.name === 'name'
+                 && (interaction.options.getSubcommand(false) === 'effect'
+                  || interaction.options.getSubcommand(false) === 'removeeffect')) {
+          // Autocomplete preset condition names for /init effect name:
+          // For removeeffect, autocomplete from the target's actual effects
+          // (preset names + custom names they actually have).
+          const sub = interaction.options.getSubcommand(false);
+          if (sub === 'effect') {
+            // Suggest preset names — Frightened, Stupefied, etc.
+            const names = listPresets().map(p => p.name);
+            suggestions = pick(names);
+          } else {
+            // removeeffect: pull effects from the named target
+            const targetName = interaction.options.getString('target');
+            const enc = getEncounter(interaction.channel.id);
+            if (enc && targetName) {
+              const target = findCombatant(enc, targetName);
+              if (target?.effects) {
+                suggestions = pick(target.effects.map(e => e.name));
+              }
+            }
+            // Fallback: preset names
+            if (!suggestions || suggestions.length === 0) {
+              suggestions = pick(listPresets().map(p => p.name));
+            }
+          }
+        }
+        else if (cmd === 'init' && focused.name === 'target') {
+          // Autocomplete combatants currently in this channel's encounter
+          const enc = getEncounter(interaction.channel.id);
+          if (enc) suggestions = pick(enc.combatants.map(c => c.name));
+        }
+        else if (cmd === 'init' && focused.name === 'name'
+                 && ['hp', 'remove', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
+          // Autocomplete combatants for any subcommand that takes a 'name' parameter
+          // referring to a combatant in the encounter.
+          const enc = getEncounter(interaction.channel.id);
+          if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'monsteradd' && focused.name === 'monster') {
           // For /monsteradd remove, suggest the full bestiary.
@@ -10608,6 +10774,46 @@ client.on('interactionCreate', async (interaction) => {
         lines.push(`⚠️ **${current.name}** is Dying ${current.dying} but no recovery check auto-rolled. Use \`/init recovery name:${current.name}\` to force a roll.`);
       }
 
+      // ── Action economy at start of turn ────────────────────────────
+      // PF2e: Slowed N → lose N actions. Quickened → +1 action.
+      // Stunned N → lose N actions, then reduce stunned by N (capped at 0).
+      // We surface this immediately so the player and GM see it on turn start.
+      // Stunned auto-decrements after announcing.
+      if (current.effects && current.effects.length > 0) {
+        const slowed = current.effects.find(e => e.presetKey === 'slowed');
+        const quickened = current.effects.find(e => e.presetKey === 'quickened');
+        const stunned = current.effects.find(e => e.presetKey === 'stunned');
+
+        const actionNotes = [];
+        let netActions = 3;
+        if (slowed?.value) {
+          netActions -= slowed.value;
+          actionNotes.push(`Slowed ${slowed.value}`);
+        }
+        if (stunned?.value) {
+          const lost = Math.min(stunned.value, netActions);
+          netActions -= lost;
+          // Auto-decrement stunned by the actions lost (PF2e RAW)
+          const stunnedRemaining = Math.max(0, stunned.value - lost);
+          if (stunnedRemaining === 0) {
+            // Remove the stunned effect entirely
+            current.effects = current.effects.filter(e => e !== stunned);
+            actionNotes.push(`Stunned ${stunned.value} (lost ${lost} actions; Stunned cleared)`);
+          } else {
+            stunned.value = stunnedRemaining;
+            actionNotes.push(`Stunned ${stunned.value + lost} → ${stunnedRemaining} (lost ${lost} actions)`);
+          }
+        }
+        if (quickened) {
+          netActions += 1;
+          actionNotes.push('Quickened (+1 action)');
+        }
+        if (actionNotes.length > 0) {
+          netActions = Math.max(0, netActions);
+          lines.push(`⚡ **${current.name}** has ${netActions} action${netActions === 1 ? '' : 's'} this turn — *${actionNotes.join(', ')}*`);
+        }
+      }
+
       const replyPayload = { content: lines.join('\n') };
       if (result.recoveryCheck) {
         const payload = buildRecoveryCheckPayload(result.recoveryCheck, current);
@@ -10620,7 +10826,47 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    if (sub === 'list') return interaction.reply({ embeds: [buildInitiativeEmbed(enc)] });
+    if (sub === 'list') {
+      // /init list shows MORE detail than the pinned summary embed:
+      // full effect descriptions (with modifiers and durations) and explicit
+      // dying/wounded/doomed/unconscious flags. Useful for "what's actually
+      // going on" mid-fight when the summary line is too compact.
+      const summaryEmbed = buildInitiativeEmbed(enc);
+      const detailLines = [];
+      for (const c of enc.combatants) {
+        const flags = [];
+        if ((c.dying ?? 0) > 0)   flags.push(`💀 Dying ${c.dying}`);
+        if ((c.wounded ?? 0) > 0) flags.push(`🩸 Wounded ${c.wounded}`);
+        if ((c.doomed ?? 0) > 0)  flags.push(`⚰️ Doomed ${c.doomed}`);
+        if (c.unconscious === true && (c.dying ?? 0) === 0) flags.push('😴 Unconscious');
+        const flagText = flags.length > 0 ? ` · ${flags.join(' · ')}` : '';
+
+        const effectDetails = (c.effects ?? []).map(e => {
+          if (e.kind === 'persistent-damage' || e.modifiers?.kind === 'persistent-damage') {
+            const dice = e.modifiers?.dice ?? e.dice ?? '?';
+            const dtype = e.modifiers?.damageType ?? e.damageType ?? 'damage';
+            const dc = e.modifiers?.dc ?? e.dc ?? 15;
+            return `   🩸 Persistent ${dice} ${dtype} (DC ${dc} flat to end)`;
+          }
+          const value = e.value ?? '';
+          const dur = e.duration !== null && e.duration !== undefined ? ` — ${e.duration}r left` : '';
+          const desc = e.modifiers?.description ? ` *(${e.modifiers.description})*` : '';
+          return `   • **${e.name}${value ? ' ' + value : ''}**${dur}${desc}`;
+        });
+        if (flags.length > 0 || effectDetails.length > 0) {
+          detailLines.push(`**${c.name}**${flagText}\n${effectDetails.join('\n')}`.trim());
+        }
+      }
+      const replyPayload = { embeds: [summaryEmbed] };
+      if (detailLines.length > 0) {
+        const detailEmbed = new EmbedBuilder()
+          .setColor(0x9B59B6)
+          .setTitle('🌀 Active Effects & Conditions')
+          .setDescription(detailLines.join('\n\n').slice(0, 4000));
+        replyPayload.embeds.push(detailEmbed);
+      }
+      return interaction.reply(replyPayload);
+    }
 
     if (sub === 'hp') {
       const name = interaction.options.getString('name');
@@ -10694,6 +10940,19 @@ client.on('interactionCreate', async (interaction) => {
       const result = addEffect(channelId, target.name, effect);
       if (!result) return interaction.reply({ content: `❌ Failed to apply effect.`, ephemeral: true });
 
+      // ── Sync core PF2e tracked-field conditions to the combatant ─────
+      // Doomed and Wounded need to be on the combatant directly (not just in
+      // the effects array) because combatAutomation reads them for dying math.
+      // Setting these via /init effect is the same as setting them via a
+      // dedicated subcommand — we just keep the surface small.
+      if (preset?.key === 'doomed') {
+        target.doomed = effect.value ?? 1;
+      } else if (preset?.key === 'wounded') {
+        target.wounded = effect.value ?? 1;
+      } else if (preset?.key === 'unconscious') {
+        target.unconscious = true;
+      }
+
       const modLines = [];
       const m = effect.modifiers;
       if (m.attackBonus) modLines.push(`Attack: ${fmt(m.attackBonus)}`);
@@ -10722,6 +10981,11 @@ client.on('interactionCreate', async (interaction) => {
 
       const result = removeEffect(channelId, target.name, effectName);
       if (!result) return interaction.reply({ content: `❌ **${target.name}** doesn't have an effect named "${effectName}".`, ephemeral: true });
+
+      // Sync PF2e tracked-field conditions when removing the effect.
+      if (result.effect.presetKey === 'doomed')      target.doomed = 0;
+      else if (result.effect.presetKey === 'wounded') target.wounded = 0;
+      else if (result.effect.presetKey === 'unconscious') target.unconscious = false;
 
       await interaction.reply(`🧹 Removed **${result.effect.name}** from **${target.name}**.`);
       await updateSummary(interaction.channel, enc);
@@ -10871,7 +11135,11 @@ client.on('interactionCreate', async (interaction) => {
 
     // ── /init dying ──
     // Manually set a combatant's dying value (override the auto-applied value
-    // for cases like a critical effect that bumps dying directly).
+    // for cases like a critical effect that bumps dying directly, or a GM
+    // marking someone dying who isn't tracked through normal damage).
+    //
+    // PF2e RAW: setting dying to 0 from above 0 does NOT regain HP — the character
+    // remains unconscious at 0 HP until something heals them. We follow RAW.
     if (sub === 'dying') {
       if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can override dying values.', ephemeral: true });
       const targetName = interaction.options.getString('name');
@@ -10880,16 +11148,26 @@ client.on('interactionCreate', async (interaction) => {
       if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}".`, ephemeral: true });
       if (value < 0 || value > 4) return interaction.reply({ content: '❌ Dying value must be 0–4.', ephemeral: true });
 
+      const maxDying = Math.max(1, 4 - (target.doomed ?? 0));
       const before = target.dying ?? 0;
       target.dying = value;
       let extra = '';
       if (value === 0 && before > 0) {
-        // Recovered — bump wounded
+        // Recovered from dying — gain Wounded 1 (or +1 if already wounded).
+        // Per RAW, do NOT auto-restore HP; the character is unconscious at 0 HP.
         target.wounded = (target.wounded ?? 0) + 1;
-        if (target.hp <= 0) target.hp = 1;
-        extra = ` ✨ Recovered (now Wounded ${target.wounded}, HP 1)`;
-      } else if (value >= 4) {
-        extra = ' ☠️ **Dead!**';
+        if ((target.hp ?? 0) <= 0) {
+          target.unconscious = true;
+          extra = ` ✨ Recovered from dying (now Wounded ${target.wounded}, still unconscious at 0 HP — needs healing to wake)`;
+        } else {
+          target.unconscious = false;
+          extra = ` ✨ Recovered from dying (now Wounded ${target.wounded})`;
+        }
+      } else if (value >= maxDying) {
+        target.dying = maxDying;
+        extra = target.doomed > 0
+          ? ` ☠️ **Dead!** (Doomed ${target.doomed} → death at Dying ${maxDying})`
+          : ' ☠️ **Dead!**';
       }
       await interaction.reply(`💀 **${target.name}** dying set to ${value} (was ${before}).${extra}`);
       await updateSummary(interaction.channel, enc);
@@ -10928,6 +11206,80 @@ client.on('interactionCreate', async (interaction) => {
 
       const payload = buildRecoveryCheckPayload(rc, target);
       await interaction.reply(payload);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // ── /init delay ──
+    // PF2e Player Core p. 469: When it's your turn, you may take the Delay
+    // action. Your turn ends, you're set aside, and you can rejoin at any
+    // point before your next normal turn. Implemented as a flag on the
+    // combatant; turn rotation skips delayed combatants.
+    //
+    // NOTE: Until this subcommand is registered with Discord (via deploy.js
+    // or the Dev Portal), users won't see it. The handler is here and ready.
+    if (sub === 'delay') {
+      const current = enc.combatants[enc.turnIndex];
+      if (!current) return interaction.reply({ content: '❌ No active combatant to delay.', ephemeral: true });
+      // Permission: only the current combatant's owner (or GM) can delay
+      const isOwner = !current.isNpc && interaction.user.id === current.ownerId;
+      const isGm = interaction.user.id === enc.gmId;
+      if (!isOwner && !isGm) {
+        return interaction.reply({ content: `❌ Only ${current.name}'s controller (or GM) can have them delay.`, ephemeral: true });
+      }
+      if (current.delayed) {
+        return interaction.reply({ content: `❌ **${current.name}** is already delayed.`, ephemeral: true });
+      }
+
+      // Use encounters.js delay function (also advances turn past delayed combatants)
+      const result = delayCombatant(channelId);
+      if (!result) return interaction.reply({ content: '❌ Could not delay.', ephemeral: true });
+
+      const newCurrent = result.current;
+      const newMention = newCurrent.isNpc ? `<@${enc.gmId}>` : `<@${newCurrent.ownerId}>`;
+      const lines = [
+        `⏸️ **${current.name}** delays. They'll rejoin with \`/init rejoin\`.`,
+        `🎯 It's **${newCurrent.name}**'s turn! ${newMention}`,
+      ];
+      // Show expired effects on the new current combatant
+      if (result.expiredEffects && result.expiredEffects.length > 0) {
+        const expiredText = result.expiredEffects.map(x => `**${x.effect.name}** on **${x.combatantName}**`).join(', ');
+        lines.push(`⏳ Expired: ${expiredText}`);
+      }
+      await interaction.reply(lines.join('\n'));
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // ── /init rejoin ──
+    // A delayed combatant returns to initiative. Optional `before:` parameter
+    // sets initiative just before the named target. Without it, they rejoin
+    // immediately before the current combatant (taking their turn now).
+    if (sub === 'rejoin') {
+      const rejoinerName = interaction.options.getString('name');
+      const rejoiner = enc.combatants.find(c => c.name.toLowerCase() === rejoinerName.toLowerCase());
+      if (!rejoiner) return interaction.reply({ content: `❌ No combatant named "${rejoinerName}".`, ephemeral: true });
+      if (!rejoiner.delayed) {
+        return interaction.reply({ content: `❌ **${rejoiner.name}** isn't delayed. (Are they trying to use /init next?)`, ephemeral: true });
+      }
+      const isOwner = !rejoiner.isNpc && interaction.user.id === rejoiner.ownerId;
+      const isGm = interaction.user.id === enc.gmId;
+      if (!isOwner && !isGm) {
+        return interaction.reply({ content: `❌ Only ${rejoiner.name}'s controller (or GM) can have them rejoin.`, ephemeral: true });
+      }
+
+      const beforeName = interaction.options.getString('target');
+      const result = rejoinFromDelay(channelId, rejoiner.name, beforeName);
+      if (!result || !result.ok) {
+        const reason = result?.reason === 'before-not-found'
+          ? `❌ No combatant named "${beforeName}" to rejoin before.`
+          : `❌ Could not rejoin.`;
+        return interaction.reply({ content: reason, ephemeral: true });
+      }
+
+      const mention = rejoiner.isNpc ? `<@${enc.gmId}>` : `<@${rejoiner.ownerId}>`;
+      const beforeText = beforeName ? ` (just before **${beforeName}**)` : '';
+      await interaction.reply(`▶️ **${rejoiner.name}** rejoins initiative at **${result.newInit.toFixed(3)}**${beforeText}. ${mention}, take your turn!`);
       await updateSummary(interaction.channel, enc);
       return;
     }

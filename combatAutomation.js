@@ -55,63 +55,86 @@ function recordAttack(channelId, combatantName) {
 // ─── Dying / Wounded ─────────────────────────────────────────────────────────
 
 // Core damage application wrapper. Call this INSTEAD of enc.modifyHp for damage.
-// Handles dying/wounded state transitions per PF2e rules.
+// Handles dying/wounded state transitions per PF2e rules (Player Core p. 411):
+//   - Going from alive → 0 HP: gain Dying 1 (+1 per existing wounded value)
+//   - Already dying when hit: dying +1 (or +2 if from a crit hit / crit-failed save)
+//   - Reaching maxDying (4 by default; lower if doomed) means death.
+//
+// Pass { isCrit: true } in opts when the damage is from a critical hit or a
+// critical failure on a save (per RAW). Defaults to false.
+//
 // Returns an object describing what happened:
 //   {
 //     newHp: number, maxHp: number,
 //     wentDown: boolean,        // transitioned from alive → 0 HP this call
+//     dyingIncreased: boolean,  // was dying, dying value went up
 //     wokeUp: boolean,          // was dying, now above 0 HP
-//     died: boolean,            // dying reached 4 (dead) or equivalent
+//     died: boolean,            // dying reached maxDying (dead)
 //     dying: number,            // current dying value (0 if not dying)
 //     wounded: number,          // current wounded value
 //     displaySuffix: string,    // short text to append to damage line
 //   }
-function applyDamage(channelId, combatantName, damage) {
+function applyDamage(channelId, combatantName, damage, opts = {}) {
   const encounter = enc.getEncounter(channelId);
   if (!encounter) return null;
   const c = enc.findCombatant(encounter, combatantName);
   if (!c) return null;
 
+  const isCrit = opts.isCrit === true;
+
   const hpBefore = c.hp;
   const wasAlive = hpBefore > 0;
+  const wasDying = (c.dying ?? 0) > 0;
   const newHp = Math.max(0, Math.min(c.maxHp, hpBefore - damage));
   c.hp = newHp;
 
-  // Ensure dying/wounded fields exist (legacy combatants may lack them)
+  // Ensure dying/wounded/doomed fields exist (legacy combatants may lack them)
   if (typeof c.dying !== 'number') c.dying = 0;
   if (typeof c.wounded !== 'number') c.wounded = 0;
+  if (typeof c.doomed !== 'number') c.doomed = 0;
 
+  const maxDying = Math.max(1, 4 - c.doomed);
   let wentDown = false;
+  let dyingIncreased = false;
   let died = false;
 
-  // Check for 0-HP transition while alive → apply dying
   if (wasAlive && newHp === 0 && damage > 0) {
+    // First time hitting 0 HP this fight: gain Dying 1 + wounded value
     wentDown = true;
-    // Dying starts at 1 + wounded value (PF2e rule: being wounded makes dying worse)
-    const startingDying = 1 + (c.wounded ?? 0);
-    c.dying = startingDying;
-    console.log(`[applyDamage] ${combatantName} went down: hp ${hpBefore} → 0, dying set to ${c.dying} (wounded was ${c.wounded ?? 0})`);
-    if (c.dying >= 4) {
+    c.dying = 1 + (c.wounded ?? 0);
+    if (c.dying >= maxDying) {
       died = true;
+      c.dying = maxDying;
+    }
+  } else if (wasDying && damage > 0) {
+    // Already dying and took more damage: dying +1 (or +2 if crit)
+    dyingIncreased = true;
+    c.dying += isCrit ? 2 : 1;
+    if (c.dying >= maxDying) {
+      died = true;
+      c.dying = maxDying;
     }
   }
 
-  const suffix = buildDamageSuffix({ wentDown, died, dying: c.dying, newHp });
+  const suffix = buildDamageSuffix({ wentDown, dyingIncreased, died, dying: c.dying, newHp, isCrit });
   return {
     newHp,
     maxHp: c.maxHp,
     wentDown,
+    dyingIncreased,
     wokeUp: false,
     died,
     dying: c.dying,
     wounded: c.wounded,
+    doomed: c.doomed,
     displaySuffix: suffix,
   };
 }
 
 // Healing wrapper. Call INSTEAD of enc.modifyHp for healing.
 // Handles waking up from dying per PF2e rules: any HP restoration removes the
-// dying condition and increments wounded by 1.
+// dying condition and increments wounded by 1. If you were Unconscious because
+// of dying and now have 1+ HP, you also wake up.
 function applyHealing(channelId, combatantName, amount) {
   const encounter = enc.getEncounter(channelId);
   if (!encounter) return null;
@@ -120,6 +143,7 @@ function applyHealing(channelId, combatantName, amount) {
 
   const hpBefore = c.hp;
   const wasDying = (c.dying ?? 0) > 0;
+  const wasUnconscious = c.unconscious === true;
   const newHp = Math.max(0, Math.min(c.maxHp, hpBefore + amount));
   c.hp = newHp;
 
@@ -131,11 +155,18 @@ function applyHealing(channelId, combatantName, amount) {
     wokeUp = true;
     c.dying = 0;
     c.wounded = (c.wounded ?? 0) + 1;
+    c.unconscious = false;
+  } else if (wasUnconscious && newHp > 0) {
+    // Was stable-but-unconscious from a previous recovery; healing wakes them.
+    c.unconscious = false;
+    wokeUp = true;
   }
 
   let suffix = '';
   if (wokeUp) {
-    suffix = `\n✨ **Recovered from dying!** (now Wounded ${c.wounded})`;
+    suffix = wasDying
+      ? `\n✨ **Recovered from dying!** (now Wounded ${c.wounded})`
+      : `\n✨ **${combatantName} wakes up!**`;
   }
 
   return {
@@ -143,9 +174,11 @@ function applyHealing(channelId, combatantName, amount) {
     maxHp: c.maxHp,
     wokeUp,
     wentDown: false,
+    dyingIncreased: false,
     died: false,
     dying: c.dying,
     wounded: c.wounded,
+    doomed: c.doomed ?? 0,
     displaySuffix: suffix,
   };
 }
@@ -158,20 +191,24 @@ function applyHpChange(channelId, combatantName, delta) {
   return null;
 }
 
-function buildDamageSuffix({ wentDown, died, dying, newHp }) {
-  if (died) return `\n☠️ **Dead!** (Dying ${dying})`;
-  if (wentDown && dying > 0) return `\n💀 **Down!** (Dying ${dying})`;
+function buildDamageSuffix({ wentDown, dyingIncreased, died, dying, newHp, isCrit }) {
+  const critTag = isCrit ? ' (crit)' : '';
+  if (died) return `\n☠️ **Dead!** (Dying ${dying})${critTag}`;
+  if (wentDown && dying > 0) return `\n💀 **Down!** (Dying ${dying})${critTag}`;
+  if (dyingIncreased) return `\n💀 **Dying increased to ${dying}**${critTag}`;
   if (newHp === 0 && dying > 0) return ` 💀 (Dying ${dying})`;
   return '';
 }
 
 // Roll the recovery flat check for a dying combatant.
-// PF2e rule: flat check DC (11 + dying value).
-//   Crit success: dying -2
-//   Success: dying -1
-//   Failure: dying +1
-//   Crit failure: dying +2
-// Returns { roll, dc, outcome, dyingBefore, dyingAfter, died, awoke, narration }.
+// PF2e Remaster (Player Core, p. 411):
+//   Flat check DC = 10 + current dying value (was 11 + in CRB, now 10 + in Remaster)
+//   Crit Success: dying -2
+//   Success:      dying -1
+//   Failure:      dying +1 (plus wounded value, if any)
+//   Crit Failure: dying +2 (plus wounded value, if any)
+// You die when dying reaches your maximum dying value (default 4, lower if doomed).
+// Returns { roll, dc, outcome, dyingBefore, dyingAfter, died, awoke, narration, woundedAdded, maxDying }.
 function rollRecoveryCheck(channelId, combatantName) {
   const encounter = enc.getEncounter(channelId);
   if (!encounter) return null;
@@ -179,52 +216,91 @@ function rollRecoveryCheck(channelId, combatantName) {
   if (!c || (c.dying ?? 0) <= 0) return null;
 
   const dyingBefore = c.dying;
-  const dc = 11 + dyingBefore;
+  const wounded = c.wounded ?? 0;
+  const doomed = c.doomed ?? 0;
+  const maxDying = Math.max(1, 4 - doomed); // doomed lowers your death threshold
+  const dc = 10 + dyingBefore; // Remaster uses 10 + dying (was 11 + in CRB)
   const roll = Math.floor(Math.random() * 20) + 1;
 
-  let outcome, delta;
-  if (roll === 20)                    { outcome = 'crit-success'; delta = -2; }
-  else if (roll === 1)                { outcome = 'crit-failure'; delta = +2; }
-  else if (roll >= dc + 10)           { outcome = 'crit-success'; delta = -2; }
-  else if (roll >= dc)                { outcome = 'success';      delta = -1; }
-  else if (roll <= dc - 10)           { outcome = 'crit-failure'; delta = +2; }
-  else                                { outcome = 'failure';      delta = +1; }
+  // Determine outcome (nat 20 / nat 1 shift one step)
+  let outcome, baseDelta;
+  if (roll === 20)                  { outcome = 'crit-success'; baseDelta = -2; }
+  else if (roll === 1)              { outcome = 'crit-failure'; baseDelta = +2; }
+  else if (roll >= dc + 10)         { outcome = 'crit-success'; baseDelta = -2; }
+  else if (roll >= dc)              { outcome = 'success';      baseDelta = -1; }
+  else if (roll <= dc - 10)         { outcome = 'crit-failure'; baseDelta = +2; }
+  else                              { outcome = 'failure';      baseDelta = +1; }
+
+  // Nat 20 ALSO shifts result up one step (PF2e general rule: nat 20 on a check
+  // is one degree better). Same for nat 1. Apply that shift.
+  if (roll === 20) {
+    if (outcome === 'failure')      { outcome = 'success';      baseDelta = -1; }
+    else if (outcome === 'crit-failure') { outcome = 'failure'; baseDelta = +1; }
+    // crit-success and success on nat 20 → still crit-success
+  } else if (roll === 1) {
+    if (outcome === 'success')      { outcome = 'failure';      baseDelta = +1; }
+    else if (outcome === 'crit-success') { outcome = 'success'; baseDelta = -1; }
+    // crit-failure and failure on nat 1 → still crit-failure
+  }
+
+  // Remaster: failure and crit-failure ALSO add wounded value.
+  let delta = baseDelta;
+  let woundedAdded = 0;
+  if (baseDelta > 0 && wounded > 0) {
+    delta = baseDelta + wounded;
+    woundedAdded = wounded;
+  }
 
   const dyingAfterRaw = dyingBefore + delta;
   let died = false;
   let awoke = false;
   let dyingAfter = dyingAfterRaw;
 
-  if (dyingAfter >= 4) {
+  if (dyingAfter >= maxDying) {
     died = true;
-    dyingAfter = 4;
-    c.dying = 4;
+    dyingAfter = maxDying;
+    c.dying = maxDying;
     // Dead means HP stays 0 and dying is locked; let the GM decide to remove
   } else if (dyingAfter <= 0) {
-    // Crit success on 1-dying takes you out of dying entirely and you regain
-    // consciousness at 1 HP (PF2e RAW: the check cap doesn't regain HP, but
-    // the crit-success result *does* — it's the "you stabilize and recover"
-    // end of the spectrum).
+    // Crit success that takes dying to 0 (or below) clears the dying condition.
+    // PF2e RAW: "If you lose the dying condition by succeeding at a recovery
+    // check and are still at 0 Hit Points, you remain unconscious."
+    // We keep them at 0 HP with the unconscious flag set instead of auto-1HP.
     awoke = true;
     c.dying = 0;
     c.wounded = (c.wounded ?? 0) + 1;
-    if (c.hp <= 0) c.hp = 1;
+    // PF2e RAW: stays unconscious at 0 HP. The unconscious flag is purely
+    // informational here — actual HP-restoration must come from healing.
+    c.unconscious = (c.hp ?? 0) <= 0;
     dyingAfter = 0;
   } else {
     c.dying = dyingAfter;
   }
 
+  // Compose narration
   let narration;
-  if (died)       narration = `☠️ **${combatantName} has died.**`;
-  else if (awoke) narration = `✨ **${combatantName} recovers consciousness!** (now Wounded ${c.wounded}, HP 1)`;
-  else if (delta < 0) narration = `⬆️ Dying reduced: ${dyingBefore} → ${dyingAfter}`;
-  else if (delta > 0) narration = `⬇️ Dying increased: ${dyingBefore} → ${dyingAfter}`;
-  else                narration = `Dying unchanged at ${dyingAfter}`;
+  if (died) {
+    narration = doomed > 0
+      ? `☠️ **${combatantName} has died.** (Doomed ${doomed} → death at Dying ${maxDying})`
+      : `☠️ **${combatantName} has died.**`;
+  } else if (awoke) {
+    narration = c.hp > 0
+      ? `✨ **${combatantName} recovers consciousness!** (now Wounded ${c.wounded})`
+      : `✨ **${combatantName} stabilizes** at 0 HP. (now Wounded ${c.wounded}, still unconscious — needs healing to wake)`;
+  } else if (delta < 0) {
+    narration = `⬆️ Dying reduced: ${dyingBefore} → ${dyingAfter}`;
+  } else if (delta > 0) {
+    const woundedNote = woundedAdded > 0 ? ` (+${baseDelta} base, +${woundedAdded} from Wounded ${wounded})` : '';
+    narration = `⬇️ Dying increased: ${dyingBefore} → ${dyingAfter}${woundedNote}`;
+  } else {
+    narration = `Dying unchanged at ${dyingAfter}`;
+  }
 
   return {
-    roll, dc, outcome, delta,
+    roll, dc, outcome, delta, baseDelta,
     dyingBefore, dyingAfter,
     died, awoke,
+    woundedAdded, wounded, doomed, maxDying,
     narration,
   };
 }
@@ -274,6 +350,39 @@ function rerollRecoveryCheck(channelId, combatantName, originalResult) {
     rerollRoll: second.roll,
     keptOriginal: false,
     narration: `🎭 Hero Point reroll: ${second.roll} vs original ${originalResult.roll} — kept reroll.\n${second.narration}`,
+  };
+}
+
+// Spend all remaining hero points to escape death (PF2e Player Core p. 411).
+// "If you have at least 1 Hero Point, you can spend all of your remaining Hero
+// Points at the start of your turn or when your dying value would increase. You
+// lose the dying condition entirely and stabilize with 0 Hit Points. You don't
+// gain the wounded condition or increase its value from losing the dying
+// condition in this way."
+//
+// This is the bot-side mechanical effect. The caller is responsible for
+// validating the player has hero points and zeroing them out.
+//
+// Returns { ok, dyingBefore, woundedKept, narration } or null if not dying.
+function stabilizeWithHeroPoints(channelId, combatantName) {
+  const encounter = enc.getEncounter(channelId);
+  if (!encounter) return null;
+  const c = enc.findCombatant(encounter, combatantName);
+  if (!c) return null;
+  const dyingBefore = c.dying ?? 0;
+  if (dyingBefore <= 0) return { ok: false, reason: 'not-dying' };
+
+  c.dying = 0;
+  // Wounded does NOT increase or decrease — keep current value.
+  // HP stays at 0 (stabilized). Mark unconscious so display reflects that they
+  // aren't actively fighting yet.
+  c.unconscious = (c.hp ?? 0) <= 0;
+
+  return {
+    ok: true,
+    dyingBefore,
+    woundedKept: c.wounded ?? 0,
+    narration: `🎭 **${combatantName}** spends all remaining Hero Points to escape death — stabilized at 0 HP, dying cleared. Wounded ${c.wounded ?? 0} unchanged.`,
   };
 }
 
@@ -461,6 +570,7 @@ module.exports = {
   applyHpChange,
   rollRecoveryCheck,
   rerollRecoveryCheck,
+  stabilizeWithHeroPoints,
   // Persistent damage
   getPersistentDamageEffects,
   tickPersistentDamage,

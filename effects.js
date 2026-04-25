@@ -136,6 +136,17 @@ const PRESETS = {
       description: 'Cannot see. -4 to Perception-based checks. All normal terrain is difficult.',
     }),
   },
+  unconscious: {
+    name: 'Unconscious',
+    scaling: false,
+    build: () => ({
+      acBonus: -4,
+      saveBonus: -4,
+      skillBonus: -4,
+      noAttack: true,
+      description: 'Asleep or knocked out. Cannot act. -4 status penalty to AC, Perception, and Reflex saves. Blinded and Off-Guard. Falls prone, drops items.',
+    }),
+  },
   slowed: {
     name: 'Slowed',
     scaling: true,
@@ -143,23 +154,38 @@ const PRESETS = {
       description: `Lose ${value} action${value === 1 ? '' : 's'} at the start of each turn.`,
     }),
   },
+  stunned: {
+    name: 'Stunned',
+    scaling: true,
+    build: (value) => ({
+      description: `Lose ${value} action${value === 1 ? '' : 's'} this turn. After actions are lost, reduce stunned by the same amount. (If stunned has a duration, ignore that and just track the value.)`,
+    }),
+  },
 
-  // ── Dying / Wounded (new) ────────────────────────────────────────────────
-  // Dying and Wounded are PF2e conditions that the bot now manages automatically
-  // through combatAutomation.applyDamage / applyHealing, but we still expose them
-  // as presets so GMs can inspect or manually adjust them via /init effect.
+  // ── Dying / Wounded / Doomed (managed automatically) ────────────────────
+  // Dying, Wounded, and Doomed are PF2e conditions that the bot now manages
+  // automatically through combatAutomation.applyDamage / applyHealing /
+  // rollRecoveryCheck. We still expose them as presets so GMs can inspect
+  // or manually adjust them via /init effect.
   dying: {
     name: 'Dying',
     scaling: true,
     build: (value) => ({
-      description: `Unconscious and at 0 HP. Dying ${value}. Rolls a DC ${11 + value} recovery flat check at start of turn. Dying 4 = dead.`,
+      description: `Unconscious and at 0 HP. Dying ${value}. Rolls a DC ${10 + value} recovery flat check at start of turn. Reaches Dying 4 (or 4 - doomed value) = dead.`,
     }),
   },
   wounded: {
     name: 'Wounded',
     scaling: true,
     build: (value) => ({
-      description: `Previously brought to 0 HP. When brought to 0 HP again, start at Dying ${1 + value} instead of Dying 1.`,
+      description: `Previously brought to 0 HP. When brought to 0 HP again, start at Dying ${1 + value} instead of Dying 1. Failed recovery checks also add ${value} to dying.`,
+    }),
+  },
+  doomed: {
+    name: 'Doomed',
+    scaling: true,
+    build: (value) => ({
+      description: `Death is closer. Maximum dying value reduced by ${value} — you die at Dying ${Math.max(1, 4 - value)} instead of Dying 4. Decreases by 1 per full night's rest. Apply with: /init dying-set name:X (use the dying subcommand to track).`,
     }),
   },
 
