@@ -1721,6 +1721,13 @@ function computeCharPerception(charEntry) {
 }
 
 function computeCharMaxHp(charEntry) {
+  // Honor a manual override if one is set on the entry. This is used when the
+  // import calculation comes out wrong (e.g. PDF imports that don't include
+  // every HP source, characters with custom HP rules, etc.). When the override
+  // is null/undefined, fall back to computing from ancestry/class/Con/level.
+  if (typeof charEntry?._hpMaxOverride === 'number' && charEntry._hpMaxOverride > 0) {
+    return charEntry._hpMaxOverride;
+  }
   const c = charEntry.data;
   const lvl = c.level ?? 1;
   const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
@@ -1760,7 +1767,7 @@ function buildCharHpEmbed(char, charEntry, note = null) {
     .setTitle(`❤️ ${char.name}'s Hit Points`)
     .setDescription(`\`${bar}\`\n**${currentHp} / ${maxHp}** HP · *${status}*`);
   if (note) embed.addFields({ name: '\u200b', value: note, inline: false });
-  embed.setFooter({ text: '/hp set, /hp add, /rest to restore · Combat uses /init hp' });
+  embed.setFooter({ text: '/hp set, /hp add, /hp max, /rest to restore · Combat uses /init hp' });
   if (charEntry.art) embed.setThumbnail(charEntry.art);
   return embed;
 }
@@ -4691,7 +4698,7 @@ const HELP_CATEGORIES = {
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
-      { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset)', example: '/hp add value:-5' },
+      { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset, max)', example: '/hp max value:52' },
       { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80' },
       { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
       { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:NPCs text:Met Lord Aldori' },
@@ -6830,6 +6837,88 @@ client.on('interactionCreate', async (interaction) => {
         )
         .setFooter({ text: 'All import methods accept .json or .txt. Save your export as .txt if your OS is fussy about .json files.' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // ─── /char hp ─────────────────────────────────────────────────────
+    // Override or reset a character's max HP, and/or set their current HP.
+    // Useful when an import miscalculates HP (e.g. PDF imports missing
+    // toughness/diehard/etc., or when a campaign uses house rules).
+    //
+    // Usage:
+    //   /char hp max:42                  → sets max HP override to 42
+    //   /char hp max:reset               → clears override, returns to computed
+    //   /char hp current:30              → sets current HP to 30 (clamped to max)
+    //   /char hp max:42 current:30       → both at once
+    else if (sub === 'hp') {
+      const userId = interaction.user.id;
+      const characters = loadCharacters();
+      const nameArg = interaction.options.getString('character');
+      const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+
+      const maxArg = interaction.options.getString('max');
+      const currentArg = interaction.options.getInteger('current');
+
+      if (!maxArg && currentArg == null) {
+        // No args — just show current state
+        const computed = (() => {
+          const c = charEntry.data;
+          const lvl = c.level ?? 1;
+          const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
+          return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+        })();
+        const effective = computeCharMaxHp(charEntry);
+        const current = getCharacterHp(charEntry);
+        const overrideText = (typeof charEntry._hpMaxOverride === 'number' && charEntry._hpMaxOverride > 0)
+          ? `\n*Override is active.* Computed value would be **${computed}**.`
+          : '';
+        return interaction.reply({
+          content: `**${charEntry.data.name}**: ${current} / ${effective} HP${overrideText}\n\nUse \`/char hp max:<n>\` to override max, \`/char hp current:<n>\` to set current, or \`/char hp max:reset\` to clear an override.`,
+          ephemeral: true,
+        });
+      }
+
+      const changes = [];
+
+      // Handle max: parameter
+      if (maxArg) {
+        if (maxArg.toLowerCase() === 'reset' || maxArg.toLowerCase() === 'clear' || maxArg.toLowerCase() === 'auto') {
+          if (typeof charEntry._hpMaxOverride === 'number') {
+            delete charEntry._hpMaxOverride;
+            changes.push(`max HP override cleared (now computed)`);
+          } else {
+            changes.push(`max HP wasn't overridden — no change`);
+          }
+        } else {
+          const n = parseInt(maxArg, 10);
+          if (Number.isNaN(n) || n <= 0 || n > 9999) {
+            return interaction.reply({ content: `❌ \`max\` must be a positive number (or \`reset\`). Got: \`${maxArg}\``, ephemeral: true });
+          }
+          charEntry._hpMaxOverride = n;
+          changes.push(`max HP set to **${n}**`);
+        }
+      }
+
+      // Handle current: parameter — apply AFTER max change so clamp uses new max
+      if (currentArg != null) {
+        const newMax = computeCharMaxHp(charEntry);
+        if (currentArg < 0) {
+          return interaction.reply({ content: `❌ Current HP can't be negative.`, ephemeral: true });
+        }
+        const clamped = Math.min(currentArg, newMax);
+        setCharacterHp(charEntry, clamped);
+        if (clamped !== currentArg) {
+          changes.push(`current HP set to **${clamped}** (clamped to max)`);
+        } else {
+          changes.push(`current HP set to **${clamped}**`);
+        }
+      }
+
+      saveCharacters(characters);
+
+      const finalMax = computeCharMaxHp(charEntry);
+      const finalCurrent = getCharacterHp(charEntry);
+      return interaction.reply(`✅ **${charEntry.data.name}**: ${changes.join(', ')}.\nNow at **${finalCurrent} / ${finalMax}** HP.`);
     }
 
     else if (sub === 'remove') {
@@ -10288,6 +10377,50 @@ client.on('interactionCreate', async (interaction) => {
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       const note = `🌅 Fully healed: **${maxHp}/${maxHp}** HP.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+    }
+
+    // /hp max — override the max HP permanently. Used when Pathbuilder import
+    // didn't account for every HP source (Toughness, ancestry feats, custom
+    // rules, etc.) and the computed max is wrong. Stored on charEntry as
+    // _hpMaxOverride; computeCharMaxHp honors it. action:clear removes the
+    // override and falls back to the computed value.
+    if (sub === 'max') {
+      const action = interaction.options.getString('action');
+      if (action === 'clear') {
+        const oldOverride = charEntry._hpMaxOverride;
+        delete charEntry._hpMaxOverride;
+        // Re-clamp current HP to the freshly computed max.
+        const newMax = computeCharMaxHp(charEntry);
+        if (typeof charEntry.hp === 'number' && charEntry.hp > newMax) {
+          charEntry.hp = newMax;
+        }
+        characters[interaction.user.id][charKey] = charEntry;
+        saveCharacters(characters);
+        const note = oldOverride
+          ? `🧹 Cleared max HP override (was ${oldOverride}). Now using computed max: **${newMax}**.`
+          : `ℹ️ No override was set. Computed max: **${newMax}**.`;
+        return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+      }
+
+      const value = interaction.options.getInteger('value');
+      if (value === null || value === undefined) {
+        return interaction.reply({ content: '❌ Provide either `value:` (a new max) or `action:clear`.', ephemeral: true });
+      }
+      if (value < 1) return interaction.reply({ content: '❌ Max HP must be at least 1.', ephemeral: true });
+      if (value > 9999) return interaction.reply({ content: '❌ Max HP must be 9999 or less.', ephemeral: true });
+
+      const oldMax = computeCharMaxHp(charEntry);
+      charEntry._hpMaxOverride = value;
+      // If current HP overlay is now below new max, leave it (player took damage
+      // already). If current HP was at the old max (full health), bump it to the
+      // new max so a heal-then-override doesn't cap them low.
+      if (typeof charEntry.hp !== 'number' || charEntry.hp === oldMax) {
+        charEntry.hp = value;
+      }
+      characters[interaction.user.id][charKey] = charEntry;
+      saveCharacters(characters);
+      const note = `🔧 Max HP override set to **${value}** (was ${oldMax}). Use \`/hp max action:Clear override\` to revert.`;
       return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
     }
   }
