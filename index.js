@@ -6881,12 +6881,14 @@ client.on('interactionCreate', async (interaction) => {
 
       const url = `https://pathbuilder2e.com/json.php?id=${id}`;
       try {
-        // Try a browser-like User-Agent in case Pathbuilder's allowlist is partly
-        // UA-based. In my testing it isn't — the block is host/IP-based — but it
-        // costs nothing to try.
+        // Use an honest User-Agent that identifies us as a bot. Some
+        // services (per Pathmuncher creator David Wilson, 2026-04-25) block
+        // blank or suspicious UAs but allow honest ones. Even if Pathbuilder's
+        // allowlist is host-based (which we believe it is), being a good
+        // network citizen — announcing what we are — is the right default.
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'User-Agent': 'Pathway-Bot/1.0 (+https://github.com/vivantur/Pathway; PF2e Discord bot)',
           },
         });
         const rawText = await response.text();
@@ -6895,16 +6897,18 @@ client.on('interactionCreate', async (interaction) => {
         // whitelisted. Detect that specifically so we can give useful guidance.
         if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
           return interaction.editReply(
-            `❌ **Pathbuilder blocked the request.** The endpoint returned: \`${rawText.slice(0, 100)}\`\n\n` +
-            `Pathbuilder only allows requests from specific servers (Roland's allowlist). This bot's server isn't on it.\n\n` +
-            `**Workarounds:**\n` +
-            `• Use \`/char pastemsg\` — copy the JSON from Pathbuilder and paste it as a chat message, then run the command. Works identically to this and won't be blocked.\n` +
-            `• Use \`/char add\` with the JSON as a file upload.\n\n` +
-            `If you want this feature to work, you can email \`pathbuilder2e@gmail.com\` and ask Roland to allowlist this bot's host. Include a log of this error.`
+            `❌ **Pathbuilder blocked the request — its allowlist doesn't include this bot's server.**\n\n` +
+            `**Easy fix:** import via copy-paste instead. Takes 30 seconds:\n` +
+            `1. In Pathbuilder, click **Menu** → **Export & Import** → **Export JSON**\n` +
+            `2. Click **Copy to Clipboard**\n` +
+            `3. Paste the JSON into Discord chat as a message\n` +
+            `4. Right-click your pasted message → **Apps** → **Import as Character**\n` +
+            `   *(or use \`/char pastemsg\` referring to the message ID)*\n\n` +
+            `**Why this happens:** Pathbuilder's creator (Roland) maintains an allowlist of approved hosts. Cloud-hosted bots like this one aren't on it. The User-Agent isn't the issue — the source IP is.`
           );
         }
         if (!response.ok) {
-          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again later, or use \`/char pastemsg\`.`);
+          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use the copy-paste flow described in \`/char help\`.`);
         }
 
         // Parse what we got. Pathbuilder returns { success: true, build: {...} } on
