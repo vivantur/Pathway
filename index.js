@@ -889,7 +889,7 @@ function getBlankCharacterTemplate() {
   "languages": ["Common"],
 
   "_comment_ATTRIBUTES": "== HP + SPEED ==",
-  "_comment_hp": "HP is computed as ancestryhp + classhp + (bonushp * level) + (conMod * level). For a level 1 Fighter with Con +2: 8 + 10 + 0 + 2 = 20 HP.",
+  "_comment_hp": "HP is computed as ancestryhp + bonushp + ((classhp + bonushpPerLevel + conMod) * level). For a level 1 Fighter with Con +2: 8 + 0 + ((10 + 0 + 2) * 1) = 20 HP. ancestryhp/bonushp are FLAT one-time values; classhp/bonushpPerLevel are PER-LEVEL.",
   "attributes": {
     "ancestryhp": 8,
     "classhp": 10,
@@ -1731,7 +1731,14 @@ function computeCharMaxHp(charEntry) {
   const c = charEntry.data;
   const lvl = c.level ?? 1;
   const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
-  return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+  // PF2e HP formula (matches Pathbuilder's own attribute semantics):
+  //   ancestryhp        — flat (level 1 ancestry HP)
+  //   bonushp           — flat one-time bonus (e.g. Toughness L1 portion)
+  //   classhp           — per-level class HP
+  //   bonushpPerLevel   — per-level bonus (e.g. Toughness scaling, ancestry feats)
+  //   conMod            — per-level Con bonus
+  // Total = ancestryhp + bonushp + (classhp + bonushpPerLevel + conMod) × lvl
+  return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.bonushp ?? 0) + (((c.attributes?.classhp ?? 0) + (c.attributes?.bonushpPerLevel ?? 0) + conMod) * lvl);
 }
 
 // ── Character HP overlay helpers ─────────────────────────────────────────────
@@ -6865,7 +6872,7 @@ client.on('interactionCreate', async (interaction) => {
           const c = charEntry.data;
           const lvl = c.level ?? 1;
           const conMod = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
-          return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+          return (c.attributes?.ancestryhp ?? 0) + (c.attributes?.bonushp ?? 0) + (((c.attributes?.classhp ?? 0) + (c.attributes?.bonushpPerLevel ?? 0) + conMod) * lvl);
         })();
         const effective = computeCharMaxHp(charEntry);
         const current = getCharacterHp(charEntry);
@@ -7179,7 +7186,7 @@ client.on('interactionCreate', async (interaction) => {
       const currentXP = getCharacterXp(charEntry);
       const xpDisplay = `${currentXP} / ${xpToNextLevel(lvl)} XP`;
       const conMod = Math.floor(((ab.con ?? 10) - 10) / 2);
-      const totalHPComputed = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.classhp ?? 0) + ((c.attributes?.bonushp ?? 0) * lvl) + (conMod * lvl);
+      const totalHPComputed = (c.attributes?.ancestryhp ?? 0) + (c.attributes?.bonushp ?? 0) + (((c.attributes?.classhp ?? 0) + (c.attributes?.bonushpPerLevel ?? 0) + conMod) * lvl);
       // Apply HP max override if set via /char stat
       const statOverridesPre = charEntry.edits?.stats ?? {};
       const totalHP = statOverridesPre.hpMax ?? totalHPComputed;
@@ -10380,17 +10387,15 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
     }
 
-    // /hp max — override the max HP permanently. Used when Pathbuilder import
-    // didn't account for every HP source (Toughness, ancestry feats, custom
-    // rules, etc.) and the computed max is wrong. Stored on charEntry as
-    // _hpMaxOverride; computeCharMaxHp honors it. action:clear removes the
-    // override and falls back to the computed value.
+    // /hp max — override the max HP permanently. Used when the computed max
+    // is wrong (homebrew rules, custom features, etc.). Stored on charEntry
+    // as _hpMaxOverride; computeCharMaxHp honors it. action:clear removes
+    // the override and falls back to the computed value.
     if (sub === 'max') {
       const action = interaction.options.getString('action');
       if (action === 'clear') {
         const oldOverride = charEntry._hpMaxOverride;
         delete charEntry._hpMaxOverride;
-        // Re-clamp current HP to the freshly computed max.
         const newMax = computeCharMaxHp(charEntry);
         if (typeof charEntry.hp === 'number' && charEntry.hp > newMax) {
           charEntry.hp = newMax;
@@ -10412,9 +10417,8 @@ client.on('interactionCreate', async (interaction) => {
 
       const oldMax = computeCharMaxHp(charEntry);
       charEntry._hpMaxOverride = value;
-      // If current HP overlay is now below new max, leave it (player took damage
-      // already). If current HP was at the old max (full health), bump it to the
-      // new max so a heal-then-override doesn't cap them low.
+      // If they were at full HP (or no overlay), bump current to new max.
+      // If they were already wounded, leave current HP alone.
       if (typeof charEntry.hp !== 'number' || charEntry.hp === oldMax) {
         charEntry.hp = value;
       }
