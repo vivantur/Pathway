@@ -5845,15 +5845,29 @@ client.on('interactionCreate', async (interaction) => {
           const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
           suggestions = pick(comps);
         }
-        return interaction.respond(suggestions);
+        // Await respond so any rejection (network blip, expired interaction,
+        // already-acknowledged etc.) is caught by the local try/catch instead
+        // of escaping to the unhandledRejection handler. The catch block
+        // below will swallow these errors quietly and try a fallback respond.
+        try {
+          await interaction.respond(suggestions);
+        } catch (respondErr) {
+          // Don't try to respond again — it'll just error the same way.
+          // Log if it's not the common already-acked or expired cases.
+          if (respondErr?.code !== 40060 && respondErr?.code !== 10062) {
+            console.error('Autocomplete respond failed:', respondErr.message);
+          }
+        }
+        return;
       } catch (err) {
+        // This catches errors during suggestion BUILDING (above the respond
+        // call), not respond errors themselves (those are caught inline).
         console.error('Autocomplete error:', err);
-        // Discord requires a response; empty array is fine as a fallback.
-        // Use await so async errors here are caught by the surrounding try.
         try { await interaction.respond([]); } catch (innerErr) {
-          // Interaction expired or was already responded to. Just log and move on —
-          // do NOT throw, or it'll crash the process.
-          console.error('Autocomplete fallback also failed:', innerErr.message);
+          // Already-responded or interaction expired. Just log and move on.
+          if (innerErr?.code !== 40060 && innerErr?.code !== 10062) {
+            console.error('Autocomplete fallback also failed:', innerErr.message);
+          }
         }
       }
     }
