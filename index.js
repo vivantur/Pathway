@@ -14,6 +14,7 @@ const {
   atomicWriteJson,
   loadJson,
   saveJson,
+  mutateJson,
 } = require('./utils/storage');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
@@ -369,7 +370,7 @@ function loadCharacters() {
   catch { return {}; }
 }
 function saveCharacters(data) {
-  fs.writeFileSync(dataPath('characters.json'), JSON.stringify(data, null, 2));
+  return saveJson('characters.json', data);
 }
 
 // ── Downtime helpers ──────────────────────────────────────────────────────────
@@ -381,7 +382,7 @@ function loadDowntime() {
   catch { return {}; }
 }
 function saveDowntime(data) {
-  fs.writeFileSync(dataPath('downtime.json'), JSON.stringify(data, null, 2));
+  saveJson('downtime.json', data);
 }
 
 // ── Bag helpers ───────────────────────────────────────────────────────────────
@@ -390,7 +391,7 @@ function loadBags() {
   catch { return {}; }
 }
 function saveBags(data) {
-  fs.writeFileSync(dataPath('bags.json'), JSON.stringify(data, null, 2));
+  saveJson('bags.json', data);
 }
 
 // ── Snippet helpers ──────────────────────────────────────────────────────────
@@ -403,7 +404,7 @@ function loadSnippets() {
   catch { return {}; }
 }
 function saveSnippets(data) {
-  fs.writeFileSync(dataPath('snippets.json'), JSON.stringify(data, null, 2));
+  saveJson('snippets.json', data);
 }
 // Validate a snippet name: letters/numbers/underscore only, 1-24 chars, not
 // colliding with reserved roll modifiers.
@@ -456,7 +457,7 @@ function loadServerSnippets() {
   catch { return {}; }
 }
 function saveServerSnippets(data) {
-  fs.writeFileSync(dataPath('server_snippets.json'), JSON.stringify(data, null, 2));
+  saveJson('server_snippets.json', data);
 }
 // Merge personal + server snippets for a given user+guild. Personal wins
 // on name collision. Returns { [name]: expansion }.
@@ -474,7 +475,7 @@ function loadMonsterAttacks() {
   catch { return {}; }
 }
 function saveMonsterAttacks(data) {
-  fs.writeFileSync(dataPath('monster_attacks.json'), JSON.stringify(data, null, 2));
+  saveJson('monster_attacks.json', data);
 }
 function monsterKey(name) {
   return String(name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -509,7 +510,7 @@ function loadMonsterArt() {
   catch { return {}; }
 }
 function saveMonsterArt(data) {
-  fs.writeFileSync(dataPath('monster_art.json'), JSON.stringify(data, null, 2));
+  saveJson('monster_art.json', data);
 }
 function getGuildArt(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -551,7 +552,7 @@ function loadMonsterEdits() {
   catch { return {}; }
 }
 function saveMonsterEdits(data) {
-  fs.writeFileSync(dataPath('monster_edits.json'), JSON.stringify(data, null, 2));
+  saveJson('monster_edits.json', data);
 }
 function getGuildEdits(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -3913,7 +3914,7 @@ function loadNotes() {
 
 function saveNotes(notes) {
   try {
-    fs.writeFileSync(dataPath('notes.json'), JSON.stringify(notes, null, 2));
+    saveJson('notes.json', notes);
     return true;
   } catch (err) {
     console.error('Failed to save notes.json:', err);

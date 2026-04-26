@@ -8,6 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch');
 
 // ── Persistent-data directory ────────────────────────────────────────────────
 // On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so
@@ -132,6 +133,38 @@ function dataPath(filename, { seedFromRepo = false, repoRoot = process.cwd() } =
   return target;
 }
 
+// ── Per-file write serialization ────────────────────────────────────────────
+// Two users running commands at nearly the same instant could each call
+//   1. loadJson('characters.json')   ← both read same content
+//   2. modify their slot in memory
+//   3. saveJson('characters.json', data)  ← second write CLOBBERS first
+// The second writer's in-memory copy doesn't have the first writer's change,
+// so the first user's change vanishes. Across many saves this corrupts data
+// in ways that look like "characters got swapped" or "my changes disappeared."
+//
+// The fix: queue writes per-filename. Each file has its own promise chain;
+// the next save waits for the previous one to complete (including its
+// GitHub backup) before starting. Different files don't block each other.
+//
+// Note: this only protects writes happening within a single Node process.
+// If two processes are running (e.g. local + Railway), they can still race.
+// That's a separate concern, but the bot only runs in one place at a time.
+const writeQueues = new Map();
+
+function queueWrite(filename, task) {
+  const prev = writeQueues.get(filename) ?? Promise.resolve();
+  // Always continue the chain even if the previous task threw, so one bad
+  // write doesn't permanently jam the queue for that file.
+  const next = prev.catch(() => {}).then(task);
+  writeQueues.set(filename, next);
+  // Clean up the map entry when this task finishes, but only if no newer
+  // task has chained on top (i.e. the entry still points at our promise).
+  next.finally(() => {
+    if (writeQueues.get(filename) === next) writeQueues.delete(filename);
+  });
+  return next;
+}
+
 // Atomic write: dump to a temp file, then rename. If anything goes wrong
 // mid-write, the real file is either the old version or the new version —
 // never a half-written file.
@@ -140,6 +173,61 @@ function atomicWriteJson(filename, payload) {
   const tmp = `${target}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
   fs.renameSync(tmp, target);
+}
+
+const GITHUB_BACKUP_FILES = new Set(
+  String(process.env.GITHUB_BACKUP_FILES || 'characters.json')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+);
+
+function githubConfig() {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
+  const branch = process.env.GITHUB_BRANCH || 'main';
+  if (!token || !repo) return null;
+  return { token, repo, branch };
+}
+
+async function backupJsonToGitHub(filename, data) {
+  if (!GITHUB_BACKUP_FILES.has(filename)) return { skipped: true };
+  const cfg = githubConfig();
+  if (!cfg) return { skipped: true };
+
+  const apiUrl = `https://api.github.com/repos/${cfg.repo}/contents/${encodeURIComponent(filename)}`;
+  const headers = {
+    Authorization: `Bearer ${cfg.token}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'Pathway-Bot',
+  };
+
+  let sha = null;
+  const current = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
+  if (current.ok) {
+    const body = await current.json();
+    sha = body.sha;
+  } else if (current.status !== 404) {
+    throw new Error(`GitHub read failed for ${filename}: ${current.status} ${await current.text()}`);
+  }
+
+  const content = Buffer.from(JSON.stringify(data, null, 2), 'utf8').toString('base64');
+  const update = await fetch(apiUrl, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({
+      message: `Backup ${filename} from Pathway`,
+      content,
+      branch: cfg.branch,
+      sha,
+    }),
+  });
+
+  if (!update.ok) {
+    throw new Error(`GitHub write failed for ${filename}: ${update.status} ${await update.text()}`);
+  }
+  return { ok: true };
 }
 
 // ── Generic JSON loader ──────────────────────────────────────────────────────
@@ -212,10 +300,87 @@ function loadJson(filename, opts = {}) {
   }
 }
 
-// Simple save-JSON helper for user-data files (characters, bags, notes, etc.)
-// Not atomic — use atomicWriteJson for critical shared files like bestiary.
+// Save a JSON file safely. This is the ONE function index.js (and any
+// command handler) should call to persist user data. It guarantees:
+//
+//   1. ATOMIC WRITES — temp file + rename, so a crash mid-write can't
+//      leave a corrupt or half-written file on the volume.
+//   2. SERIALIZED WRITES — concurrent calls for the same filename queue
+//      up instead of racing at the filesystem level.
+//   3. GITHUB BACKUP — fire-and-forget commit of files listed in
+//      GITHUB_BACKUP_FILES (default: characters.json) to your repo,
+//      giving you a recoverable history of every save.
+//
+// IMPORTANT: saveJson alone does NOT fix the read-modify-write race that
+// happens when two handlers do `load → modify → save` concurrently — both
+// load the same starting state, both modify their copy, the second save
+// overwrites the first. For files where multiple users may write at once
+// (especially characters.json), use mutateJson() instead, which serializes
+// the entire load-modify-save cycle.
+//
+// Returns a Promise. Most callers don't need to await it (the in-memory
+// state is already correct), but you can await if you want to confirm
+// the durable write succeeded before proceeding.
 function saveJson(filename, data) {
-  fs.writeFileSync(dataPath(filename), JSON.stringify(data, null, 2), 'utf8');
+  return queueWrite(filename, async () => {
+    atomicWriteJson(filename, data);
+    try {
+      await backupJsonToGitHub(filename, data);
+    } catch (err) {
+      console.error(`GitHub backup failed for ${filename}:`, err.message);
+    }
+  });
+}
+
+// Atomically read-modify-write a JSON file. The mutator function receives
+// the current on-disk state (or `defaultValue` if the file doesn't exist
+// or can't be parsed) and should return the new state to write. The entire
+// load-modify-save cycle runs inside the file's write queue, so two
+// handlers calling mutateJson on the same file at the same time will
+// serialize: the second one sees the first one's changes when it reads.
+//
+// This is the fix for the "swapped sheets" / "lost changes" bug. Use this
+// instead of saveJson for any file where two users could modify at once.
+//
+// The mutator may be sync or async. Throwing from it aborts the write
+// (the file is left untouched) and the error propagates to the caller.
+//
+// Example (replacing load → modify → save):
+//
+//   // OLD (race condition):
+//   const characters = loadCharacters();
+//   characters[userId][key].hp = 30;
+//   saveCharacters(characters);
+//
+//   // NEW (race-free):
+//   await mutateJson('characters.json', { default: {} }, (characters) => {
+//     characters[userId][key].hp = 30;
+//     return characters;
+//   });
+function mutateJson(filename, opts, mutator) {
+  // Allow calling as mutateJson(filename, mutator) with no opts.
+  if (typeof opts === 'function') { mutator = opts; opts = {}; }
+  const { default: defaultValue = null } = opts || {};
+  return queueWrite(filename, async () => {
+    let current;
+    try {
+      current = JSON.parse(fs.readFileSync(dataPath(filename), 'utf8'));
+    } catch {
+      current = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+    }
+    const next = await mutator(current);
+    if (next === undefined) {
+      // Mutator didn't return — assume they mutated in place.
+      atomicWriteJson(filename, current);
+      try { await backupJsonToGitHub(filename, current); }
+      catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
+      return current;
+    }
+    atomicWriteJson(filename, next);
+    try { await backupJsonToGitHub(filename, next); }
+    catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
+    return next;
+  });
 }
 
 module.exports = {
@@ -224,6 +389,8 @@ module.exports = {
   atomicWriteJson,
   loadJson,
   saveJson,
+  mutateJson,
+  backupJsonToGitHub,
   shouldForceReseed,
   preserveHomebrewDuringReseed,
 };
