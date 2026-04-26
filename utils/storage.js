@@ -13,13 +13,17 @@ const fetch = require('node-fetch');
 // ── Where the repo's bundled JSON data lives ────────────────────────────────
 // After the folder reorg, all the static JSON data files (ancestries.json,
 // feats.json, archetypes.json, deities.json, bestiary.json, spells.json,
-// items.json, etc.) live in `<repo-root>/data/`. This module is in
-// `<repo-root>/utils/`, so go up one level and into `data/`.
+// items.json, etc.) live in `<repo-root>/gamedata/`. This folder is named
+// `gamedata` (not `data`) to avoid colliding with the Railway persistent
+// volume mounted at /app/data — that mount would otherwise hide the repo's
+// reference data from the running bot.
 //
-// Used as the default `repoRoot` for both dataPath() and loadJson({ fromRepo })
-// so callers don't have to pass it every time. Anything that needs a
-// different location can still override via the `repoRoot` option.
-const REPO_DATA_DIR = path.join(__dirname, '..', 'data');
+// This module is in `<repo-root>/utils/`, so go up one level and into
+// `gamedata/`. Used as the default `repoRoot` for both dataPath() and
+// loadJson({ fromRepo }) so callers don't have to pass it every time.
+// Anything that needs a different location can still override via the
+// `repoRoot` option.
+const REPO_DATA_DIR = path.join(__dirname, '..', 'gamedata');
 
 // ── Persistent-data directory ────────────────────────────────────────────────
 // On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so

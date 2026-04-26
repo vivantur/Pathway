@@ -124,10 +124,13 @@ async function main() {
   // Sort alphabetically
   allSpells.sort((a, b) => a.name.localeCompare(b.name));
 
-  // covertspells.js lives in systems/; spells.json lives in data/. Use an
-  // absolute path resolved from this file's location so the script works no
-  // matter what directory you run it from.
-  const SPELLS_PATH = path.join(__dirname, '..', 'data', 'spells.json');
+  // covertspells.js lives in systems/; the repo's spells.json source lives in
+  // gamedata/ (not data/ — that name collides with Railway's volume mount).
+  // After running this script, commit the updated gamedata/spells.json. To
+  // push the new content to a running bot, set FORCE_RESEED_SPELLS=1 on
+  // Railway and redeploy; the seeder will overwrite the volume copy and
+  // preserve any homebrew entries.
+  const SPELLS_PATH = path.join(__dirname, '..', 'gamedata', 'spells.json');
 
   // Load any existing custom spells and preserve them
   let customSpells = [];
