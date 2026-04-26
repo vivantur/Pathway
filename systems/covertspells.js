@@ -124,11 +124,16 @@ async function main() {
   // Sort alphabetically
   allSpells.sort((a, b) => a.name.localeCompare(b.name));
 
+  // covertspells.js lives in systems/; spells.json lives in data/. Use an
+  // absolute path resolved from this file's location so the script works no
+  // matter what directory you run it from.
+  const SPELLS_PATH = path.join(__dirname, '..', 'data', 'spells.json');
+
   // Load any existing custom spells and preserve them
   let customSpells = [];
-  if (fs.existsSync('spells.json')) {
+  if (fs.existsSync(SPELLS_PATH)) {
     try {
-      const existing = JSON.parse(fs.readFileSync('spells.json', 'utf8'));
+      const existing = JSON.parse(fs.readFileSync(SPELLS_PATH, 'utf8'));
       customSpells = existing.filter(s => s.custom === true);
       if (customSpells.length > 0) {
         console.log(`Preserving ${customSpells.length} custom spells`);
@@ -144,7 +149,7 @@ async function main() {
   const finalSpells = [...foundryFiltered, ...customSpells]
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  fs.writeFileSync('spells.json', JSON.stringify(finalSpells, null, 2), 'utf8');
+  fs.writeFileSync(SPELLS_PATH, JSON.stringify(finalSpells, null, 2), 'utf8');
   console.log(`\nDone! Saved ${finalSpells.length} spells to spells.json`);
   console.log(`  - ${foundryFiltered.length} from Foundry PF2e`);
   console.log(`  - ${customSpells.length} custom spells`);

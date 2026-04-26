@@ -13,7 +13,7 @@
 // This module returns structured data for the caller (index.js) to render as
 // Discord embeds/messages. It never calls Discord APIs directly.
 
-const enc = require('./encounters');
+const enc = require('../commands/encounters');
 
 // ─── MAP (Multi-Attack Penalty) ──────────────────────────────────────────────
 
