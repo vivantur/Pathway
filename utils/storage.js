@@ -10,6 +10,21 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
 
+// ── Where the repo's bundled JSON data lives ────────────────────────────────
+// After the folder reorg, all the static JSON data files (ancestries.json,
+// feats.json, archetypes.json, deities.json, bestiary.json, spells.json,
+// items.json, etc.) live in `<repo-root>/gamedata/`. This folder is named
+// `gamedata` (not `data`) to avoid colliding with the Railway persistent
+// volume mounted at /app/data — that mount would otherwise hide the repo's
+// reference data from the running bot.
+//
+// This module is in `<repo-root>/utils/`, so go up one level and into
+// `gamedata/`. Used as the default `repoRoot` for both dataPath() and
+// loadJson({ fromRepo }) so callers don't have to pass it every time.
+// Anything that needs a different location can still override via the
+// `repoRoot` option.
+const REPO_DATA_DIR = path.join(__dirname, '..', 'gamedata');
+
 // ── Persistent-data directory ────────────────────────────────────────────────
 // On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so
 // user state (characters, bags, monster art/edits, notes, homebrew DB adds)
@@ -100,7 +115,7 @@ function preserveHomebrewDuringReseed(filename, volumeCopy, repoCopy) {
 // The second arg `repoRoot` lets callers override where the repo copy lives.
 // Defaults to process.cwd() which matches the old behavior when utils/ is
 // required from the project root.
-function dataPath(filename, { seedFromRepo = false, repoRoot = process.cwd() } = {}) {
+function dataPath(filename, { seedFromRepo = false, repoRoot = REPO_DATA_DIR } = {}) {
   const target = path.join(DATA_DIR, filename);
   const repoCopy = path.join(repoRoot, filename);
 
@@ -265,7 +280,7 @@ function loadJson(filename, opts = {}) {
     default: defaultValue = null,
     fromRepo = false,
     seedFromRepo = false,
-    repoRoot = process.cwd(),
+    repoRoot = REPO_DATA_DIR,
     label,
     count,
     transform,

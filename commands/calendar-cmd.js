@@ -147,6 +147,15 @@ async function handleCalendar(interaction, weatherModule = null) {
   if (!interaction.guildId) {
     return interaction.reply({ content: 'Calendar is per-server, so this command only works in a server.', ephemeral: true });
   }
+  // Defensive check: if gamedata/calendar.json failed to load at startup,
+  // RULES will be null and every command will crash on a property access.
+  // Report a clear error instead so the GM knows where to look.
+  if (!calendar.RULES) {
+    return interaction.reply({
+      content: '❌ Calendar data file is missing. The bot couldn\'t load `gamedata/calendar.json`. Check the deploy logs for the exact error and confirm the file exists in your repo.',
+      ephemeral: true,
+    });
+  }
   const sub = interaction.options.getSubcommand();
   const guildId = interaction.guildId;
 

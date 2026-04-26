@@ -91,6 +91,15 @@ async function handleWeather(interaction, encountersModule = null) {
   if (!interaction.guildId) {
     return interaction.reply({ content: 'Weather is per-server, so this command only works in a server.', ephemeral: true });
   }
+  // Defensive check: if gamedata/weather.json failed to load at startup,
+  // RULES will be null and every command will crash on a property access.
+  // Report a clear error instead so the GM knows where to look.
+  if (!weather.RULES) {
+    return interaction.reply({
+      content: '❌ Weather data file is missing. The bot couldn\'t load `gamedata/weather.json`. Check the deploy logs for the exact error and confirm the file exists in your repo.',
+      ephemeral: true,
+    });
+  }
 
   const sub = interaction.options.getSubcommand();
   const guildId = interaction.guildId;
