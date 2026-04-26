@@ -43,6 +43,9 @@ const { parseSpellStatBlock, toSlug: spellSlug } = require('./parsers/spellParse
 const { parseItemStatBlock,  toSlug: itemSlug  } = require('./parsers/itemParser');
 const charOverlay = require('./systems/characterOverlay');
 const ca = require('./systems/combatAutomation');
+// Weather: per-server PF2e weather tracker. /weather subcommands handled by
+// commands/weather-cmd.js; the engine + persistence live in systems/weather.js.
+const weatherCmd = require('./commands/weather-cmd');
 
 const client = new Client({
   intents: [
@@ -5384,6 +5387,15 @@ client.on('interactionCreate', async (interaction) => {
     // ─── Autocomplete ────────────────────────────────────────────────
     if (interaction.isAutocomplete()) {
       try {
+        // ─── /weather autocomplete ───
+        // Delegate /weather autocomplete to weather-cmd.js. It has its own
+        // custom logic (climates, seasons, precipitation/wind/fog values
+        // depending on which 'component' the user picked) and doesn't fit the
+        // pick() helper pattern used below.
+        if (interaction.commandName === 'weather') {
+          return await weatherCmd.handleWeatherAutocomplete(interaction);
+        }
+
         const focused = interaction.options.getFocused(true); // { name, value }
         const q = String(focused.value ?? '').toLowerCase().trim();
         const cmd = interaction.commandName;
@@ -12355,6 +12367,15 @@ client.on('interactionCreate', async (interaction) => {
         content: `🪙 ${verb === 'awarded' ? 'Awarded' : 'Removed'} **${sign}${days}** downtime day${Math.abs(days) === 1 ? '' : 's'} ${days > 0 ? 'to' : 'from'} <@${targetPlayer.id}>'s **${tCharEntry.data.name}**${reason ? `: *${reason}*` : ''}.\nNew balance: **${newBalance}**.`,
       });
     }
+  }
+
+  // ─── /weather ─────────────────────────────────────────────────────
+  // PF2e weather tracker. Per-server scope, GM-controlled advancement.
+  // All subcommand logic lives in commands/weather-cmd.js. We pass the
+  // encounters module in so /weather apply can attach effects to combatants
+  // in the active encounter.
+  else if (commandName === 'weather') {
+    return weatherCmd.handleWeather(interaction, encounters);
   }
 
 

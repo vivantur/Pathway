@@ -1,0 +1,187 @@
+{
+  "_meta": {
+    "source": "Pathfinder 2e Remaster GM Core, pages 94-95 (Climate, Precipitation, Temperature, Wind)",
+    "notes": "Canonical PF2e weather rules. Damage values use the GM Core 'Tier' damage scale (Minor/Moderate/Major/Massive) — see the 'damageTiers' block. Climate tables are weighted probabilities for daily rolls.",
+    "version": 1
+  },
+
+  "damageTiers": {
+    "minor": { "dice": "1d6", "label": "Minor" },
+    "moderate": { "dice": "4d6", "label": "Moderate" },
+    "major": { "dice": "10d6", "label": "Major" },
+    "massive": { "dice": "20d6", "label": "Massive" }
+  },
+
+  "temperature": {
+    "incredibleCold":   { "label": "Incredible cold",  "rangeF": [-999, -80], "fatigueHours": 2, "damage": { "tier": "moderate", "type": "cold", "interval": "minute" }, "penalty": -4, "emoji": "🥶" },
+    "extremeCold":      { "label": "Extreme cold",     "rangeF": [-79, -20],  "fatigueHours": 4, "damage": { "tier": "minor", "type": "cold", "interval": "10 minutes" }, "penalty": -3, "emoji": "❄️" },
+    "severeCold":       { "label": "Severe cold",      "rangeF": [-21, 12],   "fatigueHours": 4, "damage": { "tier": "minor", "type": "cold", "interval": "hour" }, "penalty": -2, "emoji": "🧊" },
+    "mildCold":         { "label": "Mild cold",        "rangeF": [13, 32],    "fatigueHours": 4, "damage": null, "penalty": -1, "emoji": "🌨️" },
+    "normal":           { "label": "Normal",           "rangeF": [33, 94],    "fatigueHours": 8, "damage": null, "penalty": 0, "emoji": "🌤️" },
+    "mildHeat":         { "label": "Mild heat",        "rangeF": [95, 104],   "fatigueHours": 4, "damage": null, "penalty": -1, "emoji": "☀️" },
+    "severeHeat":       { "label": "Severe heat",      "rangeF": [105, 114],  "fatigueHours": 4, "damage": { "tier": "minor", "type": "fire", "interval": "hour" }, "penalty": -2, "emoji": "🔥" },
+    "extremeHeat":      { "label": "Extreme heat",     "rangeF": [115, 139],  "fatigueHours": 4, "damage": { "tier": "minor", "type": "fire", "interval": "10 minutes" }, "penalty": -3, "emoji": "🌞" },
+    "incredibleHeat":   { "label": "Incredible heat",  "rangeF": [140, 999],  "fatigueHours": 2, "damage": { "tier": "moderate", "type": "fire", "interval": "minute" }, "penalty": -4, "emoji": "🥵" }
+  },
+
+  "precipitation": {
+    "none":          { "label": "Clear",          "fatigue": false, "soaked": false, "extinguishesFlames": false, "frozenAccumulation": false, "emoji": "☀️" },
+    "drizzle":       { "label": "Drizzle",        "fatigue": false, "soaked": false, "extinguishesFlames": "tiny", "frozenAccumulation": false, "emoji": "🌦️", "perceptionPenalty": -1 },
+    "lightSnow":     { "label": "Light snow",     "fatigue": false, "soaked": false, "extinguishesFlames": "tiny", "frozenAccumulation": true, "emoji": "🌨️", "perceptionPenalty": -1 },
+    "rain":          { "label": "Rain",           "fatigue": "4h", "soaked": true, "extinguishesFlames": "unprotected", "frozenAccumulation": false, "emoji": "🌧️", "perceptionPenalty": -2 },
+    "snow":          { "label": "Snow",           "fatigue": "4h", "soaked": false, "extinguishesFlames": "unprotected", "frozenAccumulation": true, "emoji": "❄️", "perceptionPenalty": -2 },
+    "sleet":         { "label": "Sleet",          "fatigue": "4h", "soaked": true, "extinguishesFlames": "unprotected", "frozenAccumulation": true, "emoji": "🌨️", "perceptionPenalty": -2 },
+    "heavyRain":     { "label": "Heavy rain",     "fatigue": "4h", "soaked": true, "extinguishesFlames": "any", "frozenAccumulation": false, "emoji": "⛈️", "perceptionPenalty": -3 },
+    "blizzard":      { "label": "Blizzard",       "fatigue": "4h", "soaked": false, "extinguishesFlames": "any", "frozenAccumulation": true, "emoji": "🌬️❄️", "perceptionPenalty": -4, "note": "Combines cold weather, heavy snow, and strong winds." },
+    "thunderstorm":  { "label": "Thunderstorm",   "fatigue": "4h", "soaked": true, "extinguishesFlames": "any", "frozenAccumulation": false, "emoji": "⛈️", "perceptionPenalty": -3, "lightning": { "tier": "moderate", "type": "electricity", "chancePerHour": 0.005 } },
+    "severeThunderstorm": { "label": "Severe thunderstorm", "fatigue": "4h", "soaked": true, "extinguishesFlames": "any", "frozenAccumulation": false, "emoji": "🌩️", "perceptionPenalty": -4, "lightning": { "tier": "major", "type": "electricity", "chancePerHour": 0.01 } },
+    "hail":          { "label": "Hail",           "fatigue": "4h", "soaked": false, "extinguishesFlames": "any", "frozenAccumulation": false, "emoji": "🌧️", "perceptionPenalty": -2 }
+  },
+
+  "wind": {
+    "calm":      { "label": "Calm",          "auditoryPenalty": 0,  "rangedPenalty": 0, "rangedImpossible": false, "extinguishes": "none",     "emoji": "🍃" },
+    "light":     { "label": "Light wind",    "auditoryPenalty": 0,  "rangedPenalty": 0, "rangedImpossible": false, "extinguishes": "none",     "emoji": "🍃" },
+    "moderate":  { "label": "Moderate wind", "auditoryPenalty": -1, "rangedPenalty": -1, "rangedImpossible": false, "extinguishes": "tiny",     "emoji": "💨" },
+    "strong":    { "label": "Strong wind",   "auditoryPenalty": -2, "rangedPenalty": -2, "rangedImpossible": false, "extinguishes": "handheld", "emoji": "💨", "note": "Difficult terrain when flying." },
+    "severe":    { "label": "Severe wind",   "auditoryPenalty": -3, "rangedPenalty": -4, "rangedImpossible": false, "extinguishes": "lanterns", "emoji": "🌬️", "note": "Greater difficult terrain when flying. Athletics check to move on the ground for Small/Tiny creatures." },
+    "windstorm": { "label": "Windstorm",     "auditoryPenalty": -4, "rangedPenalty": -4, "rangedImpossible": true,  "extinguishes": "all",      "emoji": "🌪️", "note": "Ranged attacks impossible. Athletics check to move; fliers can be blown away on a critical failure." }
+  },
+
+  "fog": {
+    "none":  { "label": "Clear",         "perceptionPenalty": 0, "concealment": false, "visibility": "normal", "emoji": "" },
+    "haze":  { "label": "Haze",          "perceptionPenalty": -1, "concealment": false, "visibility": "3 miles", "emoji": "🌫️" },
+    "mist":  { "label": "Mist",          "perceptionPenalty": -2, "concealment": false, "visibility": "1 mile",  "emoji": "🌫️" },
+    "fog":   { "label": "Fog",           "perceptionPenalty": -3, "concealment": true,  "visibility": "half mile", "emoji": "🌫️" },
+    "heavyFog": { "label": "Heavy fog",  "perceptionPenalty": -4, "concealment": true,  "visibility": "5-30 feet", "emoji": "🌁", "note": "Concealment to all creatures; visibility cut to as little as 5 feet." }
+  },
+
+  "climates": {
+    "temperate": {
+      "label": "Temperate",
+      "description": "Forests, plains, hills, and farmlands of moderate latitudes. Four distinct seasons.",
+      "emoji": "🌳",
+      "seasons": {
+        "spring": {
+          "tempRangeF": [40, 70],
+          "tempVarianceF": 15,
+          "precipitation": { "none": 35, "drizzle": 20, "rain": 25, "heavyRain": 10, "thunderstorm": 8, "fog": 2 },
+          "wind": { "calm": 25, "light": 40, "moderate": 25, "strong": 8, "severe": 2 },
+          "fog": { "none": 65, "haze": 15, "mist": 12, "fog": 7, "heavyFog": 1 }
+        },
+        "summer": {
+          "tempRangeF": [65, 90],
+          "tempVarianceF": 12,
+          "precipitation": { "none": 55, "drizzle": 10, "rain": 15, "heavyRain": 8, "thunderstorm": 10, "severeThunderstorm": 2 },
+          "wind": { "calm": 35, "light": 40, "moderate": 18, "strong": 5, "severe": 2 },
+          "fog": { "none": 80, "haze": 12, "mist": 6, "fog": 2 }
+        },
+        "autumn": {
+          "tempRangeF": [40, 65],
+          "tempVarianceF": 18,
+          "precipitation": { "none": 40, "drizzle": 20, "rain": 22, "heavyRain": 8, "thunderstorm": 5, "lightSnow": 3, "fog": 2 },
+          "wind": { "calm": 20, "light": 35, "moderate": 30, "strong": 12, "severe": 3 },
+          "fog": { "none": 55, "haze": 18, "mist": 15, "fog": 10, "heavyFog": 2 }
+        },
+        "winter": {
+          "tempRangeF": [15, 40],
+          "tempVarianceF": 20,
+          "precipitation": { "none": 45, "drizzle": 5, "lightSnow": 20, "snow": 18, "sleet": 7, "blizzard": 3, "heavyRain": 2 },
+          "wind": { "calm": 20, "light": 30, "moderate": 30, "strong": 15, "severe": 5 },
+          "fog": { "none": 60, "haze": 15, "mist": 12, "fog": 10, "heavyFog": 3 }
+        }
+      }
+    },
+
+    "tropical": {
+      "label": "Tropical",
+      "description": "Jungles, rainforests, and tropical coastlines. Two seasons: wet and dry.",
+      "emoji": "🌴",
+      "seasons": {
+        "spring":  { "tempRangeF": [75, 95],  "tempVarianceF": 8,  "precipitation": { "none": 35, "drizzle": 15, "rain": 25, "heavyRain": 15, "thunderstorm": 10 }, "wind": { "calm": 30, "light": 40, "moderate": 20, "strong": 8, "severe": 2 }, "fog": { "none": 60, "haze": 15, "mist": 15, "fog": 8, "heavyFog": 2 } },
+        "summer":  { "tempRangeF": [80, 100], "tempVarianceF": 8,  "precipitation": { "none": 20, "rain": 25, "heavyRain": 25, "thunderstorm": 20, "severeThunderstorm": 10 }, "wind": { "calm": 20, "light": 35, "moderate": 25, "strong": 15, "severe": 5 }, "fog": { "none": 50, "haze": 20, "mist": 18, "fog": 10, "heavyFog": 2 } },
+        "autumn":  { "tempRangeF": [75, 95],  "tempVarianceF": 8,  "precipitation": { "none": 30, "drizzle": 10, "rain": 25, "heavyRain": 18, "thunderstorm": 15, "severeThunderstorm": 2 }, "wind": { "calm": 25, "light": 35, "moderate": 25, "strong": 12, "severe": 3 }, "fog": { "none": 55, "haze": 18, "mist": 15, "fog": 10, "heavyFog": 2 } },
+        "winter":  { "tempRangeF": [70, 90],  "tempVarianceF": 8,  "precipitation": { "none": 55, "drizzle": 15, "rain": 20, "heavyRain": 7, "thunderstorm": 3 }, "wind": { "calm": 35, "light": 40, "moderate": 18, "strong": 5, "severe": 2 }, "fog": { "none": 65, "haze": 15, "mist": 12, "fog": 7, "heavyFog": 1 } }
+      }
+    },
+
+    "arctic": {
+      "label": "Arctic",
+      "description": "Tundra, glaciers, and polar regions. Bitter cold year-round; brief mild summers near the edges.",
+      "emoji": "🧊",
+      "seasons": {
+        "spring":  { "tempRangeF": [-10, 25], "tempVarianceF": 25, "precipitation": { "none": 50, "lightSnow": 20, "snow": 18, "sleet": 7, "blizzard": 5 }, "wind": { "calm": 15, "light": 25, "moderate": 30, "strong": 20, "severe": 8, "windstorm": 2 }, "fog": { "none": 50, "haze": 15, "mist": 15, "fog": 15, "heavyFog": 5 } },
+        "summer":  { "tempRangeF": [25, 55],  "tempVarianceF": 20, "precipitation": { "none": 55, "drizzle": 15, "rain": 15, "lightSnow": 8, "fog": 5, "heavyRain": 2 }, "wind": { "calm": 20, "light": 35, "moderate": 30, "strong": 12, "severe": 3 }, "fog": { "none": 40, "haze": 20, "mist": 20, "fog": 15, "heavyFog": 5 } },
+        "autumn":  { "tempRangeF": [-15, 30], "tempVarianceF": 25, "precipitation": { "none": 45, "drizzle": 5, "lightSnow": 20, "snow": 15, "sleet": 10, "blizzard": 5 }, "wind": { "calm": 15, "light": 25, "moderate": 30, "strong": 20, "severe": 8, "windstorm": 2 }, "fog": { "none": 45, "haze": 15, "mist": 15, "fog": 18, "heavyFog": 7 } },
+        "winter":  { "tempRangeF": [-50, 0],  "tempVarianceF": 30, "precipitation": { "none": 50, "lightSnow": 15, "snow": 18, "sleet": 5, "blizzard": 12 }, "wind": { "calm": 10, "light": 20, "moderate": 25, "strong": 25, "severe": 15, "windstorm": 5 }, "fog": { "none": 55, "haze": 15, "mist": 12, "fog": 12, "heavyFog": 6 } }
+      }
+    },
+
+    "desert": {
+      "label": "Desert",
+      "description": "Hot, arid wastes. Searing days, freezing nights, and scarce rain.",
+      "emoji": "🏜️",
+      "seasons": {
+        "spring":  { "tempRangeF": [60, 95],  "tempVarianceF": 30, "precipitation": { "none": 90, "drizzle": 5, "rain": 3, "thunderstorm": 2 }, "wind": { "calm": 25, "light": 35, "moderate": 25, "strong": 12, "severe": 3 }, "fog": { "none": 95, "haze": 5 } },
+        "summer":  { "tempRangeF": [85, 130], "tempVarianceF": 35, "precipitation": { "none": 95, "rain": 2, "thunderstorm": 3 }, "wind": { "calm": 20, "light": 30, "moderate": 30, "strong": 15, "severe": 4, "windstorm": 1 }, "fog": { "none": 98, "haze": 2 } },
+        "autumn":  { "tempRangeF": [55, 95],  "tempVarianceF": 30, "precipitation": { "none": 92, "drizzle": 3, "rain": 3, "thunderstorm": 2 }, "wind": { "calm": 25, "light": 35, "moderate": 25, "strong": 12, "severe": 3 }, "fog": { "none": 95, "haze": 5 } },
+        "winter":  { "tempRangeF": [25, 75],  "tempVarianceF": 35, "precipitation": { "none": 88, "drizzle": 5, "rain": 4, "lightSnow": 3 }, "wind": { "calm": 25, "light": 35, "moderate": 25, "strong": 12, "severe": 3 }, "fog": { "none": 90, "haze": 7, "mist": 3 } }
+      }
+    },
+
+    "swamp": {
+      "label": "Swamp / Marsh",
+      "description": "Wet, low-lying lands choked with mist and rotting vegetation. Heavy fog is common.",
+      "emoji": "🐊",
+      "seasons": {
+        "spring":  { "tempRangeF": [55, 80],  "tempVarianceF": 12, "precipitation": { "none": 25, "drizzle": 25, "rain": 25, "heavyRain": 15, "thunderstorm": 10 }, "wind": { "calm": 50, "light": 35, "moderate": 12, "strong": 3 }, "fog": { "none": 25, "haze": 20, "mist": 25, "fog": 22, "heavyFog": 8 } },
+        "summer":  { "tempRangeF": [70, 95],  "tempVarianceF": 10, "precipitation": { "none": 30, "drizzle": 15, "rain": 20, "heavyRain": 15, "thunderstorm": 15, "severeThunderstorm": 5 }, "wind": { "calm": 50, "light": 35, "moderate": 12, "strong": 3 }, "fog": { "none": 30, "haze": 22, "mist": 22, "fog": 20, "heavyFog": 6 } },
+        "autumn":  { "tempRangeF": [50, 75],  "tempVarianceF": 15, "precipitation": { "none": 25, "drizzle": 25, "rain": 25, "heavyRain": 15, "thunderstorm": 10 }, "wind": { "calm": 45, "light": 35, "moderate": 15, "strong": 5 }, "fog": { "none": 20, "haze": 18, "mist": 25, "fog": 25, "heavyFog": 12 } },
+        "winter":  { "tempRangeF": [30, 55],  "tempVarianceF": 18, "precipitation": { "none": 30, "drizzle": 20, "rain": 25, "lightSnow": 10, "sleet": 10, "heavyRain": 5 }, "wind": { "calm": 40, "light": 35, "moderate": 18, "strong": 7 }, "fog": { "none": 25, "haze": 18, "mist": 22, "fog": 25, "heavyFog": 10 } }
+      }
+    },
+
+    "coastal": {
+      "label": "Coastal",
+      "description": "Sea cliffs, beaches, and harbors. Steady winds, frequent fog, mild temperatures.",
+      "emoji": "🌊",
+      "seasons": {
+        "spring":  { "tempRangeF": [45, 65],  "tempVarianceF": 10, "precipitation": { "none": 35, "drizzle": 25, "rain": 22, "heavyRain": 10, "fog": 5, "thunderstorm": 3 }, "wind": { "calm": 10, "light": 25, "moderate": 35, "strong": 22, "severe": 7, "windstorm": 1 }, "fog": { "none": 35, "haze": 20, "mist": 22, "fog": 18, "heavyFog": 5 } },
+        "summer":  { "tempRangeF": [60, 80],  "tempVarianceF": 8,  "precipitation": { "none": 55, "drizzle": 15, "rain": 15, "heavyRain": 7, "thunderstorm": 8 }, "wind": { "calm": 15, "light": 30, "moderate": 35, "strong": 15, "severe": 5 }, "fog": { "none": 40, "haze": 20, "mist": 20, "fog": 15, "heavyFog": 5 } },
+        "autumn":  { "tempRangeF": [45, 65],  "tempVarianceF": 12, "precipitation": { "none": 30, "drizzle": 22, "rain": 25, "heavyRain": 12, "thunderstorm": 8, "severeThunderstorm": 3 }, "wind": { "calm": 8, "light": 22, "moderate": 35, "strong": 25, "severe": 8, "windstorm": 2 }, "fog": { "none": 30, "haze": 20, "mist": 22, "fog": 22, "heavyFog": 6 } },
+        "winter":  { "tempRangeF": [30, 50],  "tempVarianceF": 12, "precipitation": { "none": 30, "drizzle": 15, "rain": 25, "heavyRain": 12, "sleet": 8, "lightSnow": 7, "snow": 3 }, "wind": { "calm": 5, "light": 18, "moderate": 32, "strong": 28, "severe": 13, "windstorm": 4 }, "fog": { "none": 35, "haze": 20, "mist": 20, "fog": 18, "heavyFog": 7 } }
+      }
+    },
+
+    "mountain": {
+      "label": "Mountain",
+      "description": "High elevations. Cold, windy, and storm-prone. Weather changes fast.",
+      "emoji": "🏔️",
+      "seasons": {
+        "spring":  { "tempRangeF": [25, 55],  "tempVarianceF": 25, "precipitation": { "none": 40, "drizzle": 10, "rain": 15, "lightSnow": 15, "snow": 10, "thunderstorm": 7, "blizzard": 3 }, "wind": { "calm": 10, "light": 25, "moderate": 30, "strong": 22, "severe": 10, "windstorm": 3 }, "fog": { "none": 40, "haze": 15, "mist": 18, "fog": 20, "heavyFog": 7 } },
+        "summer":  { "tempRangeF": [50, 75],  "tempVarianceF": 20, "precipitation": { "none": 45, "drizzle": 10, "rain": 18, "heavyRain": 8, "thunderstorm": 15, "severeThunderstorm": 4 }, "wind": { "calm": 12, "light": 28, "moderate": 30, "strong": 20, "severe": 8, "windstorm": 2 }, "fog": { "none": 45, "haze": 18, "mist": 17, "fog": 15, "heavyFog": 5 } },
+        "autumn":  { "tempRangeF": [25, 55],  "tempVarianceF": 22, "precipitation": { "none": 40, "drizzle": 10, "rain": 12, "lightSnow": 18, "snow": 12, "thunderstorm": 5, "blizzard": 3 }, "wind": { "calm": 8, "light": 22, "moderate": 30, "strong": 25, "severe": 12, "windstorm": 3 }, "fog": { "none": 40, "haze": 15, "mist": 18, "fog": 20, "heavyFog": 7 } },
+        "winter":  { "tempRangeF": [-10, 30], "tempVarianceF": 30, "precipitation": { "none": 35, "lightSnow": 22, "snow": 22, "sleet": 8, "blizzard": 13 }, "wind": { "calm": 5, "light": 15, "moderate": 25, "strong": 28, "severe": 20, "windstorm": 7 }, "fog": { "none": 45, "haze": 15, "mist": 15, "fog": 18, "heavyFog": 7 } }
+      }
+    },
+
+    "underground": {
+      "label": "Underground",
+      "description": "Caverns, the Darklands, dungeons. No real weather: stable temperature, no precipitation, no wind.",
+      "emoji": "🕳️",
+      "seasons": {
+        "spring":  { "tempRangeF": [55, 65], "tempVarianceF": 3, "precipitation": { "none": 100 }, "wind": { "calm": 95, "light": 5 }, "fog": { "none": 85, "haze": 8, "mist": 5, "fog": 2 } },
+        "summer":  { "tempRangeF": [55, 65], "tempVarianceF": 3, "precipitation": { "none": 100 }, "wind": { "calm": 95, "light": 5 }, "fog": { "none": 85, "haze": 8, "mist": 5, "fog": 2 } },
+        "autumn":  { "tempRangeF": [55, 65], "tempVarianceF": 3, "precipitation": { "none": 100 }, "wind": { "calm": 95, "light": 5 }, "fog": { "none": 85, "haze": 8, "mist": 5, "fog": 2 } },
+        "winter":  { "tempRangeF": [55, 65], "tempVarianceF": 3, "precipitation": { "none": 100 }, "wind": { "calm": 95, "light": 5 }, "fog": { "none": 85, "haze": 8, "mist": 5, "fog": 2 } }
+      }
+    }
+  },
+
+  "persistence": {
+    "_comment": "How much yesterday's weather influences today's roll. Higher = more inertia. Applied as a probability weight multiplier on the same category as yesterday.",
+    "precipitation": 2.0,
+    "wind": 1.8,
+    "fog": 1.5,
+    "tempDriftF": 8
+  }
+}
