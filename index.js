@@ -19,7 +19,7 @@ const {
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
-const encounters = require('./encounters');
+const encounters = require('./commands/encounters');
 const {
   getEncounter,
   createEncounter,
@@ -36,13 +36,13 @@ const {
   delayCombatant,
   rejoinFromDelay,
 } = encounters;
-const { getPreset, listPresets } = require('./effects');
-const downtime = require('./downtime');
-const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./bestiaryParser');
-const { parseSpellStatBlock, toSlug: spellSlug } = require('./spellParser');
-const { parseItemStatBlock,  toSlug: itemSlug  } = require('./itemParser');
-const charOverlay = require('./characterOverlay');
-const ca = require('./combatAutomation');
+const { getPreset, listPresets } = require('./systems/effects');
+const downtime = require('./commands/downtime');
+const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./parsers/bestiaryParser');
+const { parseSpellStatBlock, toSlug: spellSlug } = require('./parsers/spellParser');
+const { parseItemStatBlock,  toSlug: itemSlug  } = require('./parsers/itemParser');
+const charOverlay = require('./systems/characterOverlay');
+const ca = require('./systems/combatAutomation');
 
 const client = new Client({
   intents: [
