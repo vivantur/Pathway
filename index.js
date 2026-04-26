@@ -46,6 +46,12 @@ const ca = require('./systems/combatAutomation');
 // Weather: per-server PF2e weather tracker. /weather subcommands handled by
 // commands/weather-cmd.js; the engine + persistence live in systems/weather.js.
 const weatherCmd = require('./commands/weather-cmd');
+// Calendar: Golarion calendar. We pull in both the engine (for systems that
+// need date math, like potentially weather later) and the command handler.
+// The command handler optionally takes the weather engine so /calendar advance
+// can update weather.season as the months change.
+const weatherEngine = require('./systems/weather');
+const calendarCmd = require('./commands/calendar-cmd');
 
 const client = new Client({
   intents: [
@@ -5394,6 +5400,11 @@ client.on('interactionCreate', async (interaction) => {
         // pick() helper pattern used below.
         if (interaction.commandName === 'weather') {
           return await weatherCmd.handleWeatherAutocomplete(interaction);
+        }
+        // ─── /calendar autocomplete ───
+        // Calendar autocomplete (just month names mapped to 1-12 integers).
+        if (interaction.commandName === 'calendar') {
+          return await calendarCmd.handleCalendarAutocomplete(interaction);
         }
 
         const focused = interaction.options.getFocused(true); // { name, value }
@@ -12376,6 +12387,15 @@ client.on('interactionCreate', async (interaction) => {
   // in the active encounter.
   else if (commandName === 'weather') {
     return weatherCmd.handleWeather(interaction, encounters);
+  }
+
+  // ─── /calendar ───────────────────────────────────────────────────
+  // Golarion calendar. Per-server scope, GM-controlled advancement.
+  // Pass the weather engine in so /calendar set and /calendar advance
+  // automatically update the weather system's season when the month
+  // boundary changes seasons (one-way integration).
+  else if (commandName === 'calendar') {
+    return calendarCmd.handleCalendar(interaction, weatherEngine);
   }
 
 
