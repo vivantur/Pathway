@@ -43,6 +43,10 @@ const { parseSpellStatBlock, toSlug: spellSlug } = require('./parsers/spellParse
 const { parseItemStatBlock,  toSlug: itemSlug  } = require('./parsers/itemParser');
 const charOverlay = require('./systems/characterOverlay');
 const ca = require('./systems/combatAutomation');
+// Spell effects auto-application: maps spell names to mechanical effects
+// (Frightened, Slowed, Bless, etc.) that get applied to targets based on
+// their save degree of success. Used by /cast.
+const spellEffects = require('./systems/spellEffects');
 // Weather: per-server PF2e weather tracker. /weather subcommands handled by
 // commands/weather-cmd.js; the engine + persistence live in systems/weather.js.
 const weatherCmd = require('./commands/weather-cmd');
@@ -7900,11 +7904,38 @@ client.on('interactionCreate', async (interaction) => {
 
     const channelId = interaction.channel.id;
     const enc = getEncounter(channelId);
+
+    // ── Resolve target(s) ──────────────────────────────────────────────
+    // Two ways to specify targets:
+    //   target  — a single combatant name (legacy/single-target spells)
+    //   targets — comma-separated list of combatant names (multi-target,
+    //             multi-save resolution, auto-effect application)
+    // If both are given, `targets` wins (and target is ignored).
+    // The existing single-target rendering logic below uses `target` (singular)
+    // — so for multi-target casts, we resolve a list AND set `target` to the
+    // first entry to keep that legacy path working for the embed header.
+    const targetsArg = interaction.options.getString('targets');
+    let resolvedTargets = []; // populated below; used by the multi-target effect-applier section
     let target = null;
-    if (targetName) {
+    if (targetsArg) {
+      // Parse "Goblin1, Goblin2, Bandit" into a clean list
+      if (!enc) return interaction.editReply('❌ Targets specified but no active encounter in this channel. Start one with `/init start`.');
+      const names = targetsArg.split(',').map(s => s.trim()).filter(Boolean);
+      const notFound = [];
+      for (const n of names) {
+        const found = enc.combatants.find(x => x.name.toLowerCase() === n.toLowerCase());
+        if (found) resolvedTargets.push(found);
+        else notFound.push(n);
+      }
+      if (notFound.length > 0) return interaction.editReply(`❌ No combatant(s) named: ${notFound.map(n => `"${n}"`).join(', ')} in this encounter.`);
+      if (resolvedTargets.length === 0) return interaction.editReply('❌ No valid targets resolved.');
+      // First target is "the" target for the legacy single-target rendering path.
+      target = resolvedTargets[0];
+    } else if (targetName) {
       if (!enc) return interaction.editReply('❌ Target specified but no active encounter in this channel. Start one with `/init start`.');
       target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
       if (!target) return interaction.editReply(`❌ No combatant named "${targetName}" in this encounter.`);
+      resolvedTargets = [target];
     }
 
     const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`${c.name} casts ${spell.name}!`);
@@ -8071,6 +8102,116 @@ client.on('interactionCreate', async (interaction) => {
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
     }
+
+    // ── Multi-target processing & auto-effect application ──────────────
+    // At this point, the existing single-target path has already handled
+    // resolvedTargets[0] (saved into `target`): rolled attack/save, applied
+    // damage, rendered the result. Now we need to:
+    //
+    //   (a) Apply spell-mapped CONDITIONS to that first target based on
+    //       its save degree (e.g. cast Fear → Frightened auto-applies).
+    //       This is independent of the basic-save damage logic above.
+    //
+    //   (b) For target #2..N (only set when /cast was used with `targets`
+    //       plural), repeat the save+damage+effect logic for each.
+    //
+    // The whole block is gated on (resolvedTargets.length > 0 && enc) so
+    // we never touch combatants outside an active encounter.
+    if (enc && resolvedTargets.length > 0) {
+      const hasEffectMapping = spellEffects.hasMapping(spell.name);
+      const degreeEmoji = { 'crit-success': '🌟', 'success': '✅', 'failure': '❌', 'crit-failure': '💥' };
+      const degreeLabel = { 'crit-success': 'Crit Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Crit Failure' };
+
+      // (a) Apply auto-effects to the FIRST target (the one already rendered).
+      // For attack spells, we use attackDegree as the "save degree" so spells
+      // with attack rolls + conditions (rare) work. Otherwise saveDegreeApplied.
+      // For no-save spells (alwaysApply), pass null and the engine returns
+      // the alwaysApply list.
+      if (hasEffectMapping && target) {
+        const mapping = spellEffects.getMapping(spell.name);
+        let degreeForTarget = null;
+        if (mapping.saveType && saveDegreeApplied) {
+          degreeForTarget = saveDegreeApplied;
+        } else if (mapping.saveType && isAttackSpell && attackDegree) {
+          // Treat attack hit/miss as failure/success for effect resolution
+          degreeForTarget = (attackDegree === 'success' || attackDegree === 'crit-success') ? 'failure' : 'success';
+        }
+        const effects = spellEffects.resolveEffectsForDegree(spell.name, degreeForTarget, effectiveLevel);
+        if (effects.length > 0) {
+          const result = spellEffects.applyEffectsToCombatant(channelId, target.name, effects, encounters, 'spell');
+          if (result.applied > 0) {
+            description += `\n✨ **${target.name}** gains: ${spellEffects.formatEffectSummary(effects)}\n`;
+          }
+        }
+      }
+
+      // (b) Process additional targets (everything past index 0).
+      // Each gets its own save roll, damage application (basic save), and
+      // effect application. We render a compact one-line-per-target summary.
+      if (resolvedTargets.length > 1) {
+        description += `\n**Additional targets:**\n`;
+        for (let i = 1; i < resolvedTargets.length; i++) {
+          const t = resolvedTargets[i];
+          let line = `• **${t.name}**: `;
+          let extraDegree = null;
+
+          // Save spells (basic or non-basic): roll the save, possibly apply damage
+          if (saveType && !isAttackSpell) {
+            const bonusInfo = getTargetSaveBonus(t, saveType, characters);
+            if (bonusInfo) {
+              const sr = rollSaveForTarget(bonusInfo.bonus, spellDC);
+              extraDegree = sr.degree;
+              line += `${saveType.charAt(0).toUpperCase() + saveType.slice(1)} ${sr.total} (${sr.dieRoll}${fmt(bonusInfo.bonus)}) ${degreeEmoji[sr.degree] || ''} ${degreeLabel[sr.degree] || sr.degree}`;
+              // Basic-save damage: apply to this target
+              if (spell.saveIsBasic && damageResult) {
+                const dmgForTarget = basicSaveDamage(damageResult.total, sr.degree);
+                if (dmgForTarget > 0) {
+                  ca.applyDamage(channelId, t.name, dmgForTarget);
+                  line += ` — ${dmgForTarget} dmg`;
+                }
+              }
+            } else {
+              line += `*save bonus unknown — roll \`/save type:${saveType}\` manually*`;
+            }
+          }
+          // Attack spells against multiple targets: re-roll attack for each
+          // (PF2e doesn't have multi-target attack-roll spells in core but
+          // homebrew might; treat each as an independent attack).
+          else if (isAttackSpell) {
+            const die = Math.floor(Math.random() * 20) + 1;
+            const total = die + spellAttackBonus + casterMods.attackBonus;
+            const tMods = sumEffectModifiers(t);
+            const effAc = (t.ac ?? 0) + tMods.acBonus;
+            const deg = (t.ac != null) ? determineDegreeOfSuccess(total, die, effAc) : null;
+            extraDegree = deg;
+            line += `Atk ${total} (${die}${fmt(spellAttackBonus + casterMods.attackBonus)}) vs AC ${effAc} ${degreeEmoji[deg] || ''} ${degreeLabel[deg] || ''}`;
+            if ((deg === 'success' || deg === 'crit-success') && damageResult) {
+              const dmg = deg === 'crit-success' ? damageResult.total * 2 : damageResult.total;
+              ca.applyDamage(channelId, t.name, dmg);
+              line += ` — ${dmg} dmg`;
+            }
+          }
+
+          // Auto-apply effects for this target based on resolved degree
+          if (hasEffectMapping) {
+            const mapping = spellEffects.getMapping(spell.name);
+            let degForT = null;
+            if (mapping.saveType && extraDegree) {
+              degForT = extraDegree;
+            } else if (mapping.saveType && extraDegree && isAttackSpell) {
+              degForT = (extraDegree === 'success' || extraDegree === 'crit-success') ? 'failure' : 'success';
+            }
+            const tEffects = spellEffects.resolveEffectsForDegree(spell.name, degForT, effectiveLevel);
+            if (tEffects.length > 0) {
+              const r = spellEffects.applyEffectsToCombatant(channelId, t.name, tEffects, encounters, 'spell');
+              if (r.applied > 0) line += ` → ${spellEffects.formatEffectSummary(tEffects)}`;
+            }
+          }
+          description += line + '\n';
+        }
+      }
+    }
+
 
     const shortDesc = spell.description ?? '';
     if (shortDesc && shortDesc !== '*No description available.*') {
