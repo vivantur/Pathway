@@ -2462,17 +2462,20 @@ function findRule(query) {
 function buildRuleEmbed(rule) {
   const colors  = { condition: 0xe74c3c, action: 0x2ecc71, trait: 0xf39c12 };
   const emojis  = { condition: '🩸', action: '⚡', trait: '🏷️' };
+  const cat = rule.category ?? 'rule';
   const embed = new EmbedBuilder()
-    .setColor(colors[rule.category] ?? 0x7289DA)
-    .setTitle(`${emojis[rule.category] ?? '📖'} ${rule.name}`)
-    .setDescription(rule.description);
-  if (rule.action_cost) embed.addFields({ name: '⏱️ Action Cost', value: rule.action_cost, inline: true });
-  if (rule.value_label) embed.addFields({ name: '📊 Format', value: rule.value_label, inline: true });
-  if (rule.traits?.length) embed.addFields({ name: '🏷️ Traits', value: rule.traits.join(', '), inline: true });
-  if (rule.trigger)      embed.addFields({ name: '🔔 Trigger', value: rule.trigger, inline: false });
-  if (rule.requirements) embed.addFields({ name: '📋 Requirements', value: rule.requirements, inline: false });
-  const cat = rule.category.charAt(0).toUpperCase() + rule.category.slice(1);
-  embed.setFooter({ text: `${cat} • ${rule.source ?? 'Pathfinder 2e'}` });
+    .setColor(colors[cat] ?? 0x7289DA)
+    .setTitle(`${emojis[cat] ?? '📖'} ${rule.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(rule.description ?? '*(no description)*', 4000));
+  if (rule.action_cost) embed.addFields({ name: '⏱️ Action Cost', value: truncateForEmbed(rule.action_cost, 1000), inline: true });
+  if (rule.value_label) embed.addFields({ name: '📊 Format', value: truncateForEmbed(rule.value_label, 1000), inline: true });
+  if (Array.isArray(rule.traits) && rule.traits.length) embed.addFields({ name: '🏷️ Traits', value: truncateForEmbed(rule.traits.join(', '), 1000), inline: true });
+  if (rule.trigger)      embed.addFields({ name: '🔔 Trigger', value: truncateForEmbed(rule.trigger, 1000), inline: false });
+  if (rule.requirements) embed.addFields({ name: '📋 Requirements', value: truncateForEmbed(rule.requirements, 1000), inline: false });
+  const catLabel = typeof cat === 'string' && cat.length > 0
+    ? cat.charAt(0).toUpperCase() + cat.slice(1)
+    : 'Rule';
+  embed.setFooter({ text: `${catLabel} • ${rule.source ?? 'Pathfinder 2e'}` });
   return embed;
 }
 
@@ -2492,18 +2495,18 @@ function buildArchetypeEmbed(archetype) {
   const rarityColor = { Common: 0x4a90d9, Uncommon: 0xc45f00, Rare: 0x6b21a8 };
   const typeEmoji = archetype.type === 'multiclass' ? '🔀' : '📖';
   const typeLabel = archetype.type === 'multiclass' ? 'Multiclass Archetype' : 'Archetype';
-  const rarityLabel = archetype.rarity !== 'Common' ? ` • ${archetype.rarity}` : '';
+  const rarityLabel = archetype.rarity && archetype.rarity !== 'Common' ? ` • ${archetype.rarity}` : '';
   const embed = new EmbedBuilder()
     .setColor(rarityColor[archetype.rarity] ?? 0x4a90d9)
-    .setTitle(`${typeEmoji} ${archetype.name}`)
-    .setDescription(archetype.description || '*No description available.*')
+    .setTitle(`${typeEmoji} ${archetype.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(archetype.description || '*No description available.*', 4000))
     .addFields(
-      { name: '📋 Type',            value: `${typeLabel}${rarityLabel}`, inline: true },
-      { name: '🎯 Dedication Feat', value: `Feat ${archetype.dedication_level}`, inline: true },
-      { name: '📚 Source',          value: archetype.source || 'Unknown', inline: true },
+      { name: '📋 Type',            value: truncateForEmbed(`${typeLabel}${rarityLabel}`, 1000), inline: true },
+      { name: '🎯 Dedication Feat', value: `Feat ${archetype.dedication_level ?? '?'}`, inline: true },
+      { name: '📚 Source',          value: truncateForEmbed(archetype.source || 'Unknown', 1000), inline: true },
     );
   if (archetype.prerequisites)
-    embed.addFields({ name: '⚠️ Prerequisites', value: archetype.prerequisites, inline: false });
+    embed.addFields({ name: '⚠️ Prerequisites', value: truncateForEmbed(archetype.prerequisites, 1000), inline: false });
   embed.setFooter({ text: 'Pathway • PF2e Archetype Lookup' });
   return embed;
 }
@@ -2538,26 +2541,24 @@ function buildBackgroundEmbed(bg) {
   const rarityEmoji = { Common: '⚪', Uncommon: '🟠', Rare: '🟣', Unique: '🔴' };
   const emoji = rarityEmoji[bg.rarity] ?? '📜';
 
-  const boosts = bg.ability_boosts?.length
-    ? bg.ability_boosts.join(' or ')
-    : '*Choose any two (free)*';
-  const skills = bg.trained_skills?.length
-    ? bg.trained_skills.map(s => `• ${s}`).join('\n')
-    : '*None specified*';
-  const feats = bg.granted_feats?.length
-    ? bg.granted_feats.map(f => `✨ ${f}`).join('\n')
-    : '*None*';
+  const boostsArr = Array.isArray(bg.ability_boosts) ? bg.ability_boosts : [];
+  const skillsArr = Array.isArray(bg.trained_skills) ? bg.trained_skills : [];
+  const featsArr  = Array.isArray(bg.granted_feats)  ? bg.granted_feats  : [];
+
+  const boosts = boostsArr.length ? boostsArr.join(' or ') : '*Choose any two (free)*';
+  const skills = skillsArr.length ? skillsArr.map(s => `• ${s}`).join('\n') : '*None specified*';
+  const feats  = featsArr.length  ? featsArr.map(f => `✨ ${f}`).join('\n') : '*None*';
 
   const embed = new EmbedBuilder()
     .setColor(rarityColor[bg.rarity] ?? 0x4a90d9)
-    .setTitle(`${emoji} ${bg.name}`)
-    .setDescription(bg.summary || '*No summary available.*')
+    .setTitle(`${emoji} ${bg.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(bg.summary || '*No summary available.*', 4000))
     .addFields(
-      { name: '💪 Ability Boosts',  value: boosts, inline: true },
+      { name: '💪 Ability Boosts',  value: truncateForEmbed(boosts, 1000), inline: true },
       { name: '🏅 Rarity',           value: bg.rarity ?? 'Common', inline: true },
-      { name: '🎫 PFS',              value: bg.pfs_availability ?? 'Unknown', inline: true },
-      { name: '🎓 Trained Skills',   value: skills, inline: false },
-      { name: '🎯 Granted Feat',     value: feats,  inline: false },
+      { name: '🎫 PFS',              value: truncateForEmbed(bg.pfs_availability ?? 'Unknown', 1000), inline: true },
+      { name: '🎓 Trained Skills',   value: truncateForEmbed(skills, 1000), inline: false },
+      { name: '🎯 Granted Feat',     value: truncateForEmbed(feats, 1000),  inline: false },
     )
     .setFooter({ text: `Source: ${bg.source ?? 'Unknown'} • PF2e Background Lookup` });
 
@@ -2637,14 +2638,13 @@ function buildFeatEmbed(feat) {
   const fields = [
     { name: '📊 Level', value: feat.level != null ? String(feat.level) : 'Unknown', inline: true },
   ];
-  if (actionText) fields.push({ name: '⚡ Activity', value: actionText, inline: true });
-  if (feat.pfs_access) fields.push({ name: '🎫 PFS', value: feat.pfs_access, inline: true });
+  if (actionText) fields.push({ name: '⚡ Activity', value: truncateForEmbed(actionText, 1000), inline: true });
+  if (feat.pfs_access) fields.push({ name: '🎫 PFS', value: truncateForEmbed(feat.pfs_access, 1000), inline: true });
   if (feat.prerequisites) {
-    const prereq = String(feat.prerequisites).slice(0, 1024);
-    fields.push({ name: '📋 Prerequisites', value: prereq, inline: false });
+    fields.push({ name: '📋 Prerequisites', value: truncateForEmbed(String(feat.prerequisites), 1000), inline: false });
   }
   if (feat.notes) {
-    fields.push({ name: '📝 Notes', value: String(feat.notes).slice(0, 1024), inline: false });
+    fields.push({ name: '📝 Notes', value: truncateForEmbed(String(feat.notes), 1000), inline: false });
   }
 
   // Footer: source citation (e.g. "Player Core 2 pg. 223")
@@ -2653,8 +2653,8 @@ function buildFeatEmbed(feat) {
 
   const embed = new EmbedBuilder()
     .setColor(color)
-    .setTitle(`🪄 ${feat.name}`)
-    .setDescription(fullDesc.slice(0, 4000))
+    .setTitle(`🪄 ${feat.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(fullDesc, 4000))
     .addFields(fields)
     .setFooter({ text: `PF2e Feat Lookup • ${sourceText ?? 'Archives of Nethys'}` });
 
@@ -2750,33 +2750,33 @@ function buildItemEmbed(item) {
 
   const embed = new EmbedBuilder()
     .setColor(color)
-    .setTitle(`${icon} ${item.name}`);
+    .setTitle(`${icon} ${item.name ?? '(unnamed)'}`);
 
   // Description is the traits line (italic), since items in this dataset don't have prose descriptions
-  if (traitsDisplay) embed.setDescription(traitsDisplay);
+  if (traitsDisplay) embed.setDescription(truncateForEmbed(traitsDisplay, 4000));
 
   // Top row: Level / Price / Bulk
   const topFields = [
     { name: '📊 Level', value: item.level != null ? String(item.level) : '—', inline: true },
-    { name: '💰 Price', value: item.price_raw || '—',                         inline: true },
-    { name: '⚖️ Bulk',  value: item.bulk_raw  || '—',                         inline: true },
+    { name: '💰 Price', value: truncateForEmbed(item.price_raw || '—', 1000), inline: true },
+    { name: '⚖️ Bulk',  value: truncateForEmbed(item.bulk_raw  || '—', 1000), inline: true },
   ];
   embed.addFields(topFields);
 
   // Usage (held in 1 hand, worn, etc.)
-  if (item.usage) embed.addFields({ name: '✋ Usage', value: item.usage, inline: false });
+  if (item.usage) embed.addFields({ name: '✋ Usage', value: truncateForEmbed(item.usage, 1000), inline: false });
 
   // Category / subcategory
-  if (categoryLine) embed.addFields({ name: '📂 Category', value: categoryLine, inline: true });
+  if (categoryLine) embed.addFields({ name: '📂 Category', value: truncateForEmbed(categoryLine, 1000), inline: true });
 
   // PFS availability
-  if (item.pfs_availability) embed.addFields({ name: '🎫 PFS', value: item.pfs_availability, inline: true });
+  if (item.pfs_availability) embed.addFields({ name: '🎫 PFS', value: truncateForEmbed(item.pfs_availability, 1000), inline: true });
 
   // Campaign (e.g. Kingmaker-only items)
-  if (item.campaign) embed.addFields({ name: '📜 Campaign', value: item.campaign, inline: true });
+  if (item.campaign) embed.addFields({ name: '📜 Campaign', value: truncateForEmbed(item.campaign, 1000), inline: true });
 
   // Notes, if present
-  if (item.notes) embed.addFields({ name: '📝 Notes', value: String(item.notes).slice(0, 1000), inline: false });
+  if (item.notes) embed.addFields({ name: '📝 Notes', value: truncateForEmbed(String(item.notes), 1000), inline: false });
 
   embed.setFooter({ text: `PF2e Item Lookup • ${sourceText ?? 'Archives of Nethys'}` });
   return embed;
@@ -2828,34 +2828,34 @@ function buildDeityEmbed(deity) {
 
   const embed = new EmbedBuilder()
     .setColor(color)
-    .setTitle(`⛪ ${deity.name}`);
+    .setTitle(`⛪ ${deity.name ?? '(unnamed)'}`);
 
   // Subtitle line: PFS availability + pantheons
   const subtitleParts = [];
   if (deity.pfs_availability) subtitleParts.push(`PFS ${deity.pfs_availability}`);
-  if (deity.pantheons?.length) subtitleParts.push(deity.pantheons.join(', '));
-  if (subtitleParts.length) embed.setDescription(`*${subtitleParts.join(' · ')}*`);
+  if (Array.isArray(deity.pantheons) && deity.pantheons.length) subtitleParts.push(deity.pantheons.join(', '));
+  if (subtitleParts.length) embed.setDescription(truncateForEmbed(`*${subtitleParts.join(' · ')}*`, 4000));
 
   // Edicts / Anathemas — the core flavor content
   if (deity.edicts) {
-    embed.addFields({ name: '✅ Edicts',    value: String(deity.edicts).slice(0, 1024),    inline: false });
+    embed.addFields({ name: '✅ Edicts',    value: truncateForEmbed(String(deity.edicts), 1000),    inline: false });
   }
   if (deity.anathemas) {
-    embed.addFields({ name: '🚫 Anathemas', value: String(deity.anathemas).slice(0, 1024), inline: false });
+    embed.addFields({ name: '🚫 Anathemas', value: truncateForEmbed(String(deity.anathemas), 1000), inline: false });
   }
 
   // Domains — comma-joined
-  if (deity.domains?.length) {
-    embed.addFields({ name: '🏛️ Domains', value: deity.domains.join(', '), inline: false });
+  if (Array.isArray(deity.domains) && deity.domains.length) {
+    embed.addFields({ name: '🏛️ Domains', value: truncateForEmbed(deity.domains.join(', '), 1000), inline: false });
   }
 
   // Mechanical stats (divine font, sanctification, attributes) — in a compact row
   const mechanicals = [];
   if (deity.divine_font)     mechanicals.push(`**Divine Font** ${deity.divine_font}`);
   if (deity.sanctification)  mechanicals.push(`**Sanctification** ${deity.sanctification}`);
-  if (deity.attributes?.length) mechanicals.push(`**Attributes** ${deity.attributes.join(', ')}`);
+  if (Array.isArray(deity.attributes) && deity.attributes.length) mechanicals.push(`**Attributes** ${deity.attributes.join(', ')}`);
   if (mechanicals.length) {
-    embed.addFields({ name: '⚙️ Cleric Mechanics', value: mechanicals.join('\n'), inline: false });
+    embed.addFields({ name: '⚙️ Cleric Mechanics', value: truncateForEmbed(mechanicals.join('\n'), 1000), inline: false });
   }
 
   // Divine skill + favored weapon
@@ -2863,15 +2863,15 @@ function buildDeityEmbed(deity) {
   if (deity.divine_skill)   gearParts.push(`**Skill** ${deity.divine_skill}`);
   if (deity.favored_weapon) gearParts.push(`**Favored Weapon** ${deity.favored_weapon}`);
   if (gearParts.length) {
-    embed.addFields({ name: '🎯 Divine Gifts', value: gearParts.join(' · '), inline: false });
+    embed.addFields({ name: '🎯 Divine Gifts', value: truncateForEmbed(gearParts.join(' · '), 1000), inline: false });
   }
 
   // Devotee benefits (can be long — truncate if needed)
-  if (deity.devotee_benefits?.length) {
+  if (Array.isArray(deity.devotee_benefits) && deity.devotee_benefits.length) {
     const benefits = deity.devotee_benefits.join(', ');
     embed.addFields({
       name: '✨ Sanctifications / Devotee Benefits',
-      value: benefits.length > 1024 ? benefits.slice(0, 1021) + '...' : benefits,
+      value: truncateForEmbed(benefits, 1000),
       inline: false,
     });
   }
@@ -2994,7 +2994,7 @@ function buildCompanionEmbed(companion) {
   if (header) descParts.push(header);
   if (companion.description) descParts.push(companion.description);
   if (companion.access) descParts.push(`**Access:** ${companion.access}`);
-  if (descParts.length) embed.setDescription(descParts.join('\n\n').slice(0, 4000));
+  if (descParts.length) embed.setDescription(truncateForEmbed(descParts.join('\n\n'), 4000));
 
   // Abilities (inline)
   embed.addFields({
@@ -3008,27 +3008,27 @@ function buildCompanionEmbed(companion) {
   if (companion.hp !== null) defParts.push(`**HP** ${companion.hp}`);
   if (companion.speed) defParts.push(`**Speed** ${companion.speed}`);
   if (companion.skill) defParts.push(`**Skill** ${companion.skill}`);
-  if (companion.senses && companion.senses.length) defParts.push(`**Senses** ${companion.senses.join(', ')}`);
+  if (Array.isArray(companion.senses) && companion.senses.length) defParts.push(`**Senses** ${companion.senses.join(', ')}`);
   if (defParts.length) {
     embed.addFields({ name: '🛡️ Stats', value: defParts.join(' · '), inline: false });
   }
 
   // Attacks
   const attackLines = [];
-  for (const a of companion.melee) attackLines.push('Melee: ' + formatCompanionAttack(a));
-  for (const a of companion.ranged) attackLines.push('Ranged: ' + formatCompanionAttack(a));
+  for (const a of (Array.isArray(companion.melee) ? companion.melee : [])) attackLines.push('Melee: ' + formatCompanionAttack(a));
+  for (const a of (Array.isArray(companion.ranged) ? companion.ranged : [])) attackLines.push('Ranged: ' + formatCompanionAttack(a));
   if (attackLines.length) {
-    embed.addFields({ name: '⚔️ Attacks', value: attackLines.join('\n'), inline: false });
+    embed.addFields({ name: '⚔️ Attacks', value: truncateForEmbed(attackLines.join('\n'), 1000), inline: false });
   }
 
   // Special abilities
   if (companion.special) {
-    embed.addFields({ name: '✨ Special', value: companion.special.slice(0, 1020), inline: false });
+    embed.addFields({ name: '✨ Special', value: truncateForEmbed(companion.special, 1000), inline: false });
   }
 
   // Support Benefit
   if (companion.support) {
-    embed.addFields({ name: '🤝 Support Benefit', value: companion.support.slice(0, 1020), inline: false });
+    embed.addFields({ name: '🤝 Support Benefit', value: truncateForEmbed(companion.support, 1000), inline: false });
   }
 
   // Advanced Maneuver
@@ -3038,7 +3038,7 @@ function buildCompanionEmbed(companion) {
     const traits = m.traits && m.traits.length ? ` · *${m.traits.join(' ')}*` : '';
     const heading = `💥 Advanced Maneuver: ${m.name}${actions ? ` (${actions})` : ''}${traits}`;
     const body = m.description ?
-      m.description.replace(/^Source .+?pg\.\s*\d+\s*/i, '').slice(0, 1020) :
+      truncateForEmbed(m.description.replace(/^Source .+?pg\.\s*\d+\s*/i, ''), 1000) :
       '*No description available.*';
     embed.addFields({ name: heading.slice(0, 256), value: body, inline: false });
   }
@@ -3215,7 +3215,7 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
   const skillEntries = Object.entries(skills).sort(([a], [b]) => a.localeCompare(b));
   if (skillEntries.length > 0) {
     const line = skillEntries.map(([name, bonus]) => `**${name}** ${fmt(bonus)}`).join(' · ');
-    embed.addFields({ name: '🎯 Skills', value: line.slice(0, 1020), inline: false });
+    embed.addFields({ name: '🎯 Skills', value: truncateForEmbed(line, 1000), inline: false });
   }
 
   // Attacks: primary (from catalog/custom, with scaling) + any custom attacks
@@ -3235,7 +3235,7 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
     }
   }
   if (attackLines.length) {
-    embed.addFields({ name: '⚔️ Attacks', value: attackLines.join('\n').slice(0, 1020), inline: false });
+    embed.addFields({ name: '⚔️ Attacks', value: truncateForEmbed(attackLines.join('\n'), 1000), inline: false });
   }
 
   // Abilities: free-form text abilities + structured maneuver-style ones
@@ -3247,10 +3247,10 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
       }
       return `**${a.name}** — ${a.description}`;
     });
-    embed.addFields({ name: '✨ Abilities', value: abilityLines.join('\n').slice(0, 1020), inline: false });
+    embed.addFields({ name: '✨ Abilities', value: truncateForEmbed(abilityLines.join('\n'), 1000), inline: false });
   }
 
-  if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
+  if (comp.notes) embed.addFields({ name: '📝 Notes', value: truncateForEmbed(comp.notes, 1000), inline: false });
   const hasOverrides = (scaled.overriddenFields ?? []).length > 0;
   const footerExtra = hasOverrides ? ` · ✏️ = overridden` : '';
   embed.setFooter({ text: `Character: ${char.name} · /companion set to customize${footerExtra}` });
@@ -3310,12 +3310,12 @@ const SKILL_COLORS = {
 function buildSkillOverviewPage(skill, charMod = null) {
   const embed = new EmbedBuilder()
     .setColor(SKILL_COLORS.overview)
-    .setTitle(`🎯 ${skill.name}`)
-    .setDescription(skill.description)
+    .setTitle(`🎯 ${skill.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(skill.description ?? '*No description available.*', 4000))
     .setFooter({ text: `Page 1/3 • Pathfinder 2e Remaster` });
 
   // Key attribute + (if character loaded) the character's modifier
-  const attrFields = [{ name: '🔑 Key Attribute', value: skill.keyAttribute, inline: true }];
+  const attrFields = [{ name: '🔑 Key Attribute', value: truncateForEmbed(skill.keyAttribute ?? '?', 1000), inline: true }];
   if (charMod) {
     const sign = charMod.modifier >= 0 ? '+' : '';
     attrFields.push({
@@ -3327,9 +3327,10 @@ function buildSkillOverviewPage(skill, charMod = null) {
   embed.addFields(attrFields);
 
   // Common uses as a bullet list
-  const usesList = (skill.commonUses ?? []).map(u => `• ${u}`).join('\n');
+  const usesArr = Array.isArray(skill.commonUses) ? skill.commonUses : [];
+  const usesList = usesArr.map(u => `• ${u}`).join('\n');
   if (usesList) {
-    embed.addFields({ name: '🌟 Common Uses', value: usesList.slice(0, 1024), inline: false });
+    embed.addFields({ name: '🌟 Common Uses', value: truncateForEmbed(usesList, 1000), inline: false });
   }
 
   return embed;
@@ -3338,20 +3339,21 @@ function buildSkillOverviewPage(skill, charMod = null) {
 function buildSkillActionsPage(skill) {
   const embed = new EmbedBuilder()
     .setColor(SKILL_COLORS.actions)
-    .setTitle(`🎯 ${skill.name} — Actions`)
-    .setDescription(`Actions that use **${skill.name}**. Proficiency indicates the minimum rank required.`)
+    .setTitle(`🎯 ${skill.name ?? '(unnamed)'} — Actions`)
+    .setDescription(`Actions that use **${skill.name ?? 'this skill'}**. Proficiency indicates the minimum rank required.`)
     .setFooter({ text: `Page 2/3 • Pathfinder 2e Remaster` });
 
   // Chunk the actions into fields. Each action has its own field so it stays readable.
-  const actions = skill.actions ?? [];
+  const actions = Array.isArray(skill.actions) ? skill.actions : [];
   for (const action of actions) {
+    if (!action || !action.name) continue;
     const costIcon = skillActionCostIcon(action.cost);
     const costPart = costIcon ? `${costIcon} · ` : '';
-    const heading = `${costPart}**${action.name}** *(${action.proficiency})*`;
-    const body = String(action.description).slice(0, 950);
+    const heading = `${costPart}**${action.name}** *(${action.proficiency ?? '?'})*`;
+    const body = truncateForEmbed(String(action.description ?? ''), 1000);
     embed.addFields({
       name: heading.slice(0, 256),
-      value: body,
+      value: body || '*(no description)*',
       inline: false,
     });
   }
@@ -3366,14 +3368,17 @@ function buildSkillActionsPage(skill) {
 function buildSkillDcsPage(skill) {
   const embed = new EmbedBuilder()
     .setColor(SKILL_COLORS.dcs)
-    .setTitle(`🎯 ${skill.name} — DCs & Examples`)
-    .setDescription(`Example DCs for **${skill.name}** checks. Actual DCs depend on level, circumstance, and GM adjudication.`)
+    .setTitle(`🎯 ${skill.name ?? '(unnamed)'} — DCs & Examples`)
+    .setDescription(`Example DCs for **${skill.name ?? 'this skill'}** checks. Actual DCs depend on level, circumstance, and GM adjudication.`)
     .setFooter({ text: `Page 3/3 • Pathfinder 2e Remaster` });
 
-  const examples = skill.dcExamples ?? [];
+  const examples = Array.isArray(skill.dcExamples) ? skill.dcExamples : [];
   if (examples.length) {
-    const lines = examples.map(e => `**DC ${e.dc}** — ${e.example}`).join('\n');
-    embed.addFields({ name: '📐 Example DCs', value: lines.slice(0, 1024), inline: false });
+    const lines = examples
+      .filter(e => e && e.dc != null)
+      .map(e => `**DC ${e.dc}** — ${e.example ?? ''}`)
+      .join('\n');
+    if (lines) embed.addFields({ name: '📐 Example DCs', value: truncateForEmbed(lines, 1000), inline: false });
   }
 
   // General PF2e DC guidance (always the same, independent of skill)
@@ -3448,8 +3453,8 @@ function chunkText(text, max = 1020) {
 function buildClassOverviewPage(cls, userCharName = null) {
   const embed = new EmbedBuilder()
     .setColor(0x8e44ad)
-    .setTitle(`⚔️ ${cls.name}`)
-    .setDescription((cls.description || '*No description available.*').slice(0, 4000));
+    .setTitle(`⚔️ ${cls.name ?? '(unnamed)'}`)
+    .setDescription(truncateForEmbed(cls.description || '*No description available.*', 4000));
   const metaBits = [];
   if (cls.keyAttribute) metaBits.push(`**🔑 Key Attribute:** ${cls.keyAttribute}`);
   if (cls.hitPoints) metaBits.push(`**❤️ Hit Points:** ${cls.hitPoints}`);
@@ -3747,19 +3752,19 @@ function buildMonsterEmbed(monster, artUrl = null) {
   // the bestiary's own summary. Only show it if present, and keep the header
   // block italicized so it reads as the subtitle.
   const headerDescription = `*${levelLine}${rarityLine}${sizeLine}*`;
-  const editDescription = rich?.description ? `\n\n${String(rich.description).slice(0, 600)}` : '';
+  const editDescription = rich?.description ? `\n\n${truncateForEmbed(String(rich.description), 600)}` : '';
 
   const embed = new EmbedBuilder()
     .setColor(rarityColor[rarity] ?? 0x4a90d9)
     .setTitle(title)
     .setDescription(`${headerDescription}${editDescription}`);
 
-  if (traits.length) {
+  if (Array.isArray(traits) && traits.length) {
     embed.addFields({ name: '🏷️ Traits', value: traits.join(', '), inline: false });
   }
 
   // Languages — rich only, but if a GM edit set them they'll be here too.
-  if (rich?.languages?.length) {
+  if (Array.isArray(rich?.languages) && rich.languages.length) {
     embed.addFields({ name: '🗣️ Languages', value: rich.languages.join(', '), inline: false });
   }
 
@@ -3768,7 +3773,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
     const skillLine = Object.entries(rich.skills)
       .map(([name, mod]) => `${name} ${mod >= 0 ? '+' : ''}${mod}`)
       .join(', ');
-    embed.addFields({ name: '🎯 Skills', value: skillLine.slice(0, 1024), inline: false });
+    embed.addFields({ name: '🎯 Skills', value: truncateForEmbed(skillLine, 1000), inline: false });
   }
 
   // Ability scores — rich only, shown as a compact row. These are PF2e
@@ -3789,7 +3794,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
 
   // Items — rich only. Simple comma-joined.
   if (rich?.items?.length) {
-    embed.addFields({ name: '🎒 Items', value: rich.items.join(', ').slice(0, 1024), inline: false });
+    embed.addFields({ name: '🎒 Items', value: truncateForEmbed(rich.items.join(', '), 1000), inline: false });
   }
 
   // Defenses
@@ -3810,19 +3815,19 @@ function buildMonsterEmbed(monster, artUrl = null) {
 
   // Immunities / weaknesses / resistances — rich only
   if (rich?.defenses?.immunities?.length) {
-    embed.addFields({ name: '🚫 Immunities', value: rich.defenses.immunities.join(', ').slice(0, 1024), inline: false });
+    embed.addFields({ name: '🚫 Immunities', value: truncateForEmbed(rich.defenses.immunities.join(', '), 1000), inline: false });
   }
   if (rich?.defenses?.weaknesses?.length) {
     const w = rich.defenses.weaknesses.map(x =>
       typeof x === 'string' ? x : `${x.type} ${x.value}`
     ).join(', ');
-    embed.addFields({ name: '💔 Weaknesses', value: w.slice(0, 1024), inline: false });
+    embed.addFields({ name: '💔 Weaknesses', value: truncateForEmbed(w, 1000), inline: false });
   }
   if (rich?.defenses?.resistances?.length) {
     const r = rich.defenses.resistances.map(x =>
       typeof x === 'string' ? x : `${x.type} ${x.value}${x.notes ? ` (${x.notes})` : ''}`
     ).join(', ');
-    embed.addFields({ name: '💠 Resistances', value: r.slice(0, 1024), inline: false });
+    embed.addFields({ name: '💠 Resistances', value: truncateForEmbed(r, 1000), inline: false });
   }
 
   // Saves
@@ -3853,7 +3858,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
       const joined = attackLines.join('\n');
       embed.addFields({
         name: '⚔️ Attacks',
-        value: joined.length > 1024 ? joined.slice(0, 1021) + '...' : joined,
+        value: truncateForEmbed(joined, 1000),
         inline: false,
       });
     }
@@ -3907,7 +3912,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
         const label = lvl === '0' ? 'Cantrips' : `Rank ${lvl}`;
         lines.push(`**${label}:** ${spellNames.join(', ')}`);
       }
-      const body = (header + lines.join('\n')).slice(0, 1024);
+      const body = truncateForEmbed(header + lines.join('\n'), 1000);
       if (body.trim()) {
         embed.addFields({ name: `🔮 ${heading.charAt(0).toUpperCase() + heading.slice(1)} Spells`, value: body, inline: false });
       }
@@ -3917,7 +3922,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
   // Rich-only goodies: lore + GM tactics. These are what make Pathway
   // distinctly better than Avrae.
   if (rich?.lore_short) {
-    embed.addFields({ name: '📖 Lore', value: String(rich.lore_short).slice(0, 1024), inline: false });
+    embed.addFields({ name: '📖 Lore', value: truncateForEmbed(String(rich.lore_short), 1000), inline: false });
   }
   if (rich?.tactics && typeof rich.tactics === 'object') {
     const t = rich.tactics;
@@ -3928,7 +3933,7 @@ function buildMonsterEmbed(monster, artUrl = null) {
     if (t.when_hurt) tacticsLines.push(`**When Hurt:** ${t.when_hurt}`);
     const tacticsText = tacticsLines.join('\n');
     if (tacticsText) {
-      embed.addFields({ name: '🎯 Tactics (GM)', value: tacticsText.slice(0, 1024), inline: false });
+      embed.addFields({ name: '🎯 Tactics (GM)', value: truncateForEmbed(tacticsText, 1000), inline: false });
     }
   }
 
@@ -4815,16 +4820,18 @@ function buildSpellEmbed(rawSpell) {
   const spell = normalizeSpell(rawSpell);
   const isCantrip = spell.type === 'Cantrip';
   const levelDisplay = isCantrip ? `Cantrip ${spell.level}` : `Spell ${spell.level}`;
-  const traditionsDisplay = spell.traditions.length > 0 ? spell.traditions.join(', ') : 'None';
-  const traitsDisplay = spell.traits.length > 0 ? spell.traits.join(', ') : null;
-  let description = spell.description && spell.description.trim() ? spell.description : '*No description available.*';
-  if (description.length > 1500) description = description.slice(0, 1500) + '...\n*(description truncated)*';
-  const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(spell.name).setDescription(description);
+  const traditionsArr = Array.isArray(spell.traditions) ? spell.traditions : [];
+  const traitsArr = Array.isArray(spell.traits) ? spell.traits : [];
+  const traditionsDisplay = traditionsArr.length > 0 ? traditionsArr.join(', ') : 'None';
+  const traitsDisplay = traitsArr.length > 0 ? traitsArr.join(', ') : null;
+  const rawDesc = spell.description && spell.description.trim() ? spell.description : '*No description available.*';
+  const description = truncateForEmbed(rawDesc, 4000);
+  const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(spell.name ?? '(unnamed)').setDescription(description);
   const levelLine = [`**${levelDisplay}**`, spell.school ?? null].filter(Boolean).join(' · ');
-  embed.addFields({ name: '\u200b', value: levelLine, inline: false });
-  if (spell.source) embed.addFields({ name: 'Source', value: spell.source, inline: false });
-  embed.addFields({ name: 'Traditions', value: traditionsDisplay, inline: false });
-  if (traitsDisplay) embed.addFields({ name: 'Traits', value: traitsDisplay, inline: false });
+  embed.addFields({ name: '\u200b', value: truncateForEmbed(levelLine, 1000), inline: false });
+  if (spell.source) embed.addFields({ name: 'Source', value: truncateForEmbed(spell.source, 1000), inline: false });
+  embed.addFields({ name: 'Traditions', value: truncateForEmbed(traditionsDisplay, 1000), inline: false });
+  if (traitsDisplay) embed.addFields({ name: 'Traits', value: truncateForEmbed(traitsDisplay, 1000), inline: false });
   const metaLines = [
     spell.cast     ? `**Cast** ${spell.cast}`         : null,
     spell.range    ? `**Range** ${spell.range}`       : null,
@@ -4832,7 +4839,7 @@ function buildSpellEmbed(rawSpell) {
     spell.target   ? `**Target** ${spell.target}`     : null,
     spell.duration ? `**Duration** ${spell.duration}` : null,
   ].filter(Boolean);
-  if (metaLines.length > 0) embed.addFields({ name: 'Meta', value: metaLines.join('\n'), inline: false });
+  if (metaLines.length > 0) embed.addFields({ name: 'Meta', value: truncateForEmbed(metaLines.join('\n'), 1000), inline: false });
   // "Defense" field matches AoN. Shows "AC" for attack-roll spells, or the
   // save type (with "basic " prefix for basic saves) for save spells.
   if (spell.isAttackSpell) {
@@ -4841,7 +4848,7 @@ function buildSpellEmbed(rawSpell) {
     const basicPrefix = spell.saveIsBasic ? 'basic ' : '';
     embed.addFields({ name: 'Defense', value: `${basicPrefix}${spell.savingThrow}`, inline: false });
   }
-  if (spell.damage)      embed.addFields({ name: 'Damage', value: spell.damage, inline: false });
+  if (spell.damage)      embed.addFields({ name: 'Damage', value: truncateForEmbed(spell.damage, 1000), inline: false });
   if (spell.heightening && typeof spell.heightening === 'object') {
     let htText = '';
     if (spell.heightening.type === 'per_rank' && spell.heightening.damage_bonus)
@@ -4849,9 +4856,9 @@ function buildSpellEmbed(rawSpell) {
     else if (spell.heightening.type === 'fixed' && spell.heightening.levels)
       htText = Object.entries(spell.heightening.levels).map(([k, v]) => `**${k}:** ${v}`).join('\n');
     else htText = JSON.stringify(spell.heightening);
-    if (htText) embed.addFields({ name: '⬆️ Heightened', value: htText, inline: false });
+    if (htText) embed.addFields({ name: '⬆️ Heightened', value: truncateForEmbed(htText, 1000), inline: false });
   } else if (spell.heightened?.trim()) {
-    embed.addFields({ name: '⬆️ Heightened', value: spell.heightened, inline: false });
+    embed.addFields({ name: '⬆️ Heightened', value: truncateForEmbed(spell.heightened, 1000), inline: false });
   }
   embed.setFooter({ text: `Pathfinder 2e · ${spell.source ?? 'Unknown source'}` });
   return embed;
