@@ -64,8 +64,9 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    // Required for /char pastemsg to read the text of user's recent messages.
-    // You must ALSO enable this in the Discord Developer Portal:
+    // MessageContent intent — kept on as a safety net for future features
+    // that may want to read user message text. Currently unused.
+    // To enable in the Discord Developer Portal:
     //   https://discord.com/developers/applications → Your App → Bot → Privileged Gateway Intents
     //   → Enable "Message Content Intent"
     GatewayIntentBits.MessageContent,
@@ -1086,7 +1087,7 @@ function getBlankCharacterTemplate() {
 }
 
 // Imports/updates a character from Pathbuilder JSON. Used by /char add,
-// /char import, /char update, /char sync, and /char pastemsg.
+// /char import, and /char update.
 //
 // PHASE 2 RACE-FREE CONVERSION
 // Previously this used loadCharacters() → modify → saveCharacters() which
@@ -4833,12 +4834,9 @@ const HELP_CATEGORIES = {
     label: 'Character',
     blurb: 'Import, display, and manage your saved characters. For editing fields, see the Edit category.',
     commands: [
-      { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
-      { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
-      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
-      { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
-      { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
-      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
+      { name: '/char import', summary: '**Easiest!** Import directly from Pathbuilder by 6-digit ID. Pulls latest data from Pathbuilder\'s API.', options: 'id', example: '/char import id:122550' },
+      { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file. Use when you don\'t have a Pathbuilder ID.', options: 'file', example: '/char add file:[attach file]' },
+      { name: '/char update', summary: 'Refresh an existing character. **Pass `id:` for fastest path** (re-fetches from Pathbuilder), or `file:` to upload new JSON. Keeps hero points, XP, HP, bag, and notes.', options: 'id, file', example: '/char update id:122550' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
@@ -6184,148 +6182,90 @@ client.on('interactionCreate', async (interaction) => {
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
         const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? Next time try \`/char pastemsg\` — paste the JSON as a chat message instead of wrangling files.*`);
+        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*Tip: For the easiest re-imports, try \`/char import id:<your-id>\` instead — pulls latest data from Pathbuilder directly.*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
+    // /char update — refresh an existing character from Pathbuilder.
+    // Two ways to provide the new data:
+    //   id:  (preferred) — Pathbuilder character ID, fetched from their API
+    //   file: (fallback) — uploaded .json/.txt file
+    // If both given, ID wins. Update preserves hero points, XP, current HP,
+    // bag/inventory, and notes via saveImportedCharacter's preserveOverlay flag.
     else if (sub === 'update') {
       await interaction.deferReply();
+      const id = interaction.options.getInteger('id');
       const attachment = interaction.options.getAttachment('file');
-      const nameLower = attachment.name.toLowerCase();
-      if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
-        return interaction.editReply('Please attach a `.json` or `.txt` file exported from Pathbuilder.');
-      }
-      try {
-        const response = await fetch(attachment.url);
-        const rawText = await response.text();
-        const parsed = parsePastedPathbuilderJSON(rawText);
-        if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: true });
-        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-        if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
-        await interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level}! *(hero points, XP, current HP, and bag preserved.)*`);
-      } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
-    }
 
-    // /char pastemsg — import by scanning recent channel messages for JSON
-    // Flow: user posts a Discord message with their JSON (as code block,
-    // plain text, or `.txt` attachment), then runs `/char pastemsg`. Bot
-    // reads recent messages and picks the first one with parseable JSON.
-    // Works better than a modal for mobile users because:
-    //   - regular messages handle up to 2000 chars natively
-    //   - `.txt` attachments allow any size via Discord's 10MB file cap
-    //   - mobile Discord's paste-into-message UX is smooth
-    else if (sub === 'pastemsg' || sub === 'pastemsgupdate') {
-      const isUpdate = sub === 'pastemsgupdate';
-      await interaction.deferReply({ ephemeral: true });
-      let messages;
-      try {
-        messages = await interaction.channel.messages.fetch({ limit: 20 });
-      } catch (err) {
-        return interaction.editReply('❌ Could not read recent messages in this channel. Make sure the bot has permission to read messages here, then try again.');
-      }
-      // Look at the user's last 5 messages in reverse-chrono order
-      const userMessages = [...messages.values()]
-        .filter(m => m.author.id === interaction.user.id)
-        .slice(0, 5);
-      if (userMessages.length === 0) {
-        return interaction.editReply('❌ No recent messages from you in this channel. Post your Pathbuilder JSON (as text or `.txt` attachment) first, then run this command.');
-      }
-
-      // For each message, try to extract JSON from (a) attachments, (b) message content
-      for (const msg of userMessages) {
-        // Try attachments first — they can hold bigger JSONs
-        for (const att of msg.attachments.values()) {
-          const n = att.name?.toLowerCase() ?? '';
-          if (n.endsWith('.json') || n.endsWith('.txt')) {
-            try {
-              const res = await fetch(att.url);
-              const txt = await res.text();
-              const parsed = parsePastedPathbuilderJSON(txt);
-              if (parsed.char) {
-                const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
-                if (saved.error) continue;
-                if (isUpdate && !saved.replaced) continue;
-                return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your attachment \`${att.name}\`.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}`);
-              }
-            } catch { /* try next */ }
-          }
-        }
-        // Then try the message text
-        if (msg.content && msg.content.trim().length > 50) {
-          const parsed = parsePastedPathbuilderJSON(msg.content);
-          if (parsed.char) {
-            const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
-            if (saved.error) continue;
-            if (isUpdate && !saved.replaced) continue;
-            return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your chat message.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}\n*You can delete the message now — the import is done.*`);
-          }
-        }
-      }
-      return interaction.editReply(
-        '❌ Couldn\'t find valid Pathbuilder JSON in your recent messages.\n\n' +
-        '**Try this instead:**\n' +
-        '1. From Pathbuilder: Menu → **Export JSON** → Copy\n' +
-        '2. Paste the JSON as a chat message in this channel (or attach it as a `.txt`)\n' +
-        '3. Run `/char pastemsg` again immediately after\n\n' +
-        '*For larger characters, save the JSON as a `.txt` file and attach it — Discord\'s 10MB limit is plenty.*'
-      );
-    }
-
-    // /char howto — platform-specific guidance for getting JSON into the bot
-    // /char pdf — import from a Pathbuilder statblock PDF
-    // Flow: user exports Pathbuilder character as statblock PDF (Menu →
-    // Export → View Statblock → Print/Save as PDF), uploads it here.
-    // Uses pdf-parse to extract text, then parsePathbuilderStatblockPDF
-    // to turn it into a character object. Best-effort — fills in what the
-    // PDF contains but leaves JSON-only fields empty. Marked _source:'pdf'.
-    //
-    // Why this instead of printable character sheet PDF: the printable sheet
-    // has form labels and values interleaved in random order that's basically
-    // unparseable. The statblock PDF uses the consistent monster-statblock
-    // format that we already handle for /monsteradd.
-    else if (sub === 'pdf') {
-      await interaction.deferReply();
-      const attachment = interaction.options.getAttachment('file');
-      if (!attachment.name.toLowerCase().endsWith('.pdf')) {
-        return interaction.editReply('❌ Please attach a `.pdf` file. For non-PDF imports, use `/char add` (JSON/TXT) or `/char pastemsg` (paste as message).');
-      }
-      try {
-        const response = await fetch(attachment.url);
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        let pdfText;
-        try {
-          const { PDFParse } = require('pdf-parse');
-          const p = new PDFParse({ data: buffer });
-          const r = await p.getText();
-          pdfText = r.text ?? '';
-        } catch (err) {
-          console.error('PDF text extraction failed:', err);
-          return interaction.editReply('❌ Could not read that PDF. It may be encrypted, image-only (scanned), or corrupted. Try re-exporting from Pathbuilder.');
-        }
-
-        const parsed = parsePathbuilderStatblockPDF(pdfText);
-        if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-
-        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
-        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-
-        // Warn the user about PDF-import limitations — it's a partial character
-        const warnLines = parsed.warnings.length
-          ? `\n*Parser warnings: ${parsed.warnings.join('; ')}*`
-          : '';
-        await interaction.editReply(
-          `✅ **${saved.name}** (Level ${saved.level}) imported from PDF!${warnLines}\n\n` +
-          `⚠️ **PDF imports are partial.** Skill proficiency ranks, class features by level, ` +
-          `and some details the statblock doesn't print aren't captured. Features that depend on ` +
-          `the full Pathbuilder JSON (leveling up, sync) won't work as well as with \`/char add\` or \`/char pastemsg\`.\n\n` +
-          `Use \`/sheet\` to view them. For full data, re-import later via JSON.`
+      if (!id && !attachment) {
+        return interaction.editReply(
+          '❌ Provide either an `id:` (Pathbuilder character ID) or a `file:` (uploaded .json/.txt).\n\n' +
+          '**Easy:** `/char update id:122550`\n' +
+          '**Fallback:** `/char update file:[attach .json]`'
         );
+      }
+
+      let rawChar;
+      try {
+        if (id) {
+          // ── Path 1: Pathbuilder ID ──
+          if (id < 1 || id > 99999999) {
+            return interaction.editReply(`❌ That doesn't look like a valid Pathbuilder ID. Expected a 6-digit number like \`122550\`.`);
+          }
+          const url = `https://pathbuilder2e.com/json.php?id=${id}`;
+          const response = await fetch(url, {
+            headers: {
+              'User-Agent': 'Pathway-Bot/1.0 (+https://github.com/vivantur/Pathway; PF2e Discord bot)',
+            },
+          });
+          const rawText = await response.text();
+
+          // Pathbuilder's allowlist may block cloud-hosted bots
+          if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
+            return interaction.editReply(
+              `❌ **Pathbuilder blocked the request — its allowlist doesn't include this bot's server.**\n\n` +
+              `**Fallback:** download the JSON file from Pathbuilder and run \`/char update file:[attach .json]\` instead.`
+            );
+          }
+          if (!response.ok) {
+            return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use \`/char update file:[attach .json]\`.`);
+          }
+
+          let parsed;
+          try {
+            parsed = JSON.parse(rawText);
+          } catch {
+            return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again or use \`/char update file:[attach .json]\`.`);
+          }
+          if (parsed.success === false) {
+            return interaction.editReply(`❌ Pathbuilder couldn't find ID \`${id}\`. Double-check the number (it's the 6-digit code shown after you export JSON in Pathbuilder).`);
+          }
+          rawChar = parsed.build ?? parsed;
+          if (!rawChar || !rawChar.name) {
+            return interaction.editReply(`❌ Got a response from Pathbuilder but no character data. The ID may be invalid or expired.`);
+          }
+        } else {
+          // ── Path 2: file upload (fallback) ──
+          const nameLower = attachment.name.toLowerCase();
+          if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
+            return interaction.editReply('❌ Please attach a `.json` or `.txt` file exported from Pathbuilder.');
+          }
+          const response = await fetch(attachment.url);
+          const rawText = await response.text();
+          const parsed = parsePastedPathbuilderJSON(rawText);
+          if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
+          rawChar = parsed.char;
+        }
+
+        // ── Common path: save with preserveOverlay so HP/XP/hero points/etc. survive ──
+        const saved = await saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: true });
+        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+        if (!saved.replaced) return interaction.editReply(`Couldn't find an existing **${saved.name}** to update. Use \`/char add\` first to import a new character.`);
+        const sourceText = id ? `from Pathbuilder ID \`${id}\`` : 'from uploaded file';
+        await interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level} ${sourceText}! *(hero points, XP, current HP, bag, and notes preserved.)*`);
       } catch (err) {
-        console.error('/char pdf error:', err);
-        await interaction.editReply('❌ Something went wrong processing that PDF. Check the Railway logs and report the error.');
+        console.error('/char update error:', err);
+        await interaction.editReply(`❌ Something went wrong: \`${err.message}\`. Try again or paste the JSON file via \`file:\` instead.`);
       }
     }
 
@@ -6988,26 +6928,21 @@ client.on('interactionCreate', async (interaction) => {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setTitle('📥 How to import your character')
-        .setDescription('Pick whichever method matches your device.')
+        .setDescription('Pick whichever method matches your situation.')
         .addFields(
           {
-            name: '📱 Mobile — easiest: `/char pastemsg`',
-            value: '1. Pathbuilder app → Menu (≡) → **Export JSON** → **Copy JSON**\n2. Paste as a regular Discord chat message here\n3. Run `/char pastemsg` — bot reads your last message\n4. Delete the pasted message after (optional)\n\n**For big characters:** save the JSON as a `.txt` file first (Notes app → Share → Save to Files → rename to `.txt`), attach it to a Discord message, then run `/char pastemsg`.',
+            name: '⭐ Easiest: `/char import id:<your-id>`',
+            value: '1. In Pathbuilder, look at the URL when viewing your character — there\'s a 6-digit ID like `122550`\n2. Run `/char import id:122550`\n3. Done! No file uploads, no copy-paste.\n\n*Requires the character to be saved online in Pathbuilder. The ID can be re-used to refresh the character later via `/char update id:<same-id>`.*',
             inline: false,
           },
           {
-            name: '💻 Desktop — `/char add` (file upload)',
-            value: 'Download JSON from Pathbuilder → `/char add file:<the-file>`. Accepts `.json` or `.txt`.',
-            inline: false,
-          },
-          {
-            name: '📄 PDF fallback — `/char pdf` (partial import)',
-            value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks and some metadata. Use `/char edit` to set background/deity/languages/senses and `/char skill` to set proficiency ranks on the skills that matter. Does **not** work with the printable character sheet PDF, only the statblock format.',
+            name: '📁 Fallback: `/char add file:<your-file>`',
+            value: 'If `/char import` doesn\'t work (Pathbuilder allowlist, no ID, etc.):\n1. Pathbuilder → Menu (≡) → **Export JSON**\n2. Save the file (`.json` or `.txt`)\n3. `/char add file:[attach the file]`',
             inline: false,
           },
           {
             name: '📝 No Pathbuilder? — `/char template` (build from scratch)',
-            value: 'For NPCs, homebrew characters, or anyone without Pathbuilder access:\n1. `/char template` — bot sends you a blank fill-in-the-blanks `.txt` file\n2. Edit it in any text editor (Notepad, phone notes, etc.). Comments explain every field.\n3. `/char add file:<the-edited-file>` imports your character.\n\nTo heavily modify an existing character: `/char dump character:<name>` exports them as an editable file. Edit, then `/char update file:<edited>` to apply changes.',
+            value: 'For NPCs, homebrew characters, or anyone without Pathbuilder access:\n1. `/char template` — bot sends you a blank fill-in-the-blanks `.txt` file\n2. Edit it in any text editor (Notepad, phone notes, etc.). Comments explain every field.\n3. `/char add file:<the-edited-file>` imports your character.\n\nTo heavily modify an existing character: `/char dump character:<n>` exports them as an editable file. Edit, then `/char update file:<edited>` to apply changes.',
             inline: false,
           },
           {
@@ -7017,16 +6952,16 @@ client.on('interactionCreate', async (interaction) => {
               '**Skills:** `/char skill` (16 standard skills), `/char lore` (Lore skills — any topic, remove:True deletes)\n' +
               '**Inventory:** `/char item` (add/remove/edit non-weapon items), `/char money` (set coin counts)\n' +
               '**Feats:** `/char feat action:add/remove`\n\n' +
-              'All edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections. Use `action:clear` on most commands to revert overrides.',
+              'All edits are preserved across `/char update`, so leveling up won\'t wipe your manual corrections. Use `action:clear` on most commands to revert overrides.',
             inline: false,
           },
           {
             name: '🔄 Updating an existing character',
-            value: 'After leveling up, refresh with:\n• `/char pastemsgupdate` — paste updated JSON as a chat message\n• `/char update` — re-upload the updated file\n\nBoth preserve hero points, XP, current HP, notes, and any `/char edit` or `/char skill` overrides.',
+            value: 'After leveling up:\n• **Easiest:** `/char update id:<your-id>` — refetches latest data from Pathbuilder\n• **Fallback:** `/char update file:<new-json>` — upload the new JSON file\n\nBoth preserve hero points, XP, current HP, notes, and any `/char edit` or `/char skill` overrides.',
             inline: false,
           },
         )
-        .setFooter({ text: 'All import methods accept .json or .txt. Save your export as .txt if your OS is fussy about .json files.' });
+        .setFooter({ text: 'All file-based methods accept .json or .txt. Save your export as .txt if your OS is fussy about .json files.' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -7186,17 +7121,12 @@ client.on('interactionCreate', async (interaction) => {
         if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
           return interaction.editReply(
             `❌ **Pathbuilder blocked the request — its allowlist doesn't include this bot's server.**\n\n` +
-            `**Easy fix:** import via copy-paste instead. Takes 30 seconds:\n` +
-            `1. In Pathbuilder, click **Menu** → **Export & Import** → **Export JSON**\n` +
-            `2. Click **Copy to Clipboard**\n` +
-            `3. Paste the JSON into Discord chat as a message\n` +
-            `4. Right-click your pasted message → **Apps** → **Import as Character**\n` +
-            `   *(or use \`/char pastemsg\` referring to the message ID)*\n\n` +
-            `**Why this happens:** Pathbuilder's creator (Roland) maintains an allowlist of approved hosts. Cloud-hosted bots like this one aren't on it. The User-Agent isn't the issue — the source IP is.`
+            `**Fallback:** download the JSON file from Pathbuilder and run \`/char add file:[attach .json]\` instead.\n` +
+            `**Why this happens:** Pathbuilder's creator (Roland) maintains an allowlist of approved hosts. Cloud-hosted bots like this one aren't on it.`
           );
         }
         if (!response.ok) {
-          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use the copy-paste flow described in \`/char help\`.`);
+          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use \`/char add file:[attach .json]\` instead.`);
         }
 
         // Parse what we got. Pathbuilder returns { success: true, build: {...} } on
@@ -7205,7 +7135,7 @@ client.on('interactionCreate', async (interaction) => {
         try {
           parsed = JSON.parse(rawText);
         } catch {
-          return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again or use \`/char pastemsg\`.`);
+          return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again or use \`/char add file:[attach .json]\` instead.`);
         }
 
         if (parsed.success === false) {
@@ -7221,13 +7151,13 @@ client.on('interactionCreate', async (interaction) => {
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         return interaction.editReply(
           `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
-          `*Tip: Pathbuilder's IDs expire after a while. If you re-export, use \`/char import id:<new-id>\` or just \`/char pastemsg\` to refresh.*`
+          `*Tip: Re-import or refresh anytime with \`/char update id:${id}\`.*`
         );
       } catch (err) {
         console.error('/char import fetch error:', err);
         return interaction.editReply(
           `❌ Couldn\'t reach Pathbuilder: \`${err.message}\`\n\n` +
-          `Try \`/char pastemsg\` instead — copy the JSON from Pathbuilder and paste it as a chat message, then run the command.`
+          `Try \`/char add file:[attach .json]\` instead — download the JSON from Pathbuilder and upload it.`
         );
       }
     }
