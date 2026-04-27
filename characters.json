@@ -1424,7 +1424,8 @@
             "Deception": 0,
             "Diplomacy": 0,
             "Intimidation": 0,
-            "Medicine": 1
+            "Medicine": 1,
+            "Nature": 1
           }
         }
       },
