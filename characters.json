@@ -1436,7 +1436,19 @@
           }
         }
       },
-      "activeCompanion": "abyss"
+      "activeCompanion": "abyss",
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {},
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {},
+          "last_rest_at": "2026-04-27T23:00:32.601Z"
+        }
+      },
+      "hp": 24
     },
     "isolde": {
       "name": "Isolde",
