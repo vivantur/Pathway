@@ -1860,6 +1860,418 @@
       "senses": null,
       "edits": null,
       "saved": "2026-04-27T16:05:35.361Z"
+    },
+    "khyber": {
+      "name": "Khyber",
+      "data": {
+        "name": "Khyber",
+        "class": "Guardian",
+        "dualClass": null,
+        "level": 3,
+        "xp": 0,
+        "ancestry": "Kholo",
+        "heritage": "Dragonblood",
+        "background": "Cursed",
+        "alignment": "N",
+        "gender": "Female",
+        "age": "28 (Human Years)",
+        "deity": "Not set",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "str",
+        "languages": [
+          "Common",
+          "Diabolic",
+          "Draconic",
+          "Elven",
+          "Kholo"
+        ],
+        "rituals": [],
+        "resistances": [
+          "physical 2"
+        ],
+        "inventorMods": [],
+        "abilities": {
+          "str": 18,
+          "dex": 12,
+          "con": 14,
+          "int": 14,
+          "wis": 8,
+          "cha": 12,
+          "breakdown": {
+            "ancestryFree": [
+              "Con"
+            ],
+            "ancestryBoosts": [
+              "Str",
+              "Int"
+            ],
+            "ancestryFlaws": [
+              "Wis"
+            ],
+            "backgroundBoosts": [
+              "Int",
+              "Str"
+            ],
+            "classBoosts": [
+              "Str"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Cha",
+                "Con",
+                "Str"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 12,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 2,
+          "medium": 2,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 2,
+          "acrobatics": 0,
+          "arcana": 2,
+          "athletics": 2,
+          "crafting": 0,
+          "deception": 4,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 0,
+          "nature": 2,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 0,
+          "society": 0,
+          "stealth": 4,
+          "survival": 0,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {
+          "Stealth": {
+            "Potency Bonus": 1
+          },
+          "Kineticist Impulse Attack": {
+            "Potency Bonus": 1
+          }
+        },
+        "feats": [
+          [
+            "Shield Block",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Diehard",
+            null,
+            "Awarded Feat",
+            3
+          ],
+          [
+            "Dragonblood",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Larger Than Life",
+            null,
+            "Class Feat",
+            1,
+            "Guardian Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Breath of the Dragon",
+            null,
+            "Ancestry Feat",
+            1,
+            "Gnoll Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Additional Lore",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Raise Haft",
+            null,
+            "Class Feat",
+            2,
+            "Guardian Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Beastmaster Dedication",
+            null,
+            "Archetype Feat",
+            2,
+            "Free Archetype 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Ride",
+            null,
+            "General Feat",
+            3,
+            "General Feat 3",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Guardian's Armor",
+          "Taunt",
+          "Intercept Attack",
+          "Ever Ready",
+          "Low-Light Vision",
+          "Bite (Kholo)",
+          "Warding Sign",
+          "Resurrection",
+          "Call Companion",
+          "Tough to Kill",
+          "Stealth",
+          "Dragonblood"
+        ],
+        "lores": [
+          [
+            "Curse",
+            2
+          ],
+          [
+            "Dragon",
+            4
+          ]
+        ],
+        "equipmentContainers": {
+          "0a26d1e5-d204-463d-8e34-f00163284d62": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Clothing (Explorer's)",
+            1,
+            "Invested"
+          ],
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "0a26d1e5-d204-463d-8e34-f00163284d62",
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Bastard Sword",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d8",
+            "pot": 1,
+            "str": "",
+            "mat": null,
+            "display": "+1 Bastard Sword",
+            "runes": [],
+            "damageType": "S",
+            "attack": 10,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Battle Saddle",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d8",
+            "pot": 1,
+            "str": "",
+            "mat": null,
+            "display": "+1 Battle Saddle",
+            "runes": [],
+            "damageType": "S",
+            "attack": 10,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Falchion",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d10",
+            "pot": 1,
+            "str": "",
+            "mat": null,
+            "display": "+1 Falchion",
+            "runes": [],
+            "damageType": "S",
+            "attack": 10,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 4,
+          "gp": 55,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Scale Mail",
+            "qty": 1,
+            "prof": "medium",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Scale Mail",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          },
+          {
+            "name": "Buckler",
+            "qty": 1,
+            "prof": "shield",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [],
+        "focusPoints": 0,
+        "focus": {},
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 5,
+          "acAbilityBonus": 1,
+          "acItemBonus": 3,
+          "acTotal": 19,
+          "shieldBonus": "1"
+        },
+        "pets": [
+          {
+            "type": "Animal Companion",
+            "name": "Young Wyvern",
+            "equipment": [],
+            "animal": "Wyvern",
+            "mature": false,
+            "incredible": false,
+            "incredibleType": "Nimble",
+            "specializations": [],
+            "armor": "Unarmored"
+          }
+        ],
+        "familiars": []
+      },
+      "art": null,
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-27T16:22:36.499Z"
     }
   },
   "496522967283531778": {
