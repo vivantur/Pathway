@@ -6917,101 +6917,6 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 
-    // ── /char debug — diagnostic dump of the user's character data ──
-    // Shows exactly what the bot has stored under your user ID: the keys
-    // it uses for each character, what entry.name vs entry.data.name say,
-    // active char setting, and any inconsistencies. Use this when /sheet,
-    // /init add, and /char list disagree about which character is which.
-    //
-    // Output is ephemeral (only you see it) and shows ONLY your own data,
-    // never anyone else's.
-    else if (sub === 'debug') {
-      const userId = interaction.user.id;
-      const characters = loadCharacters();
-      const userChars = characters[userId] ?? {};
-      const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
-      const activeKey = userChars._activeChar ?? null;
-
-      if (charKeys.length === 0) {
-        return interaction.reply({
-          content: '📭 You have no characters saved. Use `/char add` to import one.',
-          ephemeral: true,
-        });
-      }
-
-      const lines = [];
-      lines.push(`**Your user ID:** \`${userId}\``);
-      lines.push(`**Total characters under your ID:** ${charKeys.length}`);
-      lines.push(`**Active character key:** \`${activeKey ?? '(none set)'}\``);
-      if (activeKey && !userChars[activeKey]) {
-        lines.push(`⚠️ **WARNING:** activeKey \`${activeKey}\` doesn't exist in your character list! This will cause "no active character" errors.`);
-      }
-      lines.push('');
-      lines.push('**Character Entries:**');
-
-      let anyMismatch = false;
-      for (const key of charKeys) {
-        const entry = userChars[key];
-        const topName = entry?.name ?? '(missing)';
-        const dataName = entry?.data?.name ?? '(missing)';
-        const isActive = key === activeKey ? ' 📌' : '';
-        const mismatch = topName !== dataName ? ' ⚠️ **NAME MISMATCH!**' : '';
-        if (mismatch) anyMismatch = true;
-        const expectedKey = String(topName).toLowerCase().replace(/\s+/g, '-');
-        const keyMismatch = key !== expectedKey
-          ? ` ⚠️ key "\`${key}\`" doesn't match name "${topName}" (expected "\`${expectedKey}\`")`
-          : '';
-        lines.push(`• **Key:** \`${key}\`${isActive}`);
-        lines.push(`  • \`entry.name\`: **${topName}**`);
-        lines.push(`  • \`entry.data.name\`: **${dataName}**${mismatch}`);
-        if (keyMismatch) lines.push(`  •${keyMismatch}`);
-      }
-
-      if (anyMismatch) {
-        lines.push('');
-        lines.push('🚨 **A name mismatch means \`/sheet\` and \`/init add\` will show different characters!**');
-        lines.push('Use `/char debug fix:true` to repair (it will sync top-level name to match data.name).');
-      }
-
-      // Optional: try to auto-fix if user passed fix:true
-      const wantFix = interaction.options.getBoolean('fix') === true;
-      if (wantFix && anyMismatch) {
-        const fixedNames = [];
-        for (const key of charKeys) {
-          const entry = userChars[key];
-          if (!entry) continue;
-          const topName = entry.name;
-          const dataName = entry.data?.name;
-          if (topName !== dataName && dataName) {
-            fixedNames.push(`${topName} → ${dataName}`);
-            entry.name = dataName;
-          }
-        }
-        if (fixedNames.length > 0) {
-          saveCharacters(characters);
-          lines.push('');
-          lines.push(`✅ **Fixed ${fixedNames.length} mismatch(es):**`);
-          for (const f of fixedNames) lines.push(`  • ${f}`);
-          lines.push('Run `/sheet` and `/init add` again to verify.');
-        }
-      } else if (wantFix && !anyMismatch) {
-        lines.push('');
-        lines.push('✅ Nothing to fix — all entries are consistent.');
-      }
-
-      // Discord cap: 2000 chars per message. If we somehow exceed that, send as file.
-      const text = lines.join('\n');
-      if (text.length > 1900) {
-        const buf = Buffer.from(text, 'utf8');
-        return interaction.reply({
-          content: '📋 Diagnostic too long for one message — see attached file:',
-          files: [new AttachmentBuilder(buf, { name: 'char-debug.txt' })],
-          ephemeral: true,
-        });
-      }
-      return interaction.reply({ content: text, ephemeral: true });
-    }
-
     else if (sub === 'howto') {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
@@ -8706,6 +8611,104 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /mattack ────────────────────────────────────────────────────
+  // ─── /diagnose — diagnostic dump of the user's character data ────
+  // Shows exactly what the bot has stored under your user ID: the keys
+  // it uses for each character, what entry.name vs entry.data.name say,
+  // active char setting, and any inconsistencies. Use this when /sheet,
+  // /init add, and /char list disagree about which character is which.
+  //
+  // Was originally going to be /char debug but /char already has Discord's
+  // max of 25 subcommands. So /diagnose is a top-level command that does
+  // the same thing.
+  //
+  // Output is ephemeral (only you see it) and shows ONLY your own data.
+  else if (commandName === 'diagnose') {
+    const userId = interaction.user.id;
+    const characters = loadCharacters();
+    const userChars = characters[userId] ?? {};
+    const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
+    const activeKey = userChars._activeChar ?? null;
+
+    if (charKeys.length === 0) {
+      return interaction.reply({
+        content: '📭 You have no characters saved. Use `/char add` to import one.',
+        ephemeral: true,
+      });
+    }
+
+    const lines = [];
+    lines.push(`**Your user ID:** \`${userId}\``);
+    lines.push(`**Total characters under your ID:** ${charKeys.length}`);
+    lines.push(`**Active character key:** \`${activeKey ?? '(none set)'}\``);
+    if (activeKey && !userChars[activeKey]) {
+      lines.push(`⚠️ **WARNING:** activeKey \`${activeKey}\` doesn't exist in your character list! This will cause "no active character" errors.`);
+    }
+    lines.push('');
+    lines.push('**Character Entries:**');
+
+    let anyMismatch = false;
+    for (const key of charKeys) {
+      const entry = userChars[key];
+      const topName = entry?.name ?? '(missing)';
+      const dataName = entry?.data?.name ?? '(missing)';
+      const isActive = key === activeKey ? ' 📌' : '';
+      const mismatch = topName !== dataName ? ' ⚠️ **NAME MISMATCH!**' : '';
+      if (mismatch) anyMismatch = true;
+      const expectedKey = String(topName).toLowerCase().replace(/\s+/g, '-');
+      const keyMismatch = key !== expectedKey
+        ? ` ⚠️ key "\`${key}\`" doesn't match name "${topName}" (expected "\`${expectedKey}\`")`
+        : '';
+      lines.push(`• **Key:** \`${key}\`${isActive}`);
+      lines.push(`  • \`entry.name\`: **${topName}**`);
+      lines.push(`  • \`entry.data.name\`: **${dataName}**${mismatch}`);
+      if (keyMismatch) lines.push(`  •${keyMismatch}`);
+    }
+
+    if (anyMismatch) {
+      lines.push('');
+      lines.push('🚨 **A name mismatch means \`/sheet\` and \`/init add\` will show different characters!**');
+      lines.push('Use `/diagnose fix:true` to repair (it will sync top-level name to match data.name).');
+    }
+
+    // Optional: try to auto-fix if user passed fix:true
+    const wantFix = interaction.options.getBoolean('fix') === true;
+    if (wantFix && anyMismatch) {
+      const fixedNames = [];
+      for (const key of charKeys) {
+        const entry = userChars[key];
+        if (!entry) continue;
+        const topName = entry.name;
+        const dataName = entry.data?.name;
+        if (topName !== dataName && dataName) {
+          fixedNames.push(`${topName} → ${dataName}`);
+          entry.name = dataName;
+        }
+      }
+      if (fixedNames.length > 0) {
+        saveCharacters(characters);
+        lines.push('');
+        lines.push(`✅ **Fixed ${fixedNames.length} mismatch(es):**`);
+        for (const f of fixedNames) lines.push(`  • ${f}`);
+        lines.push('Run `/sheet` and `/init add` again to verify.');
+      }
+    } else if (wantFix && !anyMismatch) {
+      lines.push('');
+      lines.push('✅ Nothing to fix — all entries are consistent.');
+    }
+
+    // Discord cap: 2000 chars per message. If we somehow exceed that, send as file.
+    const text = lines.join('\n');
+    if (text.length > 1900) {
+      const buf = Buffer.from(text, 'utf8');
+      return interaction.reply({
+        content: '📋 Diagnostic too long for one message — see attached file:',
+        files: [new AttachmentBuilder(buf, { name: 'diagnose.txt' })],
+        ephemeral: true,
+      });
+    }
+    return interaction.reply({ content: text, ephemeral: true });
+  }
+
   else if (commandName === 'mattack') {
     const channelId = interaction.channel.id;
     const userId = interaction.user.id;
