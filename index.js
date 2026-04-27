@@ -2031,6 +2031,46 @@ function rollDamageExpression(expr) {
   return { rolls, bonus, numDice, numSides, sum, total, display };
 }
 
+// Parse a bestiary-style compound damage string like "3d12+15 piercing plus 2d6 fire"
+// or "4d8 void plus siphon life" (the trailing non-dice rider becomes a flavor note).
+//
+// Returns an array of damage parts. Each part has:
+//   { expr: '3d12+15', type: 'piercing', rollResult: {...} }   ← rollable
+//   { expr: null, type: null, note: 'siphon life' }             ← flavor only
+//
+// If nothing parses out, returns null. Use this for monster attacks where the
+// damage may be compound. For simple "1d6+2" expressions, rollDamageExpression
+// is the right tool.
+function parseAndRollAttackDamage(damageString) {
+  if (!damageString || typeof damageString !== 'string') return null;
+  // Split on " plus " to handle compound damage. PF2e canonically uses "plus"
+  // as the separator; we lowercase to be safe.
+  const parts = damageString.split(/\s+plus\s+/i);
+  const out = [];
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    // Try to extract a dice expression followed by a damage type. Patterns:
+    //   "1d6 slashing"
+    //   "3d12+15 piercing"
+    //   "2d6 fire"
+    //   "siphon life"   ← no dice, treat as flavor note
+    const dmgMatch = trimmed.match(/^(\d*d\d+(?:[+-]\d+)?)\s+(.+)$/i);
+    if (dmgMatch) {
+      const expr = dmgMatch[1];
+      const type = dmgMatch[2].trim().toLowerCase();
+      const rollResult = rollDamageExpression(expr);
+      if (rollResult) {
+        out.push({ expr, type, rollResult });
+        continue;
+      }
+    }
+    // Non-dice part — treat as flavor (e.g. "siphon life", "grab", "knockdown")
+    out.push({ expr: null, type: null, note: trimmed });
+  }
+  return out.length > 0 ? out : null;
+}
+
 function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
   if (targetAc === null || targetAc === undefined) return null;
   let degree;
@@ -3350,6 +3390,37 @@ function buildClassButtons(currentPage, classKey) {
     new ButtonBuilder().setCustomId(`class_${id}_3`).setLabel('Class Feats').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 3),
     new ButtonBuilder().setCustomId(`class_${id}_4`).setLabel('Subclasses').setStyle(ButtonStyle.Success).setDisabled(currentPage === 4),
   );
+}
+
+// Given a combatant from the encounter (with bestiaryKey set by /init addmonster),
+// return the merged list of attacks available on that monster: bestiary base
+// attacks + GM edits + monster_attacks library entries. Returns [] if the
+// combatant has no bestiary backing (e.g. they were added via /init addnpc).
+function getCombatantAttacks(combatant, guildId) {
+  if (!combatant?.bestiaryKey) return [];
+  const { monster } = findMonster(combatant.bestiaryKey);
+  if (!monster) return [];
+  // Same pipeline /init addmonster used: GM edits + attack library overlay
+  const edits = guildId ? getMonsterEdit(guildId, monster.name) : null;
+  const edited = applyMonsterEdits(monster, edits);
+  const withLibrary = guildId ? applyMonsterAttackLibrary(edited, guildId) : edited;
+  return Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+}
+
+// Find a specific named attack on a combatant. Tries exact match first,
+// then case-insensitive, then substring. Returns null if nothing matches.
+function findCombatantAttack(combatant, attackName, guildId) {
+  const attacks = getCombatantAttacks(combatant, guildId);
+  if (attacks.length === 0) return null;
+  const q = String(attackName ?? '').toLowerCase().trim();
+  if (!q) return null;
+  // 1. Exact (case-insensitive) match
+  const exact = attacks.find(a => String(a.name ?? '').toLowerCase() === q);
+  if (exact) return exact;
+  // 2. Substring match — return only if unambiguous
+  const partial = attacks.filter(a => String(a.name ?? '').toLowerCase().includes(q));
+  if (partial.length === 1) return partial[0];
+  return null;
 }
 
 // ── Bestiary lookup ───────────────────────────────────────────────────────────
@@ -4792,6 +4863,7 @@ const HELP_CATEGORIES = {
       { name: '/init add', summary: 'Add a combatant to the current encounter.', options: 'name, initiative, hp, (gm flags)', example: '/init add name:Goblin 1 initiative:18 hp:6' },
       { name: '/init addmonster', summary: 'GM: add a bestiary monster with auto-filled HP/AC/perception. Supports multi-spawn.', options: 'monster, count, init_mode, hp_mode, bonus', example: '/init addmonster monster:Goblin Warrior count:4' },
       { name: '/init addnpc', summary: 'GM: add a custom NPC with manual stats (for homebrew).', options: 'name, bonus, hp, ac', example: '/init addnpc name:Bandit Captain bonus:6 hp:45 ac:20' },
+      { name: '/init attack', summary: 'GM: roll an NPC monster\'s bestiary attack against a target. Auto-fills bonus, damage, traits.', options: 'monster, attack, target, bonus, map', example: '/init attack monster:Goblin Warrior attack:dogslicer target:Fighter' },
       { name: '/init remove', summary: 'Remove a combatant.', options: 'name', example: '/init remove name:Goblin 1' },
       { name: '/init next', summary: 'Advance turn. Auto-rolls persistent damage and recovery checks.', example: '/init next' },
       { name: '/init hp', summary: 'Modify a combatant\'s HP. Auto-applies dying when reduced to 0.', options: 'name, change', example: '/init hp name:Fighter change:-12' },
@@ -4850,7 +4922,7 @@ const HELP_CATEGORIES = {
       { name: '/monsterart remove', summary: 'Remove the custom image for a monster on this server.', options: 'monster', example: '/monsterart remove monster:Goblin Warrior' },
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
       { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
-      { name: '/mattack', summary: 'Roll a monster attack against a target in the active encounter.', options: 'attacker, target, map', example: '/mattack attacker:Goblin target:Fighter' },
+      { name: '/mattack', summary: 'Manual monster attack — type bonus + damage yourself. For monsters from /init addmonster, prefer /init attack (it auto-fills both).', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
       { name: '/monsterattack', summary: 'Save and manage a library of monster attacks (per-server).', options: '(subcommands)', example: '/monsterattack add monster:Goblin attack:Shortsword ...' },
     ],
   },
@@ -5676,7 +5748,33 @@ client.on('interactionCreate', async (interaction) => {
           }
         }
         else if (cmd === 'init' && focused.name === 'monster') {
-          suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          // For /init attack, "monster" refers to a combatant in the encounter
+          // (an NPC/monster who's about to swing). For /init addmonster (and
+          // anywhere else), it means a creature in the bestiary to add.
+          const subForMonster = interaction.options.getSubcommand(false);
+          if (subForMonster === 'attack') {
+            const enc = getEncounter(interaction.channel.id);
+            if (enc) {
+              // Only NPC combatants — players use /attack themselves
+              suggestions = pick(enc.combatants.filter(c => c.isNpc).map(c => c.name));
+            }
+          } else {
+            suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+          }
+        }
+        else if (cmd === 'init' && focused.name === 'attack'
+                 && interaction.options.getSubcommand(false) === 'attack') {
+          // Autocomplete the attacker's actual attacks. We need to know which
+          // combatant the GM picked first — read the 'monster' option.
+          const monsterArg = interaction.options.getString('monster');
+          const enc = getEncounter(interaction.channel.id);
+          if (enc && monsterArg) {
+            const attacker = enc.combatants.find(c => c.name.toLowerCase() === monsterArg.toLowerCase());
+            if (attacker?.isNpc && attacker?.bestiaryKey) {
+              const atks = getCombatantAttacks(attacker, interaction.guildId);
+              suggestions = pick(atks.map(a => a.name).filter(Boolean));
+            }
+          }
         }
         else if (cmd === 'init' && focused.name === 'name'
                  && (interaction.options.getSubcommand(false) === 'effect'
@@ -11123,6 +11221,219 @@ client.on('interactionCreate', async (interaction) => {
 
       const header = `👹 Added **${count}× ${baseName}** to initiative${skipped ? ` (${skipped} name collision(s) auto-renumbered)` : ''}:`;
       await interaction.reply(`${header}\n${addedLines.join('\n')}`);
+      await updateSummary(interaction.channel, enc);
+      return;
+    }
+
+    // ── /init attack — auto-roll a monster's bestiary attack ─────────
+    // GM-only. Looks up the combatant in the encounter, pulls the attack
+    // from their bestiary entry (rich.attacks), and rolls it just like
+    // /attack does for player characters: auto-MAP, effect modifiers,
+    // crit handling, damage application, reaction prompts.
+    //
+    // Replaces the old /mattack flow where GMs had to manually type
+    // bonus + damage every time. Now: /init attack monster:Goblin Warrior
+    // attack:dogslicer target:Bard does it all.
+    if (sub === 'attack') {
+      if (userId !== enc.gmId) {
+        return interaction.reply({ content: '❌ Only the GM can use `/init attack`.', ephemeral: true });
+      }
+
+      const attackerName = interaction.options.getString('monster');
+      const attackName = interaction.options.getString('attack');
+      const targetName = interaction.options.getString('target');
+      const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+      const explicitMap = interaction.options.getInteger('map'); // null if unset
+
+      // 1. Look up the attacker as a combatant in the encounter
+      const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
+      if (!attacker) {
+        return interaction.reply({
+          content: `❌ No combatant named **"${attackerName}"** in this encounter. Use \`/init list\` to see who's in initiative.`,
+          ephemeral: true,
+        });
+      }
+      if (!attacker.isNpc) {
+        return interaction.reply({
+          content: `❌ **${attacker.name}** is a player character — they should use \`/attack\` themselves. \`/init attack\` is for monsters/NPCs only.`,
+          ephemeral: true,
+        });
+      }
+      if (!attacker.bestiaryKey) {
+        return interaction.reply({
+          content: `❌ **${attacker.name}** wasn't added from the bestiary, so I can't auto-pull their attacks. Use \`/mattack\` to roll an attack manually instead.`,
+          ephemeral: true,
+        });
+      }
+
+      // 2. Find the named attack on the attacker
+      const atk = findCombatantAttack(attacker, attackName, interaction.guildId);
+      if (!atk) {
+        const available = getCombatantAttacks(attacker, interaction.guildId)
+          .map(a => `**${a.name}** (${a.type === 'ranged' ? '🏹' : '⚔️'} ${fmt(a.to_hit)})`)
+          .join(', ') || 'none';
+        return interaction.reply({
+          content: `❌ **${attacker.name}** has no attack matching **"${attackName}"**. Available: ${available}`,
+          ephemeral: true,
+        });
+      }
+
+      // 3. Look up the target
+      const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      if (!target) {
+        return interaction.reply({ content: `❌ No combatant named **"${targetName}"** in this encounter.`, ephemeral: true });
+      }
+
+      const baseAttackBonus = typeof atk.to_hit === 'number' ? atk.to_hit : 0;
+      const isAgile = (atk.traits ?? []).some(t => String(t).toLowerCase() === 'agile');
+      const attackerMods = sumEffectModifiers(attacker);
+      const targetMods = sumEffectModifiers(target);
+
+      // 4. Compute MAP (auto-tracked from encounter, or manual override)
+      let mapPenalty, mapNoteText;
+      if (explicitMap !== null) {
+        mapPenalty = calculateMap(explicitMap, isAgile);
+        mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
+      } else {
+        const mapInfo = ca.computeMapForNextAttack(attacker, isAgile);
+        mapPenalty = mapInfo.penalty;
+        mapNoteText = mapInfo.noteText;
+      }
+
+      // 5. Roll attack
+      const dieRoll = Math.floor(Math.random() * 20) + 1;
+      const attackTotal = dieRoll + baseAttackBonus + extraBonus + mapPenalty + attackerMods.attackBonus;
+
+      const baseTargetAc = target.ac ?? null;
+      const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
+      const degree = effectiveTargetAc !== null
+        ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc)
+        : null;
+
+      // 6. Roll damage (handles compound expressions like "3d12+15 piercing plus 2d6 fire")
+      const damageParts = parseAndRollAttackDamage(atk.damage);
+      const totalDamageBonus = attackerMods.damageBonus;
+
+      // Sum all the rolled dice damage (flavor-only parts contribute 0)
+      let totalRolledDamage = 0;
+      const damageLineParts = [];
+      const allTypes = [];
+      if (damageParts) {
+        for (const part of damageParts) {
+          if (part.rollResult) {
+            totalRolledDamage += part.rollResult.total;
+            const partTotal = part.rollResult.total;
+            damageLineParts.push(`${part.rollResult.display} **${partTotal} ${part.type}**`);
+            allTypes.push(part.type);
+          } else if (part.note) {
+            damageLineParts.push(`*plus ${part.note}*`);
+          }
+        }
+      }
+      // Apply effect bonus to damage (e.g. Bless)
+      let finalDamage = Math.max(1, totalRolledDamage + totalDamageBonus);
+      // Crits double
+      if (degree === 'crit-success') finalDamage = finalDamage * 2;
+
+      // 7. Build the embed (same shape as /mattack so it feels consistent)
+      const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
+      const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
+      const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
+      const traitsText = (atk.traits?.length) ? ` *(${atk.traits.join(', ')})*` : '';
+
+      let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(baseAttackBonus)}${mapText}${bonusText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
+      if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
+      if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
+      if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+      if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
+
+      // Damage line (if we have parsed damage)
+      let damageLine = null;
+      if (damageParts && damageLineParts.length > 0) {
+        const damageContribText = formatEffectContributions(attackerMods.activeEffects, 'damage');
+        const bonusDisplay = totalDamageBonus !== 0 ? ` ${fmt(totalDamageBonus)}` : '';
+        if (degree === 'crit-success') {
+          damageLine = `**Damage (CRIT × 2)**\n${damageLineParts.join(' + ')}${bonusDisplay} → **${finalDamage}** total`;
+        } else {
+          damageLine = `**Damage**\n${damageLineParts.join(' + ')}${bonusDisplay} → **${finalDamage}** total`;
+        }
+        if (damageContribText) damageLine += `\n*${damageContribText.trim().slice(1, -1)}*`;
+      } else if (atk.damage) {
+        // Couldn't parse — show raw string so GM can roll manually
+        damageLine = `**Damage**\n*Couldn't auto-roll \`${atk.damage}\` — please roll manually.*`;
+      }
+
+      const acBreakdown = baseTargetAc !== null && targetMods.acBonus !== 0
+        ? ` (base ${baseTargetAc}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAc})`
+        : '';
+      let outcomeLine;
+      if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+      else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
+      else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+      else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
+      else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
+
+      // 8. Apply damage on hit
+      let hpLine = '';
+      let mentionLine = '';
+      if (degree === 'success' || degree === 'crit-success') {
+        const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
+        const dyingNote = dmgResult?.displaySuffix ?? '';
+        hpLine = target.isNpc
+          ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
+          : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+      }
+      if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
+
+      // 9. Record attack for MAP tracking (only if MAP wasn't manually overridden)
+      if (explicitMap === null) {
+        ca.recordAttack(channelId, attacker.name);
+      }
+
+      // 10. Reaction prompt for the target (Reactive Strike, Shield Block, etc.)
+      let reactionPromptRow = null;
+      let reactionPromptContent = '';
+      if (target && target.hasReaction !== false && ca.hasReactionAvailable(target)) {
+        if (target.name.toLowerCase() !== attacker.name.toLowerCase()) {
+          const reactorMention = target.isNpc ? `<@${enc.gmId}>` : (target.ownerId ? `<@${target.ownerId}>` : '');
+          reactionPromptContent = `\n${reactorMention} **${target.name}** may have a reaction available (e.g. Reactive Strike, Shield Block).`;
+          reactionPromptRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId(`reaction_trigger_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
+              .setLabel(`${target.name}: Trigger Reaction`)
+              .setStyle(ButtonStyle.Primary)
+              .setEmoji('🎲'),
+            new ButtonBuilder()
+              .setCustomId(`reaction_skip_${target.name.replace(/[^a-zA-Z0-9]/g, '_')}`)
+              .setLabel('Skip')
+              .setStyle(ButtonStyle.Secondary),
+          );
+        }
+      }
+
+      const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
+      const description = [
+        attackLine,
+        '',
+        showDamage ? damageLine : null,
+        outcomeLine,
+        hpLine || null,
+      ].filter(s => s !== null).join('\n');
+
+      const attackEmoji = atk.type === 'ranged' ? '🏹' : '⚔️';
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle(`👹 ${attacker.name} attacks with ${atk.name}!${traitsText}`)
+        .setDescription(description)
+        .setFooter({ text: `${attackEmoji} ${atk.name} ${fmt(baseAttackBonus)} · ${atk.damage}` });
+
+      const replyPayload = { embeds: [embed] };
+      let content = (mentionLine || '').trim();
+      if (reactionPromptContent) content = (content + reactionPromptContent).trim();
+      if (content) replyPayload.content = content;
+      if (reactionPromptRow) replyPayload.components = [reactionPromptRow];
+
+      await interaction.reply(replyPayload);
       await updateSummary(interaction.channel, enc);
       return;
     }
