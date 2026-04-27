@@ -1417,7 +1417,8 @@
           ],
           "art": "https://media.discordapp.net/attachments/1465080216279056586/1496354706845339658/image.png?ex=69ef832b&is=69ee31ab&hm=dc264687f0f58de6211e66847ea029d6598d967644fb2018ed11f8a819bd0243&=&format=webp&quality=lossless&width=667&height=444",
           "skills": {
-            "Acrobatics": 6
+            "Acrobatics": 6,
+            "Arcana": -4
           }
         }
       },
