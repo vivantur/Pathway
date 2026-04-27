@@ -4861,27 +4861,42 @@ function buildSpellEmbed(rawSpell) {
 const ANCESTRY_COLORS = { main: 0x4B8B6F, heritage: 0x7B5EA7, feats: 0xC4862A };
 
 function buildAncestryCorePage(ancestry) {
-  const boosts = ancestry.attribute_boosts.join(', ');
-  const flaws  = ancestry.attribute_flaws.length ? ancestry.attribute_flaws.join(', ') : 'None';
-  const sensesText   = ancestry.senses.map(s => `**${s.name}** — ${s.description}`).join('\n');
-  const languageText = `${ancestry.languages.base.join(', ')}\n*Plus additional languages equal to ${ancestry.languages.bonus_count}, chosen from: ${ancestry.languages.bonus_pool.join(', ')}.*`;
+  // All array fields can be missing/null on partial or homebrew ancestries.
+  // Default everything to safe empty values so we never crash.
+  const boostsArr = Array.isArray(ancestry.attribute_boosts) ? ancestry.attribute_boosts : [];
+  const flawsArr  = Array.isArray(ancestry.attribute_flaws)  ? ancestry.attribute_flaws  : [];
+  const sensesArr = Array.isArray(ancestry.senses)           ? ancestry.senses           : [];
+  const traitsArr = Array.isArray(ancestry.traits)           ? ancestry.traits           : [];
+  const lang = ancestry.languages ?? {};
+  const langBase  = Array.isArray(lang.base)        ? lang.base        : [];
+  const langPool  = Array.isArray(lang.bonus_pool)  ? lang.bonus_pool  : [];
+
+  const boosts = boostsArr.length ? boostsArr.join(', ') : 'None';
+  const flaws  = flawsArr.length  ? flawsArr.join(', ')  : 'None';
+  const sensesText = sensesArr
+    .filter(s => s && s.name)
+    .map(s => `**${s.name}** — ${s.description ?? ''}`)
+    .join('\n');
+  const languageText = langBase.length > 0
+    ? `${langBase.join(', ')}${langPool.length > 0 ? `\n*Plus additional languages equal to ${lang.bonus_count ?? 0}, chosen from: ${langPool.join(', ')}.*` : ''}`
+    : '*None listed.*';
   // Description includes the traits header + the (potentially huge) ancestry
   // description. Some entries (e.g. Gnome, Human) blow past Discord's 4096
   // character description limit, which crashes the whole interaction. Truncate.
-  const traitsLine = `*${ancestry.traits.join(', ')}*\n\n`;
-  const descBody = truncateForEmbed(ancestry.description ?? '', 4000 - traitsLine.length);
+  const traitsLine = traitsArr.length > 0 ? `*${traitsArr.join(', ')}*\n\n` : '';
+  const descBody = truncateForEmbed(ancestry.description ?? '*(no description)*', 4000 - traitsLine.length);
   return new EmbedBuilder()
     .setTitle(ancestry.name)
     .setDescription(traitsLine + descBody)
     .setColor(ANCESTRY_COLORS.main)
-    .setFooter({ text: `Source: ${ancestry.source} • Page 1/3` })
+    .setFooter({ text: `Source: ${ancestry.source ?? 'Unknown'} • Page 1/3` })
     .addFields(
-      { name: '❤️ Hit Points',       value: `${ancestry.hp}`,       inline: true },
-      { name: '🏃 Speed',            value: `${ancestry.speed} ft.`, inline: true },
-      { name: '📏 Size',             value: ancestry.size,           inline: true },
-      { name: '📈 Attribute Boosts', value: boosts,                  inline: true },
-      { name: '📉 Attribute Flaw',   value: flaws,                   inline: true },
-      { name: '\u200B',              value: '\u200B',                inline: true },
+      { name: '❤️ Hit Points',       value: `${ancestry.hp ?? '?'}`,        inline: true },
+      { name: '🏃 Speed',            value: `${ancestry.speed ?? '?'} ft.`, inline: true },
+      { name: '📏 Size',             value: ancestry.size ?? 'Unknown',     inline: true },
+      { name: '📈 Attribute Boosts', value: boosts,                         inline: true },
+      { name: '📉 Attribute Flaw',   value: flaws,                          inline: true },
+      { name: '\u200B',              value: '\u200B',                       inline: true },
       { name: '👁️ Senses',          value: truncateForEmbed(sensesText || 'None', 1000), inline: false },
       { name: '🗣️ Languages',       value: truncateForEmbed(languageText, 1000),         inline: false },
     );
@@ -4893,9 +4908,16 @@ function buildAncestryHeritagesPage(ancestry) {
     .setDescription('Choose one heritage at character creation.')
     .setColor(ANCESTRY_COLORS.heritage)
     .setFooter({ text: `Source: ${ancestry.source} • Page 2/3` });
-  for (const h of ancestry.heritages) {
-    // Field values cap at 1024. Some heritage descriptions exceed that —
-    // truncate with a graceful note rather than crash the interaction.
+  // Some ancestries (especially homebrew or partial imports) may have no
+  // heritages array at all, or it may be null. Treat anything non-iterable
+  // as empty.
+  const heritages = Array.isArray(ancestry.heritages) ? ancestry.heritages : [];
+  if (heritages.length === 0) {
+    embed.setDescription('*No heritages are listed for this ancestry yet.*');
+    return embed;
+  }
+  for (const h of heritages) {
+    if (!h || !h.name) continue;
     embed.addFields({ name: `◈ ${h.name}`, value: truncateForEmbed(h.description ?? '*(no description)*', 1000), inline: false });
   }
   return embed;
@@ -4907,12 +4929,21 @@ function buildAncestryFeatsPage(ancestry) {
     .setDescription('You gain ancestry feats at 1st level and every 4 levels thereafter.')
     .setColor(ANCESTRY_COLORS.feats)
     .setFooter({ text: `Source: ${ancestry.source} • Page 3/3` });
-  for (const group of ancestry.ancestry_feats) {
+  const featGroups = Array.isArray(ancestry.ancestry_feats) ? ancestry.ancestry_feats : [];
+  if (featGroups.length === 0) {
+    embed.setDescription('*No ancestry feats are listed for this ancestry yet.*');
+    return embed;
+  }
+  for (const group of featGroups) {
+    if (!group) continue;
     embed.addFields({ name: `── Level ${group.level} ──`, value: '\u200B', inline: false });
-    for (const feat of group.feats) {
-      const prereqLine = feat.prerequisites ? `*Prerequisite: ${feat.prerequisites.join(', ')}*\n` : '';
-      // Same field-value cap as heritages.
-      embed.addFields({ name: `✦ ${feat.name}`, value: truncateForEmbed(`${prereqLine}${feat.description}`, 1000), inline: false });
+    const feats = Array.isArray(group.feats) ? group.feats : [];
+    for (const feat of feats) {
+      if (!feat || !feat.name) continue;
+      const prereqLine = Array.isArray(feat.prerequisites) && feat.prerequisites.length > 0
+        ? `*Prerequisite: ${feat.prerequisites.join(', ')}*\n`
+        : '';
+      embed.addFields({ name: `✦ ${feat.name}`, value: truncateForEmbed(`${prereqLine}${feat.description ?? ''}`, 1000), inline: false });
     }
   }
   return embed;
