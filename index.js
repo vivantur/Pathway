@@ -6331,25 +6331,36 @@ client.on('interactionCreate', async (interaction) => {
   // Deferred immediately because Railway cold starts can otherwise push
   // past Discord's 3-second reply window and cause 10062 errors.
   else if (commandName === 'br') {
+    // Page break — renders as a flat dark bar in chat to visually separate
+    // scenes, rounds, encounters, etc. Matches the look of Avrae's !break.
+    //
+    // HOW THIS WORKS
+    // Discord requires every embed to have at least one of: title,
+    // description, fields, image, or author. A truly-empty embed is rejected.
+    // Avrae's trick: use a single zero-width space character (\u200B) as the
+    // description. Discord accepts it as "non-empty" but the bar renders as
+    // a solid black/dark void with a thin colored stripe on the left edge.
+    //
+    // If a title is supplied, we put it in the embed's title field — same
+    // dark bar, but with text in the middle. Useful for "Round 2 Begins" or
+    // "Day 3" style scene markers.
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
-      const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+      const embed = new EmbedBuilder().setColor(0x2b2d31); // matches Discord's dark theme
       if (title) {
-        const embed = new EmbedBuilder()
-          .setColor(0x4a90d9)
-          .setTitle(`✦  ${title}  ✦`)
-          .setDescription(bar);
-        await interaction.editReply({ embeds: [embed] });
+        embed.setTitle(title);
+        // Still need SOMETHING for the body to make the bar visible-tall.
+        embed.setDescription('\u200B');
       } else {
-        await interaction.editReply(bar);
+        // Pure bar — just a zero-width space.
+        embed.setDescription('\u200B');
       }
+      await interaction.editReply({ embeds: [embed] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
         console.error('/br error:', err);
       }
-      // Try to tell the user something went wrong, but only if the
-      // interaction is still alive. If it's already dead, nothing we can do.
       try {
         if (interaction.deferred || interaction.replied) {
           await interaction.editReply('❌ Something went wrong with /br. Try again.');
