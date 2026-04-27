@@ -117,6 +117,35 @@ let ancestryDatabase = loadGamedata('ancestries.json', {
   count: obj => Object.keys(obj).length,
 });
 
+// ── Heritage index ─────────────────────────────────────────────────────────
+// Built once at startup from ancestryDatabase. Each ancestry has a `heritages`
+// sub-array; we flatten them all into a single lookup keyed by lowercase name,
+// preserving which ancestry each heritage belongs to. Used by /heritage.
+//
+// Note: versatile heritages (Tiefling, Aasimar, Dhampir, Changeling, etc.) are
+// NOT in this index because they live outside any single ancestry. To add
+// them, we'd need a separate AoN fetch — listed as a future improvement.
+//
+// Shape: { 'wildwood halfling': { name, ancestry, description } }
+const heritageDatabase = (() => {
+  const idx = {};
+  for (const ancestry of Object.values(ancestryDatabase)) {
+    if (!ancestry || !Array.isArray(ancestry.heritages)) continue;
+    for (const h of ancestry.heritages) {
+      if (!h || !h.name) continue;
+      idx[h.name.toLowerCase()] = {
+        name: h.name,
+        ancestry: ancestry.name,
+        description: h.description ?? '*(no description)*',
+      };
+    }
+  }
+  if (Object.keys(idx).length > 0) {
+    console.log(`[startup] Indexed ${Object.keys(idx).length} heritages from ${Object.keys(ancestryDatabase).length} ancestries.`);
+  }
+  return idx;
+})();
+
 let archetypeDatabase = loadGamedata('archetypes.json', {
   default: {},
   label: 'archetypes from database',
@@ -4918,7 +4947,8 @@ const HELP_CATEGORIES = {
     label: 'Rolls',
     blurb: 'Dice rolling, skill checks, saves, and reusable snippets.',
     commands: [
-      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
+      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets. Shortcut: `/r`.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
+      { name: '/r', summary: 'Shortcut for `/roll` — same syntax, fewer keystrokes for ad-hoc rolls.', options: 'dice, character', example: '/r dice:4d6kh3' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/lore', summary: 'Roll a Lore skill check (Int-based). Autocomplete shows your character\'s known lores.', options: 'topic, character, bonus', example: '/lore topic:Dragon' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
@@ -4983,6 +5013,7 @@ const HELP_CATEGORIES = {
     blurb: 'Look up anything from the PF2e rulebooks.',
     commands: [
       { name: '/ancestry', summary: 'Look up a PF2e ancestry (Core, Heritages, Feats across 3 pages).', options: 'name', example: '/ancestry name:Elf' },
+      { name: '/heritage', summary: 'Look up a single heritage (Wildwood Halfling, Cavern Elf, etc.). Autocomplete shows all known heritages.', options: 'name', example: '/heritage name:Wildwood Halfling' },
       { name: '/archetype', summary: 'Look up a PF2e archetype.', options: 'name', example: '/archetype name:Assassin' },
       { name: '/background', summary: 'Look up a PF2e background.', options: 'name', example: '/background name:Acolyte' },
       { name: '/feat', summary: 'Look up a feat. Filter by level to disambiguate same-named feats.', options: 'name, level', example: '/feat name:Power Attack' },
@@ -5709,6 +5740,11 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'ancestry' && focused.name === 'name') {
           suggestions = pick(Object.values(ancestryDatabase).map(a => a?.name).filter(Boolean));
+        }
+        else if (cmd === 'heritage' && focused.name === 'name') {
+          // Heritages are flat strings; the index is keyed by lowercase name
+          // but each entry has a properly-cased .name we use for display.
+          suggestions = pick(Object.values(heritageDatabase).map(h => h?.name).filter(Boolean));
         }
         else if (cmd === 'archetype' && focused.name === 'name') {
           suggestions = pick(Object.values(archetypeDatabase).map(a => a?.name).filter(Boolean));
@@ -8812,7 +8848,8 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /roll ───────────────────────────────────────────────────────
-  else if (commandName === 'roll') {
+  // /roll and /r — same handler. /r is the shortcut alias for fast ad-hoc rolls.
+  else if (commandName === 'roll' || commandName === 'r') {
     const raw = interaction.options.getString('dice');
     const snippets = mergedSnippetsFor(interaction.user.id, interaction.guildId);
     const result = rollAdvanced(raw, snippets);
@@ -9028,6 +9065,55 @@ client.on('interactionCreate', async (interaction) => {
     const ancestry = ancestryDatabase[key];
     if (!ancestry) return interaction.reply({ content: `❌ No ancestry found for **"${input}"**. Available: ${Object.keys(ancestryDatabase).join(', ')}`, ephemeral: true });
     await interaction.reply({ embeds: [buildAncestryCorePage(ancestry)], components: [buildAncestryButtons(0, key)] });
+  }
+
+  // ─── /heritage ───────────────────────────────────────────────────
+  // Look up a single heritage by name. Heritages are sub-options of an
+  // ancestry chosen at character creation (e.g. Wildwood Halfling, Cavern
+  // Elf). Each one tweaks the base ancestry's traits, languages, or features.
+  //
+  // Versatile heritages (Tiefling, Aasimar, Changeling, Dhampir, Dragonblood,
+  // etc.) are NOT in the index yet — they need a separate AoN fetch. Lookups
+  // for those will return "not found." When that's improved, the message
+  // here can be updated.
+  else if (commandName === 'heritage') {
+    const input = interaction.options.getString('name');
+    const key = input.toLowerCase().trim();
+    const heritage = heritageDatabase[key];
+
+    if (!heritage) {
+      // Find close matches as a "did you mean" hint. Match either the heritage
+      // name or any heritage that contains the search term.
+      const allNames = Object.values(heritageDatabase).map(h => h.name);
+      const matches = allNames
+        .filter(n => n.toLowerCase().includes(key))
+        .slice(0, 8)
+        .sort();
+      const hint = matches.length > 0
+        ? `\n**Did you mean:** ${matches.map(m => `\`${m}\``).join(', ')}`
+        : '';
+      const versatileNote = /\b(tiefling|aasimar|dhampir|changeling|dragonblood|nephilim|duskwalker|ganzi|ifrit|oread|sylph|undine)\b/i.test(input)
+        ? `\n\n*Note: Versatile heritages (Tiefling, Aasimar, Dhampir, etc.) aren't in the lookup yet — they'll be added in a future update. For now, check Archives of Nethys directly: <https://2e.aonprd.com/Heritages.aspx>*`
+        : '';
+      return interaction.reply({
+        content: `❌ No heritage found for **"${input}"**.${hint}${versatileNote}`,
+        ephemeral: true,
+      });
+    }
+
+    // Build the embed. Heritage purple matches the ancestry pages.
+    const embed = new EmbedBuilder()
+      .setTitle(`◈ ${heritage.name}`)
+      .setDescription(heritage.description)
+      .setColor(0x7B5EA7) // ANCESTRY_COLORS.heritage
+      .addFields({
+        name: 'Ancestry',
+        value: `**${heritage.ancestry}** — see \`/ancestry name:${heritage.ancestry}\` for full ancestry details.`,
+        inline: false,
+      })
+      .setFooter({ text: 'Heritages are chosen at character creation alongside an ancestry.' });
+
+    await interaction.reply({ embeds: [embed] });
   }
 
   // ─── /archetype ──────────────────────────────────────────────────
