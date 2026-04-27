@@ -1423,7 +1423,8 @@
             "Crafting": -4,
             "Deception": 0,
             "Diplomacy": 0,
-            "Intimidation": 0
+            "Intimidation": 0,
+            "Medicine": 1
           }
         }
       },
