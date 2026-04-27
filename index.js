@@ -6364,39 +6364,29 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /break — scene break ──────────────────────────────────────────
-  // Avrae-style visual divider for play-by-post games. With no args, it
-  // prints a flat dark bar. With a title, it embeds the title between two
-  // dividers for labeled scene transitions.
+  // Avrae-style scene break: a wide gray bar that stretches across the chat.
   //
-  // Deferred immediately because Railway cold starts can otherwise push
-  // past Discord's 3-second reply window and cause 10062 errors.
+  // THE TRICK: Discord code blocks render as a flat gray bar that fills the
+  // available chat width. Avrae uses a triple-backtick code block containing
+  // only a zero-width space character (\u200B) between two newlines. The
+  // result is a horizontal bar exactly like Avrae's !break.
+  //
+  // From Avrae's source (cogs5e/pbpUtils.py):
+  //   await ctx.send("```\n​\n```")
+  //   # zero-width space between newlines — ensures mobile renders correctly
+  //
+  // If a title is supplied, we sandwich it between two bars for a labeled
+  // scene transition.
   else if (commandName === 'break') {
-    // Page break — renders as a flat dark bar in chat to visually separate
-    // scenes, rounds, encounters, etc. Matches the look of Avrae's !break.
-    //
-    // HOW THIS WORKS
-    // Discord requires every embed to have at least one of: title,
-    // description, fields, image, or author. A truly-empty embed is rejected.
-    // Avrae's trick: use a single zero-width space character (\u200B) as the
-    // description. Discord accepts it as "non-empty" but the bar renders as
-    // a solid black/dark void with a thin colored stripe on the left edge.
-    //
-    // If a title is supplied, we put it in the embed's title field — same
-    // dark bar, but with text in the middle. Useful for "Round 2 Begins" or
-    // "Day 3" style scene markers.
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
-      const embed = new EmbedBuilder().setColor(0x2b2d31); // matches Discord's dark theme
-      if (title) {
-        embed.setTitle(title);
-        // Still need SOMETHING for the body to make the bar visible-tall.
-        embed.setDescription('\u200B');
-      } else {
-        // Pure bar — just a zero-width space.
-        embed.setDescription('\u200B');
-      }
-      await interaction.editReply({ embeds: [embed] });
+      // Triple-backtick + newline + zero-width space + newline + triple-backtick
+      const bar = '```\n\u200B\n```';
+      const content = title
+        ? `${bar}\n**${title}**\n${bar}`
+        : bar;
+      await interaction.editReply({ content });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
         console.error('/break error:', err);
