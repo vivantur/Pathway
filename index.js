@@ -5116,6 +5116,7 @@ const HELP_CATEGORIES = {
       { name: '/companion attack', summary: 'Add, remove, or list custom attacks for a companion.', options: 'action, name, bonus, damage, type, traits, companion, character', example: '/companion attack action:add name:breath bonus:12 damage:3d6 type:fire' },
       { name: '/companion ability', summary: 'Add, remove, or list abilities (free-form text or structured actions).', options: 'action, name, description, action_cost, companion, character', example: '/companion ability action:add name:Pack Attack description:+1 circumstance bonus when adjacent ally threatens' },
       { name: '/companion skill', summary: 'Set, clear, or list skill bonuses on a companion. Free-form (any skill name).', options: 'action, name, bonus, companion, character', example: '/companion skill action:set name:Athletics bonus:8' },
+      { name: '/companion roll', summary: 'Roll a companion attack, skill check, save, or perception. Auto-applies MAP if the companion is in the encounter.', options: 'type, name, target, bonus, companion, character', example: '/companion roll type:attack name:Bite target:Goblin' },
       { name: '/companion notes', summary: 'Set or clear free-form notes on a companion.', options: 'text, companion, character', example: '/companion notes text:Bonded in the dragon\'s lair' },
     ],
   },
@@ -6144,7 +6145,46 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'companion') {
           const sub2 = interaction.options.getSubcommand(false);
           if (focused.name === 'name') {
-            suggestions = pick(companionDatabase.map(c => c.name));
+            // For /companion roll, autocomplete depends on the `type` option:
+            //   attack     → companion's attacks (primary + custom)
+            //   skill      → companion's stored skills
+            //   save       → fort/ref/will
+            //   perception → no name needed
+            // For other subcommands (info/add) name = catalog companion.
+            if (sub2 === 'roll') {
+              const rollType = interaction.options.getString('type');
+              const characters = loadCharacters();
+              const charArg = interaction.options.getString('character');
+              const { char: ce } = resolveChar(interaction.user.id, charArg, characters);
+              const compNameArg = interaction.options.getString('companion');
+              const compKey = compNameArg
+                ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                : ce?.activeCompanion;
+              const comp = compKey && ce?.companions ? ce.companions[compKey] : null;
+              if (rollType === 'save') {
+                suggestions = pick(['fort', 'ref', 'will']);
+              } else if (rollType === 'skill' && comp) {
+                suggestions = pick(Object.keys(comp.skills ?? {}));
+              } else if (rollType === 'attack' && comp) {
+                const c = ce?.data ?? {};
+                const scaled = (typeof scaleCompanion === 'function')
+                  ? (() => { try { return scaleCompanion(comp, c); } catch { return null; } })()
+                  : null;
+                const names = [];
+                if (scaled?.primaryAttack?.name) names.push(scaled.primaryAttack.name);
+                if (Array.isArray(comp.customAttacks)) {
+                  for (const a of comp.customAttacks) {
+                    if (a?.name) names.push(a.name);
+                  }
+                }
+                suggestions = pick(names);
+              } else {
+                suggestions = pick([]);
+              }
+            } else {
+              // Default: catalog companion lookup (for /companion info, add, etc.)
+              suggestions = pick(companionDatabase.map(c => c.name));
+            }
           } else if (focused.name === 'base') {
             const custom = interaction.options.getBoolean('custom');
             if (custom) suggestions = pick(Object.values(bestiaryDatabase ?? {}).map(m => m?.name).filter(Boolean));
@@ -9950,6 +9990,219 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       return interaction.reply({ content: `❌ Unknown action.`, ephemeral: true });
+    }
+
+    // ── /companion roll — roll attack/skill/save/perception checks ────────
+    // One subcommand handles all rolling. Type determines what we roll:
+    //   attack     → 1d20 + attack bonus (auto-MAP if in encounter), then damage
+    //   skill      → 1d20 + stored skill bonus
+    //   save       → 1d20 + Fort/Ref/Will (from scaled.saves)
+    //   perception → 1d20 + perception
+    //
+    // The `name` option means different things per type:
+    //   - attack: which attack to use (primary, or any custom one)
+    //   - skill:  which skill to roll
+    //   - save:   fort, ref, or will
+    //   - perception: ignored
+    //
+    // All rolls go through buildRollEmbed for visual consistency with /roll,
+    // /skill, /save, /perception so it feels like the same family.
+    if (sub === 'roll') {
+      await interaction.deferReply();
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg
+        ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.editReply(`❌ Companion not found. Use \`/companion list\` or set an active companion with \`/companion swap\`.`);
+      }
+      const comp = charEntry.companions[compKey];
+      const scaled = scaleCompanion(comp, char);
+      const type = interaction.options.getString('type');
+      const nameArg = interaction.options.getString('name')?.trim();
+      const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+      const targetArg = interaction.options.getString('target')?.trim();
+      const thumbnail = comp.art ?? charEntry.art ?? null;
+
+      // ── ATTACK ──
+      if (type === 'attack') {
+        // Find the attack: primary first, then customAttacks. Default to primary
+        // if no name was given.
+        let attack = null;
+        if (!nameArg) {
+          if (!scaled.primaryAttack) {
+            return interaction.editReply(`❌ **${comp.displayName}** has no primary attack defined. Either specify a custom attack name or use \`/companion set stat:attack value:...\`.`);
+          }
+          attack = {
+            name: scaled.primaryAttack.name,
+            bonus: scaled.attackBonus,
+            damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : scaled.damageBonus) : ''}`,
+            damageType: scaled.damageType,
+            traits: scaled.primaryAttack.traits ?? [],
+            isPrimary: true,
+          };
+        } else {
+          // Match against primary or custom
+          const lower = nameArg.toLowerCase();
+          if (scaled.primaryAttack && scaled.primaryAttack.name.toLowerCase() === lower) {
+            attack = {
+              name: scaled.primaryAttack.name,
+              bonus: scaled.attackBonus,
+              damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : scaled.damageBonus) : ''}`,
+              damageType: scaled.damageType,
+              traits: scaled.primaryAttack.traits ?? [],
+              isPrimary: true,
+            };
+          } else if (Array.isArray(comp.customAttacks)) {
+            const customMatch = comp.customAttacks.find(a => a.name.toLowerCase() === lower);
+            if (customMatch) attack = { ...customMatch, isPrimary: false };
+          }
+        }
+        if (!attack) {
+          const known = [
+            scaled.primaryAttack?.name,
+            ...((Array.isArray(comp.customAttacks) ? comp.customAttacks : []).map(a => a.name)),
+          ].filter(Boolean);
+          const knownText = known.length > 0
+            ? `Available: ${known.map(n => `\`${n}\``).join(', ')}`
+            : '*No attacks defined yet. Use `/companion attack action:add` to add one.*';
+          return interaction.editReply(`❌ No attack named **"${nameArg}"** on **${comp.displayName}**.\n${knownText}`);
+        }
+        if (attack.bonus == null) {
+          return interaction.editReply(`❌ Attack **${attack.name}** has no attack bonus set. Use \`/companion attack action:add bonus:...\` or \`/companion set stat:attack value:...\`.`);
+        }
+
+        // Auto-MAP if companion is a combatant in an active encounter
+        const channelId = interaction.channel.id;
+        const enc = getEncounter(channelId);
+        let mapPenalty = 0;
+        let mapNoteText = null;
+        const combatant = enc
+          ? enc.combatants.find(c => c.name.toLowerCase() === comp.displayName.toLowerCase())
+          : null;
+        if (combatant) {
+          const agile = Array.isArray(attack.traits) && attack.traits.includes('agile');
+          const mapInfo = ca.computeMapForNextAttack(combatant, agile);
+          mapPenalty = mapInfo.penalty;
+          mapNoteText = mapInfo.noteText;
+        }
+
+        // Roll the attack
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const attackTotal = dieRoll + attack.bonus + mapPenalty + extraBonus;
+        const isCrit = dieRoll === 20;
+        const isFumble = dieRoll === 1;
+
+        // Roll damage
+        let damageLine = '';
+        let damageTotal = null;
+        if (attack.damage) {
+          const dmg = rollDamageExpression(attack.damage);
+          if (dmg) {
+            damageTotal = dmg.total;
+            const critDmg = isCrit ? ` *(double on crit: ${dmg.total * 2})*` : '';
+            damageLine = `\n**Damage:** ${dmg.display} = **${dmg.total}**${attack.damageType ? ` ${attack.damageType}` : ''}${critDmg}`;
+          } else {
+            damageLine = `\n**Damage:** \`${attack.damage}\`${attack.damageType ? ` ${attack.damageType}` : ''} *(couldn't auto-roll — roll manually)*`;
+          }
+        }
+
+        // Build embed
+        const traitsLine = Array.isArray(attack.traits) && attack.traits.length
+          ? ` *(${attack.traits.join(', ')})*`
+          : '';
+        const targetLine = targetArg ? ` vs **${targetArg}**` : '';
+        const mapLine = mapNoteText ? ` *(${mapNoteText})*` : (mapPenalty !== 0 ? ` *(MAP ${mapPenalty})*` : '');
+        const bonusLine = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
+        const breakdown =
+          `**Attack Roll**${traitsLine}\n` +
+          `1d20 (${dieRoll}) ${fmt(attack.bonus)}${mapLine}${bonusLine} = **${attackTotal}**${targetLine}` +
+          (isCrit ? '\n⭐ Natural 20!' : isFumble ? '\n💀 Natural 1!' : '') +
+          damageLine;
+
+        // Record attack for MAP tracking if in encounter
+        if (combatant) ca.recordAttack(channelId, combatant.name);
+
+        return interaction.editReply({ embeds: [buildRollEmbed({
+          title: `⚔️ ${comp.displayName} attacks with ${attack.name}!`,
+          breakdown,
+          charName: `${comp.displayName} · ${char.name}'s companion`,
+          thumbnail,
+        })] });
+      }
+
+      // ── SKILL ──
+      if (type === 'skill') {
+        if (!nameArg) {
+          return interaction.editReply(`❌ Provide a skill name. Use \`/companion skill action:list\` to see what's set.`);
+        }
+        const skills = comp.skills ?? {};
+        // Match case-insensitively
+        const matchKey = Object.keys(skills).find(k => k.toLowerCase() === nameArg.toLowerCase());
+        if (!matchKey) {
+          const knownList = Object.keys(skills).length > 0
+            ? `Known: ${Object.keys(skills).map(k => `\`${k}\``).join(', ')}`
+            : '*No skills set. Add some with `/companion skill action:set name:Athletics bonus:8`.*';
+          return interaction.editReply(`❌ **${comp.displayName}** doesn't have **${nameArg}** set.\n${knownList}`);
+        }
+        const skillBonus = skills[matchKey];
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + skillBonus + extraBonus;
+        return interaction.editReply({ embeds: [buildRollEmbed({
+          title: `🎯 ${comp.displayName} makes a ${matchKey} check!`,
+          breakdown: formatRollBreakdown(dieRoll, skillBonus, extraBonus, total, 20),
+          charName: `${comp.displayName} · ${matchKey} (${fmt(skillBonus)})`,
+          thumbnail,
+        })] });
+      }
+
+      // ── SAVE ──
+      if (type === 'save') {
+        if (!nameArg) {
+          return interaction.editReply(`❌ Provide a save name: \`fort\`, \`ref\`, or \`will\`.`);
+        }
+        const saveMap = {
+          fort: { key: 'fort', label: 'Fortitude' },
+          fortitude: { key: 'fort', label: 'Fortitude' },
+          ref: { key: 'ref', label: 'Reflex' },
+          reflex: { key: 'ref', label: 'Reflex' },
+          will: { key: 'will', label: 'Will' },
+        };
+        const saveDef = saveMap[nameArg.toLowerCase()];
+        if (!saveDef) {
+          return interaction.editReply(`❌ Unknown save **"${nameArg}"**. Use \`fort\`, \`ref\`, or \`will\`.`);
+        }
+        const saveBonus = scaled.saves?.[saveDef.key];
+        if (saveBonus == null) {
+          return interaction.editReply(`❌ **${comp.displayName}** has no ${saveDef.label} save defined. Set one with \`/companion set stat:${saveDef.key}_save value:...\`.`);
+        }
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + saveBonus + extraBonus;
+        return interaction.editReply({ embeds: [buildRollEmbed({
+          title: `💪 ${comp.displayName} makes a ${saveDef.label} save!`,
+          breakdown: formatRollBreakdown(dieRoll, saveBonus, extraBonus, total, 20),
+          charName: `${comp.displayName} · ${saveDef.label} (${fmt(saveBonus)})`,
+          thumbnail,
+        })] });
+      }
+
+      // ── PERCEPTION ──
+      if (type === 'perception') {
+        const perception = scaled.perception;
+        if (perception == null) {
+          return interaction.editReply(`❌ **${comp.displayName}** has no perception defined.`);
+        }
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + perception + extraBonus;
+        return interaction.editReply({ embeds: [buildRollEmbed({
+          title: `👁️ ${comp.displayName} rolls Perception!`,
+          breakdown: formatRollBreakdown(dieRoll, perception, extraBonus, total, 20),
+          charName: `${comp.displayName} · Perception (${fmt(perception)})`,
+          thumbnail,
+        })] });
+      }
+
+      return interaction.editReply(`❌ Unknown roll type. Use \`attack\`, \`skill\`, \`save\`, or \`perception\`.`);
     }
 
     // ── /companion notes — set/clear free-form notes ───────────────────
