@@ -5022,7 +5022,6 @@ const HELP_CATEGORIES = {
       { name: '/monsterart remove', summary: 'Remove the custom image for a monster on this server.', options: 'monster', example: '/monsterart remove monster:Goblin Warrior' },
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
       { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
-      { name: '/mattack', summary: 'Manual monster attack — type bonus + damage yourself. For monsters from /init addmonster, prefer /init attack (it auto-fills both).', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
       { name: '/monsterattack', summary: 'Save and manage a library of monster attacks (per-server).', options: '(subcommands)', example: '/monsterattack add monster:Goblin attack:Shortsword ...' },
     ],
   },
@@ -8604,7 +8603,6 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
   }
 
-  // ─── /mattack ────────────────────────────────────────────────────
   // ─── /diagnose — diagnostic dump of the user's character data ────
   // Shows exactly what the bot has stored under your user ID: the keys
   // it uses for each character, what entry.name vs entry.data.name say,
@@ -8811,122 +8809,6 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
     return interaction.reply({ content: text, ephemeral: true });
-  }
-
-  else if (commandName === 'mattack') {
-    const channelId = interaction.channel.id;
-    const userId = interaction.user.id;
-    const enc = getEncounter(channelId);
-
-    if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
-    if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
-
-    const attackerName = interaction.options.getString('attacker');
-    const attackName = interaction.options.getString('name');
-    const attackBonus = interaction.options.getInteger('bonus');
-    const damageExpr = interaction.options.getString('damage');
-    const targetName = interaction.options.getString('target');
-    const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
-    const explicitMap = interaction.options.getInteger('map'); // null if unset
-    const agile = interaction.options.getBoolean('agile') ?? false;
-
-    const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
-    if (!attacker) return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
-
-    const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
-    if (!target) return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
-
-    const damageResult = rollDamageExpression(damageExpr);
-    if (!damageResult) return interaction.reply({ content: `❌ Couldn't parse damage expression "${damageExpr}". Use something like \`1d6+2\` or \`2d8\`.`, ephemeral: true });
-
-    const attackerMods = sumEffectModifiers(attacker);
-    const targetMods = sumEffectModifiers(target);
-
-    // Auto-MAP if not explicitly provided
-    let mapPenalty, mapNoteText;
-    if (explicitMap !== null) {
-      mapPenalty = calculateMap(explicitMap, agile);
-      mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
-    } else {
-      const mapInfo = ca.computeMapForNextAttack(attacker, agile);
-      mapPenalty = mapInfo.penalty;
-      mapNoteText = mapInfo.noteText;
-    }
-    const dieRoll = Math.floor(Math.random() * 20) + 1;
-    const attackTotal = dieRoll + attackBonus + mapPenalty + attackerMods.attackBonus;
-
-    const baseTargetAc = target.ac ?? null;
-    const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
-    const degree = effectiveTargetAc !== null
-      ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc)
-      : null;
-
-    // Build attack line
-    const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
-    const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
-    let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(attackBonus)}${mapText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
-    if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
-    if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
-    if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
-    if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
-
-    // Damage
-    const totalDamageBonus = attackerMods.damageBonus;
-    let finalDamage = Math.max(1, damageResult.total + totalDamageBonus);
-    const damageContribText = formatEffectContributions(attackerMods.activeEffects, 'damage');
-    let damageLine;
-    if (degree === 'crit-success') {
-      finalDamage = finalDamage * 2;
-      damageLine = `**Damage (CRIT × 2)**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = ${damageResult.total + totalDamageBonus} × 2 = **${finalDamage} ${damageType}**`;
-    } else {
-      damageLine = `**Damage**\n${damageResult.display}${totalDamageBonus ? ` ${fmt(totalDamageBonus)}` : ''} = **${finalDamage} ${damageType}**`;
-    }
-    if (damageContribText) damageLine += `\n*${damageContribText.trim().slice(1, -1)}*`;
-
-    const acBreakdown = baseTargetAc !== null && targetMods.acBonus !== 0
-      ? ` (base ${baseTargetAc}${fmt(targetMods.acBonus)} from effects = ${effectiveTargetAc})`
-      : '';
-    let outcomeLine;
-    if (degree === 'crit-success')      outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
-    else if (degree === 'success')      outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}${acBreakdown}`;
-    else if (degree === 'failure')      outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
-    else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}${acBreakdown}`;
-    else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
-
-    let hpLine = '';
-    let mentionLine = '';
-    if (degree === 'success' || degree === 'crit-success') {
-      const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
-      const dyingNote = dmgResult?.displaySuffix ?? '';
-      hpLine = target.isNpc
-        ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
-        : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-    }
-    if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
-
-    const showDamage = (degree === 'success' || degree === 'crit-success' || degree === null);
-    const description = [
-      attackLine,
-      '',
-      showDamage ? damageLine : null,
-      outcomeLine,
-      hpLine || null,
-    ].filter(s => s !== null).join('\n');
-
-    const embed = new EmbedBuilder()
-      .setColor(0x8B0000)
-      .setTitle(`👹 ${attacker.name} attacks with ${attackName}!`)
-      .setDescription(description)
-      .setFooter({ text: `GM attack · Attack ${fmt(attackBonus)} · ${damageExpr} ${damageType}` });
-
-    const replyPayload = { embeds: [embed] };
-    if (mentionLine) replyPayload.content = mentionLine;
-    await interaction.reply(replyPayload);
-    // Record attack for MAP tracking (only if MAP wasn't manually overridden)
-    if (explicitMap === null) {
-      ca.recordAttack(channelId, attacker.name);
-    }
-    await updateSummary(interaction.channel, enc);
   }
 
   // ─── /roll ───────────────────────────────────────────────────────
@@ -11559,7 +11441,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       if (!attacker.bestiaryKey) {
         return interaction.reply({
-          content: `❌ **${attacker.name}** wasn't added from the bestiary, so I can't auto-pull their attacks. Use \`/mattack\` to roll an attack manually instead.`,
+          content: `❌ **${attacker.name}** wasn't added from the bestiary, so I can't auto-pull their attacks. Use \`/monsterattack add\` to save a custom attack first, then \`/init attack\` will be able to use it.`,
           ephemeral: true,
         });
       }
@@ -11633,7 +11515,7 @@ client.on('interactionCreate', async (interaction) => {
       // Crits double
       if (degree === 'crit-success') finalDamage = finalDamage * 2;
 
-      // 7. Build the embed (same shape as /mattack so it feels consistent)
+      // 7. Build the embed (consistent shape across all attack rolls)
       const mapText = mapPenalty !== 0 ? ` ${mapPenalty}` : '';
       const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
       const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
