@@ -8629,16 +8629,93 @@ client.on('interactionCreate', async (interaction) => {
     const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
     const activeKey = userChars._activeChar ?? null;
 
-    if (charKeys.length === 0) {
-      return interaction.reply({
-        content: '📭 You have no characters saved. Use `/char add` to import one.',
-        ephemeral: true,
-      });
+    // ── DEEP STORAGE DIAGNOSTICS ──
+    // Show exactly which file is being read so we can detect cases where
+    // /sheet and /diagnose end up hitting DIFFERENT files (which is what's
+    // happening when /sheet shows a character that doesn't exist in the
+    // file /diagnose reads). This block lists candidate paths and reports
+    // which ones exist + their sizes + last modified times.
+    const path = require('path');
+    const candidatePaths = {
+      'dataPath()':                 dataPath('characters.json'),
+      'DATA_DIR/characters.json':   path.join(DATA_DIR ?? process.cwd(), 'characters.json'),
+      'cwd()/characters.json':      path.join(process.cwd(), 'characters.json'),
+      'cwd()/saves/characters.json': path.join(process.cwd(), 'saves', 'characters.json'),
+      'cwd()/data/characters.json':  path.join(process.cwd(), 'data', 'characters.json'),
+      'cwd()/gamedata/characters.json': path.join(process.cwd(), 'gamedata', 'characters.json'),
+      '/app/data/characters.json':   '/app/data/characters.json',
+      '/app/characters.json':        '/app/characters.json',
+      '/app/saves/characters.json':  '/app/saves/characters.json',
+    };
+    const fileInfo = [];
+    const seenPaths = new Set();
+    for (const [label, p] of Object.entries(candidatePaths)) {
+      if (seenPaths.has(p)) continue;
+      seenPaths.add(p);
+      try {
+        const stat = fs.statSync(p);
+        // Try to read top-level keys + your user's keys for comparison
+        let topKeyCount = '?';
+        let yourKeyList = '?';
+        try {
+          const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+          topKeyCount = Object.keys(data).length;
+          const userBlock = data[userId] ?? {};
+          const userBlockKeys = Object.keys(userBlock).filter(k => !k.startsWith('_'));
+          yourKeyList = userBlockKeys.length > 0 ? userBlockKeys.join(', ') : '(none under your ID)';
+        } catch {
+          yourKeyList = '(unparseable)';
+        }
+        fileInfo.push({
+          label,
+          path: p,
+          size: stat.size,
+          modified: stat.mtime.toISOString(),
+          topKeyCount,
+          yourKeyList,
+        });
+      } catch {
+        // File doesn't exist — skip silently, we only care about ones that do
+      }
     }
 
     const lines = [];
     lines.push(`**Your user ID:** \`${userId}\``);
-    lines.push(`**Total characters under your ID:** ${charKeys.length}`);
+    lines.push(`**Bot's resolved file path:** \`${dataPath('characters.json')}\``);
+    lines.push(`**process.cwd():** \`${process.cwd()}\``);
+    lines.push(`**DATA_DIR env:** \`${process.env.DATA_DIR ?? '(unset)'}\``);
+    lines.push('');
+
+    // List every characters.json file we could find on disk
+    lines.push(`**📁 characters.json files found on disk: ${fileInfo.length}**`);
+    if (fileInfo.length > 1) {
+      lines.push(`🚨 **MULTIPLE FILES DETECTED — this is your bug.**`);
+    } else if (fileInfo.length === 0) {
+      lines.push(`🚨 **NO FILES FOUND — bot is running on empty data.**`);
+    }
+    for (const f of fileInfo) {
+      lines.push(`• \`${f.path}\``);
+      lines.push(`  • size: **${f.size} bytes**, modified: ${f.modified}`);
+      lines.push(`  • top-level userIds: ${f.topKeyCount}`);
+      lines.push(`  • YOUR keys here: ${f.yourKeyList}`);
+    }
+    lines.push('');
+
+    if (charKeys.length === 0) {
+      lines.push(`📭 **The file the bot is currently reading has NO characters under your ID.**`);
+      const text = lines.join('\n');
+      if (text.length > 1900) {
+        const buf = Buffer.from(text, 'utf8');
+        return interaction.reply({
+          content: '📋 Diagnostic too long for one message — see attached file:',
+          files: [new AttachmentBuilder(buf, { name: 'diagnose.txt' })],
+          ephemeral: true,
+        });
+      }
+      return interaction.reply({ content: text, ephemeral: true });
+    }
+
+    lines.push(`**Total characters under your ID (in active file):** ${charKeys.length}`);
     lines.push(`**Active character key:** \`${activeKey ?? '(none set)'}\``);
     if (activeKey && !userChars[activeKey]) {
       lines.push(`⚠️ **WARNING:** activeKey \`${activeKey}\` doesn't exist in your character list! This will cause "no active character" errors.`);
