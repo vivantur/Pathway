@@ -1425,7 +1425,8 @@
             "Diplomacy": 0,
             "Intimidation": 0,
             "Medicine": 1,
-            "Nature": 1
+            "Nature": 1,
+            "Occultism": -4
           }
         }
       },
