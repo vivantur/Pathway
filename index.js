@@ -886,7 +886,7 @@ function buildBagEmbed(userBag, character = null) {
       }
     }
     const value = lines.length > 0 ? lines.join('\n') : '*Empty*';
-    embed.addFields({ name: `**${cat}**`, value: value.slice(0, 1024), inline: false });
+    embed.addFields({ name: `**${cat}**`, value: truncateForEmbed(value, 1000), inline: false });
   }
 
   // Summary footer fields: Bulk (with encumbrance if character provided) and Total Value
@@ -3486,7 +3486,7 @@ function buildClassProficienciesPage(cls) {
   const labels = { perception: '👁️ Perception', savingthrows: '💪 Saving Throws', skills: '🎯 Skills', attacks: '⚔️ Attacks', defenses: '🛡️ Defenses', classdc: '🎲 Class DC', armor: '🛡️ Armor', spellattacks: '✨ Spell Attacks', spelldcs: '✨ Spell DCs' };
   for (const key of order) {
     if (cls.proficiencies?.[key]) {
-      embed.addFields({ name: labels[key] ?? key, value: String(cls.proficiencies[key]).slice(0, 1020), inline: false });
+      embed.addFields({ name: labels[key] ?? key, value: truncateForEmbed(String(cls.proficiencies[key]), 1000), inline: false });
     }
   }
   if (Object.keys(cls.proficiencies ?? {}).length === 0) {
@@ -4117,7 +4117,7 @@ function buildXpEmbed(char, charEntry, { note, showLog } = {}) {
       const reason = e.reason ? ` — ${e.reason}` : '';
       return `\`${sign}${e.amount} XP\` *(${date})*${reason}`;
     });
-    embed.addFields({ name: '📜 Recent Awards', value: lines.join('\n').slice(0, 1024), inline: false });
+    embed.addFields({ name: '📜 Recent Awards', value: truncateForEmbed(lines.join('\n'), 1000), inline: false });
   }
 
   embed.setFooter({ text: '/xp award to give XP · /xp view character:<name> · 1000 XP = level up' });
@@ -4283,7 +4283,7 @@ function buildNoteDetailEmbed(char, note) {
   const embed = new EmbedBuilder()
     .setColor(cat?.color ?? 0x95a5a6)
     .setTitle(`${cat?.icon ?? '📝'} Note #${note.id} · ${cat?.label ?? 'Uncategorized'}`)
-    .setDescription(note.text.slice(0, 4000));
+    .setDescription(truncateForEmbed(note.text, 4000));
 
   const meta = [];
   if (note.pinned) meta.push('📌 Pinned');
@@ -5312,21 +5312,23 @@ client.on('interactionCreate', async (interaction) => {
       if (interaction.user.id !== ownerId) {
         return interaction.reply({ content: '❌ Only the person who used `/rest` can confirm.', ephemeral: true });
       }
-      const characters = loadCharacters();
-      const charEntry = characters[ownerId]?.[charKey];
-      if (!charEntry) {
+      const restResult = await mutateCharacters((chars) => {
+        const ce = chars[ownerId]?.[charKey];
+        if (!ce) return { ok: false };
+        charOverlay.longRest(ce);
+        // Restore HP to max as part of a full rest
+        const maxHp = computeCharMaxHp(ce);
+        ce.hp = maxHp;
+        const focus = charOverlay.getCurrentFocus(ce);
+        return { ok: true, maxHp, focus, name: ce.data.name };
+      }, { returnValue: true });
+      if (!restResult?.ok) {
         return interaction.update({ content: '❌ Could not find that character anymore.', embeds: [], components: [] });
       }
-      charOverlay.longRest(charEntry);
-      // Restore HP to max as part of a full rest
-      const maxHp = computeCharMaxHp(charEntry);
-      charEntry.hp = maxHp;
-      saveCharacters(characters);
-      const focus = charOverlay.getCurrentFocus(charEntry);
       const doneEmbed = new EmbedBuilder()
         .setColor(0x2ecc71)
-        .setTitle(`🌙 ${charEntry.data.name} rests and recovers`)
-        .setDescription(`HP restored to **${maxHp}/${maxHp}**. All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.`);
+        .setTitle(`🌙 ${restResult.name} rests and recovers`)
+        .setDescription(`HP restored to **${restResult.maxHp}/${restResult.maxHp}**. All spell slots refilled. Focus points: ${restResult.focus.current}/${restResult.focus.max}. Hero points reset to 1. Prepared spells cleared.`);
       return interaction.update({ embeds: [doneEmbed], components: [] });
     }
     if (interaction.customId.startsWith('rest_cancel_')) {
@@ -5402,15 +5404,17 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: '❌ Only the combatant\'s owner can spend the Hero Point.', ephemeral: true });
       }
 
-      // Burn the hero point
-      const characters = loadCharacters();
+      // Burn the hero point — race-free
       const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
-      const charEntry = characters[combatant.ownerId]?.[charKey];
-      if (!charEntry) return interaction.reply({ content: '❌ Character not found.', ephemeral: true });
-      const currentHp = charEntry.heroPoints ?? 1;
-      if (currentHp <= 0) return interaction.reply({ content: '❌ No hero points available.', ephemeral: true });
-      charEntry.heroPoints = currentHp - 1;
-      saveCharacters(characters);
+      const burnResult = await mutateCharacters((characters) => {
+        const charEntry = characters[combatant.ownerId]?.[charKey];
+        if (!charEntry) return { error: 'Character not found.' };
+        const currentHp = charEntry.heroPoints ?? 1;
+        if (currentHp <= 0) return { error: 'No hero points available.' };
+        charEntry.heroPoints = currentHp - 1;
+        return { ok: true, newPoints: charEntry.heroPoints };
+      }, { returnValue: true });
+      if (burnResult?.error) return interaction.reply({ content: `❌ ${burnResult.error}`, ephemeral: true });
 
       // Reroll
       const originalResult = { dyingBefore, dyingAfter, roll, awoke };
@@ -5426,7 +5430,7 @@ client.on('interactionCreate', async (interaction) => {
           `Original: ${originalResult.roll} · Reroll: ${result.rerollRoll}\n` +
           `${outcomeEmoji} **${(result.outcome ?? 'unchanged').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**\n` +
           `${result.narration}\n\n` +
-          `*Hero Points: ${charEntry.heroPoints}/3*`
+          `*Hero Points: ${burnResult.newPoints}/3*`
         );
       await interaction.update({ embeds: [newEmbed], components: [] });
       await updateSummary(interaction.channel, enc);
@@ -5451,26 +5455,32 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: '❌ Only the combatant\'s owner can spend Hero Points.', ephemeral: true });
       }
 
-      // Look up character + hero points; require at least 1
-      const characters = loadCharacters();
+      // Try to stabilize FIRST (before consuming hero points). If it fails,
+      // we don't burn anything. If it succeeds, we burn them all.
       const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
+
+      // First check that they have hero points to spend (read-only check)
+      const characters = loadCharacters();
       const charEntry = characters[combatant.ownerId]?.[charKey];
       if (!charEntry) return interaction.reply({ content: '❌ Character not found.', ephemeral: true });
       const currentHp = charEntry.heroPoints ?? 1;
       if (currentHp <= 0) return interaction.reply({ content: '❌ No Hero Points to spend.', ephemeral: true });
 
-      // Burn ALL hero points and stabilize
-      const spent = currentHp;
-      charEntry.heroPoints = 0;
-      saveCharacters(characters);
-
+      // Try to stabilize
       const stab = ca.stabilizeWithHeroPoints(channelId, combatant.name);
       if (!stab || !stab.ok) {
-        // Refund (shouldn't happen — guard rail)
-        charEntry.heroPoints = currentHp;
-        saveCharacters(characters);
         return interaction.reply({ content: `❌ Could not stabilize **${combatant.name}**: not currently dying.`, ephemeral: true });
       }
+
+      // Stabilization worked — now burn the hero points race-free
+      const burnResult = await mutateCharacters((chars) => {
+        const ce = chars[combatant.ownerId]?.[charKey];
+        if (!ce) return { error: 'Character not found.', spent: 0 };
+        const spent = ce.heroPoints ?? 0;
+        ce.heroPoints = 0;
+        return { ok: true, spent };
+      }, { returnValue: true });
+      const spent = burnResult?.spent ?? currentHp;
 
       const newEmbed = new EmbedBuilder()
         .setColor(0x2ecc71)
@@ -7207,10 +7217,12 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply(`Couldn't find that character. Your characters: ${names}`);
       }
       const name = characters[userId][charKey].name;
-      delete characters[userId][charKey];
-      // If the removed character was the active one, clear that pointer.
-      if (characters[userId]._activeChar === charKey) delete characters[userId]._activeChar;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[userId]) return;
+        delete chars[userId][charKey];
+        // If the removed character was the active one, clear that pointer.
+        if (chars[userId]._activeChar === charKey) delete chars[userId]._activeChar;
+      });
       await interaction.reply(`✅ **${name}** has been removed.`);
     }
 
@@ -7311,9 +7323,14 @@ client.on('interactionCreate', async (interaction) => {
       const { error, charKey } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
       if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
-      characters[interaction.user.id][charKey].art = url;
-      saveCharacters(characters);
-      const charName = characters[interaction.user.id][charKey].name;
+      const userId = interaction.user.id;
+      const setResult = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return null;
+        ce.art = url;
+        return ce.name;
+      }, { returnValue: true });
+      const charName = setResult ?? characters[userId][charKey].name;
       await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
     }
 
@@ -7332,8 +7349,9 @@ client.on('interactionCreate', async (interaction) => {
 
       // /char active action:clear
       if (action === 'clear') {
-        delete characters[userId]._activeChar;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (chars[userId]) delete chars[userId]._activeChar;
+        });
         return interaction.reply({ content: `✅ Active character cleared. Commands will now prompt you to choose when you have multiple characters.`, ephemeral: true });
       }
 
@@ -7355,8 +7373,10 @@ client.on('interactionCreate', async (interaction) => {
         const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
         return interaction.reply({ content: `❌ Couldn't find **${nameArg}**.\nYour characters: ${names}`, ephemeral: true });
       }
-      characters[userId]._activeChar = charKey;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[userId]) chars[userId] = {};
+        chars[userId]._activeChar = charKey;
+      });
       const charName = characters[userId][charKey].name;
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
     }
@@ -7395,7 +7415,7 @@ client.on('interactionCreate', async (interaction) => {
           if (Array.isArray(f)) return `• **${f[0]}** ${f[2] ? '*(lvl ' + f[2] + ')*' : ''}`;
           return `• **${f.name ?? f}**`;
         });
-        const embed = new EmbedBuilder().setColor(0x9b59b6).setTitle(`📜 ${ce2.data.name}'s Feats`).setDescription(lines.join('\n').slice(0, 4000));
+        const embed = new EmbedBuilder().setColor(0x9b59b6).setTitle(`📜 ${ce2.data.name}'s Feats`).setDescription(truncateForEmbed(lines.join('\n'), 4000));
         return interaction.reply({ embeds: [embed] });
       }
     }
@@ -7883,11 +7903,18 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spellbook') {
     await interaction.deferReply();
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
     if (error) return interaction.editReply(error);
+    const userId = interaction.user.id;
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
 
+    // Persist the overlay creation race-free
+    await mutateCharacters((chars) => {
+      const ce = chars[userId]?.[charKey];
+      if (ce) charOverlay.ensureOverlay(ce);
+    });
+    // Re-apply locally for the embed building below
     charOverlay.ensureOverlay(charEntry);
     const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`🔮 ${c.name}'s Spellbook`);
     if (charEntry.art) embed.setThumbnail(charEntry.art);
@@ -7942,7 +7969,7 @@ client.on('interactionCreate', async (interaction) => {
       const casterType = caster.spellcastingType || 'unknown';
       const innateTag = caster.innate ? ' · innate' : '';
       const header = `${caster.name} (${caster.magicTradition} · ${casterType}${innateTag})`;
-      embed.addFields({ name: header, value: body.slice(0, 1024), inline: false });
+      embed.addFields({ name: header, value: truncateForEmbed(body, 1000), inline: false });
     }
 
     // Focus spells at the bottom (separate system in Pathbuilder)
@@ -7960,13 +7987,12 @@ client.on('interactionCreate', async (interaction) => {
       const { current, max } = charOverlay.getCurrentFocus(charEntry);
       embed.addFields({
         name: `🌟 Focus Spells (${current}/${max} points)`,
-        value: focusLines.join('\n').slice(0, 1024),
+        value: truncateForEmbed(focusLines.join('\n'), 1000),
         inline: false,
       });
     }
 
     embed.setFooter({ text: '✨ = added via /spells · /cast <spell> to cast · /rest to refresh' });
-    saveCharacters(characters);
     await interaction.editReply({ embeds: [embed] });
   }
 
@@ -8034,7 +8060,7 @@ client.on('interactionCreate', async (interaction) => {
 
       const innateTag = caster.innate ? ' · innate' : '';
       const casterHeader = `${caster.name} (${caster.magicTradition} · prepared${innateTag})`;
-      embed.addFields({ name: casterHeader, value: sections.join('\n\n').slice(0, 1024), inline: false });
+      embed.addFields({ name: casterHeader, value: truncateForEmbed(sections.join('\n\n'), 1000), inline: false });
     }
 
     // Note any spontaneous casters the user might be wondering about
@@ -8512,8 +8538,9 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spells') {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
+    const userId = interaction.user.id;
     const c = charEntry.data;
     const casters = charOverlay.getCasters(c);
     if (!casters.length) return interaction.reply({ content: `**${c.name}** has no spellcasting!`, ephemeral: true });
@@ -8547,9 +8574,12 @@ client.on('interactionCreate', async (interaction) => {
       const casterTradition = picked.caster.magicTradition?.toLowerCase() ?? '';
       const spellTraditions = (spell.traditions ?? []).map(t => t.toLowerCase());
       const traditionMismatch = spellTraditions.length && !spellTraditions.includes(casterTradition);
-      const r = charOverlay.learnSpell(charEntry, picked.caster.name, spell.name, rank);
+      const r = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return { ok: false, error: 'Character not found.' };
+        return charOverlay.learnSpell(ce, picked.caster.name, spell.name, rank);
+      }, { returnValue: true });
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
-      saveCharacters(characters);
       const embed = new EmbedBuilder()
         .setColor(0x9B59B6)
         .setTitle(`📘 ${c.name} learned ${spell.name}`)
@@ -8571,9 +8601,12 @@ client.on('interactionCreate', async (interaction) => {
       const explicitCaster = interaction.options.getString('caster');
       const picked = await pickCaster(explicitCaster);
       if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
-      const r = charOverlay.forgetSpell(charEntry, picked.caster.name, spellName);
+      const r = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return { ok: false, error: 'Character not found.' };
+        return charOverlay.forgetSpell(ce, picked.caster.name, spellName);
+      }, { returnValue: true });
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
-      saveCharacters(characters);
       return interaction.reply({ content: `🗑️ **${c.name}** forgot **${spellName}** (from ${picked.caster.name}).` });
     }
 
@@ -8584,9 +8617,12 @@ client.on('interactionCreate', async (interaction) => {
       const explicitCaster = interaction.options.getString('caster');
       const picked = await pickCaster(explicitCaster);
       if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
-      const r = charOverlay.prepareSpell(charEntry, picked.caster.name, spellName, rank);
+      const r = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return { ok: false, error: 'Character not found.' };
+        return charOverlay.prepareSpell(ce, picked.caster.name, spellName, rank);
+      }, { returnValue: true });
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
-      saveCharacters(characters);
       const slots = charOverlay.getSlotsRemaining(charEntry, picked.caster.name, rank);
       return interaction.reply({ content: `📋 Prepared **${spellName}** at rank ${rank} for **${picked.caster.name}**. Slots filled this rank: ${r.slot_index + 1}/${slots.max || '?'}.` });
     }
@@ -8598,9 +8634,12 @@ client.on('interactionCreate', async (interaction) => {
       const explicitCaster = interaction.options.getString('caster');
       const picked = await pickCaster(explicitCaster);
       if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
-      const r = charOverlay.unprepareSpell(charEntry, picked.caster.name, spellName, rank);
+      const r = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return { ok: false, error: 'Character not found.' };
+        return charOverlay.unprepareSpell(ce, picked.caster.name, spellName, rank);
+      }, { returnValue: true });
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
-      saveCharacters(characters);
       return interaction.reply({ content: `🗑️ Unprepared **${spellName}** (rank ${rank}) from **${picked.caster.name}**.` });
     }
 
@@ -8615,9 +8654,12 @@ client.on('interactionCreate', async (interaction) => {
       // Validate the replacement spell exists
       const rawSpell = findSpell(addName);
       if (!rawSpell) return interaction.reply({ content: `❌ Couldn't find a spell called **${addName}** in the database.`, ephemeral: true });
-      const r = charOverlay.swapRepertoire(charEntry, picked.caster.name, rank, removeName, addName);
+      const r = await mutateCharacters((chars) => {
+        const ce = chars[userId]?.[charKey];
+        if (!ce) return { ok: false, error: 'Character not found.' };
+        return charOverlay.swapRepertoire(ce, picked.caster.name, rank, removeName, addName);
+      }, { returnValue: true });
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
-      saveCharacters(characters);
       return interaction.reply({ content: `🔄 **${picked.caster.name}** swapped **${removeName}** → **${addName}** (rank ${rank}).` });
     }
 
@@ -8653,7 +8695,7 @@ client.on('interactionCreate', async (interaction) => {
         const casterType = caster.spellcastingType || 'unknown';
         const innateTag = caster.innate ? ' · innate' : '';
         const header = `${caster.name} (${caster.magicTradition} · ${casterType}${innateTag})`;
-        embed.addFields({ name: header, value: (sections.join('\n') || '*No spells known.*').slice(0, 1024), inline: false });
+        embed.addFields({ name: header, value: truncateForEmbed(sections.join('\n') || '*No spells known.*', 1000), inline: false });
       }
       embed.setFooter({ text: '✨ = added via /spells learn or /spells swap' });
       return interaction.reply({ embeds: [embed] });
@@ -8693,14 +8735,19 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'refocus') {
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
+    const userId = interaction.user.id;
     const before = charOverlay.getCurrentFocus(charEntry);
     if (before.max === 0) return interaction.reply({ content: `**${charEntry.data.name}** has no focus pool.`, ephemeral: true });
     if (before.current >= before.max) return interaction.reply({ content: `**${charEntry.data.name}**'s focus pool is already full (${before.current}/${before.max}).`, ephemeral: true });
-    const after = charOverlay.refocus(charEntry, 1);
-    saveCharacters(characters);
-    return interaction.reply({ content: `🌀 **${charEntry.data.name}** refocuses. Focus points: ${after.current}/${after.max}.` });
+    const result = await mutateCharacters((chars) => {
+      const ce = chars[userId]?.[charKey];
+      if (!ce) return null;
+      return charOverlay.refocus(ce, 1);
+    }, { returnValue: true });
+    if (!result) return interaction.reply({ content: `❌ Character disappeared mid-action.`, ephemeral: true });
+    return interaction.reply({ content: `🌀 **${charEntry.data.name}** refocuses. Focus points: ${result.current}/${result.max}.` });
   }
 
   // ─── /resource ───────────────────────────────────────────────────
@@ -8708,8 +8755,9 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
+    const userId = interaction.user.id;
     const c = charEntry.data;
     charOverlay.ensureOverlay(charEntry);
 
@@ -8746,14 +8794,21 @@ client.on('interactionCreate', async (interaction) => {
       if (resource === 'focus') {
         const max = charOverlay.getMaxFocus(c);
         const clamped = Math.max(0, Math.min(max, value));
-        charEntry.overlay.daily.focus_spent = max - clamped;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          const ce = chars[userId]?.[charKey];
+          if (!ce) return;
+          charOverlay.ensureOverlay(ce);
+          ce.overlay.daily.focus_spent = max - clamped;
+        });
         return interaction.reply({ content: `🌟 Focus points set to ${clamped}/${max}.` });
       }
       if (resource === 'hero') {
-        const v = charOverlay.setHeroPoints(charEntry, value);
-        saveCharacters(characters);
-        return interaction.reply({ content: `⭐ Hero points set to ${v}/3.` });
+        const v = await mutateCharacters((chars) => {
+          const ce = chars[userId]?.[charKey];
+          if (!ce) return null;
+          return charOverlay.setHeroPoints(ce, value);
+        }, { returnValue: true });
+        return interaction.reply({ content: `⭐ Hero points set to ${v ?? value}/3.` });
       }
       if (resource === 'slot') {
         if (rank === null || rank === undefined) return interaction.reply({ content: '❌ The `rank` option is required when setting spell slots.', ephemeral: true });
@@ -8762,9 +8817,13 @@ client.on('interactionCreate', async (interaction) => {
         if (!caster) return interaction.reply({ content: `❌ Specify which caster with the \`caster\` option. Available: ${casters.map(x => x.name).join(', ')}`, ephemeral: true });
         const max = Number(caster.perDay?.[rank] ?? 0);
         const clamped = Math.max(0, Math.min(max, value));
-        if (!charEntry.overlay.daily.slots_used[caster.name]) charEntry.overlay.daily.slots_used[caster.name] = {};
-        charEntry.overlay.daily.slots_used[caster.name][rank] = max - clamped;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          const ce = chars[userId]?.[charKey];
+          if (!ce) return;
+          charOverlay.ensureOverlay(ce);
+          if (!ce.overlay.daily.slots_used[caster.name]) ce.overlay.daily.slots_used[caster.name] = {};
+          ce.overlay.daily.slots_used[caster.name][rank] = max - clamped;
+        });
         return interaction.reply({ content: `✨ ${caster.name} rank ${rank} slots set to ${clamped}/${max}.` });
       }
       return interaction.reply({ content: '❌ Unknown resource.', ephemeral: true });
@@ -9548,8 +9607,10 @@ client.on('interactionCreate', async (interaction) => {
       }
       charEntry.companions[compKey] = { displayName, baseType, form, notes: '', customStats, currentHp: null };
       if (!charEntry.activeCompanion) charEntry.activeCompanion = compKey;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `🐾 **${displayName}** (${custom ? 'custom: ' + baseInput : baseInput}, ${form}) added to **${char.name}**'s companions!${charEntry.activeCompanion === compKey ? ' *(active)*' : ''}\nUse \`/companion sheet\` to view.` });
     }
 
@@ -9575,8 +9636,10 @@ client.on('interactionCreate', async (interaction) => {
       const scaled = scaleCompanion(comp, char);
       if (comp.currentHp === null || comp.currentHp === undefined) {
         comp.currentHp = scaled.maxHp;
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
       }
       return interaction.reply({ embeds: [buildCompanionSheetEmbed(comp, scaled, char, charEntry, compKey === charEntry.activeCompanion)] });
     }
@@ -9586,8 +9649,10 @@ client.on('interactionCreate', async (interaction) => {
       const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
       charEntry.activeCompanion = compKey;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `⭐ **${charEntry.companions[compKey].displayName}** is now **${char.name}**'s active companion.` });
     }
 
@@ -9602,8 +9667,10 @@ client.on('interactionCreate', async (interaction) => {
       if (charEntry.companions[compKey].currentHp && charEntry.companions[compKey].currentHp > scaled.maxHp) {
         charEntry.companions[compKey].currentHp = scaled.maxHp;
       }
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `🔄 **${charEntry.companions[compKey].displayName}**: **${oldForm}** → **${newForm}**.\nNew max HP: **${scaled.maxHp}** · Attack: **+${scaled.attackBonus}** · AC: **${scaled.ac}**` });
     }
 
@@ -9618,8 +9685,10 @@ client.on('interactionCreate', async (interaction) => {
       if (setValue !== null && setValue !== undefined) comp.currentHp = Math.max(0, Math.min(scaled.maxHp, setValue));
       else if (change !== null && change !== undefined) comp.currentHp = Math.max(0, Math.min(scaled.maxHp, (comp.currentHp ?? scaled.maxHp) + change));
       else comp.currentHp = scaled.maxHp;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `❤️ **${comp.displayName}**: ${comp.currentHp}/${scaled.maxHp} HP.` });
     }
 
@@ -9633,8 +9702,10 @@ client.on('interactionCreate', async (interaction) => {
         const remaining = Object.keys(charEntry.companions);
         charEntry.activeCompanion = remaining[0] ?? null;
       }
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `🗑️ Removed **${name}** from **${char.name}**'s companions.` });
     }
 
@@ -9649,8 +9720,10 @@ client.on('interactionCreate', async (interaction) => {
       // Empty / "clear" / "none" wipes the art
       if (!url || /^(clear|none|remove|off)$/i.test(url.trim())) {
         delete charEntry.companions[compKey].art;
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🗑️ Cleared portrait for **${charEntry.companions[compKey].displayName}**.`, ephemeral: true });
       }
       // Basic URL validation — must start with http(s) and point at a plausible image host
@@ -9658,8 +9731,10 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ That doesn't look like a valid URL. Use a direct image link (e.g. https://i.imgur.com/abc.png).`, ephemeral: true });
       }
       charEntry.companions[compKey].art = url.trim();
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `🖼️ Updated portrait for **${charEntry.companions[compKey].displayName}**.\nView it with \`/companion sheet\`.`, ephemeral: true });
     }
 
@@ -9750,8 +9825,10 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ Unknown stat \`${stat}\`.`, ephemeral: true });
       }
 
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `✏️ **${comp.displayName}** — ${displayLabel} set to **${displayValue}**.\nView with \`/companion sheet\`. Undo with \`/companion reset stat:${stat}\`.`, ephemeral: true });
     }
 
@@ -9782,8 +9859,10 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ Unknown stat \`${stat}\`.`, ephemeral: true });
       }
 
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `↺ Reset \`${stat}\` on **${comp.displayName}** to auto-calculated.`, ephemeral: true });
     }
 
@@ -9796,8 +9875,10 @@ client.on('interactionCreate', async (interaction) => {
       }
       const comp = charEntry.companions[compKey];
       comp.overrides = { abilities: {}, saves: {} };
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `↺ Cleared all stat overrides on **${comp.displayName}**. Using auto-calculated stats again.`, ephemeral: true });
     }
 
@@ -9836,8 +9917,10 @@ client.on('interactionCreate', async (interaction) => {
           damageType: damageType || null,
           traits,
         });
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `⚔️ Added **${atkName}** to **${comp.displayName}**'s attacks.`, ephemeral: true });
       }
 
@@ -9847,8 +9930,10 @@ client.on('interactionCreate', async (interaction) => {
         const idx = comp.customAttacks.findIndex(a => a.name.toLowerCase() === atkName.toLowerCase());
         if (idx < 0) return interaction.reply({ content: `❌ No custom attack named **${atkName}** on **${comp.displayName}**.`, ephemeral: true });
         const [removed] = comp.customAttacks.splice(idx, 1);
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s attacks.`, ephemeral: true });
       }
 
@@ -9895,8 +9980,10 @@ client.on('interactionCreate', async (interaction) => {
           description,
           actionCost: actionCost || null,
         });
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `✨ Added **${abName}** to **${comp.displayName}**'s abilities.`, ephemeral: true });
       }
 
@@ -9906,8 +9993,10 @@ client.on('interactionCreate', async (interaction) => {
         const idx = comp.customAbilities.findIndex(a => a.name.toLowerCase() === abName.toLowerCase());
         if (idx < 0) return interaction.reply({ content: `❌ No ability named **${abName}** on **${comp.displayName}**.`, ephemeral: true });
         const [removed] = comp.customAbilities.splice(idx, 1);
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s abilities.`, ephemeral: true });
       }
 
@@ -9954,8 +10043,10 @@ client.on('interactionCreate', async (interaction) => {
         // Title-case the skill name for nicer display
         const displayName = skillName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
         comp.skills[displayName] = bonus;
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🎯 Set **${displayName}** to **${fmt(bonus)}** on **${comp.displayName}**.`, ephemeral: true });
       }
 
@@ -9966,8 +10057,10 @@ client.on('interactionCreate', async (interaction) => {
         const foundKey = Object.keys(comp.skills).find(k => k.toLowerCase() === skillName.toLowerCase());
         if (!foundKey) return interaction.reply({ content: `❌ No skill named **${skillName}** on **${comp.displayName}**.`, ephemeral: true });
         delete comp.skills[foundKey];
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🗑️ Cleared **${foundKey}** from **${comp.displayName}**.`, ephemeral: true });
       }
 
@@ -10206,14 +10299,18 @@ client.on('interactionCreate', async (interaction) => {
       const text = interaction.options.getString('text');
       if (!text || /^(clear|none|remove|off)$/i.test(text.trim())) {
         comp.notes = '';
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await mutateCharacters((chars) => {
+          if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+          chars[interaction.user.id][charKey] = charEntry;
+        });
         return interaction.reply({ content: `🗑️ Cleared notes on **${comp.displayName}**.`, ephemeral: true });
       }
       if (text.length > 1000) return interaction.reply({ content: `❌ Notes too long (1000 chars max).`, ephemeral: true });
       comp.notes = text;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ content: `📝 Updated notes on **${comp.displayName}**.`, ephemeral: true });
     }
   }
@@ -10587,7 +10684,7 @@ client.on('interactionCreate', async (interaction) => {
       const embed = new EmbedBuilder()
         .setColor(0x9B59B6)
         .setTitle(`🖼️ Saved Monster Art (${entries.length})`)
-        .setDescription(lines.join('\n').slice(0, 4000))
+        .setDescription(truncateForEmbed(lines.join('\n'), 4000))
         .setFooter({ text: '/monsterart view monster:<name> to see the image • /monsterart remove to delete' });
       return interaction.reply({ embeds: [embed] });
     }
@@ -10827,7 +10924,7 @@ client.on('interactionCreate', async (interaction) => {
       const embed = new EmbedBuilder()
         .setColor(0xe67e22)
         .setTitle(`📝 Monster Edits (${entries.length})`)
-        .setDescription(lines.join('\n').slice(0, 4000))
+        .setDescription(truncateForEmbed(lines.join('\n'), 4000))
         .setFooter({ text: '/monsteredit view monster:<n> to see details' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -11015,8 +11112,10 @@ client.on('interactionCreate', async (interaction) => {
       wallet.sp = (wallet.sp ?? 0) + sp;
       wallet.cp = (wallet.cp ?? 0) + cp;
       charEntry.wallet = wallet;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💰 ${char.name}'s Wallet — Added ${formatWallet({ pp, gp, sp, cp })}`)] });
     }
     if (subcommand === 'spend') {
@@ -11029,8 +11128,10 @@ client.on('interactionCreate', async (interaction) => {
       const spendTotal = pp * 1000 + gp * 100 + sp * 10 + cp;
       if (spendTotal > currentTotal) return interaction.reply({ content: `❌ **${char.name}** can't afford that! They only have **${formatWallet(wallet)}**.`, ephemeral: true });
       charEntry.wallet = copperToWallet(currentTotal - spendTotal);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💸 ${char.name}'s Wallet — Spent ${formatWallet({ pp, gp, sp, cp })}`)] });
     }
     if (subcommand === 'convert') {
@@ -11049,8 +11150,10 @@ client.on('interactionCreate', async (interaction) => {
       wallet[to]   = (wallet[to]   ?? 0) + converted;
       wallet.cp    = (wallet.cp    ?? 0) + remainder;
       charEntry.wallet = wallet;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       const remainderNote = remainder > 0 ? ` (+${remainder} cp remainder)` : '';
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`🔄 ${char.name}'s Wallet — Converted`).setDescription(`Converted **${amount} ${from}** → **${converted} ${to}**${remainderNote}`)] });
     }
@@ -11061,8 +11164,10 @@ client.on('interactionCreate', async (interaction) => {
         sp: interaction.options.getInteger('sp') ?? wallet.sp ?? 0,
         cp: interaction.options.getInteger('cp') ?? wallet.cp ?? 0,
       };
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`✏️ ${char.name}'s Wallet — Updated`)] });
     }
   }
@@ -11088,8 +11193,10 @@ client.on('interactionCreate', async (interaction) => {
       const raw = current + amount;
       const capped = Math.min(raw, HERO_POINTS_MAX);
       charEntry.heroPoints = capped;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
 
       const actuallyAdded = capped - current;
       const wasted = amount - actuallyAdded;
@@ -11106,8 +11213,10 @@ client.on('interactionCreate', async (interaction) => {
       if (amount > current) return interaction.reply({ content: `❌ **${char.name}** only has **${current}** Hero Point${current === 1 ? '' : 's'}.`, ephemeral: true });
 
       charEntry.heroPoints = current - amount;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
 
       const note = amount === current && amount >= 3
         ? `💫 **${char.name}** spent all **${amount}** Hero Points! *(Enough to avoid death and stabilize.)*`
@@ -11120,8 +11229,10 @@ client.on('interactionCreate', async (interaction) => {
       const value = interaction.options.getInteger('value');
       if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
       charEntry.heroPoints = value;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
       const note = `✏️ Set to **${value}**${overflow}.`;
       return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
@@ -11130,8 +11241,10 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'reset') {
       // Reset to the session default (1)
       charEntry.heroPoints = HERO_POINTS_DEFAULT;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
       const note = `🌅 Reset for a new session. **${char.name}** starts with **${HERO_POINTS_DEFAULT}**.`;
       return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
     }
@@ -11147,8 +11260,10 @@ client.on('interactionCreate', async (interaction) => {
 
       // Deduct 1 hero point (the reroll cost)
       charEntry.heroPoints = current - 1;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await mutateCharacters((chars) => {
+        if (!chars[interaction.user.id]) chars[interaction.user.id] = {};
+        chars[interaction.user.id][charKey] = charEntry;
+      });
 
       // PF2e rule: keep the HIGHER of the two rolls. If user gave us their prior total, compare.
       let keepLine;
@@ -12218,7 +12333,7 @@ client.on('interactionCreate', async (interaction) => {
         const detailEmbed = new EmbedBuilder()
           .setColor(0x9B59B6)
           .setTitle('🌀 Active Effects & Conditions')
-          .setDescription(detailLines.join('\n\n').slice(0, 4000));
+          .setDescription(truncateForEmbed(detailLines.join('\n\n'), 4000));
         replyPayload.embeds.push(detailEmbed);
       }
       return interaction.reply(replyPayload);
