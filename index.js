@@ -105,16 +105,92 @@ process.on('uncaughtException', error => {
   console.error('Uncaught exception:', error);
 });
 
+// ── Remaster duplicate filter ────────────────────────────────────────────
+// Archives of Nethys serves both the legacy and Remaster versions of many
+// entities (deities, ancestries, classes, archetypes, backgrounds, creatures)
+// because Pathfinder's rules updated in 2024-2025. Each duplicate has either:
+//   legacy_id   — entry IS the Remaster version (points back at legacy)
+//   remaster_id — entry IS the legacy version (points forward to Remaster)
+// We prefer the Remaster version. If neither field is set, we keep the newer
+// one by release_date.
+//
+// Pass an array of entries; returns { entries, droppedCount }. The label is
+// purely cosmetic for the startup log.
+function dedupRemasterOverlay(entries, label = 'entries') {
+  if (!Array.isArray(entries)) return { entries, droppedCount: 0 };
+  const groups = new Map();
+  for (const e of entries) {
+    if (!e || typeof e.name !== 'string' || !e.name.length) continue;
+    const key = e.name.toLowerCase();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e);
+  }
+  const out = [];
+  let droppedCount = 0;
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      out.push(group[0]);
+      continue;
+    }
+    let winner = group.find(e => Array.isArray(e.legacy_id) && e.legacy_id.length > 0);
+    if (!winner) winner = group.find(e => !(Array.isArray(e.remaster_id) && e.remaster_id.length > 0));
+    if (!winner) winner = group.slice().sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''))[0];
+    out.push(winner);
+    droppedCount += group.length - 1;
+  }
+  if (droppedCount > 0) {
+    console.log(`[startup] Deduped ${droppedCount} duplicate ${label} (Remaster overlay).`);
+  }
+  return { entries: out, droppedCount };
+}
+
+// Object-shaped catalog version: dict keyed by slug, values are entries with
+// .name. Dedupes across keys when two slugs point at entries with the same
+// name (the typical Remaster duplication shape).
+function dedupRemasterOverlayObject(rawObj, label = 'entries') {
+  if (!rawObj || typeof rawObj !== 'object') return rawObj;
+  const out = {};
+  if (rawObj._meta) out._meta = rawObj._meta;
+  const entries = Object.entries(rawObj).filter(([k, v]) => k !== '_meta' && v && typeof v === 'object' && typeof v.name === 'string');
+  const groups = new Map();
+  for (const [slug, val] of entries) {
+    const nameKey = val.name.toLowerCase();
+    if (!groups.has(nameKey)) groups.set(nameKey, []);
+    groups.get(nameKey).push({ slug, val });
+  }
+  let droppedCount = 0;
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      out[group[0].slug] = group[0].val;
+      continue;
+    }
+    let winner = group.find(g => Array.isArray(g.val.legacy_id) && g.val.legacy_id.length > 0);
+    if (!winner) winner = group.find(g => !(Array.isArray(g.val.remaster_id) && g.val.remaster_id.length > 0));
+    if (!winner) winner = group.slice().sort((a, b) => (b.val.release_date || '').localeCompare(a.val.release_date || ''))[0];
+    out[winner.slug] = winner.val;
+    droppedCount += group.length - 1;
+  }
+  if (droppedCount > 0) {
+    console.log(`[startup] Deduped ${droppedCount} duplicate ${label} (Remaster overlay).`);
+  }
+  return out;
+}
+
 let spellDatabase = loadGamedata('spells.json', {
   default: [],
   label: 'spells from database',
+  transform: raw => {
+    const list = Array.isArray(raw) ? raw : (raw.spells ?? []);
+    return dedupRemasterOverlay(list, 'spells').entries;
+  },
   count: arr => arr.length,
 });
 
 let ancestryDatabase = loadGamedata('ancestries.json', {
   default: {},
   label: 'ancestries from database',
-  count: obj => Object.keys(obj).length,
+  transform: raw => dedupRemasterOverlayObject(raw, 'ancestries'),
+  count: obj => Object.keys(obj).filter(k => k !== '_meta').length,
 });
 
 // ── Heritage index ─────────────────────────────────────────────────────────
@@ -154,15 +230,16 @@ const heritageDatabase = (() => {
 let archetypeDatabase = loadGamedata('archetypes.json', {
   default: {},
   label: 'archetypes from database',
-  count: obj => Object.keys(obj).length,
+  transform: raw => dedupRemasterOverlayObject(raw, 'archetypes'),
+  count: obj => Object.keys(obj).filter(k => k !== '_meta').length,
 });
 
 // File shape: { _meta: {...}, backgrounds: { key: {...} } }
 let backgroundDatabase = loadGamedata('background.json', {
   default: {},
   label: 'backgrounds from database',
-  transform: raw => raw.backgrounds ?? raw,
-  count: obj => Object.keys(obj).length,
+  transform: raw => dedupRemasterOverlayObject(raw.backgrounds ?? raw, 'backgrounds'),
+  count: obj => Object.keys(obj).filter(k => k !== '_meta').length,
 });
 
 // File shape: { metadata: {...}, feats: [ {...} ] }
@@ -172,7 +249,8 @@ let featDatabase = loadGamedata('feats.json', {
   label: 'feats from database',
   transform: raw => {
     const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
-    return rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+    const filtered = rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+    return dedupRemasterOverlay(filtered, 'feats').entries;
   },
   count: arr => arr.length,
 });
@@ -193,8 +271,8 @@ let rulesDatabase = loadGamedata('rules.json', {
 let bestiaryDatabase = loadGamedata('bestiary.json', {
   default: {},
   label: 'creatures from bestiary',
-  transform: raw => raw.creatures ?? raw,
-  count: obj => Object.keys(obj).length,
+  transform: raw => dedupRemasterOverlayObject(raw.creatures ?? raw, 'creatures'),
+  count: obj => Object.keys(obj).filter(k => k !== '_meta').length,
 });
 
 // ── Bestiary mutation helpers ─────────────────────────────────────────────────
@@ -300,7 +378,8 @@ let itemDatabase = loadGamedata('items.json', {
   label: 'items from database',
   transform: raw => {
     const itemsObj = raw.items ?? raw;
-    return Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+    const list = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+    return dedupRemasterOverlay(list, 'items').entries;
   },
   count: arr => arr.length,
 });
@@ -365,7 +444,8 @@ let deityDatabase = loadGamedata('deities.json', {
   label: 'deities from database',
   transform: raw => {
     const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
-    return rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+    const filtered = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+    return dedupRemasterOverlay(filtered, 'deities').entries;
   },
   count: arr => arr.length,
 });
@@ -381,8 +461,8 @@ let skillDatabase = loadGamedata('skills.json', {
 let classDatabase = loadGamedata('classes.json', {
   default: {},
   label: 'classes from database',
-  transform: raw => raw.classes ?? raw,
-  count: obj => Object.keys(obj).length,
+  transform: raw => dedupRemasterOverlayObject(raw.classes ?? raw, 'classes'),
+  count: obj => Object.keys(obj).filter(k => k !== '_meta').length,
 });
 
 // File shape: either { _meta, companions: { slug: {...} } } (keyed object),
