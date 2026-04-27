@@ -8629,6 +8629,39 @@ client.on('interactionCreate', async (interaction) => {
     const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
     const activeKey = userChars._activeChar ?? null;
 
+    // ── DOWNLOAD FILE OPTION ──
+    // /diagnose download:true returns the full characters.json as an attachment
+    // so the operator can inspect what's actually on Railway's volume.
+    // Bot-owner only — characters.json contains everyone's data and shouldn't
+    // be downloadable by random users.
+    if (interaction.options.getBoolean('download') === true) {
+      if (!isBotOwner(userId)) {
+        return interaction.reply({
+          content: '🔒 Only the bot owner can download the full characters.json (it contains every player\'s data). Set BOT_OWNER_ID in your .env to your Discord user ID first.',
+          ephemeral: true,
+        });
+      }
+      try {
+        const filePath = dataPath('characters.json');
+        const stat = fs.statSync(filePath);
+        if (stat.size > 24 * 1024 * 1024) {
+          return interaction.reply({
+            content: `❌ File is too big to attach (${(stat.size / (1024*1024)).toFixed(1)} MB). Discord caps attachments at 25 MB.`,
+            ephemeral: true,
+          });
+        }
+        const content = fs.readFileSync(filePath, 'utf8');
+        const buf = Buffer.from(content, 'utf8');
+        return interaction.reply({
+          content: `📦 Full \`characters.json\` from \`${filePath}\` (${stat.size} bytes, modified ${stat.mtime.toISOString()}).`,
+          files: [new AttachmentBuilder(buf, { name: 'characters-snapshot.json' })],
+          ephemeral: true,
+        });
+      } catch (err) {
+        return interaction.reply({ content: `❌ Couldn't read characters.json: ${err.message}`, ephemeral: true });
+      }
+    }
+
     // ── DEEP STORAGE DIAGNOSTICS ──
     // Show exactly which file is being read so we can detect cases where
     // /sheet and /diagnose end up hitting DIFFERENT files (which is what's
