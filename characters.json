@@ -1,0 +1,3368 @@
+{
+  "903006245865259048": {
+    "aurelius": {
+      "name": "Aurelius",
+      "data": {
+        "name": "Aurelius",
+        "class": "Wizard (Runelord)",
+        "dualClass": null,
+        "level": 2,
+        "xp": 0,
+        "ancestry": "Human",
+        "heritage": "Nephilim",
+        "background": "Royalty",
+        "alignment": "N",
+        "gender": "Not set",
+        "age": "Not set",
+        "deity": "Not set",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "int",
+        "languages": [
+          "None selected"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 8,
+          "dex": 16,
+          "con": 12,
+          "int": 18,
+          "wis": 14,
+          "cha": 10,
+          "breakdown": {
+            "ancestryFree": [],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [],
+            "classBoosts": [],
+            "mapLevelledBoosts": {}
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 6,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 2,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 0,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 2,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 2,
+          "arcana": 2,
+          "athletics": 0,
+          "crafting": 2,
+          "deception": 0,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 0,
+          "nature": 0,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 0,
+          "society": 2,
+          "stealth": 2,
+          "survival": 0,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Courtly Graces",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Magical Shorthand",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Nephilim",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Natural Ambition",
+            null,
+            "Ancestry Feat",
+            1,
+            "Human Feat 1",
+            "parentChoice",
+            null
+          ],
+          [
+            "Spellbook Prodigy",
+            null,
+            "Class Feat",
+            1,
+            "Natural Ambition Class FeatHuman Feat 1",
+            "childChoice",
+            "Human Feat 1"
+          ],
+          [
+            "Natural Ambition",
+            null,
+            "Ancestry Feat",
+            1,
+            "Ancestry Paragon 1",
+            "parentChoice",
+            null
+          ],
+          [
+            "Reach Spell",
+            null,
+            "Class Feat",
+            1,
+            "Natural Ambition Class FeatAncestry Paragon 1",
+            "childChoice",
+            "Ancestry Paragon 1"
+          ],
+          [
+            "Recognize Spell",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Cantrip Expansion",
+            null,
+            "Class Feat",
+            2,
+            "Wizard Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Runelord Dedication",
+            null,
+            "Archetype Feat",
+            2,
+            "Free Archetype 2",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Arcane Bond",
+          "Drain Bonded Item",
+          "Spellbook",
+          "Wizard Spellcasting",
+          "Low-Light Vision",
+          "Wrath",
+          "Nephilim"
+        ],
+        "lores": [
+          [
+            "Undead",
+            2
+          ]
+        ],
+        "equipmentContainers": {},
+        "equipment": [
+          [
+            "Alchemist's Toolkit",
+            1,
+            "Invested"
+          ],
+          [
+            "Clothing (Explorer's)",
+            1,
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [
+            "Dueling Spear"
+          ],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Dueling Spear",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d8",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Dueling Spear",
+            "runes": [],
+            "damageType": "P",
+            "attack": 7,
+            "damageBonus": -1,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 15,
+          "pp": 0
+        },
+        "armor": [],
+        "spellCasters": [
+          {
+            "name": "Wizard",
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared",
+            "ability": "int",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              8,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Gouging Claw",
+                  "Light",
+                  "Phase Bolt",
+                  "Prestidigitation",
+                  "Read Aura",
+                  "Root Reading",
+                  "Slashing Gust",
+                  "Torturous Trauma",
+                  "Electric Arc",
+                  "Detect Magic",
+                  "Message"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Charm",
+                  "Gravitational Pull",
+                  "Gentle Landing",
+                  "Scorching Blast",
+                  "Sure Strike",
+                  "Force Barrage",
+                  "Summon Undead",
+                  "Thunderstrike",
+                  "Mystic Armor"
+                ]
+              }
+            ],
+            "prepared": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Electric Arc",
+                  "Gouging Claw",
+                  "Light",
+                  "Slashing Gust",
+                  "Gouging Claw",
+                  "Read Aura",
+                  "Root Reading",
+                  "Detect Magic"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Force Barrage",
+                  "Scorching Blast",
+                  "Thunderstrike",
+                  "Mystic Armor"
+                ]
+              }
+            ],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 1,
+        "focus": {
+          "arcane": {
+            "int": {
+              "abilityBonus": 4,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Vengeful Glare"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 4,
+          "acAbilityBonus": 3,
+          "acItemBonus": 0,
+          "acTotal": 17,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": "https://media.discordapp.net/attachments/1465073077137444927/1481712261600116806/image.png?ex=69ea5d14&is=69e90b94&hm=9f21f1038d3587e0643639978e742e68f3c2295b6ff7f33c906ae644835e798e&=&format=webp&quality=lossless",
+      "senses": [
+        "Low-light vision"
+      ],
+      "saved": "2026-04-23T03:04:10.699Z",
+      "languages": [
+        "Taldane (Common)",
+        "Draconic",
+        "Shoanti",
+        "Varisian",
+        "Thassilonian",
+        "Jotun",
+        "Elven"
+      ],
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {
+          "Wizard": [
+            {
+              "rank": 1,
+              "spell": "Scorching Blast",
+              "slot_index": 0,
+              "prepared_at": "2026-04-23T16:19:00.835Z"
+            },
+            {
+              "rank": 1,
+              "spell": "Force Barrage",
+              "slot_index": 1,
+              "prepared_at": "2026-04-23T16:19:09.803Z"
+            },
+            {
+              "rank": 1,
+              "spell": "Tunderstrike",
+              "slot_index": 2,
+              "prepared_at": "2026-04-23T16:19:21.844Z"
+            },
+            {
+              "rank": 1,
+              "spell": "Mystic Armor",
+              "slot_index": 3,
+              "prepared_at": "2026-04-23T16:19:30.719Z"
+            }
+          ]
+        },
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {
+            "Wizard": {
+              "1": 1
+            }
+          },
+          "last_rest_at": null
+        }
+      }
+    },
+    "mys": {
+      "name": "Mys",
+      "data": {
+        "name": "Mys",
+        "class": "Magus",
+        "dualClass": null,
+        "level": 4,
+        "xp": 0,
+        "ancestry": "Human",
+        "heritage": "Nephilim",
+        "background": "Hired Killer",
+        "alignment": "N",
+        "gender": "Not set",
+        "age": "Not set",
+        "deity": "Not set",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "str",
+        "languages": [
+          "None selected"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 18,
+          "dex": 16,
+          "con": 12,
+          "int": 10,
+          "wis": 12,
+          "cha": 10,
+          "breakdown": {
+            "ancestryFree": [
+              "Str",
+              "Dex"
+            ],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Str",
+              "Dex"
+            ],
+            "classBoosts": [
+              "Str"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Str",
+                "Dex",
+                "Wis",
+                "Con"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 8,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 10
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 2,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 2,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 0,
+          "arcana": 2,
+          "athletics": 4,
+          "crafting": 0,
+          "deception": 0,
+          "diplomacy": 0,
+          "intimidation": 0,
+          "medicine": 0,
+          "nature": 0,
+          "occultism": 0,
+          "performance": 0,
+          "religion": 0,
+          "society": 0,
+          "stealth": 2,
+          "survival": 0,
+          "thievery": 2,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Cat Fall",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Terrain Stalker",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Nephilim",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Nimble Hooves",
+            null,
+            "Ancestry Feat",
+            1,
+            "Human Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Titan Wrestler",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Force Fang",
+            null,
+            "Class Feat",
+            2,
+            "Magus Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Fleet",
+            null,
+            "General Feat",
+            3,
+            "General Feat 3",
+            "standardChoice",
+            null
+          ],
+          [
+            "Pickpocket",
+            null,
+            "Skill Feat",
+            4,
+            "Skill Feat 4",
+            "standardChoice",
+            null
+          ],
+          [
+            "Distant Waterbird's Poise",
+            null,
+            "Class Feat",
+            4,
+            "Magus Feat 4",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Spellstrike",
+          "Spellstrike Specifics",
+          "Arcane Cascade",
+          "Aloof Firmament",
+          "Conflux Spells",
+          "Spellbook",
+          "Low-Light Vision",
+          "Nephilim"
+        ],
+        "lores": [
+          [
+            "Underworld",
+            2
+          ]
+        ],
+        "equipmentContainers": {
+          "aacebfc5-a83c-4599-9e6d-cb7e0cda599f": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "aacebfc5-a83c-4599-9e6d-cb7e0cda599f",
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Katana",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d6",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Katana",
+            "runes": [],
+            "damageType": "S",
+            "attack": 10,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 5,
+          "gp": 193,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Studded Leather Armor",
+            "qty": 1,
+            "prof": "light",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Studded Leather",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          },
+          {
+            "name": "Studded Leather Armor",
+            "qty": 1,
+            "prof": "unarmored",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Unarmored",
+            "worn": false,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [
+          {
+            "name": "Magus",
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared",
+            "ability": "int",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              5,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Eat Fire",
+                  "Gouging Claw",
+                  "Light",
+                  "Message",
+                  "Shield",
+                  "Root Reading"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Conductive Weapon",
+                  "Fleet Step",
+                  "Force Barrage",
+                  "Runic Weapon",
+                  "Sure Strike",
+                  "Jump"
+                ]
+              },
+              {
+                "spellLevel": 2,
+                "list": [
+                  "False Vitality",
+                  "Invisibility",
+                  "Umbral Extraction",
+                  "Umbral Mindtheft"
+                ]
+              }
+            ],
+            "prepared": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Eat Fire",
+                  "Gouging Claw",
+                  "Light",
+                  "Message",
+                  "Shield"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Runic Weapon",
+                  "Runic Weapon"
+                ]
+              },
+              {
+                "spellLevel": 2,
+                "list": [
+                  "Umbral Mindtheft",
+                  "Umbral Mindtheft"
+                ]
+              }
+            ],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 2,
+        "focus": {
+          "arcane": {
+            "int": {
+              "abilityBonus": 0,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Sky Laughs at Waves",
+                "Force Fang"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 6,
+          "acAbilityBonus": 3,
+          "acItemBonus": 2,
+          "acTotal": 21,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": "https://media.discordapp.net/attachments/1251682804064850031/1375867081538670693/a3c40b2f0507f9086f35c258a7ed8057.jpg?ex=69eee052&is=69ed8ed2&hm=2b0f3dd47df99492a189f04d0453fa271ba4b09386f06edf1e80c4b843a7b035&=&format=webp",
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-26T04:12:49.115Z"
+    }
+  },
+  "348925636796088332": {
+    "hylia": {
+      "name": "Hylia",
+      "data": {
+        "name": "Hylia",
+        "class": "Oracle",
+        "dualClass": null,
+        "level": 2,
+        "xp": 30,
+        "ancestry": "Elf",
+        "heritage": "Seer Elf",
+        "background": "Occult Librarian",
+        "alignment": "N",
+        "gender": "Female",
+        "age": "300",
+        "deity": "Pharasma",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "cha",
+        "languages": [
+          "Common",
+          "Elven",
+          "Fey",
+          "Shadowtongue"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 12,
+          "int": 12,
+          "wis": 14,
+          "cha": 16,
+          "breakdown": {
+            "ancestryFree": [
+              "Con"
+            ],
+            "ancestryBoosts": [
+              "Dex",
+              "Int"
+            ],
+            "ancestryFlaws": [
+              "Con"
+            ],
+            "backgroundBoosts": [
+              "Wis",
+              "Cha"
+            ],
+            "classBoosts": [
+              "Cha"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Con",
+                "Cha",
+                "Dex",
+                "Wis"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 6,
+          "classhp": 8,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 30,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 2,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 2,
+          "castingDivine": 2,
+          "castingOccult": 0,
+          "castingPrimal": 2,
+          "acrobatics": 2,
+          "arcana": 2,
+          "athletics": 0,
+          "crafting": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "intimidation": 0,
+          "medicine": 2,
+          "nature": 2,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 2,
+          "society": 0,
+          "stealth": 0,
+          "survival": 0,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {
+          "Thievery": {
+            "Item Bonus": 1
+          }
+        },
+        "feats": [
+          [
+            "Trance of Celerity",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Schooled in Secrets",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Seer Elf",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Wildborn Magic",
+            null,
+            "Ancestry Feat",
+            1,
+            "Elf Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Arcane Sense",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Widen Spell",
+            null,
+            "Class Feat",
+            2,
+            "Oracle Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Beastmaster Dedication",
+            null,
+            "Archetype Feat",
+            2,
+            "Free Archetype 2",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Time Mystery",
+          "Curse of Turbulent Moments",
+          "Revelation Spells",
+          "Oracular Curse",
+          "Low-Light Vision",
+          "Call Companion",
+          "Seer Elf"
+        ],
+        "lores": [
+          [
+            "Academia",
+            2
+          ]
+        ],
+        "equipmentContainers": {
+          "6b64452a-839e-4a51-8c74-7f4c1243a038": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "6b64452a-839e-4a51-8c74-7f4c1243a038",
+            "Invested"
+          ],
+          [
+            "Healing Potion (Minor)",
+            1,
+            "Invested"
+          ],
+          [
+            "Charlatan's Gloves",
+            1,
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Hand Crossbow",
+            "qty": 1,
+            "prof": "simple",
+            "die": "d6",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Hand Crossbow",
+            "runes": [],
+            "damageType": "P",
+            "attack": 6,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Dagger",
+            "qty": 1,
+            "prof": "simple",
+            "die": "d4",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Dagger",
+            "runes": [],
+            "damageType": "P",
+            "attack": 6,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 3,
+          "gp": 3,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Studded Leather Armor",
+            "qty": 1,
+            "prof": "light",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Studded Leather",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [
+          {
+            "name": "Oracle",
+            "magicTradition": "divine",
+            "spellcastingType": "spontaneous",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              5,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Forbidding Ward",
+                  "Divine Lance",
+                  "Shield",
+                  "Guidance",
+                  "Protect Companion",
+                  "Time Sense"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Bane",
+                  "Ill Omen",
+                  "Heal",
+                  "Fated Healing",
+                  "Déjà Vu"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          },
+          {
+            "name": "Seer Elf",
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": true,
+            "perDay": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Detect Magic"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          },
+          {
+            "name": "Wildborn Magic",
+            "magicTradition": "primal",
+            "spellcastingType": "prepared",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": true,
+            "perDay": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Root Reading"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          },
+          {
+            "name": "Caster Arcane Sense",
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": true,
+            "perDay": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Detect Magic"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 1,
+        "focus": {
+          "divine": {
+            "cha": {
+              "abilityBonus": 3,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Temporal Distortion"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 4,
+          "acAbilityBonus": 2,
+          "acItemBonus": 2,
+          "acTotal": 18,
+          "shieldBonus": null
+        },
+        "pets": [
+          {
+            "type": "Animal Companion",
+            "name": "Young Wyvern",
+            "equipment": [],
+            "animal": "Wyvern",
+            "mature": false,
+            "incredible": false,
+            "incredibleType": "Nimble",
+            "specializations": [],
+            "armor": "Unarmored"
+          }
+        ],
+        "familiars": []
+      },
+      "art": "https://media.discordapp.net/attachments/903452615663304817/1496712402815684638/02053d1d-e5f7-4d3a-966a-dfb1af6f7d0c.png?ex=69ef7ecc&is=69ee2d4c&hm=a0228e1ddda15fea33988b51fda6aa8c7f9a74ee2636ba13dcf2723311c7a305&=&format=webp&quality=lossless&width=712&height=1069",
+      "senses": null,
+      "edits": {
+        "background": "Occult Librarian",
+        "deity": "Pharasma",
+        "languages": [
+          "Common",
+          "Elven",
+          "Fey",
+          "Shadowtongue"
+        ],
+        "senses": [
+          "Low-light Vision"
+        ]
+      },
+      "saved": "2026-04-27T03:23:31.489Z",
+      "companions": {
+        "abyss": {
+          "displayName": "Abyss",
+          "baseType": "wyvern",
+          "form": "young",
+          "notes": "",
+          "customStats": null,
+          "currentHp": 24,
+          "overrides": {
+            "abilities": {
+              "str": 2
+            },
+            "saves": {
+              "fort": 6,
+              "ref": 6,
+              "will": 5
+            },
+            "ac": 16,
+            "hp": 24,
+            "perception": 5,
+            "attackBonus": 6,
+            "speed": "20f feet, fly 40 feet",
+            "size": "Large"
+          },
+          "customAttacks": [
+            {
+              "name": "Stinger plus poison",
+              "bonus": 6,
+              "damage": "1d6+2",
+              "damageType": "Piercing",
+              "traits": [
+                "agile",
+                "reach",
+                "poison"
+              ]
+            }
+          ],
+          "customAbilities": [
+            {
+              "name": "Special",
+              "description": "The wyvern's stinger attack deals additional poison damage equl to 1 + 1 per weapon damage die.",
+              "actionCost": null
+            },
+            {
+              "name": "Unsteady Mount",
+              "description": "The wyvern has the mount ability but is only strong enough to fly in short bursts while carrying a rider; if it doesn't end its turn on solid ground, it descends 30 feet without taking falling damage. At 14th level, a wyvern replaces this with the mount ability, removing this restriction.",
+              "actionCost": null
+            },
+            {
+              "name": "Support Benefit",
+              "description": "Your wyvern whips its stinger at your foes. Until the start of your next turn, your Strikes that damage a creature in your wyvern's reach also deal 1d6 persistent poison damage. If your wyvern is nimble or savage, the persistent damage increases to 2d6.",
+              "actionCost": null
+            },
+            {
+              "name": "Trained Skill Set",
+              "description": "Acrobatics +6, Athletics +6, Stealth +6.",
+              "actionCost": null
+            },
+            {
+              "name": "Senses",
+              "description": "darkvision, scent (impercise, 30 feet)",
+              "actionCost": null
+            }
+          ],
+          "art": "https://media.discordapp.net/attachments/1465080216279056586/1496354706845339658/image.png?ex=69ef832b&is=69ee31ab&hm=dc264687f0f58de6211e66847ea029d6598d967644fb2018ed11f8a819bd0243&=&format=webp&quality=lossless&width=667&height=444"
+        }
+      },
+      "activeCompanion": "abyss"
+    },
+    "isolde": {
+      "name": "Isolde",
+      "data": {
+        "name": "Isolde",
+        "class": "Swashbuckler",
+        "dualClass": null,
+        "level": 1,
+        "xp": 0,
+        "ancestry": "Automaton",
+        "heritage": "Dromaar",
+        "background": "War Orphan",
+        "alignment": "N",
+        "gender": "Not set",
+        "age": "Not set",
+        "deity": "Not set",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "dex",
+        "languages": [
+          "None selected"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 12,
+          "dex": 16,
+          "con": 14,
+          "int": 14,
+          "wis": 12,
+          "cha": 10,
+          "breakdown": {
+            "ancestryFree": [
+              "Int"
+            ],
+            "ancestryBoosts": [
+              "Str"
+            ],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Dex",
+              "Con"
+            ],
+            "classBoosts": [
+              "Dex"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Con",
+                "Int",
+                "Wis"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 10,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 4,
+          "fortitude": 2,
+          "reflex": 4,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 2,
+          "arcana": 2,
+          "athletics": 0,
+          "crafting": 2,
+          "deception": 0,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 0,
+          "nature": 0,
+          "occultism": 0,
+          "performance": 2,
+          "religion": 0,
+          "society": 2,
+          "stealth": 2,
+          "survival": 2,
+          "thievery": 2,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Dirty Trick",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Fascinating Performance",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Dromaar",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Extravagant Parry",
+            null,
+            "Class Feat",
+            1,
+            "Swashbuckler Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Reinforced Chassis",
+            null,
+            "Ancestry Feat",
+            1,
+            "Automaton Feat 1",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Panache",
+          "Precise Strike",
+          "Stylish Combatant",
+          "Battledancer Style",
+          "Confident Finisher",
+          "Low-Light Vision",
+          "Automaton Core",
+          "Constructed Body",
+          "Medium",
+          "Low-Light Vision",
+          "Dromaar"
+        ],
+        "lores": [
+          [
+            "Underworld",
+            2
+          ]
+        ],
+        "equipmentContainers": {},
+        "equipment": [],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Rapier",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d6",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Rapier",
+            "runes": [],
+            "damageType": "P",
+            "attack": 6,
+            "damageBonus": 1,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Butterfly Sword",
+            "qty": 1,
+            "prof": "advanced",
+            "die": "d4",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Butterfly Sword",
+            "runes": [],
+            "damageType": "S",
+            "attack": 3,
+            "damageBonus": 1,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 11,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Unarmored",
+            "qty": 1,
+            "prof": "unarmored",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Unarmored",
+            "worn": false,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [],
+        "focusPoints": 0,
+        "focus": {},
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 3,
+          "acAbilityBonus": 3,
+          "acItemBonus": 0,
+          "acTotal": 16,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": "https://media.discordapp.net/attachments/903452615663304817/1498346037956448256/487a8d31c26e3ff5782b15b212c33028.png?ex=69f0d2fd&is=69ef817d&hm=b6bb8d350288f3fb97cf286ad4097a1d18cb0a02a0055e9c882531218ab77552&=&format=webp&quality=lossless&width=721&height=1069",
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-27T15:22:14.067Z"
+    },
+    "_activeChar": "hylia",
+    "petrova-ashcroft": {
+      "name": "Petrova Ashcroft",
+      "data": {
+        "name": "Petrova Ashcroft",
+        "class": "Swashbuckler",
+        "dualClass": null,
+        "level": 1,
+        "xp": 0,
+        "ancestry": "Human",
+        "heritage": "Draconic Scion",
+        "background": "Dragon Scholar",
+        "alignment": "N",
+        "gender": "Female",
+        "age": "21",
+        "deity": "Dunne",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "dex",
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "rituals": [],
+        "resistances": [
+          "fire 1"
+        ],
+        "inventorMods": [],
+        "abilities": {
+          "str": 14,
+          "dex": 16,
+          "con": 10,
+          "int": 12,
+          "wis": 12,
+          "cha": 14,
+          "breakdown": {
+            "ancestryFree": [
+              "Str",
+              "Dex"
+            ],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Cha",
+              "Dex"
+            ],
+            "classBoosts": [
+              "Dex"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Int",
+                "Wis",
+                "Cha",
+                "Str"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 10,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 4,
+          "fortitude": 2,
+          "reflex": 4,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 2,
+          "arcana": 2,
+          "athletics": 0,
+          "crafting": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 2,
+          "nature": 2,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 0,
+          "society": 0,
+          "stealth": 0,
+          "survival": 2,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Intimidating Glare",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Draconic Scion",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Flashy Dodge",
+            null,
+            "Class Feat",
+            1,
+            "Swashbuckler Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Draconic Resistance",
+            null,
+            "Ancestry Feat",
+            1,
+            "Human Feat 1",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Panache",
+          "Precise Strike",
+          "Stylish Combatant",
+          "Fencer Style",
+          "Confident Finisher",
+          "Rewrite Fate",
+          "Caretaker's Calling",
+          "Low-Light Vision",
+          "Red Dragon",
+          "fire",
+          "Draconic Scion"
+        ],
+        "lores": [
+          [
+            "Dragon",
+            2
+          ]
+        ],
+        "equipmentContainers": {},
+        "equipment": [],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [],
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 15,
+          "pp": 0
+        },
+        "armor": [],
+        "spellCasters": [],
+        "focusPoints": 0,
+        "focus": {},
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 3,
+          "acAbilityBonus": 3,
+          "acItemBonus": 0,
+          "acTotal": 16,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": null,
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-27T16:05:35.361Z"
+    }
+  },
+  "496522967283531778": {
+    "thorne": {
+      "name": "Thorne",
+      "data": {
+        "name": "Thorne",
+        "class": "Witch",
+        "dualClass": null,
+        "level": 4,
+        "ancestry": "",
+        "heritage": "",
+        "background": "",
+        "alignment": "N",
+        "gender": "",
+        "age": "",
+        "deity": "",
+        "size": 0,
+        "keyability": "",
+        "languages": [
+          "Diabolic",
+          "Draconic",
+          "Elven",
+          "Goblin Skils Acrobatics +8",
+          "Arcana +10",
+          "Athletics +0",
+          "Crafting +10",
+          "Intimidation +6",
+          "Lore: One City +10",
+          "Lore: Shadow Plane +10",
+          "Medicine +7",
+          "Occultism +12",
+          "Religion +7",
+          "Society +10",
+          "Stealth +8",
+          "Survival +7",
+          "Thievery +8"
+        ],
+        "attributes": {
+          "ancestryhp": 0,
+          "classhp": 0,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 14,
+          "int": 18,
+          "wis": 12,
+          "cha": 10,
+          "breakdown": {
+            "ancestryFree": [],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [],
+            "classBoosts": [],
+            "mapLevelledBoosts": {}
+          }
+        },
+        "proficiencies": {
+          "classDC": 0,
+          "perception": 7,
+          "fortitude": 0,
+          "reflex": 0,
+          "will": 0,
+          "heavy": 0,
+          "medium": 0,
+          "light": 0,
+          "unarmored": 0,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 0,
+          "unarmed": 0,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0
+        },
+        "acTotal": {
+          "acTotal": 18,
+          "acProfBonus": 0,
+          "acAbilityBonus": 0,
+          "acItemBonus": 0,
+          "acValue": 18
+        },
+        "feats": [
+          [
+            "Eyes of the City",
+            null,
+            null,
+            null
+          ],
+          [
+            "Fetchling Lore",
+            null,
+            null,
+            null
+          ],
+          [
+            "Pickpocket",
+            null,
+            null,
+            null
+          ],
+          [
+            "Quick Squeze",
+            null,
+            null,
+            null
+          ],
+          [
+            "Root Magic",
+            null,
+            null,
+            null
+          ],
+          [
+            "Skilful Treses",
+            null,
+            null,
+            null
+          ],
+          [
+            "Tato Artist",
+            null,
+            null,
+            null
+          ],
+          [
+            "Wisp Fetchling",
+            null,
+            null,
+            null
+          ],
+          [
+            "Witch's Armaments",
+            null,
+            null,
+            null
+          ]
+        ],
+        "specificProficiencies": {},
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 0,
+          "pp": 0
+        },
+        "armor": [],
+        "weapons": [],
+        "equipment": [
+          [
+            "Unarmored",
+            1
+          ]
+        ],
+        "specials": [
+          "Darkvision (Fetchling)",
+          "Familiar",
+          "Familiar of Stalking Night",
+          "Hex Spells (Phase Familiar)",
+          "Patron (Starles Shadow)",
+          "Witch Spellcasting",
+          "Witch's Armaments (Living Hair) - 1 of 1 -"
+        ],
+        "lores": [],
+        "formula": [],
+        "pets": [],
+        "spellCasters": [],
+        "focus": {
+          "focusPoints": 1,
+          "spells": [
+            "Phase Familiar Shroud of Night"
+          ]
+        },
+        "senses": "Darkvision",
+        "_source": "pdf",
+        "_pdfWarnings": [
+          "Couldn't parse size/ancestry from: \"Smal Fetchling Wisp Fetchling Humanoid\""
+        ],
+        "_displayMods": {
+          "str": 0,
+          "dex": 2,
+          "con": 2,
+          "int": 4,
+          "wis": 1,
+          "cha": 0
+        },
+        "_skillTotals": {},
+        "_hpMaxOverride": 0,
+        "_resistances": [],
+        "_weaknesses": [],
+        "_immunities": [],
+        "_subclass": null
+      },
+      "art": null,
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-24T18:31:40.530Z"
+    }
+  },
+  "352922571395563532": {
+    "kazuo": {
+      "name": "Kazuo",
+      "data": {
+        "name": "Kazuo",
+        "class": "Druid",
+        "dualClass": null,
+        "level": 4,
+        "xp": 0,
+        "ancestry": "Kitsune",
+        "heritage": "Frozen Wind Kitsune",
+        "background": "Field Medic",
+        "alignment": "N",
+        "gender": "Male",
+        "age": "37",
+        "deity": "None",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "wis",
+        "languages": [
+          "Common"
+        ],
+        "rituals": [],
+        "resistances": [
+          "cold 2"
+        ],
+        "inventorMods": [],
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 14,
+          "int": 10,
+          "wis": 16,
+          "cha": 14,
+          "breakdown": {
+            "ancestryFree": [
+              "Dex"
+            ],
+            "ancestryBoosts": [
+              "Cha"
+            ],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Con",
+              "Wis"
+            ],
+            "classBoosts": [
+              "Wis"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Con",
+                "Wis",
+                "Dex",
+                "Cha"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 8,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 4,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 2,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 2,
+          "acrobatics": 2,
+          "arcana": 0,
+          "athletics": 0,
+          "crafting": 0,
+          "deception": 0,
+          "diplomacy": 0,
+          "intimidation": 0,
+          "medicine": 4,
+          "nature": 2,
+          "occultism": 0,
+          "performance": 2,
+          "religion": 0,
+          "society": 0,
+          "stealth": 2,
+          "survival": 0,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Storm Born",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Shield Block",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Battle Medicine",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Animal Empathy",
+            null,
+            "Class Feat",
+            1,
+            "Druid voice of nature",
+            "standardChoice",
+            null
+          ],
+          [
+            "Frozen Wind Kitsune",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Foxfire",
+            null,
+            "Ancestry Feat",
+            1,
+            "Kitsune Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Verdant Weapon",
+            null,
+            "Class Feat",
+            2,
+            "Druid Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Cat Fall",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Pet",
+            null,
+            "General Feat",
+            3,
+            "General Feat 3",
+            "standardChoice",
+            null
+          ],
+          [
+            "Medical Researcher",
+            null,
+            "Skill Feat",
+            4,
+            "Skill Feat 4",
+            "standardChoice",
+            null
+          ],
+          [
+            "Snowdrift Spell",
+            null,
+            "Class Feat",
+            4,
+            "Druid Feat 4",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Anathema",
+          "Change Shape (Kitsune)",
+          "Wildsong",
+          "Storm Order",
+          "Low-Light Vision",
+          "Voice of Nature",
+          "Fortitude Expertise",
+          "Perception Expertise",
+          "Frozen Wind Kitsune"
+        ],
+        "lores": [
+          [
+            "Warfare",
+            2
+          ]
+        ],
+        "equipmentContainers": {
+          "aeb82662-cc42-49a9-9279-9115707224c3": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "aeb82662-cc42-49a9-9279-9115707224c3",
+            "Invested"
+          ],
+          [
+            "Healer's Toolkit",
+            1,
+            "Invested"
+          ],
+          [
+            "Healing Potion (Lesser)",
+            2,
+            "Invested"
+          ],
+          [
+            "Primal Symbol",
+            1,
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Special Unarmed Foxfire",
+            "qty": 1,
+            "prof": "unarmed",
+            "die": "d4",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Special Unarmed Foxfire",
+            "runes": [],
+            "damageType": "E or F",
+            "attack": 8,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Staff",
+            "qty": 1,
+            "prof": "simple",
+            "die": "d8",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Staff (2h)",
+            "runes": [],
+            "damageType": "B",
+            "attack": 6,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          },
+          {
+            "name": "Javelin",
+            "qty": 4,
+            "prof": "simple",
+            "die": "d6",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Javelin (x4)",
+            "runes": [],
+            "damageType": "P",
+            "attack": 8,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 195,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Leaf Weave",
+            "qty": 1,
+            "prof": "light",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Leaf Weave",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [
+          {
+            "name": "Druid",
+            "magicTradition": "primal",
+            "spellcastingType": "prepared",
+            "ability": "wis",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              5,
+              3,
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Detect Magic",
+                  "Frostbite",
+                  "Light",
+                  "Glass Shield",
+                  "Slashing Gust"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Thunderstrike",
+                  "Chilling Spray",
+                  "Heal"
+                ]
+              },
+              {
+                "spellLevel": 2,
+                "list": [
+                  "Dispel Magic",
+                  "Enlarge",
+                  "Rime Slick"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 1,
+        "focus": {
+          "primal": {
+            "wis": {
+              "abilityBonus": 3,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Tempest Surge"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 6,
+          "acAbilityBonus": 2,
+          "acItemBonus": 1,
+          "acTotal": 19,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": [
+          {
+            "type": "Familiar",
+            "name": "Familiar",
+            "equipment": [],
+            "specific": null,
+            "abilities": []
+          }
+        ]
+      },
+      "art": "https://cdn.discordapp.com/attachments/516255639878631427/1497759335248429207/Kazuo-Moira-Full_1.png?ex=69eeb094&is=69ed5f14&hm=59807313a325453279d37414f09cf45949f9c056434e4758b8227025b20a585a&",
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-25T18:43:32.586Z",
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {},
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {
+            "Druid": {
+              "2": 1
+            }
+          },
+          "last_rest_at": null
+        }
+      }
+    }
+  },
+  "989722397043204096": {
+    "justice": {
+      "name": "Justice",
+      "data": {
+        "name": "Justice",
+        "class": "Champion",
+        "dualClass": null,
+        "level": 4,
+        "xp": 0,
+        "ancestry": "Human",
+        "heritage": "Nephilim",
+        "background": "Haunted",
+        "alignment": "N",
+        "gender": "Female ",
+        "age": "30",
+        "deity": "Justice Ideal",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "str",
+        "languages": [
+          "Common"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 18,
+          "dex": 12,
+          "con": 12,
+          "int": 10,
+          "wis": 12,
+          "cha": 14,
+          "breakdown": {
+            "ancestryFree": [
+              "Str",
+              "Dex"
+            ],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Cha",
+              "Str"
+            ],
+            "classBoosts": [
+              "Str"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Str",
+                "Con",
+                "Wis",
+                "Cha"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 10,
+          "bonushp": 0,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 5
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 2,
+          "medium": 2,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 2,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 0,
+          "arcana": 0,
+          "athletics": 2,
+          "crafting": 0,
+          "deception": 0,
+          "diplomacy": 2,
+          "intimidation": 0,
+          "medicine": 4,
+          "nature": 0,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 2,
+          "society": 0,
+          "stealth": 0,
+          "survival": 2,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Shield Block",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Deity's Domain",
+            null,
+            "Class Feat",
+            1,
+            "Champion Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Nephilim",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Nimble Hooves",
+            null,
+            "Ancestry Feat",
+            1,
+            "Human Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Battle Medicine",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Oath of the Slayer",
+            null,
+            "Class Feat",
+            2,
+            "Champion Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Fleet",
+            null,
+            "General Feat",
+            3,
+            "General Feat 3",
+            "standardChoice",
+            null
+          ],
+          [
+            "Godless Healing",
+            null,
+            "Skill Feat",
+            4,
+            "Skill Feat 4",
+            "standardChoice",
+            null
+          ],
+          [
+            "Aura of Courage",
+            null,
+            "Class Feat",
+            4,
+            "Champion Feat 4",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Retributive Strike",
+          "Deific Weapon",
+          "Anathema",
+          "Holy Aura",
+          "Champion's Aura",
+          "Lay on Hands",
+          "Domain: Freedom",
+          "Low-Light Vision",
+          "Deity Skill",
+          "Justice Cause",
+          "Blessed Armament",
+          "Nephilim"
+        ],
+        "lores": [],
+        "equipmentContainers": {
+          "fb333d02-3460-40d5-b762-44b35aaa41af": {
+            "containerName": "Backpack",
+            "bagOfHolding": false,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Backpack",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            1,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "fb333d02-3460-40d5-b762-44b35aaa41af",
+            "Invested"
+          ],
+          [
+            "Healer's Toolkit (Expanded)",
+            1,
+            "Invested"
+          ],
+          [
+            "Healing Potion (Lesser)",
+            1,
+            "Invested"
+          ],
+          [
+            "Healing Potion (Minor)",
+            2,
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Guisarme",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d10",
+            "pot": 1,
+            "str": "striking",
+            "mat": null,
+            "display": "+1 Striking Vitalizing Guisarme",
+            "runes": [
+              "Vitalizing"
+            ],
+            "damageType": "S",
+            "attack": 11,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 5,
+          "gp": 8,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Half Plate",
+            "qty": 1,
+            "prof": "heavy",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Half Plate",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [],
+        "focusPoints": 2,
+        "focus": {
+          "divine": {
+            "cha": {
+              "abilityBonus": 2,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [],
+              "focusSpells": [
+                "Lay on Hands",
+                "Unimpeded Stride"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 6,
+          "acAbilityBonus": 1,
+          "acItemBonus": 5,
+          "acTotal": 22,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": "https://i.imgur.com/Gx5miqk.png",
+      "senses": null,
+      "edits": {
+        "background": "Haunted (Possessed)",
+        "deity": "Justice Ideal",
+        "languages": [
+          "Common"
+        ],
+        "senses": [
+          "Darkvision"
+        ],
+        "stats": {
+          "hpMax": 52
+        }
+      },
+      "saved": "2026-04-25T14:44:18.717Z",
+      "wallet": {
+        "pp": 0,
+        "gp": 8,
+        "sp": 5,
+        "cp": 0
+      },
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {},
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {},
+          "last_rest_at": "2026-04-25T14:53:32.347Z"
+        }
+      },
+      "hp": 52,
+      "_hpMaxOverride": 52
+    }
+  },
+  "320266205355048960": {
+    "kasa": {
+      "name": "Kasa",
+      "data": {
+        "name": "Kasa",
+        "class": "Summoner",
+        "dualClass": null,
+        "level": 4,
+        "xp": 0,
+        "ancestry": "Kobold",
+        "heritage": "Dragonscaled Kobold",
+        "background": "Hermit (Occultism)",
+        "alignment": "N",
+        "gender": "Not set",
+        "age": "Not set",
+        "deity": "Not set",
+        "size": 1,
+        "sizeName": "Small",
+        "keyability": "cha",
+        "languages": [
+          "Common",
+          "Draconic",
+          "Goblin",
+          "Sakvroth"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 12,
+          "int": 14,
+          "wis": 10,
+          "cha": 18,
+          "breakdown": {
+            "ancestryFree": [
+              "Int"
+            ],
+            "ancestryBoosts": [
+              "Dex",
+              "Cha"
+            ],
+            "ancestryFlaws": [
+              "Con"
+            ],
+            "backgroundBoosts": [
+              "Con",
+              "Cha"
+            ],
+            "classBoosts": [
+              "Cha"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Int",
+                "Cha",
+                "Con"
+              ]
+            }
+          }
+        },
+        "attributes": {
+          "ancestryhp": 6,
+          "classhp": 10,
+          "bonushp": 4,
+          "bonushpPerLevel": 1,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 4,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 0,
+          "light": 0,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 0,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 2,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 0,
+          "arcana": 2,
+          "athletics": 2,
+          "crafting": 0,
+          "deception": 4,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 0,
+          "nature": 0,
+          "occultism": 2,
+          "performance": 0,
+          "religion": 0,
+          "society": 2,
+          "stealth": 2,
+          "survival": 0,
+          "thievery": 2,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Dubious Knowledge",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Dragonscaled Kobold",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Glider Form",
+            null,
+            "Summoner Evolution Feat",
+            1,
+            "Evolution Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Scamper",
+            null,
+            "Ancestry Feat",
+            1,
+            "Kobold Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Sign Language",
+            null,
+            "Skill Feat",
+            2,
+            "Skill Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Steed Form",
+            null,
+            "Class Feat",
+            2,
+            "Summoner Feat 2",
+            "standardChoice",
+            null
+          ],
+          [
+            "Toughness",
+            null,
+            "General Feat",
+            3,
+            "General Feat 3",
+            "standardChoice",
+            null
+          ],
+          [
+            "Discreet Inquiry",
+            null,
+            "Skill Feat",
+            4,
+            "Skill Feat 4",
+            "standardChoice",
+            null
+          ],
+          [
+            "Lifelink Surge",
+            null,
+            "Class Feat",
+            4,
+            "Summoner Feat 4",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Dragon Eidolon",
+          "Manifest Eidolon",
+          "Act Together",
+          "Share Senses",
+          "Link Spells",
+          "Evolution Feat",
+          "Breath Weapon",
+          "Darkvision",
+          "Barrage",
+          "Shared Vigilance",
+          "Unlimited Signature Spells",
+          "Dragonscaled Kobold"
+        ],
+        "lores": [
+          [
+            "One Terrain",
+            2
+          ]
+        ],
+        "equipmentContainers": {
+          "6737edaf-8689-499d-b9a0-065974b0fe79": {
+            "containerName": "Spacious Pouch I",
+            "bagOfHolding": true,
+            "backpack": true,
+            "augmentations": false
+          }
+        },
+        "equipment": [
+          [
+            "Handwraps of Mighty Blows (+1 Striking)",
+            1,
+            "Invested"
+          ],
+          [
+            "Bedroll",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Chalk",
+            10,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Flint and Steel",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Rope",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Rations",
+            2,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Torch",
+            5,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Waterskin",
+            2,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Soap",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Disguise Kit",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Compass",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Clothing (Ordinary)",
+            1,
+            "Invested"
+          ],
+          [
+            "Ladder",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Signal Whistle",
+            1,
+            "Invested"
+          ],
+          [
+            "Thieves' Toolkit",
+            1,
+            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ]
+        ],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [],
+        "money": {
+          "cp": 4,
+          "sp": 1,
+          "gp": 17,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Unarmored",
+            "qty": 1,
+            "prof": "unarmored",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Explorer's Clothing",
+            "worn": false,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [
+          {
+            "name": "Summoner",
+            "magicTradition": "arcane",
+            "spellcastingType": "spontaneous",
+            "ability": "cha",
+            "proficiency": 2,
+            "focusPoints": 0,
+            "innate": false,
+            "perDay": [
+              5,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "spells": [
+              {
+                "spellLevel": 0,
+                "list": [
+                  "Slashing Gust",
+                  "Detect Magic",
+                  "Light",
+                  "Protect Companion",
+                  "Warp Step"
+                ]
+              },
+              {
+                "spellLevel": 1,
+                "list": [
+                  "Mystic Armor",
+                  "Fear",
+                  "Endure"
+                ]
+              },
+              {
+                "spellLevel": 2,
+                "list": [
+                  "Resist Energy",
+                  "Hidebound"
+                ]
+              }
+            ],
+            "prepared": [],
+            "blendedSpells": []
+          }
+        ],
+        "focusPoints": 2,
+        "focus": {
+          "arcane": {
+            "cha": {
+              "abilityBonus": 4,
+              "proficiency": 2,
+              "itemBonus": 0,
+              "focusCantrips": [
+                "Boost Eidolon"
+              ],
+              "focusSpells": [
+                "Evolution Surge",
+                "Lifelink Surge"
+              ]
+            }
+          }
+        },
+        "formula": [],
+        "acTotal": {
+          "acProfBonus": 6,
+          "acAbilityBonus": 2,
+          "acItemBonus": 0,
+          "acTotal": 18,
+          "shieldBonus": null
+        },
+        "pets": [],
+        "familiars": []
+      },
+      "art": null,
+      "senses": null,
+      "edits": null,
+      "saved": "2026-04-25T20:18:37.268Z",
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {},
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {},
+          "last_rest_at": null
+        }
+      }
+    },
+    "_activeChar": "kasa"
+  }
+}
