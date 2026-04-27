@@ -1793,6 +1793,42 @@ function computeCharPerception(charEntry) {
   return wisMod + calcProfNum(profNum, lvl);
 }
 
+// Get all of a character's known Lore skills, combining JSON-imported
+// (c.lores from Pathbuilder) and user-added (charEntry.edits.lores).
+// Returns an array of { topic, rank } sorted alphabetically by topic.
+// Rank is the proficiency number (2=trained, 4=expert, 6=master, 8=legendary).
+//
+// Used by /lore (rolling), /skill (autocomplete + Lore: ... detection), and
+// the /lore autocomplete handler.
+function getCharacterLores(charEntry) {
+  const c = charEntry.data ?? {};
+  const jsonLores = Array.isArray(c.lores) ? c.lores : [];
+  const editLores = Array.isArray(charEntry.edits?.lores) ? charEntry.edits.lores : [];
+
+  // Build a map: topic (lowercase) → { topic, rank }. Edits win over JSON.
+  const byTopic = new Map();
+  for (const entry of jsonLores) {
+    if (!Array.isArray(entry) || entry.length < 2) continue;
+    const [topic, rank] = entry;
+    if (typeof topic !== 'string' || typeof rank !== 'number') continue;
+    byTopic.set(topic.toLowerCase(), { topic, rank });
+  }
+  // Edit lores can be either [topic, rank] tuples (legacy) or {name, rank} objects
+  for (const entry of editLores) {
+    if (Array.isArray(entry) && entry.length >= 2) {
+      const [topic, rank] = entry;
+      if (typeof topic === 'string' && typeof rank === 'number') {
+        byTopic.set(topic.toLowerCase(), { topic, rank });
+      }
+    } else if (entry && typeof entry === 'object' && entry.name) {
+      const rank = typeof entry.rank === 'number' ? entry.rank : 2;
+      byTopic.set(entry.name.toLowerCase(), { topic: entry.name, rank });
+    }
+  }
+
+  return Array.from(byTopic.values()).sort((a, b) => a.topic.localeCompare(b.topic));
+}
+
 function computeCharMaxHp(charEntry) {
   // Honor a manual override if one is set on the entry. This is used when the
   // import calculation comes out wrong (e.g. PDF imports that don't include
@@ -4873,8 +4909,6 @@ const HELP_CATEGORIES = {
       { name: '/char lore', summary: 'Add, edit, or remove a Lore skill (e.g. Lore: Dragon). Set `remove:True` to delete.', options: 'topic, rank, total, remove', example: '/char lore topic:Dragon rank:expert' },
       { name: '/char weapon', summary: 'Add, edit, or remove weapons/attacks. Fill gaps from PDF imports or track new gear.', options: 'action, name, attack, damage, type, traits', example: '/char weapon action:add name:"Greatsword" attack:10 damage:1d12+4 type:S' },
       { name: '/char spellcasting', summary: 'Override spell DC, attack, tradition, or key ability on the primary spellcaster.', options: 'field, value, text_value, action', example: '/char spellcasting field:dc value:18' },
-      { name: '/char item', summary: 'Add, edit, or remove non-weapon inventory items.', options: 'action, name, quantity', example: '/char item action:add name:"Rope" quantity:1' },
-      { name: '/char money', summary: 'Set coin counts (gp, sp, cp, pp). Use action:clear to revert.', options: 'gp, sp, cp, pp, action', example: '/char money gp:55 sp:10' },
       { name: '/char feat', summary: 'Add or remove feats that didn\'t come through the import.', options: 'action, name, level, character', example: '/char feat action:add name:"Power Attack"' },
     ],
   },
@@ -4886,6 +4920,7 @@ const HELP_CATEGORIES = {
     commands: [
       { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
+      { name: '/lore', summary: 'Roll a Lore skill check (Int-based). Autocomplete shows your character\'s known lores.', options: 'topic, character, bonus', example: '/lore topic:Dragon' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
       { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
       { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
@@ -5756,6 +5791,39 @@ client.on('interactionCreate', async (interaction) => {
           // Suggest Perception + the 16 core skills for initiative overrides
           const skills = ['Perception', 'Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
           suggestions = pick(skills);
+        }
+        else if (cmd === 'lore' && focused.name === 'topic') {
+          // Suggest the user's character's known lores. We need to figure out
+          // WHICH character to look up — they may have passed `character:` as
+          // another option, or have an active char. Fall back to all of their
+          // characters' merged lore lists if we can't disambiguate.
+          const characters = loadCharacters();
+          const userId = interaction.user.id;
+          const userChars = characters[userId] ?? {};
+          const charNameArg = interaction.options.getString('character');
+          let topics = [];
+          if (charNameArg) {
+            // Try to find that specific char
+            const resolved = resolveChar(userId, charNameArg, characters);
+            if (!resolved.error && resolved.char) {
+              topics = getCharacterLores(resolved.char).map(l => l.topic);
+            }
+          } else {
+            // No character specified — try active char first, then merge all
+            const activeKey = userChars._activeChar;
+            if (activeKey && userChars[activeKey]) {
+              topics = getCharacterLores(userChars[activeKey]).map(l => l.topic);
+            } else {
+              // Merge lores from all of user's characters (deduped by pick())
+              for (const k of Object.keys(userChars)) {
+                if (k.startsWith('_')) continue;
+                const entry = userChars[k];
+                if (!entry) continue;
+                getCharacterLores(entry).forEach(l => topics.push(l.topic));
+              }
+            }
+          }
+          suggestions = pick(topics);
         }
         else if (cmd === 'char' && focused.name === 'character' && interaction.options.getSubcommand(false) === 'active') {
           const characters = loadCharacters();
@@ -6723,100 +6791,6 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `✅ Set **${field.toUpperCase()}** to **${value}** (${modStr} mod) on **${charEntry.name}**.`, ephemeral: true });
     }
 
-    // /char money — set or adjust coin counts
-    else if (sub === 'money') {
-      const charNameArg = interaction.options.getString('character');
-      const action = interaction.options.getString('action') ?? 'set';
-      const cp = interaction.options.getInteger('cp');
-      const sp = interaction.options.getInteger('sp');
-      const gp = interaction.options.getInteger('gp');
-      const pp = interaction.options.getInteger('pp');
-
-      if (action === 'set' && cp === null && sp === null && gp === null && pp === null) {
-        return interaction.reply({ content: '❌ Provide at least one coin value (`cp`, `sp`, `gp`, or `pp`) or use `action:clear`.', ephemeral: true });
-      }
-
-      const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
-      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
-      const { char: charEntry } = resolved;
-      if (!charEntry.edits) charEntry.edits = {};
-      if (!charEntry.edits.money) charEntry.edits.money = {};
-
-      if (action === 'clear') {
-        charEntry.edits.money = {};
-        saveCharacters(characters);
-        return interaction.reply({ content: `✅ Cleared all money overrides on **${charEntry.name}**. JSON values will show on \`/sheet\`.`, ephemeral: true });
-      }
-
-      const set = {};
-      if (cp !== null) { charEntry.edits.money.cp = cp; set.cp = cp; }
-      if (sp !== null) { charEntry.edits.money.sp = sp; set.sp = sp; }
-      if (gp !== null) { charEntry.edits.money.gp = gp; set.gp = gp; }
-      if (pp !== null) { charEntry.edits.money.pp = pp; set.pp = pp; }
-      saveCharacters(characters);
-      const parts = Object.entries(set).map(([k, v]) => `${v} ${k}`).join(', ');
-      return interaction.reply({ content: `✅ Set ${parts} on **${charEntry.name}**.`, ephemeral: true });
-    }
-
-    // /char item — add / remove / edit a non-weapon inventory item.
-    // Mirrors /char weapon pattern: edits.items adds new, edits.hiddenItems hides JSON ones.
-    else if (sub === 'item') {
-      const charNameArg = interaction.options.getString('character');
-      const action = interaction.options.getString('action');
-      const name = interaction.options.getString('name')?.trim();
-      const quantity = interaction.options.getInteger('quantity') ?? 1;
-
-      if (!['add', 'remove', 'edit'].includes(action)) {
-        return interaction.reply({ content: '❌ action must be `add`, `remove`, or `edit`.', ephemeral: true });
-      }
-      if (!name) {
-        return interaction.reply({ content: '❌ Please provide an item name.', ephemeral: true });
-      }
-
-      const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
-      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
-      const { char: charEntry } = resolved;
-      const c = charEntry.data ?? {};
-      if (!charEntry.edits) charEntry.edits = {};
-      if (!charEntry.edits.items) charEntry.edits.items = [];
-
-      const nameLower = name.toLowerCase();
-      // c.equipment is [name, quantity] tuples in Pathbuilder JSON
-      const jsonItems = c.equipment ?? [];
-      const existingJsonIdx = jsonItems.findIndex(([n]) => (n || '').toLowerCase() === nameLower);
-      const existingEditIdx = charEntry.edits.items.findIndex(([n]) => (n || '').toLowerCase() === nameLower);
-
-      if (action === 'remove') {
-        if (existingJsonIdx === -1 && existingEditIdx === -1) {
-          return interaction.reply({ content: `❌ No item "${name}" on **${charEntry.name}**.`, ephemeral: true });
-        }
-        if (existingEditIdx !== -1) charEntry.edits.items.splice(existingEditIdx, 1);
-        if (existingJsonIdx !== -1) {
-          if (!charEntry.edits.hiddenItems) charEntry.edits.hiddenItems = [];
-          if (!charEntry.edits.hiddenItems.some(h => h.toLowerCase() === nameLower)) {
-            charEntry.edits.hiddenItems.push(name);
-          }
-        }
-        saveCharacters(characters);
-        return interaction.reply({ content: `✅ Removed **${name}** from **${charEntry.name}**.`, ephemeral: true });
-      }
-
-      // add/edit: un-hide if previously hidden, then set quantity
-      if (charEntry.edits.hiddenItems) {
-        charEntry.edits.hiddenItems = charEntry.edits.hiddenItems.filter(h => h.toLowerCase() !== nameLower);
-      }
-      if (existingEditIdx !== -1) {
-        charEntry.edits.items[existingEditIdx] = [name, quantity];
-      } else {
-        charEntry.edits.items.push([name, quantity]);
-      }
-      saveCharacters(characters);
-      const verb = (existingEditIdx !== -1 || existingJsonIdx !== -1) ? 'Updated' : 'Added';
-      return interaction.reply({ content: `✅ ${verb} **${name}** (x${quantity}) on **${charEntry.name}**.`, ephemeral: true });
-    }
-
     // /char spellcasting — set DC, attack, tradition, key ability on the character's
     // primary spellcaster (c.spellCasters[0]). Stored in edits.spellcasting, merged
     // at display/cast time.
@@ -6950,7 +6924,7 @@ client.on('interactionCreate', async (interaction) => {
             value: '**Quick tweaks (modals):** `/char edit` (background, deity, languages, senses), `/char identity` (class, level, ancestry, heritage), `/char misc` (gender, age, size, alignment, key ability)\n' +
               '**Combat stats:** `/char stat` (AC, HP max, saves, Perception, Speed), `/char weapon` (add/edit/remove attacks), `/char ability` (ability scores), `/char spellcasting` (DC, attack, tradition)\n' +
               '**Skills:** `/char skill` (16 standard skills), `/char lore` (Lore skills — any topic, remove:True deletes)\n' +
-              '**Inventory:** `/char item` (add/remove/edit non-weapon items), `/char money` (set coin counts)\n' +
+              '**Inventory:** Use `/bag` to track items beyond your Pathbuilder export, and `/gold` to manage coins.\n' +
               '**Feats:** `/char feat action:add/remove`\n\n' +
               'All edits are preserved across `/char update`, so leveling up won\'t wipe your manual corrections. Use `action:clear` on most commands to revert overrides.',
             inline: false,
@@ -9015,6 +8989,9 @@ client.on('interactionCreate', async (interaction) => {
       society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
     };
     const abilKey  = skillMap[skillName];
+    if (!abilKey) {
+      return interaction.editReply(`❌ Unknown skill **${skillName}**. Use the dropdown to pick one of the 16 standard skills, or \`/lore topic:${skillName}\` for a Lore skill.`);
+    }
     const abilMod  = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
     const profNum  = prof[skillName] ?? 0;
     const modifier = abilMod + calcProfNum(profNum, lvl);
@@ -9023,6 +9000,47 @@ client.on('interactionCreate', async (interaction) => {
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const skillDisplay = skillName.charAt(0).toUpperCase() + skillName.slice(1);
     await interaction.editReply({ embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: charEntry.art ?? null })] });
+  }
+
+  // ─── /lore ───────────────────────────────────────────────────────
+  // Roll a Lore skill check. Lore skills are Int-based and stored separately
+  // from the 16 standard skills (in c.lores from Pathbuilder, plus user-added
+  // ones in charEntry.edits.lores). Autocomplete on `topic` shows the
+  // character's known lores.
+  //
+  // Same roll pattern as /skill: 1d20 + intMod + profNumber + extraBonus.
+  // Same embed style with a 📚 emoji to distinguish from regular skills.
+  else if (commandName === 'lore') {
+    await interaction.deferReply();
+    const topic      = interaction.options.getString('topic');
+    const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    if (error) return interaction.editReply(error);
+    const c = charEntry.data;
+    const ab = c.abilities ?? {};
+    const lvl = c.level ?? 1;
+
+    const lores = getCharacterLores(charEntry);
+    const match = lores.find(l => l.topic.toLowerCase() === topic.toLowerCase());
+    if (!match) {
+      const knownList = lores.length > 0
+        ? lores.map(l => `\`${l.topic}\``).join(', ')
+        : '*(none — use `/char lore` to add one)*';
+      return interaction.editReply(`❌ **${c.name}** doesn't have Lore: ${topic}.\nKnown lores: ${knownList}`);
+    }
+
+    const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
+    const modifier = intMod + calcProfNum(match.rank, lvl);
+    const dieRoll = Math.floor(Math.random() * 20) + 1;
+    const total = dieRoll + modifier + extraBonus;
+    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
+    await interaction.editReply({ embeds: [buildRollEmbed({
+      title: `📚 ${c.name} rolls Lore: ${match.topic}!`,
+      breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
+      charName: `${c.name} · ${profLabels[match.rank] ?? 'Untrained'} Lore: ${match.topic} (${fmt(modifier)})`,
+      thumbnail: charEntry.art ?? null,
+    })] });
   }
 
   // ─── /perception ─────────────────────────────────────────────────

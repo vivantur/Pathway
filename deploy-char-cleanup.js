@@ -1,14 +1,16 @@
 // deploy-char-cleanup.js
-// One-off slash-command surgery: removes /char pdf, /char pastemsg, and
-// /char pastemsgupdate from Discord, and updates /char update to accept
-// either an `id:` (preferred, fetched from Pathbuilder) or `file:` parameter.
+// One-off slash-command surgery on /char:
+//   1. Removes /char pdf, /char pastemsg, /char pastemsgupdate, /char item,
+//      and /char money (all redundant or replaced by /bag /gold /char import).
+//   2. Updates /char update to accept either an `id:` (preferred, fetched from
+//      Pathbuilder) or `file:` parameter.
 //
 // HOW IT WORKS
 // Discord registers slash commands as a single object per top-level command
 // (/char), with subcommands as nested options. To remove subcommands you have
 // to PATCH the entire /char definition. This script:
 //   1. Fetches your CURRENT /char definition from Discord
-//   2. Removes the three deleted subcommands from its options array
+//   2. Removes the deleted subcommands from its options array
 //   3. Replaces the `update` subcommand's options with new ones (id + file)
 //   4. PATCHes /char back to Discord
 //
@@ -23,7 +25,7 @@ require('dotenv').config();
 const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
 // Subcommands we want to REMOVE entirely from /char
-const SUBCOMMANDS_TO_REMOVE = ['pdf', 'pastemsg', 'pastemsgupdate'];
+const SUBCOMMANDS_TO_REMOVE = ['pdf', 'pastemsg', 'pastemsgupdate', 'item', 'money'];
 
 // New definition for /char update (replacing the file-only version)
 const UPDATED_UPDATE_SUBCOMMAND = {
@@ -62,7 +64,6 @@ async function main() {
     : Routes.applicationCommands(clientId);
 
   try {
-    // 1. Fetch all currently-registered commands
     console.log(`Fetching existing commands${guildId ? ` for guild ${guildId}` : ' (global)'}...`);
     const commands = await rest.get(listRoute);
     if (!Array.isArray(commands)) {
@@ -70,7 +71,6 @@ async function main() {
       process.exit(1);
     }
 
-    // 2. Find the /char command
     const charCommand = commands.find(c => c.name === 'char');
     if (!charCommand) {
       console.error('❌ Could not find /char command. Has it been deployed yet?');
@@ -80,7 +80,6 @@ async function main() {
 
     console.log(`✓ Found /char with ${charCommand.options?.length ?? 0} existing subcommand(s).`);
 
-    // 3. Filter out the three removed subcommands
     const existingOptions = Array.isArray(charCommand.options) ? [...charCommand.options] : [];
     const removedNames = [];
     let filtered = existingOptions.filter(o => {
@@ -91,7 +90,6 @@ async function main() {
       return true;
     });
 
-    // 4. Replace the `update` subcommand with the new id+file version
     const updateIdx = filtered.findIndex(o => o.name === 'update');
     if (updateIdx >= 0) {
       console.log(`  ↺ Replacing /char update with new id+file definition.`);
@@ -101,14 +99,12 @@ async function main() {
       filtered.push(UPDATED_UPDATE_SUBCOMMAND);
     }
 
-    // 5. Report what we're doing
     if (removedNames.length > 0) {
       console.log(`  - Removing: ${removedNames.map(n => `/char ${n}`).join(', ')}`);
     } else {
       console.log(`  · No subcommands to remove (already cleaned up?).`);
     }
 
-    // 6. PATCH /char with the new options array
     const updateRoute = guildId
       ? Routes.applicationGuildCommand(clientId, guildId, charCommand.id)
       : Routes.applicationCommand(clientId, charCommand.id);
