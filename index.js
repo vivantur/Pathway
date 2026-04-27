@@ -1085,56 +1085,73 @@ function getBlankCharacterTemplate() {
 `;
 }
 
-function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
+// Imports/updates a character from Pathbuilder JSON. Used by /char add,
+// /char import, /char update, /char sync, and /char pastemsg.
+//
+// PHASE 2 RACE-FREE CONVERSION
+// Previously this used loadCharacters() → modify → saveCharacters() which
+// could lose data when two players imported simultaneously. Now wrapped in
+// mutateCharacters() so the entire load-modify-save cycle serializes.
+//
+// The function is now async — callers must `await` the result. The return
+// shape is unchanged: { error } on failure, or { ok, key, name, level,
+// replaced } on success.
+async function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
   const char = rawChar?.build ?? rawChar;
   if (!char || !char.name) {
     return { error: 'Pathbuilder data is missing a character name. Re-export and try again.' };
   }
-  const characters = loadCharacters();
-  if (!characters[userId]) characters[userId] = {};
   const key = char.name.toLowerCase().replace(/\s+/g, '-');
-  const prev = characters[userId][key];
-  const existed = !!prev;
 
-  // Always preserve art, senses, and user edits (background/deity/skill overrides).
-  // These are user-set flavor and manual corrections that shouldn't be wiped on
-  // re-import even when not using /char update.
-  const existingArt    = prev?.art ?? null;
-  const existingSenses = prev?.senses ?? null;
-  const existingEdits  = prev?.edits ?? null;
-  const baseEntry = {
-    name: char.name,
-    data: char,
-    art: existingArt,
-    senses: existingSenses,
-    edits: existingEdits,
-    saved: new Date().toISOString(),
-  };
+  // Run the entire load-modify-save inside the file's write queue. The
+  // mutator captures `existed` so we can return it to the caller via
+  // returnValue:true.
+  const result = await mutateCharacters((characters) => {
+    if (!characters[userId]) characters[userId] = {};
+    const prev = characters[userId][key];
+    const existed = !!prev;
 
-  if (preserveOverlay && prev) {
-    // /char update / /char sync path: keep all bot-managed state.
-    const preserved = {
-      heroPoints: prev.heroPoints,
-      xp: prev.xp,
-      xpLog: prev.xpLog,
-      hp: prev.hp,
-      overlay: prev.overlay,
-      languages: prev.languages, // languages overlay, separate from `edits.languages`
+    // Always preserve art, senses, and user edits (background/deity/skill
+    // overrides). These are user-set flavor and manual corrections that
+    // shouldn't be wiped on re-import even when not using /char update.
+    const existingArt    = prev?.art ?? null;
+    const existingSenses = prev?.senses ?? null;
+    const existingEdits  = prev?.edits ?? null;
+    const baseEntry = {
+      name: char.name,
+      data: char,
+      art: existingArt,
+      senses: existingSenses,
+      edits: existingEdits,
+      saved: new Date().toISOString(),
     };
-    characters[userId][key] = { ...baseEntry, ...preserved };
-    // Clamp current HP if max dropped.
-    if (typeof preserved.hp === 'number') {
-      const newMax = computeCharMaxHp(characters[userId][key]);
-      if (newMax > 0 && preserved.hp > newMax) {
-        characters[userId][key].hp = newMax;
-      }
-    }
-  } else {
-    characters[userId][key] = baseEntry;
-  }
 
-  saveCharacters(characters);
-  return { ok: true, key, name: char.name, level: char.level, replaced: existed };
+    if (preserveOverlay && prev) {
+      // /char update / /char sync path: keep all bot-managed state.
+      const preserved = {
+        heroPoints: prev.heroPoints,
+        xp: prev.xp,
+        xpLog: prev.xpLog,
+        hp: prev.hp,
+        overlay: prev.overlay,
+        languages: prev.languages, // languages overlay, separate from `edits.languages`
+      };
+      characters[userId][key] = { ...baseEntry, ...preserved };
+      // Clamp current HP if max dropped.
+      if (typeof preserved.hp === 'number') {
+        const newMax = computeCharMaxHp(characters[userId][key]);
+        if (newMax > 0 && preserved.hp > newMax) {
+          characters[userId][key].hp = newMax;
+        }
+      }
+    } else {
+      characters[userId][key] = baseEntry;
+    }
+
+    return { existed };
+  }, { returnValue: true });
+
+  return { ok: true, key, name: char.name, level: char.level, replaced: result.existed };
 }
 
 // Try to parse a JSON string that may have extra wrapping (code blocks,
@@ -6165,7 +6182,7 @@ client.on('interactionCreate', async (interaction) => {
         // isn't actually JSON (user uploaded the wrong file, etc.)
         const parsed = parsePastedPathbuilderJSON(rawText);
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
+        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? Next time try \`/char pastemsg\` — paste the JSON as a chat message instead of wrangling files.*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
@@ -6183,7 +6200,7 @@ client.on('interactionCreate', async (interaction) => {
         const rawText = await response.text();
         const parsed = parsePastedPathbuilderJSON(rawText);
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: true });
+        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: true });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
         await interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level}! *(hero points, XP, current HP, and bag preserved.)*`);
@@ -6226,7 +6243,7 @@ client.on('interactionCreate', async (interaction) => {
               const txt = await res.text();
               const parsed = parsePastedPathbuilderJSON(txt);
               if (parsed.char) {
-                const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
+                const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
                 if (saved.error) continue;
                 if (isUpdate && !saved.replaced) continue;
                 return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your attachment \`${att.name}\`.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}`);
@@ -6238,7 +6255,7 @@ client.on('interactionCreate', async (interaction) => {
         if (msg.content && msg.content.trim().length > 50) {
           const parsed = parsePastedPathbuilderJSON(msg.content);
           if (parsed.char) {
-            const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
+            const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
             if (saved.error) continue;
             if (isUpdate && !saved.replaced) continue;
             return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your chat message.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}\n*You can delete the message now — the import is done.*`);
@@ -6292,7 +6309,7 @@ client.on('interactionCreate', async (interaction) => {
         const parsed = parsePathbuilderStatblockPDF(pdfText);
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
 
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
+        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
 
         // Warn the user about PDF-import limitations — it's a partial character
@@ -7192,7 +7209,7 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         // Import via the same path /char add uses
-        const saved = saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
+        const saved = await saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         return interaction.editReply(
           `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
@@ -10861,42 +10878,61 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'set') {
       const value = interaction.options.getInteger('value');
       if (value < 0) return interaction.reply({ content: '❌ HP cannot be negative.', ephemeral: true });
-      const maxHp = computeCharMaxHp(charEntry);
-      const oldHp = getCharacterHp(charEntry);
-      const newHp = setCharacterHp(charEntry, value);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      // PHASE 2 race-free pattern: re-resolve and mutate in one atomic block
+      // so two simultaneous /hp commands can't clobber each other.
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const maxHp = computeCharMaxHp(live);
+        const oldHp = getCharacterHp(live);
+        const newHp = setCharacterHp(live, value);
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, maxHp, oldHp, newHp };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
       let note;
-      if (value > maxHp) note = `✏️ Set to **${newHp}/${maxHp}** (clamped from requested ${value}).`;
-      else note = `✏️ Set to **${newHp}/${maxHp}** (was ${oldHp}).`;
-      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+      if (value > result.maxHp) note = `✏️ Set to **${result.newHp}/${result.maxHp}** (clamped from requested ${value}).`;
+      else note = `✏️ Set to **${result.newHp}/${result.maxHp}** (was ${result.oldHp}).`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(result.live.data, result.live, note)] });
     }
 
     if (sub === 'add') {
       const value = interaction.options.getInteger('value');
       if (value === 0) return interaction.reply({ content: '❌ Amount cannot be 0.', ephemeral: true });
-      const maxHp = computeCharMaxHp(charEntry);
-      const oldHp = getCharacterHp(charEntry);
-      const newHp = setCharacterHp(charEntry, oldHp + value);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const sign = value >= 0 ? '+' : '';
-      const actuallyChanged = newHp - oldHp;
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const maxHp = computeCharMaxHp(live);
+        const oldHp = getCharacterHp(live);
+        const newHp = setCharacterHp(live, oldHp + value);
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, maxHp, oldHp, newHp };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+      const actuallyChanged = result.newHp - result.oldHp;
       let note;
-      if (actuallyChanged === 0 && value > 0) note = `💚 Already at full HP (${maxHp}/${maxHp}).`;
+      if (actuallyChanged === 0 && value > 0) note = `💚 Already at full HP (${result.maxHp}/${result.maxHp}).`;
       else if (actuallyChanged === 0 && value < 0) note = `💀 Already at 0 HP.`;
-      else if (value > 0) note = `💚 Healed **+${actuallyChanged}** HP: ${oldHp} → **${newHp}**/${maxHp}.`;
-      else note = `💔 Took **${value}** damage: ${oldHp} → **${newHp}**/${maxHp}.`;
-      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+      else if (value > 0) note = `💚 Healed **+${actuallyChanged}** HP: ${result.oldHp} → **${result.newHp}**/${result.maxHp}.`;
+      else note = `💔 Took **${value}** damage: ${result.oldHp} → **${result.newHp}**/${result.maxHp}.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(result.live.data, result.live, note)] });
     }
 
     if (sub === 'reset') {
-      const maxHp = computeCharMaxHp(charEntry);
-      charEntry.hp = maxHp;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const note = `🌅 Fully healed: **${maxHp}/${maxHp}** HP.`;
-      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const maxHp = computeCharMaxHp(live);
+        live.hp = maxHp;
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, maxHp };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+      const note = `🌅 Fully healed: **${result.maxHp}/${result.maxHp}** HP.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(result.live.data, result.live, note)] });
     }
 
     // /hp max — override the max HP permanently. Used when the computed max
@@ -10906,18 +10942,24 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'max') {
       const action = interaction.options.getString('action');
       if (action === 'clear') {
-        const oldOverride = charEntry._hpMaxOverride;
-        delete charEntry._hpMaxOverride;
-        const newMax = computeCharMaxHp(charEntry);
-        if (typeof charEntry.hp === 'number' && charEntry.hp > newMax) {
-          charEntry.hp = newMax;
-        }
-        characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
-        const note = oldOverride
-          ? `🧹 Cleared max HP override (was ${oldOverride}). Now using computed max: **${newMax}**.`
-          : `ℹ️ No override was set. Computed max: **${newMax}**.`;
-        return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+        const result = await mutateCharacters((characters) => {
+          const re = resolveChar(interaction.user.id, charNameArg, characters);
+          if (re.error) return { error: re.error };
+          const live = re.char;
+          const oldOverride = live._hpMaxOverride;
+          delete live._hpMaxOverride;
+          const newMax = computeCharMaxHp(live);
+          if (typeof live.hp === 'number' && live.hp > newMax) {
+            live.hp = newMax;
+          }
+          characters[interaction.user.id][re.charKey] = live;
+          return { live, oldOverride, newMax };
+        }, { returnValue: true });
+        if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+        const note = result.oldOverride
+          ? `🧹 Cleared max HP override (was ${result.oldOverride}). Now using computed max: **${result.newMax}**.`
+          : `ℹ️ No override was set. Computed max: **${result.newMax}**.`;
+        return interaction.reply({ embeds: [buildCharHpEmbed(result.live.data, result.live, note)] });
       }
 
       const value = interaction.options.getInteger('value');
@@ -10927,17 +10969,23 @@ client.on('interactionCreate', async (interaction) => {
       if (value < 1) return interaction.reply({ content: '❌ Max HP must be at least 1.', ephemeral: true });
       if (value > 9999) return interaction.reply({ content: '❌ Max HP must be 9999 or less.', ephemeral: true });
 
-      const oldMax = computeCharMaxHp(charEntry);
-      charEntry._hpMaxOverride = value;
-      // If they were at full HP (or no overlay), bump current to new max.
-      // If they were already wounded, leave current HP alone.
-      if (typeof charEntry.hp !== 'number' || charEntry.hp === oldMax) {
-        charEntry.hp = value;
-      }
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const note = `🔧 Max HP override set to **${value}** (was ${oldMax}). Use \`/hp max action:Clear override\` to revert.`;
-      return interaction.reply({ embeds: [buildCharHpEmbed(char, charEntry, note)] });
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const oldMax = computeCharMaxHp(live);
+        live._hpMaxOverride = value;
+        // If they were at full HP (or no overlay), bump current to new max.
+        // If they were already wounded, leave current HP alone.
+        if (typeof live.hp !== 'number' || live.hp === oldMax) {
+          live.hp = value;
+        }
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, oldMax };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+      const note = `🔧 Max HP override set to **${value}** (was ${result.oldMax}). Use \`/hp max action:Clear override\` to revert.`;
+      return interaction.reply({ embeds: [buildCharHpEmbed(result.live.data, result.live, note)] });
     }
   }
 
