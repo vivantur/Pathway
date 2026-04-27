@@ -1420,7 +1420,8 @@
             "Acrobatics": 6,
             "Arcana": -4,
             "Athletics": 6,
-            "Crafting": -4
+            "Crafting": -4,
+            "Deception": 0
           }
         }
       },
