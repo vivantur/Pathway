@@ -915,6 +915,39 @@ function calcProfNum(profNum, level) {
 function fmt(n) { return n >= 0 ? `+${n}` : `${n}`; }
 function xpToNextLevel() { return 1000; }
 
+// ── Embed text truncation ────────────────────────────────────────────────
+// Discord embeds have hard limits on every text field. If we exceed them,
+// the entire interaction crashes with a CombinedError. These helpers shorten
+// strings to fit while preserving readability.
+//
+// Limits per Discord:
+//   title: 256
+//   description: 4096
+//   field name: 256
+//   field value: 1024
+//   total embed: 6000
+//
+// We default to 4000 (just under description's 4096 cap) leaving room for any
+// prefix/suffix the caller adds. For field values pass max:1000.
+function truncateForEmbed(text, max = 4000) {
+  if (typeof text !== 'string') return '';
+  if (text.length <= max) return text;
+  // Try to break at a paragraph or sentence boundary near the limit.
+  const truncationNote = '\n\n*...truncated. See Archives of Nethys for the full text.*';
+  const room = max - truncationNote.length;
+  // Prefer the last paragraph break before `room`. Fall back to last sentence,
+  // then to a hard character cut.
+  const slice = text.slice(0, room);
+  const lastPara = slice.lastIndexOf('\n\n');
+  const lastSentence = slice.lastIndexOf('. ');
+  let cut;
+  if (lastPara > room * 0.7) cut = lastPara;
+  else if (lastSentence > room * 0.7) cut = lastSentence + 1;
+  else cut = room;
+  return text.slice(0, cut).trimEnd() + truncationNote;
+}
+
+
 // Parse a Pathbuilder import reference from user input. Accepts either:
 //   - a 4-8 digit ID (e.g. "122550")
 //   - a full URL (e.g. "https://pathbuilder2e.com/json.php?id=122550")
@@ -4832,9 +4865,14 @@ function buildAncestryCorePage(ancestry) {
   const flaws  = ancestry.attribute_flaws.length ? ancestry.attribute_flaws.join(', ') : 'None';
   const sensesText   = ancestry.senses.map(s => `**${s.name}** — ${s.description}`).join('\n');
   const languageText = `${ancestry.languages.base.join(', ')}\n*Plus additional languages equal to ${ancestry.languages.bonus_count}, chosen from: ${ancestry.languages.bonus_pool.join(', ')}.*`;
+  // Description includes the traits header + the (potentially huge) ancestry
+  // description. Some entries (e.g. Gnome, Human) blow past Discord's 4096
+  // character description limit, which crashes the whole interaction. Truncate.
+  const traitsLine = `*${ancestry.traits.join(', ')}*\n\n`;
+  const descBody = truncateForEmbed(ancestry.description ?? '', 4000 - traitsLine.length);
   return new EmbedBuilder()
     .setTitle(ancestry.name)
-    .setDescription(`*${ancestry.traits.join(', ')}*\n\n${ancestry.description}`)
+    .setDescription(traitsLine + descBody)
     .setColor(ANCESTRY_COLORS.main)
     .setFooter({ text: `Source: ${ancestry.source} • Page 1/3` })
     .addFields(
@@ -4844,8 +4882,8 @@ function buildAncestryCorePage(ancestry) {
       { name: '📈 Attribute Boosts', value: boosts,                  inline: true },
       { name: '📉 Attribute Flaw',   value: flaws,                   inline: true },
       { name: '\u200B',              value: '\u200B',                inline: true },
-      { name: '👁️ Senses',          value: sensesText || 'None',    inline: false },
-      { name: '🗣️ Languages',       value: languageText,            inline: false },
+      { name: '👁️ Senses',          value: truncateForEmbed(sensesText || 'None', 1000), inline: false },
+      { name: '🗣️ Languages',       value: truncateForEmbed(languageText, 1000),         inline: false },
     );
 }
 
@@ -4855,8 +4893,11 @@ function buildAncestryHeritagesPage(ancestry) {
     .setDescription('Choose one heritage at character creation.')
     .setColor(ANCESTRY_COLORS.heritage)
     .setFooter({ text: `Source: ${ancestry.source} • Page 2/3` });
-  for (const h of ancestry.heritages)
-    embed.addFields({ name: `◈ ${h.name}`, value: h.description, inline: false });
+  for (const h of ancestry.heritages) {
+    // Field values cap at 1024. Some heritage descriptions exceed that —
+    // truncate with a graceful note rather than crash the interaction.
+    embed.addFields({ name: `◈ ${h.name}`, value: truncateForEmbed(h.description ?? '*(no description)*', 1000), inline: false });
+  }
   return embed;
 }
 
@@ -4870,7 +4911,8 @@ function buildAncestryFeatsPage(ancestry) {
     embed.addFields({ name: `── Level ${group.level} ──`, value: '\u200B', inline: false });
     for (const feat of group.feats) {
       const prereqLine = feat.prerequisites ? `*Prerequisite: ${feat.prerequisites.join(', ')}*\n` : '';
-      embed.addFields({ name: `✦ ${feat.name}`, value: `${prereqLine}${feat.description}`, inline: false });
+      // Same field-value cap as heritages.
+      embed.addFields({ name: `✦ ${feat.name}`, value: truncateForEmbed(`${prereqLine}${feat.description}`, 1000), inline: false });
     }
   }
   return embed;
@@ -9102,9 +9144,10 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     // Build the embed. Heritage purple matches the ancestry pages.
+    // Description capped at 4000 chars for safety against rare oversized entries.
     const embed = new EmbedBuilder()
       .setTitle(`◈ ${heritage.name}`)
-      .setDescription(heritage.description)
+      .setDescription(truncateForEmbed(heritage.description, 4000))
       .setColor(0x7B5EA7) // ANCESTRY_COLORS.heritage
       .addFields({
         name: 'Ancestry',
