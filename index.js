@@ -7042,16 +7042,15 @@ client.on('interactionCreate', async (interaction) => {
     //   /char hp max:42 current:30       → both at once
     else if (sub === 'hp') {
       const userId = interaction.user.id;
-      const characters = loadCharacters();
       const nameArg = interaction.options.getString('character');
-      const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
-      if (error) return interaction.reply({ content: error, ephemeral: true });
-
       const maxArg = interaction.options.getString('max');
       const currentArg = interaction.options.getInteger('current');
 
+      // No-args view: just read, no mutation. Use a fresh load.
       if (!maxArg && currentArg == null) {
-        // No args — just show current state
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, nameArg, characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
         const computed = (() => {
           const c = charEntry.data;
           const lvl = c.level ?? 1;
@@ -7069,47 +7068,56 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
-      const changes = [];
+      // Mutation path: race-free re-resolve and apply changes inside the queue.
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(userId, nameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const changes = [];
 
-      // Handle max: parameter
-      if (maxArg) {
-        if (maxArg.toLowerCase() === 'reset' || maxArg.toLowerCase() === 'clear' || maxArg.toLowerCase() === 'auto') {
-          if (typeof charEntry._hpMaxOverride === 'number') {
-            delete charEntry._hpMaxOverride;
-            changes.push(`max HP override cleared (now computed)`);
+        // Handle max: parameter
+        if (maxArg) {
+          if (maxArg.toLowerCase() === 'reset' || maxArg.toLowerCase() === 'clear' || maxArg.toLowerCase() === 'auto') {
+            if (typeof live._hpMaxOverride === 'number') {
+              delete live._hpMaxOverride;
+              changes.push(`max HP override cleared (now computed)`);
+            } else {
+              changes.push(`max HP wasn't overridden — no change`);
+            }
           } else {
-            changes.push(`max HP wasn't overridden — no change`);
+            const n = parseInt(maxArg, 10);
+            if (Number.isNaN(n) || n <= 0 || n > 9999) {
+              return { error: `❌ \`max\` must be a positive number (or \`reset\`). Got: \`${maxArg}\`` };
+            }
+            live._hpMaxOverride = n;
+            changes.push(`max HP set to **${n}**`);
           }
-        } else {
-          const n = parseInt(maxArg, 10);
-          if (Number.isNaN(n) || n <= 0 || n > 9999) {
-            return interaction.reply({ content: `❌ \`max\` must be a positive number (or \`reset\`). Got: \`${maxArg}\``, ephemeral: true });
+        }
+
+        // Handle current: parameter — apply AFTER max change so clamp uses new max
+        if (currentArg != null) {
+          const newMax = computeCharMaxHp(live);
+          if (currentArg < 0) {
+            return { error: `❌ Current HP can't be negative.` };
           }
-          charEntry._hpMaxOverride = n;
-          changes.push(`max HP set to **${n}**`);
+          const clamped = Math.min(currentArg, newMax);
+          setCharacterHp(live, clamped);
+          if (clamped !== currentArg) {
+            changes.push(`current HP set to **${clamped}** (clamped to max)`);
+          } else {
+            changes.push(`current HP set to **${clamped}**`);
+          }
         }
-      }
 
-      // Handle current: parameter — apply AFTER max change so clamp uses new max
-      if (currentArg != null) {
-        const newMax = computeCharMaxHp(charEntry);
-        if (currentArg < 0) {
-          return interaction.reply({ content: `❌ Current HP can't be negative.`, ephemeral: true });
-        }
-        const clamped = Math.min(currentArg, newMax);
-        setCharacterHp(charEntry, clamped);
-        if (clamped !== currentArg) {
-          changes.push(`current HP set to **${clamped}** (clamped to max)`);
-        } else {
-          changes.push(`current HP set to **${clamped}**`);
-        }
-      }
+        characters[userId][re.charKey] = live;
+        return { live, changes };
+      }, { returnValue: true });
 
-      saveCharacters(characters);
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
 
-      const finalMax = computeCharMaxHp(charEntry);
-      const finalCurrent = getCharacterHp(charEntry);
-      return interaction.reply(`✅ **${charEntry.data.name}**: ${changes.join(', ')}.\nNow at **${finalCurrent} / ${finalMax}** HP.`);
+      const finalMax = computeCharMaxHp(result.live);
+      const finalCurrent = getCharacterHp(result.live);
+      return interaction.reply(`✅ **${result.live.data.name}**: ${result.changes.join(', ')}.\nNow at **${finalCurrent} / ${finalMax}** HP.`);
     }
 
     else if (sub === 'remove') {
@@ -8053,9 +8061,24 @@ client.on('interactionCreate', async (interaction) => {
           }
         }
       }
-      // Spend the slot
-      charOverlay.spendSlot(charEntry, castingCaster.name, effectiveLevel);
-      saveCharacters(characters);
+      // Spend the slot — race-free path. Re-resolve inside mutateCharacters
+      // so we mutate the latest disk state, then sync the new overlay back
+      // to the in-memory `charEntry` so the rest of /cast (damage rolls,
+      // attack rolls, embed rendering) sees the updated slot count.
+      //
+      // We call spendSlot ONCE — on the disk-resolved character — then copy
+      // its overlay back to the in-memory entry. Calling it twice would
+      // double-spend the slot.
+      await mutateCharacters((live) => {
+        const re = resolveChar(interaction.user.id, nameArg, live);
+        if (re.error) return; // Char gone? Save is moot.
+        charOverlay.spendSlot(re.char, castingCaster.name, effectiveLevel);
+        live[interaction.user.id][re.charKey] = re.char;
+        // Sync the freshly-spent overlay back to the in-memory copy used
+        // by the rest of this handler. Object.assign mutates in place so
+        // existing references to charEntry stay valid.
+        Object.assign(charEntry, re.char);
+      });
     }
 
     const channelId = interaction.channel.id;
@@ -11013,20 +11036,29 @@ client.on('interactionCreate', async (interaction) => {
       const reason = interaction.options.getString('reason');
       if (amount === 0) return interaction.reply({ content: '❌ Amount cannot be 0.', ephemeral: true });
 
-      const { oldXp, newXp, leveledUp } = awardXp(charEntry, amount, reason, interaction.user.id);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      // Race-free award: the GM often awards XP to multiple party members in
+      // rapid succession, exactly the scenario where the old load-modify-save
+      // pattern would lose data. Re-resolve and mutate inside the queue.
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const ax = awardXp(live, amount, reason, interaction.user.id);
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, ...ax };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
 
       const sign = amount >= 0 ? '+' : '';
-      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
-      const replyPayload = { embeds: [buildXpEmbed(char, charEntry, { note, showLog: false })] };
+      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${result.oldXp} → **${result.newXp}** XP`;
+      const replyPayload = { embeds: [buildXpEmbed(result.live.data, result.live, { note, showLog: false })] };
 
       // If they crossed a 1000 XP threshold, post a celebratory level-up embed too
-      if (leveledUp) {
-        replyPayload.embeds.push(buildLevelUpEmbed(char, charEntry, oldXp, newXp));
+      if (result.leveledUp) {
+        replyPayload.embeds.push(buildLevelUpEmbed(result.live.data, result.live, result.oldXp, result.newXp));
         // Ping the owner if someone else (e.g. GM) awarded the XP
-        if (charEntry.ownerId && charEntry.ownerId !== interaction.user.id) {
-          replyPayload.content = `<@${charEntry.ownerId}>`;
+        if (result.live.ownerId && result.live.ownerId !== interaction.user.id) {
+          replyPayload.content = `<@${result.live.ownerId}>`;
         } else if (interaction.user.id) {
           // Self-award still pings for visibility
           replyPayload.content = `<@${interaction.user.id}>`;
@@ -11038,24 +11070,36 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'set') {
       const amount = interaction.options.getInteger('amount');
       if (amount < 0) return interaction.reply({ content: '❌ XP cannot be negative.', ephemeral: true });
-      const oldXp = getCharacterXp(charEntry);
-      setCharacterXp(charEntry, amount);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const note = `✏️ Set XP to **${amount}** (was ${oldXp}).`;
-      return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const oldXp = getCharacterXp(live);
+        setCharacterXp(live, amount);
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, oldXp };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+      const note = `✏️ Set XP to **${amount}** (was ${result.oldXp}).`;
+      return interaction.reply({ embeds: [buildXpEmbed(result.live.data, result.live, { note })] });
     }
 
     if (sub === 'reset') {
       // Zero the XP AND the log. Use this after leveling up in Pathbuilder
       // and running /char update, to start fresh toward the next level.
-      const oldXp = getCharacterXp(charEntry);
-      charEntry.xp = 0;
-      charEntry.xpLog = [];
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const note = `🌅 Reset XP to **0** (was ${oldXp}). Good luck on the road to the next level!`;
-      return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
+      const result = await mutateCharacters((characters) => {
+        const re = resolveChar(interaction.user.id, charNameArg, characters);
+        if (re.error) return { error: re.error };
+        const live = re.char;
+        const oldXp = getCharacterXp(live);
+        live.xp = 0;
+        live.xpLog = [];
+        characters[interaction.user.id][re.charKey] = live;
+        return { live, oldXp };
+      }, { returnValue: true });
+      if (result.error) return interaction.reply({ content: result.error, ephemeral: true });
+      const note = `🌅 Reset XP to **0** (was ${result.oldXp}). Good luck on the road to the next level!`;
+      return interaction.reply({ embeds: [buildXpEmbed(result.live.data, result.live, { note })] });
     }
   }
 
