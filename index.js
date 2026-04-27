@@ -11,8 +11,11 @@ const path = require('path');
 const {
   DATA_DIR,
   dataPath,
+  gamedataPath,
   atomicWriteJson,
+  atomicWriteGamedata,
   loadJson,
+  loadGamedata,
   saveJson,
   mutateJson,
 } = require('./utils/storage');
@@ -101,31 +104,27 @@ process.on('uncaughtException', error => {
   console.error('Uncaught exception:', error);
 });
 
-let spellDatabase = loadJson('spells.json', {
+let spellDatabase = loadGamedata('spells.json', {
   default: [],
-  seedFromRepo: true,
   label: 'spells from database',
   count: arr => arr.length,
 });
 
-let ancestryDatabase = loadJson('ancestries.json', {
+let ancestryDatabase = loadGamedata('ancestries.json', {
   default: {},
-  fromRepo: true,
   label: 'ancestries from database',
   count: obj => Object.keys(obj).length,
 });
 
-let archetypeDatabase = loadJson('archetypes.json', {
+let archetypeDatabase = loadGamedata('archetypes.json', {
   default: {},
-  fromRepo: true,
   label: 'archetypes from database',
   count: obj => Object.keys(obj).length,
 });
 
 // File shape: { _meta: {...}, backgrounds: { key: {...} } }
-let backgroundDatabase = loadJson('background.json', {
+let backgroundDatabase = loadGamedata('background.json', {
   default: {},
-  fromRepo: true,
   label: 'backgrounds from database',
   transform: raw => raw.backgrounds ?? raw,
   count: obj => Object.keys(obj).length,
@@ -133,9 +132,8 @@ let backgroundDatabase = loadJson('background.json', {
 
 // File shape: { metadata: {...}, feats: [ {...} ] }
 // Filters out parser garbage (feats with 1-character names like "U")
-let featDatabase = loadJson('feats.json', {
+let featDatabase = loadGamedata('feats.json', {
   default: [],
-  fromRepo: true,
   label: 'feats from database',
   transform: raw => {
     const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
@@ -144,17 +142,21 @@ let featDatabase = loadJson('feats.json', {
   count: arr => arr.length,
 });
 
-let rulesDatabase = loadJson('rules.json', {
+let rulesDatabase = loadGamedata('rules.json', {
   default: {},
-  fromRepo: true,
   label: 'rules entries from database',
-  count: obj => Object.values(obj).reduce((sum, cat) => sum + Object.keys(cat).length, 0),
+  count: obj => Object.values(obj).reduce((sum, cat) => {
+    // Skip _meta key, only count real categories
+    if (cat && typeof cat === 'object' && !Array.isArray(cat)) {
+      return sum + Object.keys(cat).length;
+    }
+    return sum;
+  }, 0),
 });
 
 // File shape: { metadata: {...}, creatures: { key: {...} } }
-let bestiaryDatabase = loadJson('bestiary.json', {
+let bestiaryDatabase = loadGamedata('bestiary.json', {
   default: {},
-  seedFromRepo: true,
   label: 'creatures from bestiary',
   transform: raw => raw.creatures ?? raw,
   count: obj => Object.keys(obj).length,
@@ -178,7 +180,7 @@ function persistBestiary() {
   // with updated creatures.
   let metadata = null;
   try {
-    const existing = JSON.parse(fs.readFileSync(dataPath('bestiary.json'), 'utf8'));
+    const existing = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
     metadata = existing.metadata ?? null;
   } catch (_) { /* ignore, we'll write without metadata */ }
 
@@ -187,9 +189,7 @@ function persistBestiary() {
   // Put metadata first for readability, but JSON key order is just cosmetic
   const ordered = metadata ? { metadata, creatures: bestiaryDatabase } : payload;
 
-  const tmp = dataPath('bestiary.json.tmp');
-  fs.writeFileSync(tmp, JSON.stringify(ordered, null, 2), 'utf8');
-  fs.renameSync(tmp, dataPath('bestiary.json'));
+  atomicWriteGamedata('bestiary.json', ordered);
 }
 
 function addMonsterToBestiary(entry, slug) {
@@ -226,9 +226,7 @@ function removeMonsterFromBestiary(slugOrName) {
 // ── Spell database mutation helpers ───────────────────────────────────────────
 // spells.json is a flat array on disk. Atomic temp-file write, same as bestiary.
 function persistSpells() {
-  const tmp = dataPath('spells.json.tmp');
-  fs.writeFileSync(tmp, JSON.stringify(spellDatabase, null, 2), 'utf8');
-  fs.renameSync(tmp, dataPath('spells.json'));
+  atomicWriteGamedata('spells.json', spellDatabase);
 }
 
 function addSpellToDatabase(entry) {
@@ -262,9 +260,8 @@ function removeSpellFromDatabase(nameOrSlug) {
 
 // File shape: { meta: {...}, items: { slug: {...} } }
 // Flattens to array and filters out malformed entries.
-let itemDatabase = loadJson('items.json', {
+let itemDatabase = loadGamedata('items.json', {
   default: [],
-  seedFromRepo: true,
   label: 'items from database',
   transform: raw => {
     const itemsObj = raw.items ?? raw;
@@ -279,7 +276,7 @@ let itemDatabase = loadJson('items.json', {
 function persistItems() {
   let meta = null;
   try {
-    const existing = JSON.parse(fs.readFileSync(dataPath('items.json'), 'utf8'));
+    const existing = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
     meta = existing.meta ?? null;
   } catch (_) { /* ignore */ }
 
@@ -290,9 +287,7 @@ function persistItems() {
   }
   const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
 
-  const tmp = dataPath('items.json.tmp');
-  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
-  fs.renameSync(tmp, dataPath('items.json'));
+  atomicWriteGamedata('items.json', payload);
 }
 
 function addItemToDatabase(entry) {
@@ -330,9 +325,8 @@ function removeItemFromDatabase(nameOrSlug) {
 }
 
 // File shape: { metadata: {...}, deities: [ {...} ] }
-let deityDatabase = loadJson('deities.json', {
+let deityDatabase = loadGamedata('deities.json', {
   default: [],
-  fromRepo: true,
   label: 'deities from database',
   transform: raw => {
     const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
@@ -342,17 +336,15 @@ let deityDatabase = loadJson('deities.json', {
 });
 
 // File shape: { _meta: {...}, skills: { key: {...} } }
-let skillDatabase = loadJson('skills.json', {
+let skillDatabase = loadGamedata('skills.json', {
   default: {},
-  fromRepo: true,
   label: 'skills from database',
   transform: raw => raw.skills ?? raw,
   count: obj => Object.keys(obj).length,
 });
 
-let classDatabase = loadJson('classes.json', {
+let classDatabase = loadGamedata('classes.json', {
   default: {},
-  fromRepo: true,
   label: 'classes from database',
   transform: raw => raw.classes ?? raw,
   count: obj => Object.keys(obj).length,
@@ -361,9 +353,8 @@ let classDatabase = loadJson('classes.json', {
 // File shape: either { _meta, companions: { slug: {...} } } (keyed object),
 // { _meta, companions: [ {...} ] } (array), or the raw array/object itself.
 // Normalized to an array in all cases.
-let companionDatabase = loadJson('companions.json', {
+let companionDatabase = loadGamedata('companions.json', {
   default: [],
-  fromRepo: true,
   label: 'companions from database',
   transform: raw => {
     const inner = raw.companions ?? raw;

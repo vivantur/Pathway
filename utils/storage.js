@@ -10,21 +10,6 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
 
-// ── Where the repo's bundled JSON data lives ────────────────────────────────
-// After the folder reorg, all the static JSON data files (ancestries.json,
-// feats.json, archetypes.json, deities.json, bestiary.json, spells.json,
-// items.json, etc.) live in `<repo-root>/gamedata/`. This folder is named
-// `gamedata` (not `data`) to avoid colliding with the Railway persistent
-// volume mounted at /app/data — that mount would otherwise hide the repo's
-// reference data from the running bot.
-//
-// This module is in `<repo-root>/utils/`, so go up one level and into
-// `gamedata/`. Used as the default `repoRoot` for both dataPath() and
-// loadJson({ fromRepo }) so callers don't have to pass it every time.
-// Anything that needs a different location can still override via the
-// `repoRoot` option.
-const REPO_DATA_DIR = path.join(__dirname, '..', 'gamedata');
-
 // ── Persistent-data directory ────────────────────────────────────────────────
 // On Railway, mount a volume at /app/data (or wherever DATA_DIR points) so
 // user state (characters, bags, monster art/edits, notes, homebrew DB adds)
@@ -115,7 +100,7 @@ function preserveHomebrewDuringReseed(filename, volumeCopy, repoCopy) {
 // The second arg `repoRoot` lets callers override where the repo copy lives.
 // Defaults to process.cwd() which matches the old behavior when utils/ is
 // required from the project root.
-function dataPath(filename, { seedFromRepo = false, repoRoot = REPO_DATA_DIR } = {}) {
+function dataPath(filename, { seedFromRepo = false, repoRoot = process.cwd() } = {}) {
   const target = path.join(DATA_DIR, filename);
   const repoCopy = path.join(repoRoot, filename);
 
@@ -148,7 +133,82 @@ function dataPath(filename, { seedFromRepo = false, repoRoot = REPO_DATA_DIR } =
   return target;
 }
 
-// ── Per-file write serialization ────────────────────────────────────────────
+// ── Reference-data path (gamedata/) ─────────────────────────────────────────
+// PF2e content bundled with the repo (spells, feats, items, bestiary, etc.)
+// lives in gamedata/ inside the bot's source tree. These files are READ-ONLY
+// at runtime — they're updated by the AoN sync transformers (tools/aon-*.js)
+// and pushed via git, never written to from inside the bot.
+//
+// IMPORTANT: This is different from `dataPath`. dataPath() points to DATA_DIR
+// (Railway volume) which holds USER state (characters, bags, snippets, etc.)
+// that needs to survive redeploys. Reference data ships with the repo and
+// just needs to be readable.
+//
+// Resolves filenames relative to the bot's project root, regardless of where
+// the bot was started from. Falls back to process.cwd() if path detection
+// fails (which it shouldn't, since this file lives at utils/storage.js).
+const GAMEDATA_DIR = (() => {
+  // utils/storage.js → ../gamedata
+  try {
+    return path.join(__dirname, '..', 'gamedata');
+  } catch {
+    return path.join(process.cwd(), 'gamedata');
+  }
+})();
+
+function gamedataPath(filename) {
+  return path.join(GAMEDATA_DIR, filename);
+}
+
+// Read a reference-data file from gamedata/. Mirrors loadJson's signature
+// for drop-in compatibility, minus the seedFromRepo / fromRepo flags
+// (always reads from gamedata/).
+function loadGamedata(filename, opts = {}) {
+  const {
+    default: defaultValue = null,
+    label,
+    count,
+    transform,
+    quiet = false,
+  } = opts;
+
+  const target = gamedataPath(filename);
+  try {
+    const raw = JSON.parse(fs.readFileSync(target, 'utf8'));
+    const data = transform ? transform(raw) : raw;
+    if (!quiet) {
+      const noun = label || filename.replace(/\.json$/, '');
+      if (typeof count === 'function') {
+        try {
+          console.log(`Loaded ${count(data)} ${noun}.`);
+        } catch {
+          console.log(`Loaded ${noun}.`);
+        }
+      } else {
+        console.log(`Loaded ${noun}.`);
+      }
+    }
+    return data;
+  } catch (err) {
+    console.error(`Could not load gamedata/${filename}:`, err.message);
+    return defaultValue;
+  }
+}
+
+// Atomic write to gamedata/. Used by /spelladd /itemadd /monsteradd to
+// persist homebrew additions. Note: in production on Railway, gamedata/
+// is part of the deployed image — writes here will be lost on redeploy
+// unless committed to git. The user accepted this trade-off for simplicity
+// (homebrew is rare; you can re-run `/spelladd` after a redeploy if needed).
+function atomicWriteGamedata(filename, payload) {
+  const target = gamedataPath(filename);
+  const tmp = `${target}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
+  fs.renameSync(tmp, target);
+}
+
+// ── Persistent-data path (DATA_DIR) ─────────────────────────────────────────
+
 // Two users running commands at nearly the same instant could each call
 //   1. loadJson('characters.json')   ← both read same content
 //   2. modify their slot in memory
@@ -280,7 +340,7 @@ function loadJson(filename, opts = {}) {
     default: defaultValue = null,
     fromRepo = false,
     seedFromRepo = false,
-    repoRoot = REPO_DATA_DIR,
+    repoRoot = process.cwd(),
     label,
     count,
     transform,
@@ -310,15 +370,7 @@ function loadJson(filename, opts = {}) {
     }
     return data;
   } catch (err) {
-    // ENOENT (file-not-found) is the expected case for state files on first
-    // use — there's no data to load yet, so the default is correct. Honor
-    // the quiet flag so callers can suppress these expected-first-use logs
-    // (calendar-state.json, weather-state.json, etc.). Other errors (corrupt
-    // JSON, permission denied, etc.) always log so we don't lose visibility
-    // into real problems.
-    if (!(quiet && err.code === 'ENOENT')) {
-      console.error(`Could not load ${filename}:`, err.message);
-    }
+    console.error(`Could not load ${filename}:`, err.message);
     return defaultValue;
   }
 }
@@ -408,9 +460,13 @@ function mutateJson(filename, opts, mutator) {
 
 module.exports = {
   DATA_DIR,
+  GAMEDATA_DIR,
   dataPath,
+  gamedataPath,
   atomicWriteJson,
+  atomicWriteGamedata,
   loadJson,
+  loadGamedata,
   saveJson,
   mutateJson,
   backupJsonToGitHub,
