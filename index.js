@@ -377,6 +377,56 @@ function saveCharacters(data) {
   return saveJson('characters.json', data);
 }
 
+// ── Race-free character mutation ─────────────────────────────────────────────
+// Use this INSTEAD OF the loadCharacters → modify → saveCharacters pattern
+// for any code path that mutates character data. It prevents the most common
+// data-corruption bug: two commands hitting at the same millisecond, each
+// loading the same starting state, each modifying their copy, with the
+// second save overwriting the first.
+//
+// Under the hood this wraps mutateJson which uses a per-file write queue to
+// serialize concurrent calls — two simultaneous mutateCharacters calls simply
+// run one after the other, with the second one seeing the first's changes.
+//
+// USAGE
+// ─────
+//
+//   // OLD (race-prone — DON'T USE FOR NEW CODE):
+//   const characters = loadCharacters();
+//   characters[userId][key].hp = 30;
+//   saveCharacters(characters);
+//
+//   // NEW (race-free):
+//   await mutateCharacters((characters) => {
+//     characters[userId][key].hp = 30;
+//   });
+//
+// The mutator can be sync or async. You don't need to `return characters` —
+// mutateJson detects in-place mutations. If you need a value back to the
+// caller (e.g. the new HP, or "did this character exist?"), pass
+// { returnValue: true } and return whatever you want from the mutator:
+//
+//   const result = await mutateCharacters((characters) => {
+//     const c = characters[userId]?.[key];
+//     if (!c) return { error: 'Not found' };
+//     c.hp = (c.hp ?? c.maxHp) - 10;
+//     return { ok: true, newHp: c.hp };
+//   }, { returnValue: true });
+//
+// IMPORTANT: with returnValue:true, the resolved value is whatever the
+// mutator returns — NOT the new state of `characters`. The file is still
+// saved (mutateJson always writes after a successful mutator).
+async function mutateCharacters(mutator, opts = {}) {
+  const { returnValue = false } = opts;
+  let captured;
+  await mutateJson('characters.json', { default: {} }, async (characters) => {
+    const result = await mutator(characters);
+    if (returnValue) captured = result;
+    // Return undefined → mutateJson saves the in-place mutation
+  });
+  return captured;
+}
+
 // ── Downtime helpers ──────────────────────────────────────────────────────────
 // Downtime activities and the per-character bank of downtime days are stored
 // in downtime.json (separate from characters.json so character imports don't
