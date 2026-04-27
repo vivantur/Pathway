@@ -1426,7 +1426,8 @@
             "Intimidation": 0,
             "Medicine": 1,
             "Nature": 1,
-            "Occultism": -4
+            "Occultism": -4,
+            "Performance": 0
           }
         }
       },
