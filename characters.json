@@ -1448,7 +1448,8 @@
           "last_rest_at": "2026-04-27T23:00:32.601Z"
         }
       },
-      "hp": 24
+      "hp": 24,
+      "heroPoints": 2
     },
     "isolde": {
       "name": "Isolde",
