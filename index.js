@@ -6363,14 +6363,14 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply('Pong! 🏓 Bot is alive and running.');
   }
 
-  // ─── /br — scene break ─────────────────────────────────────────────
+  // ─── /break — scene break ──────────────────────────────────────────
   // Avrae-style visual divider for play-by-post games. With no args, it
-  // prints a plain separator bar. With a title, it embeds the title
-  // between two dividers for labeled scene transitions.
+  // prints a flat dark bar. With a title, it embeds the title between two
+  // dividers for labeled scene transitions.
   //
   // Deferred immediately because Railway cold starts can otherwise push
   // past Discord's 3-second reply window and cause 10062 errors.
-  else if (commandName === 'br') {
+  else if (commandName === 'break') {
     // Page break — renders as a flat dark bar in chat to visually separate
     // scenes, rounds, encounters, etc. Matches the look of Avrae's !break.
     //
@@ -6399,11 +6399,11 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
-        console.error('/br error:', err);
+        console.error('/break error:', err);
       }
       try {
         if (interaction.deferred || interaction.replied) {
-          await interaction.editReply('❌ Something went wrong with /br. Try again.');
+          await interaction.editReply('❌ Something went wrong with /break. Try again.');
         }
       } catch {}
     }
