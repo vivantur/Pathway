@@ -1431,7 +1431,8 @@
             "Religion": 1,
             "Society": -4,
             "Stealth": 6,
-            "Survival": 1
+            "Survival": 1,
+            "Thievery": 2
           }
         }
       },
