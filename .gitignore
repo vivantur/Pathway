@@ -1,12 +1,13 @@
-﻿# Dependencies
+﻿# Raw AoN dumps — regenerate with `node tools/aon-fetch.js`
+gamedata/aon-raw/*.json
+!gamedata/aon-raw/README.md
+!gamedata/aon-raw/.gitkeep
+
+# Local backups — don't push these
+gamedata/*.backup
+*.backup
+
+# The usual suspects
 node_modules/
-
-# Environment
 .env
-
-# Runtime data (per-server state, not code)
-characters.json
-bags.json
-monster_art.json
-monster_attacks.json
-monster_edits.json
+saves/characters.json

@@ -1,0 +1,68 @@
+{
+  "1466843829343752417": {
+    "\"lucky\" lanks": {
+      "displayName": "\"Lucky\" Lanks",
+      "attacks": [
+        {
+          "name": "Shortsword",
+          "kind": "strike",
+          "bonus": 16,
+          "damage": "2d6+4",
+          "damageType": "piercing",
+          "traits": [
+            "agile",
+            "finesse",
+            "magical",
+            "vertical s"
+          ],
+          "extraDamage": null,
+          "extraType": null
+        },
+        {
+          "name": "Dagger",
+          "kind": "strike",
+          "bonus": 15,
+          "damage": "1d4+4",
+          "damageType": "piercing",
+          "traits": [
+            "agile",
+            "finesse",
+            "versatile s"
+          ],
+          "extraDamage": null,
+          "extraType": null
+        },
+        {
+          "name": "Coat Pistol",
+          "kind": "strike",
+          "bonus": 15,
+          "damage": "1d4+4",
+          "damageType": "piercing",
+          "traits": [
+            "concealable",
+            "concussive",
+            "fatal d8",
+            "range increment 30ft",
+            "reload 1"
+          ],
+          "extraDamage": null,
+          "extraType": null
+        },
+        {
+          "name": "Ranged Dagger",
+          "kind": "strike",
+          "bonus": 15,
+          "damage": "1d4+4",
+          "damageType": "piercing",
+          "traits": [
+            "agile",
+            "thrown 10 feet",
+            "versatile s"
+          ],
+          "extraDamage": null,
+          "extraType": null
+        }
+      ]
+    }
+  }
+}
