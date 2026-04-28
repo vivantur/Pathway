@@ -23,7 +23,21 @@
 'use strict';
 
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const weather = require('../systems/weather');
+const golarionWeather = require('../systems/weather');
+const eberronWeather = require('../systems/eberronWeather');
+const settings = require('../systems/settings');
+
+// Pick the right weather engine for a guild. Both engines export the same
+// public API so handlers below can use `wx` interchangeably. Default is
+// Golarion for backward compatibility.
+function getEngine(guildId) {
+  const setting = settings.getCampaignSetting(guildId);
+  return setting === 'eberron' ? eberronWeather : golarionWeather;
+}
+
+function settingLabel(name) {
+  return name === 'eberron' ? 'Eberron (14 climates incl. Mournland)' : 'Golarion (Inner Sea climates)';
+}
 
 const WEATHER_GM_ONLY = process.env.WEATHER_GM_ONLY === '1' || process.env.WEATHER_GM_ONLY === 'true';
 
@@ -38,22 +52,25 @@ function isGm(interaction) {
 const CLIMATE_EMOJI = { temperate: '🌳', tropical: '🌴', arctic: '🧊', desert: '🏜️', swamp: '🐊', coastal: '🌊', mountain: '🏔️', underground: '🕳️' };
 
 // Build the embed shown by /weather current and /weather forecast (per day).
-function buildWeatherEmbed(state, weatherData, opts = {}) {
+function buildWeatherEmbed(state, weatherData, opts = {}, wx = null) {
+  if (!wx) throw new Error('buildWeatherEmbed: wx engine parameter required.');
   const { title, footer, color = 0x5DADE2 } = opts;
-  const climateLabel = weather.RULES.climates[state.climate]?.label || state.climate;
-  const climateEmoji = CLIMATE_EMOJI[state.climate] || '';
+  const climateLabel = wx.RULES.climates[state.climate]?.label || state.climate;
+  // Climate emoji: prefer the engine's own emoji (Eberron has continent-specific
+  // ones), fall back to the CLIMATE_EMOJI map (Golarion's flat list).
+  const climateEmoji = wx.RULES.climates[state.climate]?.emoji || CLIMATE_EMOJI[state.climate] || '';
   const seasonLabel = state.season.charAt(0).toUpperCase() + state.season.slice(1);
 
   const embed = new EmbedBuilder()
     .setColor(color)
     .setTitle(title || `${climateEmoji} Weather — Day ${state.day}`)
-    .setDescription(weather.describeWeather(weatherData))
+    .setDescription(wx.describeWeather(weatherData))
     .addFields(
       { name: 'Climate', value: `${climateLabel} · ${seasonLabel}`, inline: true },
     );
 
   // Add a "mechanical effects" field only if there's something noteworthy.
-  const mech = mechanicalSummary(weatherData);
+  const mech = mechanicalSummary(weatherData, wx);
   if (mech.length > 0) {
     embed.addFields({ name: 'Mechanical Effects', value: mech.join('\n') });
   }
@@ -63,26 +80,28 @@ function buildWeatherEmbed(state, weatherData, opts = {}) {
 }
 
 // Short bullet-list summary of mechanical impact, used inside the embed.
-function mechanicalSummary(w) {
-  if (!w) return [];
+function mechanicalSummary(w, wx) {
+  if (!w || !wx) return [];
   const out = [];
-  const tdef = weather.RULES.temperature[w.effectiveTemperatureCategory || w.temperatureCategory];
+  const tdef = wx.RULES.temperature[w.effectiveTemperatureCategory || w.temperatureCategory];
   if (tdef?.damage) {
-    const dice = weather.RULES.damageTiers[tdef.damage.tier]?.dice;
+    const dice = wx.RULES.damageTiers[tdef.damage.tier]?.dice;
     out.push(`• ${tdef.label}: ${dice} ${tdef.damage.type} damage every ${tdef.damage.interval} unprotected (fatigue at ${tdef.fatigueHours}h travel)`);
   }
-  const pdef = weather.RULES.precipitation[w.precipitation];
+  const pdef = wx.RULES.precipitation[w.precipitation];
   if (pdef?.perceptionPenalty) out.push(`• ${pdef.label}: ${pdef.perceptionPenalty} visual Perception`);
   if (pdef?.lightning) {
-    const dice = weather.RULES.damageTiers[pdef.lightning.tier]?.dice;
+    const dice = wx.RULES.damageTiers[pdef.lightning.tier]?.dice;
     out.push(`• Lightning risk: ~${(pdef.lightning.chancePerHour * 100).toFixed(1)}%/hour, ${dice} ${pdef.lightning.type} damage on strike`);
   }
-  const wdef = weather.RULES.wind[w.wind];
+  if (pdef?.note) out.push(`• ${pdef.label}: ${pdef.note}`);
+  const wdef = wx.RULES.wind[w.wind];
   if (wdef?.rangedImpossible) out.push(`• ${wdef.label}: ranged attacks impossible`);
   else if (wdef?.rangedPenalty) out.push(`• ${wdef.label}: ${wdef.rangedPenalty} ranged attacks, ${wdef.auditoryPenalty} auditory Perception`);
-  const fdef = weather.RULES.fog[w.fog];
+  const fdef = wx.RULES.fog[w.fog];
   if (fdef?.concealment) out.push(`• ${fdef.label}: creatures have concealment in fog (DC 5 flat to target)`);
   else if (fdef?.perceptionPenalty) out.push(`• ${fdef.label}: ${fdef.perceptionPenalty} visual Perception`);
+  if (fdef?.note) out.push(`• ${fdef.label}: ${fdef.note}`);
   return out;
 }
 
@@ -91,29 +110,38 @@ async function handleWeather(interaction, encountersModule = null) {
   if (!interaction.guildId) {
     return interaction.reply({ content: 'Weather is per-server, so this command only works in a server.', ephemeral: true });
   }
-  // Defensive check: if gamedata/weather.json failed to load at startup,
+  const guildId = interaction.guildId;
+  const sub = interaction.options.getSubcommand();
+
+  // The setting subcommand must run BEFORE we resolve `wx`, since it changes
+  // which engine is active. Handle it first.
+  if (sub === 'setting') {
+    return cmdSetting(interaction, guildId);
+  }
+
+  // Resolve which engine to use for everything else.
+  const wx = getEngine(guildId);
+
+  // Defensive check: if the engine's data file failed to load at startup,
   // RULES will be null and every command will crash on a property access.
-  // Report a clear error instead so the GM knows where to look.
-  if (!weather.RULES) {
+  if (!wx.RULES) {
+    const file = wx === eberronWeather ? 'eberron-weather.json' : 'weather.json';
     return interaction.reply({
-      content: '❌ Weather data file is missing. The bot couldn\'t load `gamedata/weather.json`. Check the deploy logs for the exact error and confirm the file exists in your repo.',
+      content: `❌ Weather data file is missing. The bot couldn't load \`gamedata/${file}\`. Check the deploy logs for the exact error and confirm the file exists in your repo.`,
       ephemeral: true,
     });
   }
 
-  const sub = interaction.options.getSubcommand();
-  const guildId = interaction.guildId;
-
   try {
     switch (sub) {
-      case 'current':   return cmdCurrent(interaction, guildId);
-      case 'climate':   return cmdClimate(interaction, guildId);
-      case 'set':       return cmdSet(interaction, guildId);
-      case 'roll':      return cmdRoll(interaction, guildId);
-      case 'advance':   return cmdAdvance(interaction, guildId);
-      case 'forecast':  return cmdForecast(interaction, guildId);
-      case 'apply':     return cmdApply(interaction, guildId, encountersModule);
-      case 'clear':     return cmdClear(interaction, guildId);
+      case 'current':   return cmdCurrent(interaction, guildId, wx);
+      case 'climate':   return cmdClimate(interaction, guildId, wx);
+      case 'set':       return cmdSet(interaction, guildId, wx);
+      case 'roll':      return cmdRoll(interaction, guildId, wx);
+      case 'advance':   return cmdAdvance(interaction, guildId, wx);
+      case 'forecast':  return cmdForecast(interaction, guildId, wx);
+      case 'apply':     return cmdApply(interaction, guildId, encountersModule, wx);
+      case 'clear':     return cmdClear(interaction, guildId, wx);
       default:          return interaction.reply({ content: `Unknown subcommand: ${sub}`, ephemeral: true });
     }
   } catch (err) {
@@ -125,96 +153,118 @@ async function handleWeather(interaction, encountersModule = null) {
   }
 }
 
+// ── /weather setting ──────────────────────────────────────────────────────
+// Switches this server between Golarion and Eberron weather. With no argument,
+// shows current. GM-gated.
+async function cmdSetting(interaction, guildId) {
+  const choice = interaction.options.getString('choice');
+  if (!choice) {
+    const current = settings.getCampaignSetting(guildId);
+    return interaction.reply({
+      content: `🌦️ This server is currently using **${settingLabel(current)}**.\n\nUse \`/weather setting choice:eberron\` or \`/weather setting choice:golarion\` to switch.\n\n*Note: \`/calendar setting\` and \`/weather setting\` share the same value — switching one switches both.*`,
+      ephemeral: true,
+    });
+  }
+  if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can change the campaign setting.', ephemeral: true });
+  await settings.setCampaignSetting(guildId, choice);
+  const wx = getEngine(guildId);
+  return interaction.reply({
+    content: `✅ Campaign setting switched to **${settingLabel(choice)}**.\n\n*Weather state is preserved across switches but climate names differ. Use \`/weather climate\` to pick from the new climate list (${wx.listClimates().length} available).*`,
+  });
+}
+
 // ── /weather current ──────────────────────────────────────────────────────
-async function cmdCurrent(interaction, guildId) {
-  const state = weather.getWeather(guildId);
+async function cmdCurrent(interaction, guildId, wx) {
+  const state = wx.getWeather(guildId);
   if (!state) {
     return interaction.reply({
       content: 'No weather has been set for this server yet. Use `/weather climate` to pick a starting climate, or `/weather roll` to generate one.',
       ephemeral: true,
     });
   }
-  const embed = buildWeatherEmbed(state, state.current);
+  const embed = buildWeatherEmbed(state, state.current, {}, wx);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /weather climate ──────────────────────────────────────────────────────
-async function cmdClimate(interaction, guildId) {
+async function cmdClimate(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can change the climate.', ephemeral: true });
   const climate = interaction.options.getString('climate');
   const season = interaction.options.getString('season') || null;
-  if (!weather.isValidClimate(climate)) {
-    return interaction.reply({ content: `❌ Unknown climate: \`${climate}\`. Try one of: ${weather.listClimates().map(c => c.key).join(', ')}`, ephemeral: true });
+  if (!wx.isValidClimate(climate)) {
+    return interaction.reply({ content: `❌ Unknown climate: \`${climate}\`. Try one of: ${wx.listClimates().map(c => c.key).join(', ')}`, ephemeral: true });
   }
   // First-time creation if needed
-  await weather.ensureWeather(guildId, { climate, season: season || 'spring' });
-  await weather.setClimate(guildId, climate, season);
-  const state = weather.getWeather(guildId);
+  await wx.ensureWeather(guildId, { climate, season: season || 'spring' });
+  await wx.setClimate(guildId, climate, season);
+  const state = wx.getWeather(guildId);
+  // Climate emoji prefers engine-specific (Eberron) over the legacy CLIMATE_EMOJI map.
+  const climEmoji = wx.RULES.climates[climate]?.emoji || CLIMATE_EMOJI[climate] || '';
   const embed = buildWeatherEmbed(state, state.current, {
-    title: `${CLIMATE_EMOJI[climate] || ''} Climate set: ${weather.RULES.climates[climate].label}`,
+    title: `${climEmoji} Climate set: ${wx.RULES.climates[climate].label}`,
     footer: 'Today\'s weather has been re-rolled for the new climate.',
-  });
+  }, wx);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /weather set ──────────────────────────────────────────────────────────
-async function cmdSet(interaction, guildId) {
+async function cmdSet(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can set weather components.', ephemeral: true });
   const component = interaction.options.getString('component');
   const value = interaction.options.getString('value');
-  await weather.setComponent(guildId, component, isNaN(Number(value)) ? value : Number(value));
-  const state = weather.getWeather(guildId);
+  await wx.setComponent(guildId, component, isNaN(Number(value)) ? value : Number(value));
+  const state = wx.getWeather(guildId);
   const embed = buildWeatherEmbed(state, state.current, {
     title: `Weather updated — ${component} → ${value}`,
-  });
+  }, wx);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /weather roll ─────────────────────────────────────────────────────────
-async function cmdRoll(interaction, guildId) {
+async function cmdRoll(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can roll new weather.', ephemeral: true });
-  const state = weather.getWeather(guildId);
+  const state = wx.getWeather(guildId);
   if (!state) {
     return interaction.reply({ content: 'No climate set yet. Use `/weather climate` first.', ephemeral: true });
   }
-  await weather.rollWeather(guildId);
-  const fresh = weather.getWeather(guildId);
-  const embed = buildWeatherEmbed(fresh, fresh.current, { title: '🎲 Rolled new weather for today' });
+  await wx.rollWeather(guildId);
+  const fresh = wx.getWeather(guildId);
+  const embed = buildWeatherEmbed(fresh, fresh.current, { title: '🎲 Rolled new weather for today' }, wx);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /weather advance ──────────────────────────────────────────────────────
-async function cmdAdvance(interaction, guildId) {
+async function cmdAdvance(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can advance time.', ephemeral: true });
   const days = interaction.options.getInteger('days');
-  const state = weather.getWeather(guildId);
+  const state = wx.getWeather(guildId);
   if (!state) {
     return interaction.reply({ content: 'No climate set yet. Use `/weather climate` first.', ephemeral: true });
   }
-  await weather.advanceDays(guildId, days);
-  const fresh = weather.getWeather(guildId);
+  await wx.advanceDays(guildId, days);
+  const fresh = wx.getWeather(guildId);
   const embed = buildWeatherEmbed(fresh, fresh.current, {
     title: `⏭️ Advanced ${days} day${days === 1 ? '' : 's'} — now Day ${fresh.day}`,
-  });
+  }, wx);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /weather forecast ─────────────────────────────────────────────────────
-async function cmdForecast(interaction, guildId) {
+async function cmdForecast(interaction, guildId, wx) {
   const days = interaction.options.getInteger('days') || 3;
   if (days < 1 || days > 7) {
     return interaction.reply({ content: '❌ Forecast must be between 1 and 7 days.', ephemeral: true });
   }
-  const state = weather.getWeather(guildId);
+  const state = wx.getWeather(guildId);
   if (!state) {
     return interaction.reply({ content: 'No climate set yet. Use `/weather climate` first.', ephemeral: true });
   }
-  const forecast = weather.getForecast(guildId, days);
+  const forecast = wx.getForecast(guildId, days);
   const lines = forecast.map(d => {
-    const t = weather.RULES.temperature[d.temperatureCategory] || {};
-    const p = weather.RULES.precipitation[d.precipitation] || {};
-    const w = weather.RULES.wind[d.wind] || {};
-    const f = weather.RULES.fog[d.fog] || {};
+    const t = wx.RULES.temperature[d.temperatureCategory] || {};
+    const p = wx.RULES.precipitation[d.precipitation] || {};
+    const w = wx.RULES.wind[d.wind] || {};
+    const f = wx.RULES.fog[d.fog] || {};
     const parts = [`${t.emoji || ''} ${d.temperatureF}°F (${t.label})`, `${p.emoji || ''} ${p.label}`];
     if (d.wind !== 'calm' && d.wind !== 'light') parts.push(`${w.emoji || ''} ${w.label}`);
     if (d.fog !== 'none') parts.push(`${f.emoji || ''} ${f.label}`);
@@ -229,12 +279,12 @@ async function cmdForecast(interaction, guildId) {
 }
 
 // ── /weather apply ────────────────────────────────────────────────────────
-async function cmdApply(interaction, guildId, encountersModule) {
+async function cmdApply(interaction, guildId, encountersModule, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can apply weather to combatants.', ephemeral: true });
   if (!encountersModule) {
     return interaction.reply({ content: '❌ Encounter integration not available in this build.', ephemeral: true });
   }
-  const state = weather.getWeather(guildId);
+  const state = wx.getWeather(guildId);
   if (!state) {
     return interaction.reply({ content: 'No weather set for this server. Use `/weather climate` first.', ephemeral: true });
   }
@@ -242,7 +292,7 @@ async function cmdApply(interaction, guildId, encountersModule) {
   if (!enc) {
     return interaction.reply({ content: '❌ No active encounter in this channel. Start one first, or apply weather effects manually with `/init effect`.', ephemeral: true });
   }
-  const effects = weather.buildEffectsForCombatant(state.current, { appliedBy: 'weather' });
+  const effects = wx.buildEffectsForCombatant(state.current, { appliedBy: 'weather' });
   if (effects.length === 0) {
     return interaction.reply({ content: 'Current weather has no mechanical effects to apply.', ephemeral: true });
   }
@@ -262,9 +312,9 @@ async function cmdApply(interaction, guildId, encountersModule) {
 }
 
 // ── /weather clear ────────────────────────────────────────────────────────
-async function cmdClear(interaction, guildId) {
+async function cmdClear(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can clear weather state.', ephemeral: true });
-  await weather.clear(guildId);
+  await wx.clear(guildId);
   return interaction.reply({ content: '🗑️ Weather state cleared for this server.', ephemeral: true });
 }
 
@@ -275,20 +325,27 @@ async function cmdClear(interaction, guildId) {
 //     return weatherCmd.handleWeatherAutocomplete(interaction);
 //   }
 async function handleWeatherAutocomplete(interaction) {
+  const guildId = interaction.guildId;
+  const wx = guildId ? getEngine(guildId) : golarionWeather;
   const sub = interaction.options.getSubcommand(false);
   const focused = interaction.options.getFocused(true);
   const term = String(focused.value || '').toLowerCase();
   let choices = [];
 
   if (sub === 'climate' && focused.name === 'climate') {
-    choices = weather.listClimates().map(c => ({ name: `${c.emoji} ${c.label}`, value: c.key }));
+    choices = wx.listClimates().map(c => ({ name: `${c.emoji} ${c.label}`, value: c.key }));
   } else if (sub === 'climate' && focused.name === 'season') {
-    choices = weather.SEASONS.map(s => ({ name: s.charAt(0).toUpperCase() + s.slice(1), value: s }));
+    choices = wx.SEASONS.map(s => ({ name: s.charAt(0).toUpperCase() + s.slice(1), value: s }));
   } else if (sub === 'set' && focused.name === 'value') {
     const component = interaction.options.getString('component');
     if (component && component !== 'temperature') {
-      choices = weather.listChoices(component);
+      choices = wx.listChoices(component);
     }
+  } else if (sub === 'setting' && focused.name === 'choice') {
+    choices = [
+      { name: 'Golarion (Inner Sea Calendar)', value: 'golarion' },
+      { name: 'Eberron (Galifar Calendar)',    value: 'eberron'  },
+    ];
   }
 
   const filtered = choices

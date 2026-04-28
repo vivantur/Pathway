@@ -22,7 +22,31 @@
 'use strict';
 
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const calendar = require('../systems/calendar');
+const golarionCalendar = require('../systems/calendar');
+const eberronCalendar = require('../systems/eberronCalendar');
+const settings = require('../systems/settings');
+
+// Pick the right engine for a guild. Defaults to Golarion for backward
+// compatibility — every existing server keeps its current experience until
+// someone runs /calendar setting choice:eberron.
+//
+// Both engines export the same public API (getDate, advance, getMonthGrid,
+// describeDate, etc.) so this is a true drop-in dispatch — handlers below
+// just use `cal` as if it were the original calendar module.
+function getEngine(guildId) {
+  const setting = settings.getCampaignSetting(guildId);
+  return setting === 'eberron' ? eberronCalendar : golarionCalendar;
+}
+
+// Year suffix differs between settings. Helpers below use this for embed
+// titles. Pulled from the engine so we don't hardcode strings.
+function yearSuffix(cal) {
+  return cal === eberronCalendar ? 'YK' : 'AR';
+}
+
+function settingLabel(name) {
+  return name === 'eberron' ? 'Eberron (Galifar Calendar)' : 'Golarion (Inner Sea Calendar)';
+}
 
 const GM_ONLY =
   process.env.CALENDAR_GM_ONLY === '1' || process.env.CALENDAR_GM_ONLY === 'true' ||
@@ -40,12 +64,15 @@ const SEASON_LABEL = { spring: 'Spring', summer: 'Summer', autumn: 'Autumn', win
 // Ask the weather module (if available) to update its season for the given
 // guild. Best-effort: if anything throws (e.g. weather state doesn't exist),
 // we silently skip — calendar shouldn't fail because of weather.
-async function syncWeatherSeason(weatherModule, guildId, date) {
-  if (!weatherModule || !date) return;
+//
+// `cal` is the calendar engine to use (Golarion or Eberron). Both expose
+// the same seasonOf API so this works for either setting.
+async function syncWeatherSeason(weatherModule, guildId, date, cal) {
+  if (!weatherModule || !date || !cal) return;
   try {
     const state = weatherModule.getWeather && weatherModule.getWeather(guildId);
     if (!state) return; // No weather set for this server; nothing to sync.
-    const newSeason = calendar.seasonOf(date.month);
+    const newSeason = cal.seasonOf(date.month);
     if (newSeason && newSeason !== state.season && weatherModule.setSeason) {
       await weatherModule.setSeason(guildId, newSeason);
     }
@@ -54,26 +81,33 @@ async function syncWeatherSeason(weatherModule, guildId, date) {
   }
 }
 
-// Build the embed shown by /calendar today.
-function buildTodayEmbed(date) {
-  const monthDef = calendar.RULES.months[date.month - 1];
-  const wdName = calendar.weekdayName(date.year, date.month, date.day);
-  const wdDef = calendar.RULES.weekdays.find(w => w.name === wdName);
-  const moon = calendar.getMoonPhase(date.year, date.month, date.day);
-  const season = calendar.seasonOf(date.month);
-  const holidaysToday = calendar.getHolidaysOn(date.year, date.month, date.day);
-  const isLeap = calendar.isLeapYear(date.year);
+// Build the embed shown by /calendar today. Engine-aware: works for both
+// Golarion (deity-named months) and Eberron (moon-named months with dragonmarks).
+function buildTodayEmbed(date, cal) {
+  const monthDef = cal.RULES.months[date.month - 1];
+  const wdName = cal.weekdayName(date.year, date.month, date.day);
+  const wdDef = cal.RULES.weekdays.find(w => w.name === wdName);
+  const moon = cal.getMoonPhase(date.year, date.month, date.day);
+  const season = cal.seasonOf(date.month);
+  const holidaysToday = cal.getHolidaysOn(date.year, date.month, date.day);
+  const isLeap = cal.isLeapYear(date.year);
+
+  // Golarion months have .deity; Eberron months have .moon + .dragonmark.
+  // We pick whichever the engine provided so the heading reads correctly.
+  const monthSubtitle = monthDef.deity
+    ? monthDef.deity
+    : (monthDef.dragonmark ? `Mark of ${monthDef.dragonmark}` : '');
 
   const embed = new EmbedBuilder()
     .setColor(0x9B59B6)
-    .setTitle(`📅 ${calendar.describeDate(date)}`)
+    .setTitle(`📅 ${cal.describeDate(date)}`)
     .setDescription(
       `*${wdDef?.blurb || ''}*\n\n` +
       `**${SEASON_EMOJI[season]} ${SEASON_LABEL[season]}** · ` +
-      `**${moon.emoji} ${moon.name}**${isLeap ? ' · 🌀 Leap Year' : ''}`
+      `**${moon.emoji} ${moon.name}${moon.moonName ? ` (${moon.moonName})` : ''}**${isLeap ? ' · 🌀 Leap Year' : ''}`
     )
     .addFields({
-      name: `${monthDef.name} (${monthDef.deity})`,
+      name: monthSubtitle ? `${monthDef.name} — ${monthSubtitle}` : monthDef.name,
       value: monthDef.blurb,
     });
 
@@ -85,11 +119,11 @@ function buildTodayEmbed(date) {
   }
 
   // Always show the next upcoming holiday so the GM has something to look forward to.
-  const next = calendar.getNextHoliday(date.year, date.month, date.day);
+  const next = cal.getNextHoliday(date.year, date.month, date.day);
   if (next) {
     embed.addFields({
       name: '⏭️ Next Holiday',
-      value: `${next.holiday.emoji || ''} **${next.holiday.name}** in ${next.daysAway} day${next.daysAway === 1 ? '' : 's'} (${calendar.describeDate(next.occursOn, { includeWeekday: false })})`,
+      value: `${next.holiday.emoji || ''} **${next.holiday.name}** in ${next.daysAway} day${next.daysAway === 1 ? '' : 's'} (${cal.describeDate(next.occursOn, { includeWeekday: false })})`,
     });
   }
 
@@ -97,14 +131,14 @@ function buildTodayEmbed(date) {
 }
 
 // Build the embed shown by /calendar month — a grid view of the chosen month.
-function buildMonthEmbed(year, month, today = null) {
-  const monthDef = calendar.RULES.months[month - 1];
-  const grid = calendar.getMonthGrid(year, month, today);
-  const isLeap = calendar.isLeapYear(year);
-  const len = calendar.monthLength(month - 1, year);
+function buildMonthEmbed(year, month, today = null, cal) {
+  const monthDef = cal.RULES.months[month - 1];
+  const grid = cal.getMonthGrid(year, month, today);
+  const isLeap = cal.isLeapYear(year);
+  const len = cal.monthLength(month - 1, year);
 
   // Header row: short weekday names (2 letters)
-  const header = calendar.WEEKDAY_NAMES.map(n => `\`${n.slice(0, 2)}\``).join(' ');
+  const header = cal.WEEKDAY_NAMES.map(n => `\`${n.slice(0, 2)}\``).join(' ');
 
   // Cell formatting: 2-wide day number with marker. Uses backticks for
   // monospace alignment; markdown bold for today.
@@ -120,25 +154,38 @@ function buildMonthEmbed(year, month, today = null) {
     lines.push(cells.join(' '));
   }
 
-  const monthHolidays = calendar.listHolidays(month);
+  // Eberron's "every X day" recurring holidays (Tain Gala) need to be expanded
+  // for the current month using resolveWeekdayHolidays. listHolidays gives
+  // only fixed-date holidays.
+  const monthHolidays = [
+    ...cal.listHolidays(month),
+    ...(cal.resolveWeekdayHolidays ? cal.resolveWeekdayHolidays(year, month) : []),
+  ].sort((a, b) => a.day - b.day);
+
   const holidayLines = monthHolidays.map(h => {
-    const dStr = calendar.ordinal(h.day);
+    const dStr = cal.ordinal(h.day);
     return `${h.emoji || ''} **${dStr}** — ${h.name}${h.deity ? ` *(${h.deity})*` : ''}`;
   });
 
+  // Year suffix and footer subtitle vary by setting.
+  const suffix = yearSuffix(cal);
+  const footer = monthDef.deity
+    ? `${len} days · ${monthDef.deity}'s month`
+    : (monthDef.moon ? `${len} days · the ${monthDef.moon} Moon (Mark of ${monthDef.dragonmark})` : `${len} days`);
+
   const embed = new EmbedBuilder()
     .setColor(0x9B59B6)
-    .setTitle(`📅 ${monthDef.name} ${year} AR${isLeap ? ' (leap year)' : ''}`)
+    .setTitle(`📅 ${monthDef.name} ${year} ${suffix}${isLeap ? ' (leap year)' : ''}`)
     .setDescription(
       `*${monthDef.blurb}*\n\n` +
       lines.join('\n') +
-      (today && today.year === year && today.month === month ? `\n\n*Today: ${calendar.ordinal(today.day)}*` : '') +
+      (today && today.year === year && today.month === month ? `\n\n*Today: ${cal.ordinal(today.day)}*` : '') +
       `\n*\\* = holiday*`
     );
   if (monthHolidays.length > 0) {
     embed.addFields({ name: 'Holidays', value: holidayLines.join('\n') });
   }
-  embed.setFooter({ text: `${len} days · ${monthDef.deity}'s month` });
+  embed.setFooter({ text: footer });
   return embed;
 }
 
@@ -147,28 +194,38 @@ async function handleCalendar(interaction, weatherModule = null) {
   if (!interaction.guildId) {
     return interaction.reply({ content: 'Calendar is per-server, so this command only works in a server.', ephemeral: true });
   }
-  // Defensive check: if gamedata/calendar.json failed to load at startup,
+  const guildId = interaction.guildId;
+  const sub = interaction.options.getSubcommand();
+
+  // The setting subcommand must run BEFORE we resolve `cal`, since it changes
+  // which engine is active. Handle it first.
+  if (sub === 'setting') {
+    return cmdSetting(interaction, guildId);
+  }
+
+  // Resolve which engine to use for everything else.
+  const cal = getEngine(guildId);
+
+  // Defensive check: if the engine's data file failed to load at startup,
   // RULES will be null and every command will crash on a property access.
-  // Report a clear error instead so the GM knows where to look.
-  if (!calendar.RULES) {
+  if (!cal.RULES) {
+    const file = cal === eberronCalendar ? 'eberron-calendar.json' : 'calendar.json';
     return interaction.reply({
-      content: '❌ Calendar data file is missing. The bot couldn\'t load `gamedata/calendar.json`. Check the deploy logs for the exact error and confirm the file exists in your repo.',
+      content: `❌ Calendar data file is missing. The bot couldn't load \`gamedata/${file}\`. Check the deploy logs for the exact error and confirm the file exists in your repo.`,
       ephemeral: true,
     });
   }
-  const sub = interaction.options.getSubcommand();
-  const guildId = interaction.guildId;
 
   try {
     switch (sub) {
-      case 'today':         return cmdToday(interaction, guildId);
-      case 'set':           return cmdSet(interaction, guildId, weatherModule);
-      case 'advance':       return cmdAdvance(interaction, guildId, weatherModule);
-      case 'month':         return cmdMonth(interaction, guildId);
-      case 'holidays':      return cmdHolidays(interaction, guildId);
-      case 'next-holiday':  return cmdNextHoliday(interaction, guildId);
-      case 'moon':          return cmdMoon(interaction, guildId);
-      case 'clear':         return cmdClear(interaction, guildId);
+      case 'today':         return cmdToday(interaction, guildId, cal);
+      case 'set':           return cmdSet(interaction, guildId, weatherModule, cal);
+      case 'advance':       return cmdAdvance(interaction, guildId, weatherModule, cal);
+      case 'month':         return cmdMonth(interaction, guildId, cal);
+      case 'holidays':      return cmdHolidays(interaction, guildId, cal);
+      case 'next-holiday':  return cmdNextHoliday(interaction, guildId, cal);
+      case 'moon':          return cmdMoon(interaction, guildId, cal);
+      case 'clear':         return cmdClear(interaction, guildId, cal);
       default:              return interaction.reply({ content: `Unknown subcommand: ${sub}`, ephemeral: true });
     }
   } catch (err) {
@@ -180,82 +237,111 @@ async function handleCalendar(interaction, weatherModule = null) {
   }
 }
 
-// ── /calendar today ─────────────────────────────────────────────────────────
-async function cmdToday(interaction, guildId) {
-  let date = calendar.getDate(guildId);
-  if (!date) {
-    await calendar.ensureDate(guildId); // seed with anchor date on first use
-    date = calendar.getDate(guildId);
+// ── /calendar setting ───────────────────────────────────────────────────────
+// Switches this server between Golarion and Eberron. With no argument, shows
+// which is currently active. GM-gated like /calendar set.
+async function cmdSetting(interaction, guildId) {
+  const choice = interaction.options.getString('choice');
+  if (!choice) {
+    const current = settings.getCampaignSetting(guildId);
+    return interaction.reply({
+      content: `📜 This server is currently using **${settingLabel(current)}**.\n\nUse \`/calendar setting choice:eberron\` or \`/calendar setting choice:golarion\` to switch.`,
+      ephemeral: true,
+    });
   }
-  return interaction.reply({ embeds: [buildTodayEmbed(date)] });
+  if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can change the campaign setting.', ephemeral: true });
+  await settings.setCampaignSetting(guildId, choice);
+  const cal = getEngine(guildId);
+  const seedDate = cal.RULES?.anchor || { year: 1, month: 1, day: 1 };
+  return interaction.reply({
+    content: `✅ Campaign setting switched to **${settingLabel(choice)}**.\n\n*Calendar/weather state is preserved across switches but may need re-seeding. Use \`/calendar today\` to see the new view, or \`/calendar set year:${seedDate.year} month:${seedDate.month} day:${seedDate.day}\` to start fresh from the canonical anchor (${cal === eberronCalendar ? '1 Zarantyr 998 YK' : '1 Abadius 4712 AR'}).*`,
+  });
+}
+
+// ── /calendar today ─────────────────────────────────────────────────────────
+async function cmdToday(interaction, guildId, cal) {
+  let date = cal.getDate(guildId);
+  if (!date) {
+    await cal.ensureDate(guildId); // seed with anchor date on first use
+    date = cal.getDate(guildId);
+  }
+  return interaction.reply({ embeds: [buildTodayEmbed(date, cal)] });
 }
 
 // ── /calendar set ───────────────────────────────────────────────────────────
-async function cmdSet(interaction, guildId, weatherModule) {
+async function cmdSet(interaction, guildId, weatherModule, cal) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can set the date.', ephemeral: true });
   const year = interaction.options.getInteger('year');
   const month = interaction.options.getInteger('month');
   const day = interaction.options.getInteger('day');
-  await calendar.setDate(guildId, year, month, day);
-  await syncWeatherSeason(weatherModule, guildId, { year, month, day });
-  const embed = buildTodayEmbed(calendar.getDate(guildId))
-    .setTitle(`📅 Date set — ${calendar.describeDate({ year, month, day })}`);
+  await cal.setDate(guildId, year, month, day);
+  await syncWeatherSeason(weatherModule, guildId, { year, month, day }, cal);
+  const embed = buildTodayEmbed(cal.getDate(guildId), cal)
+    .setTitle(`📅 Date set — ${cal.describeDate({ year, month, day })}`);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /calendar advance ───────────────────────────────────────────────────────
-async function cmdAdvance(interaction, guildId, weatherModule) {
+async function cmdAdvance(interaction, guildId, weatherModule, cal) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can advance time.', ephemeral: true });
   const days = interaction.options.getInteger('days');
   if (Math.abs(days) > 365 * 10) {
     return interaction.reply({ content: '❌ That\'s a lot. Limit is 10 years (3650 days) per call.', ephemeral: true });
   }
-  await calendar.ensureDate(guildId);
-  await calendar.advance(guildId, days);
-  const date = calendar.getDate(guildId);
-  await syncWeatherSeason(weatherModule, guildId, date);
+  await cal.ensureDate(guildId);
+  await cal.advance(guildId, days);
+  const date = cal.getDate(guildId);
+  await syncWeatherSeason(weatherModule, guildId, date, cal);
   const verb = days >= 0 ? 'Advanced' : 'Rewound';
-  const embed = buildTodayEmbed(date)
+  const embed = buildTodayEmbed(date, cal)
     .setTitle(`⏭️ ${verb} ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`);
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /calendar month ─────────────────────────────────────────────────────────
-async function cmdMonth(interaction, guildId) {
-  const today = calendar.getDate(guildId);
-  const year  = interaction.options.getInteger('year')  ?? today?.year  ?? calendar.RULES.anchor.year;
-  const month = interaction.options.getInteger('month') ?? today?.month ?? calendar.RULES.anchor.month;
+async function cmdMonth(interaction, guildId, cal) {
+  const today = cal.getDate(guildId);
+  const year  = interaction.options.getInteger('year')  ?? today?.year  ?? cal.RULES.anchor.year;
+  const month = interaction.options.getInteger('month') ?? today?.month ?? cal.RULES.anchor.month;
   if (month < 1 || month > 12) {
     return interaction.reply({ content: '❌ Month must be 1-12.', ephemeral: true });
   }
-  return interaction.reply({ embeds: [buildMonthEmbed(year, month, today)] });
+  return interaction.reply({ embeds: [buildMonthEmbed(year, month, today, cal)] });
 }
 
 // ── /calendar holidays ──────────────────────────────────────────────────────
-async function cmdHolidays(interaction, guildId) {
-  const today = calendar.getDate(guildId);
+async function cmdHolidays(interaction, guildId, cal) {
+  const today = cal.getDate(guildId);
   const monthArg = interaction.options.getInteger('month');
   const month = monthArg ?? today?.month ?? null;
+  const settingName = settings.getCampaignSetting(guildId);
 
   let holidays, title;
   if (month === null) {
-    holidays = calendar.listHolidays();
-    title = '🎉 All Holidays of Golarion';
+    // For Eberron, recurring weekday holidays (Tain Gala) only make sense in
+    // a specific month, so they're skipped from the global "all holidays" list.
+    holidays = cal.listHolidays();
+    title = settingName === 'eberron' ? '🎉 Holidays of Khorvaire' : '🎉 All Holidays of Golarion';
   } else {
     if (month < 1 || month > 12) {
       return interaction.reply({ content: '❌ Month must be 1-12.', ephemeral: true });
     }
-    holidays = calendar.listHolidays(month);
-    title = `🎉 Holidays in ${calendar.MONTH_NAMES[month - 1]}`;
+    // For Eberron, also expand any recurring weekday-based holidays for this
+    // month/year so Tain Gala etc. show up.
+    const fixed = cal.listHolidays(month);
+    const yearForExpand = today?.year ?? cal.RULES.anchor.year;
+    const recur = cal.resolveWeekdayHolidays ? cal.resolveWeekdayHolidays(yearForExpand, month) : [];
+    holidays = [...fixed, ...recur].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
+    title = `🎉 Holidays in ${cal.MONTH_NAMES[month - 1]}`;
   }
 
   if (holidays.length === 0) {
-    return interaction.reply({ content: `No holidays in ${calendar.MONTH_NAMES[month - 1]}.`, ephemeral: true });
+    return interaction.reply({ content: `No holidays in ${cal.MONTH_NAMES[month - 1]}.`, ephemeral: true });
   }
 
   const lines = holidays.map(h => {
-    const monthName = calendar.MONTH_NAMES[h.month - 1];
-    return `${h.emoji || ''} **${calendar.ordinal(h.day)} ${monthName}** — ${h.name}${h.deity ? ` *(${h.deity})*` : ''}\n*${h.blurb}*`;
+    const monthName = cal.MONTH_NAMES[(h.month ?? month) - 1];
+    return `${h.emoji || ''} **${cal.ordinal(h.day)} ${monthName}** — ${h.name}${h.deity ? ` *(${h.deity})*` : ''}\n*${h.blurb}*`;
   });
 
   // Discord limits embed description to 4096 chars; chunk if needed.
@@ -270,16 +356,16 @@ async function cmdHolidays(interaction, guildId) {
 }
 
 // ── /calendar next-holiday ──────────────────────────────────────────────────
-async function cmdNextHoliday(interaction, guildId) {
-  let date = calendar.getDate(guildId);
-  if (!date) { await calendar.ensureDate(guildId); date = calendar.getDate(guildId); }
-  const next = calendar.getNextHoliday(date.year, date.month, date.day);
+async function cmdNextHoliday(interaction, guildId, cal) {
+  let date = cal.getDate(guildId);
+  if (!date) { await cal.ensureDate(guildId); date = cal.getDate(guildId); }
+  const next = cal.getNextHoliday(date.year, date.month, date.day);
   if (!next) return interaction.reply({ content: 'No upcoming holidays found within a year. (Something\'s odd.)', ephemeral: true });
-  const todays = calendar.getHolidaysOn(date.year, date.month, date.day);
+  const todays = cal.getHolidaysOn(date.year, date.month, date.day);
   const embed = new EmbedBuilder()
     .setColor(0xE67E22)
     .setTitle(`${next.holiday.emoji || '🎉'} Next: ${next.holiday.name}`)
-    .setDescription(`*${next.holiday.blurb}*\n\nIn **${next.daysAway} day${next.daysAway === 1 ? '' : 's'}** on **${calendar.describeDate(next.occursOn)}**.${next.holiday.deity ? `\n\nPatron deity: **${next.holiday.deity}**.` : ''}`);
+    .setDescription(`*${next.holiday.blurb}*\n\nIn **${next.daysAway} day${next.daysAway === 1 ? '' : 's'}** on **${cal.describeDate(next.occursOn)}**.${next.holiday.deity ? `\n\nPatron deity: **${next.holiday.deity}**.` : ''}`);
   if (todays.length > 0) {
     embed.addFields({
       name: '🎉 Today',
@@ -290,55 +376,94 @@ async function cmdNextHoliday(interaction, guildId) {
 }
 
 // ── /calendar moon ──────────────────────────────────────────────────────────
-async function cmdMoon(interaction, guildId) {
-  const today = calendar.getDate(guildId);
-  const year  = interaction.options.getInteger('year')  ?? today?.year  ?? calendar.RULES.anchor.year;
-  const month = interaction.options.getInteger('month') ?? today?.month ?? calendar.RULES.anchor.month;
-  const day   = interaction.options.getInteger('day')   ?? today?.day   ?? calendar.RULES.anchor.day;
-  try { calendar.validateDate(year, month, day); }
+// For Golarion, shows the single moon (Somal). For Eberron, shows the
+// primary moon (Olarune) plus a compact line for each of the other 11.
+async function cmdMoon(interaction, guildId, cal) {
+  const today = cal.getDate(guildId);
+  const year  = interaction.options.getInteger('year')  ?? today?.year  ?? cal.RULES.anchor.year;
+  const month = interaction.options.getInteger('month') ?? today?.month ?? cal.RULES.anchor.month;
+  const day   = interaction.options.getInteger('day')   ?? today?.day   ?? cal.RULES.anchor.day;
+  try { cal.validateDate(year, month, day); }
   catch (err) { return interaction.reply({ content: `❌ ${err.message}`, ephemeral: true }); }
 
-  const moon = calendar.getMoonPhase(year, month, day);
+  const moon = cal.getMoonPhase(year, month, day);
   const date = { year, month, day };
 
-  // Find when the moon is next full and next new — useful info for spellcasters.
+  // Find when the primary moon is next full and next new — useful info for
+  // spellcasters and lycanthropy tracking. Search up to one full cycle so
+  // long-cycled moons (Olarune at 56d) still find their next full.
   let nextFull = null, nextNew = null;
   let cur = date;
-  for (let i = 1; i <= 30; i++) {
-    cur = calendar.addDays(cur.year, cur.month, cur.day, 1);
-    const m = calendar.getMoonPhase(cur.year, cur.month, cur.day);
+  const searchDays = Math.max(60, moon.cycleDays + 1);
+  for (let i = 1; i <= searchDays; i++) {
+    cur = cal.addDays(cur.year, cur.month, cur.day, 1);
+    const m = cal.getMoonPhase(cur.year, cur.month, cur.day);
     if (!nextFull && m.key === 'full') nextFull = { date: cur, daysAway: i };
     if (!nextNew  && m.key === 'new')  nextNew  = { date: cur, daysAway: i };
     if (nextFull && nextNew) break;
   }
 
+  const titleSuffix = moon.moonName ? ` (${moon.moonName})` : '';
   const embed = new EmbedBuilder()
     .setColor(0x34495E)
-    .setTitle(`${moon.emoji} ${moon.name}`)
-    .setDescription(`On ${calendar.describeDate(date)}.\n\nDay ${moon.dayOfCycle} of the ${moon.cycleDays}-day lunar cycle.`);
-  if (nextFull) embed.addFields({ name: '🌕 Next Full Moon', value: `${nextFull.daysAway} day${nextFull.daysAway === 1 ? '' : 's'} (${calendar.describeDate(nextFull.date, { includeWeekday: false })})`, inline: true });
-  if (nextNew)  embed.addFields({ name: '🌑 Next New Moon',  value: `${nextNew.daysAway} day${nextNew.daysAway === 1 ? '' : 's'} (${calendar.describeDate(nextNew.date, { includeWeekday: false })})`, inline: true });
+    .setTitle(`${moon.emoji} ${moon.name}${titleSuffix}`)
+    .setDescription(`On ${cal.describeDate(date)}.\n\nDay ${moon.dayOfCycle} of the ${moon.cycleDays}-day lunar cycle.${moon.blurb ? `\n\n*${moon.blurb}*` : ''}`);
+
+  if (nextFull) embed.addFields({ name: '🌕 Next Full Moon', value: `${nextFull.daysAway} day${nextFull.daysAway === 1 ? '' : 's'} (${cal.describeDate(nextFull.date, { includeWeekday: false })})`, inline: true });
+  if (nextNew)  embed.addFields({ name: '🌑 Next New Moon',  value: `${nextNew.daysAway} day${nextNew.daysAway === 1 ? '' : 's'} (${cal.describeDate(nextNew.date, { includeWeekday: false })})`, inline: true });
+
+  // Eberron-specific: show all 12 moons in the night sky tonight. This is one
+  // of the most distinctive bits of Eberron flavor — many lycanthropes change
+  // when ANY moon is full, so seeing them all at a glance is important.
+  if (cal.getAllMoonPhases) {
+    const allMoons = cal.getAllMoonPhases(year, month, day);
+    const lines = allMoons.map(m => `${m.emoji} **${m.moonName}** — ${m.name}`);
+    // Split into two columns so the field stays readable
+    const half = Math.ceil(lines.length / 2);
+    embed.addFields(
+      { name: 'Tonight\'s Sky (1 of 2)', value: lines.slice(0, half).join('\n'), inline: true },
+      { name: 'Tonight\'s Sky (2 of 2)', value: lines.slice(half).join('\n'),    inline: true },
+    );
+    // Count moons currently full — important for lycanthropy
+    const fullCount = allMoons.filter(m => m.key === 'full').length;
+    if (fullCount > 0) {
+      embed.setFooter({ text: `🐺 ${fullCount} moon${fullCount === 1 ? '' : 's'} currently full — afflicted lycanthropes change tonight.` });
+    } else {
+      embed.setFooter({ text: '🐺 No moons currently full. Afflicted lycanthropes hold their human form.' });
+    }
+  }
+
   return interaction.reply({ embeds: [embed] });
 }
 
 // ── /calendar clear ─────────────────────────────────────────────────────────
-async function cmdClear(interaction, guildId) {
+async function cmdClear(interaction, guildId, cal) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can clear the calendar.', ephemeral: true });
-  await calendar.clear(guildId);
+  await cal.clear(guildId);
   return interaction.reply({ content: '🗑️ Calendar state cleared for this server. Use `/calendar today` or `/calendar set` to start again.', ephemeral: true });
 }
 
 // ── Autocomplete handler ────────────────────────────────────────────────────
 async function handleCalendarAutocomplete(interaction) {
+  const guildId = interaction.guildId;
+  const cal = guildId ? getEngine(guildId) : golarionCalendar;
   const focused = interaction.options.getFocused(true);
   const term = String(focused.value || '').toLowerCase();
   if (focused.name === 'month') {
-    const choices = calendar.MONTH_NAMES.map((n, i) => ({
+    const choices = cal.MONTH_NAMES.map((n, i) => ({
       name: `${i + 1} — ${n}`,
       value: i + 1,
     }));
     const filtered = choices.filter(c => c.name.toLowerCase().includes(term)).slice(0, 25);
     return interaction.respond(filtered);
+  }
+  if (focused.name === 'choice') {
+    // /calendar setting choice autocomplete
+    const choices = [
+      { name: 'Golarion (Inner Sea Calendar)', value: 'golarion' },
+      { name: 'Eberron (Galifar Calendar)',    value: 'eberron'  },
+    ];
+    return interaction.respond(choices.filter(c => c.name.toLowerCase().includes(term)));
   }
   return interaction.respond([]);
 }
