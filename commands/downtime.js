@@ -52,6 +52,12 @@ function daysBetween(fromDateStr, toDateStr) {
 // ── Per-character record helper ─────────────────────────────────────────────
 // Lazily creates the {userId, charKey} record if it doesn't exist, seeded with
 // today as lastAccrualDate (so first-time use gives 0 days, not a windfall).
+//
+// SELF-HEALING: If the record exists but is missing fields (e.g. data from the
+// old activity-based schema, or a partially-migrated record), this fills in
+// the missing fields without losing any existing balance. Any old fields
+// (bankHistory, entries) are left in place but ignored — they don't hurt
+// anything and keep the data file recoverable if you ever want to look back.
 function getCharRecord(store, userId, charKey) {
   if (!store[userId]) store[userId] = {};
   if (!store[userId][charKey]) {
@@ -60,8 +66,14 @@ function getCharRecord(store, userId, charKey) {
       lastAccrualDate: isoDate(),
       log: [],
     };
+    return store[userId][charKey];
   }
-  return store[userId][charKey];
+  // Heal any missing fields without overwriting existing data.
+  const rec = store[userId][charKey];
+  if (typeof rec.bank !== 'number') rec.bank = 0;
+  if (typeof rec.lastAccrualDate !== 'string') rec.lastAccrualDate = isoDate();
+  if (!Array.isArray(rec.log)) rec.log = [];
+  return rec;
 }
 
 // ── Audit log ───────────────────────────────────────────────────────────────
