@@ -1478,6 +1478,11 @@
               "name": "Support Benefit",
               "description": "Your wyvern whips its stinger at your foes. Until the start of your next turn, your Strikes that damage a creature in your wyvern’s reach also deal 1d6 persistent poison damage. If your wyvern is nimble or savage, the persistent damage increases to 2d6.",
               "actionCost": null
+            },
+            {
+              "name": "Special",
+              "description": "The wyvern’s stinger attack deals additional poison damage equal to 1 + 1 per weapon damage die.",
+              "actionCost": null
             }
           ]
         }
