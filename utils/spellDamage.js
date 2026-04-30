@@ -95,12 +95,31 @@ function resolveSpellDamage(spell, castRank) {
   const effectiveRank = Number.isFinite(castRank) ? castRank : baseLevel;
   const bonusRanks = Math.max(0, effectiveRank - baseLevel);
 
-  // Pull base damage out of the catalog shape: { base, type, extra }
-  const dmg = spell.damage;
-  const hasBaseDamage = dmg && typeof dmg === 'object' && dmg.base;
-  let diceExpr = hasBaseDamage ? String(dmg.base) : null;
-  const damageType = hasBaseDamage ? (dmg.type || null) : null;
-  const extra = hasBaseDamage ? (dmg.extra || '') : '';
+  // Pull base damage. Two valid shapes depending on whether the spell has
+  // been run through normalizeSpell() yet:
+  //   1. Raw catalog shape:    spell.damage = { base, type, extra }
+  //   2. Post-normalize shape: spell.damageBase = "3d8", spell.damageType = "acid"
+  //                            (spell.damage was clobbered to a display string)
+  // The /cast handler normalizes BEFORE calling us, so we have to handle the
+  // post-normalize shape; otherwise damage rolls silently fail. Try the
+  // structured form first, then fall back to the raw object form.
+  let diceExpr = null;
+  let damageType = null;
+  let extra = '';
+
+  if (spell.damageBase) {
+    // Post-normalize shape — fields already split out for us
+    diceExpr = String(spell.damageBase);
+    damageType = spell.damageType || null;
+    extra = spell.damageExtra || '';
+  } else {
+    const dmg = spell.damage;
+    if (dmg && typeof dmg === 'object' && dmg.base) {
+      diceExpr = String(dmg.base);
+      damageType = dmg.type || null;
+      extra = dmg.extra || '';
+    }
+  }
 
   let heightenedNote = '';
   let fixedReplaced = false;
