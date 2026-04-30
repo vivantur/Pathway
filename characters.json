@@ -826,7 +826,18 @@
       "art": "https://media.discordapp.net/attachments/1251682804064850031/1375867081538670693/a3c40b2f0507f9086f35c258a7ed8057.jpg?ex=69eee052&is=69ed8ed2&hm=2b0f3dd47df99492a189f04d0453fa271ba4b09386f06edf1e80c4b843a7b035&=&format=webp",
       "senses": null,
       "edits": null,
-      "saved": "2026-04-26T04:12:49.115Z"
+      "saved": "2026-04-26T04:12:49.115Z",
+      "overlay": {
+        "spellbook": [],
+        "repertoire_swaps": [],
+        "prepared_override": {},
+        "daily": {
+          "focus_spent": 0,
+          "hero_points": 1,
+          "slots_used": {},
+          "last_rest_at": null
+        }
+      }
     },
     "_activeChar": "mys"
   },
