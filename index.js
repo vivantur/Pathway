@@ -9921,6 +9921,236 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `🖼️ Updated portrait for **${charEntry.companions[compKey].displayName}**.\nView it with \`/companion sheet\`.`, ephemeral: true });
     }
 
+    // ── /companion roll — make the companion roll something ────────────
+    // Unified rolling subcommand: attack, skill check, save, or perception.
+    // Rolls use the companion's scaled stats (which include any /companion set
+    // overrides). For attacks, accepts a target combatant for auto-resolution
+    // of degree of success and damage on hit.
+    if (sub === 'roll') {
+      const action = interaction.options.getString('action');
+      const compNameArg = interaction.options.getString('companion');
+      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      if (!compKey || !charEntry.companions[compKey]) {
+        return interaction.reply({ content: `❌ ${compNameArg ? 'No companion named "' + compNameArg + '"' : char.name + ' has no active companion'}. Use \`/companion mine\` to see options.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[compKey];
+      const scaled = scaleCompanion(comp, char);
+      const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+      const dc = interaction.options.getInteger('dc'); // null if unset
+      const thumbnail = comp.art ?? charEntry.art ?? null;
+      const charName = `${comp.displayName} · ${char.name}'s ${comp.form} companion`;
+
+      // Helper for skill/save/perception — single d20 roll with optional DC
+      function rollAndReply(title, modifier, label) {
+        const r = rollD20Plus(modifier + extraBonus);
+        let breakdown = formatRollBreakdown(r.roll, modifier, extraBonus, r.total, 20);
+        if (dc != null) {
+          const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
+          const degreeNames = { 'crit-success': '⭐ Critical Success', 'success': '✅ Success', 'failure': '❌ Failure', 'crit-failure': '💀 Critical Failure' };
+          breakdown += `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+        }
+        return interaction.reply({ embeds: [buildRollEmbed({
+          title,
+          breakdown,
+          charName: `${charName}${label ? ' · ' + label : ''}`,
+          thumbnail,
+        })] });
+      }
+
+      // ── action: skill ────────────────────────────────────────────────
+      if (action === 'skill') {
+        const skillNameArg = interaction.options.getString('name');
+        if (!skillNameArg) return interaction.reply({ content: `❌ Specify a skill name (e.g. Athletics). Set companion skills with \`/companion skill action:set\`.`, ephemeral: true });
+        const skills = comp.skills ?? {};
+        // Case-insensitive lookup
+        const foundKey = Object.keys(skills).find(k => k.toLowerCase() === skillNameArg.toLowerCase());
+        if (!foundKey) {
+          const list = Object.keys(skills);
+          const hint = list.length ? ` Known skills: ${list.join(', ')}.` : ` No skills set yet — use \`/companion skill action:set\` first.`;
+          return interaction.reply({ content: `❌ **${comp.displayName}** has no **${skillNameArg}** skill bonus set.${hint}`, ephemeral: true });
+        }
+        const modifier = skills[foundKey];
+        return rollAndReply(`🎯 ${comp.displayName} attempts ${foundKey}!`, modifier, `${foundKey} ${fmt(modifier)}`);
+      }
+
+      // ── action: save ─────────────────────────────────────────────────
+      if (action === 'save') {
+        const saveType = interaction.options.getString('save_type');
+        if (!saveType) return interaction.reply({ content: `❌ Specify which save (\`save_type:\` — fortitude, reflex, or will).`, ephemeral: true });
+        const saveKeyMap = { fortitude: 'fort', reflex: 'ref', will: 'will' };
+        const key = saveKeyMap[saveType];
+        if (!key) return interaction.reply({ content: `❌ Unknown save type \`${saveType}\`.`, ephemeral: true });
+        const modifier = scaled.saves[key] ?? 0;
+        const labelMap = { fortitude: 'Fortitude', reflex: 'Reflex', will: 'Will' };
+        return rollAndReply(`🛡️ ${comp.displayName} makes a ${labelMap[saveType]} save!`, modifier, `${labelMap[saveType]} ${fmt(modifier)}`);
+      }
+
+      // ── action: perception ───────────────────────────────────────────
+      if (action === 'perception') {
+        const modifier = scaled.perception ?? 0;
+        return rollAndReply(`👁️ ${comp.displayName} rolls Perception!`, modifier, `Perception ${fmt(modifier)}`);
+      }
+
+      // ── action: attack ───────────────────────────────────────────────
+      if (action === 'attack') {
+        // Resolve which attack to use. Default: primary attack. Otherwise look
+        // up by name across primary + customAttacks.
+        const attackNameArg = interaction.options.getString('name');
+        const customs = Array.isArray(comp.customAttacks) ? comp.customAttacks : [];
+
+        // Build a unified attack list: primary first, then customs
+        const allAttacks = [];
+        if (scaled.primaryAttack) {
+          allAttacks.push({
+            name: scaled.primaryAttack.name,
+            bonus: scaled.attackBonus,
+            damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
+            damageType: scaled.damageType ?? '',
+            traits: scaled.primaryAttack.traits ?? [],
+            isPrimary: true,
+          });
+        }
+        for (const a of customs) {
+          allAttacks.push({
+            name: a.name,
+            bonus: a.bonus,
+            damage: a.damage,
+            damageType: a.damageType ?? '',
+            traits: a.traits ?? [],
+            isPrimary: false,
+          });
+        }
+
+        if (allAttacks.length === 0) {
+          return interaction.reply({ content: `❌ **${comp.displayName}** has no attacks. Add one with \`/companion attack action:add\`.`, ephemeral: true });
+        }
+
+        let attack;
+        if (attackNameArg) {
+          attack = allAttacks.find(a => a.name.toLowerCase() === attackNameArg.toLowerCase());
+          if (!attack) {
+            const list = allAttacks.map(a => a.name).join(', ');
+            return interaction.reply({ content: `❌ No attack named **${attackNameArg}** on **${comp.displayName}**. Available: ${list}.`, ephemeral: true });
+          }
+        } else {
+          attack = allAttacks[0]; // default to primary
+        }
+
+        if (attack.bonus == null) {
+          return interaction.reply({ content: `❌ **${attack.name}** has no attack bonus configured. Set one with \`/companion set stat:attack\` or \`/companion attack action:add\`.`, ephemeral: true });
+        }
+
+        // MAP handling — match /attack's pattern. If user provides map: explicitly,
+        // use that. Otherwise, look at the encounter's attack history for this
+        // companion if they're a combatant, else default to MAP 0.
+        const explicitMap = interaction.options.getInteger('map');
+        // Auto-detect agile from the attack's traits unless overridden
+        const userAgile = interaction.options.getBoolean('agile');
+        const traitAgile = (attack.traits ?? []).map(t => String(t).toLowerCase()).includes('agile');
+        const agile = userAgile != null ? userAgile : traitAgile;
+
+        const channelId = interaction.channel.id;
+        const enc = getEncounter(channelId);
+        const compCombatant = enc?.combatants.find(c => c.name.toLowerCase() === comp.displayName.toLowerCase());
+
+        let mapPenalty, mapNoteText;
+        if (explicitMap != null) {
+          mapPenalty = calculateMap(explicitMap, agile);
+          mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
+        } else if (compCombatant) {
+          // Companion is in initiative — use the encounter's attack tracker
+          const mapInfo = ca.computeMapForNextAttack(compCombatant, agile);
+          mapPenalty = mapInfo.penalty;
+          mapNoteText = mapInfo.noteText;
+        } else {
+          mapPenalty = 0;
+          mapNoteText = null;
+        }
+
+        // Resolve target if specified
+        const targetName = interaction.options.getString('target');
+        let target = null;
+        if (targetName) {
+          if (!enc) {
+            return interaction.reply({ content: `❌ Can't target "${targetName}" — no encounter active in this channel.`, ephemeral: true });
+          }
+          target = enc.combatants.find(c => c.name.toLowerCase() === targetName.toLowerCase());
+          if (!target) {
+            return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
+          }
+        }
+
+        // Roll the attack
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const attackTotal = dieRoll + attack.bonus + mapPenalty + extraBonus;
+
+        const targetMods = target ? sumEffectModifiers(target) : null;
+        const baseTargetAc = target?.ac ?? null;
+        const effectiveTargetAc = baseTargetAc !== null && targetMods ? baseTargetAc + targetMods.acBonus : baseTargetAc;
+        const degree = effectiveTargetAc != null
+          ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc)
+          : null;
+
+        // Build attack line
+        const mapText = mapPenalty !== 0 ? ` ${fmt(mapPenalty)}` : '';
+        const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
+        let attackLine = `**Attack Roll** — ${attack.name}\n1d20 (${dieRoll}) ${fmt(attack.bonus)}${mapText}${bonusText} = **${attackTotal}**`;
+        if (mapNoteText) attackLine += `\n*${mapNoteText}*`;
+        if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+        if (dieRoll === 1)  attackLine += '\n💀 Natural 1!';
+
+        // Degree of success line
+        let degreeLine = '';
+        if (degree) {
+          const degreeNames = { 'crit-success': '⭐ Critical Hit', 'success': '✅ Hit', 'failure': '❌ Miss', 'crit-failure': '💀 Critical Miss' };
+          const acDisplay = effectiveTargetAc !== baseTargetAc ? `${baseTargetAc}→${effectiveTargetAc}` : `${effectiveTargetAc}`;
+          degreeLine = `\nvs **${target.name}** AC ${acDisplay}: **${degreeNames[degree] ?? degree}**`;
+        }
+
+        // Damage roll — only on hit/crit. Use rollCompoundExpression to support
+        // expressions like "1d6+2" that have a flat modifier.
+        let damageLine = '';
+        if (degree === 'success' || degree === 'crit-success' || !target) {
+          if (attack.damage) {
+            const dmgResult = rollCompoundExpression(attack.damage);
+            if (dmgResult) {
+              const isCrit = degree === 'crit-success';
+              const finalDamage = isCrit ? dmgResult.total * 2 : dmgResult.total;
+              const typeText = attack.damageType ? ` ${attack.damageType}` : '';
+              if (isCrit) {
+                damageLine = `\n\n**Damage (CRIT × 2)**\n${dmgResult.display} = ${dmgResult.total} × 2 = **${finalDamage}${typeText}**`;
+              } else if (target) {
+                damageLine = `\n\n**Damage**\n${dmgResult.display} = **${finalDamage}${typeText}**`;
+              } else {
+                // No target — show damage but flag it as "if hit"
+                damageLine = `\n\n**Damage** *(if hit)*\n${dmgResult.display} = **${finalDamage}${typeText}**`;
+              }
+            } else {
+              damageLine = `\n\n**Damage** ${attack.damage}${attack.damageType ? ' ' + attack.damageType : ''} *(couldn't auto-roll)*`;
+            }
+          }
+        }
+
+        // Record the attack in the encounter's MAP tracker (so the next
+        // attack auto-bumps to MAP 1, etc.) — but only if the companion
+        // actually rolled in initiative.
+        if (compCombatant && explicitMap == null) {
+          ca.recordAttack(channelId, compCombatant.name);
+        }
+
+        const traitsLine = attack.traits?.length ? `\n*${attack.traits.join(', ')}*` : '';
+
+        return interaction.reply({ embeds: [buildRollEmbed({
+          title: `⚔️ ${comp.displayName} attacks!`,
+          breakdown: `${attackLine}${degreeLine}${traitsLine}${damageLine}`,
+          charName,
+          thumbnail,
+        })] });
+      }
+
+      return interaction.reply({ content: `❌ Unknown roll action \`${action}\`. Choose: attack, skill, save, perception.`, ephemeral: true });
+    }
+
     // ── /companion set — override any stat field ───────────────────────
     // stat choice values:
     //   str, dex, con, int, wis, cha   → overrides.abilities[key]

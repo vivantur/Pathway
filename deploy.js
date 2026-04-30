@@ -600,6 +600,27 @@ const companionCommand = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('art').setDescription('Set or clear a companion\'s portrait image.')
     .addStringOption(o => o.setName('url').setDescription('Direct image URL (https://...) or "clear" to remove').setRequired(true))
     .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('roll').setDescription('Roll an attack, skill check, save, or Perception with the companion.')
+    .addStringOption(o => o.setName('action').setDescription('What kind of roll').setRequired(true).addChoices(
+      { name: '⚔️ Attack',           value: 'attack' },
+      { name: '🎯 Skill check',       value: 'skill' },
+      { name: '🛡️ Saving throw',      value: 'save' },
+      { name: '👁️ Perception',        value: 'perception' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('For attack: which attack. For skill: which skill (e.g. Athletics).').setRequired(false))
+    .addStringOption(o => o.setName('save_type').setDescription('For save: fortitude, reflex, or will').setRequired(false).addChoices(
+      { name: 'Fortitude', value: 'fortitude' },
+      { name: 'Reflex',    value: 'reflex' },
+      { name: 'Will',      value: 'will' },
+    ))
+    .addStringOption(o => o.setName('target').setDescription('For attack: target combatant in the current encounter (auto-resolves hit + damage).').setRequired(false))
+    .addIntegerOption(o => o.setName('dc').setDescription('For skill/save/perception: DC to compare against (shows degree of success).').setRequired(false))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Extra circumstance bonus to add (e.g. flanking +2)').setRequired(false))
+    .addIntegerOption(o => o.setName('map').setDescription('For attack: MAP step. 0=first, 1=second (-5/-4 agile), 2=third (-10/-8 agile).').setRequired(false).setMinValue(0).setMaxValue(2))
+    .addBooleanOption(o => o.setName('agile').setDescription('For attack: treat as agile weapon (override auto-detection from traits).').setRequired(false))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
