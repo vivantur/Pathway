@@ -36,6 +36,13 @@ const {
   hasAncestryFeats,
 } = require('./utils/ancestryParser');
 
+// Spell damage resolver — figures out the right dice expression for a spell at
+// any cast rank, handling all four heightening shapes that appear in spells.json
+// (per_rank with/without damage_bonus, fixed with/without dice in level text).
+// rollCompoundExpression handles compound expressions like "6d6 + 4d6" that
+// the original rollDamageExpression couldn't parse.
+const { resolveSpellDamage, rollCompoundExpression } = require('./utils/spellDamage');
+
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
 const encounters = require('./commands/encounters');
@@ -1100,6 +1107,13 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
       hp: prev.hp,
       overlay: prev.overlay,
       languages: prev.languages, // languages overlay, separate from `edits.languages`
+      // Companions are bot-managed (added via /companion add, edited via
+      // /companion edit) and have nothing to do with Pathbuilder data, so
+      // /char update must keep them. Without this preservation the entire
+      // companions map gets nuked on every re-import, which is how Hylia's
+      // wyvern silently vanished.
+      companions: prev.companions,
+      activeCompanion: prev.activeCompanion,
     };
     characters[userId][key] = { ...baseEntry, ...preserved };
     // Clamp current HP if max dropped.
@@ -8362,40 +8376,34 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     // ── Damage: roll dice (with heightening) and track type ─────────────
-    // For catalog spells, damageBase is the dice expression and damageType is
-    // e.g. "fire". For homebrew or text-damage spells, fall back to the
-    // string form. If `heightening.damage_bonus` exists, add the per-rank
-    // extra dice based on effectiveLevel minus the base level.
+    // resolveSpellDamage handles every heightening shape that appears in
+    // spells.json — per_rank with/without damage_bonus, fixed with/without
+    // dice in the level text — and reads spell.damage as { base, type, extra }
+    // (the actual catalog shape, not the legacy spell.damageBase). See
+    // utils/spellDamage.js for the full rules.
     let damageResult = null;
     let finalDamage = 0;
-    let damageTypeLabel = spell.damageType ?? null;
+    let damageTypeLabel = null;
     let damageExpressionDisplay = null;
+    let heightenedNoteForEmbed = '';
 
-    if (spell.damageBase) {
-      let diceExpr = spell.damageBase;
-      // Handle heightening.damage_bonus (e.g. "2d6" per rank above base)
-      const baseLevel = spell.level || 0;
-      const bonusRanks = Math.max(0, effectiveLevel - baseLevel);
-      if (bonusRanks > 0 && spell.heightening?.damage_bonus && spell.heightening.type !== 'fixed') {
-        const step = spell.heightening.step ?? 1;
-        const steps = Math.floor(bonusRanks / step);
-        if (steps > 0) {
-          // Parse "2d6" → multiply dice count
-          const m = String(spell.heightening.damage_bonus).match(/^(\d+)d(\d+)$/i);
-          if (m) {
-            const addedDice = parseInt(m[1]) * steps;
-            diceExpr = `${diceExpr} + ${addedDice}d${m[2]}`;
-          } else {
-            // Non-dice bonus (e.g. flat +X) — append as-is
-            diceExpr = `${diceExpr} + ${spell.heightening.damage_bonus}`;
-          }
-        }
+    const resolved = resolveSpellDamage(spell, effectiveLevel);
+    if (resolved) {
+      damageTypeLabel = resolved.damageType;
+      heightenedNoteForEmbed = resolved.heightenedNote || '';
+      if (resolved.diceExpr) {
+        damageResult = rollCompoundExpression(resolved.diceExpr);
+        damageExpressionDisplay = resolved.diceExpr;
       }
-      damageResult = rollDamageExpression(diceExpr);
-      damageExpressionDisplay = diceExpr;
-    } else if (spell.damage && typeof spell.damage === 'string') {
-      damageResult = rollDamageExpression(spell.damage);
-      damageExpressionDisplay = spell.damage;
+    }
+
+    // Surface the heightened narrative note in the embed when the spell is
+    // actually being cast above its base level. This catches spells like
+    // Magic Missile (per_rank, no scaling dice but extra missiles) and Aerial
+    // Form (fixed, narrative-only changes), so users see *what* the heightened
+    // version does rather than just rolling the same dice.
+    if (heightenedNoteForEmbed && resolved.bonusRanks > 0) {
+      description += `*⬆️ Heightened (rank ${effectiveLevel}): ${heightenedNoteForEmbed}*\n\n`;
     }
 
     // ── Auto-resolve save (basic or non-basic) on a single target ──────

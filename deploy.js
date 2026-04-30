@@ -459,7 +459,7 @@ const companionCommand = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('add').setDescription("Add a companion to a character's tracker.")
     .addStringOption(o => o.setName('name').setDescription('Display name for this companion (e.g. "Shadow" or "Fluffy")').setRequired(true))
     .addStringOption(o => o.setName('base').setDescription('Companion type or bestiary name (e.g. "wolf", "horse")').setRequired(true).setAutocomplete(true))
-    .addStringOption(o => o.setName('form').setDescription('Companion form/stage').setRequired(false).addChoices({ name: 'Young', value: 'young' }, { name: 'Nimble/Savage (advanced)', value: 'adult' }, { name: 'Specialized', value: 'old' }))
+    .addStringOption(o => o.setName('form').setDescription('Companion form/stage').setRequired(false).addChoices({ name: 'Young', value: 'young' }, { name: 'Mature', value: 'mature' }, { name: 'Nimble', value: 'nimble' }, { name: 'Savage', value: 'savage' }))
     .addBooleanOption(o => o.setName('custom').setDescription('Use a bestiary creature as a custom homebrew companion base').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character this companion belongs to').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('mine').setDescription("List your character's tracked companions.")
@@ -474,6 +474,131 @@ const companionCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('name').setDescription('Companion display name').setRequired(true))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('use').setDescription("Use the active companion in this encounter (same as /init add companion:name).")
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  // ── Editing ──────────────────────────────────────────────────────────────
+  // The following subcommands let you fix or customize companion stats. Most
+  // come from the bestiary scale automatically, but bestiary entries can be
+  // wrong, missing, or you may want a homebrew tweak. Every override is
+  // remembered across re-imports (we preserve companions on /char update now).
+
+  .addSubcommand(s => s.setName('set').setDescription('Override a single stat (HP, AC, ability score, save, attack, etc.).')
+    .addStringOption(o => o.setName('stat').setDescription('Which stat to override').setRequired(true).addChoices(
+      { name: 'HP (max)',       value: 'hp' },
+      { name: 'AC',             value: 'ac' },
+      { name: 'Perception',     value: 'perception' },
+      { name: 'Speed',          value: 'speed' },
+      { name: 'Size',           value: 'size' },
+      { name: 'Strength',       value: 'str' },
+      { name: 'Dexterity',      value: 'dex' },
+      { name: 'Constitution',   value: 'con' },
+      { name: 'Intelligence',   value: 'int' },
+      { name: 'Wisdom',         value: 'wis' },
+      { name: 'Charisma',       value: 'cha' },
+      { name: 'Fortitude save', value: 'fort' },
+      { name: 'Reflex save',    value: 'ref' },
+      { name: 'Will save',      value: 'will' },
+      { name: 'Attack bonus',   value: 'attack' },
+      { name: 'Damage dice',    value: 'damage_dice' },
+      { name: 'Damage bonus',   value: 'damage_bonus' },
+    ))
+    .addStringOption(o => o.setName('value').setDescription('New value (number for most; e.g. "1d8" for damage_dice; "Medium" for size)').setRequired(true))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('reset').setDescription('Clear one stat override (revert to auto-calculated).')
+    .addStringOption(o => o.setName('stat').setDescription('Which stat to reset').setRequired(true).addChoices(
+      { name: 'HP',           value: 'hp' },
+      { name: 'AC',           value: 'ac' },
+      { name: 'Perception',   value: 'perception' },
+      { name: 'Speed',        value: 'speed' },
+      { name: 'Size',         value: 'size' },
+      { name: 'Strength',     value: 'str' },
+      { name: 'Dexterity',    value: 'dex' },
+      { name: 'Constitution', value: 'con' },
+      { name: 'Intelligence', value: 'int' },
+      { name: 'Wisdom',       value: 'wis' },
+      { name: 'Charisma',     value: 'cha' },
+      { name: 'Fortitude',    value: 'fort' },
+      { name: 'Reflex',       value: 'ref' },
+      { name: 'Will',         value: 'will' },
+      { name: 'Attack bonus', value: 'attack' },
+      { name: 'Damage dice',  value: 'damage_dice' },
+      { name: 'Damage bonus', value: 'damage_bonus' },
+    ))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('resetall').setDescription('Clear ALL stat overrides on a companion.')
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('attack').setDescription('Add, remove, or list custom attacks (e.g. a wyvern\'s stinger alongside its jaws).')
+    .addStringOption(o => o.setName('action').setDescription('What to do').setRequired(true).addChoices(
+      { name: 'Add an attack',    value: 'add' },
+      { name: 'Remove an attack', value: 'remove' },
+      { name: 'List attacks',     value: 'list' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('Attack name (e.g. "Stinger", "Tail Slap")').setRequired(false))
+    .addIntegerOption(o => o.setName('bonus').setDescription('To-hit bonus (e.g. 6 for +6). Required when adding.').setRequired(false))
+    .addStringOption(o => o.setName('damage').setDescription('Damage expression (e.g. "1d6+2"). Required when adding.').setRequired(false))
+    .addStringOption(o => o.setName('type').setDescription('Damage type (e.g. piercing, slashing, B/P/S, fire)').setRequired(false))
+    .addStringOption(o => o.setName('traits').setDescription('Comma-separated traits (e.g. "agile, finesse, reach")').setRequired(false))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('ability').setDescription('Add, remove, or list special abilities (Support Benefit, Unsteady Mount, etc.).')
+    .addStringOption(o => o.setName('action').setDescription('What to do').setRequired(true).addChoices(
+      { name: 'Add an ability',    value: 'add' },
+      { name: 'Remove an ability', value: 'remove' },
+      { name: 'List abilities',    value: 'list' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('Ability name (e.g. "Support Benefit", "Pounce")').setRequired(false))
+    .addStringOption(o => o.setName('description').setDescription('Description of what it does (required when adding)').setRequired(false))
+    .addStringOption(o => o.setName('action_cost').setDescription('Action cost').setRequired(false).addChoices(
+      { name: '◆ One Action',     value: 'one-action' },
+      { name: '◆◆ Two Actions',   value: 'two-actions' },
+      { name: '◆◆◆ Three Actions', value: 'three-actions' },
+      { name: '⤾ Reaction',        value: 'reaction' },
+      { name: '◇ Free Action',     value: 'free-action' },
+    ))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('skill').setDescription('Set, clear, or list trained skills (Acrobatics, Stealth, etc.).')
+    .addStringOption(o => o.setName('action').setDescription('What to do').setRequired(true).addChoices(
+      { name: 'Set a skill bonus', value: 'set' },
+      { name: 'Clear a skill',     value: 'clear' },
+      { name: 'List skills',       value: 'list' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('Skill name (e.g. "Athletics", "Stealth")').setRequired(false))
+    .addStringOption(o => o.setName('bonus').setDescription('Total skill bonus (e.g. "8" or "-1"). Required for set.').setRequired(false))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('notes').setDescription('Set or clear free-form notes (use for senses, languages, items, etc.).')
+    .addStringOption(o => o.setName('text').setDescription('Note text (or "clear" to remove)').setRequired(true))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('hp').setDescription('Adjust the companion\'s current HP.')
+    .addIntegerOption(o => o.setName('change').setDescription('Damage (negative) or healing (positive). E.g. -5 or 10.').setRequired(false))
+    .addIntegerOption(o => o.setName('set').setDescription('Set current HP to a specific value (overrides change).').setRequired(false))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('form').setDescription('Change the companion\'s form (Young / Mature / Nimble / Savage).')
+    .addStringOption(o => o.setName('form').setDescription('New form').setRequired(true).addChoices(
+      { name: 'Young',  value: 'young' },
+      { name: 'Mature', value: 'mature' },
+      { name: 'Nimble', value: 'nimble' },
+      { name: 'Savage', value: 'savage' },
+    ))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+
+  .addSubcommand(s => s.setName('swap').setDescription('Quickly switch the active companion to another one you own.')
+    .addStringOption(o => o.setName('companion').setDescription('Companion to make active').setRequired(true))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
