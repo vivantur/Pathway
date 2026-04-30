@@ -18,6 +18,7 @@ const {
   loadGamedata,
   saveJson,
   mutateJson,
+  isSyncDegraded,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncNotesToSupabase,
@@ -11699,10 +11700,14 @@ client.on('interactionCreate', async (interaction) => {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
       const newEnc = createEncounter(channelId, userId, interaction.guildId);
       logEncounterEvent(newEnc, 'initiative_start', { actor: interaction.user.username });
+      const syncWarning = isSyncDegraded()
+        ? '\n⚠️ *Web sync is currently unavailable — the combat tracker and character sheets may not update live.*'
+        : '';
       await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
         `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
-        `When everyone is in, the GM uses \`/init next\` to begin.`
+        `When everyone is in, the GM uses \`/init next\` to begin.` +
+        syncWarning
       );
       await updateSummary(interaction.channel, newEnc);
       return;
@@ -12555,18 +12560,40 @@ client.on('interactionCreate', async (interaction) => {
       let combatDirty = false;
       for (const c of enc.combatants) {
         if (c.isNpc || !c.ownerId) continue;
-        const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
-        const entry = characters[c.ownerId]?.[key];
-        if (!entry) continue;
-        entry.hp      = c.hp;
-        entry.dying   = c.dying   ?? 0;
-        entry.wounded = c.wounded ?? 0;
-        combatDirty = true;
+
+        if (c.companionOf) {
+          // Companion — find parent character entry, then the companion sub-object
+          const ownerChars = characters[c.ownerId] ?? {};
+          const parentEntry = Object.values(ownerChars).find(
+            e => e && typeof e === 'object' && e.name === c.companionOf
+          );
+          if (parentEntry?.companions) {
+            const compEntry = Object.values(parentEntry.companions).find(
+              comp => comp && comp.displayName === c.name
+            );
+            if (compEntry) {
+              compEntry.currentHp = c.hp;
+              combatDirty = true;
+            }
+          }
+        } else {
+          // Regular character
+          const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
+          const entry = characters[c.ownerId]?.[key];
+          if (!entry) continue;
+          entry.hp      = c.hp;
+          entry.dying   = c.dying   ?? 0;
+          entry.wounded = c.wounded ?? 0;
+          combatDirty = true;
+        }
       }
       if (combatDirty) saveCharacters(characters);
 
       deleteEncounter(channelId);
-      return interaction.reply('🏁 Combat ended. Well fought!');
+      const endSyncWarning = isSyncDegraded()
+        ? '\n⚠️ *Web sync is currently unavailable — character sheets may not reflect final HP. Use `/hp view` to confirm.*'
+        : '';
+      return interaction.reply('🏁 Combat ended. Well fought!' + endSyncWarning);
     }
 
     // ── /init move ──

@@ -465,6 +465,17 @@ function mutateJson(filename, opts, mutator) {
 
 const { getSupabase } = require('./supabase');
 
+// Track consecutive sync failures so the GM can be warned in-Discord.
+let _syncConsecutiveFailures = 0;
+const SYNC_DEGRADED_THRESHOLD = 3;
+
+function _recordSyncSuccess() { _syncConsecutiveFailures = 0; }
+function _recordSyncFailure() { _syncConsecutiveFailures++; }
+
+// Returns true if Supabase syncs have been failing repeatedly.
+// Call this at the start/end of an encounter to warn the GM.
+function isSyncDegraded() { return _syncConsecutiveFailures >= SYNC_DEGRADED_THRESHOLD; }
+
 // Sync all characters from the in-memory map to Supabase.
 // Called after saveCharacters so the web app sees current data.
 // Only syncs users who have already signed into the web app (have a users row).
@@ -524,7 +535,9 @@ async function syncAllCharactersToSupabase(characters) {
       .from('characters')
       .upsert(upserts, { onConflict: 'user_id,char_key' });
     if (error) throw error;
+    _recordSyncSuccess();
   } catch (err) {
+    _recordSyncFailure();
     console.error('[Supabase] character sync failed:', err.message);
   }
 }
@@ -564,7 +577,9 @@ async function syncEncounterToSupabase(channelId, enc) {
       if (error) throw error;
       enc.supabaseId = data.id;
     }
+    _recordSyncSuccess();
   } catch (err) {
+    _recordSyncFailure();
     console.error('[Supabase] encounter sync failed:', err.message);
   }
 }
@@ -861,6 +876,7 @@ module.exports = {
   shouldForceReseed,
   preserveHomebrewDuringReseed,
   getSupabase,
+  isSyncDegraded,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncEncounterToSupabase,
