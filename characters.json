@@ -1458,7 +1458,9 @@
           "customStats": null,
           "currentHp": 16,
           "overrides": {
-            "abilities": {},
+            "abilities": {
+              "str": 2
+            },
             "saves": {},
             "hp": 24,
             "ac": 16,
