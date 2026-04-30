@@ -13452,6 +13452,7 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'log') {
       downtime.accrue(store, userId, charKey);
       saveDowntime(store);
+      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
       const entries = downtime.getLog(store, userId, charKey, 20);
       const lines = entries.length > 0
         ? entries.map(e => {
