@@ -1461,7 +1461,9 @@
             "abilities": {
               "str": 2
             },
-            "saves": {},
+            "saves": {
+              "fort": 6
+            },
             "hp": 24,
             "ac": 16,
             "perception": 5,
