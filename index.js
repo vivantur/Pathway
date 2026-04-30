@@ -20,6 +20,12 @@ const {
   mutateJson,
 } = require('./utils/storage');
 
+// Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
+// messages on lookup commands. fuzzyPick is a drop-in replacement for the
+// old inline pick() helper that powered all autocomplete; didYouMeanLine
+// is appended to "❌ No X found" messages on lookup commands.
+const { fuzzyPick, didYouMeanLine } = require('./utils/fuzzyMatch');
+
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
 const encounters = require('./commands/encounters');
@@ -5782,32 +5788,11 @@ client.on('interactionCreate', async (interaction) => {
           }
         }
 
-        // Score & slice helper: exact first, then starts-with, then contains.
-        // `names` is an array of strings (already deduped). Max 25 results.
-        const pick = (names) => {
-          const seen = new Set();
-          const out = [];
-          const push = (n) => {
-            const key = n.toLowerCase();
-            if (seen.has(key)) return;
-            seen.add(key);
-            // Discord requires name ≤ 100 chars
-            const display = n.length > 100 ? n.slice(0, 97) + '...' : n;
-            out.push({ name: display, value: display });
-          };
-          if (!q) {
-            // Empty query: first 25 alphabetically so the dropdown isn't blank
-            [...names].sort((a, b) => a.localeCompare(b)).slice(0, 25).forEach(push);
-          } else {
-            const exact    = names.filter(n => n.toLowerCase() === q);
-            const starts   = names.filter(n => n.toLowerCase().startsWith(q));
-            const contains = names.filter(n => n.toLowerCase().includes(q));
-            for (const n of exact)    { if (out.length >= 25) break; push(n); }
-            for (const n of starts)   { if (out.length >= 25) break; push(n); }
-            for (const n of contains) { if (out.length >= 25) break; push(n); }
-          }
-          return out;
-        };
+        // Score & slice helper: exact > prefix > substring > fuzzy.
+        // Powered by utils/fuzzyMatch — typos like "grabed" still surface
+        // "Grabbed", and `pick()` keeps the same input/output as before so
+        // every autocomplete branch below benefits without further changes.
+        const pick = (names) => fuzzyPick(q, names);
 
         let suggestions = [];
 
@@ -9237,7 +9222,14 @@ client.on('interactionCreate', async (interaction) => {
     const input = interaction.options.getString('name');
     const key = input.toLowerCase().trim();
     const ancestry = ancestryDatabase[key];
-    if (!ancestry) return interaction.reply({ content: `❌ No ancestry found for **"${input}"**. Available: ${Object.keys(ancestryDatabase).join(', ')}`, ephemeral: true });
+    if (!ancestry) {
+      const _names = Object.values(ancestryDatabase).map(a => a?.name).filter(Boolean);
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No ancestry found for **"${input}"**.${_hint || ` Available: ${Object.keys(ancestryDatabase).join(', ')}`}`,
+        ephemeral: true,
+      });
+    }
     await interaction.reply({ embeds: [buildAncestryCorePage(ancestry)], components: [buildAncestryButtons(0, key)] });
   }
 
@@ -9246,7 +9238,14 @@ client.on('interactionCreate', async (interaction) => {
     const input = interaction.options.getString('name');
     const { archetype, matches } = findArchetype(input);
     if (!archetype && matches.length > 1) return interaction.reply({ content: `🔍 Multiple archetypes match **"${input}"**. Did you mean one of these?\n**${matches.sort().join(', ')}**`, ephemeral: true });
-    if (!archetype) return interaction.reply({ content: `❌ No archetype found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
+    if (!archetype) {
+      const _names = Object.values(archetypeDatabase).map(a => a?.name).filter(Boolean);
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No archetype found for **"${input}"**.${_hint || ' Check your spelling or try another name.'}`,
+        ephemeral: true,
+      });
+    }
     await interaction.reply({ embeds: [buildArchetypeEmbed(archetype)] });
   }
 
@@ -9259,7 +9258,14 @@ client.on('interactionCreate', async (interaction) => {
       const extra = matches.length > 25 ? ` *(+${matches.length - 25} more)*` : '';
       return interaction.reply({ content: `🔍 Multiple backgrounds match **"${input}"**. Did you mean one of these?\n**${preview}**${extra}`, ephemeral: true });
     }
-    if (!background) return interaction.reply({ content: `❌ No background found for **"${input}"**. Check your spelling or try another name.`, ephemeral: true });
+    if (!background) {
+      const _names = Object.values(backgroundDatabase).map(b => b?.name).filter(Boolean);
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No background found for **"${input}"**.${_hint || ' Check your spelling or try another name.'}`,
+        ephemeral: true,
+      });
+    }
     await interaction.reply({ embeds: [buildBackgroundEmbed(background)] });
   }
 
@@ -9285,7 +9291,14 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const levelMsg = levelFilter != null ? ` at level ${levelFilter}` : '';
-    return interaction.reply({ content: `❌ No feat found for **"${input}"**${levelMsg}. Check your spelling or try another name.`, ephemeral: true });
+    {
+      const _names = featDatabase.map(f => f?.name).filter(Boolean);
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No feat found for **"${input}"**${levelMsg}.${_hint || ' Check your spelling or try another name.'}`,
+        ephemeral: true,
+      });
+    }
   }
 
   // ─── /item ───────────────────────────────────────────────────────
@@ -9311,8 +9324,10 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const levelMsg = levelFilter != null ? ` at level ${levelFilter}` : '';
+    const _itemNames = itemDatabase.map(i => i?.name).filter(Boolean);
+    const _itemHint = didYouMeanLine(input, _itemNames);
     return interaction.reply({
-      content: `❌ No item found for **"${input}"**${levelMsg}. Check your spelling or try another name.`,
+      content: `❌ No item found for **"${input}"**${levelMsg}.${_itemHint || ' Check your spelling or try another name.'}`,
       ephemeral: true
     });
   }
@@ -9325,7 +9340,19 @@ client.on('interactionCreate', async (interaction) => {
       const nameList = matches.map(r => `${r.name} *(${r.category})*`).sort().join('\n');
       return interaction.reply({ content: `🔍 Multiple entries match **"${input}"**:\n${nameList}`, ephemeral: true });
     }
-    if (!rule) return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
+    if (!rule) {
+      const _names = [];
+      for (const _cat of Object.values(rulesDatabase)) {
+        if (_cat && typeof _cat === 'object' && !Array.isArray(_cat)) {
+          for (const _r of Object.values(_cat)) if (_r?.name) _names.push(_r.name);
+        }
+      }
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No rule found for **"${input}"**.${_hint}\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`,
+        ephemeral: true,
+      });
+    }
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
   }
 
@@ -9352,18 +9379,14 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `🔍 Multiple conditions match **"${input}"**: ${nameList}`, ephemeral: true });
     }
 
-    // Build a "did you mean?" hint from the Conditions category.
+    // Build a "did you mean?" hint from the Conditions category using the
+    // shared fuzzy matcher — handles real typos like "grabed" or "frigtened".
     const allConditions = Object.values(rulesDatabase.Conditions ?? {})
       .map(c => c.name)
       .filter(Boolean)
       .sort();
-    const lower = (input || '').toLowerCase();
-    const suggestions = allConditions
-      .filter(n => n.toLowerCase().includes(lower.slice(0, 3)))
-      .slice(0, 5);
-    const hint = suggestions.length
-      ? `\nDid you mean: ${suggestions.map(s => `**${s}**`).join(', ')}?`
-      : `\nTry one of: ${allConditions.slice(0, 8).join(', ')}, ...`;
+    const hint = didYouMeanLine(input, allConditions) ||
+      `\nTry one of: ${allConditions.slice(0, 8).join(', ')}, ...`;
 
     return interaction.reply({
       content: `❌ No condition found for **"${input}"**.${hint}`,
@@ -9390,10 +9413,14 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
     }
 
-    return interaction.reply({
-      content: `❌ No deity found for **"${input}"**. Check your spelling or try another name.`,
-      ephemeral: true,
-    });
+    {
+      const _names = Object.values(deityDatabase).map(d => d?.name).filter(Boolean);
+      const _hint = didYouMeanLine(input, _names);
+      return interaction.reply({
+        content: `❌ No deity found for **"${input}"**.${_hint || ' Check your spelling or try another name.'}`,
+        ephemeral: true,
+      });
+    }
   }
 
   // ─── /skillinfo ──────────────────────────────────────────────────
@@ -9471,7 +9498,13 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (!cls) {
       const all = Object.values(classDatabase).map(c => c.name).sort().join(', ');
-      return interaction.reply({ content: `❌ No class found for **"${input}"**.\nAvailable: ${all}`, ephemeral: true });
+      {
+        const _hint = didYouMeanLine(input, all.split(', ').filter(Boolean));
+        return interaction.reply({
+          content: `❌ No class found for **"${input}"**.${_hint || `\nAvailable: ${all}`}`,
+          ephemeral: true,
+        });
+      }
     }
     const embed = buildClassOverviewPage(cls, userCharName);
     const buttons = buildClassButtons(0, key);
@@ -10031,7 +10064,11 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     return interaction.reply({
-      content: `❌ No creature found for **"${input}"**. Check your spelling or try another name.`,
+      content: (() => {
+        const _names = Object.values(bestiaryDatabase).map(c => c?.name).filter(Boolean);
+        const _hint = didYouMeanLine(input, _names);
+        return `❌ No creature found for **"${input}"**.${_hint || ' Check your spelling or try another name.'}`;
+      })(),
       ephemeral: true,
     });
   }
