@@ -1461,7 +1461,9 @@
         }
       },
       "hp": 24,
-      "heroPoints": 0
+      "heroPoints": 0,
+      "dying": 0,
+      "wounded": 0
     },
     "isolde": {
       "name": "Isolde",
