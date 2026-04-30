@@ -11817,14 +11817,16 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const charAc = charEntry.data?.acTotal?.acTotal ?? null;
+      const charKey = charEntry.name.toLowerCase().replace(/\s+/g, '-');
       addCombatant(channelId, {
         name: charName,
         initiative,
-        hp: maxHp,
+        hp: charEntry.hp ?? maxHp,
         maxHp,
         ac: charAc,
         ownerId: userId,
         isNpc: false,
+        charKey,
         effects: [],
       });
 
@@ -12546,6 +12548,23 @@ client.on('interactionCreate', async (interaction) => {
       if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
       await clearSummary(interaction.channel, enc);
       logEncounterEvent(enc, 'initiative_end', { actor: interaction.user.username, round: enc.round });
+
+      // Write final combat HP, dying, and wounded back to character entries so
+      // the web app and subsequent bot commands reflect post-combat state.
+      const characters = loadCharacters();
+      let combatDirty = false;
+      for (const c of enc.combatants) {
+        if (c.isNpc || !c.ownerId) continue;
+        const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
+        const entry = characters[c.ownerId]?.[key];
+        if (!entry) continue;
+        entry.hp      = c.hp;
+        entry.dying   = c.dying   ?? 0;
+        entry.wounded = c.wounded ?? 0;
+        combatDirty = true;
+      }
+      if (combatDirty) saveCharacters(characters);
+
       deleteEncounter(channelId);
       return interaction.reply('🏁 Combat ended. Well fought!');
     }

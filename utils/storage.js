@@ -511,7 +511,7 @@ async function syncAllCharactersToSupabase(characters) {
               ? { companions: charEntry.companions }
               : {}),
           },
-          hero_points:      charEntry.overlay?.daily?.hero_points ?? 1,
+          hero_points:      charEntry.heroPoints ?? charEntry.overlay?.daily?.hero_points ?? 1,
           dying:            charEntry.dying ?? 0,
           wounded:          charEntry.wounded ?? 0,
           status:           'active',
