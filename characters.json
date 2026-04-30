@@ -1501,7 +1501,10 @@
                 "reach"
               ]
             }
-          ]
+          ],
+          "skills": {
+            "Acrobatics": 6
+          }
         }
       },
       "activeCompanion": "abyss"
