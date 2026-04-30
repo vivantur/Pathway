@@ -320,7 +320,7 @@ function rerollRecoveryCheck(channelId, combatantName, originalResult) {
   c.dying = originalResult.dyingBefore;
   if (originalResult.awoke) {
     c.wounded = Math.max(0, (c.wounded ?? 0) - 1);
-    if (c.hp === 1) c.hp = 0; // roll back the 1-HP regain
+    // hp stays at 0 — rollRecoveryCheck never grants HP (PF2e RAW: stabilize at 0 HP)
   }
 
   // Now roll again
@@ -334,7 +334,7 @@ function rerollRecoveryCheck(channelId, combatantName, originalResult) {
   if (firstIsBetter) {
     // Undo the second roll's effects, reapply the first
     c.dying = originalResult.dyingAfter;
-    c.hp = originalResult.awoke ? 1 : c.hp;
+    // hp unchanged — recovery at 0 HP keeps the combatant unconscious (PF2e RAW)
     if (originalResult.awoke) c.wounded = (c.wounded ?? 0) + 1;
     return {
       ...originalResult,
