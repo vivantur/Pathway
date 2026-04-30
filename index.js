@@ -18,6 +18,8 @@ const {
   loadGamedata,
   saveJson,
   mutateJson,
+  isSyncDegraded,
+  restoreAllFromSupabase,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncNotesToSupabase,
@@ -5291,9 +5293,63 @@ function buildHelpButtons(currentCategory) {
   return rows;
 }
 
+// ── In-memory database reload after Supabase restore ─────────────────────────
+// restoreAllFromSupabase() writes updated gamedata files to disk, but the
+// module-level database variables (bestiaryDatabase, spellDatabase,
+// itemDatabase) were loaded at require-time — before clientReady fires.
+// Writing disk files alone doesn't update those live variables.
+//
+// We must mutate in-place (Object.assign / splice) rather than reassign,
+// because other closures in this module already hold references to the
+// original arrays/objects. Reassigning would leave those references stale.
+function reloadDatabasesAfterRestore() {
+  try {
+    // ── Bestiary (object: { slug → creature }) ──────────────────────────────
+    const rawBestiary = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
+    const freshCreatures = rawBestiary.creatures ?? rawBestiary;
+    // Remove any keys no longer present, then merge all current keys
+    for (const key of Object.keys(bestiaryDatabase)) {
+      if (!(key in freshCreatures)) delete bestiaryDatabase[key];
+    }
+    Object.assign(bestiaryDatabase, freshCreatures);
+    console.log(`[reload] bestiary: ${Object.keys(bestiaryDatabase).length} creatures`);
+  } catch (e) {
+    console.error('[reload] bestiary failed:', e.message);
+  }
+
+  try {
+    // ── Spells (flat array) ─────────────────────────────────────────────────
+    const rawSpells = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
+    const freshSpells = Array.isArray(rawSpells) ? rawSpells : [];
+    spellDatabase.splice(0, spellDatabase.length, ...freshSpells);
+    console.log(`[reload] spells: ${spellDatabase.length} spells`);
+  } catch (e) {
+    console.error('[reload] spells failed:', e.message);
+  }
+
+  try {
+    // ── Items (flat array in memory, { meta, items:{} } on disk) ───────────
+    const rawItems = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
+    const itemsObj = rawItems.items ?? rawItems;
+    const freshItems = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+    itemDatabase.splice(0, itemDatabase.length, ...freshItems);
+    console.log(`[reload] items: ${itemDatabase.length} items`);
+  } catch (e) {
+    console.error('[reload] items failed:', e.message);
+  }
+}
+
 // ── Bot ready ─────────────────────────────────────────────────────────────────
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  // Restore all synced data from Supabase first so the bot always boots
+  // from database truth rather than stale (or missing) volume files.
+  await restoreAllFromSupabase();
+  // After the restore writes updated gamedata files (including homebrew
+  // entries spliced back in), reload the in-memory database variables so
+  // autocomplete and lookup commands immediately see the restored content.
+  reloadDatabasesAfterRestore();
+  // Then restore active encounters (separate — encounters.js owns this).
   await restoreEncountersFromSupabase();
 });
 
@@ -7665,19 +7721,10 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('name');
-    // ── DIAGNOSTIC ── temporary logging to track down /sheet failures.
-    // Remove these console.logs after the bug is fixed.
-    console.log(`[sheet DEBUG] userId=${userId}, nameArg=${JSON.stringify(nameArg)}`);
-    console.log(`[sheet DEBUG] characters[userId] exists: ${!!characters[userId]}`);
-    console.log(`[sheet DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
-    console.log(`[sheet DEBUG] total userIds in file: ${Object.keys(characters).length}`);
-    console.log(`[sheet DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = await resolveChar(userId, nameArg, characters);
     if (error) {
-      console.log(`[sheet DEBUG] resolveChar returned error: ${error}`);
       return interaction.editReply(error);
     }
-    console.log(`[sheet DEBUG] resolveChar succeeded: charKey=${charKey}`);
     try {
       // Merge overrides from charEntry.edits into a display-only view of c.
       // Original c.data is untouched so JSON re-imports don't lose user edits
@@ -9748,17 +9795,10 @@ client.on('interactionCreate', async (interaction) => {
     // Tracking subcommands require a character
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
-    // ── DIAGNOSTIC: log what /companion is seeing ──────────────────
-    console.log(`[companion DEBUG] sub=${sub}, userId=${interaction.user.id}, charNameArg=${charNameArg}`);
-    console.log(`[companion DEBUG] characters[userId] keys: ${Object.keys(characters[interaction.user.id] ?? {}).join(', ') || '(NONE)'}`);
-    console.log(`[companion DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
-    console.log(`[companion DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
     if (error) {
-      console.log(`[companion DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error, ephemeral: true });
     }
-    console.log(`[companion DEBUG] resolveChar succeeded: charKey=${charKey}, name=${charEntry?.name}`);
     const char = charEntry.data;
     if (!charEntry.companions) charEntry.companions = {};
 
@@ -11348,14 +11388,13 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (sub === 'set') {
-      // Override — allows going above 3 if the GM really wants to
       const value = interaction.options.getInteger('value');
       if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
+      if (value > HERO_POINTS_MAX) return interaction.reply({ content: `❌ Hero Points can't exceed **${HERO_POINTS_MAX}** (PF2e cap). Use \`/hero add\` to grant up to the max.`, ephemeral: true });
       charEntry.heroPoints = value;
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
-      const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
-      const note = `✏️ Set to **${value}**${overflow}.`;
+      const note = `✏️ Set to **${value}**.`;
       return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
     }
 
@@ -11545,7 +11584,13 @@ client.on('interactionCreate', async (interaction) => {
       });
 
       const sign = amount >= 0 ? '+' : '';
-      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
+      // Warn when a deduction was partially absorbed by the 0-floor so the GM
+      // knows the full amount wasn't deducted (e.g. tried -100 but only had 50).
+      const actualDelta = newXp - oldXp;
+      const clampWarning = amount < 0 && actualDelta !== amount
+        ? `\n⚠️ *Could only deduct ${Math.abs(actualDelta)} XP — balance was already at ${oldXp}.*`
+        : '';
+      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP${clampWarning}`;
       const replyPayload = { embeds: [buildXpEmbed(char, charEntry, { note, showLog: false })] };
 
       // If they crossed a 1000 XP threshold, post a celebratory level-up embed too
@@ -11771,10 +11816,14 @@ client.on('interactionCreate', async (interaction) => {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
       const newEnc = createEncounter(channelId, userId, interaction.guildId);
       logEncounterEvent(newEnc, 'initiative_start', { actor: interaction.user.username });
+      const syncWarning = isSyncDegraded()
+        ? '\n⚠️ *Web sync is currently unavailable — the combat tracker and character sheets may not update live.*'
+        : '';
       await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
         `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
-        `When everyone is in, the GM uses \`/init next\` to begin.`
+        `When everyone is in, the GM uses \`/init next\` to begin.` +
+        syncWarning
       );
       await updateSummary(interaction.channel, newEnc);
       return;
@@ -11785,19 +11834,6 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'add') {
       const characters = loadCharacters();
-      // ── DIAGNOSTIC: log what we loaded and who's calling ───────────
-      // Remove this block once the companion-bug debugging is done.
-      console.log(`[init add DEBUG] userId=${userId}, compArg=${interaction.options.getString('companion')}, charArg=${interaction.options.getString('character')}`);
-      console.log(`[init add DEBUG] characters.json keys for user: ${Object.keys(characters[userId] ?? {}).join(', ') || '(none)'}`);
-      console.log(`[init add DEBUG] total users in characters.json: ${Object.keys(characters).length}`);
-      console.log(`[init add DEBUG] dataPath says: ${dataPath('characters.json')}`);
-      try {
-        const stats = fs.statSync(dataPath('characters.json'));
-        console.log(`[init add DEBUG] file size: ${stats.size} bytes, modified: ${stats.mtime.toISOString()}`);
-      } catch (e) {
-        console.log(`[init add DEBUG] file stat failed: ${e.message}`);
-      }
-
       // ── Companion path ─────────────────────────────────────────────
       // If `companion:` is specified, add the user's companion to init as
       // their own combatant (ownedby the user, not NPC-controlled). Uses
@@ -11806,7 +11842,6 @@ client.on('interactionCreate', async (interaction) => {
       if (compArg) {
         const { error: cerr, char: ce } = await resolveChar(userId, interaction.options.getString('character'), characters);
         if (cerr) {
-          console.log(`[init add DEBUG] resolveChar returned error: ${cerr}`);
           return interaction.reply({ content: cerr, ephemeral: true });
         }
         if (!ce.companions || Object.keys(ce.companions).length === 0) {
@@ -11848,10 +11883,13 @@ client.on('interactionCreate', async (interaction) => {
           rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
         }
 
+        // Use stored HP when it has been explicitly set (including 0 for an
+        // unconscious companion), fall back to maxHp only when never recorded.
+        const companionHp = comp.currentHp != null ? comp.currentHp : scaled.maxHp;
         addCombatant(channelId, {
           name: comp.displayName,
           initiative,
-          hp: comp.currentHp ?? scaled.maxHp,
+          hp: companionHp,
           maxHp: scaled.maxHp,
           ac: scaled.ac,
           ownerId: userId,
@@ -11860,7 +11898,7 @@ client.on('interactionCreate', async (interaction) => {
           effects: [],
         });
 
-        await interaction.reply(`🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins initiative at **${initiative}** ${rollText}. HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac}`);
+        await interaction.reply(`🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins initiative at **${initiative}** ${rollText}. HP ${companionHp}/${scaled.maxHp} · AC ${scaled.ac}`);
         await updateSummary(interaction.channel, enc);
         return;
       }
@@ -11916,6 +11954,13 @@ client.on('interactionCreate', async (interaction) => {
       const ac = interaction.options.getInteger('ac');
       const resultOverride = interaction.options.getInteger('result');
 
+      // Validate HP and AC before creating the combatant. hp/ac are optional
+      // Discord options (null = not provided), so only reject explicitly bad values.
+      if (hp !== null && hp < 1) return interaction.reply({ content: '❌ HP must be at least 1.', ephemeral: true });
+      if (ac !== null && ac < 0) return interaction.reply({ content: '❌ AC cannot be negative.', ephemeral: true });
+      const finalHp = hp ?? 1;
+      const finalAc = ac ?? 10;
+
       if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase())) return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
 
       let initiative, rollText;
@@ -11931,15 +11976,15 @@ client.on('interactionCreate', async (interaction) => {
       addCombatant(channelId, {
         name,
         initiative,
-        hp,
-        maxHp: hp,
-        ac,
+        hp: finalHp,
+        maxHp: finalHp,
+        ac: finalAc,
         ownerId: userId,
         isNpc: true,
         effects: [],
       });
 
-      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}. HP ${finalHp} · AC ${finalAc}`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -12627,18 +12672,40 @@ client.on('interactionCreate', async (interaction) => {
       let combatDirty = false;
       for (const c of enc.combatants) {
         if (c.isNpc || !c.ownerId) continue;
-        const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
-        const entry = characters[c.ownerId]?.[key];
-        if (!entry) continue;
-        entry.hp      = c.hp;
-        entry.dying   = c.dying   ?? 0;
-        entry.wounded = c.wounded ?? 0;
-        combatDirty = true;
+
+        if (c.companionOf) {
+          // Companion — find parent character entry, then the companion sub-object
+          const ownerChars = characters[c.ownerId] ?? {};
+          const parentEntry = Object.values(ownerChars).find(
+            e => e && typeof e === 'object' && e.name === c.companionOf
+          );
+          if (parentEntry?.companions) {
+            const compEntry = Object.values(parentEntry.companions).find(
+              comp => comp && comp.displayName === c.name
+            );
+            if (compEntry) {
+              compEntry.currentHp = c.hp;
+              combatDirty = true;
+            }
+          }
+        } else {
+          // Regular character
+          const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
+          const entry = characters[c.ownerId]?.[key];
+          if (!entry) continue;
+          entry.hp      = c.hp;
+          entry.dying   = c.dying   ?? 0;
+          entry.wounded = c.wounded ?? 0;
+          combatDirty = true;
+        }
       }
       if (combatDirty) saveCharacters(characters);
 
       deleteEncounter(channelId);
-      return interaction.reply('🏁 Combat ended. Well fought!');
+      const endSyncWarning = isSyncDegraded()
+        ? '\n⚠️ *Web sync is currently unavailable — character sheets may not reflect final HP. Use `/hp view` to confirm.*'
+        : '';
+      return interaction.reply('🏁 Combat ended. Well fought!' + endSyncWarning);
     }
 
     // ── /init move ──
@@ -13583,6 +13650,7 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'log') {
       downtime.accrue(store, userId, charKey);
       saveDowntime(store);
+      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
       const entries = downtime.getLog(store, userId, charKey, 20);
       const lines = entries.length > 0
         ? entries.map(e => {
