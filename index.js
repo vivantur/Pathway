@@ -18,6 +18,8 @@ const {
   loadGamedata,
   saveJson,
   mutateJson,
+  syncAllCharactersToSupabase,
+  logEncounterEvent,
 } = require('./utils/storage');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
@@ -374,6 +376,7 @@ function loadCharacters() {
   catch { return {}; }
 }
 function saveCharacters(data) {
+  syncAllCharactersToSupabase(data);
   return saveJson('characters.json', data);
 }
 
@@ -9160,6 +9163,15 @@ client.on('interactionCreate', async (interaction) => {
       hpLine = target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+      logEncounterEvent(enc, dmgResult?.died ? 'death' : 'attack', {
+        actor: attacker.name, target: target.name,
+        data: { roll: totalRoll, damage: finalDamage, hit: true, crit: degree === 'crit-success', died: !!dmgResult?.died },
+      });
+    } else {
+      logEncounterEvent(enc, 'attack', {
+        actor: attacker.name, target: target?.name ?? null,
+        data: { roll: totalRoll, hit: false, crit: false },
+      });
     }
     if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -11338,6 +11350,11 @@ client.on('interactionCreate', async (interaction) => {
       const { oldXp, newXp, leveledUp } = awardXp(charEntry, amount, reason, interaction.user.id);
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      const xpEnc = getEncounter(interaction.channel.id);
+      logEncounterEvent(xpEnc, 'xp_award', {
+        actor: interaction.user.username, target: charEntry.name,
+        data: { amount, reason: reason ?? null, oldXp, newXp, leveledUp },
+      });
 
       const sign = amount >= 0 ? '+' : '';
       const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
@@ -11560,7 +11577,8 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'start') {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
-      const newEnc = createEncounter(channelId, userId);
+      const newEnc = createEncounter(channelId, userId, interaction.guildId);
+      logEncounterEvent(newEnc, 'initiative_start', { actor: interaction.user.username });
       await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
         `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
@@ -12029,6 +12047,15 @@ client.on('interactionCreate', async (interaction) => {
         hpLine = target.isNpc
           ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
           : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+        logEncounterEvent(enc, dmgResult?.died ? 'death' : 'attack', {
+          actor: attacker.name, target: target.name,
+          data: { roll: totalRoll, damage: finalDamage, hit: true, crit: degree === 'crit-success', died: !!dmgResult?.died },
+        });
+      } else {
+        logEncounterEvent(enc, 'attack', {
+          actor: attacker.name, target: target?.name ?? null,
+          data: { roll: totalRoll, hit: false, crit: false },
+        });
       }
       if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -12170,9 +12197,14 @@ client.on('interactionCreate', async (interaction) => {
 
       const replyPayload = { content: lines.join('\n') };
       if (result.recoveryCheck) {
-        const payload = buildRecoveryCheckPayload(result.recoveryCheck, current);
+        const rc = result.recoveryCheck;
+        const payload = buildRecoveryCheckPayload(rc, current);
         replyPayload.embeds = payload.embeds;
         if (payload.components.length) replyPayload.components = payload.components;
+        logEncounterEvent(enc, rc.died ? 'death' : rc.awoke ? 'recovery' : 'recovery', {
+          actor: current.name,
+          data: { roll: rc.roll, dc: rc.dc, outcome: rc.outcome, died: !!rc.died, awoke: !!rc.awoke },
+        });
       }
 
       await interaction.reply(replyPayload);
@@ -12393,6 +12425,7 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'end') {
       if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
       await clearSummary(interaction.channel, enc);
+      logEncounterEvent(enc, 'initiative_end', { actor: interaction.user.username, round: enc.round });
       deleteEncounter(channelId);
       return interaction.reply('🏁 Combat ended. Well fought!');
     }

@@ -1,8 +1,11 @@
 // encounters.js
 // In-memory encounter store, keyed by channelId.
-// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId, summaryMessageId }
+// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId, guildId, summaryMessageId,
+//                    supabaseId (set after first Supabase sync) }
 // Each combatant = { name, initiative, hp, maxHp, ac, ownerId, isNpc, effects: [] }
 // Each effect = { name, value, duration, modifiers: {...}, isPreset, presetKey, appliedBy }
+
+const { syncEncounterToSupabase, endEncounterInSupabase } = require('../utils/storage');
 
 const encounters = new Map();
 
@@ -10,19 +13,24 @@ function getEncounter(channelId) {
   return encounters.get(channelId) || null;
 }
 
-function createEncounter(channelId, gmId) {
+function createEncounter(channelId, gmId, guildId = null) {
   const encounter = {
     combatants: [],
     turnIndex: 0,
     round: 1,
     gmId,
+    guildId,
     summaryMessageId: null,
+    supabaseId: null,
   };
   encounters.set(channelId, encounter);
+  syncEncounterToSupabase(channelId, encounter);
   return encounter;
 }
 
 function deleteEncounter(channelId) {
+  const enc = encounters.get(channelId);
+  if (enc) endEncounterInSupabase(enc);
   encounters.delete(channelId);
 }
 
@@ -44,6 +52,7 @@ function addCombatant(channelId, combatant) {
     if (b.maxHp !== a.maxHp) return b.maxHp - a.maxHp;
     return a.name.localeCompare(b.name);
   });
+  syncEncounterToSupabase(channelId, enc);
   return enc;
 }
 
@@ -57,6 +66,7 @@ function removeCombatant(channelId, name) {
   if (idx < enc.turnIndex) enc.turnIndex--;
   enc.combatants.splice(idx, 1);
   if (enc.turnIndex >= enc.combatants.length) enc.turnIndex = 0;
+  syncEncounterToSupabase(channelId, enc);
   return enc;
 }
 
@@ -98,9 +108,11 @@ function advanceTurn(channelId) {
       });
     }
 
+    syncEncounterToSupabase(channelId, enc);
     return { enc, current, expiredEffects };
   }
   // All combatants delayed; return current with no advance (defensive)
+  syncEncounterToSupabase(channelId, enc);
   return { enc, current: enc.combatants[enc.turnIndex], expiredEffects };
 }
 
@@ -112,6 +124,7 @@ function modifyHp(channelId, name, delta) {
   );
   if (!c) return null;
   c.hp = Math.max(0, Math.min(c.maxHp, c.hp + delta));
+  syncEncounterToSupabase(channelId, enc);
   return c;
 }
 
@@ -148,6 +161,7 @@ function addEffect(channelId, combatantName, effect) {
     replaced = true;
   }
   combatant.effects.push(effect);
+  syncEncounterToSupabase(channelId, enc);
   return { combatant, effect, replaced };
 }
 
@@ -162,6 +176,7 @@ function removeEffect(channelId, combatantName, effectName) {
   );
   if (idx === -1) return null;
   const [removed] = combatant.effects.splice(idx, 1);
+  syncEncounterToSupabase(channelId, enc);
   return { combatant, effect: removed };
 }
 

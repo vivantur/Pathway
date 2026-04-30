@@ -458,6 +458,150 @@ function mutateJson(filename, opts, mutator) {
   });
 }
 
+// ── Supabase sync helpers ────────────────────────────────────────────────────
+// All three functions are fire-and-forget: they never throw and never block
+// a Discord command. A Supabase outage is silent to users — the bot keeps
+// working from JSON files as normal.
+
+const { getSupabase } = require('./supabase');
+
+// Sync all characters from the in-memory map to Supabase.
+// Called after saveCharacters so the web app sees current data.
+// Only syncs users who have already signed into the web app (have a users row).
+async function syncAllCharactersToSupabase(characters) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const discordIds = Object.keys(characters).filter(k => k !== '_activeChar' && /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+
+    const { data: userRows, error: userErr } = await sb
+      .from('users')
+      .select('id, discord_id')
+      .in('discord_id', discordIds);
+    if (userErr) throw userErr;
+    if (!userRows || userRows.length === 0) return;
+
+    const userMap = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
+
+    const upserts = [];
+    for (const [discordId, userChars] of Object.entries(characters)) {
+      const userId = userMap[discordId];
+      if (!userId) continue;
+
+      for (const [charKey, charEntry] of Object.entries(userChars)) {
+        if (charKey.startsWith('_') || !charEntry || !charEntry.name) continue;
+        const d = charEntry.data || {};
+        upserts.push({
+          user_id:          userId,
+          char_key:         charKey,
+          discord_guild_id: charEntry.guildId ?? null,
+          name:             charEntry.name,
+          class_name:       d.class ?? null,
+          ancestry_name:    d.ancestry ?? null,
+          background_name:  d.background ?? null,
+          level:            d.level ?? 1,
+          experience:       d.xp ?? 0,
+          pathbuilder_data: d,
+          current_hp:       charEntry.hp ?? null,
+          overlay:          charEntry.overlay ?? {},
+          hero_points:      charEntry.overlay?.daily?.hero_points ?? 1,
+          dying:            charEntry.dying ?? 0,
+          wounded:          charEntry.wounded ?? 0,
+          status:           'active',
+        });
+      }
+    }
+    if (upserts.length === 0) return;
+
+    const { error } = await sb
+      .from('characters')
+      .upsert(upserts, { onConflict: 'user_id,char_key' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] character sync failed:', err.message);
+  }
+}
+
+// Upsert the full encounter snapshot. Called after every state mutation so
+// the web combat tracker stays current. Stores the encounter's Supabase UUID
+// on enc.supabaseId so event logging can reference it without another lookup.
+async function syncEncounterToSupabase(channelId, enc) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !enc || !enc.guildId) return;
+
+    const payload = {
+      discord_guild_id: enc.guildId,
+      channel_id:       channelId,
+      gm_discord_id:    enc.gmId ?? null,
+      status:           'active',
+      round:            enc.round,
+      turn_index:       enc.turnIndex,
+      combatants:       enc.combatants,
+    };
+
+    if (enc.supabaseId) {
+      // Already created — update in place.
+      const { error } = await sb
+        .from('encounters')
+        .update(payload)
+        .eq('id', enc.supabaseId);
+      if (error) throw error;
+    } else {
+      // First sync for this encounter — insert and store the UUID.
+      const { data, error } = await sb
+        .from('encounters')
+        .insert(payload)
+        .select('id')
+        .single();
+      if (error) throw error;
+      enc.supabaseId = data.id;
+    }
+  } catch (err) {
+    console.error('[Supabase] encounter sync failed:', err.message);
+  }
+}
+
+// Mark an active encounter as ended.
+async function endEncounterInSupabase(enc) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !enc?.supabaseId) return;
+    const { error } = await sb
+      .from('encounters')
+      .update({ status: 'ended', ended_at: new Date().toISOString() })
+      .eq('id', enc.supabaseId);
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] encounter end failed:', err.message);
+  }
+}
+
+// Insert one event row for the session history log.
+// eventType: 'initiative_start' | 'initiative_end' | 'attack' | 'damage' |
+//            'heal' | 'death' | 'recovery' | 'effect_add' | 'effect_expire' | 'xp_award'
+// actor / target: combatant names (strings or null)
+// data: any extra payload (plain object)
+async function logEncounterEvent(enc, eventType, { actor = null, target = null, round = null, data = {} } = {}) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !enc?.supabaseId) return;
+    const { error } = await sb.from('encounter_events').insert({
+      encounter_id: enc.supabaseId,
+      event_type:   eventType,
+      actor,
+      target,
+      round:        round ?? enc.round ?? null,
+      data,
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] event log failed:', err.message);
+  }
+}
+
 module.exports = {
   DATA_DIR,
   GAMEDATA_DIR,
@@ -472,4 +616,8 @@ module.exports = {
   backupJsonToGitHub,
   shouldForceReseed,
   preserveHomebrewDuringReseed,
+  syncAllCharactersToSupabase,
+  syncEncounterToSupabase,
+  endEncounterInSupabase,
+  logEncounterEvent,
 };
