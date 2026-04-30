@@ -1456,7 +1456,12 @@
           "form": "young",
           "notes": "",
           "customStats": null,
-          "currentHp": 16
+          "currentHp": 16,
+          "overrides": {
+            "abilities": {},
+            "saves": {},
+            "hp": 24
+          }
         }
       },
       "activeCompanion": "abyss"
