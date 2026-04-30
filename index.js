@@ -2282,17 +2282,26 @@ function findSpell(spellName) {
 
 // ── Rules lookup ──────────────────────────────────────────────────────────────
 function findRule(query) {
+  // Defensive: if the user-typed query is empty/null, bail with no match.
+  // (Discord shouldn't send us an empty string for a required option, but
+  // belt-and-suspenders.)
+  if (typeof query !== 'string' || !query.trim()) return { rule: null, matches: [] };
   const q = query.toLowerCase().trim().replace(/\s+/g, '-');
   const qRaw = query.toLowerCase().trim();
   for (const category of Object.values(rulesDatabase)) {
     if (category[q]) return { rule: category[q], matches: [] };
-    const exactName = Object.values(category).find(r => r.name.toLowerCase() === qRaw);
+    // Defensive: some entries in rulesDatabase may be missing a `name`
+    // field (malformed JSON, partial homebrew, etc.). Skip those instead
+    // of crashing the whole interaction.
+    const exactName = Object.values(category).find(r => typeof r?.name === 'string' && r.name.toLowerCase() === qRaw);
     if (exactName) return { rule: exactName, matches: [] };
   }
   const matches = [];
   for (const category of Object.values(rulesDatabase)) {
     for (const [key, rule] of Object.entries(category)) {
-      if (rule.name.toLowerCase().includes(qRaw) || key.includes(q)) matches.push(rule);
+      const nameMatches = typeof rule?.name === 'string' && rule.name.toLowerCase().includes(qRaw);
+      const keyMatches  = typeof key === 'string' && key.includes(q);
+      if (nameMatches || keyMatches) matches.push(rule);
     }
   }
   if (matches.length === 1) return { rule: matches[0], matches: [] };
@@ -5483,7 +5492,21 @@ client.on('interactionCreate', async (interaction) => {
 
         const focused = interaction.options.getFocused(true); // { name, value }
         const q = String(focused.value ?? '').toLowerCase().trim();
-        const cmd = interaction.commandName;
+        // /m subcommand groups are aliased back to the legacy commandName so
+        // the existing autocomplete branches below work unchanged. Mirrors
+        // the same rewrite in the main handler dispatcher above.
+        let cmd = interaction.commandName;
+        if (cmd === 'm') {
+          const group = interaction.options.getSubcommandGroup(false);
+          if (group === 'roll')        cmd = 'monsterroll';
+          else if (group === 'attack') cmd = 'monsterattack';
+          else if (group === 'edit')   cmd = 'monsteredit';
+          else if (group === 'add')    cmd = 'monsteradd';
+          else {
+            const sub = interaction.options.getSubcommand(false);
+            if (sub === 'show') cmd = 'monster';
+          }
+        }
 
         // Score & slice helper: exact first, then starts-with, then contains.
         // `names` is an array of strings (already deduped). Max 25 results.
@@ -6062,7 +6085,39 @@ client.on('interactionCreate', async (interaction) => {
     }
     return;
   }
-  const { commandName } = interaction;
+  // commandName is mutable here so we can rewrite /m subcommands into their
+  // legacy equivalents before the dispatch chain. See the /m router below.
+  let { commandName } = interaction;
+
+  // ─── /m router ───────────────────────────────────────────────────
+  // Single GM-friendly umbrella for monster admin. Subcommand groups:
+  //
+  //   /m show name:                          → /monster name:
+  //   /m roll save monster:save:[dc] [public]  → /monsterroll save ...
+  //   /m roll skill monster:skill:[dc] [public] → /monsterroll skill ...
+  //   /m attack add/addspell/addsave/remove/clear/list/use → /monsterattack X
+  //   /m edit set/paste/list/reset/show       → /monsteredit X
+  //   /m add paste/file/remove                → /monsteradd X
+  //
+  // We rewrite commandName to the legacy name so the existing handlers (which
+  // are big and shouldn't be duplicated) handle the request. The user-facing
+  // name in the slash-command picker is just `/m`; everything else flows.
+  // Existing /monster, /monsterattack, /monsteredit, /monsteradd, /monsterroll
+  // are kept registered as aliases so old muscle memory still works.
+  if (commandName === 'm') {
+    const group = interaction.options.getSubcommandGroup(false);
+    if (group === 'roll')        commandName = 'monsterroll';
+    else if (group === 'attack') commandName = 'monsterattack';
+    else if (group === 'edit')   commandName = 'monsteredit';
+    else if (group === 'add')    commandName = 'monsteradd';
+    else {
+      // No group — must be top-level subcommand like /m show
+      const sub = interaction.options.getSubcommand(false);
+      if (sub === 'show') commandName = 'monster';
+      // Everything else: /m alone or unknown — fall through with no rewrite,
+      // which will hit the catch-all "unknown command" handler.
+    }
+  }
 
   // ─── /ping ───────────────────────────────────────────────────────
   if (commandName === 'ping') {
@@ -9900,6 +9955,12 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.ok) {
         return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
       }
+      // Tag as homebrew so the volume's reseed-preservation step keeps it.
+      // Without this flag, a forced reseed (e.g. bestiary.json bumped in repo)
+      // overwrites this entry with the repo copy. The flag is read by
+      // preserveHomebrewDuringReseed in storage.js — entries without it are
+      // assumed to be canonical/repo data and get replaced on reseed.
+      result.entry._homebrew = true;
       const slug = addMonsterToBestiary(result.entry, result.slug);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
@@ -9937,6 +9998,9 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.ok) {
         return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
       }
+      // Tag as homebrew so the volume's reseed-preservation step keeps it.
+      // (See /monsteradd paste handler above for why this matters.)
+      result.entry._homebrew = true;
       const slug = addMonsterToBestiary(result.entry, result.slug);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
