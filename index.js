@@ -1828,94 +1828,223 @@ function formatEffectForEmbed(e) {
   return text;
 }
 
-function buildInitiativeEmbed(enc) {
-  const lines = enc.combatants.map((combatant, i) => {
-    const isCurrent = i === enc.turnIndex;
-    const marker = isCurrent ? '▶' : ' ';
-    const status = hpStatus(
-      combatant.hp,
-      combatant.maxHp,
-      combatant.dying ?? 0,
-      combatant.doomed ?? 0,
-      combatant.unconscious === true,
+// ── Initiative display: hybrid pagination ────────────────────────────────────
+// Layout strategy by combatant count:
+//   1-4  combatants → all detailed (HP bar + effects sub-line per entry)
+//   5+   combatants → current turn detailed, everyone else compact one-liners
+//   >10  combatants → paginated, 10 per page, ◀ ▶ buttons; current turn's
+//                    page is always shown by default (cursor follows the turn)
+//
+// PAGE_SIZE controls page break for compact mode. Picked 10 because 10 compact
+// lines (~50-70 chars each) plus one detailed block (~3 lines) lands well under
+// Discord's 4096-char description limit and reads cleanly on mobile.
+const INIT_PAGE_SIZE = 10;
+const INIT_COMPACT_THRESHOLD = 5; // 5+ combatants triggers compact mode
+
+// Render ONE combatant in DETAILED form (HP bar, effects sub-line, all the trim).
+// This is the "headline" rendering used for current turn and small encounters.
+function renderCombatantDetailed(combatant, isCurrent) {
+  const marker = isCurrent ? '▶' : ' ';
+  const status = hpStatus(
+    combatant.hp,
+    combatant.maxHp,
+    combatant.dying ?? 0,
+    combatant.doomed ?? 0,
+    combatant.unconscious === true,
+  );
+
+  // PCs see actual HP + bar; NPCs see status only (HP hidden from players).
+  let hpInline;
+  if (combatant.isNpc) {
+    hpInline = status.label;
+  } else {
+    const bar = hpBar(combatant.hp, combatant.maxHp);
+    hpInline = `\`${bar}\` ${combatant.hp}/${combatant.maxHp}`;
+  }
+
+  const acPart      = combatant.ac != null ? ` · AC ${combatant.ac}` : '';
+  const woundedPart = (combatant.wounded ?? 0) > 0 ? ` · Wounded ${combatant.wounded}` : '';
+  const doomedPart  = (combatant.doomed  ?? 0) > 0 ? ` · Doomed ${combatant.doomed}`   : '';
+  const delayedPart = combatant.delayed ? ' · *Delayed*' : '';
+
+  // Reaction indicator: ⤾ available, ⌀ used. Cross-platform-safe glyphs.
+  let reactionPart = '';
+  if (combatant.hasReaction !== false && (combatant.dying ?? 0) === 0 && !combatant.delayed) {
+    reactionPart = combatant.reactionUsed ? ' · ⌀' : ' · ⤾';
+  }
+
+  // Active effects (excluding the dying/wounded/doomed pips, which already
+  // surface in their own slots above).
+  let effectLine = '';
+  if (combatant.effects?.length) {
+    const visible = combatant.effects.filter(e => {
+      const k = e.presetKey;
+      return k !== 'dying' && k !== 'wounded' && k !== 'doomed' && k !== 'unconscious';
+    });
+    if (visible.length) {
+      const effectTexts = visible.map(formatEffectForEmbed);
+      effectLine = `\n     *${effectTexts.join(', ')}*`;
+    }
+  }
+
+  const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
+  return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}`;
+}
+
+// Render ONE combatant in COMPACT form (single line, no bar, no effects sub).
+// Used for everyone except the current turn when there are 5+ combatants.
+function renderCombatantCompact(combatant, isCurrent) {
+  const marker = isCurrent ? '▶' : ' ';
+  const status = hpStatus(
+    combatant.hp,
+    combatant.maxHp,
+    combatant.dying ?? 0,
+    combatant.doomed ?? 0,
+    combatant.unconscious === true,
+  );
+
+  // Compact HP: PCs show "HP/MAX", NPCs show qualitative status word only.
+  const hpPart = combatant.isNpc ? status.label : `${combatant.hp}/${combatant.maxHp}`;
+
+  // Compact mode drops AC and reaction state to keep lines short. Doomed/
+  // Wounded/Delayed still surface as terse keywords because they affect
+  // tactical decisions ("oh that goblin's wounded, finish it").
+  const tags = [];
+  if ((combatant.wounded ?? 0) > 0) tags.push(`W${combatant.wounded}`);
+  if ((combatant.doomed  ?? 0) > 0) tags.push(`D${combatant.doomed}`);
+  if (combatant.delayed) tags.push('Delayed');
+  if ((combatant.dying  ?? 0) > 0) tags.push(`Dying ${combatant.dying}`);
+  const tagPart = tags.length ? ` · ${tags.join('/')}` : '';
+
+  const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
+  return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpPart}${tagPart}`;
+}
+
+// Compute which page (0-indexed) contains the given combatant index.
+function pageForIndex(idx, pageSize) {
+  return Math.floor(idx / pageSize);
+}
+
+// Build the initiative embed. Optional `pageOverride` lets the button handler
+// jump to an arbitrary page (private/ephemeral); default is the page that
+// contains the current turn so the cursor naturally follows.
+function buildInitiativeEmbed(enc, { pageOverride = null } = {}) {
+  const total = enc.combatants.length;
+  if (total === 0) {
+    return {
+      embed: new EmbedBuilder()
+        .setTitle(`Initiative — Round ${enc.round}`)
+        .setDescription('*No combatants yet*')
+        .setColor(0xAA0000),
+      page: 0,
+      totalPages: 1,
+    };
+  }
+
+  // ── Mode A: Tiny encounter (1-4) — render everyone detailed, no pagination
+  if (total < INIT_COMPACT_THRESHOLD) {
+    const lines = enc.combatants.map((c, i) =>
+      renderCombatantDetailed(c, i === enc.turnIndex)
     );
+    return {
+      embed: new EmbedBuilder()
+        .setTitle(`Initiative — Round ${enc.round}`)
+        .setDescription(lines.join('\n\n'))
+        .setColor(0xAA0000),
+      page: 0,
+      totalPages: 1,
+    };
+  }
 
-    // PCs see actual HP + bar; NPCs see status only (HP hidden from players).
-    // Both go on the SAME line as the combatant name now per Viv's redesign —
-    // makes the list scannable at a glance.
-    let hpInline;
-    if (combatant.isNpc) {
-      // NPC: just the qualitative status. Keep it terse.
-      hpInline = status.label;
+  // ── Mode B: 5+ combatants — compact list, current turn detailed
+  // Pagination kicks in only when total > PAGE_SIZE. Default page is the
+  // one containing the current turn so the embed always shows whoever's up.
+  const pageSize = INIT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const naturalPage = pageForIndex(enc.turnIndex, pageSize);
+  const page = pageOverride != null
+    ? Math.max(0, Math.min(totalPages - 1, pageOverride))
+    : naturalPage;
+
+  const start = page * pageSize;
+  const end = Math.min(total, start + pageSize);
+
+  // Build the page's combatant lines. The current turn is detailed only if
+  // they're ON this page; otherwise we show them in compact form like
+  // everyone else and add a "Current turn elsewhere" note at the top.
+  const lines = [];
+  const currentOnThisPage = enc.turnIndex >= start && enc.turnIndex < end;
+  if (!currentOnThisPage) {
+    const cur = enc.combatants[enc.turnIndex];
+    if (cur) {
+      lines.push(`*Current turn (page ${naturalPage + 1}):* ${renderCombatantCompact(cur, true)}`);
+      lines.push(''); // visual gap before page contents
+    }
+  }
+  for (let i = start; i < end; i++) {
+    const c = enc.combatants[i];
+    const isCurrent = i === enc.turnIndex;
+    if (isCurrent) {
+      lines.push(renderCombatantDetailed(c, true));
     } else {
-      // PC: bar + numeric HP, no separate status word (the bar conveys it).
-      const bar = hpBar(combatant.hp, combatant.maxHp);
-      hpInline = `\`${bar}\` ${combatant.hp}/${combatant.maxHp}`;
+      lines.push(renderCombatantCompact(c, false));
     }
+  }
 
-    const acPart = combatant.ac !== undefined && combatant.ac !== null
-      ? ` · AC ${combatant.ac}`
-      : '';
-
-    // Wounded persists across deaths/recoveries (separate from current dying state)
-    const woundedPart = (combatant.wounded ?? 0) > 0
-      ? ` · Wounded ${combatant.wounded}`
-      : '';
-    // Doomed reduces death threshold; surface it prominently
-    const doomedPart = (combatant.doomed ?? 0) > 0
-      ? ` · Doomed ${combatant.doomed}`
-      : '';
-    // Delayed indicator — they've set themselves aside and aren't in rotation
-    const delayedPart = combatant.delayed ? ' · *Delayed*' : '';
-
-    // Reaction indicator: ⤾ available, ⌀ used. Use a clean cross-platform
-    // glyph instead of the combining strikethrough that doesn't render on mobile.
-    let reactionPart = '';
-    if (combatant.hasReaction !== false && (combatant.dying ?? 0) === 0 && !combatant.delayed) {
-      reactionPart = combatant.reactionUsed ? ' · ⌀' : ' · ⤾';
-    }
-
-    let effectLine = '';
-    if (combatant.effects && combatant.effects.length > 0) {
-      // Skip dying/wounded/doomed in the effect line — they have their own pips.
-      const visible = combatant.effects.filter(e => {
-        const k = e.presetKey;
-        return k !== 'dying' && k !== 'wounded' && k !== 'doomed' && k !== 'unconscious';
-      });
-      if (visible.length > 0) {
-        const effectTexts = visible.map(formatEffectForEmbed);
-        effectLine = `\n     *${effectTexts.join(', ')}*`;
-      }
-    }
-
-    // Bold the current combatant's name to make it pop more than just ▶
-    const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
-
-    // Single-line layout: ▶ 22 — Hylia (HP bar) · AC 18 · Wounded 1 · ⤾
-    // followed by an optional effects sub-line, then a blank line for spacing.
-    return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}`;
-  });
-
-  // Join with double-newline so each combatant has a blank line of breathing
-  // room between them. Much more scannable, especially with 6+ combatants.
-  return new EmbedBuilder()
-    .setTitle(`Initiative — Round ${enc.round}`)
-    .setDescription(lines.join('\n\n') || '*No combatants yet*')
+  const pageSuffix = totalPages > 1 ? ` — Page ${page + 1}/${totalPages}` : '';
+  const embed = new EmbedBuilder()
+    .setTitle(`Initiative — Round ${enc.round}${pageSuffix}`)
+    .setDescription(lines.join('\n'))
     .setColor(0xAA0000);
+
+  if (totalPages > 1) {
+    embed.setFooter({ text: `${total} combatants · ◀ ▶ for more (private view)` });
+  }
+
+  return { embed, page, totalPages };
+}
+
+// Build the action row of pagination buttons. Returns null when there's
+// only one page so we don't post empty button rows.
+function buildInitiativeButtons(channelId, page, totalPages) {
+  if (totalPages <= 1) return null;
+  // customId encodes channelId + target page. The handler decodes and
+  // re-renders the embed at that page in an EPHEMERAL reply (per Viv's
+  // design: anyone can flip pages, but only they see the new page).
+  const prevPage = (page - 1 + totalPages) % totalPages;
+  const nextPage = (page + 1) % totalPages;
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`init_page_${channelId}_${prevPage}`)
+      .setLabel('◀ Prev')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`init_page_${channelId}_${nextPage}`)
+      .setLabel('Next ▶')
+      .setStyle(ButtonStyle.Secondary),
+  );
 }
 
 async function updateSummary(channel, enc) {
   if (!enc) return;
-  const embed = buildInitiativeEmbed(enc);
+  // Always render the summary at the natural page (the one containing the
+  // current turn) so the cursor follows along automatically as /init next
+  // rotates through combatants. Players who want to peek at later pages use
+  // the buttons, which give them a private/ephemeral view.
+  const { embed, page, totalPages } = buildInitiativeEmbed(enc);
+  const buttons = buildInitiativeButtons(channel.id, page, totalPages);
+  const components = buttons ? [buttons] : [];
+  const payload = { embeds: [embed], components };
+
   if (enc.summaryMessageId) {
     try {
       const existing = await channel.messages.fetch(enc.summaryMessageId);
-      await existing.edit({ embeds: [embed] });
+      await existing.edit(payload);
       return;
     } catch {}
   }
   try {
-    const msg = await channel.send({ embeds: [embed] });
+    const msg = await channel.send(payload);
     setSummaryMessageId(channel.id, msg.id);
     try {
       await msg.pin();
@@ -5042,6 +5171,47 @@ client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!
 client.on('interactionCreate', async (interaction) => {
 
   if (interaction.isButton()) {
+    // ─── Initiative pagination buttons ──────────────────────────────
+    // customId shape: init_page_<channelId>_<targetPage>
+    // Anyone can click; the new page renders as an EPHEMERAL reply visible
+    // ONLY to the clicker (per Viv's design: "their click is private").
+    // The pinned summary message itself doesn't change — the cursor still
+    // follows the current turn for everyone else.
+    //
+    // First click on the public summary → reply with a fresh ephemeral.
+    // Subsequent clicks on that same ephemeral → update it in place so the
+    // user doesn't end up with a stack of ephemeral messages while paging.
+    if (interaction.customId.startsWith('init_page_')) {
+      const tail = interaction.customId.slice('init_page_'.length);
+      const lastUnderscore = tail.lastIndexOf('_');
+      if (lastUnderscore < 0) {
+        return interaction.reply({ content: '❌ Malformed pagination button.', ephemeral: true });
+      }
+      const channelId = tail.slice(0, lastUnderscore);
+      const targetPage = parseInt(tail.slice(lastUnderscore + 1), 10);
+      const enc = getEncounter(channelId);
+      if (!enc) {
+        // Edge case: encounter ended while user was viewing buttons.
+        // If we're on the public summary message, reply ephemerally;
+        // if we're on a prior ephemeral, just update with the bad-news.
+        if (interaction.message.flags?.has('Ephemeral')) {
+          return interaction.update({ content: '❌ The encounter has ended.', embeds: [], components: [] });
+        }
+        return interaction.reply({ content: '❌ The encounter has ended.', ephemeral: true });
+      }
+      const { embed, page, totalPages } = buildInitiativeEmbed(enc, { pageOverride: targetPage });
+      const buttons = buildInitiativeButtons(channelId, page, totalPages);
+      const components = buttons ? [buttons] : [];
+      // Detect ephemeral vs public by checking the source message's flags.
+      // Discord exposes a 64 flag (Ephemeral) on ephemeral messages.
+      const isOnEphemeral = !!(interaction.message.flags?.has?.('Ephemeral')
+        || (typeof interaction.message.flags === 'object' && interaction.message.flags?.bitfield & 64));
+      if (isOnEphemeral) {
+        return interaction.update({ embeds: [embed], components });
+      }
+      return interaction.reply({ embeds: [embed], components, ephemeral: true });
+    }
+
     // ─── Monster-attack save roll button ────────────────────────────
     if (interaction.customId.startsWith('msave_')) {
       // customId shape: msave_<saveType>_<dc>
@@ -11994,7 +12164,11 @@ client.on('interactionCreate', async (interaction) => {
       // full effect descriptions (with modifiers and durations) and explicit
       // dying/wounded/doomed/unconscious flags. Useful for "what's actually
       // going on" mid-fight when the summary line is too compact.
-      const summaryEmbed = buildInitiativeEmbed(enc);
+      //
+      // The summary part now uses pagination so big encounters don't blow
+      // past Discord's description limit. /init list shows the natural page
+      // (current turn) just like the pinned summary.
+      const { embed: summaryEmbed, page, totalPages } = buildInitiativeEmbed(enc);
       const detailLines = [];
       for (const c of enc.combatants) {
         const flags = [];
@@ -12020,7 +12194,9 @@ client.on('interactionCreate', async (interaction) => {
           detailLines.push(`**${c.name}**${flagText}\n${effectDetails.join('\n')}`.trim());
         }
       }
+      const buttons = buildInitiativeButtons(channelId, page, totalPages);
       const replyPayload = { embeds: [summaryEmbed] };
+      if (buttons) replyPayload.components = [buttons];
       if (detailLines.length > 0) {
         const detailEmbed = new EmbedBuilder()
           .setColor(0x9B59B6)
