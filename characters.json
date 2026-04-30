@@ -1470,7 +1470,8 @@
             "ac": 16,
             "perception": 5,
             "speed": "20 feet, fly 40 feet",
-            "size": "Large"
+            "size": "Large",
+            "attackBonus": 6
           }
         }
       },
