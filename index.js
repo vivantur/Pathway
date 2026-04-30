@@ -18,20 +18,6 @@ const {
   loadGamedata,
   saveJson,
   mutateJson,
-  isSyncDegraded,
-  restoreAllFromSupabase,
-  syncAllCharactersToSupabase,
-  syncDowntimeToSupabase,
-  syncNotesToSupabase,
-  logEncounterEvent,
-  mergeCharactersFromSupabase,
-  syncBagToSupabase,
-  syncHomebrewEntryToSupabase,
-  deleteHomebrewEntryFromSupabase,
-  syncUserSnippetsToSupabase,
-  syncGuildSnippetsToSupabase,
-  syncMonsterArtToSupabase,
-  syncMonsterEditsToSupabase,
 } = require('./utils/storage');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
@@ -52,7 +38,6 @@ const {
   clearEffects,
   delayCombatant,
   rejoinFromDelay,
-  restoreEncountersFromSupabase,
 } = encounters;
 const { getPreset, listPresets } = require('./systems/effects');
 const downtime = require('./commands/downtime');
@@ -79,10 +64,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    // Required for /char pastemsg to read the text of user's recent messages.
-    // You must ALSO enable this in the Discord Developer Portal:
-    //   https://discord.com/developers/applications → Your App → Bot → Privileged Gateway Intents
-    //   → Enable "Message Content Intent"
+    // Message content intent — kept enabled in case future features (like reading
+    // posted JSON or chat-based commands) need it. Toggle in Discord Developer Portal.
     GatewayIntentBits.MessageContent,
   ]
 });
@@ -405,7 +388,6 @@ function loadCharacters() {
   catch { return {}; }
 }
 function saveCharacters(data) {
-  syncAllCharactersToSupabase(data);
   return saveJson('characters.json', data);
 }
 
@@ -1702,19 +1684,9 @@ async function fetchPathbuilderCharacter(id) {
   return { char, id };
 }
 
-async function resolveChar(userId, nameArg, characters) {
-  const hasLocalChars = characters[userId] &&
-    Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length > 0;
-
-  // No local characters at all — pull from Supabase before giving up.
-  if (!hasLocalChars) {
-    const added = await mergeCharactersFromSupabase(userId, characters);
-    if (added > 0) saveCharacters(characters);
-  }
-
+function resolveChar(userId, nameArg, characters) {
   if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
-
   let charKey;
   if (!nameArg) {
     // Filter out underscore-prefixed metadata keys (like _activeChar)
@@ -1733,17 +1705,7 @@ async function resolveChar(userId, nameArg, characters) {
   } else {
     charKey = nameArg.toLowerCase().replace(/\s+/g, '-');
   }
-
   if (!characters[userId][charKey]) {
-    // Specific key not found locally but user has other local chars — one more
-    // Supabase pull to catch characters created via the web app.
-    if (hasLocalChars) {
-      const added = await mergeCharactersFromSupabase(userId, characters);
-      if (added > 0) {
-        saveCharacters(characters);
-        if (characters[userId][charKey]) return { charKey, char: characters[userId][charKey] };
-      }
-    }
     const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
     return { error: `Couldn't find that character. Your characters: ${names}` };
   }
@@ -5056,11 +5018,8 @@ const HELP_CATEGORIES = {
     label: 'Character',
     blurb: 'Import, display, and manage your saved characters. For editing fields, see the Edit category.',
     commands: [
-      { name: '/char pastemsg', summary: '**Best for mobile.** Post JSON as a chat message (or `.txt` attachment), then run this.', options: '', example: '/char pastemsg' },
-      { name: '/char pastemsgupdate', summary: 'Refresh a character from a posted JSON message. Keeps hero points, XP, HP, notes.', options: '', example: '/char pastemsgupdate' },
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file. Keeps your overlay additions.', options: 'file', example: '/char update file:[attach .json]' },
-      { name: '/char pdf', summary: 'Import from a Pathbuilder statblock PDF (partial — misses some details). Use when you don\'t have JSON.', options: 'file', example: '/char pdf file:[attach .pdf]' },
       { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
@@ -5309,65 +5268,8 @@ function buildHelpButtons(currentCategory) {
   return rows;
 }
 
-// ── In-memory database reload after Supabase restore ─────────────────────────
-// restoreAllFromSupabase() writes updated gamedata files to disk, but the
-// module-level database variables (bestiaryDatabase, spellDatabase,
-// itemDatabase) were loaded at require-time — before clientReady fires.
-// Writing disk files alone doesn't update those live variables.
-//
-// We must mutate in-place (Object.assign / splice) rather than reassign,
-// because other closures in this module already hold references to the
-// original arrays/objects. Reassigning would leave those references stale.
-function reloadDatabasesAfterRestore() {
-  try {
-    // ── Bestiary (object: { slug → creature }) ──────────────────────────────
-    const rawBestiary = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
-    const freshCreatures = rawBestiary.creatures ?? rawBestiary;
-    // Remove any keys no longer present, then merge all current keys
-    for (const key of Object.keys(bestiaryDatabase)) {
-      if (!(key in freshCreatures)) delete bestiaryDatabase[key];
-    }
-    Object.assign(bestiaryDatabase, freshCreatures);
-    console.log(`[reload] bestiary: ${Object.keys(bestiaryDatabase).length} creatures`);
-  } catch (e) {
-    console.error('[reload] bestiary failed:', e.message);
-  }
-
-  try {
-    // ── Spells (flat array) ─────────────────────────────────────────────────
-    const rawSpells = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
-    const freshSpells = Array.isArray(rawSpells) ? rawSpells : [];
-    spellDatabase.splice(0, spellDatabase.length, ...freshSpells);
-    console.log(`[reload] spells: ${spellDatabase.length} spells`);
-  } catch (e) {
-    console.error('[reload] spells failed:', e.message);
-  }
-
-  try {
-    // ── Items (flat array in memory, { meta, items:{} } on disk) ───────────
-    const rawItems = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
-    const itemsObj = rawItems.items ?? rawItems;
-    const freshItems = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
-    itemDatabase.splice(0, itemDatabase.length, ...freshItems);
-    console.log(`[reload] items: ${itemDatabase.length} items`);
-  } catch (e) {
-    console.error('[reload] items failed:', e.message);
-  }
-}
-
 // ── Bot ready ─────────────────────────────────────────────────────────────────
-client.once('clientReady', async () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-  // Restore all synced data from Supabase first so the bot always boots
-  // from database truth rather than stale (or missing) volume files.
-  await restoreAllFromSupabase();
-  // After the restore writes updated gamedata files (including homebrew
-  // entries spliced back in), reload the in-memory database variables so
-  // autocomplete and lookup commands immediately see the restored content.
-  reloadDatabasesAfterRestore();
-  // Then restore active encounters (separate — encounters.js owns this).
-  await restoreEncountersFromSupabase();
-});
+client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!`); });
 
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
@@ -5420,7 +5322,7 @@ client.on('interactionCreate', async (interaction) => {
       const [, saveType, dcStr] = interaction.customId.split('_');
       const dc = parseInt(dcStr, 10);
       const characters = loadCharacters();
-      const { error, char: charEntry } = await resolveChar(interaction.user.id, null, characters);
+      const { error, char: charEntry } = resolveChar(interaction.user.id, null, characters);
       if (error) {
         return interaction.reply({ content: `❌ ${error}\nLoad a character with \`/char add\` first, or roll manually with \`/save type:${saveType}\`.`, ephemeral: true });
       }
@@ -5670,7 +5572,7 @@ client.on('interactionCreate', async (interaction) => {
       if (pageIndex === 0) {
         try {
           const characters = loadCharacters();
-          const { char: charEntry } = await resolveChar(interaction.user.id, null, characters);
+          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
           if (charEntry) charMod = computeCharSkillModifier(charEntry, skillKey);
         } catch { /* no character, skip */ }
       }
@@ -5696,7 +5598,7 @@ client.on('interactionCreate', async (interaction) => {
       if (pageIndex === 0) {
         try {
           const characters = loadCharacters();
-          const { char: charEntry } = await resolveChar(interaction.user.id, null, characters);
+          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
           if (charEntry?.data?.class?.toLowerCase() === cls.name.toLowerCase()) {
             userCharName = charEntry.data.name;
           }
@@ -5921,10 +5823,10 @@ client.on('interactionCreate', async (interaction) => {
           const sub = interaction.options.getSubcommand(false);
           const charNameArg = interaction.options.getString('character');
           // Helper: get the current character's overlay + pathbuilder spellbooks
-          const getOwnSpells = async (filterPredicate) => {
+          const getOwnSpells = (filterPredicate) => {
             try {
               const characters = loadCharacters();
-              const { error, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
+              const { error, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
               if (error || !charEntry) return [];
               const casterFilter = interaction.options.getString('caster');
               const casters = charOverlay.getCasters(charEntry.data)
@@ -5953,7 +5855,7 @@ client.on('interactionCreate', async (interaction) => {
           }
           else if (focused.name === 'caster') {
             const characters = loadCharacters();
-            const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
             const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
             suggestions = pick(names);
           }
@@ -5964,7 +5866,7 @@ client.on('interactionCreate', async (interaction) => {
             } else if (sub === 'forget') {
               // Only overlay-added spells can be forgotten
               const characters = loadCharacters();
-              const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
+              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
               if (charEntry) {
                 charOverlay.ensureOverlay(charEntry);
                 const casterFilter = interaction.options.getString('caster');
@@ -5976,7 +5878,7 @@ client.on('interactionCreate', async (interaction) => {
             } else if (sub === 'unprepare') {
               // Only prepared spells
               const characters = loadCharacters();
-              const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
+              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
               if (charEntry) {
                 charOverlay.ensureOverlay(charEntry);
                 const casterFilter = interaction.options.getString('caster');
@@ -5992,7 +5894,7 @@ client.on('interactionCreate', async (interaction) => {
           }
           else if (focused.name === 'remove') {
             // /spells swap: remove should only show spells the character knows
-            suggestions = pick(await getOwnSpells());
+            suggestions = pick(getOwnSpells());
           }
           else if (focused.name === 'add') {
             // /spells swap: add from full spell database
@@ -6008,6 +5910,14 @@ client.on('interactionCreate', async (interaction) => {
           for (const category of Object.values(rulesDatabase)) {
             for (const rule of Object.values(category)) if (rule?.name) names.push(rule.name);
           }
+          suggestions = pick(names);
+        }
+        else if (cmd === 'condition' && focused.name === 'name') {
+          // Scope autocomplete to the Conditions category only — typing in
+          // /condition shouldn't surface every chapter heading from rules.json.
+          const names = Object.values(rulesDatabase.Conditions ?? {})
+            .map(r => r?.name)
+            .filter(Boolean);
           suggestions = pick(names);
         }
         else if (cmd === 'ancestry' && focused.name === 'name') {
@@ -6062,7 +5972,7 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           } else if (focused.name === 'caster') {
             const charNameArg = interaction.options.getString('character');
-            const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
             const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
             suggestions = pick(names);
           }
@@ -6118,7 +6028,7 @@ client.on('interactionCreate', async (interaction) => {
               // Find the character the user is asking about
               let ownerId = null, charKey = null;
               if (!charNameArg) {
-                const own = await resolveChar(interaction.user.id, null, characters);
+                const own = resolveChar(interaction.user.id, null, characters);
                 if (!own.error) { ownerId = interaction.user.id; charKey = own.charKey; }
               } else {
                 const target = String(charNameArg).toLowerCase();
@@ -6295,7 +6205,7 @@ client.on('interactionCreate', async (interaction) => {
             // If the user has partially filled the character: field, use that
             // character's companions; otherwise default to the active one.
             const charArg = interaction.options.getString('character');
-            const { char: ce } = await resolveChar(interaction.user.id, charArg, characters);
+            const { char: ce } = resolveChar(interaction.user.id, charArg, characters);
             const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
             suggestions = pick(comps);
           } else if (focused.name === 'character') {
@@ -6347,7 +6257,7 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'item' && focused.name === 'name') {
           // For edit/remove actions: autocomplete from existing items
           const characters = loadCharacters();
-          const { char: ce } = await resolveChar(interaction.user.id, null, characters) || {};
+          const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
           if (ce) {
             const c = ce.data ?? {};
             const jsonItems = (c.equipment ?? []).map(e => Array.isArray(e) ? e[0] : e).filter(Boolean);
@@ -6363,7 +6273,7 @@ client.on('interactionCreate', async (interaction) => {
           } else if (focused.name === 'name') {
             // Autocomplete from existing weapons on the active character (for edit/remove)
             const characters = loadCharacters();
-            const { char: ce } = await resolveChar(interaction.user.id, null, characters) || {};
+            const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
             if (ce) {
               const c = ce.data ?? {};
               const jsonWeapons = (c.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
@@ -6387,7 +6297,7 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'init' && focused.name === 'companion') {
           const characters = loadCharacters();
-          const { char: ce } = await resolveChar(interaction.user.id, null, characters);
+          const { char: ce } = resolveChar(interaction.user.id, null, characters);
           const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
           suggestions = pick(comps);
         }
@@ -6407,7 +6317,7 @@ client.on('interactionCreate', async (interaction) => {
           // For /downtime complete/cancel/spend, autocomplete with the player's
           // active entry IDs paired with a friendly description.
           const characters = loadCharacters();
-          const { charKey } = await resolveChar(interaction.user.id, null, characters);
+          const { charKey } = resolveChar(interaction.user.id, null, characters);
           if (charKey) {
             const store = loadDowntime();
             const active = downtime.listActiveEntries(store, interaction.user.id, charKey);
@@ -6551,7 +6461,7 @@ client.on('interactionCreate', async (interaction) => {
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
         const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.\n*On mobile? Next time try \`/char pastemsg\` — paste the JSON as a chat message instead of wrangling files.*`);
+        await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
     }
 
@@ -6573,138 +6483,11 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level}! *(hero points, XP, current HP, and bag preserved.)*`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong. Try again!'); }
     }
-
-    // /char pastemsg — import by scanning recent channel messages for JSON
-    // Flow: user posts a Discord message with their JSON (as code block,
-    // plain text, or `.txt` attachment), then runs `/char pastemsg`. Bot
-    // reads recent messages and picks the first one with parseable JSON.
-    // Works better than a modal for mobile users because:
-    //   - regular messages handle up to 2000 chars natively
-    //   - `.txt` attachments allow any size via Discord's 10MB file cap
-    //   - mobile Discord's paste-into-message UX is smooth
-    else if (sub === 'pastemsg' || sub === 'pastemsgupdate') {
-      const isUpdate = sub === 'pastemsgupdate';
-      await interaction.deferReply({ ephemeral: true });
-      let messages;
-      try {
-        messages = await interaction.channel.messages.fetch({ limit: 20 });
-      } catch (err) {
-        return interaction.editReply('❌ Could not read recent messages in this channel. Make sure the bot has permission to read messages here, then try again.');
-      }
-      // Look at the user's last 5 messages in reverse-chrono order
-      const userMessages = [...messages.values()]
-        .filter(m => m.author.id === interaction.user.id)
-        .slice(0, 5);
-      if (userMessages.length === 0) {
-        return interaction.editReply('❌ No recent messages from you in this channel. Post your Pathbuilder JSON (as text or `.txt` attachment) first, then run this command.');
-      }
-
-      // For each message, try to extract JSON from (a) attachments, (b) message content
-      for (const msg of userMessages) {
-        // Try attachments first — they can hold bigger JSONs
-        for (const att of msg.attachments.values()) {
-          const n = att.name?.toLowerCase() ?? '';
-          if (n.endsWith('.json') || n.endsWith('.txt')) {
-            try {
-              const res = await fetch(att.url);
-              const txt = await res.text();
-              const parsed = parsePastedPathbuilderJSON(txt);
-              if (parsed.char) {
-                const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
-                if (saved.error) continue;
-                if (isUpdate && !saved.replaced) continue;
-                return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your attachment \`${att.name}\`.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}`);
-              }
-            } catch { /* try next */ }
-          }
-        }
-        // Then try the message text
-        if (msg.content && msg.content.trim().length > 50) {
-          const parsed = parsePastedPathbuilderJSON(msg.content);
-          if (parsed.char) {
-            const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: isUpdate });
-            if (saved.error) continue;
-            if (isUpdate && !saved.replaced) continue;
-            return interaction.editReply(`✅ **${saved.name}**${saved.level ? ` (Level ${saved.level})` : ''} ${isUpdate ? 'updated' : (saved.replaced ? 'replaced' : 'saved')} from your chat message.${isUpdate ? ' *(hero points, XP, HP, notes preserved.)*' : ''}\n*You can delete the message now — the import is done.*`);
-          }
-        }
-      }
-      return interaction.editReply(
-        '❌ Couldn\'t find valid Pathbuilder JSON in your recent messages.\n\n' +
-        '**Try this instead:**\n' +
-        '1. From Pathbuilder: Menu → **Export JSON** → Copy\n' +
-        '2. Paste the JSON as a chat message in this channel (or attach it as a `.txt`)\n' +
-        '3. Run `/char pastemsg` again immediately after\n\n' +
-        '*For larger characters, save the JSON as a `.txt` file and attach it — Discord\'s 10MB limit is plenty.*'
-      );
-    }
-
-    // /char howto — platform-specific guidance for getting JSON into the bot
-    // /char pdf — import from a Pathbuilder statblock PDF
-    // Flow: user exports Pathbuilder character as statblock PDF (Menu →
-    // Export → View Statblock → Print/Save as PDF), uploads it here.
-    // Uses pdf-parse to extract text, then parsePathbuilderStatblockPDF
-    // to turn it into a character object. Best-effort — fills in what the
-    // PDF contains but leaves JSON-only fields empty. Marked _source:'pdf'.
-    //
-    // Why this instead of printable character sheet PDF: the printable sheet
-    // has form labels and values interleaved in random order that's basically
-    // unparseable. The statblock PDF uses the consistent monster-statblock
-    // format that we already handle for /monsteradd.
-    else if (sub === 'pdf') {
-      await interaction.deferReply();
-      const attachment = interaction.options.getAttachment('file');
-      if (!attachment.name.toLowerCase().endsWith('.pdf')) {
-        return interaction.editReply('❌ Please attach a `.pdf` file. For non-PDF imports, use `/char add` (JSON/TXT) or `/char pastemsg` (paste as message).');
-      }
-      try {
-        const response = await fetch(attachment.url);
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        let pdfText;
-        try {
-          const { PDFParse } = require('pdf-parse');
-          const p = new PDFParse({ data: buffer });
-          const r = await p.getText();
-          pdfText = r.text ?? '';
-        } catch (err) {
-          console.error('PDF text extraction failed:', err);
-          return interaction.editReply('❌ Could not read that PDF. It may be encrypted, image-only (scanned), or corrupted. Try re-exporting from Pathbuilder.');
-        }
-
-        const parsed = parsePathbuilderStatblockPDF(pdfText);
-        if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
-        if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-
-        // Warn the user about PDF-import limitations — it's a partial character
-        const warnLines = parsed.warnings.length
-          ? `\n*Parser warnings: ${parsed.warnings.join('; ')}*`
-          : '';
-        await interaction.editReply(
-          `✅ **${saved.name}** (Level ${saved.level}) imported from PDF!${warnLines}\n\n` +
-          `⚠️ **PDF imports are partial.** Skill proficiency ranks, class features by level, ` +
-          `and some details the statblock doesn't print aren't captured. Features that depend on ` +
-          `the full Pathbuilder JSON (leveling up, sync) won't work as well as with \`/char add\` or \`/char pastemsg\`.\n\n` +
-          `Use \`/sheet\` to view them. For full data, re-import later via JSON.`
-        );
-      } catch (err) {
-        console.error('/char pdf error:', err);
-        await interaction.editReply('❌ Something went wrong processing that PDF. Check the Railway logs and report the error.');
-      }
-    }
-
-    // /char edit — open a modal with free-text fields users may want to edit:
-    // Background, Deity, Languages (comma-separated), Senses (comma-separated).
-    // Pre-fills with current values so users can see and correct.
-    // Edits are stored in charEntry.edits and preserved across JSON re-imports.
     else if (sub === 'edit') {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -6799,7 +6582,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { charKey, char: charEntry } = resolved;
 
@@ -6853,7 +6636,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
 
@@ -6938,7 +6721,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
 
@@ -6974,7 +6757,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       const c = charEntry.data ?? {};
@@ -7051,7 +6834,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -7083,7 +6866,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -7131,7 +6914,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       if (!charEntry.edits) charEntry.edits = {};
@@ -7149,45 +6932,6 @@ client.on('interactionCreate', async (interaction) => {
       const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
       return interaction.reply({ content: `✅ Set **${field.toUpperCase()}** to **${value}** (${modStr} mod) on **${charEntry.name}**.`, ephemeral: true });
     }
-
-    // /char money — set or adjust coin counts
-    else if (sub === 'money') {
-      const charNameArg = interaction.options.getString('character');
-      const action = interaction.options.getString('action') ?? 'set';
-      const cp = interaction.options.getInteger('cp');
-      const sp = interaction.options.getInteger('sp');
-      const gp = interaction.options.getInteger('gp');
-      const pp = interaction.options.getInteger('pp');
-
-      if (action === 'set' && cp === null && sp === null && gp === null && pp === null) {
-        return interaction.reply({ content: '❌ Provide at least one coin value (`cp`, `sp`, `gp`, or `pp`) or use `action:clear`.', ephemeral: true });
-      }
-
-      const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
-      if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
-      const { char: charEntry } = resolved;
-      if (!charEntry.edits) charEntry.edits = {};
-      if (!charEntry.edits.money) charEntry.edits.money = {};
-
-      if (action === 'clear') {
-        charEntry.edits.money = {};
-        saveCharacters(characters);
-        return interaction.reply({ content: `✅ Cleared all money overrides on **${charEntry.name}**. JSON values will show on \`/sheet\`.`, ephemeral: true });
-      }
-
-      const set = {};
-      if (cp !== null) { charEntry.edits.money.cp = cp; set.cp = cp; }
-      if (sp !== null) { charEntry.edits.money.sp = sp; set.sp = sp; }
-      if (gp !== null) { charEntry.edits.money.gp = gp; set.gp = gp; }
-      if (pp !== null) { charEntry.edits.money.pp = pp; set.pp = pp; }
-      saveCharacters(characters);
-      const parts = Object.entries(set).map(([k, v]) => `${v} ${k}`).join(', ');
-      return interaction.reply({ content: `✅ Set ${parts} on **${charEntry.name}**.`, ephemeral: true });
-    }
-
-    // /char item — add / remove / edit a non-weapon inventory item.
-    // Mirrors /char weapon pattern: edits.items adds new, edits.hiddenItems hides JSON ones.
     else if (sub === 'item') {
       const charNameArg = interaction.options.getString('character');
       const action = interaction.options.getString('action');
@@ -7202,7 +6946,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       const c = charEntry.data ?? {};
@@ -7262,7 +7006,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       if (!charEntry.edits) charEntry.edits = {};
@@ -7316,7 +7060,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -7350,53 +7094,6 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.reply({ content: `❌ Couldn\'t export that character: ${err.message}`, ephemeral: true });
       }
     }
-
-    else if (sub === 'howto') {
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('📥 How to import your character')
-        .setDescription('Pick whichever method matches your device.')
-        .addFields(
-          {
-            name: '📱 Mobile — easiest: `/char pastemsg`',
-            value: '1. Pathbuilder app → Menu (≡) → **Export JSON** → **Copy JSON**\n2. Paste as a regular Discord chat message here\n3. Run `/char pastemsg` — bot reads your last message\n4. Delete the pasted message after (optional)\n\n**For big characters:** save the JSON as a `.txt` file first (Notes app → Share → Save to Files → rename to `.txt`), attach it to a Discord message, then run `/char pastemsg`.',
-            inline: false,
-          },
-          {
-            name: '💻 Desktop — `/char add` (file upload)',
-            value: 'Download JSON from Pathbuilder → `/char add file:<the-file>`. Accepts `.json` or `.txt`.',
-            inline: false,
-          },
-          {
-            name: '📄 PDF fallback — `/char pdf` (partial import)',
-            value: 'Export a **statblock PDF** from Pathbuilder: Menu → Export → **View Statblock** → Save as PDF. Upload with `/char pdf file:<the-pdf>`.\n\n*Partial import only* — misses skill proficiency ranks and some metadata. Use `/char edit` to set background/deity/languages/senses and `/char skill` to set proficiency ranks on the skills that matter. Does **not** work with the printable character sheet PDF, only the statblock format.',
-            inline: false,
-          },
-          {
-            name: '📝 No Pathbuilder? — `/char template` (build from scratch)',
-            value: 'For NPCs, homebrew characters, or anyone without Pathbuilder access:\n1. `/char template` — bot sends you a blank fill-in-the-blanks `.txt` file\n2. Edit it in any text editor (Notepad, phone notes, etc.). Comments explain every field.\n3. `/char add file:<the-edited-file>` imports your character.\n\nTo heavily modify an existing character: `/char dump character:<name>` exports them as an editable file. Edit, then `/char update file:<edited>` to apply changes.',
-            inline: false,
-          },
-          {
-            name: '✏️ Fixing or customising details',
-            value: '**Quick tweaks (modals):** `/char edit` (background, deity, languages, senses), `/char identity` (class, level, ancestry, heritage), `/char misc` (gender, age, size, alignment, key ability)\n' +
-              '**Combat stats:** `/char stat` (AC, HP max, saves, Perception, Speed), `/char weapon` (add/edit/remove attacks), `/char ability` (ability scores), `/char spellcasting` (DC, attack, tradition)\n' +
-              '**Skills:** `/char skill` (16 standard skills), `/char lore` (Lore skills — any topic, remove:True deletes)\n' +
-              '**Inventory:** `/char item` (add/remove/edit non-weapon items), `/char money` (set coin counts)\n' +
-              '**Feats:** `/char feat action:add/remove`\n\n' +
-              'All edits are preserved across `/char update` and `/char pastemsgupdate`, so leveling up won\'t wipe your manual corrections. Use `action:clear` on most commands to revert overrides.',
-            inline: false,
-          },
-          {
-            name: '🔄 Updating an existing character',
-            value: 'After leveling up, refresh with:\n• `/char pastemsgupdate` — paste updated JSON as a chat message\n• `/char update` — re-upload the updated file\n\nBoth preserve hero points, XP, current HP, notes, and any `/char edit` or `/char skill` overrides.',
-            inline: false,
-          },
-        )
-        .setFooter({ text: 'All import methods accept .json or .txt. Save your export as .txt if your OS is fussy about .json files.' });
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
     // ─── /char hp ─────────────────────────────────────────────────────
     // Override or reset a character's max HP, and/or set their current HP.
     // Useful when an import miscalculates HP (e.g. PDF imports missing
@@ -7411,7 +7108,7 @@ client.on('interactionCreate', async (interaction) => {
       const userId = interaction.user.id;
       const characters = loadCharacters();
       const nameArg = interaction.options.getString('character');
-      const { error, charKey, char: charEntry } = await resolveChar(userId, nameArg, characters);
+      const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
       const maxArg = interaction.options.getString('max');
@@ -7520,98 +7217,72 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'import') {
       await interaction.deferReply({ ephemeral: true });
       const id = interaction.options.getInteger('id');
+      // Pathbuilder IDs are 6 digits (e.g. 122550). Allow a broader range in case
+      // of older or future formats, but warn on obviously wrong shapes.
       if (id < 1 || id > 99999999) {
         return interaction.editReply(`❌ That doesn't look like a valid Pathbuilder ID. Expected a 6-digit number like \`122550\`.`);
       }
 
-      // ── Attempt 1: route through the web app (Vercel isn't on Pathbuilder's
-      // blocklist, so this sidesteps the Railway allowlist problem entirely).
-      // If WEB_API_URL + BOT_API_KEY are configured we always try this first.
-      const webApiUrl = process.env.WEB_API_URL;
-      const botApiKey = process.env.BOT_API_KEY;
-      if (webApiUrl && botApiKey) {
-        try {
-          const proxyRes = await fetch(`${webApiUrl}/api/bot/characters`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-bot-key': botApiKey,
-            },
-            body: JSON.stringify({
-              discord_id: interaction.user.id,
-              discord_guild_id: interaction.guildId ?? 'dm',
-              pathbuilder_id: id,
-            }),
-          });
-
-          if (proxyRes.ok) {
-            const { build } = await proxyRes.json();
-            const saved = saveImportedCharacter(interaction.user.id, build, { preserveOverlay: false });
-            if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-            return interaction.editReply(
-              `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
-              `*The character is also saved to the web app — visit the Pathway site to see your full sheet.*`
-            );
-          }
-
-          if (proxyRes.status === 404) {
-            return interaction.editReply(
-              `❌ Pathbuilder couldn't find ID \`${id}\`. IDs expire after about 24 hours.\n` +
-              `Get a fresh one: Pathbuilder → Menu → Export JSON → copy the new code.`
-            );
-          }
-          // Non-404 proxy error — fall through to direct fetch below.
-        } catch {
-          // Proxy unreachable — fall through to direct fetch.
-        }
-      }
-
-      // ── Attempt 2: direct Pathbuilder fetch (works when the bot's host is
-      // on Pathbuilder's allowlist; blocked on most cloud hosts).
+      const url = `https://pathbuilder2e.com/json.php?id=${id}`;
       try {
-        const response = await fetch(`https://pathbuilder2e.com/json.php?id=${id}`, {
-          headers: { 'User-Agent': 'Pathway-Bot/1.0 (+https://github.com/vivantur/Pathway; PF2e Discord bot)' },
+        // Use an honest User-Agent that identifies us as a bot. Some
+        // services (per Pathmuncher creator David Wilson, 2026-04-25) block
+        // blank or suspicious UAs but allow honest ones. Even if Pathbuilder's
+        // allowlist is host-based (which we believe it is), being a good
+        // network citizen — announcing what we are — is the right default.
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Pathway-Bot/1.0 (+https://github.com/vivantur/Pathway; PF2e Discord bot)',
+          },
         });
         const rawText = await response.text();
 
+        // Pathbuilder returns 403 "Host not in allowlist" when the server isn't
+        // whitelisted. Detect that specifically so we can give useful guidance.
         if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
           return interaction.editReply(
-            `❌ **Pathbuilder blocked the request** (this host isn't on their allowlist).\n\n` +
-            `**Fastest fix — import via the web app:**\n` +
-            `1. Go to the Pathway web app and sign in with Discord\n` +
-            `2. Click **Import Character** and enter your Pathbuilder ID \`${id}\`\n` +
-            `3. Run \`/char sync\` here to pull it into the bot\n\n` +
-            `**Or paste the JSON directly:**\n` +
-            `1. Pathbuilder → Menu → Export JSON → Copy to Clipboard\n` +
-            `2. Paste as a Discord message, then use \`/char pastemsg\``
+            `❌ **Pathbuilder blocked the request — its allowlist doesn't include this bot's server.**\n\n` +
+            `**Easy fix:** import via copy-paste instead. Takes 30 seconds:\n` +
+            `1. In Pathbuilder, click **Menu** → **Export & Import** → **Export JSON**\n` +
+            `2. Click **Copy to Clipboard**\n` +
+            `3. Paste the JSON into Discord chat as a message\n` +
+            `4. Right-click your pasted message → **Apps** → **Import as Character**\n` +
+              `**Why this happens:** Pathbuilder's creator (Roland) maintains an allowlist of approved hosts. Cloud-hosted bots like this one aren't on it. The User-Agent isn't the issue — the source IP is.`
           );
         }
         if (!response.ok) {
-          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment.`);
+          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use the copy-paste flow described in \`/char help\`.`);
         }
 
+        // Parse what we got. Pathbuilder returns { success: true, build: {...} } on
+        // valid IDs, or { success: false, error: ... } on lookup failures.
         let parsed;
-        try { parsed = JSON.parse(rawText); }
-        catch { return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try \`/char pastemsg\` instead.`); }
+        try {
+          parsed = JSON.parse(rawText);
+        } catch {
+          return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again, or use \`/char add\` with the exported JSON file.`);
+        }
 
         if (parsed.success === false) {
-          return interaction.editReply(`❌ Pathbuilder couldn't find ID \`${id}\`. Double-check the number or get a fresh export.`);
+          return interaction.editReply(`❌ Pathbuilder couldn't find ID \`${id}\`. Double-check the number (it's the 6-digit code shown after you export JSON in Pathbuilder).`);
         }
         const rawChar = parsed.build ?? parsed;
         if (!rawChar || !rawChar.name) {
           return interaction.editReply(`❌ Got a response from Pathbuilder but no character data. The ID may be invalid or expired.`);
         }
 
+        // Import via the same path /char add uses
         const saved = saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         return interaction.editReply(
           `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
-          `*Tip: Pathbuilder IDs expire after a while — use \`/char import id:<new-id>\` or \`/char pastemsg\` to refresh.*`
+          `*Tip: Pathbuilder's IDs expire after a while. If you re-export, use \`/char import id:<new-id>\` or \`/char update\` with the exported JSON file to refresh.*`
         );
       } catch (err) {
         console.error('/char import fetch error:', err);
         return interaction.editReply(
-          `❌ Couldn\'t reach Pathbuilder: \`${err.message}\`\n\nTry \`/char pastemsg\` instead.`
+          `❌ Couldn\'t reach Pathbuilder: \`${err.message}\`\n\n` +
+          `Try \`/char add\` instead — export the JSON from Pathbuilder and upload it as a file.`
         );
       }
     }
@@ -7619,7 +7290,7 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'art') {
       const url = interaction.options.getString('url');
       const characters = loadCharacters();
-      const { error, charKey } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+      const { error, charKey } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
       if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
       characters[interaction.user.id][charKey].art = url;
@@ -7672,32 +7343,13 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
     }
 
-    else if (sub === 'sync') {
-      const userId = interaction.user.id;
-      await interaction.deferReply({ ephemeral: true });
-      const characters = loadCharacters();
-      const before = new Set(Object.keys(characters[userId] ?? {}).filter(k => !k.startsWith('_')));
-      const added = await mergeCharactersFromSupabase(userId, characters);
-      if (added > 0) saveCharacters(characters);
-      if (added === 0) {
-        return interaction.editReply('✅ Already up to date — no new characters found in the web app.');
-      }
-      const newChars = Object.entries(characters[userId] ?? {})
-        .filter(([k]) => !k.startsWith('_') && !before.has(k))
-        .map(([, e]) => `**${e.name}**`);
-      return interaction.editReply(
-        `✅ Synced ${added} character${added !== 1 ? 's' : ''} from the web app: ${newChars.join(', ')}\n` +
-        `Use \`/char active character:<name>\` to set one as your default.`
-      );
-    }
-
     else if (sub === 'feat') {
       const action = interaction.options.getString('action'); // add or remove
       const featName = interaction.options.getString('name');
       const featLevel = interaction.options.getInteger('level') ?? charEntry.data?.level ?? 1;
       const userId = interaction.user.id;
       const characters2 = loadCharacters();
-      const { error: e2, charKey: ck2, char: ce2 } = await resolveChar(userId, interaction.options.getString('character'), characters2);
+      const { error: e2, charKey: ck2, char: ce2 } = resolveChar(userId, interaction.options.getString('character'), characters2);
       if (e2) return interaction.reply({ content: e2, ephemeral: true });
       if (!ce2.data.feats) ce2.data.feats = [];
       if (action === 'add') {
@@ -7737,10 +7389,19 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('name');
-    const { error, charKey, char: charEntry } = await resolveChar(userId, nameArg, characters);
+    // ── DIAGNOSTIC ── temporary logging to track down /sheet failures.
+    // Remove these console.logs after the bug is fixed.
+    console.log(`[sheet DEBUG] userId=${userId}, nameArg=${JSON.stringify(nameArg)}`);
+    console.log(`[sheet DEBUG] characters[userId] exists: ${!!characters[userId]}`);
+    console.log(`[sheet DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[sheet DEBUG] total userIds in file: ${Object.keys(characters).length}`);
+    console.log(`[sheet DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
+    const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
     if (error) {
+      console.log(`[sheet DEBUG] resolveChar returned error: ${error}`);
       return interaction.editReply(error);
     }
+    console.log(`[sheet DEBUG] resolveChar succeeded: charKey=${charKey}`);
     try {
       // Merge overrides from charEntry.edits into a display-only view of c.
       // Original c.data is untouched so JSON re-imports don't lose user edits
@@ -7970,7 +7631,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'portrait') {
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('character');
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data ?? {};
@@ -8029,7 +7690,6 @@ client.on('interactionCreate', async (interaction) => {
       const existed = !!userSnippets[name.toLowerCase()];
       snippets[interaction.user.id] = { ...userSnippets, [name.toLowerCase()]: expansion };
       saveSnippets(snippets);
-      syncUserSnippetsToSupabase(interaction.user.id, snippets[interaction.user.id]);
       // Detect arg count to give an accurate usage hint
       const argCount = (expansion.match(/%\d+/g) ?? []).length
         ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
@@ -8091,7 +7751,6 @@ client.on('interactionCreate', async (interaction) => {
       delete userSnippets[name];
       snippets[interaction.user.id] = userSnippets;
       saveSnippets(snippets);
-      syncUserSnippetsToSupabase(interaction.user.id, userSnippets);
       return interaction.reply({ content: `🗑️ Deleted snippet **${name}**.`, ephemeral: true });
     }
 
@@ -8134,7 +7793,6 @@ client.on('interactionCreate', async (interaction) => {
       const existed = !!guildSnippets[name.toLowerCase()];
       all[interaction.guildId] = { ...guildSnippets, [name.toLowerCase()]: expansion };
       saveServerSnippets(all);
-      syncGuildSnippetsToSupabase(interaction.guildId, all[interaction.guildId]);
       const argCount = (expansion.match(/%\d+/g) ?? []).length
         ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
         : 0;
@@ -8197,7 +7855,6 @@ client.on('interactionCreate', async (interaction) => {
       delete guildSnippets[name];
       all[interaction.guildId] = guildSnippets;
       saveServerSnippets(all);
-      syncGuildSnippetsToSupabase(interaction.guildId, guildSnippets);
       return interaction.reply({ content: `🗑️ Deleted server snippet **${name}**.` });
     }
 
@@ -8208,7 +7865,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spellbook') {
     await interaction.deferReply();
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
@@ -8304,7 +7961,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'prepared') {
     await interaction.deferReply({ ephemeral: false });
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
@@ -8398,7 +8055,7 @@ client.on('interactionCreate', async (interaction) => {
     const castLevel = interaction.options.getInteger('level') ?? null;
     const targetName = interaction.options.getString('target');
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.editReply(error);
     const rawSpell = findSpell(spellName);
     if (!rawSpell) return interaction.editReply(`Couldn't find a spell called **${spellName}**. Check the spelling and try again!`);
@@ -8822,7 +8479,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spells') {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const c = charEntry.data;
     const casters = charOverlay.getCasters(c);
@@ -8978,7 +8635,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'rest') {
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry, charKey } = await resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry, charKey } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     charOverlay.ensureOverlay(charEntry);
     // Summarize what's going to change
@@ -9003,7 +8660,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'refocus') {
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const before = charOverlay.getCurrentFocus(charEntry);
     if (before.max === 0) return interaction.reply({ content: `**${charEntry.data.name}** has no focus pool.`, ephemeral: true });
@@ -9018,7 +8675,7 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const c = charEntry.data;
     charOverlay.ensureOverlay(charEntry);
@@ -9380,15 +9037,6 @@ client.on('interactionCreate', async (interaction) => {
       hpLine = target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-      logEncounterEvent(enc, dmgResult?.died ? 'death' : 'attack', {
-        actor: attacker.name, target: target.name,
-        data: { roll: totalRoll, damage: finalDamage, hit: true, crit: degree === 'crit-success', died: !!dmgResult?.died },
-      });
-    } else {
-      logEncounterEvent(enc, 'attack', {
-        actor: attacker.name, target: target?.name ?? null,
-        data: { roll: totalRoll, hit: false, crit: false },
-      });
     }
     if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -9465,7 +9113,7 @@ client.on('interactionCreate', async (interaction) => {
     const skillName  = interaction.options.getString('skill');
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9495,7 +9143,7 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.deferReply();
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const modifier = computeCharPerception(charEntry);
@@ -9521,7 +9169,7 @@ client.on('interactionCreate', async (interaction) => {
     const skillOverride = interaction.options.getString('skill'); // optional
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9566,7 +9214,7 @@ client.on('interactionCreate', async (interaction) => {
     const saveType   = interaction.options.getString('type');
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9777,7 +9425,7 @@ client.on('interactionCreate', async (interaction) => {
     try {
       const characters = loadCharacters();
       const charNameArg = interaction.options.getString('character');
-      const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
+      const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
       if (charEntry) {
         charMod = computeCharSkillModifier(charEntry, skillKey);
       }
@@ -9799,7 +9447,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const charArg = interaction.options.getString('character');
-        const { char: charEntry } = await resolveChar(interaction.user.id, charArg, characters);
+        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
         if (charEntry?.data?.class) {
           input = charEntry.data.class;
           userCharName = charEntry.data.name;
@@ -9810,7 +9458,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const charArg = interaction.options.getString('character');
-        const { char: charEntry } = await resolveChar(interaction.user.id, charArg, characters);
+        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
         if (charEntry?.data?.class && charEntry.data.class.toLowerCase() === input.toLowerCase()) {
           userCharName = charEntry.data.name;
         }
@@ -9853,10 +9501,17 @@ client.on('interactionCreate', async (interaction) => {
     // Tracking subcommands require a character
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
+    // ── DIAGNOSTIC: log what /companion is seeing ──────────────────
+    console.log(`[companion DEBUG] sub=${sub}, userId=${interaction.user.id}, charNameArg=${charNameArg}`);
+    console.log(`[companion DEBUG] characters[userId] keys: ${Object.keys(characters[interaction.user.id] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[companion DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
+    console.log(`[companion DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
     if (error) {
+      console.log(`[companion DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error, ephemeral: true });
     }
+    console.log(`[companion DEBUG] resolveChar succeeded: charKey=${charKey}, name=${charEntry?.name}`);
     const char = charEntry.data;
     if (!charEntry.companions) charEntry.companions = {};
 
@@ -10416,9 +10071,7 @@ client.on('interactionCreate', async (interaction) => {
       // preserveHomebrewDuringReseed in storage.js — entries without it are
       // assumed to be canonical/repo data and get replaced on reseed.
       result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const slug = addMonsterToBestiary(result.entry, result.slug);
-      syncHomebrewEntryToSupabase('monster', slug, result.entry);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
         ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
@@ -10458,9 +10111,7 @@ client.on('interactionCreate', async (interaction) => {
       // Tag as homebrew so the volume's reseed-preservation step keeps it.
       // (See /monsteradd paste handler above for why this matters.)
       result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const slug = addMonsterToBestiary(result.entry, result.slug);
-      syncHomebrewEntryToSupabase('monster', slug, result.entry);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
         ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
@@ -10478,7 +10129,6 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No creature found for \`${input}\` in the bestiary.`, ephemeral: true });
       }
-      deleteHomebrewEntryFromSupabase('monster', result.key);
       return interaction.reply({ content: `🗑️ Removed **${result.name}** (key: \`${result.key}\`) from the global bestiary.`, ephemeral: true });
     }
 
@@ -10509,10 +10159,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply({ ephemeral: true });
       const result = parseSpellStatBlock(raw);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
-      result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const finalName = addSpellToDatabase(result.entry);
-      syncHomebrewEntryToSupabase('spell', finalName.toLowerCase().replace(/\s+/g, '-'), result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view. Remove with \`/spelladd remove spell:${finalName}\`.`,
@@ -10542,10 +10189,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = parseSpellStatBlock(body);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
-      result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const finalName = addSpellToDatabase(result.entry);
-      syncHomebrewEntryToSupabase('spell', finalName.toLowerCase().replace(/\s+/g, '-'), result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view.`,
@@ -10562,7 +10206,6 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No homebrew spell found matching \`${input}\`.`, ephemeral: true });
       }
-      deleteHomebrewEntryFromSupabase('spell', result.name.toLowerCase().replace(/\s+/g, '-'));
       return interaction.reply({ content: `🗑️ Removed homebrew spell **${result.name}** from the database.`, ephemeral: true });
     }
 
@@ -10592,10 +10235,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply({ ephemeral: true });
       const result = parseItemStatBlock(raw);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
-      result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const finalName = addItemToDatabase(result.entry);
-      syncHomebrewEntryToSupabase('item', result.entry.id, result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view. Remove with \`/itemadd remove item:${finalName}\`.`,
@@ -10625,10 +10265,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = parseItemStatBlock(body);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
-      result.entry._homebrew = true;
-      result.entry._addedBy = interaction.user.id;
       const finalName = addItemToDatabase(result.entry);
-      syncHomebrewEntryToSupabase('item', result.entry.id, result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view.`,
@@ -10645,7 +10282,6 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No homebrew item found matching \`${input}\`.`, ephemeral: true });
       }
-      deleteHomebrewEntryFromSupabase('item', input.toLowerCase().replace(/\s+/g, '-'));
       return interaction.reply({ content: `🗑️ Removed homebrew item **${result.name}** from the database.`, ephemeral: true });
     }
 
@@ -10687,7 +10323,6 @@ client.on('interactionCreate', async (interaction) => {
         setAt: new Date().toISOString(),
       };
       saveMonsterArt(store);
-      syncMonsterArtToSupabase(guildId, store[guildId] ?? {});
 
       const embed = new EmbedBuilder()
         .setColor(0x2ecc71)
@@ -10714,7 +10349,6 @@ client.on('interactionCreate', async (interaction) => {
       if (Object.keys(guild).length === 0) delete store[guildId];
       else store[guildId] = guild;
       saveMonsterArt(store);
-      syncMonsterArtToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `🗑️ Removed art for **${displayName}**.`, ephemeral: true });
     }
 
@@ -10968,7 +10602,6 @@ client.on('interactionCreate', async (interaction) => {
       else bucket.push(newAbility);
 
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       const verb = existingIdx >= 0 ? 'Updated' : 'Added';
       return interaction.reply({ content: `✅ ${verb} ability **${name}** on **${displayName}** (slot: ${slot}).`, ephemeral: true });
     }
@@ -10988,7 +10621,6 @@ client.on('interactionCreate', async (interaction) => {
       }
       entry.items.push(item);
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Added item **${item}** to **${displayName}**.`, ephemeral: true });
     }
 
@@ -11007,7 +10639,6 @@ client.on('interactionCreate', async (interaction) => {
       }
       entry.languages.push(lang);
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Added language **${lang}** to **${displayName}**.`, ephemeral: true });
     }
 
@@ -11025,7 +10656,6 @@ client.on('interactionCreate', async (interaction) => {
       const normalized = skillName.charAt(0).toUpperCase() + skillName.slice(1).toLowerCase();
       entry.skills[normalized] = modifier;
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Set **${normalized}** ${modifier >= 0 ? '+' : ''}${modifier} on **${displayName}**.`, ephemeral: true });
     }
 
@@ -11055,7 +10685,6 @@ client.on('interactionCreate', async (interaction) => {
       if (idx >= 0) entry.attacks[idx] = newAtk;
       else entry.attacks.push(newAtk);
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ ${idx >= 0 ? 'Updated' : 'Added'} attack **${name}** on **${displayName}**.`, ephemeral: true });
     }
 
@@ -11076,7 +10705,6 @@ client.on('interactionCreate', async (interaction) => {
       }
       entry.ability_modifiers[which] = value;
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Set **${which.toUpperCase()}** ${value >= 0 ? '+' : ''}${value} on **${displayName}**.`, ephemeral: true });
     }
 
@@ -11088,7 +10716,6 @@ client.on('interactionCreate', async (interaction) => {
       const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
       entry.description = description;
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Description set on **${displayName}**.`, ephemeral: true });
     }
 
@@ -11119,7 +10746,6 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ JSON had none of the recognized fields: ${allowed.join(', ')}`, ephemeral: true });
       }
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `✅ Applied fields [${applied.join(', ')}] to **${displayName}**.`, ephemeral: true });
     }
 
@@ -11205,7 +10831,6 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ \`field\` must be one of: ability, item, language, skill, attack.`, ephemeral: true });
       }
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `🗑️ Removed ${field} **${value}** from **${displayName}**.`, ephemeral: true });
     }
 
@@ -11222,7 +10847,6 @@ client.on('interactionCreate', async (interaction) => {
       if (Object.keys(guild).length === 0) delete store[guildId];
       else store[guildId] = guild;
       saveMonsterEdits(store);
-      syncMonsterEditsToSupabase(guildId, store[guildId] ?? {});
       return interaction.reply({ content: `🗑️ Wiped all edits for **${displayName}**.`, ephemeral: true });
     }
   }
@@ -11240,7 +10864,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const nameArg = interaction.options.getString('character');
-        const resolved = await resolveChar(userId, nameArg, characters);
+        const resolved = resolveChar(userId, nameArg, characters);
         if (!resolved.error) character = resolved.character;
       } catch { /* no character, just skip encumbrance */ }
       return interaction.reply({ embeds: [buildBagEmbed(userBag, character)] });
@@ -11249,7 +10873,6 @@ client.on('interactionCreate', async (interaction) => {
       const newName = interaction.options.getString('name');
       userBag.bagName = newName;
       saveBags(bags);
-      syncBagToSupabase(userId, userBag);
       return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
     }
     if (sub === 'add') {
@@ -11276,7 +10899,7 @@ client.on('interactionCreate', async (interaction) => {
         bucket.push({ name: displayName, qty });
       }
       saveBags(bags);
-      syncBagToSupabase(userId, userBag);
+
       const tag = data ? '' : ' *(homebrew)*';
       const qtyLabel = qty > 1 ? ` ×${qty}` : '';
       return interaction.reply({ content: `✅ Added **${displayName}**${qtyLabel}${tag} to **${category}**!`, ephemeral: true });
@@ -11302,7 +10925,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       if (bucket.length === 0) delete userBag.categories[category];
       saveBags(bags);
-      syncBagToSupabase(userId, userBag);
+
       const removedQty = qty == null ? existing.qty : Math.min(qty, existing.qty);
       const qtyLabel = removedQty > 1 ? ` ×${removedQty}` : '';
       return interaction.reply({ content: `✅ Removed **${existing.name}**${qtyLabel} from **${category}**!`, ephemeral: true });
@@ -11312,13 +10935,11 @@ client.on('interactionCreate', async (interaction) => {
       if (!userBag.categories[category]) return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
       delete userBag.categories[category];
       saveBags(bags);
-      syncBagToSupabase(userId, userBag);
       return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
     }
     if (sub === 'clear') {
       userBag.categories = {};
       saveBags(bags);
-      syncBagToSupabase(userId, userBag);
       return interaction.reply({ content: `🗑️ Your bag has been cleared!`, ephemeral: true });
     }
   }
@@ -11327,7 +10948,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'gold') {
     const subcommand = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
     if (!charEntry.wallet) charEntry.wallet = { pp: 0, gp: 0, sp: 0, cp: 0 };
@@ -11401,7 +11022,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'hero') {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
     const current = getHeroPoints(charEntry);
@@ -11446,13 +11067,14 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (sub === 'set') {
+      // Override — allows going above 3 if the GM really wants to
       const value = interaction.options.getInteger('value');
       if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
-      if (value > HERO_POINTS_MAX) return interaction.reply({ content: `❌ Hero Points can't exceed **${HERO_POINTS_MAX}** (PF2e cap). Use \`/hero add\` to grant up to the max.`, ephemeral: true });
       charEntry.heroPoints = value;
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
-      const note = `✏️ Set to **${value}**.`;
+      const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
+      const note = `✏️ Set to **${value}**${overflow}.`;
       return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
     }
 
@@ -11517,7 +11139,7 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
 
@@ -11619,7 +11241,7 @@ client.on('interactionCreate', async (interaction) => {
     // All /xp subcommands need a character, but the character arg is optional
     // (defaults to the user's only loaded char, if they have exactly one).
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
 
@@ -11635,20 +11257,9 @@ client.on('interactionCreate', async (interaction) => {
       const { oldXp, newXp, leveledUp } = awardXp(charEntry, amount, reason, interaction.user.id);
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
-      const xpEnc = getEncounter(interaction.channel.id);
-      logEncounterEvent(xpEnc, 'xp_award', {
-        actor: interaction.user.username, target: charEntry.name,
-        data: { amount, reason: reason ?? null, oldXp, newXp, leveledUp },
-      });
 
       const sign = amount >= 0 ? '+' : '';
-      // Warn when a deduction was partially absorbed by the 0-floor so the GM
-      // knows the full amount wasn't deducted (e.g. tried -100 but only had 50).
-      const actualDelta = newXp - oldXp;
-      const clampWarning = amount < 0 && actualDelta !== amount
-        ? `\n⚠️ *Could only deduct ${Math.abs(actualDelta)} XP — balance was already at ${oldXp}.*`
-        : '';
-      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP${clampWarning}`;
+      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
       const replyPayload = { embeds: [buildXpEmbed(char, charEntry, { note, showLog: false })] };
 
       // If they crossed a 1000 XP threshold, post a celebratory level-up embed too
@@ -11706,7 +11317,7 @@ client.on('interactionCreate', async (interaction) => {
 
     if (!charNameArg) {
       // No character specified — try to resolve the invoker's own default character.
-      const own = await resolveChar(interaction.user.id, null, characters);
+      const own = resolveChar(interaction.user.id, null, characters);
       if (!own.error) {
         charOwnerId = interaction.user.id;
         charKey = own.charKey;
@@ -11766,7 +11377,6 @@ client.on('interactionCreate', async (interaction) => {
       if (!saveNotes(notesData)) {
         return interaction.reply({ content: `❌ Failed to save the note. Try again?`, ephemeral: true });
       }
-      syncNotesToSupabase(charOwnerId, charKey, book);
       const cat = NOTE_CATEGORIES[category];
       return interaction.reply({
         content: `${cat.icon} Added note \`#${note.id}\` to **${char.name}**'s ${cat.label}${pinned ? ' *(pinned)*' : ''}.\n> ${truncateNote(text, 200)}`,
@@ -11831,7 +11441,6 @@ client.on('interactionCreate', async (interaction) => {
       note.text = newText;
       note.editedAt = new Date().toISOString();
       if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
-      syncNotesToSupabase(charOwnerId, charKey, book);
       return interaction.reply({ embeds: [buildNoteDetailEmbed(char, note)] });
     }
 
@@ -11845,7 +11454,6 @@ client.on('interactionCreate', async (interaction) => {
       }
       book.notes = book.notes.filter(n => n.id !== id);
       if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
-      syncNotesToSupabase(charOwnerId, charKey, book);
       const cat = NOTE_CATEGORIES[note.category];
       return interaction.reply({ content: `🗑️ Removed note \`#${id}\` from **${char.name}**'s ${cat.label}.` });
     }
@@ -11857,7 +11465,6 @@ client.on('interactionCreate', async (interaction) => {
       if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}**.`, ephemeral: true });
       note.pinned = !note.pinned;
       if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
-      syncNotesToSupabase(charOwnerId, charKey, book);
       return interaction.reply({
         content: `${note.pinned ? '📌' : '📍'} Note \`#${id}\` is now ${note.pinned ? '**pinned**' : '**unpinned**'}.`,
       });
@@ -11872,16 +11479,11 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'start') {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
-      const newEnc = createEncounter(channelId, userId, interaction.guildId);
-      logEncounterEvent(newEnc, 'initiative_start', { actor: interaction.user.username });
-      const syncWarning = isSyncDegraded()
-        ? '\n⚠️ *Web sync is currently unavailable — the combat tracker and character sheets may not update live.*'
-        : '';
+      const newEnc = createEncounter(channelId, userId);
       await interaction.reply(
         `⚔️ Combat started! <@${userId}> is the GM.\n` +
         `Players: use \`/init add\` to join. GM: use \`/init addnpc\` for monsters.\n` +
-        `When everyone is in, the GM uses \`/init next\` to begin.` +
-        syncWarning
+        `When everyone is in, the GM uses \`/init next\` to begin.`
       );
       await updateSummary(interaction.channel, newEnc);
       return;
@@ -11892,14 +11494,28 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'add') {
       const characters = loadCharacters();
+      // ── DIAGNOSTIC: log what we loaded and who's calling ───────────
+      // Remove this block once the companion-bug debugging is done.
+      console.log(`[init add DEBUG] userId=${userId}, compArg=${interaction.options.getString('companion')}, charArg=${interaction.options.getString('character')}`);
+      console.log(`[init add DEBUG] characters.json keys for user: ${Object.keys(characters[userId] ?? {}).join(', ') || '(none)'}`);
+      console.log(`[init add DEBUG] total users in characters.json: ${Object.keys(characters).length}`);
+      console.log(`[init add DEBUG] dataPath says: ${dataPath('characters.json')}`);
+      try {
+        const stats = fs.statSync(dataPath('characters.json'));
+        console.log(`[init add DEBUG] file size: ${stats.size} bytes, modified: ${stats.mtime.toISOString()}`);
+      } catch (e) {
+        console.log(`[init add DEBUG] file stat failed: ${e.message}`);
+      }
+
       // ── Companion path ─────────────────────────────────────────────
       // If `companion:` is specified, add the user's companion to init as
       // their own combatant (ownedby the user, not NPC-controlled). Uses
       // the companion's Perception for the initiative roll (standard PF2e).
       const compArg = interaction.options.getString('companion');
       if (compArg) {
-        const { error: cerr, char: ce } = await resolveChar(userId, interaction.options.getString('character'), characters);
+        const { error: cerr, char: ce } = resolveChar(userId, interaction.options.getString('character'), characters);
         if (cerr) {
+          console.log(`[init add DEBUG] resolveChar returned error: ${cerr}`);
           return interaction.reply({ content: cerr, ephemeral: true });
         }
         if (!ce.companions || Object.keys(ce.companions).length === 0) {
@@ -11941,13 +11557,10 @@ client.on('interactionCreate', async (interaction) => {
           rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
         }
 
-        // Use stored HP when it has been explicitly set (including 0 for an
-        // unconscious companion), fall back to maxHp only when never recorded.
-        const companionHp = comp.currentHp != null ? comp.currentHp : scaled.maxHp;
         addCombatant(channelId, {
           name: comp.displayName,
           initiative,
-          hp: companionHp,
+          hp: comp.currentHp ?? scaled.maxHp,
           maxHp: scaled.maxHp,
           ac: scaled.ac,
           ownerId: userId,
@@ -11956,13 +11569,13 @@ client.on('interactionCreate', async (interaction) => {
           effects: [],
         });
 
-        await interaction.reply(`🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins initiative at **${initiative}** ${rollText}. HP ${companionHp}/${scaled.maxHp} · AC ${scaled.ac}`);
+        await interaction.reply(`🐾 **${comp.displayName}** (${ce.data.name}'s ${comp.form} companion) joins initiative at **${initiative}** ${rollText}. HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac}`);
         await updateSummary(interaction.channel, enc);
         return;
       }
 
       // ── Character path (default) ───────────────────────────────────
-      const { error, char: charEntry } = await resolveChar(userId, interaction.options.getString('character'), characters);
+      const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
       const charName = charEntry.name;
@@ -11985,16 +11598,14 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const charAc = charEntry.data?.acTotal?.acTotal ?? null;
-      const charKey = charEntry.name.toLowerCase().replace(/\s+/g, '-');
       addCombatant(channelId, {
         name: charName,
         initiative,
-        hp: charEntry.hp ?? maxHp,
+        hp: maxHp,
         maxHp,
         ac: charAc,
         ownerId: userId,
         isNpc: false,
-        charKey,
         effects: [],
       });
 
@@ -12012,13 +11623,6 @@ client.on('interactionCreate', async (interaction) => {
       const ac = interaction.options.getInteger('ac');
       const resultOverride = interaction.options.getInteger('result');
 
-      // Validate HP and AC before creating the combatant. hp/ac are optional
-      // Discord options (null = not provided), so only reject explicitly bad values.
-      if (hp !== null && hp < 1) return interaction.reply({ content: '❌ HP must be at least 1.', ephemeral: true });
-      if (ac !== null && ac < 0) return interaction.reply({ content: '❌ AC cannot be negative.', ephemeral: true });
-      const finalHp = hp ?? 1;
-      const finalAc = ac ?? 10;
-
       if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase())) return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
 
       let initiative, rollText;
@@ -12034,15 +11638,15 @@ client.on('interactionCreate', async (interaction) => {
       addCombatant(channelId, {
         name,
         initiative,
-        hp: finalHp,
-        maxHp: finalHp,
-        ac: finalAc,
+        hp,
+        maxHp: hp,
+        ac,
         ownerId: userId,
         isNpc: true,
         effects: [],
       });
 
-      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}. HP ${finalHp} · AC ${finalAc}`);
+      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -12344,15 +11948,6 @@ client.on('interactionCreate', async (interaction) => {
         hpLine = target.isNpc
           ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
           : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-        logEncounterEvent(enc, dmgResult?.died ? 'death' : 'attack', {
-          actor: attacker.name, target: target.name,
-          data: { roll: totalRoll, damage: finalDamage, hit: true, crit: degree === 'crit-success', died: !!dmgResult?.died },
-        });
-      } else {
-        logEncounterEvent(enc, 'attack', {
-          actor: attacker.name, target: target?.name ?? null,
-          data: { roll: totalRoll, hit: false, crit: false },
-        });
       }
       if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -12494,14 +12089,9 @@ client.on('interactionCreate', async (interaction) => {
 
       const replyPayload = { content: lines.join('\n') };
       if (result.recoveryCheck) {
-        const rc = result.recoveryCheck;
-        const payload = buildRecoveryCheckPayload(rc, current);
+        const payload = buildRecoveryCheckPayload(result.recoveryCheck, current);
         replyPayload.embeds = payload.embeds;
         if (payload.components.length) replyPayload.components = payload.components;
-        logEncounterEvent(enc, rc.died ? 'death' : rc.awoke ? 'recovery' : 'recovery', {
-          actor: current.name,
-          data: { roll: rc.roll, dc: rc.dc, outcome: rc.outcome, died: !!rc.died, awoke: !!rc.awoke },
-        });
       }
 
       await interaction.reply(replyPayload);
@@ -12722,48 +12312,8 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'end') {
       if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can end the encounter.', ephemeral: true });
       await clearSummary(interaction.channel, enc);
-      logEncounterEvent(enc, 'initiative_end', { actor: interaction.user.username, round: enc.round });
-
-      // Write final combat HP, dying, and wounded back to character entries so
-      // the web app and subsequent bot commands reflect post-combat state.
-      const characters = loadCharacters();
-      let combatDirty = false;
-      for (const c of enc.combatants) {
-        if (c.isNpc || !c.ownerId) continue;
-
-        if (c.companionOf) {
-          // Companion — find parent character entry, then the companion sub-object
-          const ownerChars = characters[c.ownerId] ?? {};
-          const parentEntry = Object.values(ownerChars).find(
-            e => e && typeof e === 'object' && e.name === c.companionOf
-          );
-          if (parentEntry?.companions) {
-            const compEntry = Object.values(parentEntry.companions).find(
-              comp => comp && comp.displayName === c.name
-            );
-            if (compEntry) {
-              compEntry.currentHp = c.hp;
-              combatDirty = true;
-            }
-          }
-        } else {
-          // Regular character
-          const key = c.charKey ?? c.name.toLowerCase().replace(/\s+/g, '-');
-          const entry = characters[c.ownerId]?.[key];
-          if (!entry) continue;
-          entry.hp      = c.hp;
-          entry.dying   = c.dying   ?? 0;
-          entry.wounded = c.wounded ?? 0;
-          combatDirty = true;
-        }
-      }
-      if (combatDirty) saveCharacters(characters);
-
       deleteEncounter(channelId);
-      const endSyncWarning = isSyncDegraded()
-        ? '\n⚠️ *Web sync is currently unavailable — character sheets may not reflect final HP. Use `/hp view` to confirm.*'
-        : '';
-      return interaction.reply('🏁 Combat ended. Well fought!' + endSyncWarning);
+      return interaction.reply('🏁 Combat ended. Well fought!');
     }
 
     // ── /init move ──
@@ -13023,7 +12573,7 @@ client.on('interactionCreate', async (interaction) => {
     const noMap = interaction.options.getBoolean('no_map') ?? false;
     const characters = loadCharacters();
 
-    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data;
@@ -13647,94 +13197,313 @@ client.on('interactionCreate', async (interaction) => {
     const characters = loadCharacters();
     let store = loadDowntime();
 
+    // ─── /downtime list — show available activities ───
+    if (sub === 'list') {
+      const lines = Object.entries(downtime.ACTIVITIES).map(([key, def]) =>
+        `• **${def.name}** \`(${key})\` — ${def.summary} *(${def.source})*`
+      );
+      const embed = new EmbedBuilder()
+        .setColor(0x6f4e37)
+        .setTitle('🛠️ Available Downtime Activities')
+        .setDescription(lines.join('\n') || 'No activities defined yet.')
+        .setFooter({ text: 'Start with /downtime start' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // For all other subcommands, we need the player's character.
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = await resolveChar(userId, charNameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    // ── DIAGNOSTIC ──
+    console.log(`[downtime DEBUG] sub=${sub}, userId=${userId}, charNameArg=${JSON.stringify(charNameArg)}`);
+    console.log(`[downtime DEBUG] characters[userId] exists: ${!!characters[userId]}`);
+    console.log(`[downtime DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[downtime DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
+    console.log(`[downtime DEBUG] all options: ${JSON.stringify(interaction.options.data)}`);
+    const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
+    if (error) {
+      console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
+      return interaction.reply({ content: error, ephemeral: true });
+    }
+    console.log(`[downtime DEBUG] resolveChar succeeded: charKey=${charKey}`);
     const c = charEntry.data;
 
-    // ─── /downtime check — show bank + auto-accrue pending days ─────
+    // ─── /downtime start ──────────────────────────────
+    if (sub === 'start') {
+      const activityKey = interaction.options.getString('activity');
+      const def = downtime.ACTIVITIES[activityKey];
+      if (!def) {
+        return interaction.reply({ content: `❌ Unknown activity "${activityKey}". Use \`/downtime list\` to see options.`, ephemeral: true });
+      }
+
+      // Currently only Earn Income — branch here when more activities exist.
+      if (activityKey === 'earn-income') {
+        const skillName = interaction.options.getString('skill');
+        const taskLevel = interaction.options.getInteger('tasklevel');
+        const plannedDays = interaction.options.getInteger('days');
+        const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+
+        // Validate skill (use same map as /skill, plus Crafting/Lore-as-text)
+        const skillMap = {
+          acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+          deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+          nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+          society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+        };
+        const lowerSkill = skillName.toLowerCase();
+        if (!(lowerSkill in skillMap)) {
+          return interaction.reply({ content: `❌ Unknown skill "${skillName}". Earn Income uses skills like Crafting, Performance, or any Lore.`, ephemeral: true });
+        }
+
+        // Compute character's modifier for the chosen skill
+        const ab = c.abilities ?? {};
+        const prof = c.proficiencies ?? {};
+        const lvl = c.level ?? 1;
+        const abilKey = skillMap[lowerSkill];
+        const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+        const profNum = prof[lowerSkill] ?? 0;
+        const modifier = abilMod + calcProfNum(profNum, lvl);
+
+        if (profNum === 0) {
+          return interaction.reply({ content: `❌ **${c.name}** is not trained in ${skillName}. Earn Income generally requires being at least Trained.`, ephemeral: true });
+        }
+
+        // Roll the initial check
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + modifier + extraBonus;
+        const dc = downtime.taskLevelDC(taskLevel);
+
+        // Determine outcome
+        let outcome;
+        if (total >= dc + 10) outcome = 'crit-success';
+        else if (total >= dc) outcome = 'success';
+        else if (total <= dc - 10) outcome = 'crit-failure';
+        else outcome = 'failure';
+        // Nat 20 / Nat 1 shift the outcome by one step
+        if (dieRoll === 20) {
+          outcome = outcome === 'crit-failure' ? 'failure' : outcome === 'failure' ? 'success' : 'crit-success';
+        } else if (dieRoll === 1) {
+          outcome = outcome === 'crit-success' ? 'success' : outcome === 'success' ? 'failure' : 'crit-failure';
+        }
+
+        const dailyCp = downtime.dailyIncomeCopper({ taskLevel, profRank: profNum, outcome });
+
+        // On a critical failure, the activity ends immediately (fired & reputation hit).
+        if (outcome === 'crit-failure') {
+          const embed = new EmbedBuilder()
+            .setColor(0xC0392B)
+            .setTitle(`💼 ${c.name} attempts Earn Income (${skillName})`)
+            .setDescription(
+              `🎲 **Rolled:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+              `💥 **Critical Failure!**\n\n` +
+              `*${c.name} is fired immediately and earns nothing. Their reputation in this community suffers — the GM may make future Earn Income harder here.*`
+            )
+            .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+          return interaction.reply({ embeds: [embed] });
+        }
+
+        // Start the entry
+        const result = downtime.startEntry(store, userId, charKey, 'earn-income', {
+          skill: skillName,
+          taskLevel,
+          profRank: profNum,
+          modifier,
+          dieRoll,
+          rolledTotal: total,
+          dc,
+          outcome,
+          dailyIncomeCp: dailyCp,
+        }, plannedDays);
+
+        if (!result.ok) {
+          return interaction.reply({ content: `❌ Could not start activity: ${result.reason}`, ephemeral: true });
+        }
+        saveDowntime(store);
+
+        const outcomeEmoji = { 'crit-success': '🌟', success: '✅', failure: '⚠️' }[outcome];
+        const outcomeLabel = { 'crit-success': 'Critical Success!', success: 'Success', failure: 'Failure (shoddy work)' }[outcome];
+        const embed = new EmbedBuilder()
+          .setColor(outcome === 'crit-success' ? 0xF1C40F : outcome === 'success' ? 0x27AE60 : 0xE67E22)
+          .setTitle(`💼 ${c.name} starts Earn Income (${skillName})`)
+          .setDescription(
+            `🎲 **Initial Check:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+            `${outcomeEmoji} **${outcomeLabel}**\n\n` +
+            `**Daily payout:** ${downtime.formatCopper(dailyCp)}\n` +
+            `**Planned duration:** ${plannedDays} day${plannedDays === 1 ? '' : 's'}\n` +
+            `**Activity ID:** \`${result.entry.id}\`\n\n` +
+            `Each real-life day will automatically credit a downtime day.\n` +
+            `Use \`/downtime check\` to see progress, or \`/downtime complete activity:${result.entry.id}\` when done.`
+          )
+          .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+        if (charEntry.art) embed.setThumbnail(charEntry.art);
+        return interaction.reply({ embeds: [embed] });
+      }
+
+      return interaction.reply({ content: `❌ Activity "${activityKey}" not yet implemented.`, ephemeral: true });
+    }
+
+    // ─── /downtime check — auto-advance and show status ───
     if (sub === 'check') {
-      const accrual = downtime.accrue(store, userId, charKey);
+      // Auto-advance everything for this character first
+      const advances = downtime.autoAdvanceAll(store, userId, charKey);
+      const active = downtime.listActiveEntries(store, userId, charKey);
+
+      if (active.length === 0) {
+        const bank = downtime.getBank(store, userId, charKey).bank;
+        return interaction.reply({
+          content: `**${c.name}** has no active downtime activities. Banked days: **${bank}**.\nStart one with \`/downtime start\`.`,
+          ephemeral: true,
+        });
+      }
+
       saveDowntime(store);
-      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
-      const { bank, isFull, capacity } = downtime.getStatus(store, userId, charKey);
-      const recent = downtime.getLog(store, userId, charKey, 5);
-      const accrualNote = accrual.added > 0
-        ? `\n*+${accrual.added} day${accrual.added !== 1 ? 's' : ''} accrued today${accrual.capped > 0 ? ` (${accrual.capped} dropped — bank was full)` : ''}.*`
+
+      const lines = active.map(entry => {
+        const def = downtime.ACTIVITIES[entry.activity];
+        const adv = advances.find(a => a.entry.id === entry.id);
+        const advText = adv && adv.addedDays > 0
+          ? ` *(+${adv.addedDays} day${adv.addedDays === 1 ? '' : 's'} since last check, +${downtime.formatCopper(adv.addedCp)})*`
+          : '';
+        const statusBadge = entry.status === 'ready-to-complete' ? ' ✅ **READY TO COMPLETE**' : '';
+        const earnedText = entry.result?.totalEarnedCp != null
+          ? `Earned: **${downtime.formatCopper(entry.result.totalEarnedCp)}**`
+          : '';
+        return `• **${def.name}** (${entry.params.skill ?? '?'}) — ID \`${entry.id}\`${statusBadge}\n` +
+               `  Day ${entry.elapsedDays}/${entry.plannedDays} · ${earnedText}${advText}`;
+      });
+
+      const bank = downtime.getBank(store, userId, charKey).bank;
+      const embed = new EmbedBuilder()
+        .setColor(0x6f4e37)
+        .setTitle(`🛠️ ${c.name}'s Downtime`)
+        .setDescription(lines.join('\n\n'))
+        .setFooter({ text: `Banked downtime days: ${bank}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime complete ───────────────────────────
+    if (sub === 'complete') {
+      const entryId = interaction.options.getString('activity');
+      // Auto-advance first so we know if it's actually done
+      downtime.autoAdvanceAll(store, userId, charKey);
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      if (entry.status === 'completed') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` is already completed.`, ephemeral: true });
+      }
+      if (entry.status === 'cancelled') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` was cancelled.`, ephemeral: true });
+      }
+
+      // Allow completing early — partial credit for partial days.
+      const result = downtime.completeEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
+      const earned = entry.result?.totalEarnedCp ?? 0;
+      const earlyNote = entry.elapsedDays < entry.plannedDays
+        ? `\n*(Completed early at day ${entry.elapsedDays}/${entry.plannedDays}.)*`
         : '';
-      const logLines = recent.length > 0
-        ? recent.map(e => {
-            const sign = e.delta > 0 ? '+' : '';
-            return `${e.ts.slice(0, 10)} · **${sign}${e.delta}** — ${e.reason}`;
-          }).join('\n')
-        : '*No recent activity.*';
+      const embed = new EmbedBuilder()
+        .setColor(0x2ECC71)
+        .setTitle(`✅ ${c.name} completes ${def.name}`)
+        .setDescription(
+          `**Total earned:** ${downtime.formatCopper(earned)}\n` +
+          `**Days worked:** ${entry.elapsedDays}\n` +
+          `**Skill used:** ${entry.params.skill}${earlyNote}\n\n` +
+          `*Add this to your character's coin pouch with \`/coin add\` (or however you track money).*`
+        )
+        .setFooter({ text: `Activity ID: ${entry.id}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime cancel ─────────────────────────────
+    if (sub === 'cancel') {
+      const entryId = interaction.options.getString('activity');
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      const result = downtime.cancelEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
+      return interaction.reply({
+        content: `🚫 Cancelled **${def.name}** (\`${entry.id}\`). ${entry.result?.totalEarnedCp ? `Forfeited ${downtime.formatCopper(entry.result.totalEarnedCp)}.` : 'No earnings forfeited.'}`,
+      });
+    }
+
+    // ─── /downtime spend — apply banked days to an activity ───
+    if (sub === 'spend') {
+      const entryId = interaction.options.getString('activity');
+      const days = interaction.options.getInteger('days');
+      const result = downtime.spendBankedDays(store, userId, charKey, entryId, days);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[result.entry.activity];
+      const completedNote = result.entry.status === 'ready-to-complete'
+        ? `\n✅ **Activity is now ready to complete!** Use \`/downtime complete activity:${result.entry.id}\`.`
+        : '';
+      return interaction.reply({
+        content: `🪙 Applied **${result.daysApplied}** banked day${result.daysApplied === 1 ? '' : 's'} to ${def.name} (\`${result.entry.id}\`).\n` +
+                 `Earned **+${downtime.formatCopper(result.addedCp)}** (total: ${downtime.formatCopper(result.entry.result?.totalEarnedCp ?? 0)}).\n` +
+                 `Days now ${result.entry.elapsedDays}/${result.entry.plannedDays}. Bank balance: **${store[userId][charKey].bank}**.${completedNote}`,
+      });
+    }
+
+    // ─── /downtime bank — show banked days + recent history ───
+    if (sub === 'bank') {
+      const { bank, history } = downtime.getBank(store, userId, charKey);
+      const recent = history.slice(-10).reverse();
+      const histLines = recent.length === 0
+        ? '*No history yet.*'
+        : recent.map(h => {
+            const sign = h.delta > 0 ? '+' : '';
+            const date = h.ts.slice(0, 10);
+            return `${date} · **${sign}${h.delta}** — ${h.reason}`;
+          }).join('\n');
       const embed = new EmbedBuilder()
         .setColor(0xF39C12)
         .setTitle(`🪙 ${c.name}'s Downtime Bank`)
-        .setDescription(`**${bank} / ${capacity} days**${isFull ? ' *(full — spend some!)*' : ''}${accrualNote}\n\n${logLines}`)
-        .setFooter({ text: 'Use /downtime log for full history' });
-      if (charEntry.art) embed.setThumbnail(charEntry.art);
+        .setDescription(`**Banked days:** ${bank}\n\n**Recent activity:**\n${histLines}`)
+        .setFooter({ text: 'GMs award days with /downtime award' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // ─── /downtime spend ──────────────────────────────────────────────
-    if (sub === 'spend') {
+    // ─── /downtime award — GM grants days to a player's character ───
+    // Permission: anyone can use this. (We could restrict to GMs but downtime
+    // awards are usually announced openly anyway. Easy to add a check later.)
+    if (sub === 'award') {
+      // The character we resolved above is the AWARDER's character.
+      // The award target is a different player's character — read from options.
+      const targetPlayer = interaction.options.getUser('player');
+      const targetCharName = interaction.options.getString('targetcharacter');
       const days = interaction.options.getInteger('days');
-      const reason = interaction.options.getString('reason');
-      const result = downtime.spend(store, userId, charKey, days, reason, userId);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      saveDowntime(store);
-      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
-      return interaction.reply({
-        content: `🪙 **${c.name}** spent **${days}** downtime day${days !== 1 ? 's' : ''} on: *${reason}*\nNew balance: **${result.balance}** days.`,
-      });
-    }
+      const reason = interaction.options.getString('reason') ?? 'GM award';
 
-    // ─── /downtime grant ─────────────────────────────────────────────
-    if (sub === 'grant') {
-      const days = interaction.options.getInteger('days');
-      const reason = interaction.options.getString('reason');
-      const result = downtime.grant(store, userId, charKey, days, reason, userId);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      saveDowntime(store);
-      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
-      const cappedNote = result.capped > 0 ? ` *(${result.capped} dropped — bank full)*` : '';
-      return interaction.reply({
-        content: `✅ Granted **${result.added}** downtime day${result.added !== 1 ? 's' : ''} to **${c.name}**${cappedNote}.\nNew balance: **${result.balance}** days.\n*Reason: ${reason}*`,
-      });
-    }
+      if (!targetPlayer) {
+        return interaction.reply({ content: '❌ Specify a `player:` (and `targetcharacter:` if they have multiple).', ephemeral: true });
+      }
+      if (days === 0) {
+        return interaction.reply({ content: '❌ Award amount must be non-zero. Use a negative number to remove days.', ephemeral: true });
+      }
 
-    // ─── /downtime log — full audit trail ────────────────────────────
-    if (sub === 'log') {
-      downtime.accrue(store, userId, charKey);
-      saveDowntime(store);
-      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
-      const entries = downtime.getLog(store, userId, charKey, 20);
-      const lines = entries.length > 0
-        ? entries.map(e => {
-            const sign = e.delta > 0 ? '+' : '';
-            const by = e.by ? ` *(by <@${e.by}>)*` : '';
-            return `${e.ts.slice(0, 10)} · **${sign}${e.delta}** (→ ${e.balance})${by} — ${e.reason}`;
-          }).join('\n')
-        : '*No downtime history yet.*';
-      const { bank } = downtime.getStatus(store, userId, charKey);
-      const embed = new EmbedBuilder()
-        .setColor(0x6f4e37)
-        .setTitle(`📋 ${c.name}'s Downtime Log`)
-        .setDescription(lines)
-        .setFooter({ text: `Current balance: ${bank} days` });
-      if (charEntry.art) embed.setThumbnail(charEntry.art);
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
+      const targetCharacters = loadCharacters(); // re-read so we have fresh data
+      const { error: terr, charKey: tCharKey, char: tCharEntry } = resolveChar(targetPlayer.id, targetCharName, targetCharacters);
+      if (terr) return interaction.reply({ content: `❌ Couldn't find that character: ${terr}`, ephemeral: true });
 
-    // ─── /downtime reset ─────────────────────────────────────────────
-    if (sub === 'reset') {
-      const result = downtime.reset(store, userId, charKey, userId, 'manual reset');
+      const newBalance = downtime.awardDays(store, targetPlayer.id, tCharKey, days, reason);
       saveDowntime(store);
-      syncDowntimeToSupabase(userId, charKey, store[userId][charKey]);
+
+      const sign = days > 0 ? '+' : '';
+      const verb = days > 0 ? 'awarded' : 'removed';
       return interaction.reply({
-        content: `🔄 Reset **${c.name}**'s downtime bank from **${result.before}** to **0** days.`,
-        ephemeral: true,
+        content: `🪙 ${verb === 'awarded' ? 'Awarded' : 'Removed'} **${sign}${days}** downtime day${Math.abs(days) === 1 ? '' : 's'} ${days > 0 ? 'to' : 'from'} <@${targetPlayer.id}>'s **${tCharEntry.data.name}**${reason ? `: *${reason}*` : ''}.\nNew balance: **${newBalance}**.`,
       });
     }
   }
