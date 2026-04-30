@@ -26,6 +26,16 @@ const {
 // is appended to "❌ No X found" messages on lookup commands.
 const { fuzzyPick, didYouMeanLine } = require('./utils/fuzzyMatch');
 
+// Ancestry description parser — splits the messy AoN-imported description
+// field into labeled sections (Edicts, Anathema, Society, etc.) and
+// normalizes the hp/hit_points field-name discrepancy between schemas.
+const {
+  parseDescription: parseAncestryDescription,
+  getAncestryHp,
+  hasHeritages,
+  hasAncestryFeats,
+} = require('./utils/ancestryParser');
+
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
 const encounters = require('./commands/encounters');
@@ -4953,60 +4963,226 @@ function buildSpellEmbed(rawSpell) {
 const ANCESTRY_COLORS = { main: 0x4B8B6F, heritage: 0x7B5EA7, feats: 0xC4862A };
 
 function buildAncestryCorePage(ancestry) {
-  const boosts = ancestry.attribute_boosts.join(', ');
-  const flaws  = ancestry.attribute_flaws.length ? ancestry.attribute_flaws.join(', ') : 'None';
-  const sensesText   = ancestry.senses.map(s => `**${s.name}** — ${s.description}`).join('\n');
-  const languageText = `${ancestry.languages.base.join(', ')}\n*Plus additional languages equal to ${ancestry.languages.bonus_count}, chosen from: ${ancestry.languages.bonus_pool.join(', ')}.*`;
-  return new EmbedBuilder()
+  const boosts = (ancestry.attribute_boosts || []).join(', ') || 'None';
+  const flaws  = (ancestry.attribute_flaws || []).length
+    ? ancestry.attribute_flaws.join(', ')
+    : 'None';
+
+  // Senses: array of {name, description}. AoN often duplicates name == description,
+  // so collapse the redundancy.
+  const senses = ancestry.senses || [];
+  const sensesText = senses.length
+    ? senses.map(s => {
+        if (!s) return '';
+        if (s.description && s.description !== s.name) return `**${s.name}** — ${s.description}`;
+        return `**${s.name}**`;
+      }).filter(Boolean).join('\n')
+    : 'Normal';
+
+  // Languages: base list + (only if bonus_count > 0) the bonus pool.
+  const langs = ancestry.languages || { base: [], bonus_count: 0, bonus_pool: [] };
+  const baseLangs = (langs.base || []).join(', ') || 'None';
+  const bonusLine = (langs.bonus_count > 0 && langs.bonus_pool?.length)
+    ? `\n*Plus ${langs.bonus_count} additional language${langs.bonus_count === 1 ? '' : 's'} (if Int positive), chosen from: ${langs.bonus_pool.join(', ')}.*`
+    : (langs.bonus_count > 0)
+      ? `\n*Plus additional languages equal to your Intelligence modifier (if positive).*`
+      : '';
+  const languageText = `${baseLangs}${bonusLine}`;
+
+  // HP: handle both `hp` and `hit_points` schemas; null for versatile heritages.
+  const hp = getAncestryHp(ancestry);
+  const hpText = hp != null ? String(hp) : '—';
+
+  // Speed: tolerate string ("25 ft.") or number (25)
+  const speed = ancestry.speed;
+  const speedText = (speed == null) ? '—'
+    : (typeof speed === 'number') ? `${speed} ft.`
+    : String(speed);
+
+  // Description sections — parse the messy AoN dump into labeled chunks.
+  const sections = parseAncestryDescription(ancestry.description);
+  const mainDescription = sections[0]?.content || '';
+  const subSections = sections.slice(1);
+
+  // Discord limits: description ≤ 4096, each field value ≤ 1024, total ≤ 6000.
+  // Many AoN ancestries blow past 6000 if we render every section in full, so
+  // we budget ~4500 chars for sections (saving room for description + meta
+  // fields). When that's exceeded, longer sections get truncated with "..."
+  // and an AoN link footer added so users can read the full text.
+  const traitLine = (ancestry.traits || []).join(', ');
+  const headerLine = traitLine ? `*${traitLine}*\n\n` : '';
+  const truncatedMain = mainDescription.length > 1500
+    ? mainDescription.slice(0, 1497) + '...'
+    : mainDescription;
+
+  const embed = new EmbedBuilder()
     .setTitle(ancestry.name)
-    .setDescription(`*${ancestry.traits.join(', ')}*\n\n${ancestry.description}`)
+    .setDescription(`${headerLine}${truncatedMain}`)
     .setColor(ANCESTRY_COLORS.main)
-    .setFooter({ text: `Source: ${ancestry.source} • Page 1/3` })
     .addFields(
-      { name: '❤️ Hit Points',       value: `${ancestry.hp}`,       inline: true },
-      { name: '🏃 Speed',            value: `${ancestry.speed} ft.`, inline: true },
-      { name: '📏 Size',             value: ancestry.size,           inline: true },
-      { name: '📈 Attribute Boosts', value: boosts,                  inline: true },
-      { name: '📉 Attribute Flaw',   value: flaws,                   inline: true },
-      { name: '\u200B',              value: '\u200B',                inline: true },
-      { name: '👁️ Senses',          value: sensesText || 'None',    inline: false },
-      { name: '🗣️ Languages',       value: languageText,            inline: false },
+      { name: '❤️ Hit Points',       value: hpText,       inline: true },
+      { name: '🏃 Speed',            value: speedText,    inline: true },
+      { name: '📏 Size',             value: ancestry.size || '—', inline: true },
+      { name: '📈 Attribute Boosts', value: boosts,       inline: true },
+      { name: '📉 Attribute Flaw',   value: flaws,        inline: true },
+      { name: '\u200B',              value: '\u200B',     inline: true },
+      { name: '👁️ Senses',          value: sensesText,   inline: false },
+      { name: '🗣️ Languages',       value: languageText, inline: false },
     );
+
+  // Track running embed length so we don't blow past Discord's 6000-char cap.
+  // The fields above add ~150-300 chars; we budget the rest for sub-sections.
+  let runningLen = (embed.data.title?.length || 0)
+    + (embed.data.description?.length || 0)
+    + (embed.data.footer?.text?.length || 0)
+    + (embed.data.fields || []).reduce((s, f) => s + f.name.length + f.value.length, 0);
+  const HARD_CAP = 5800; // a bit under 6000 to leave room for the footer
+
+  let truncatedSomething = false;
+  for (const sec of subSections) {
+    if (!sec.content) continue;
+    if (runningLen >= HARD_CAP) {
+      truncatedSomething = true;
+      break;
+    }
+    const labelEmoji = SECTION_EMOJIS[sec.label] || '📜';
+    // How much room is left for this section?
+    const reserved = labelEmoji.length + sec.label.length + 8; // emoji + label + " (cont.)"
+    const remaining = HARD_CAP - runningLen - reserved;
+    if (remaining < 100) {
+      truncatedSomething = true;
+      break;
+    }
+    let content = sec.content;
+    if (content.length > remaining) {
+      content = content.slice(0, remaining - 3) + '...';
+      truncatedSomething = true;
+    }
+    const chunks = splitForFieldValue(content, 1024);
+    for (let i = 0; i < chunks.length; i++) {
+      const name = i === 0
+        ? `${labelEmoji} ${sec.label}`
+        : `${labelEmoji} ${sec.label} (cont.)`;
+      embed.addFields({ name, value: chunks[i], inline: false });
+      runningLen += name.length + chunks[i].length;
+      if (runningLen >= HARD_CAP) { truncatedSomething = true; break; }
+    }
+  }
+
+  // Footer: include AoN link suggestion when content was trimmed
+  const footerText = truncatedSomething && ancestry.aon_url
+    ? `Source: ${ancestry.source} • Page 1/3 • Trimmed — full text on Archives of Nethys`
+    : `Source: ${ancestry.source} • Page 1/3`;
+  embed.setFooter({ text: footerText });
+
+  return embed;
+}
+
+// Emoji prefixes for each section label produced by ancestryParser. Keeps
+// the embed visually scannable instead of all-text.
+const SECTION_EMOJIS = {
+  'Description':          '📖',
+  'Edicts':               '✅',
+  'Anathema':             '🚫',
+  'Physical Description': '🧍',
+  'Society':              '🏛️',
+  'Beliefs':              '🕯️',
+  'Names':                '🏷️',
+  'Sample Names':         '📝',
+  'Special Ability':      '✨',
+};
+
+/**
+ * Split a long string into chunks that each fit Discord's 1024-char field
+ * value limit, breaking on whitespace where possible to avoid mid-word cuts.
+ */
+function splitForFieldValue(text, max) {
+  if (text.length <= max) return [text];
+  const out = [];
+  let remaining = text;
+  while (remaining.length > max) {
+    // Find the last whitespace before max
+    let cut = remaining.lastIndexOf(' ', max);
+    if (cut < max * 0.5) cut = max; // no good break point — hard cut
+    out.push(remaining.slice(0, cut).trim());
+    remaining = remaining.slice(cut).trim();
+  }
+  if (remaining) out.push(remaining);
+  return out;
 }
 
 function buildAncestryHeritagesPage(ancestry) {
   const embed = new EmbedBuilder()
     .setTitle(`${ancestry.name} — Heritages`)
-    .setDescription('Choose one heritage at character creation.')
     .setColor(ANCESTRY_COLORS.heritage)
     .setFooter({ text: `Source: ${ancestry.source} • Page 2/3` });
-  for (const h of ancestry.heritages)
-    embed.addFields({ name: `◈ ${h.name}`, value: h.description, inline: false });
+
+  if (!hasHeritages(ancestry)) {
+    // Versatile heritages and AoN-imported entries don't have heritage data
+    // baked in. Be honest about it rather than rendering an empty embed.
+    const aonNote = ancestry.aon_url
+      ? `\n\n[View on Archives of Nethys](${ancestry.aon_url})`
+      : '';
+    embed.setDescription(
+      `Heritage details aren't available in the local database for **${ancestry.name}** yet.${aonNote}`
+    );
+    return embed;
+  }
+
+  embed.setDescription('Choose one heritage at character creation.');
+  for (const h of ancestry.heritages) {
+    const desc = (h.description || '*No description.*').slice(0, 1024);
+    embed.addFields({ name: `◈ ${h.name}`, value: desc, inline: false });
+  }
   return embed;
 }
 
 function buildAncestryFeatsPage(ancestry) {
   const embed = new EmbedBuilder()
     .setTitle(`${ancestry.name} — Ancestry Feats`)
-    .setDescription('You gain ancestry feats at 1st level and every 4 levels thereafter.')
     .setColor(ANCESTRY_COLORS.feats)
     .setFooter({ text: `Source: ${ancestry.source} • Page 3/3` });
+
+  if (!hasAncestryFeats(ancestry)) {
+    const aonNote = ancestry.aon_url
+      ? `\n\n[View on Archives of Nethys](${ancestry.aon_url})`
+      : '';
+    embed.setDescription(
+      `Ancestry feat details aren't available in the local database for **${ancestry.name}** yet.${aonNote}`
+    );
+    return embed;
+  }
+
+  embed.setDescription('You gain ancestry feats at 1st level and every 4 levels thereafter.');
   for (const group of ancestry.ancestry_feats) {
     embed.addFields({ name: `── Level ${group.level} ──`, value: '\u200B', inline: false });
-    for (const feat of group.feats) {
-      const prereqLine = feat.prerequisites ? `*Prerequisite: ${feat.prerequisites.join(', ')}*\n` : '';
-      embed.addFields({ name: `✦ ${feat.name}`, value: `${prereqLine}${feat.description}`, inline: false });
+    for (const feat of (group.feats || [])) {
+      const prereqs = Array.isArray(feat.prerequisites) && feat.prerequisites.length
+        ? `*Prerequisite: ${feat.prerequisites.join(', ')}*\n`
+        : '';
+      const value = `${prereqs}${feat.description || '*No description.*'}`.slice(0, 1024);
+      embed.addFields({ name: `✦ ${feat.name}`, value, inline: false });
     }
   }
   return embed;
 }
 
-function buildAncestryButtons(currentPage, ancestryKey) {
+function buildAncestryButtons(currentPage, ancestryKey, ancestry) {
   const id = ancestryKey.toLowerCase();
+  // If the ancestry doesn't have heritage/feat data, show those buttons in
+  // Secondary (grey) style so users can tell at a glance they'll get a
+  // "not yet available — view on AoN" message instead of full data.
+  const heritagesStyle = ancestry && hasHeritages(ancestry)
+    ? ButtonStyle.Primary
+    : ButtonStyle.Secondary;
+  const featsStyle = ancestry && hasAncestryFeats(ancestry)
+    ? ButtonStyle.Success
+    : ButtonStyle.Secondary;
+
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`ancestry_${id}_0`).setLabel('◀ Core').setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
-    new ButtonBuilder().setCustomId(`ancestry_${id}_1`).setLabel('Heritages').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 1),
-    new ButtonBuilder().setCustomId(`ancestry_${id}_2`).setLabel('Feats ▶').setStyle(ButtonStyle.Success).setDisabled(currentPage === 2),
+    new ButtonBuilder().setCustomId(`ancestry_${id}_1`).setLabel('Heritages').setStyle(heritagesStyle).setDisabled(currentPage === 1),
+    new ButtonBuilder().setCustomId(`ancestry_${id}_2`).setLabel('Feats ▶').setStyle(featsStyle).setDisabled(currentPage === 2),
   );
 }
 
@@ -5630,7 +5806,7 @@ client.on('interactionCreate', async (interaction) => {
     if (pageIndex === 0) newEmbed = buildAncestryCorePage(ancestry);
     if (pageIndex === 1) newEmbed = buildAncestryHeritagesPage(ancestry);
     if (pageIndex === 2) newEmbed = buildAncestryFeatsPage(ancestry);
-    return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, ancestryKey)] });
+    return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, ancestryKey, ancestry)] });
   }
 
   if (!interaction.isChatInputCommand()) {
@@ -9230,7 +9406,7 @@ client.on('interactionCreate', async (interaction) => {
         ephemeral: true,
       });
     }
-    await interaction.reply({ embeds: [buildAncestryCorePage(ancestry)], components: [buildAncestryButtons(0, key)] });
+    await interaction.reply({ embeds: [buildAncestryCorePage(ancestry)], components: [buildAncestryButtons(0, key, ancestry)] });
   }
 
   // ─── /archetype ──────────────────────────────────────────────────
