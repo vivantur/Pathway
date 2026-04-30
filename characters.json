@@ -1503,7 +1503,8 @@
             }
           ],
           "skills": {
-            "Acrobatics": 6
+            "Acrobatics": 6,
+            "Athletics": 6
           }
         }
       },
