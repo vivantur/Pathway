@@ -11163,19 +11163,35 @@ client.on('interactionCreate', async (interaction) => {
         effectBonus = mods.saveBonus ?? 0;
       }
       const r = rollD20Plus(modifier + effectBonus);
-      const sign = (modifier + effectBonus) >= 0 ? '+' : '';
-      let resultLine = `**${r.total}** = d20[${r.roll}] ${sign}${modifier + effectBonus}`;
-      if (effectBonus !== 0) resultLine += ` *(base ${fmt(modifier)}, effects ${fmt(effectBonus)})*`;
-      let degreeLine = '';
+      const totalModifier = modifier + effectBonus;
+
+      // Build the breakdown using the shared formatter so monster rolls look
+      // identical to character rolls (1d20 (X) + Y = **Z**, with crit/fumble
+      // emoji on natural 20/1). When effects bumped the modifier, surface
+      // that on its own line so the GM can see where the bonus came from.
+      let breakdown = formatRollBreakdown(r.roll, totalModifier, 0, r.total, 20);
+      if (effectBonus !== 0) {
+        breakdown += `\n*base ${fmt(modifier)}, effects ${fmt(effectBonus)}*`;
+      }
       if (dc != null) {
         const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
-        const degreeNames = { 'crit-success': 'Critical Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Critical Failure' };
-        degreeLine = `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+        const degreeNames = { 'crit-success': '⭐ Critical Success', 'success': '✅ Success', 'failure': '❌ Failure', 'crit-failure': '💀 Critical Failure' };
+        breakdown += `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
       }
-      const embed = new EmbedBuilder()
-        .setColor(0x8B0000)
-        .setTitle(`${monster.name} — ${saveLabel} Save`)
-        .setDescription(`${resultLine}${degreeLine}`);
+
+      // Monster art (per-guild override) if set, so the embed has a portrait
+      // matching the rest of the bot's roll style.
+      const art = guildId ? lookupMonsterArt(guildId, monster) : null;
+
+      const embed = buildRollEmbed({
+        title: `🛡️ ${monster.name} rolls a ${saveLabel} save!`,
+        breakdown,
+        charName: `${monster.name} · ${saveLabel} ${fmt(totalModifier)}`,
+        thumbnail: art,
+      });
+      // Override the default purple to a deep red — that's the established
+      // monster/threat color used throughout /monster, /mattack, etc.
+      embed.setColor(0x8B0000);
       return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
     }
 
@@ -11209,19 +11225,27 @@ client.on('interactionCreate', async (interaction) => {
         effectBonus = mods.skillBonus ?? 0;
       }
       const r = rollD20Plus(modifier + effectBonus);
-      const sign = (modifier + effectBonus) >= 0 ? '+' : '';
-      let resultLine = `**${r.total}** = d20[${r.roll}] ${sign}${modifier + effectBonus}`;
-      if (effectBonus !== 0) resultLine += ` *(base ${fmt(modifier)}, effects ${fmt(effectBonus)})*`;
-      let degreeLine = '';
+      const totalModifier = modifier + effectBonus;
+
+      let breakdown = formatRollBreakdown(r.roll, totalModifier, 0, r.total, 20);
+      if (effectBonus !== 0) {
+        breakdown += `\n*base ${fmt(modifier)}, effects ${fmt(effectBonus)}*`;
+      }
       if (dc != null) {
         const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
-        const degreeNames = { 'crit-success': 'Critical Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Critical Failure' };
-        degreeLine = `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+        const degreeNames = { 'crit-success': '⭐ Critical Success', 'success': '✅ Success', 'failure': '❌ Failure', 'crit-failure': '💀 Critical Failure' };
+        breakdown += `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
       }
-      const embed = new EmbedBuilder()
-        .setColor(0x8B0000)
-        .setTitle(`${monster.name} — ${chosenKey}`)
-        .setDescription(`${resultLine}${degreeLine}`);
+
+      const art = guildId ? lookupMonsterArt(guildId, monster) : null;
+
+      const embed = buildRollEmbed({
+        title: `🎯 ${monster.name} attempts ${chosenKey}!`,
+        breakdown,
+        charName: `${monster.name} · ${chosenKey} ${fmt(totalModifier)}`,
+        thumbnail: art,
+      });
+      embed.setColor(0x8B0000);
       return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
     }
 
