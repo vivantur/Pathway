@@ -1483,6 +1483,11 @@
               "name": "Special",
               "description": "The wyvern’s stinger attack deals additional poison damage equal to 1 + 1 per weapon damage die.",
               "actionCost": null
+            },
+            {
+              "name": "Unsteady Mount",
+              "description": "The wyvern has the mount ability but is only strong enough to fly in short bursts while carrying a rider; if it doesn’t end its turn on solid ground, it descends 30 feet without taking falling damage. At 14th level, a wyvern replaces this with the mount ability, removing this restriction.",
+              "actionCost": null
             }
           ]
         }
