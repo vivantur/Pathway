@@ -602,6 +602,55 @@ async function logEncounterEvent(enc, eventType, { actor = null, target = null, 
   }
 }
 
+// Pull all active characters for a Discord user from Supabase and merge any
+// that aren't already in the local in-memory characters map. Returns the number
+// of new entries added. Never throws — Supabase failures are silent.
+async function mergeCharactersFromSupabase(discordId, charactersMap) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return 0;
+
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', discordId)
+      .single();
+    if (!userRow) return 0;
+
+    const { data: rows } = await sb
+      .from('characters')
+      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id')
+      .eq('user_id', userRow.id)
+      .eq('status', 'active');
+    if (!rows || rows.length === 0) return 0;
+
+    if (!charactersMap[discordId]) charactersMap[discordId] = {};
+    let added = 0;
+    for (const row of rows) {
+      const key = row.char_key;
+      if (!key || charactersMap[discordId][key]) continue; // already cached locally
+      const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
+      if (!build?.name) continue;
+      charactersMap[discordId][key] = {
+        name:       build.name,
+        data:       build,
+        hp:         row.current_hp ?? null,
+        overlay:    row.overlay ?? {},
+        dying:      row.dying ?? 0,
+        wounded:    row.wounded ?? 0,
+        heroPoints: row.hero_points ?? 1,
+        guildId:    row.discord_guild_id ?? null,
+        saved:      new Date().toISOString(),
+      };
+      added++;
+    }
+    return added;
+  } catch (err) {
+    console.error('[Supabase] character merge failed:', err.message);
+    return 0;
+  }
+}
+
 module.exports = {
   DATA_DIR,
   GAMEDATA_DIR,
@@ -620,4 +669,5 @@ module.exports = {
   syncEncounterToSupabase,
   endEncounterInSupabase,
   logEncounterEvent,
+  mergeCharactersFromSupabase,
 };

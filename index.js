@@ -20,6 +20,7 @@ const {
   mutateJson,
   syncAllCharactersToSupabase,
   logEncounterEvent,
+  mergeCharactersFromSupabase,
 } = require('./utils/storage');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
@@ -1673,9 +1674,19 @@ async function fetchPathbuilderCharacter(id) {
   return { char, id };
 }
 
-function resolveChar(userId, nameArg, characters) {
+async function resolveChar(userId, nameArg, characters) {
+  const hasLocalChars = characters[userId] &&
+    Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length > 0;
+
+  // No local characters at all — pull from Supabase before giving up.
+  if (!hasLocalChars) {
+    const added = await mergeCharactersFromSupabase(userId, characters);
+    if (added > 0) saveCharacters(characters);
+  }
+
   if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
+
   let charKey;
   if (!nameArg) {
     // Filter out underscore-prefixed metadata keys (like _activeChar)
@@ -1694,7 +1705,17 @@ function resolveChar(userId, nameArg, characters) {
   } else {
     charKey = nameArg.toLowerCase().replace(/\s+/g, '-');
   }
+
   if (!characters[userId][charKey]) {
+    // Specific key not found locally but user has other local chars — one more
+    // Supabase pull to catch characters created via the web app.
+    if (hasLocalChars) {
+      const added = await mergeCharactersFromSupabase(userId, characters);
+      if (added > 0) {
+        saveCharacters(characters);
+        if (characters[userId][charKey]) return { charKey, char: characters[userId][charKey] };
+      }
+    }
     const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
     return { error: `Couldn't find that character. Your characters: ${names}` };
   }
@@ -5221,7 +5242,7 @@ client.on('interactionCreate', async (interaction) => {
       const [, saveType, dcStr] = interaction.customId.split('_');
       const dc = parseInt(dcStr, 10);
       const characters = loadCharacters();
-      const { error, char: charEntry } = resolveChar(interaction.user.id, null, characters);
+      const { error, char: charEntry } = await resolveChar(interaction.user.id, null, characters);
       if (error) {
         return interaction.reply({ content: `❌ ${error}\nLoad a character with \`/char add\` first, or roll manually with \`/save type:${saveType}\`.`, ephemeral: true });
       }
@@ -5471,7 +5492,7 @@ client.on('interactionCreate', async (interaction) => {
       if (pageIndex === 0) {
         try {
           const characters = loadCharacters();
-          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
+          const { char: charEntry } = await resolveChar(interaction.user.id, null, characters);
           if (charEntry) charMod = computeCharSkillModifier(charEntry, skillKey);
         } catch { /* no character, skip */ }
       }
@@ -5497,7 +5518,7 @@ client.on('interactionCreate', async (interaction) => {
       if (pageIndex === 0) {
         try {
           const characters = loadCharacters();
-          const { char: charEntry } = resolveChar(interaction.user.id, null, characters);
+          const { char: charEntry } = await resolveChar(interaction.user.id, null, characters);
           if (charEntry?.data?.class?.toLowerCase() === cls.name.toLowerCase()) {
             userCharName = charEntry.data.name;
           }
@@ -5722,10 +5743,10 @@ client.on('interactionCreate', async (interaction) => {
           const sub = interaction.options.getSubcommand(false);
           const charNameArg = interaction.options.getString('character');
           // Helper: get the current character's overlay + pathbuilder spellbooks
-          const getOwnSpells = (filterPredicate) => {
+          const getOwnSpells = async (filterPredicate) => {
             try {
               const characters = loadCharacters();
-              const { error, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+              const { error, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
               if (error || !charEntry) return [];
               const casterFilter = interaction.options.getString('caster');
               const casters = charOverlay.getCasters(charEntry.data)
@@ -5754,7 +5775,7 @@ client.on('interactionCreate', async (interaction) => {
           }
           else if (focused.name === 'caster') {
             const characters = loadCharacters();
-            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
             const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
             suggestions = pick(names);
           }
@@ -5765,7 +5786,7 @@ client.on('interactionCreate', async (interaction) => {
             } else if (sub === 'forget') {
               // Only overlay-added spells can be forgotten
               const characters = loadCharacters();
-              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+              const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
               if (charEntry) {
                 charOverlay.ensureOverlay(charEntry);
                 const casterFilter = interaction.options.getString('caster');
@@ -5777,7 +5798,7 @@ client.on('interactionCreate', async (interaction) => {
             } else if (sub === 'unprepare') {
               // Only prepared spells
               const characters = loadCharacters();
-              const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+              const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
               if (charEntry) {
                 charOverlay.ensureOverlay(charEntry);
                 const casterFilter = interaction.options.getString('caster');
@@ -5793,7 +5814,7 @@ client.on('interactionCreate', async (interaction) => {
           }
           else if (focused.name === 'remove') {
             // /spells swap: remove should only show spells the character knows
-            suggestions = pick(getOwnSpells());
+            suggestions = pick(await getOwnSpells());
           }
           else if (focused.name === 'add') {
             // /spells swap: add from full spell database
@@ -5863,7 +5884,7 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           } else if (focused.name === 'caster') {
             const charNameArg = interaction.options.getString('character');
-            const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters) || {};
+            const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters) || {};
             const names = charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : [];
             suggestions = pick(names);
           }
@@ -5919,7 +5940,7 @@ client.on('interactionCreate', async (interaction) => {
               // Find the character the user is asking about
               let ownerId = null, charKey = null;
               if (!charNameArg) {
-                const own = resolveChar(interaction.user.id, null, characters);
+                const own = await resolveChar(interaction.user.id, null, characters);
                 if (!own.error) { ownerId = interaction.user.id; charKey = own.charKey; }
               } else {
                 const target = String(charNameArg).toLowerCase();
@@ -6096,7 +6117,7 @@ client.on('interactionCreate', async (interaction) => {
             // If the user has partially filled the character: field, use that
             // character's companions; otherwise default to the active one.
             const charArg = interaction.options.getString('character');
-            const { char: ce } = resolveChar(interaction.user.id, charArg, characters);
+            const { char: ce } = await resolveChar(interaction.user.id, charArg, characters);
             const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
             suggestions = pick(comps);
           } else if (focused.name === 'character') {
@@ -6148,7 +6169,7 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'item' && focused.name === 'name') {
           // For edit/remove actions: autocomplete from existing items
           const characters = loadCharacters();
-          const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
+          const { char: ce } = await resolveChar(interaction.user.id, null, characters) || {};
           if (ce) {
             const c = ce.data ?? {};
             const jsonItems = (c.equipment ?? []).map(e => Array.isArray(e) ? e[0] : e).filter(Boolean);
@@ -6164,7 +6185,7 @@ client.on('interactionCreate', async (interaction) => {
           } else if (focused.name === 'name') {
             // Autocomplete from existing weapons on the active character (for edit/remove)
             const characters = loadCharacters();
-            const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
+            const { char: ce } = await resolveChar(interaction.user.id, null, characters) || {};
             if (ce) {
               const c = ce.data ?? {};
               const jsonWeapons = (c.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
@@ -6188,7 +6209,7 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'init' && focused.name === 'companion') {
           const characters = loadCharacters();
-          const { char: ce } = resolveChar(interaction.user.id, null, characters);
+          const { char: ce } = await resolveChar(interaction.user.id, null, characters);
           const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
           suggestions = pick(comps);
         }
@@ -6208,7 +6229,7 @@ client.on('interactionCreate', async (interaction) => {
           // For /downtime complete/cancel/spend, autocomplete with the player's
           // active entry IDs paired with a friendly description.
           const characters = loadCharacters();
-          const { charKey } = resolveChar(interaction.user.id, null, characters);
+          const { charKey } = await resolveChar(interaction.user.id, null, characters);
           if (charKey) {
             const store = loadDowntime();
             const active = downtime.listActiveEntries(store, interaction.user.id, charKey);
@@ -6505,7 +6526,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -6600,7 +6621,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { charKey, char: charEntry } = resolved;
 
@@ -6654,7 +6675,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
 
@@ -6739,7 +6760,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
 
@@ -6775,7 +6796,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       const c = charEntry.data ?? {};
@@ -6852,7 +6873,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -6884,7 +6905,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { charKey, char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -6932,7 +6953,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       if (!charEntry.edits) charEntry.edits = {};
@@ -6965,7 +6986,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       if (!charEntry.edits) charEntry.edits = {};
@@ -7003,7 +7024,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       const c = charEntry.data ?? {};
@@ -7063,7 +7084,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const characters = loadCharacters();
-      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
       if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
       const { char: charEntry } = resolved;
       if (!charEntry.edits) charEntry.edits = {};
@@ -7117,7 +7138,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const charNameArg = interaction.options.getString('character');
         const characters = loadCharacters();
-        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        const resolved = await resolveChar(interaction.user.id, charNameArg, characters);
         if (resolved.error) return interaction.reply({ content: `❌ ${resolved.error}`, ephemeral: true });
         const { char: charEntry } = resolved;
         const c = charEntry.data ?? {};
@@ -7212,7 +7233,7 @@ client.on('interactionCreate', async (interaction) => {
       const userId = interaction.user.id;
       const characters = loadCharacters();
       const nameArg = interaction.options.getString('character');
-      const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
+      const { error, charKey, char: charEntry } = await resolveChar(userId, nameArg, characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
       const maxArg = interaction.options.getString('max');
@@ -7395,7 +7416,7 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'art') {
       const url = interaction.options.getString('url');
       const characters = loadCharacters();
-      const { error, charKey } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+      const { error, charKey } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
       if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
       characters[interaction.user.id][charKey].art = url;
@@ -7454,7 +7475,7 @@ client.on('interactionCreate', async (interaction) => {
       const featLevel = interaction.options.getInteger('level') ?? charEntry.data?.level ?? 1;
       const userId = interaction.user.id;
       const characters2 = loadCharacters();
-      const { error: e2, charKey: ck2, char: ce2 } = resolveChar(userId, interaction.options.getString('character'), characters2);
+      const { error: e2, charKey: ck2, char: ce2 } = await resolveChar(userId, interaction.options.getString('character'), characters2);
       if (e2) return interaction.reply({ content: e2, ephemeral: true });
       if (!ce2.data.feats) ce2.data.feats = [];
       if (action === 'add') {
@@ -7501,7 +7522,7 @@ client.on('interactionCreate', async (interaction) => {
     console.log(`[sheet DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
     console.log(`[sheet DEBUG] total userIds in file: ${Object.keys(characters).length}`);
     console.log(`[sheet DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
-    const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
+    const { error, charKey, char: charEntry } = await resolveChar(userId, nameArg, characters);
     if (error) {
       console.log(`[sheet DEBUG] resolveChar returned error: ${error}`);
       return interaction.editReply(error);
@@ -7736,7 +7757,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'portrait') {
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('character');
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data ?? {};
@@ -7970,7 +7991,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spellbook') {
     await interaction.deferReply();
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
@@ -8066,7 +8087,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'prepared') {
     await interaction.deferReply({ ephemeral: false });
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
@@ -8160,7 +8181,7 @@ client.on('interactionCreate', async (interaction) => {
     const castLevel = interaction.options.getInteger('level') ?? null;
     const targetName = interaction.options.getString('target');
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.editReply(error);
     const rawSpell = findSpell(spellName);
     if (!rawSpell) return interaction.editReply(`Couldn't find a spell called **${spellName}**. Check the spelling and try again!`);
@@ -8605,7 +8626,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spells') {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const c = charEntry.data;
     const casters = charOverlay.getCasters(c);
@@ -8761,7 +8782,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'rest') {
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry, charKey } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry, charKey } = await resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     charOverlay.ensureOverlay(charEntry);
     // Summarize what's going to change
@@ -8786,7 +8807,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'refocus') {
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const before = charOverlay.getCurrentFocus(charEntry);
     if (before.max === 0) return interaction.reply({ content: `**${charEntry.data.name}** has no focus pool.`, ephemeral: true });
@@ -8801,7 +8822,7 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const nameArg = interaction.options.getString('character');
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const c = charEntry.data;
     charOverlay.ensureOverlay(charEntry);
@@ -9248,7 +9269,7 @@ client.on('interactionCreate', async (interaction) => {
     const skillName  = interaction.options.getString('skill');
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9278,7 +9299,7 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.deferReply();
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const modifier = computeCharPerception(charEntry);
@@ -9304,7 +9325,7 @@ client.on('interactionCreate', async (interaction) => {
     const skillOverride = interaction.options.getString('skill'); // optional
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9349,7 +9370,7 @@ client.on('interactionCreate', async (interaction) => {
     const saveType   = interaction.options.getString('type');
     const extraBonus = interaction.options.getInteger('bonus') ?? 0;
     const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.editReply(error);
     const c = charEntry.data;
     const ab = c.abilities ?? {};
@@ -9518,7 +9539,7 @@ client.on('interactionCreate', async (interaction) => {
     try {
       const characters = loadCharacters();
       const charNameArg = interaction.options.getString('character');
-      const { char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+      const { char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
       if (charEntry) {
         charMod = computeCharSkillModifier(charEntry, skillKey);
       }
@@ -9540,7 +9561,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const charArg = interaction.options.getString('character');
-        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
+        const { char: charEntry } = await resolveChar(interaction.user.id, charArg, characters);
         if (charEntry?.data?.class) {
           input = charEntry.data.class;
           userCharName = charEntry.data.name;
@@ -9551,7 +9572,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const charArg = interaction.options.getString('character');
-        const { char: charEntry } = resolveChar(interaction.user.id, charArg, characters);
+        const { char: charEntry } = await resolveChar(interaction.user.id, charArg, characters);
         if (charEntry?.data?.class && charEntry.data.class.toLowerCase() === input.toLowerCase()) {
           userCharName = charEntry.data.name;
         }
@@ -9599,7 +9620,7 @@ client.on('interactionCreate', async (interaction) => {
     console.log(`[companion DEBUG] characters[userId] keys: ${Object.keys(characters[interaction.user.id] ?? {}).join(', ') || '(NONE)'}`);
     console.log(`[companion DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
     console.log(`[companion DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
     if (error) {
       console.log(`[companion DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error, ephemeral: true });
@@ -10957,7 +10978,7 @@ client.on('interactionCreate', async (interaction) => {
       try {
         const characters = loadCharacters();
         const nameArg = interaction.options.getString('character');
-        const resolved = resolveChar(userId, nameArg, characters);
+        const resolved = await resolveChar(userId, nameArg, characters);
         if (!resolved.error) character = resolved.character;
       } catch { /* no character, just skip encumbrance */ }
       return interaction.reply({ embeds: [buildBagEmbed(userBag, character)] });
@@ -11041,7 +11062,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'gold') {
     const subcommand = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
     if (!charEntry.wallet) charEntry.wallet = { pp: 0, gp: 0, sp: 0, cp: 0 };
@@ -11115,7 +11136,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'hero') {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
     const current = getHeroPoints(charEntry);
@@ -11232,7 +11253,7 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
 
@@ -11334,7 +11355,7 @@ client.on('interactionCreate', async (interaction) => {
     // All /xp subcommands need a character, but the character arg is optional
     // (defaults to the user's only loaded char, if they have exactly one).
     const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
+    const { error, charKey, char: charEntry } = await resolveChar(interaction.user.id, charNameArg, characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
     const char = charEntry.data;
 
@@ -11415,7 +11436,7 @@ client.on('interactionCreate', async (interaction) => {
 
     if (!charNameArg) {
       // No character specified — try to resolve the invoker's own default character.
-      const own = resolveChar(interaction.user.id, null, characters);
+      const own = await resolveChar(interaction.user.id, null, characters);
       if (!own.error) {
         charOwnerId = interaction.user.id;
         charKey = own.charKey;
@@ -11612,7 +11633,7 @@ client.on('interactionCreate', async (interaction) => {
       // the companion's Perception for the initiative roll (standard PF2e).
       const compArg = interaction.options.getString('companion');
       if (compArg) {
-        const { error: cerr, char: ce } = resolveChar(userId, interaction.options.getString('character'), characters);
+        const { error: cerr, char: ce } = await resolveChar(userId, interaction.options.getString('character'), characters);
         if (cerr) {
           console.log(`[init add DEBUG] resolveChar returned error: ${cerr}`);
           return interaction.reply({ content: cerr, ephemeral: true });
@@ -11674,7 +11695,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       // ── Character path (default) ───────────────────────────────────
-      const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
+      const { error, char: charEntry } = await resolveChar(userId, interaction.options.getString('character'), characters);
       if (error) return interaction.reply({ content: error, ephemeral: true });
 
       const charName = charEntry.name;
@@ -12687,7 +12708,7 @@ client.on('interactionCreate', async (interaction) => {
     const noMap = interaction.options.getBoolean('no_map') ?? false;
     const characters = loadCharacters();
 
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+    const { error, char: charEntry } = await resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data;
@@ -13218,7 +13239,7 @@ client.on('interactionCreate', async (interaction) => {
     console.log(`[downtime DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
     console.log(`[downtime DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
     console.log(`[downtime DEBUG] all options: ${JSON.stringify(interaction.options.data)}`);
-    const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
+    const { error, charKey, char: charEntry } = await resolveChar(userId, charNameArg, characters);
     if (error) {
       console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error, ephemeral: true });
@@ -13494,7 +13515,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const targetCharacters = loadCharacters(); // re-read so we have fresh data
-      const { error: terr, charKey: tCharKey, char: tCharEntry } = resolveChar(targetPlayer.id, targetCharName, targetCharacters);
+      const { error: terr, charKey: tCharKey, char: tCharEntry } = await resolveChar(targetPlayer.id, targetCharName, targetCharacters);
       if (terr) return interaction.reply({ content: `❌ Couldn't find that character: ${terr}`, ephemeral: true });
 
       const newBalance = downtime.awardDays(store, targetPlayer.id, tCharKey, days, reason);
