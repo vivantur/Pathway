@@ -1462,7 +1462,8 @@
             "saves": {},
             "hp": 24,
             "ac": 16,
-            "perception": 5
+            "perception": 5,
+            "speed": "20 feet, fly 40 feet"
           }
         }
       },
