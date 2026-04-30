@@ -19,6 +19,7 @@ const {
   saveJson,
   mutateJson,
   isSyncDegraded,
+  restoreAllFromSupabase,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncNotesToSupabase,
@@ -5202,6 +5203,10 @@ function buildHelpButtons(currentCategory) {
 // ── Bot ready ─────────────────────────────────────────────────────────────────
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  // Restore all synced data from Supabase first so the bot always boots
+  // from database truth rather than stale (or missing) volume files.
+  await restoreAllFromSupabase();
+  // Then restore active encounters (separate — encounters.js owns this).
   await restoreEncountersFromSupabase();
 });
 

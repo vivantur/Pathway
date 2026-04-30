@@ -829,7 +829,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
 
     const { data: rows } = await sb
       .from('characters')
-      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id')
+      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, updated_at')
       .eq('user_id', userRow.id)
       .eq('status', 'active');
     if (!rows || rows.length === 0) return 0;
@@ -838,7 +838,12 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
     let added = 0;
     for (const row of rows) {
       const key = row.char_key;
-      if (!key || charactersMap[discordId][key]) continue; // already cached locally
+      if (!key) continue;
+      // Only skip if the character exists locally AND was saved after the Supabase row.
+      // This lets manual edits survive without being overwritten by stale Supabase data
+      // mid-session, while still pulling new characters created on the web app.
+      const local = charactersMap[discordId][key];
+      if (local?.saved && row.updated_at && local.saved >= row.updated_at) continue;
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
       charactersMap[discordId][key] = {
@@ -861,6 +866,196 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
   }
 }
 
+// ── Startup restore from Supabase ─────────────────────────────────────────────
+// Called once in clientReady BEFORE any user interaction is possible.
+// Pulls every synced table back into local JSON so the bot always boots from
+// Supabase truth rather than stale (or missing) volume files.
+//
+// Safe to run on a healthy restart — it only OVERWRITES fields that exist in
+// Supabase; it never deletes local-only data.
+async function restoreAllFromSupabase() {
+  try {
+    const sb = getSupabase();
+    if (!sb) {
+      console.log('[Supabase] restore skipped — no client (env vars not set)');
+      return;
+    }
+    console.log('[Supabase] starting startup restore…');
+
+    // ── 1. Fetch user map: discord_id → supabase user_id ────────────────────
+    const { data: userRows, error: userErr } = await sb
+      .from('users')
+      .select('id, discord_id');
+    if (userErr) throw userErr;
+    if (!userRows || userRows.length === 0) {
+      console.log('[Supabase] restore: no users found, skipping');
+      return;
+    }
+    const bySupabaseId = Object.fromEntries(userRows.map(u => [u.id,    u.discord_id]));
+    const byDiscordId  = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
+
+    // ── 2. Characters ────────────────────────────────────────────────────────
+    const { data: charRows, error: charErr } = await sb
+      .from('characters')
+      .select('user_id, char_key, name, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id')
+      .eq('status', 'active');
+    if (charErr) throw charErr;
+
+    const characters = loadJson('characters.json', { default: {}, quiet: true }) || {};
+    for (const row of charRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId || !row.char_key) continue;
+      const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
+      if (!build?.name) continue;
+      if (!characters[discordId]) characters[discordId] = {};
+      // Always overwrite from Supabase — it is the source of truth.
+      characters[discordId][row.char_key] = {
+        name:       build.name,
+        data:       build,
+        hp:         row.current_hp ?? null,
+        overlay:    row.overlay ?? {},
+        dying:      row.dying   ?? 0,
+        wounded:    row.wounded ?? 0,
+        heroPoints: row.hero_points ?? 1,
+        guildId:    row.discord_guild_id ?? null,
+        saved:      new Date().toISOString(),
+      };
+    }
+    atomicWriteJson(dataPath('characters.json'), characters);
+    console.log(`[Supabase] restore: wrote ${charRows?.length ?? 0} characters`);
+
+    // ── 3. Bags ──────────────────────────────────────────────────────────────
+    const { data: bagRows, error: bagErr } = await sb
+      .from('bags')
+      .select('user_id, bag_name, categories');
+    if (bagErr) throw bagErr;
+
+    const bags = loadJson('bags.json', { default: {}, quiet: true }) || {};
+    for (const row of bagRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId) continue;
+      bags[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories: row.categories ?? {} };
+    }
+    atomicWriteJson(dataPath('bags.json'), bags);
+    console.log(`[Supabase] restore: wrote ${bagRows?.length ?? 0} bags`);
+
+    // ── 4. Downtime ──────────────────────────────────────────────────────────
+    const { data: dtRows, error: dtErr } = await sb
+      .from('downtime')
+      .select('user_id, char_key, bank, last_accrual_date, log');
+    if (dtErr) throw dtErr;
+
+    const downtime = loadJson('downtime.json', { default: {}, quiet: true }) || {};
+    for (const row of dtRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId || !row.char_key) continue;
+      if (!downtime[discordId]) downtime[discordId] = {};
+      downtime[discordId][row.char_key] = {
+        bank:             row.bank ?? 0,
+        lastAccrualDate:  row.last_accrual_date ?? null,
+        log:              row.log ?? [],
+      };
+    }
+    atomicWriteJson(dataPath('downtime.json'), downtime);
+    console.log(`[Supabase] restore: wrote ${dtRows?.length ?? 0} downtime records`);
+
+    // ── 5. User snippets ─────────────────────────────────────────────────────
+    const { data: userSnipRows, error: usErr } = await sb
+      .from('user_snippets')
+      .select('user_id, snippets');
+    if (usErr) throw usErr;
+
+    const snippets = loadJson('snippets.json', { default: {}, quiet: true }) || {};
+    for (const row of userSnipRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId || !row.snippets) continue;
+      snippets[discordId] = row.snippets;
+    }
+    atomicWriteJson(dataPath('snippets.json'), snippets);
+    console.log(`[Supabase] restore: wrote ${userSnipRows?.length ?? 0} user snippet sets`);
+
+    // ── 6. Guild snippets ────────────────────────────────────────────────────
+    const { data: guildSnipRows, error: gsErr } = await sb
+      .from('guild_snippets')
+      .select('discord_guild_id, snippets');
+    if (gsErr) throw gsErr;
+
+    const serverSnippets = loadJson('server_snippets.json', { default: {}, quiet: true }) || {};
+    for (const row of guildSnipRows ?? []) {
+      if (!row.discord_guild_id || !row.snippets) continue;
+      serverSnippets[row.discord_guild_id] = row.snippets;
+    }
+    atomicWriteJson(dataPath('server_snippets.json'), serverSnippets);
+    console.log(`[Supabase] restore: wrote ${guildSnipRows?.length ?? 0} guild snippet sets`);
+
+    // ── 7. Guild state: calendar + weather ──────────────────────────────────
+    const { data: guildStateRows, error: gsStateErr } = await sb
+      .from('guild_state')
+      .select('discord_guild_id, calendar, weather');
+    if (gsStateErr) throw gsStateErr;
+
+    const calState  = loadJson('calendar-state.json', { default: {}, quiet: true }) || {};
+    const wxState   = loadJson('weather-state.json',  { default: {}, quiet: true }) || {};
+    const botSettings = loadJson('bot-settings.json', { default: {}, quiet: true }) || {};
+
+    for (const row of guildStateRows ?? []) {
+      const gid = row.discord_guild_id;
+      if (!gid) continue;
+
+      const cal = row.calendar;
+      if (cal?.year && cal?.month && cal?.day) {
+        calState[gid] = { year: cal.year, month: cal.month, day: cal.day };
+        // Also restore campaign setting (golarion / eberron)
+        if (cal.setting) {
+          if (!botSettings[gid]) botSettings[gid] = {};
+          botSettings[gid].campaignSetting = cal.setting;
+        }
+      }
+
+      const wx = row.weather;
+      if (wx?.climate && wx?.current) {
+        // Restore current weather. yesterday = current (best approximation);
+        // history is ephemeral and is dropped — bot regenerates it as play resumes.
+        wxState[gid] = {
+          climate:   wx.climate,
+          season:    wx.season   ?? 'spring',
+          day:       wx.day      ?? 1,
+          current:   {
+            temperatureF:                wx.temperatureF,
+            temperatureCategory:         wx.temperatureCategory,
+            effectiveTemperatureCategory: wx.effectiveTemperatureCategory ?? wx.temperatureCategory,
+            precipitation:               wx.precipitation ?? 'none',
+            wind:                        wx.wind          ?? 'calm',
+            fog:                         wx.fog           ?? 'none',
+            soaked:                      wx.soaked        ?? false,
+          },
+          yesterday: {
+            temperatureF:                wx.temperatureF,
+            temperatureCategory:         wx.temperatureCategory,
+            effectiveTemperatureCategory: wx.effectiveTemperatureCategory ?? wx.temperatureCategory,
+            precipitation:               wx.precipitation ?? 'none',
+            wind:                        wx.wind          ?? 'calm',
+            fog:                         wx.fog           ?? 'none',
+            soaked:                      wx.soaked        ?? false,
+          },
+          history: [],
+        };
+      }
+    }
+
+    atomicWriteJson(dataPath('calendar-state.json'), calState);
+    atomicWriteJson(dataPath('weather-state.json'),  wxState);
+    atomicWriteJson(dataPath('bot-settings.json'),   botSettings);
+    console.log(`[Supabase] restore: wrote guild state for ${guildStateRows?.length ?? 0} guilds`);
+
+    console.log('[Supabase] startup restore complete ✓');
+  } catch (err) {
+    // Never crash the bot on a restore failure — log and continue.
+    // The bot will run from whatever JSON files are on disk.
+    console.error('[Supabase] startup restore failed:', err.message);
+  }
+}
+
 module.exports = {
   DATA_DIR,
   GAMEDATA_DIR,
@@ -877,6 +1072,7 @@ module.exports = {
   preserveHomebrewDuringReseed,
   getSupabase,
   isSyncDegraded,
+  restoreAllFromSupabase,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncEncounterToSupabase,
