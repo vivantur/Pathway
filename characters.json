@@ -1454,7 +1454,7 @@
           "displayName": "Abyss",
           "baseType": "wyvern",
           "form": "young",
-          "notes": "",
+          "notes": "Senses: darkvision, scent (imprecise, 30 feet)",
           "customStats": null,
           "currentHp": 16,
           "overrides": {
