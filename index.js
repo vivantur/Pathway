@@ -1993,7 +1993,7 @@ function buildRecoveryCheckPayload(rc, combatant) {
     buttons.push(
       new ButtonBuilder()
         .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-        .setLabel(`🎭 Reroll (1 HP)`)
+        .setLabel(`🎭 Reroll (1 Hero Pt)`)
         .setStyle(ButtonStyle.Primary)
     );
   }
@@ -8055,10 +8055,17 @@ client.on('interactionCreate', async (interaction) => {
     let attackTotal = null;
     let effectiveTargetAcForSpell = null;
     if (isAttackSpell) {
+      // Spell attacks are affected by MAP just like weapon strikes (PF2e Player Core p. 446).
+      // casterCombatant is already looked up above; spell attacks are never agile.
+      const spellMapInfo = casterCombatant
+        ? ca.computeMapForNextAttack(casterCombatant, false)
+        : { penalty: 0, noteText: null };
       attackDieRoll = Math.floor(Math.random() * 20) + 1;
-      attackTotal = attackDieRoll + spellAttackBonus + casterMods.attackBonus;
+      attackTotal = attackDieRoll + spellAttackBonus + casterMods.attackBonus + spellMapInfo.penalty;
       const casterEffectText = formatEffectContributions(casterMods.activeEffects, 'attack');
-      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)}${casterEffectText ? ` ${fmt(casterMods.attackBonus)}` : ''} = **${attackTotal}**`;
+      const mapText = spellMapInfo.penalty !== 0 ? ` ${spellMapInfo.penalty}` : '';
+      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)}${mapText}${casterEffectText ? ` ${fmt(casterMods.attackBonus)}` : ''} = **${attackTotal}**`;
+      if (spellMapInfo.noteText) description += `\n*${spellMapInfo.noteText}*`;
       if (casterEffectText) description += `\n*${casterEffectText.trim().slice(1, -1)}*`;
       if (attackDieRoll === 20) description += ' ⭐ Natural 20!';
       if (attackDieRoll === 1)  description += ' 💀 Natural 1!';
@@ -8096,14 +8103,22 @@ client.on('interactionCreate', async (interaction) => {
         const step = spell.heightening.step ?? 1;
         const steps = Math.floor(bonusRanks / step);
         if (steps > 0) {
-          // Parse "2d6" → multiply dice count
           const m = String(spell.heightening.damage_bonus).match(/^(\d+)d(\d+)$/i);
           if (m) {
             const addedDice = parseInt(m[1]) * steps;
-            diceExpr = `${diceExpr} + ${addedDice}d${m[2]}`;
+            // Combine dice counts when die types match (e.g. "6d6" + "4d6" → "10d6").
+            // Producing "6d6 + 4d6" instead would break rollDamageExpression, which only
+            // handles single-group XdY+Z expressions.
+            const baseMatch = diceExpr.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+            if (baseMatch && baseMatch[2] === m[2]) {
+              const combined = parseInt(baseMatch[1]) + addedDice;
+              diceExpr = `${combined}d${m[2]}${baseMatch[3] ?? ''}`;
+            }
+            // If die types differ, leave diceExpr unchanged — unusual edge case.
           } else {
-            // Non-dice bonus (e.g. flat +X) — append as-is
-            diceExpr = `${diceExpr} + ${spell.heightening.damage_bonus}`;
+            // Non-dice bonus (e.g. flat +X) — append as a numeric modifier.
+            // "2d6 + 5" → whitespace stripped → "2d6+5" which rollDamageExpression handles.
+            diceExpr = `${diceExpr}+${spell.heightening.damage_bonus}`;
           }
         }
       }
@@ -8197,6 +8212,12 @@ client.on('interactionCreate', async (interaction) => {
       description += target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+    }
+    // Record spell attacks for MAP tracking so subsequent strikes on the same
+    // turn get the correct penalty (and any strike made before this cast already
+    // bumped attacksThisTurn, so this spell attack will have received its MAP above).
+    if (isAttackSpell && casterCombatant) {
+      ca.recordAttack(channelId, c.name);
     }
 
     // ── Multi-target processing & auto-effect application ──────────────
