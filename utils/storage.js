@@ -1048,6 +1048,76 @@ async function restoreAllFromSupabase() {
     atomicWriteJson(dataPath('bot-settings.json'),   botSettings);
     console.log(`[Supabase] restore: wrote guild state for ${guildStateRows?.length ?? 0} guilds`);
 
+    // ── 8. Homebrew entries (monsters, spells, items) ────────────────────────
+    // These are written into gamedata/ (which resets on every Railway deploy).
+    // By restoring from Supabase at startup, /spelladd and /monsteradd content
+    // survives redeploys without manual re-entry.
+    const { data: homebrewRows, error: hbErr } = await sb
+      .from('homebrew_entries')
+      .select('type, entry_key, data');
+    if (hbErr) throw hbErr;
+
+    const homebrewByType = { monster: {}, spell: [], item: [] };
+    for (const row of homebrewRows ?? []) {
+      if (!row.type || !row.data) continue;
+      if (row.type === 'monster' && row.entry_key) {
+        homebrewByType.monster[row.entry_key] = { ...row.data, _homebrew: true };
+      } else if (row.type === 'spell') {
+        homebrewByType.spell.push({ ...row.data, _homebrew: true });
+      } else if (row.type === 'item') {
+        homebrewByType.item.push({ ...row.data, _homebrew: true });
+      }
+    }
+
+    // Monsters — bestiary.json shape: { metadata?, creatures: { slug: entry } }
+    if (Object.keys(homebrewByType.monster).length > 0) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
+        const metadata = existing.metadata ?? null;
+        const creatures = existing.creatures ?? existing;
+        const merged = { ...creatures, ...homebrewByType.monster };
+        const payload = metadata ? { metadata, creatures: merged } : { creatures: merged };
+        atomicWriteGamedata('bestiary.json', payload);
+      } catch (e) {
+        console.error('[Supabase] restore: bestiary patch failed:', e.message);
+      }
+    }
+
+    // Spells — spells.json shape: flat array
+    if (homebrewByType.spell.length > 0) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
+        const canonical = Array.isArray(existing) ? existing : [];
+        const homebrewNames = new Set(homebrewByType.spell.map(s => String(s.name).toLowerCase()));
+        // Remove any stale homebrew entries with the same name, then append fresh
+        const merged = canonical.filter(s => !s._homebrew || !homebrewNames.has(String(s.name).toLowerCase()))
+          .concat(homebrewByType.spell);
+        atomicWriteGamedata('spells.json', merged);
+      } catch (e) {
+        console.error('[Supabase] restore: spells patch failed:', e.message);
+      }
+    }
+
+    // Items — items.json shape: { meta?, items: { slug: entry } }
+    if (homebrewByType.item.length > 0) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
+        const meta = existing.meta ?? null;
+        const itemsMap = existing.items ?? existing;
+        for (const item of homebrewByType.item) {
+          const key = item.id || String(item.name).toLowerCase().replace(/\s+/g, '-');
+          itemsMap[key] = { ...item, _homebrew: true };
+        }
+        const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
+        atomicWriteGamedata('items.json', payload);
+      } catch (e) {
+        console.error('[Supabase] restore: items patch failed:', e.message);
+      }
+    }
+
+    const hbCount = Object.keys(homebrewByType.monster).length + homebrewByType.spell.length + homebrewByType.item.length;
+    console.log(`[Supabase] restore: spliced ${hbCount} homebrew entries into gamedata`);
+
     console.log('[Supabase] startup restore complete ✓');
   } catch (err) {
     // Never crash the bot on a restore failure — log and continue.
