@@ -597,8 +597,9 @@ const companionCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
 
-  .addSubcommand(s => s.setName('swap').setDescription('Quickly switch the active companion to another one you own.')
-    .addStringOption(o => o.setName('companion').setDescription('Companion to make active').setRequired(true))
+  .addSubcommand(s => s.setName('art').setDescription('Set or clear a companion\'s portrait image.')
+    .addStringOption(o => o.setName('url').setDescription('Direct image URL (https://...) or "clear" to remove').setRequired(true))
+    .addStringOption(o => o.setName('companion').setDescription('Companion display name (default: active)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────

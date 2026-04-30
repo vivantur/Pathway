@@ -9796,14 +9796,57 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ embeds: [buildCompanionSheetEmbed(comp, scaled, char, charEntry, compKey === charEntry.activeCompanion)] });
     }
 
-    if (sub === 'swap') {
-      const compNameArg = interaction.options.getString('companion');
+    // ── /companion active — set which companion is currently active ───
+    // The slash command schema in deploy.js uses `name`, but earlier code
+    // used `companion`. We accept both so users hitting either don't crash.
+    if (sub === 'active' || sub === 'swap') {
+      const compNameArg = interaction.options.getString('name')
+        ?? interaction.options.getString('companion');
+      if (!compNameArg) {
+        return interaction.reply({ content: `❌ Please specify a companion. Use \`/companion mine\` to see your options.`, ephemeral: true });
+      }
       const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
       charEntry.activeCompanion = compKey;
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
       return interaction.reply({ content: `⭐ **${charEntry.companions[compKey].displayName}** is now **${char.name}**'s active companion.` });
+    }
+
+    // ── /companion use — add the active companion to the current encounter ──
+    // Convenience shortcut so users don't have to remember `/init add companion:`.
+    // Uses the active companion (since `/companion use` takes no companion arg).
+    // Companions roll initiative on Perception per PF2e standard.
+    if (sub === 'use') {
+      const channelId = interaction.channel.id;
+      const enc = getEncounter(channelId);
+      if (!enc) {
+        return interaction.reply({ content: `❌ No encounter active in this channel. Start one with \`/init start\` first.`, ephemeral: true });
+      }
+      if (!charEntry.activeCompanion || !charEntry.companions[charEntry.activeCompanion]) {
+        return interaction.reply({ content: `❌ **${char.name}** has no active companion. Set one with \`/companion active <name>\`, or add one with \`/companion add\`.`, ephemeral: true });
+      }
+      const comp = charEntry.companions[charEntry.activeCompanion];
+      if (enc.combatants.some(x => x.name.toLowerCase() === comp.displayName.toLowerCase())) {
+        return interaction.reply({ content: `❌ **${comp.displayName}** is already in the encounter.`, ephemeral: true });
+      }
+      const scaled = scaleCompanion(comp, char);
+      const initMod = scaled.perception ?? 0;
+      const r = rollD20Plus(initMod);
+      addCombatant(channelId, {
+        name: comp.displayName,
+        initiative: r.total,
+        hp: comp.currentHp ?? scaled.maxHp,
+        maxHp: scaled.maxHp,
+        ac: scaled.ac,
+        ownerId: interaction.user.id,
+        isNpc: false,
+        companionOf: char.name,
+        effects: [],
+      });
+      await interaction.reply(`🐾 **${comp.displayName}** (${char.name}'s ${comp.form} companion) joins initiative at **${r.total}** (rolled ${r.roll} ${fmt(r.mod)}). HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac}`);
+      await updateSummary(interaction.channel, enc);
+      return;
     }
 
     if (sub === 'form') {
