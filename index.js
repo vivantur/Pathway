@@ -154,6 +154,22 @@ let rulesDatabase = loadGamedata('rules.json', {
   }, 0),
 });
 
+// Merge in conditions.json as its own category. The Archives of Nethys importer
+// only pulled rulebook chapter text, so /rule grabbed (and every other condition)
+// was returning "no rule found". Loading conditions separately and merging them
+// under a "Conditions" category lets findRule() pick them up automatically and
+// lets buildRuleEmbed() apply its existing red/🩸 condition styling for free.
+const conditionsData = loadGamedata('conditions.json', {
+  default: { Conditions: {} },
+  label: 'conditions from database',
+  count: obj => Object.keys(obj.Conditions ?? {}).length,
+});
+if (conditionsData?.Conditions) {
+  // Merge non-destructively: if a homebrew Conditions category already exists in
+  // rulesDatabase, layer the official data over it without nuking custom entries.
+  rulesDatabase.Conditions = { ...(rulesDatabase.Conditions ?? {}), ...conditionsData.Conditions };
+}
+
 // File shape: { metadata: {...}, creatures: { key: {...} } }
 let bestiaryDatabase = loadGamedata('bestiary.json', {
   default: {},
@@ -9522,6 +9538,48 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (!rule) return interaction.reply({ content: `❌ No rule found for **"${input}"**.\nTry a **condition** (e.g. frightened, prone), **action** (e.g. stride, grapple), or **trait** (e.g. agile, finesse).`, ephemeral: true });
     await interaction.reply({ embeds: [buildRuleEmbed(rule)] });
+  }
+
+  // ─── /condition ──────────────────────────────────────────────────
+  // Dedicated condition lookup. Reuses findRule + buildRuleEmbed under the hood
+  // — conditions live in rulesDatabase as the "Conditions" category — but
+  // restricts results to that category so /condition spell can't pull a spell.
+  else if (commandName === 'condition') {
+    const input = interaction.options.getString('name');
+    const { rule, matches } = findRule(input);
+    const isCondition = r => r?.category === 'condition';
+
+    if (rule && isCondition(rule)) {
+      return interaction.reply({ embeds: [buildRuleEmbed(rule)] });
+    }
+
+    // Filter ambiguous matches down to just conditions.
+    const conditionMatches = matches.filter(isCondition);
+    if (conditionMatches.length === 1) {
+      return interaction.reply({ embeds: [buildRuleEmbed(conditionMatches[0])] });
+    }
+    if (conditionMatches.length > 1) {
+      const nameList = conditionMatches.map(r => r.name).sort().join(', ');
+      return interaction.reply({ content: `🔍 Multiple conditions match **"${input}"**: ${nameList}`, ephemeral: true });
+    }
+
+    // Build a "did you mean?" hint from the Conditions category.
+    const allConditions = Object.values(rulesDatabase.Conditions ?? {})
+      .map(c => c.name)
+      .filter(Boolean)
+      .sort();
+    const lower = (input || '').toLowerCase();
+    const suggestions = allConditions
+      .filter(n => n.toLowerCase().includes(lower.slice(0, 3)))
+      .slice(0, 5);
+    const hint = suggestions.length
+      ? `\nDid you mean: ${suggestions.map(s => `**${s}**`).join(', ')}?`
+      : `\nTry one of: ${allConditions.slice(0, 8).join(', ')}, ...`;
+
+    return interaction.reply({
+      content: `❌ No condition found for **"${input}"**.${hint}`,
+      ephemeral: true,
+    });
   }
 
   // ─── /deity ──────────────────────────────────────────────────────

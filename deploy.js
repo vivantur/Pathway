@@ -439,6 +439,11 @@ const ruleCommand = new SlashCommandBuilder()
   .setDescription('Look up a rule entry from the game database.')
   .addStringOption(o => o.setName('name').setDescription('Rule name (partial match OK)').setRequired(true).setAutocomplete(true));
 
+const conditionCommand = new SlashCommandBuilder()
+  .setName('condition')
+  .setDescription('Look up a PF2e condition (e.g. grabbed, frightened, off-guard).')
+  .addStringOption(o => o.setName('name').setDescription('Condition name (partial match OK)').setRequired(true).setAutocomplete(true));
+
 const deityCommand = new SlashCommandBuilder()
   .setName('deity')
   .setDescription('Look up a deity from the game database.')
@@ -1056,6 +1061,7 @@ const commands = [
   backgroundCommand,
   classCommand,
   companionCommand,
+  conditionCommand,
   deityCommand,
   featCommand,
   itemCommand,
