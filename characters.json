@@ -1460,7 +1460,8 @@
           "overrides": {
             "abilities": {},
             "saves": {},
-            "hp": 24
+            "hp": 24,
+            "ac": 16
           }
         }
       },
