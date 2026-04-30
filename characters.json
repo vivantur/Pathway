@@ -1489,6 +1489,18 @@
               "description": "The wyvern has the mount ability but is only strong enough to fly in short bursts while carrying a rider; if it doesn’t end its turn on solid ground, it descends 30 feet without taking falling damage. At 14th level, a wyvern replaces this with the mount ability, removing this restriction.",
               "actionCost": null
             }
+          ],
+          "customAttacks": [
+            {
+              "name": "Stinger plus poison",
+              "bonus": 6,
+              "damage": "1d6+2",
+              "damageType": "Piercing",
+              "traits": [
+                "agile",
+                "reach"
+              ]
+            }
           ]
         }
       },
