@@ -926,13 +926,13 @@ const monsterRollCommand = new SlashCommandBuilder()
         { name: 'Will',      value: 'will' },
       ))
     .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against (shows degree of success).').setRequired(false))
-    .addBooleanOption(o => o.setName('public').setDescription('Show the result publicly instead of GM-only (default: false).').setRequired(false)))
+    .addBooleanOption(o => o.setName('public').setDescription('Set to false to keep this roll GM-only (default: true, visible to all).').setRequired(false)))
   .addSubcommand(s => s.setName('skill')
     .setDescription('Roll a skill check for a monster.')
     .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true))
     .addStringOption(o => o.setName('skill').setDescription('Skill name (e.g. Stealth, Athletics — partial match OK).').setRequired(true))
     .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against (shows degree of success).').setRequired(false))
-    .addBooleanOption(o => o.setName('public').setDescription('Show the result publicly instead of GM-only (default: false).').setRequired(false)));
+    .addBooleanOption(o => o.setName('public').setDescription('Set to false to keep this roll GM-only (default: true, visible to all).').setRequired(false)));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /r (quick alias for /roll)

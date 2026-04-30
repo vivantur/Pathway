@@ -11091,7 +11091,7 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const monsterInput = interaction.options.getString('monster');
     const dc = interaction.options.getInteger('dc'); // optional
-    const wantPublic = interaction.options.getBoolean('public') ?? false;
+    const wantPublic = interaction.options.getBoolean('public') ?? true;
     const guildId = interaction.guildId;
     const channelId = interaction.channel?.id;
 
