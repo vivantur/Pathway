@@ -845,115 +845,44 @@
     "hylia": {
       "name": "Hylia",
       "data": {
-        "name": "Hylia",
-        "class": "Oracle",
-        "dualClass": null,
-        "level": 2,
         "xp": 30,
-        "ancestry": "Elf",
-        "heritage": "Seer Elf",
-        "background": "Occult Librarian",
-        "alignment": "N",
-        "gender": "Female",
         "age": "300",
-        "deity": "Pharasma",
-        "size": 2,
-        "sizeName": "Medium",
-        "keyability": "cha",
-        "languages": [
-          "Common",
-          "Elven",
-          "Fey",
-          "Shadowtongue"
-        ],
-        "rituals": [],
-        "resistances": [],
-        "inventorMods": [],
-        "abilities": {
-          "str": 10,
-          "dex": 14,
-          "con": 12,
-          "int": 12,
-          "wis": 14,
-          "cha": 16,
-          "breakdown": {
-            "ancestryFree": [
-              "Con"
-            ],
-            "ancestryBoosts": [
-              "Dex",
-              "Int"
-            ],
-            "ancestryFlaws": [
-              "Con"
-            ],
-            "backgroundBoosts": [
-              "Wis",
-              "Cha"
-            ],
-            "classBoosts": [
-              "Cha"
-            ],
-            "mapLevelledBoosts": {
-              "1": [
-                "Con",
-                "Cha",
-                "Dex",
-                "Wis"
-              ]
-            }
-          }
-        },
-        "attributes": {
-          "ancestryhp": 6,
-          "classhp": 8,
-          "bonushp": 0,
-          "bonushpPerLevel": 0,
-          "speed": 30,
-          "speedBonus": 0
-        },
-        "proficiencies": {
-          "classDC": 2,
-          "perception": 2,
-          "fortitude": 2,
-          "reflex": 2,
-          "will": 4,
-          "heavy": 0,
-          "medium": 0,
-          "light": 2,
-          "unarmored": 2,
-          "advanced": 0,
-          "martial": 0,
-          "simple": 2,
-          "unarmed": 2,
-          "castingArcane": 2,
-          "castingDivine": 2,
-          "castingOccult": 0,
-          "castingPrimal": 2,
-          "acrobatics": 2,
-          "arcana": 2,
-          "athletics": 0,
-          "crafting": 0,
-          "deception": 2,
-          "diplomacy": 0,
-          "intimidation": 0,
-          "medicine": 2,
-          "nature": 2,
-          "occultism": 2,
-          "performance": 0,
-          "religion": 2,
-          "society": 0,
-          "stealth": 0,
-          "survival": 0,
-          "thievery": 0,
-          "piloting": 0,
-          "computers": 0
-        },
         "mods": {
           "Thievery": {
             "Item Bonus": 1
           }
         },
+        "name": "Hylia",
+        "pets": [
+          {
+            "name": "Young Wyvern",
+            "type": "Animal Companion",
+            "armor": "Unarmored",
+            "animal": "Wyvern",
+            "mature": false,
+            "equipment": [],
+            "incredible": false,
+            "incredibleType": "Nimble",
+            "specializations": []
+          }
+        ],
+        "size": 2,
+        "armor": [
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Studded Leather Armor",
+            "prof": "light",
+            "worn": true,
+            "grade": "",
+            "runes": [],
+            "display": "Studded Leather"
+          }
+        ],
+        "class": "Oracle",
+        "deity": "Pharasma",
         "feats": [
           [
             "Trance of Celerity",
@@ -1013,6 +942,83 @@
             null
           ]
         ],
+        "focus": {
+          "divine": {
+            "cha": {
+              "itemBonus": 0,
+              "focusSpells": [
+                "Temporal Distortion"
+              ],
+              "proficiency": 2,
+              "abilityBonus": 3,
+              "focusCantrips": []
+            }
+          }
+        },
+        "level": 2,
+        "lores": [
+          [
+            "Academia",
+            2
+          ]
+        ],
+        "money": {
+          "cp": 0,
+          "gp": 3,
+          "pp": 0,
+          "sp": 3
+        },
+        "gender": "Female",
+        "acTotal": {
+          "acTotal": 18,
+          "acItemBonus": 2,
+          "acProfBonus": 4,
+          "shieldBonus": null,
+          "acAbilityBonus": 2
+        },
+        "formula": [],
+        "rituals": [],
+        "weapons": [
+          {
+            "die": "d6",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Hand Crossbow",
+            "prof": "simple",
+            "grade": "",
+            "runes": [],
+            "attack": 6,
+            "display": "Hand Crossbow",
+            "damageType": "P",
+            "isInventor": false,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false
+          },
+          {
+            "die": "d4",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Dagger",
+            "prof": "simple",
+            "grade": "",
+            "runes": [],
+            "attack": 6,
+            "display": "Dagger",
+            "damageType": "P",
+            "isInventor": false,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false
+          }
+        ],
+        "ancestry": "Elf",
+        "heritage": "Seer Elf",
+        "sizeName": "Medium",
         "specials": [
           "Time Mystery",
           "Curse of Turbulent Moments",
@@ -1022,20 +1028,43 @@
           "Call Companion",
           "Seer Elf"
         ],
-        "lores": [
-          [
-            "Academia",
-            2
-          ]
-        ],
-        "equipmentContainers": {
-          "6b64452a-839e-4a51-8c74-7f4c1243a038": {
-            "containerName": "Backpack",
-            "bagOfHolding": false,
-            "backpack": true,
-            "augmentations": false
+        "abilities": {
+          "cha": 16,
+          "con": 12,
+          "dex": 14,
+          "int": 12,
+          "str": 10,
+          "wis": 14,
+          "breakdown": {
+            "classBoosts": [
+              "Cha"
+            ],
+            "ancestryFree": [
+              "Con"
+            ],
+            "ancestryFlaws": [
+              "Con"
+            ],
+            "ancestryBoosts": [
+              "Dex",
+              "Int"
+            ],
+            "backgroundBoosts": [
+              "Wis",
+              "Cha"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Con",
+                "Cha",
+                "Dex",
+                "Wis"
+              ]
+            }
           }
         },
+        "alignment": "N",
+        "dualClass": null,
         "equipment": [
           [
             "Backpack",
@@ -1101,78 +1130,29 @@
             "Invested"
           ]
         ],
-        "specificProficiencies": {
-          "trained": [],
-          "expert": [],
-          "master": [],
-          "legendary": []
-        },
-        "weapons": [
-          {
-            "name": "Hand Crossbow",
-            "qty": 1,
-            "prof": "simple",
-            "die": "d6",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Hand Crossbow",
-            "runes": [],
-            "damageType": "P",
-            "attack": 6,
-            "damageBonus": 0,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          },
-          {
-            "name": "Dagger",
-            "qty": 1,
-            "prof": "simple",
-            "die": "d4",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Dagger",
-            "runes": [],
-            "damageType": "P",
-            "attack": 6,
-            "damageBonus": 0,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          }
+        "familiars": [],
+        "languages": [
+          "Common",
+          "Elven",
+          "Fey",
+          "Shadowtongue"
         ],
-        "money": {
-          "cp": 0,
-          "sp": 3,
-          "gp": 3,
-          "pp": 0
+        "attributes": {
+          "speed": 30,
+          "bonushp": 0,
+          "classhp": 8,
+          "ancestryhp": 6,
+          "speedBonus": 0,
+          "bonushpPerLevel": 0
         },
-        "armor": [
-          {
-            "name": "Studded Leather Armor",
-            "qty": 1,
-            "prof": "light",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "Studded Leather",
-            "worn": true,
-            "runes": [],
-            "grade": ""
-          }
-        ],
+        "background": "Occult Librarian",
+        "keyability": "cha",
+        "focusPoints": 1,
+        "resistances": [],
+        "inventorMods": [],
         "spellCasters": [
           {
             "name": "Oracle",
-            "magicTradition": "divine",
-            "spellcastingType": "spontaneous",
-            "ability": "cha",
-            "proficiency": 2,
-            "focusPoints": 0,
             "innate": false,
             "perDay": [
               5,
@@ -1189,7 +1169,6 @@
             ],
             "spells": [
               {
-                "spellLevel": 0,
                 "list": [
                   "Forbidding Ward",
                   "Divine Lance",
@@ -1197,29 +1176,30 @@
                   "Guidance",
                   "Protect Companion",
                   "Time Sense"
-                ]
+                ],
+                "spellLevel": 0
               },
               {
-                "spellLevel": 1,
                 "list": [
                   "Bane",
                   "Ill Omen",
                   "Heal",
                   "Fated Healing",
                   "Déjà Vu"
-                ]
+                ],
+                "spellLevel": 1
               }
             ],
+            "ability": "cha",
             "prepared": [],
-            "blendedSpells": []
+            "focusPoints": 0,
+            "proficiency": 2,
+            "blendedSpells": [],
+            "magicTradition": "divine",
+            "spellcastingType": "spontaneous"
           },
           {
             "name": "Seer Elf",
-            "magicTradition": "arcane",
-            "spellcastingType": "prepared",
-            "ability": "cha",
-            "proficiency": 2,
-            "focusPoints": 0,
             "innate": true,
             "perDay": [
               1,
@@ -1236,22 +1216,22 @@
             ],
             "spells": [
               {
-                "spellLevel": 0,
                 "list": [
                   "Detect Magic"
-                ]
+                ],
+                "spellLevel": 0
               }
             ],
+            "ability": "cha",
             "prepared": [],
-            "blendedSpells": []
+            "focusPoints": 0,
+            "proficiency": 2,
+            "blendedSpells": [],
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared"
           },
           {
             "name": "Wildborn Magic",
-            "magicTradition": "primal",
-            "spellcastingType": "prepared",
-            "ability": "cha",
-            "proficiency": 2,
-            "focusPoints": 0,
             "innate": true,
             "perDay": [
               1,
@@ -1268,22 +1248,22 @@
             ],
             "spells": [
               {
-                "spellLevel": 0,
                 "list": [
                   "Root Reading"
-                ]
+                ],
+                "spellLevel": 0
               }
             ],
+            "ability": "cha",
             "prepared": [],
-            "blendedSpells": []
+            "focusPoints": 0,
+            "proficiency": 2,
+            "blendedSpells": [],
+            "magicTradition": "primal",
+            "spellcastingType": "prepared"
           },
           {
             "name": "Caster Arcane Sense",
-            "magicTradition": "arcane",
-            "spellcastingType": "prepared",
-            "ability": "cha",
-            "proficiency": 2,
-            "focusPoints": 0,
             "innate": true,
             "perDay": [
               1,
@@ -1300,273 +1280,201 @@
             ],
             "spells": [
               {
-                "spellLevel": 0,
                 "list": [
                   "Detect Magic"
-                ]
+                ],
+                "spellLevel": 0
               }
             ],
+            "ability": "cha",
             "prepared": [],
-            "blendedSpells": []
+            "focusPoints": 0,
+            "proficiency": 2,
+            "blendedSpells": [],
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared"
           }
         ],
-        "focusPoints": 1,
-        "focus": {
-          "divine": {
-            "cha": {
-              "abilityBonus": 3,
-              "proficiency": 2,
-              "itemBonus": 0,
-              "focusCantrips": [],
-              "focusSpells": [
-                "Temporal Distortion"
-              ]
-            }
+        "proficiencies": {
+          "will": 4,
+          "heavy": 0,
+          "light": 2,
+          "arcana": 2,
+          "medium": 0,
+          "nature": 2,
+          "reflex": 2,
+          "simple": 2,
+          "classDC": 2,
+          "martial": 0,
+          "society": 0,
+          "stealth": 0,
+          "unarmed": 2,
+          "advanced": 0,
+          "crafting": 0,
+          "medicine": 2,
+          "piloting": 0,
+          "religion": 2,
+          "survival": 0,
+          "thievery": 0,
+          "athletics": 0,
+          "computers": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "fortitude": 2,
+          "occultism": 2,
+          "unarmored": 2,
+          "acrobatics": 2,
+          "perception": 2,
+          "performance": 0,
+          "intimidation": 0,
+          "castingArcane": 2,
+          "castingDivine": 2,
+          "castingOccult": 0,
+          "castingPrimal": 2
+        },
+        "equipmentContainers": {
+          "6b64452a-839e-4a51-8c74-7f4c1243a038": {
+            "backpack": true,
+            "bagOfHolding": false,
+            "augmentations": false,
+            "containerName": "Backpack"
           }
         },
-        "formula": [],
-        "acTotal": {
-          "acProfBonus": 4,
-          "acAbilityBonus": 2,
-          "acItemBonus": 2,
-          "acTotal": 18,
-          "shieldBonus": null
-        },
-        "pets": [
-          {
-            "type": "Animal Companion",
-            "name": "Young Wyvern",
-            "equipment": [],
-            "animal": "Wyvern",
-            "mature": false,
-            "incredible": false,
-            "incredibleType": "Nimble",
-            "specializations": [],
-            "armor": "Unarmored"
-          }
-        ],
-        "familiars": []
-      },
-      "art": "https://media.discordapp.net/attachments/903452615663304817/1496712402815684638/02053d1d-e5f7-4d3a-966a-dfb1af6f7d0c.png?ex=69ef7ecc&is=69ee2d4c&hm=a0228e1ddda15fea33988b51fda6aa8c7f9a74ee2636ba13dcf2723311c7a305&=&format=webp&quality=lossless&width=712&height=1069",
-      "senses": null,
-      "edits": {
-        "background": "Occult Librarian",
-        "deity": "Pharasma",
-        "languages": [
-          "Common",
-          "Elven",
-          "Fey",
-          "Shadowtongue"
-        ],
-        "senses": [
-          "Low-light Vision"
-        ]
-      },
-      "saved": "2026-04-27T03:23:31.489Z",
-      "companions": {
-        "abyss": {
-          "displayName": "Abyss",
-          "baseType": "wyvern",
-          "form": "young",
-          "notes": "",
-          "customStats": null,
-          "currentHp": 24,
-          "overrides": {
-            "abilities": {
-              "str": 2
-            },
-            "saves": {
-              "fort": 6,
-              "ref": 6,
-              "will": 5
-            },
-            "ac": 16,
-            "hp": 24,
-            "perception": 5,
-            "attackBonus": 6,
-            "speed": "20f feet, fly 40 feet",
-            "size": "Large"
-          },
-          "customAttacks": [
-            {
-              "name": "Stinger plus poison",
-              "bonus": 6,
-              "damage": "1d6+2",
-              "damageType": "Piercing",
-              "traits": [
-                "agile",
-                "reach",
-                "poison"
-              ]
-            }
-          ],
-          "customAbilities": [
-            {
-              "name": "Special",
-              "description": "The wyvern's stinger attack deals additional poison damage equl to 1 + 1 per weapon damage die.",
-              "actionCost": null
-            },
-            {
-              "name": "Unsteady Mount",
-              "description": "The wyvern has the mount ability but is only strong enough to fly in short bursts while carrying a rider; if it doesn't end its turn on solid ground, it descends 30 feet without taking falling damage. At 14th level, a wyvern replaces this with the mount ability, removing this restriction.",
-              "actionCost": null
-            },
-            {
-              "name": "Support Benefit",
-              "description": "Your wyvern whips its stinger at your foes. Until the start of your next turn, your Strikes that damage a creature in your wyvern's reach also deal 1d6 persistent poison damage. If your wyvern is nimble or savage, the persistent damage increases to 2d6.",
-              "actionCost": null
-            },
-            {
-              "name": "Trained Skill Set",
-              "description": "Acrobatics +6, Athletics +6, Stealth +6.",
-              "actionCost": null
-            },
-            {
-              "name": "Senses",
-              "description": "darkvision, scent (impercise, 30 feet)",
-              "actionCost": null
-            }
-          ],
-          "art": "https://media.discordapp.net/attachments/1465080216279056586/1496354706845339658/image.png?ex=69ef832b&is=69ee31ab&hm=dc264687f0f58de6211e66847ea029d6598d967644fb2018ed11f8a819bd0243&=&format=webp&quality=lossless&width=667&height=444",
-          "skills": {
-            "Acrobatics": 6,
-            "Arcana": -4,
-            "Athletics": 6,
-            "Crafting": -4,
-            "Deception": 0,
-            "Diplomacy": 0,
-            "Intimidation": 0,
-            "Medicine": 1,
-            "Nature": 1,
-            "Occultism": -4,
-            "Performance": 0,
-            "Religion": 1,
-            "Society": -4,
-            "Stealth": 6,
-            "Survival": 1,
-            "Thievery": 2
-          }
-        }
-      },
-      "activeCompanion": "abyss",
-      "overlay": {
-        "spellbook": [],
-        "repertoire_swaps": [],
-        "prepared_override": {},
-        "daily": {
-          "focus_spent": 0,
-          "hero_points": 1,
-          "slots_used": {},
-          "last_rest_at": "2026-04-27T23:00:32.601Z"
+        "specificProficiencies": {
+          "expert": [],
+          "master": [],
+          "trained": [],
+          "legendary": []
         }
       },
       "hp": 24,
-      "heroPoints": 0,
+      "overlay": {
+        "daily": {
+          "slots_used": {},
+          "focus_spent": 0,
+          "hero_points": 1,
+          "last_rest_at": "2026-04-27T23:00:32.601Z"
+        },
+        "spellbook": [],
+        "companions": {
+          "abyss": {
+            "art": "https://media.discordapp.net/attachments/1465080216279056586/1496354706845339658/image.png?ex=69ef832b&is=69ee31ab&hm=dc264687f0f58de6211e66847ea029d6598d967644fb2018ed11f8a819bd0243&=&format=webp&quality=lossless&width=667&height=444",
+            "form": "young",
+            "notes": "",
+            "skills": {
+              "Arcana": -4,
+              "Nature": 1,
+              "Society": -4,
+              "Stealth": 6,
+              "Crafting": -4,
+              "Medicine": 1,
+              "Religion": 1,
+              "Survival": 1,
+              "Thievery": 2,
+              "Athletics": 6,
+              "Deception": 0,
+              "Diplomacy": 0,
+              "Occultism": -4,
+              "Acrobatics": 6,
+              "Performance": 0,
+              "Intimidation": 0
+            },
+            "baseType": "wyvern",
+            "currentHp": 24,
+            "overrides": {
+              "ac": 16,
+              "hp": 24,
+              "size": "Large",
+              "saves": {
+                "ref": 6,
+                "fort": 6,
+                "will": 5
+              },
+              "speed": "20f feet, fly 40 feet",
+              "abilities": {
+                "str": 2
+              },
+              "perception": 5,
+              "attackBonus": 6
+            },
+            "customStats": null,
+            "displayName": "Abyss",
+            "customAttacks": [
+              {
+                "name": "Stinger plus poison",
+                "bonus": 6,
+                "damage": "1d6+2",
+                "traits": [
+                  "agile",
+                  "reach",
+                  "poison"
+                ],
+                "damageType": "Piercing"
+              }
+            ],
+            "customAbilities": [
+              {
+                "name": "Special",
+                "actionCost": null,
+                "description": "The wyvern's stinger attack deals additional poison damage equl to 1 + 1 per weapon damage die."
+              },
+              {
+                "name": "Unsteady Mount",
+                "actionCost": null,
+                "description": "The wyvern has the mount ability but is only strong enough to fly in short bursts while carrying a rider; if it doesn't end its turn on solid ground, it descends 30 feet without taking falling damage. At 14th level, a wyvern replaces this with the mount ability, removing this restriction."
+              },
+              {
+                "name": "Support Benefit",
+                "actionCost": null,
+                "description": "Your wyvern whips its stinger at your foes. Until the start of your next turn, your Strikes that damage a creature in your wyvern's reach also deal 1d6 persistent poison damage. If your wyvern is nimble or savage, the persistent damage increases to 2d6."
+              },
+              {
+                "name": "Trained Skill Set",
+                "actionCost": null,
+                "description": "Acrobatics +6, Athletics +6, Stealth +6."
+              },
+              {
+                "name": "Senses",
+                "actionCost": null,
+                "description": "darkvision, scent (impercise, 30 feet)"
+              }
+            ]
+          }
+        },
+        "repertoire_swaps": [],
+        "prepared_override": {}
+      },
       "dying": 0,
-      "wounded": 0
+      "wounded": 0,
+      "heroPoints": 0,
+      "guildId": null,
+      "saved": "2026-04-30T16:14:50.139Z"
     },
     "isolde": {
       "name": "Isolde",
       "data": {
-        "name": "Isolde",
-        "class": "Swashbuckler",
-        "dualClass": null,
-        "level": 1,
         "xp": 0,
-        "ancestry": "Automaton",
-        "heritage": "Dromaar",
-        "background": "War Orphan",
-        "alignment": "N",
-        "gender": "Not set",
         "age": "Not set",
-        "deity": "Not set",
-        "size": 2,
-        "sizeName": "Medium",
-        "keyability": "dex",
-        "languages": [
-          "None selected"
-        ],
-        "rituals": [],
-        "resistances": [],
-        "inventorMods": [],
-        "abilities": {
-          "str": 12,
-          "dex": 16,
-          "con": 14,
-          "int": 14,
-          "wis": 12,
-          "cha": 10,
-          "breakdown": {
-            "ancestryFree": [
-              "Int"
-            ],
-            "ancestryBoosts": [
-              "Str"
-            ],
-            "ancestryFlaws": [],
-            "backgroundBoosts": [
-              "Dex",
-              "Con"
-            ],
-            "classBoosts": [
-              "Dex"
-            ],
-            "mapLevelledBoosts": {
-              "1": [
-                "Dex",
-                "Con",
-                "Int",
-                "Wis"
-              ]
-            }
-          }
-        },
-        "attributes": {
-          "ancestryhp": 8,
-          "classhp": 10,
-          "bonushp": 0,
-          "bonushpPerLevel": 0,
-          "speed": 25,
-          "speedBonus": 0
-        },
-        "proficiencies": {
-          "classDC": 2,
-          "perception": 4,
-          "fortitude": 2,
-          "reflex": 4,
-          "will": 4,
-          "heavy": 0,
-          "medium": 0,
-          "light": 2,
-          "unarmored": 2,
-          "advanced": 0,
-          "martial": 2,
-          "simple": 2,
-          "unarmed": 2,
-          "castingArcane": 0,
-          "castingDivine": 0,
-          "castingOccult": 0,
-          "castingPrimal": 0,
-          "acrobatics": 2,
-          "arcana": 2,
-          "athletics": 0,
-          "crafting": 2,
-          "deception": 0,
-          "diplomacy": 0,
-          "intimidation": 2,
-          "medicine": 0,
-          "nature": 0,
-          "occultism": 0,
-          "performance": 2,
-          "religion": 0,
-          "society": 2,
-          "stealth": 2,
-          "survival": 2,
-          "thievery": 2,
-          "piloting": 0,
-          "computers": 0
-        },
         "mods": {},
+        "name": "Isolde",
+        "pets": [],
+        "size": 2,
+        "armor": [
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Unarmored",
+            "prof": "unarmored",
+            "worn": false,
+            "grade": "",
+            "runes": [],
+            "display": "Unarmored"
+          }
+        ],
+        "class": "Swashbuckler",
+        "deity": "Not set",
         "feats": [
           [
             "Dirty Trick",
@@ -1608,6 +1516,71 @@
             null
           ]
         ],
+        "focus": {},
+        "level": 1,
+        "lores": [
+          [
+            "Underworld",
+            2
+          ]
+        ],
+        "money": {
+          "cp": 0,
+          "gp": 11,
+          "pp": 0,
+          "sp": 0
+        },
+        "gender": "Not set",
+        "acTotal": {
+          "acTotal": 16,
+          "acItemBonus": 0,
+          "acProfBonus": 3,
+          "shieldBonus": null,
+          "acAbilityBonus": 3
+        },
+        "formula": [],
+        "rituals": [],
+        "weapons": [
+          {
+            "die": "d6",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Rapier",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 6,
+            "display": "Rapier",
+            "damageType": "P",
+            "isInventor": false,
+            "damageBonus": 1,
+            "extraDamage": [],
+            "increasedDice": false
+          },
+          {
+            "die": "d4",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Butterfly Sword",
+            "prof": "advanced",
+            "grade": "",
+            "runes": [],
+            "attack": 3,
+            "display": "Butterfly Sword",
+            "damageType": "S",
+            "isInventor": false,
+            "damageBonus": 1,
+            "extraDamage": [],
+            "increasedDice": false
+          }
+        ],
+        "ancestry": "Automaton",
+        "heritage": "Dromaar",
+        "sizeName": "Medium",
         "specials": [
           "Panache",
           "Precise Strike",
@@ -1621,202 +1594,125 @@
           "Low-Light Vision",
           "Dromaar"
         ],
-        "lores": [
-          [
-            "Underworld",
-            2
-          ]
-        ],
-        "equipmentContainers": {},
+        "abilities": {
+          "cha": 10,
+          "con": 14,
+          "dex": 16,
+          "int": 14,
+          "str": 12,
+          "wis": 12,
+          "breakdown": {
+            "classBoosts": [
+              "Dex"
+            ],
+            "ancestryFree": [
+              "Int"
+            ],
+            "ancestryFlaws": [],
+            "ancestryBoosts": [
+              "Str"
+            ],
+            "backgroundBoosts": [
+              "Dex",
+              "Con"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Con",
+                "Int",
+                "Wis"
+              ]
+            }
+          }
+        },
+        "alignment": "N",
+        "dualClass": null,
         "equipment": [],
+        "familiars": [],
+        "languages": [
+          "None selected"
+        ],
+        "attributes": {
+          "speed": 25,
+          "bonushp": 0,
+          "classhp": 10,
+          "ancestryhp": 8,
+          "speedBonus": 0,
+          "bonushpPerLevel": 0
+        },
+        "background": "War Orphan",
+        "keyability": "dex",
+        "focusPoints": 0,
+        "resistances": [],
+        "inventorMods": [],
+        "spellCasters": [],
+        "proficiencies": {
+          "will": 4,
+          "heavy": 0,
+          "light": 2,
+          "arcana": 2,
+          "medium": 0,
+          "nature": 0,
+          "reflex": 4,
+          "simple": 2,
+          "classDC": 2,
+          "martial": 2,
+          "society": 2,
+          "stealth": 2,
+          "unarmed": 2,
+          "advanced": 0,
+          "crafting": 2,
+          "medicine": 0,
+          "piloting": 0,
+          "religion": 0,
+          "survival": 2,
+          "thievery": 2,
+          "athletics": 0,
+          "computers": 0,
+          "deception": 0,
+          "diplomacy": 0,
+          "fortitude": 2,
+          "occultism": 0,
+          "unarmored": 2,
+          "acrobatics": 2,
+          "perception": 4,
+          "performance": 2,
+          "intimidation": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0
+        },
+        "equipmentContainers": {},
         "specificProficiencies": {
-          "trained": [],
           "expert": [],
           "master": [],
+          "trained": [],
           "legendary": []
-        },
-        "weapons": [
-          {
-            "name": "Rapier",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d6",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Rapier",
-            "runes": [],
-            "damageType": "P",
-            "attack": 6,
-            "damageBonus": 1,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          },
-          {
-            "name": "Butterfly Sword",
-            "qty": 1,
-            "prof": "advanced",
-            "die": "d4",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Butterfly Sword",
-            "runes": [],
-            "damageType": "S",
-            "attack": 3,
-            "damageBonus": 1,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          }
-        ],
-        "money": {
-          "cp": 0,
-          "sp": 0,
-          "gp": 11,
-          "pp": 0
-        },
-        "armor": [
-          {
-            "name": "Unarmored",
-            "qty": 1,
-            "prof": "unarmored",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "Unarmored",
-            "worn": false,
-            "runes": [],
-            "grade": ""
-          }
-        ],
-        "spellCasters": [],
-        "focusPoints": 0,
-        "focus": {},
-        "formula": [],
-        "acTotal": {
-          "acProfBonus": 3,
-          "acAbilityBonus": 3,
-          "acItemBonus": 0,
-          "acTotal": 16,
-          "shieldBonus": null
-        },
-        "pets": [],
-        "familiars": []
+        }
       },
-      "art": "https://media.discordapp.net/attachments/903452615663304817/1498346037956448256/487a8d31c26e3ff5782b15b212c33028.png?ex=69f0d2fd&is=69ef817d&hm=b6bb8d350288f3fb97cf286ad4097a1d18cb0a02a0055e9c882531218ab77552&=&format=webp&quality=lossless&width=721&height=1069",
-      "senses": null,
-      "edits": null,
-      "saved": "2026-04-27T15:22:14.067Z"
+      "hp": null,
+      "overlay": {},
+      "dying": 0,
+      "wounded": 0,
+      "heroPoints": 1,
+      "guildId": null,
+      "saved": "2026-04-30T16:14:50.139Z"
     },
     "_activeChar": "hylia",
     "petrova-ashcroft": {
       "name": "Petrova Ashcroft",
       "data": {
-        "name": "Petrova Ashcroft",
-        "class": "Swashbuckler",
-        "dualClass": null,
-        "level": 1,
         "xp": 0,
-        "ancestry": "Human",
-        "heritage": "Draconic Scion",
-        "background": "Dragon Scholar",
-        "alignment": "N",
-        "gender": "Female",
         "age": "21",
-        "deity": "Dunne",
-        "size": 2,
-        "sizeName": "Medium",
-        "keyability": "dex",
-        "languages": [
-          "Common",
-          "Draconic"
-        ],
-        "rituals": [],
-        "resistances": [
-          "fire 1"
-        ],
-        "inventorMods": [],
-        "abilities": {
-          "str": 14,
-          "dex": 16,
-          "con": 10,
-          "int": 12,
-          "wis": 12,
-          "cha": 14,
-          "breakdown": {
-            "ancestryFree": [
-              "Str",
-              "Dex"
-            ],
-            "ancestryBoosts": [],
-            "ancestryFlaws": [],
-            "backgroundBoosts": [
-              "Cha",
-              "Dex"
-            ],
-            "classBoosts": [
-              "Dex"
-            ],
-            "mapLevelledBoosts": {
-              "1": [
-                "Int",
-                "Wis",
-                "Cha",
-                "Str"
-              ]
-            }
-          }
-        },
-        "attributes": {
-          "ancestryhp": 8,
-          "classhp": 10,
-          "bonushp": 0,
-          "bonushpPerLevel": 0,
-          "speed": 25,
-          "speedBonus": 0
-        },
-        "proficiencies": {
-          "classDC": 2,
-          "perception": 4,
-          "fortitude": 2,
-          "reflex": 4,
-          "will": 4,
-          "heavy": 0,
-          "medium": 0,
-          "light": 2,
-          "unarmored": 2,
-          "advanced": 0,
-          "martial": 2,
-          "simple": 2,
-          "unarmed": 2,
-          "castingArcane": 0,
-          "castingDivine": 0,
-          "castingOccult": 0,
-          "castingPrimal": 0,
-          "acrobatics": 2,
-          "arcana": 2,
-          "athletics": 0,
-          "crafting": 0,
-          "deception": 2,
-          "diplomacy": 0,
-          "intimidation": 2,
-          "medicine": 2,
-          "nature": 2,
-          "occultism": 2,
-          "performance": 0,
-          "religion": 0,
-          "society": 0,
-          "stealth": 0,
-          "survival": 2,
-          "thievery": 0,
-          "piloting": 0,
-          "computers": 0
-        },
         "mods": {},
+        "name": "Petrova Ashcroft",
+        "pets": [],
+        "size": 2,
+        "armor": [],
+        "class": "Swashbuckler",
+        "deity": "Dunne",
         "feats": [
           [
             "Intimidating Glare",
@@ -1852,6 +1748,34 @@
             null
           ]
         ],
+        "focus": {},
+        "level": 1,
+        "lores": [
+          [
+            "Dragon",
+            2
+          ]
+        ],
+        "money": {
+          "cp": 0,
+          "gp": 15,
+          "pp": 0,
+          "sp": 0
+        },
+        "gender": "Female",
+        "acTotal": {
+          "acTotal": 16,
+          "acItemBonus": 0,
+          "acProfBonus": 3,
+          "shieldBonus": null,
+          "acAbilityBonus": 3
+        },
+        "formula": [],
+        "rituals": [],
+        "weapons": [],
+        "ancestry": "Human",
+        "heritage": "Draconic Scion",
+        "sizeName": "Medium",
         "specials": [
           "Panache",
           "Precise Strike",
@@ -1865,157 +1789,119 @@
           "fire",
           "Draconic Scion"
         ],
-        "lores": [
-          [
-            "Dragon",
-            2
-          ]
-        ],
-        "equipmentContainers": {},
-        "equipment": [],
-        "specificProficiencies": {
-          "trained": [],
-          "expert": [],
-          "master": [],
-          "legendary": []
-        },
-        "weapons": [],
-        "money": {
-          "cp": 0,
-          "sp": 0,
-          "gp": 15,
-          "pp": 0
-        },
-        "armor": [],
-        "spellCasters": [],
-        "focusPoints": 0,
-        "focus": {},
-        "formula": [],
-        "acTotal": {
-          "acProfBonus": 3,
-          "acAbilityBonus": 3,
-          "acItemBonus": 0,
-          "acTotal": 16,
-          "shieldBonus": null
-        },
-        "pets": [],
-        "familiars": []
-      },
-      "art": null,
-      "senses": null,
-      "edits": null,
-      "saved": "2026-04-27T16:05:35.361Z"
-    },
-    "khyber": {
-      "name": "Khyber",
-      "data": {
-        "name": "Khyber",
-        "class": "Guardian",
-        "dualClass": null,
-        "level": 3,
-        "xp": 0,
-        "ancestry": "Kholo",
-        "heritage": "Dragonblood",
-        "background": "Cursed",
-        "alignment": "N",
-        "gender": "Female",
-        "age": "28 (Human Years)",
-        "deity": "Not set",
-        "size": 2,
-        "sizeName": "Medium",
-        "keyability": "str",
-        "languages": [
-          "Common",
-          "Diabolic",
-          "Draconic",
-          "Elven",
-          "Kholo"
-        ],
-        "rituals": [],
-        "resistances": [
-          "physical 2"
-        ],
-        "inventorMods": [],
         "abilities": {
-          "str": 18,
-          "dex": 12,
-          "con": 14,
-          "int": 14,
-          "wis": 8,
-          "cha": 12,
+          "cha": 14,
+          "con": 10,
+          "dex": 16,
+          "int": 12,
+          "str": 14,
+          "wis": 12,
           "breakdown": {
-            "ancestryFree": [
-              "Con"
-            ],
-            "ancestryBoosts": [
-              "Str",
-              "Int"
-            ],
-            "ancestryFlaws": [
-              "Wis"
-            ],
-            "backgroundBoosts": [
-              "Int",
-              "Str"
-            ],
             "classBoosts": [
-              "Str"
+              "Dex"
+            ],
+            "ancestryFree": [
+              "Str",
+              "Dex"
+            ],
+            "ancestryFlaws": [],
+            "ancestryBoosts": [],
+            "backgroundBoosts": [
+              "Cha",
+              "Dex"
             ],
             "mapLevelledBoosts": {
               "1": [
-                "Dex",
+                "Int",
+                "Wis",
                 "Cha",
-                "Con",
                 "Str"
               ]
             }
           }
         },
+        "alignment": "N",
+        "dualClass": null,
+        "equipment": [],
+        "familiars": [],
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
         "attributes": {
-          "ancestryhp": 8,
-          "classhp": 12,
-          "bonushp": 0,
-          "bonushpPerLevel": 0,
           "speed": 25,
-          "speedBonus": 0
+          "bonushp": 0,
+          "classhp": 10,
+          "ancestryhp": 8,
+          "speedBonus": 0,
+          "bonushpPerLevel": 0
         },
+        "background": "Dragon Scholar",
+        "keyability": "dex",
+        "focusPoints": 0,
+        "resistances": [
+          "fire 1"
+        ],
+        "inventorMods": [],
+        "spellCasters": [],
         "proficiencies": {
-          "classDC": 2,
-          "perception": 2,
-          "fortitude": 4,
-          "reflex": 2,
           "will": 4,
-          "heavy": 2,
-          "medium": 2,
+          "heavy": 0,
           "light": 2,
-          "unarmored": 2,
-          "advanced": 0,
-          "martial": 2,
+          "arcana": 2,
+          "medium": 0,
+          "nature": 2,
+          "reflex": 4,
           "simple": 2,
+          "classDC": 2,
+          "martial": 2,
+          "society": 0,
+          "stealth": 0,
           "unarmed": 2,
+          "advanced": 0,
+          "crafting": 0,
+          "medicine": 2,
+          "piloting": 0,
+          "religion": 0,
+          "survival": 2,
+          "thievery": 0,
+          "athletics": 0,
+          "computers": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "fortitude": 2,
+          "occultism": 2,
+          "unarmored": 2,
+          "acrobatics": 2,
+          "perception": 4,
+          "performance": 0,
+          "intimidation": 2,
           "castingArcane": 0,
           "castingDivine": 0,
           "castingOccult": 0,
-          "castingPrimal": 2,
-          "acrobatics": 0,
-          "arcana": 2,
-          "athletics": 2,
-          "crafting": 0,
-          "deception": 4,
-          "diplomacy": 0,
-          "intimidation": 2,
-          "medicine": 0,
-          "nature": 2,
-          "occultism": 2,
-          "performance": 0,
-          "religion": 0,
-          "society": 0,
-          "stealth": 4,
-          "survival": 0,
-          "thievery": 0,
-          "piloting": 0,
-          "computers": 0
+          "castingPrimal": 0
         },
+        "equipmentContainers": {},
+        "specificProficiencies": {
+          "expert": [],
+          "master": [],
+          "trained": [],
+          "legendary": []
+        }
+      },
+      "hp": null,
+      "overlay": {},
+      "dying": 0,
+      "wounded": 0,
+      "heroPoints": 1,
+      "guildId": null,
+      "saved": "2026-04-30T16:14:50.139Z"
+    },
+    "khyber": {
+      "name": "Khyber",
+      "data": {
+        "xp": 0,
+        "age": "28 (Human Years)",
         "mods": {
           "Stealth": {
             "Potency Bonus": 1
@@ -2024,6 +1910,49 @@
             "Potency Bonus": 1
           }
         },
+        "name": "Khyber",
+        "pets": [
+          {
+            "name": "Young Wyvern",
+            "type": "Animal Companion",
+            "armor": "Unarmored",
+            "animal": "Wyvern",
+            "mature": false,
+            "equipment": [],
+            "incredible": false,
+            "incredibleType": "Nimble",
+            "specializations": []
+          }
+        ],
+        "size": 2,
+        "armor": [
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Scale Mail",
+            "prof": "medium",
+            "worn": true,
+            "grade": "",
+            "runes": [],
+            "display": "Scale Mail"
+          },
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Buckler",
+            "prof": "shield",
+            "worn": true,
+            "grade": "",
+            "runes": [],
+            "display": ""
+          }
+        ],
+        "class": "Guardian",
+        "deity": "Not set",
         "feats": [
           [
             "Shield Block",
@@ -2101,6 +2030,93 @@
             null
           ]
         ],
+        "focus": {},
+        "level": 3,
+        "lores": [
+          [
+            "Curse",
+            2
+          ],
+          [
+            "Dragon",
+            4
+          ]
+        ],
+        "money": {
+          "cp": 0,
+          "gp": 55,
+          "pp": 0,
+          "sp": 4
+        },
+        "gender": "Female",
+        "acTotal": {
+          "acTotal": 19,
+          "acItemBonus": 3,
+          "acProfBonus": 5,
+          "shieldBonus": "1",
+          "acAbilityBonus": 1
+        },
+        "formula": [],
+        "rituals": [],
+        "weapons": [
+          {
+            "die": "d8",
+            "mat": null,
+            "pot": 1,
+            "qty": 1,
+            "str": "",
+            "name": "Bastard Sword",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 10,
+            "display": "+1 Bastard Sword",
+            "damageType": "S",
+            "isInventor": false,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false
+          },
+          {
+            "die": "d8",
+            "mat": null,
+            "pot": 1,
+            "qty": 1,
+            "str": "",
+            "name": "Battle Saddle",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 10,
+            "display": "+1 Battle Saddle",
+            "damageType": "S",
+            "isInventor": false,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false
+          },
+          {
+            "die": "d10",
+            "mat": null,
+            "pot": 1,
+            "qty": 1,
+            "str": "",
+            "name": "Falchion",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 10,
+            "display": "+1 Falchion",
+            "damageType": "S",
+            "isInventor": false,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false
+          }
+        ],
+        "ancestry": "Kholo",
+        "heritage": "Dragonblood",
+        "sizeName": "Medium",
         "specials": [
           "Guardian's Armor",
           "Taunt",
@@ -2115,24 +2131,43 @@
           "Stealth",
           "Dragonblood"
         ],
-        "lores": [
-          [
-            "Curse",
-            2
-          ],
-          [
-            "Dragon",
-            4
-          ]
-        ],
-        "equipmentContainers": {
-          "0a26d1e5-d204-463d-8e34-f00163284d62": {
-            "containerName": "Backpack",
-            "bagOfHolding": false,
-            "backpack": true,
-            "augmentations": false
+        "abilities": {
+          "cha": 12,
+          "con": 14,
+          "dex": 12,
+          "int": 14,
+          "str": 18,
+          "wis": 8,
+          "breakdown": {
+            "classBoosts": [
+              "Str"
+            ],
+            "ancestryFree": [
+              "Con"
+            ],
+            "ancestryFlaws": [
+              "Wis"
+            ],
+            "ancestryBoosts": [
+              "Str",
+              "Int"
+            ],
+            "backgroundBoosts": [
+              "Int",
+              "Str"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Cha",
+                "Con",
+                "Str"
+              ]
+            }
           }
         },
+        "alignment": "N",
+        "dualClass": null,
         "equipment": [
           [
             "Clothing (Explorer's)",
@@ -2193,233 +2228,127 @@
             "Invested"
           ]
         ],
+        "familiars": [],
+        "languages": [
+          "Common",
+          "Diabolic",
+          "Draconic",
+          "Elven",
+          "Kholo"
+        ],
+        "attributes": {
+          "speed": 25,
+          "bonushp": 0,
+          "classhp": 12,
+          "ancestryhp": 8,
+          "speedBonus": 0,
+          "bonushpPerLevel": 0
+        },
+        "background": "Cursed",
+        "keyability": "str",
+        "focusPoints": 0,
+        "resistances": [
+          "physical 2"
+        ],
+        "inventorMods": [],
+        "spellCasters": [],
+        "proficiencies": {
+          "will": 4,
+          "heavy": 2,
+          "light": 2,
+          "arcana": 2,
+          "medium": 2,
+          "nature": 2,
+          "reflex": 2,
+          "simple": 2,
+          "classDC": 2,
+          "martial": 2,
+          "society": 0,
+          "stealth": 4,
+          "unarmed": 2,
+          "advanced": 0,
+          "crafting": 0,
+          "medicine": 0,
+          "piloting": 0,
+          "religion": 0,
+          "survival": 0,
+          "thievery": 0,
+          "athletics": 2,
+          "computers": 0,
+          "deception": 4,
+          "diplomacy": 0,
+          "fortitude": 4,
+          "occultism": 2,
+          "unarmored": 2,
+          "acrobatics": 0,
+          "perception": 2,
+          "performance": 0,
+          "intimidation": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 2
+        },
+        "equipmentContainers": {
+          "0a26d1e5-d204-463d-8e34-f00163284d62": {
+            "backpack": true,
+            "bagOfHolding": false,
+            "augmentations": false,
+            "containerName": "Backpack"
+          }
+        },
         "specificProficiencies": {
-          "trained": [],
           "expert": [],
           "master": [],
+          "trained": [],
           "legendary": []
-        },
-        "weapons": [
-          {
-            "name": "Bastard Sword",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d8",
-            "pot": 1,
-            "str": "",
-            "mat": null,
-            "display": "+1 Bastard Sword",
-            "runes": [],
-            "damageType": "S",
-            "attack": 10,
-            "damageBonus": 4,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          },
-          {
-            "name": "Battle Saddle",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d8",
-            "pot": 1,
-            "str": "",
-            "mat": null,
-            "display": "+1 Battle Saddle",
-            "runes": [],
-            "damageType": "S",
-            "attack": 10,
-            "damageBonus": 4,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          },
-          {
-            "name": "Falchion",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d10",
-            "pot": 1,
-            "str": "",
-            "mat": null,
-            "display": "+1 Falchion",
-            "runes": [],
-            "damageType": "S",
-            "attack": 10,
-            "damageBonus": 4,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          }
-        ],
-        "money": {
-          "cp": 0,
-          "sp": 4,
-          "gp": 55,
-          "pp": 0
-        },
-        "armor": [
-          {
-            "name": "Scale Mail",
-            "qty": 1,
-            "prof": "medium",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "Scale Mail",
-            "worn": true,
-            "runes": [],
-            "grade": ""
-          },
-          {
-            "name": "Buckler",
-            "qty": 1,
-            "prof": "shield",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "",
-            "worn": true,
-            "runes": [],
-            "grade": ""
-          }
-        ],
-        "spellCasters": [],
-        "focusPoints": 0,
-        "focus": {},
-        "formula": [],
-        "acTotal": {
-          "acProfBonus": 5,
-          "acAbilityBonus": 1,
-          "acItemBonus": 3,
-          "acTotal": 19,
-          "shieldBonus": "1"
-        },
-        "pets": [
-          {
-            "type": "Animal Companion",
-            "name": "Young Wyvern",
-            "equipment": [],
-            "animal": "Wyvern",
-            "mature": false,
-            "incredible": false,
-            "incredibleType": "Nimble",
-            "specializations": [],
-            "armor": "Unarmored"
-          }
-        ],
-        "familiars": []
+        }
       },
-      "art": null,
-      "senses": null,
-      "edits": null,
-      "saved": "2026-04-27T16:22:36.499Z"
+      "hp": null,
+      "overlay": {},
+      "dying": 0,
+      "wounded": 0,
+      "heroPoints": 1,
+      "guildId": null,
+      "saved": "2026-04-30T16:14:50.139Z"
     },
     "seika/sekhmet": {
       "name": "Seika/Sekhmet",
       "data": {
-        "name": "Seika/Sekhmet",
-        "class": "Magus",
-        "dualClass": null,
-        "level": 1,
         "xp": 0,
-        "ancestry": "Human",
-        "heritage": "Dhampir",
-        "background": "Magical Experiment (Touch Telepathy)",
-        "alignment": "N",
-        "gender": "Female",
         "age": "23 give or take a hundred or so years as a dhampir",
-        "deity": "Not set",
-        "size": 2,
-        "sizeName": "Medium",
-        "keyability": "dex",
-        "languages": [
-          "Common",
-          "Draconic",
-          "Elven"
-        ],
-        "rituals": [],
-        "resistances": [],
-        "inventorMods": [],
-        "abilities": {
-          "str": 10,
-          "dex": 16,
-          "con": 14,
-          "int": 10,
-          "wis": 12,
-          "cha": 14,
-          "breakdown": {
-            "ancestryFree": [
-              "Dex",
-              "Cha"
-            ],
-            "ancestryBoosts": [],
-            "ancestryFlaws": [],
-            "backgroundBoosts": [
-              "Con"
-            ],
-            "classBoosts": [
-              "Dex"
-            ],
-            "mapLevelledBoosts": {
-              "1": [
-                "Dex",
-                "Con",
-                "Cha",
-                "Wis"
-              ]
-            }
-          }
-        },
-        "attributes": {
-          "ancestryhp": 8,
-          "classhp": 8,
-          "bonushp": 0,
-          "bonushpPerLevel": 0,
-          "speed": 25,
-          "speedBonus": -5
-        },
-        "proficiencies": {
-          "classDC": 2,
-          "perception": 2,
-          "fortitude": 4,
-          "reflex": 2,
-          "will": 4,
-          "heavy": 0,
-          "medium": 2,
-          "light": 2,
-          "unarmored": 2,
-          "advanced": 0,
-          "martial": 2,
-          "simple": 2,
-          "unarmed": 2,
-          "castingArcane": 2,
-          "castingDivine": 0,
-          "castingOccult": 0,
-          "castingPrimal": 0,
-          "acrobatics": 0,
-          "arcana": 2,
-          "athletics": 0,
-          "crafting": 0,
-          "deception": 2,
-          "diplomacy": 0,
-          "intimidation": 0,
-          "medicine": 0,
-          "nature": 0,
-          "occultism": 2,
-          "performance": 0,
-          "religion": 0,
-          "society": 0,
-          "stealth": 2,
-          "survival": 0,
-          "thievery": 0,
-          "piloting": 0,
-          "computers": 0
-        },
         "mods": {},
+        "name": "Seika/Sekhmet",
+        "pets": [],
+        "size": 2,
+        "armor": [
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Chain Mail",
+            "prof": "medium",
+            "worn": true,
+            "grade": "",
+            "runes": [],
+            "display": "Chain Mail"
+          },
+          {
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "res": "",
+            "name": "Buckler",
+            "prof": "shield",
+            "worn": true,
+            "grade": "",
+            "runes": [],
+            "display": ""
+          }
+        ],
+        "class": "Magus",
+        "deity": "Not set",
         "feats": [
           [
             "Cat Fall",
@@ -2446,6 +2375,83 @@
             null
           ]
         ],
+        "focus": {
+          "arcane": {
+            "int": {
+              "itemBonus": 0,
+              "focusSpells": [
+                "Sky Laughs at Waves"
+              ],
+              "proficiency": 2,
+              "abilityBonus": 0,
+              "focusCantrips": []
+            }
+          }
+        },
+        "level": 1,
+        "lores": [
+          [
+            "Academia",
+            2
+          ]
+        ],
+        "money": {
+          "cp": 0,
+          "gp": 0,
+          "pp": 0,
+          "sp": 4
+        },
+        "gender": "Female",
+        "acTotal": {
+          "acTotal": 18,
+          "acItemBonus": 4,
+          "acProfBonus": 3,
+          "shieldBonus": "1",
+          "acAbilityBonus": 1
+        },
+        "formula": [],
+        "rituals": [],
+        "weapons": [
+          {
+            "die": "d10",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Halberd",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 3,
+            "display": "Halberd",
+            "damageType": "P",
+            "isInventor": false,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false
+          },
+          {
+            "die": "d8",
+            "mat": null,
+            "pot": 0,
+            "qty": 1,
+            "str": "",
+            "name": "Bastard Sword",
+            "prof": "martial",
+            "grade": "",
+            "runes": [],
+            "attack": 3,
+            "display": "Bastard Sword",
+            "damageType": "S",
+            "isInventor": false,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false
+          }
+        ],
+        "ancestry": "Human",
+        "heritage": "Dhampir",
+        "sizeName": "Medium",
         "specials": [
           "Spellstrike",
           "Spellstrike Specifics",
@@ -2456,20 +2462,38 @@
           "Low-Light Vision",
           "Dhampir"
         ],
-        "lores": [
-          [
-            "Academia",
-            2
-          ]
-        ],
-        "equipmentContainers": {
-          "af05b243-f346-42bd-9dbc-ff75c77e9386": {
-            "containerName": "Backpack",
-            "bagOfHolding": false,
-            "backpack": true,
-            "augmentations": false
+        "abilities": {
+          "cha": 14,
+          "con": 14,
+          "dex": 16,
+          "int": 10,
+          "str": 10,
+          "wis": 12,
+          "breakdown": {
+            "classBoosts": [
+              "Dex"
+            ],
+            "ancestryFree": [
+              "Dex",
+              "Cha"
+            ],
+            "ancestryFlaws": [],
+            "ancestryBoosts": [],
+            "backgroundBoosts": [
+              "Con"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Dex",
+                "Con",
+                "Cha",
+                "Wis"
+              ]
+            }
           }
         },
+        "alignment": "N",
+        "dualClass": null,
         "equipment": [
           [
             "Clothing (Explorer's)",
@@ -2530,90 +2554,28 @@
             "Invested"
           ]
         ],
-        "specificProficiencies": {
-          "trained": [],
-          "expert": [],
-          "master": [],
-          "legendary": []
-        },
-        "weapons": [
-          {
-            "name": "Halberd",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d10",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Halberd",
-            "runes": [],
-            "damageType": "P",
-            "attack": 3,
-            "damageBonus": 0,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          },
-          {
-            "name": "Bastard Sword",
-            "qty": 1,
-            "prof": "martial",
-            "die": "d8",
-            "pot": 0,
-            "str": "",
-            "mat": null,
-            "display": "Bastard Sword",
-            "runes": [],
-            "damageType": "S",
-            "attack": 3,
-            "damageBonus": 0,
-            "extraDamage": [],
-            "increasedDice": false,
-            "isInventor": false,
-            "grade": ""
-          }
+        "familiars": [],
+        "languages": [
+          "Common",
+          "Draconic",
+          "Elven"
         ],
-        "money": {
-          "cp": 0,
-          "sp": 4,
-          "gp": 0,
-          "pp": 0
+        "attributes": {
+          "speed": 25,
+          "bonushp": 0,
+          "classhp": 8,
+          "ancestryhp": 8,
+          "speedBonus": -5,
+          "bonushpPerLevel": 0
         },
-        "armor": [
-          {
-            "name": "Chain Mail",
-            "qty": 1,
-            "prof": "medium",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "Chain Mail",
-            "worn": true,
-            "runes": [],
-            "grade": ""
-          },
-          {
-            "name": "Buckler",
-            "qty": 1,
-            "prof": "shield",
-            "pot": 0,
-            "res": "",
-            "mat": null,
-            "display": "",
-            "worn": true,
-            "runes": [],
-            "grade": ""
-          }
-        ],
+        "background": "Magical Experiment (Touch Telepathy)",
+        "keyability": "dex",
+        "focusPoints": 1,
+        "resistances": [],
+        "inventorMods": [],
         "spellCasters": [
           {
             "name": "Magus",
-            "magicTradition": "arcane",
-            "spellcastingType": "prepared",
-            "ability": "int",
-            "proficiency": 2,
-            "focusPoints": 0,
             "innate": false,
             "perDay": [
               5,
@@ -2629,40 +2591,311 @@
               0
             ],
             "spells": [],
+            "ability": "int",
             "prepared": [
               {
-                "spellLevel": 0,
-                "list": []
+                "list": [],
+                "spellLevel": 0
               },
               {
-                "spellLevel": 1,
-                "list": []
+                "list": [],
+                "spellLevel": 1
               }
             ],
-            "blendedSpells": []
+            "focusPoints": 0,
+            "proficiency": 2,
+            "blendedSpells": [],
+            "magicTradition": "arcane",
+            "spellcastingType": "prepared"
           }
         ],
-        "focusPoints": 1,
-        "focus": {
-          "arcane": {
-            "int": {
-              "abilityBonus": 0,
-              "proficiency": 2,
-              "itemBonus": 0,
-              "focusCantrips": [],
-              "focusSpells": [
-                "Sky Laughs at Waves"
+        "proficiencies": {
+          "will": 4,
+          "heavy": 0,
+          "light": 2,
+          "arcana": 2,
+          "medium": 2,
+          "nature": 0,
+          "reflex": 2,
+          "simple": 2,
+          "classDC": 2,
+          "martial": 2,
+          "society": 0,
+          "stealth": 2,
+          "unarmed": 2,
+          "advanced": 0,
+          "crafting": 0,
+          "medicine": 0,
+          "piloting": 0,
+          "religion": 0,
+          "survival": 0,
+          "thievery": 0,
+          "athletics": 0,
+          "computers": 0,
+          "deception": 2,
+          "diplomacy": 0,
+          "fortitude": 4,
+          "occultism": 2,
+          "unarmored": 2,
+          "acrobatics": 0,
+          "perception": 2,
+          "performance": 0,
+          "intimidation": 0,
+          "castingArcane": 2,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0
+        },
+        "equipmentContainers": {
+          "af05b243-f346-42bd-9dbc-ff75c77e9386": {
+            "backpack": true,
+            "bagOfHolding": false,
+            "augmentations": false,
+            "containerName": "Backpack"
+          }
+        },
+        "specificProficiencies": {
+          "expert": [],
+          "master": [],
+          "trained": [],
+          "legendary": []
+        }
+      },
+      "hp": null,
+      "overlay": {},
+      "dying": 0,
+      "wounded": 0,
+      "heroPoints": 1,
+      "guildId": null,
+      "saved": "2026-04-30T16:14:50.139Z"
+    },
+    "faelin-wulf": {
+      "name": "Faelin Wulf",
+      "data": {
+        "name": "Faelin Wulf",
+        "class": "Exemplar",
+        "dualClass": null,
+        "level": 1,
+        "xp": 0,
+        "ancestry": "Kholo",
+        "heritage": "Great Kholo",
+        "background": "Gladiator",
+        "alignment": "N",
+        "gender": "Not set",
+        "age": "Not set",
+        "deity": "Not set",
+        "size": 2,
+        "sizeName": "Medium",
+        "keyability": "str",
+        "languages": [
+          "None selected"
+        ],
+        "rituals": [],
+        "resistances": [],
+        "inventorMods": [],
+        "abilities": {
+          "str": 18,
+          "dex": 12,
+          "con": 14,
+          "int": 10,
+          "wis": 10,
+          "cha": 14,
+          "breakdown": {
+            "ancestryFree": [
+              "Str",
+              "Con"
+            ],
+            "ancestryBoosts": [],
+            "ancestryFlaws": [],
+            "backgroundBoosts": [
+              "Cha",
+              "Str"
+            ],
+            "classBoosts": [
+              "Str"
+            ],
+            "mapLevelledBoosts": {
+              "1": [
+                "Str",
+                "Con",
+                "Dex",
+                "Cha"
               ]
             }
           }
         },
+        "attributes": {
+          "ancestryhp": 8,
+          "classhp": 10,
+          "bonushp": 2,
+          "bonushpPerLevel": 0,
+          "speed": 25,
+          "speedBonus": 0
+        },
+        "proficiencies": {
+          "classDC": 2,
+          "perception": 2,
+          "fortitude": 4,
+          "reflex": 2,
+          "will": 4,
+          "heavy": 0,
+          "medium": 2,
+          "light": 2,
+          "unarmored": 2,
+          "advanced": 0,
+          "martial": 2,
+          "simple": 2,
+          "unarmed": 2,
+          "castingArcane": 0,
+          "castingDivine": 0,
+          "castingOccult": 0,
+          "castingPrimal": 0,
+          "acrobatics": 0,
+          "arcana": 0,
+          "athletics": 2,
+          "crafting": 2,
+          "deception": 0,
+          "diplomacy": 0,
+          "intimidation": 2,
+          "medicine": 0,
+          "nature": 0,
+          "occultism": 2,
+          "performance": 2,
+          "religion": 2,
+          "society": 0,
+          "stealth": 2,
+          "survival": 2,
+          "thievery": 0,
+          "piloting": 0,
+          "computers": 0
+        },
+        "mods": {},
+        "feats": [
+          [
+            "Shield Block",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Impressive Performance",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Additional Lore",
+            null,
+            "Awarded Feat",
+            1
+          ],
+          [
+            "Great Kholo",
+            null,
+            "Heritage",
+            1,
+            "Heritage Feat",
+            "standardChoice",
+            null
+          ],
+          [
+            "Vow of Mortal Defiance",
+            null,
+            "Class Feat",
+            1,
+            "Exemplar Feat 1",
+            "standardChoice",
+            null
+          ],
+          [
+            "Kholo Lore",
+            null,
+            "Ancestry Feat",
+            1,
+            "Gnoll Feat 1",
+            "standardChoice",
+            null
+          ]
+        ],
+        "specials": [
+          "Shift Immanence",
+          "Gaze Sharp as Steel",
+          "Gleaming Blade",
+          "Barrow's Edge",
+          "Humble Strikes",
+          "Spark Transcendence",
+          "Low-Light Vision",
+          "Bite (Kholo)",
+          "Great Kholo"
+        ],
+        "lores": [
+          [
+            "Gladiatorial",
+            2
+          ],
+          [
+            "Kholo",
+            2
+          ]
+        ],
+        "equipmentContainers": {},
+        "equipment": [],
+        "specificProficiencies": {
+          "trained": [],
+          "expert": [],
+          "master": [],
+          "legendary": []
+        },
+        "weapons": [
+          {
+            "name": "Greatsword",
+            "qty": 1,
+            "prof": "martial",
+            "die": "d12",
+            "pot": 0,
+            "str": "",
+            "mat": null,
+            "display": "Greatsword",
+            "runes": [],
+            "damageType": "S",
+            "attack": 7,
+            "damageBonus": 4,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
+        "money": {
+          "cp": 0,
+          "sp": 0,
+          "gp": 5,
+          "pp": 0
+        },
+        "armor": [
+          {
+            "name": "Breastplate",
+            "qty": 1,
+            "prof": "medium",
+            "pot": 0,
+            "res": "",
+            "mat": null,
+            "display": "Breastplate",
+            "worn": true,
+            "runes": [],
+            "grade": ""
+          }
+        ],
+        "spellCasters": [],
+        "focusPoints": 0,
+        "focus": {},
         "formula": [],
         "acTotal": {
           "acProfBonus": 3,
           "acAbilityBonus": 1,
           "acItemBonus": 4,
           "acTotal": 18,
-          "shieldBonus": "1"
+          "shieldBonus": null
         },
         "pets": [],
         "familiars": []
@@ -2670,7 +2903,7 @@
       "art": null,
       "senses": null,
       "edits": null,
-      "saved": "2026-04-27T16:29:28.790Z"
+      "saved": "2026-04-30T17:33:21.385Z"
     }
   },
   "496522967283531778": {
@@ -4181,5 +4414,170 @@
       "saved": "2026-04-30T13:54:22.989Z"
     },
     "_activeChar": "kasa"
+  },
+  "1498100757445087242": {
+    "kaelindra": {
+      "name": "Kaelindra",
+      "data": {
+        "name": "Kaelindra",
+        "class": "Ranger",
+        "deity": "",
+        "feats": [
+          [
+            "Elven Weapon Familiarity",
+            null,
+            "Ancestry",
+            null
+          ],
+          [
+            "Natural Medicine",
+            null,
+            "Skill",
+            null
+          ],
+          [
+            "Hunt Prey",
+            null,
+            "Class",
+            null
+          ],
+          [
+            "Twin Takedown",
+            null,
+            "Class",
+            null
+          ],
+          [
+            "Incredible Senses",
+            null,
+            "Class",
+            null
+          ],
+          [
+            "Crossbow Ace",
+            null,
+            "Class",
+            null
+          ],
+          [
+            "Far Shot",
+            null,
+            "Class",
+            null
+          ],
+          [
+            "Toughness",
+            null,
+            "General",
+            null
+          ]
+        ],
+        "level": 6,
+        "ancestry": "Elf",
+        "heritage": "Ancient Elf",
+        "specials": [
+          "Hunt Prey",
+          "Hunter's Edge: Flurry",
+          "Natural Terrain: Forest",
+          "Trackless Step",
+          "Wild Stride"
+        ],
+        "abilities": {
+          "cha": 10,
+          "con": 14,
+          "dex": 18,
+          "int": 12,
+          "str": 14,
+          "wis": 16
+        },
+        "equipment": [
+          [
+            "Longbow",
+            1
+          ],
+          [
+            "Shortsword",
+            2
+          ],
+          [
+            "Explorer's Clothing",
+            1
+          ],
+          [
+            "Leather Armor",
+            1
+          ],
+          [
+            "Backpack",
+            1
+          ],
+          [
+            "Arrows (20)",
+            1
+          ],
+          [
+            "Healer's Tools",
+            1
+          ],
+          [
+            "Rope (50 ft)",
+            1
+          ],
+          [
+            "Rations (1 week)",
+            1
+          ]
+        ],
+        "languages": [
+          "Common",
+          "Elven",
+          "Sylvan",
+          "Druidic"
+        ],
+        "attributes": {
+          "bonushp": 0,
+          "classhp": 10,
+          "ancestryhp": 6,
+          "bonushpPerLevel": 0
+        },
+        "background": "Herbalist",
+        "keyability": "dex",
+        "spellCasters": [],
+        "proficiencies": {
+          "will": 2,
+          "nature": 4,
+          "reflex": 4,
+          "stealth": 4,
+          "unarmed": 2,
+          "crafting": 2,
+          "medicine": 4,
+          "survival": 4,
+          "athletics": 2,
+          "fortitude": 4,
+          "acrobatics": 4,
+          "perception": 4,
+          "light_armor": 2,
+          "intimidation": 2,
+          "medium_armor": 2,
+          "simple_weapons": 2,
+          "martial_weapons": 4
+        }
+      },
+      "hp": 52,
+      "overlay": {
+        "daily": {
+          "slots_used": {},
+          "focus_spent": 1,
+          "hero_points": 2,
+          "last_rest_at": "2026-04-29T08:00:00.000Z"
+        },
+        "companions": {}
+      },
+      "dying": 0,
+      "wounded": 0,
+      "heroPoints": 2,
+      "guildId": "1111111111111111111",
+      "saved": "2026-04-30T16:14:50.139Z"
+    }
   }
 }
