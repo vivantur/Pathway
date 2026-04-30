@@ -24,7 +24,7 @@ const {
 // messages on lookup commands. fuzzyPick is a drop-in replacement for the
 // old inline pick() helper that powered all autocomplete; didYouMeanLine
 // is appended to "❌ No X found" messages on lookup commands.
-const { fuzzyPick, didYouMeanLine } = require('./utils/fuzzyMatch');
+const { fuzzyPick, didYouMeanLine, score: fuzzyScore } = require('./utils/fuzzyMatch');
 
 // Ancestry description parser — splits the messy AoN-imported description
 // field into labeled sections (Edicts, Anathema, Society, etc.) and
@@ -190,6 +190,26 @@ if (conditionsData?.Conditions) {
   // rulesDatabase, layer the official data over it without nuking custom entries.
   rulesDatabase.Conditions = { ...(rulesDatabase.Conditions ?? {}), ...conditionsData.Conditions };
 }
+
+// Heritages from Foundry pf2e dataset (Apache 2.0 / OGL).
+//
+// File shape:
+//   {
+//     _meta: {...},
+//     by_slug: { "anvil-dwarf": { name, slug, ancestry, ... }, ... },
+//     by_ancestry: { "dwarf": ["anvil-dwarf", ...], "_versatile": [...] }
+//   }
+//
+// We index by lowercased name AND by slug for fast lookup. Versatile heritages
+// (Aiuvarin, Nephilim, Dhampir, etc.) live under by_ancestry._versatile and
+// have ancestry === null.
+let heritagesData = loadGamedata('heritages.json', {
+  default: { by_slug: {}, by_ancestry: {} },
+  label: 'heritages from database',
+  count: obj => Object.keys(obj.by_slug ?? {}).length,
+});
+const heritageDatabase = heritagesData.by_slug ?? {};
+const heritagesByAncestry = heritagesData.by_ancestry ?? {};
 
 // File shape: { metadata: {...}, creatures: { key: {...} } }
 let bestiaryDatabase = loadGamedata('bestiary.json', {
@@ -1876,19 +1896,21 @@ function formatEffectForEmbed(e) {
 // Layout strategy by combatant count:
 //   1-4  combatants → all detailed (HP bar + effects sub-line per entry)
 //   5+   combatants → current turn detailed, everyone else compact one-liners
-//   >10  combatants → paginated, 10 per page, ◀ ▶ buttons; current turn's
+//   >5   combatants → paginated, 5 per page, ◀ ▶ buttons; current turn's
 //                    page is always shown by default (cursor follows the turn)
 //
-// PAGE_SIZE controls page break for compact mode. Picked 10 because 10 compact
-// lines (~50-70 chars each) plus one detailed block (~3 lines) lands well under
-// Discord's 4096-char description limit and reads cleanly on mobile.
-const INIT_PAGE_SIZE = 10;
+// PAGE_SIZE controls page break for compact mode. Picked 5 because compact
+// lines now include HP bars (one per line) plus a blank line between each
+// entry, so 5 fits comfortably on screen without scrolling. Crossing 5
+// combatants is the most common encounter scale, so buttons appear when
+// they matter.
+const INIT_PAGE_SIZE = 5;
 const INIT_COMPACT_THRESHOLD = 5; // 5+ combatants triggers compact mode
 
 // Render ONE combatant in DETAILED form (HP bar, effects sub-line, all the trim).
 // This is the "headline" rendering used for current turn and small encounters.
 function renderCombatantDetailed(combatant, isCurrent) {
-  const marker = isCurrent ? '▶' : ' ';
+  const marker = isCurrent ? '🎯' : '▫️';
   const status = hpStatus(
     combatant.hp,
     combatant.maxHp,
@@ -1927,18 +1949,25 @@ function renderCombatantDetailed(combatant, isCurrent) {
     });
     if (visible.length) {
       const effectTexts = visible.map(formatEffectForEmbed);
-      effectLine = `\n     *${effectTexts.join(', ')}*`;
+      effectLine = `\n      *${effectTexts.join(', ')}*`;
     }
   }
 
-  const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
-  return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}`;
+  // Current turn gets a thick highlight: a separator line above and below,
+  // and the name is wrapped in __underline__ + **bold** so it pops even on
+  // mobile where the marker emoji might shrink. Non-current combatants get
+  // a quieter, simpler line.
+  const mainLine = `${marker} **${combatant.initiative}** — ${combatant.name} · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}`;
+  if (isCurrent) {
+    return `▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n🎯 **__${combatant.initiative} — ${combatant.name}__** · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰`;
+  }
+  return mainLine;
 }
 
-// Render ONE combatant in COMPACT form (single line, no bar, no effects sub).
+// Render ONE combatant in COMPACT form (single line with HP bar, no effects).
 // Used for everyone except the current turn when there are 5+ combatants.
 function renderCombatantCompact(combatant, isCurrent) {
-  const marker = isCurrent ? '▶' : ' ';
+  const marker = isCurrent ? '🎯' : '▫️';
   const status = hpStatus(
     combatant.hp,
     combatant.maxHp,
@@ -1947,8 +1976,15 @@ function renderCombatantCompact(combatant, isCurrent) {
     combatant.unconscious === true,
   );
 
-  // Compact HP: PCs show "HP/MAX", NPCs show qualitative status word only.
-  const hpPart = combatant.isNpc ? status.label : `${combatant.hp}/${combatant.maxHp}`;
+  // Compact HP: PCs show bar + HP/MAX; NPCs show qualitative status only
+  // (still hides numeric HP from players, just like detailed mode).
+  let hpPart;
+  if (combatant.isNpc) {
+    hpPart = status.label;
+  } else {
+    const bar = hpBar(combatant.hp, combatant.maxHp, 6); // shorter bar for compact
+    hpPart = `\`${bar}\` ${combatant.hp}/${combatant.maxHp}`;
+  }
 
   // Compact mode drops AC and reaction state to keep lines short. Doomed/
   // Wounded/Delayed still surface as terse keywords because they affect
@@ -1960,7 +1996,7 @@ function renderCombatantCompact(combatant, isCurrent) {
   if ((combatant.dying  ?? 0) > 0) tags.push(`Dying ${combatant.dying}`);
   const tagPart = tags.length ? ` · ${tags.join('/')}` : '';
 
-  const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
+  const nameDisplay = isCurrent ? `**__${combatant.name}__**` : combatant.name;
   return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpPart}${tagPart}`;
 }
 
@@ -2038,7 +2074,7 @@ function buildInitiativeEmbed(enc, { pageOverride = null } = {}) {
   const pageSuffix = totalPages > 1 ? ` — Page ${page + 1}/${totalPages}` : '';
   const embed = new EmbedBuilder()
     .setTitle(`Initiative — Round ${enc.round}${pageSuffix}`)
-    .setDescription(lines.join('\n'))
+    .setDescription(lines.join('\n\n'))
     .setColor(0xAA0000);
 
   if (totalPages > 1) {
@@ -5125,6 +5161,94 @@ function splitForFieldValue(text, max) {
   return out;
 }
 
+// ── /heritage helpers ──────────────────────────────────────────────────────
+//
+// findHeritage: resolve user input to a heritage entry. Tries (in order):
+//   1. exact slug match              ("anvil-dwarf")
+//   2. exact lowercase name match    ("anvil dwarf")
+//   3. unique substring match        ("anvil" → only 1 result, return it)
+//   4. dominant fuzzy match          ("nephlim" → "Nephilim" if score is high)
+// Returns the heritage entry or null. The "dominant fuzzy" check requires
+// the top match to score significantly above the runner-up so we don't
+// silently return a wrong answer for ambiguous queries like "Dragon".
+function findHeritage(input) {
+  if (!input || !heritageDatabase) return null;
+  const slug = input.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // 1. exact slug
+  if (heritageDatabase[slug]) return heritageDatabase[slug];
+  // 2. exact name
+  const lower = input.toLowerCase().trim();
+  for (const h of Object.values(heritageDatabase)) {
+    if (h?.name?.toLowerCase() === lower) return h;
+  }
+  // 3. unique substring
+  const substringMatches = Object.values(heritageDatabase).filter(h =>
+    h?.name?.toLowerCase().includes(lower)
+  );
+  if (substringMatches.length === 1) return substringMatches[0];
+  // 4. dominant fuzzy match: score every name, take the top one IFF it's
+  //    clearly better than the runner-up (≥0.15 score gap) AND scores well
+  //    on its own (≥0.55, the same threshold fuzzyPick uses for autocomplete).
+  //    This rejects ambiguous queries like "Dragon" (many similar matches)
+  //    while accepting single-typo queries like "nephlim" → "Nephilim".
+  const scored = Object.values(heritageDatabase)
+    .map(h => ({ heritage: h, s: fuzzyScore(input, h.name) }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s);
+  if (scored.length === 0) return null;
+  const top = scored[0];
+  const runnerUp = scored[1]?.s ?? 0;
+  if (top.s >= 0.55 && (top.s - runnerUp) >= 0.15) {
+    return top.heritage;
+  }
+  return null;
+}
+
+// Render a heritage as a single embed. Versatile heritages get a prominent
+// note at the top so users understand they apply to any ancestry, not just
+// one. Color uses the existing ancestry palette so the look is consistent.
+function buildHeritageEmbed(heritage) {
+  const embed = new EmbedBuilder()
+    .setTitle(`◈ ${heritage.name}`)
+    .setColor(ANCESTRY_COLORS?.heritage ?? 0x8B4513);
+
+  // Top metadata line
+  const metaParts = [];
+  if (heritage.is_versatile) {
+    metaParts.push('**Versatile Heritage** *(applies to any ancestry)*');
+  } else if (heritage.ancestry_display) {
+    metaParts.push(`**${heritage.ancestry_display}** heritage`);
+  }
+  if (heritage.rarity && heritage.rarity !== 'common') {
+    metaParts.push(`*${heritage.rarity.charAt(0).toUpperCase() + heritage.rarity.slice(1)}*`);
+  }
+  if (heritage.remaster) metaParts.push('*Remastered*');
+
+  // Description: discord embed body limit is 4096 chars. Heritages are
+  // typically <500 chars, but truncate just in case.
+  let desc = heritage.description || '*No description available.*';
+  if (desc.length > 3800) desc = desc.slice(0, 3800) + '\n\n*…(truncated)*';
+  const fullDesc = metaParts.length
+    ? `${metaParts.join(' · ')}\n\n${desc}`
+    : desc;
+  embed.setDescription(fullDesc);
+
+  // Traits as a footer-style field if any are interesting (not just rarity-tagged)
+  const interestingTraits = (heritage.traits ?? []).filter(t =>
+    t && !['common', 'uncommon', 'rare', 'unique'].includes(String(t).toLowerCase())
+  );
+  if (interestingTraits.length) {
+    embed.addFields({
+      name: 'Traits',
+      value: interestingTraits.map(t => `\`${t}\``).join(' '),
+      inline: false,
+    });
+  }
+
+  embed.setFooter({ text: `Source: ${heritage.source}` });
+  return embed;
+}
+
 function buildAncestryHeritagesPage(ancestry) {
   const embed = new EmbedBuilder()
     .setTitle(`${ancestry.name} — Heritages`)
@@ -6097,6 +6221,11 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'ancestry' && focused.name === 'name') {
           suggestions = pick(Object.values(ancestryDatabase).map(a => a?.name).filter(Boolean));
+        }
+        else if (cmd === 'heritage' && focused.name === 'name') {
+          // 322 heritages (305 ancestry-specific + 17 versatile). Surface
+          // names; fuzzyPick handles partials, prefixes, and typo tolerance.
+          suggestions = pick(Object.values(heritageDatabase).map(h => h?.name).filter(Boolean));
         }
         else if (cmd === 'archetype' && focused.name === 'name') {
           suggestions = pick(Object.values(archetypeDatabase).map(a => a?.name).filter(Boolean));
@@ -9415,6 +9544,25 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
     await interaction.reply({ embeds: [buildAncestryCorePage(ancestry)], components: [buildAncestryButtons(0, key, ancestry)] });
+  }
+
+  // ─── /heritage ───────────────────────────────────────────────────
+  // Single-entry lookup of any of the 322 heritages: ancestry-specific
+  // (Anvil Dwarf, Tundra Halfling) or versatile (Aiuvarin, Nephilim,
+  // Dhampir). Versatile heritages apply on top of any ancestry, so we
+  // flag them in the embed so users don't get confused.
+  else if (commandName === 'heritage') {
+    const input = interaction.options.getString('name');
+    const heritage = findHeritage(input);
+    if (!heritage) {
+      const allNames = Object.values(heritageDatabase).map(h => h?.name).filter(Boolean);
+      const hint = didYouMeanLine(input, allNames);
+      return interaction.reply({
+        content: `❌ No heritage found for **"${input}"**.${hint || ''}\n*Tip: there are 322 heritages, including 17 versatile (planar) heritages like Aiuvarin or Dhampir. Use autocomplete to browse.*`,
+        ephemeral: true,
+      });
+    }
+    return interaction.reply({ embeds: [buildHeritageEmbed(heritage)] });
   }
 
   // ─── /archetype ──────────────────────────────────────────────────
