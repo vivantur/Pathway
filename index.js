@@ -1831,7 +1831,7 @@ function formatEffectForEmbed(e) {
 function buildInitiativeEmbed(enc) {
   const lines = enc.combatants.map((combatant, i) => {
     const isCurrent = i === enc.turnIndex;
-    const marker = isCurrent ? '▶️ ' : '   ';
+    const marker = isCurrent ? '▶' : ' ';
     const status = hpStatus(
       combatant.hp,
       combatant.maxHp,
@@ -1840,29 +1840,33 @@ function buildInitiativeEmbed(enc) {
       combatant.unconscious === true,
     );
 
-    // PCs see their actual HP + bar; NPCs see status only (HP is hidden).
-    // Everyone (PC or NPC) shows AC so players can plan shots.
-    let hpLine;
+    // PCs see actual HP + bar; NPCs see status only (HP hidden from players).
+    // Both go on the SAME line as the combatant name now per Viv's redesign —
+    // makes the list scannable at a glance.
+    let hpInline;
     if (combatant.isNpc) {
-      hpLine = `${status.emoji} ${status.label}`;
+      // NPC: just the qualitative status. Keep it terse.
+      hpInline = status.label;
     } else {
+      // PC: bar + numeric HP, no separate status word (the bar conveys it).
       const bar = hpBar(combatant.hp, combatant.maxHp);
-      hpLine = `${status.emoji} \`${bar}\` **${combatant.hp}/${combatant.maxHp}** HP · *${status.label}*`;
+      hpInline = `\`${bar}\` ${combatant.hp}/${combatant.maxHp}`;
     }
+
     const acPart = combatant.ac !== undefined && combatant.ac !== null
-      ? ` · **AC ${combatant.ac}**`
+      ? ` · AC ${combatant.ac}`
       : '';
 
     // Wounded persists across deaths/recoveries (separate from current dying state)
     const woundedPart = (combatant.wounded ?? 0) > 0
-      ? ` · 🩸 Wounded ${combatant.wounded}`
+      ? ` · Wounded ${combatant.wounded}`
       : '';
     // Doomed reduces death threshold; surface it prominently
     const doomedPart = (combatant.doomed ?? 0) > 0
-      ? ` · ⚰️ Doomed ${combatant.doomed}`
+      ? ` · Doomed ${combatant.doomed}`
       : '';
     // Delayed indicator — they've set themselves aside and aren't in rotation
-    const delayedPart = combatant.delayed ? ' · ⏸️ *Delayed*' : '';
+    const delayedPart = combatant.delayed ? ' · *Delayed*' : '';
 
     // Reaction indicator: ⤾ available, ⌀ used. Use a clean cross-platform
     // glyph instead of the combining strikethrough that doesn't render on mobile.
@@ -1874,26 +1878,29 @@ function buildInitiativeEmbed(enc) {
     let effectLine = '';
     if (combatant.effects && combatant.effects.length > 0) {
       // Skip dying/wounded/doomed in the effect line — they have their own pips.
-      // (The combatant-field versions are what the engine reads; effect-list
-      // duplicates would be confusing.)
       const visible = combatant.effects.filter(e => {
         const k = e.presetKey;
         return k !== 'dying' && k !== 'wounded' && k !== 'doomed' && k !== 'unconscious';
       });
       if (visible.length > 0) {
         const effectTexts = visible.map(formatEffectForEmbed);
-        effectLine = `\n     🌀 *${effectTexts.join(', ')}*`;
+        effectLine = `\n     *${effectTexts.join(', ')}*`;
       }
     }
 
-    // Bold the current combatant's name to make it pop more than just ▶️
+    // Bold the current combatant's name to make it pop more than just ▶
     const nameDisplay = isCurrent ? `**${combatant.name}**` : combatant.name;
 
-    return `${marker}**${combatant.initiative}** — ${nameDisplay}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}\n     ${hpLine}${effectLine}`;
+    // Single-line layout: ▶ 22 — Hylia (HP bar) · AC 18 · Wounded 1 · ⤾
+    // followed by an optional effects sub-line, then a blank line for spacing.
+    return `${marker} **${combatant.initiative}** — ${nameDisplay} · ${hpInline}${acPart}${woundedPart}${doomedPart}${delayedPart}${reactionPart}${effectLine}`;
   });
+
+  // Join with double-newline so each combatant has a blank line of breathing
+  // room between them. Much more scannable, especially with 6+ combatants.
   return new EmbedBuilder()
-    .setTitle(`⚔️ Initiative — Round ${enc.round}`)
-    .setDescription(lines.join('\n') || '*No combatants yet*')
+    .setTitle(`Initiative — Round ${enc.round}`)
+    .setDescription(lines.join('\n\n') || '*No combatants yet*')
     .setColor(0xAA0000);
 }
 
@@ -5989,6 +5996,44 @@ client.on('interactionCreate', async (interaction) => {
           const comps = ce?.companions ? Object.values(ce.companions).map(c => c.displayName) : [];
           suggestions = pick(comps);
         }
+        else if (cmd === 'downtime' && focused.name === 'activity'
+                 && interaction.options.getSubcommand(false) === 'start') {
+          // For /downtime start, autocomplete the activity TYPE (earn-income, etc.)
+          const names = Object.entries(downtime.ACTIVITIES).map(([k, def]) => def.name);
+          suggestions = pick(names).map(o => ({
+            // Map display name back to the key the handler expects
+            name: o.name,
+            value: Object.keys(downtime.ACTIVITIES).find(
+              k => downtime.ACTIVITIES[k].name === o.name
+            ) || o.value,
+          }));
+        }
+        else if (cmd === 'downtime' && focused.name === 'activity') {
+          // For /downtime complete/cancel/spend, autocomplete with the player's
+          // active entry IDs paired with a friendly description.
+          const characters = loadCharacters();
+          const { charKey } = resolveChar(interaction.user.id, null, characters);
+          if (charKey) {
+            const store = loadDowntime();
+            const active = downtime.listActiveEntries(store, interaction.user.id, charKey);
+            // Show "earn-income (crafting) day 3/7 [abc123]" style entries
+            suggestions = active
+              .map(e => {
+                const def = downtime.ACTIVITIES[e.activity];
+                const skill = e.params?.skill ? ` (${e.params.skill})` : '';
+                const ready = e.status === 'ready-to-complete' ? ' ✅' : '';
+                return {
+                  name: `${def.name}${skill} day ${e.elapsedDays}/${e.plannedDays}${ready} [${e.id}]`.slice(0, 100),
+                  value: e.id,
+                };
+              })
+              .slice(0, 25);
+          }
+        }
+        else if (cmd === 'downtime' && focused.name === 'skill') {
+          const skills = ['Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
+          suggestions = pick(skills);
+        }
         // Await respond so any rejection (network blip, expired interaction,
         // already-acknowledged etc.) is caught by the local try/catch instead
         // of escaping to the unhandledRejection handler. The catch block
@@ -8883,7 +8928,7 @@ client.on('interactionCreate', async (interaction) => {
 
     const embed = new EmbedBuilder()
       .setColor(0x8B0000)
-      .setTitle(`👹 ${attacker.name} attacks with ${attackName}!`)
+      .setTitle(`${attacker.name} attacks with ${attackName}!`)
       .setDescription(description)
       .setFooter({ text: `GM attack · Attack ${fmt(attackBonus)} · ${damageExpr} ${damageType}` });
 
@@ -8898,7 +8943,8 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /roll ───────────────────────────────────────────────────────
-  else if (commandName === 'roll') {
+  // Both /roll and /r (the alias) come through here. Same options, same logic.
+  else if (commandName === 'roll' || commandName === 'r') {
     const raw = interaction.options.getString('dice');
     const snippets = mergedSnippetsFor(interaction.user.id, interaction.guildId);
     const result = rollAdvanced(raw, snippets);
@@ -10167,6 +10213,163 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
+  // ─── /monsterroll ────────────────────────────────────────────────
+  // Roll saves and skills for a monster — works whether they're in an active
+  // encounter or not. GM-only (in DMs anywhere; in a server only the encounter
+  // GM if there's an active encounter, else any GM-permission user).
+  //
+  // Subcommands:
+  //   /monsterroll save monster:<name> save:<fort/ref/will> [dc:<n>]
+  //   /monsterroll skill monster:<name> skill:<name> [dc:<n>]
+  //
+  // Resolution priority for finding the monster's modifier:
+  //   1. If `monster` matches an active combatant → use the combatant's
+  //      bestiaryKey (so init effects/edits flow through).
+  //   2. Else look up directly in the bestiary by name.
+  //
+  // Replies are EPHEMERAL by default (only the GM sees the roll) so monster
+  // mod values don't leak. Use the `public:true` flag to broadcast results.
+  else if (commandName === 'monsterroll') {
+    const sub = interaction.options.getSubcommand();
+    const monsterInput = interaction.options.getString('monster');
+    const dc = interaction.options.getInteger('dc'); // optional
+    const wantPublic = interaction.options.getBoolean('public') ?? false;
+    const guildId = interaction.guildId;
+    const channelId = interaction.channel?.id;
+
+    // Find the monster's data. First check active encounter for a combatant
+    // by that name (so init effects + GM edits apply), then fall back to
+    // the raw bestiary.
+    const enc = channelId ? getEncounter(channelId) : null;
+    let combatant = null;
+    if (enc) {
+      combatant = enc.combatants.find(c => c.name.toLowerCase() === monsterInput.toLowerCase()) || null;
+    }
+
+    // GM gate: if there's an encounter, only the GM can roll. Otherwise allow
+    // anyone with Manage Channels (consistent with /weather, /calendar).
+    if (enc && interaction.user.id !== enc.gmId) {
+      return interaction.reply({ content: '❌ Only the encounter GM can roll for monsters in active combat.', ephemeral: true });
+    }
+
+    // Resolve to a bestiary monster. If we have a combatant with bestiaryKey,
+    // use that — it's the canonical name. Otherwise look up by raw input.
+    const lookupName = combatant?.bestiaryKey ?? monsterInput;
+    const { monster, matches } = findMonster(lookupName);
+    if (!monster) {
+      if (matches && matches.length > 1) {
+        const preview = matches.slice(0, 5).map(n => `• **${n}**`).join('\n');
+        return interaction.reply({ content: `🔍 Multiple matches for **"${monsterInput}"**:\n${preview}`, ephemeral: true });
+      }
+      return interaction.reply({ content: `❌ No creature named **"${monsterInput}"** found in the bestiary or encounter.`, ephemeral: true });
+    }
+
+    // Apply per-guild edits + attack library overlay (matches /init addmonster pipeline)
+    const edits = guildId ? getMonsterEdit(guildId, monster.name) : null;
+    const edited = applyMonsterEdits(monster, edits);
+    const finalMonster = guildId ? applyMonsterAttackLibrary(edited, guildId) : edited;
+    const rich = finalMonster.rich ?? null;
+    const core = finalMonster.core ?? {};
+    const summary = finalMonster.summary?.summary ?? {};
+
+    // ── /monsterroll save ────────────────────────────────────────────
+    if (sub === 'save') {
+      const saveType = interaction.options.getString('save'); // 'fort' | 'ref' | 'will'
+      const normalized = saveType.startsWith('fort') ? 'fort'
+                       : saveType.startsWith('ref')  ? 'ref'
+                       : saveType.startsWith('will') ? 'will'
+                       : null;
+      if (!normalized) return interaction.reply({ content: `❌ Unknown save: ${saveType}`, ephemeral: true });
+
+      // Pull the modifier — try core, then summary, then rich.defenses.
+      const saveMap = { fort: ['fort', 'fortitude'], ref: ['ref', 'reflex'], will: ['will'] };
+      const richKey = { fort: 'Fortitude', ref: 'Reflex', will: 'Will' }[normalized];
+      const saveLabel = { fort: 'Fortitude', ref: 'Reflex', will: 'Will' }[normalized];
+      let modifier = null;
+      for (const k of saveMap[normalized]) {
+        if (core?.saves?.[k] != null) { modifier = core.saves[k]; break; }
+        if (summary?.[k] != null) { modifier = summary[k]; break; }
+      }
+      if (modifier == null && rich?.defenses?.saves?.[richKey] != null) {
+        modifier = rich.defenses.saves[richKey];
+      }
+      if (modifier == null) {
+        return interaction.reply({ content: `❌ **${monster.name}** has no ${saveLabel} save listed in the bestiary.`, ephemeral: true });
+      }
+
+      // If this is a combatant, apply effect modifiers (frightened etc.)
+      let effectBonus = 0;
+      if (combatant) {
+        const mods = sumEffectModifiers(combatant);
+        // Generic save bonus from effects, if any
+        effectBonus = mods.saveBonus ?? 0;
+      }
+      const r = rollD20Plus(modifier + effectBonus);
+      const sign = (modifier + effectBonus) >= 0 ? '+' : '';
+      let resultLine = `**${r.total}** = d20[${r.roll}] ${sign}${modifier + effectBonus}`;
+      if (effectBonus !== 0) resultLine += ` *(base ${fmt(modifier)}, effects ${fmt(effectBonus)})*`;
+      let degreeLine = '';
+      if (dc != null) {
+        const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
+        const degreeNames = { 'crit-success': 'Critical Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Critical Failure' };
+        degreeLine = `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+      }
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle(`${monster.name} — ${saveLabel} Save`)
+        .setDescription(`${resultLine}${degreeLine}`);
+      return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
+    }
+
+    // ── /monsterroll skill ───────────────────────────────────────────
+    if (sub === 'skill') {
+      const skillInput = interaction.options.getString('skill').trim();
+      // Skills come from rich.skills as { "Athletics": 8, "Stealth": 5 }.
+      // Match case-insensitively + allow partial.
+      const skillsObj = rich?.skills ?? {};
+      const skillKeys = Object.keys(skillsObj);
+      if (skillKeys.length === 0) {
+        return interaction.reply({ content: `❌ **${monster.name}** has no skills listed in the bestiary.`, ephemeral: true });
+      }
+      const q = skillInput.toLowerCase();
+      const exact = skillKeys.find(k => k.toLowerCase() === q);
+      const partial = skillKeys.filter(k => k.toLowerCase().includes(q));
+      let chosenKey = exact;
+      if (!chosenKey && partial.length === 1) chosenKey = partial[0];
+      if (!chosenKey) {
+        if (partial.length > 1) {
+          return interaction.reply({ content: `🔍 Multiple skills match "${skillInput}": ${partial.join(', ')}`, ephemeral: true });
+        }
+        return interaction.reply({ content: `❌ **${monster.name}** has no **${skillInput}**. Available: ${skillKeys.join(', ')}`, ephemeral: true });
+      }
+      const modifier = skillsObj[chosenKey];
+
+      // Effect modifiers (e.g. clumsy, enfeebled — though we don't differentiate by skill yet)
+      let effectBonus = 0;
+      if (combatant) {
+        const mods = sumEffectModifiers(combatant);
+        effectBonus = mods.skillBonus ?? 0;
+      }
+      const r = rollD20Plus(modifier + effectBonus);
+      const sign = (modifier + effectBonus) >= 0 ? '+' : '';
+      let resultLine = `**${r.total}** = d20[${r.roll}] ${sign}${modifier + effectBonus}`;
+      if (effectBonus !== 0) resultLine += ` *(base ${fmt(modifier)}, effects ${fmt(effectBonus)})*`;
+      let degreeLine = '';
+      if (dc != null) {
+        const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
+        const degreeNames = { 'crit-success': 'Critical Success', 'success': 'Success', 'failure': 'Failure', 'crit-failure': 'Critical Failure' };
+        degreeLine = `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+      }
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle(`${monster.name} — ${chosenKey}`)
+        .setDescription(`${resultLine}${degreeLine}`);
+      return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
+    }
+
+    return interaction.reply({ content: `Unknown subcommand: ${sub}`, ephemeral: true });
+  }
+
   // ─── /monsteredit ────────────────────────────────────────────────
   // Per-guild per-field overrides for bestiary entries. Each subcommand
   // touches ONE field; untouched fields fall through to the bestiary. This
@@ -11232,7 +11435,7 @@ client.on('interactionCreate', async (interaction) => {
         effects: [],
       });
 
-      await interaction.reply(`✅ **${charName}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`**${charName}** joined initiative at **${initiative}** ${rollText}.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -11269,7 +11472,7 @@ client.on('interactionCreate', async (interaction) => {
         effects: [],
       });
 
-      await interaction.reply(`👹 **${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -11389,8 +11592,27 @@ client.on('interactionCreate', async (interaction) => {
         addedLines.push(`• **${name}** — init **${initiative}** ${rollText}, HP ${hp}, AC ${ac ?? '?'}`);
       }
 
-      const header = `👹 Added **${count}× ${baseName}** to initiative${skipped ? ` (${skipped} name collision(s) auto-renumbered)` : ''}:`;
-      await interaction.reply(`${header}\n${addedLines.join('\n')}`);
+      // Two-message reply pattern:
+      //   1. PUBLIC reply — just the count + name, NO stats. Players see "Goblin
+      //      Warrior 1 joined initiative" without being able to see HP/AC/init.
+      //   2. EPHEMERAL follow-up to GM — full stat line per copy. GM gets the
+      //      details they need to run combat without leaking them to players.
+      // This protects metagame info (esp. HP — players shouldn't know the
+      // monster has 14 HP because they saw the GM type it in).
+      const publicNames = enc.combatants
+        .filter(c => c.bestiaryKey === monster.name)
+        .slice(-count)
+        .map(c => c.name);
+      const publicHeader = count === 1
+        ? `**${publicNames[0]}** joined the encounter.`
+        : `**${count}× ${baseName}** joined the encounter: ${publicNames.join(', ')}`;
+      await interaction.reply({ content: publicHeader });
+
+      const gmHeader = `**GM details — ${count}× ${baseName}**${skipped ? ` (${skipped} name collision(s) auto-renumbered)` : ''}:`;
+      await interaction.followUp({
+        content: `${gmHeader}\n${addedLines.join('\n')}`,
+        ephemeral: true,
+      });
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -11590,12 +11812,11 @@ client.on('interactionCreate', async (interaction) => {
         hpLine || null,
       ].filter(s => s !== null).join('\n');
 
-      const attackEmoji = atk.type === 'ranged' ? '🏹' : '⚔️';
       const embed = new EmbedBuilder()
         .setColor(0x8B0000)
-        .setTitle(`👹 ${attacker.name} attacks with ${atk.name}!${traitsText}`)
+        .setTitle(`${attacker.name} attacks with ${atk.name}!${traitsText}`)
         .setDescription(description)
-        .setFooter({ text: `${attackEmoji} ${atk.name} ${fmt(baseAttackBonus)} · ${atk.damage}` });
+        .setFooter({ text: `${atk.name} ${fmt(baseAttackBonus)} · ${atk.damage}` });
 
       const replyPayload = { embeds: [embed] };
       let content = (mentionLine || '').trim();
@@ -11622,34 +11843,34 @@ client.on('interactionCreate', async (interaction) => {
       // Diagnostic logging — helps us see what happened if auto-roll doesn't fire
       console.log(`[init next] Advanced to ${current.name} (isNpc=${current.isNpc}, hp=${current.hp}/${current.maxHp}, dying=${current.dying ?? 0}, wounded=${current.wounded ?? 0}). recoveryCheck=${result.recoveryCheck ? 'fired' : 'not-triggered'}`);
 
-      const lines = [`🎯 It's **${current.name}**'s turn! ${mention}`];
+      const lines = [`▶ It's **${current.name}**'s turn! ${mention}`];
 
       // Show new round banner
       if (result.newRound) {
-        lines.push(`🔄 **Round ${enc.round}** — all reactions refreshed.`);
+        lines.push(`**Round ${enc.round}** — all reactions refreshed.`);
       }
 
       // Show expired effects
       if (result.expiredEffects && result.expiredEffects.length > 0) {
         const expiredText = result.expiredEffects.map(x => `**${x.effect.name}** on **${x.combatantName}**`).join(', ');
-        lines.push(`⏳ Expired: ${expiredText}`);
+        lines.push(`Expired: ${expiredText}`);
       }
 
       // Show persistent damage results from outgoing combatant
       if (result.persistentResults && result.persistentResults.length > 0) {
         for (const pr of result.persistentResults) {
           const flatStatus = pr.ended
-            ? `🩹 *Flat check ${pr.flatRoll} ≥ ${pr.flatDc} — condition ends.*`
-            : `🔁 *Flat check ${pr.flatRoll} < ${pr.flatDc} — persists.*`;
-          const dyingTag = pr.died ? ' ☠️ **Dead!**' : pr.wentDown ? ` 💀 (Dying ${pr.dying})` : '';
-          lines.push(`🩸 **${pr.name}** ticks: ${pr.damageDice}[${pr.damageRolls.join(',')}] = ${pr.damage} ${pr.damageType} damage${dyingTag}\n${flatStatus}`);
+            ? `*Flat check ${pr.flatRoll} ≥ ${pr.flatDc} — condition ends.*`
+            : `*Flat check ${pr.flatRoll} < ${pr.flatDc} — persists.*`;
+          const dyingTag = pr.died ? ' **Dead!**' : pr.wentDown ? ` (Dying ${pr.dying})` : '';
+          lines.push(`**${pr.name}** persistent: ${pr.damageDice}[${pr.damageRolls.join(',')}] = ${pr.damage} ${pr.damageType} damage${dyingTag}\n${flatStatus}`);
         }
       }
 
       // Hint to the GM if the combatant is dying but the check didn't fire
       // (shouldn't happen, but diagnostic aid for the user)
       if ((current.dying ?? 0) > 0 && !result.recoveryCheck) {
-        lines.push(`⚠️ **${current.name}** is Dying ${current.dying} but no recovery check auto-rolled. Use \`/init recovery name:${current.name}\` to force a roll.`);
+        lines.push(`*${current.name} is Dying ${current.dying} but no recovery check auto-rolled. Use \`/init recovery name:${current.name}\` to force a roll.*`);
       }
 
       // ── Action economy at start of turn ────────────────────────────
@@ -12673,117 +12894,324 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /downtime ────────────────────────────────────────────────────
-  // Simple per-character downtime-day counter. Auto-accrues 1 day per IRL
-  // calendar day (UTC) on first interaction. Hard cap at 200 banked.
-  // Players can grant days manually for quest rewards (audit-logged for honesty).
-  // See commands/downtime.js for the engine.
+  // PF2e downtime activity tracker. Real-life days advance activities
+  // automatically; the GM can also award banked downtime days as quest
+  // rewards. Currently supports Earn Income; more activities coming later.
   else if (commandName === 'downtime') {
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
     const characters = loadCharacters();
     let store = loadDowntime();
 
-    // All subcommands need a resolved character.
-    const charNameArg = interaction.options.getString('character');
-    const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    const charDisplayName = charEntry.data.name || charKey;
-
-    // Accrue any pending IRL days BEFORE doing anything else, so the player
-    // sees up-to-date balance on every command.
-    const accrual = downtime.accrue(store, userId, charKey);
-
-    // ─── /downtime check ─────────────────────────────────────────────
-    if (sub === 'check') {
-      const status = downtime.getStatus(store, userId, charKey);
-      saveDowntime(store);
-      const lines = [
-        `**${status.bank}** banked day${status.bank === 1 ? '' : 's'}${status.isFull ? ' *(at cap — IRL accrual paused)*' : ''}`,
-        `Last accrual: \`${status.lastAccrualDate}\``,
-      ];
-      if (accrual.added > 0) {
-        lines.push(`*+${accrual.added} just credited from ${accrual.added === 1 ? 'today' : 'IRL days passed'}.${accrual.capped > 0 ? ` ${accrual.capped} dropped (cap is ${status.capacity}).` : ''}*`);
-      }
+    // ─── /downtime list — show available activities ───
+    if (sub === 'list') {
+      const lines = Object.entries(downtime.ACTIVITIES).map(([key, def]) =>
+        `• **${def.name}** \`(${key})\` — ${def.summary} *(${def.source})*`
+      );
       const embed = new EmbedBuilder()
         .setColor(0x6f4e37)
-        .setTitle(`⏳ ${charDisplayName}'s Downtime`)
-        .setDescription(lines.join('\n'))
-        .setFooter({ text: `Cap: ${status.capacity} days · 1 day per IRL day · Use /downtime spend or /downtime grant` });
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    // ─── /downtime spend ─────────────────────────────────────────────
-    if (sub === 'spend') {
-      const days = interaction.options.getInteger('days');
-      const reason = interaction.options.getString('reason');
-      const result = downtime.spend(store, userId, charKey, days, reason, userId);
-      if (!result.ok) {
-        return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      }
-      saveDowntime(store);
-      const embed = new EmbedBuilder()
-        .setColor(0xc97f4f)
-        .setTitle(`💸 ${charDisplayName} spent ${days} day${days === 1 ? '' : 's'}`)
-        .setDescription(`**Reason:** ${reason}\n**Remaining bank:** ${result.balance} day${result.balance === 1 ? '' : 's'}`);
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    // ─── /downtime grant ─────────────────────────────────────────────
-    if (sub === 'grant') {
-      const days = interaction.options.getInteger('days');
-      const reason = interaction.options.getString('reason');
-      const result = downtime.grant(store, userId, charKey, days, reason, userId);
-      if (!result.ok) {
-        return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      }
-      saveDowntime(store);
-      const grantLines = [
-        `**Reason:** ${reason}`,
-        `**New bank:** ${result.balance} day${result.balance === 1 ? '' : 's'}`,
-      ];
-      if (result.capped > 0) {
-        grantLines.push(`*⚠️ ${result.capped} day${result.capped === 1 ? '' : 's'} dropped (cap is ${downtime.MAX_BANK}).*`);
-      }
-      const embed = new EmbedBuilder()
-        .setColor(0x4f9d6c)
-        .setTitle(`🎁 ${charDisplayName} granted ${result.added} day${result.added === 1 ? '' : 's'}`)
-        .setDescription(grantLines.join('\n'))
-        .setFooter({ text: `By: ${interaction.user.username} · Logged for audit` });
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    // ─── /downtime log ───────────────────────────────────────────────
-    if (sub === 'log') {
-      saveDowntime(store); // save in case accrual happened
-      const entries = downtime.getLog(store, userId, charKey, 10);
-      if (entries.length === 0) {
-        return interaction.reply({ content: `${charDisplayName} has no downtime activity yet.`, ephemeral: true });
-      }
-      const logLines = entries.map(e => {
-        const sign = e.delta >= 0 ? '+' : '';
-        const date = e.ts.slice(0, 10);
-        const kindEmoji = { accrual: '⏳', grant: '🎁', spend: '💸', reset: '🗑️' }[e.kind] || '•';
-        return `${kindEmoji} \`${date}\` **${sign}${e.delta}** → ${e.balance} — ${e.reason}`;
-      });
-      const embed = new EmbedBuilder()
-        .setColor(0x6f4e37)
-        .setTitle(`📜 ${charDisplayName}'s Downtime Log`)
-        .setDescription(logLines.join('\n'))
-        .setFooter({ text: `Last ${entries.length} entries (newest first)` });
+        .setTitle('🛠️ Available Downtime Activities')
+        .setDescription(lines.join('\n') || 'No activities defined yet.')
+        .setFooter({ text: 'Start with /downtime start' });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // ─── /downtime reset ─────────────────────────────────────────────
-    if (sub === 'reset') {
-      const result = downtime.reset(store, userId, charKey, userId, 'manual reset via /downtime reset');
+    // For all other subcommands, we need the player's character.
+    const charNameArg = interaction.options.getString('character');
+    // ── DIAGNOSTIC ──
+    console.log(`[downtime DEBUG] sub=${sub}, userId=${userId}, charNameArg=${JSON.stringify(charNameArg)}`);
+    console.log(`[downtime DEBUG] characters[userId] exists: ${!!characters[userId]}`);
+    console.log(`[downtime DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
+    console.log(`[downtime DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
+    console.log(`[downtime DEBUG] all options: ${JSON.stringify(interaction.options.data)}`);
+    const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
+    if (error) {
+      console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
+      return interaction.reply({ content: error, ephemeral: true });
+    }
+    console.log(`[downtime DEBUG] resolveChar succeeded: charKey=${charKey}`);
+    const c = charEntry.data;
+
+    // ─── /downtime start ──────────────────────────────
+    if (sub === 'start') {
+      const activityKey = interaction.options.getString('activity');
+      const def = downtime.ACTIVITIES[activityKey];
+      if (!def) {
+        return interaction.reply({ content: `❌ Unknown activity "${activityKey}". Use \`/downtime list\` to see options.`, ephemeral: true });
+      }
+
+      // Currently only Earn Income — branch here when more activities exist.
+      if (activityKey === 'earn-income') {
+        const skillName = interaction.options.getString('skill');
+        const taskLevel = interaction.options.getInteger('tasklevel');
+        const plannedDays = interaction.options.getInteger('days');
+        const extraBonus = interaction.options.getInteger('bonus') ?? 0;
+
+        // Validate skill (use same map as /skill, plus Crafting/Lore-as-text)
+        const skillMap = {
+          acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+          deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+          nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+          society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+        };
+        const lowerSkill = skillName.toLowerCase();
+        if (!(lowerSkill in skillMap)) {
+          return interaction.reply({ content: `❌ Unknown skill "${skillName}". Earn Income uses skills like Crafting, Performance, or any Lore.`, ephemeral: true });
+        }
+
+        // Compute character's modifier for the chosen skill
+        const ab = c.abilities ?? {};
+        const prof = c.proficiencies ?? {};
+        const lvl = c.level ?? 1;
+        const abilKey = skillMap[lowerSkill];
+        const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
+        const profNum = prof[lowerSkill] ?? 0;
+        const modifier = abilMod + calcProfNum(profNum, lvl);
+
+        if (profNum === 0) {
+          return interaction.reply({ content: `❌ **${c.name}** is not trained in ${skillName}. Earn Income generally requires being at least Trained.`, ephemeral: true });
+        }
+
+        // Roll the initial check
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const total = dieRoll + modifier + extraBonus;
+        const dc = downtime.taskLevelDC(taskLevel);
+
+        // Determine outcome
+        let outcome;
+        if (total >= dc + 10) outcome = 'crit-success';
+        else if (total >= dc) outcome = 'success';
+        else if (total <= dc - 10) outcome = 'crit-failure';
+        else outcome = 'failure';
+        // Nat 20 / Nat 1 shift the outcome by one step
+        if (dieRoll === 20) {
+          outcome = outcome === 'crit-failure' ? 'failure' : outcome === 'failure' ? 'success' : 'crit-success';
+        } else if (dieRoll === 1) {
+          outcome = outcome === 'crit-success' ? 'success' : outcome === 'success' ? 'failure' : 'crit-failure';
+        }
+
+        const dailyCp = downtime.dailyIncomeCopper({ taskLevel, profRank: profNum, outcome });
+
+        // On a critical failure, the activity ends immediately (fired & reputation hit).
+        if (outcome === 'crit-failure') {
+          const embed = new EmbedBuilder()
+            .setColor(0xC0392B)
+            .setTitle(`💼 ${c.name} attempts Earn Income (${skillName})`)
+            .setDescription(
+              `🎲 **Rolled:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+              `💥 **Critical Failure!**\n\n` +
+              `*${c.name} is fired immediately and earns nothing. Their reputation in this community suffers — the GM may make future Earn Income harder here.*`
+            )
+            .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+          return interaction.reply({ embeds: [embed] });
+        }
+
+        // Start the entry
+        const result = downtime.startEntry(store, userId, charKey, 'earn-income', {
+          skill: skillName,
+          taskLevel,
+          profRank: profNum,
+          modifier,
+          dieRoll,
+          rolledTotal: total,
+          dc,
+          outcome,
+          dailyIncomeCp: dailyCp,
+        }, plannedDays);
+
+        if (!result.ok) {
+          return interaction.reply({ content: `❌ Could not start activity: ${result.reason}`, ephemeral: true });
+        }
+        saveDowntime(store);
+
+        const outcomeEmoji = { 'crit-success': '🌟', success: '✅', failure: '⚠️' }[outcome];
+        const outcomeLabel = { 'crit-success': 'Critical Success!', success: 'Success', failure: 'Failure (shoddy work)' }[outcome];
+        const embed = new EmbedBuilder()
+          .setColor(outcome === 'crit-success' ? 0xF1C40F : outcome === 'success' ? 0x27AE60 : 0xE67E22)
+          .setTitle(`💼 ${c.name} starts Earn Income (${skillName})`)
+          .setDescription(
+            `🎲 **Initial Check:** d20 (${dieRoll}) ${fmt(modifier)}${extraBonus ? ` ${fmt(extraBonus)}` : ''} = **${total}** vs DC **${dc}**\n` +
+            `${outcomeEmoji} **${outcomeLabel}**\n\n` +
+            `**Daily payout:** ${downtime.formatCopper(dailyCp)}\n` +
+            `**Planned duration:** ${plannedDays} day${plannedDays === 1 ? '' : 's'}\n` +
+            `**Activity ID:** \`${result.entry.id}\`\n\n` +
+            `Each real-life day will automatically credit a downtime day.\n` +
+            `Use \`/downtime check\` to see progress, or \`/downtime complete activity:${result.entry.id}\` when done.`
+          )
+          .setFooter({ text: `Task Level ${taskLevel} · ${downtime.profRankKey(profNum)}` });
+        if (charEntry.art) embed.setThumbnail(charEntry.art);
+        return interaction.reply({ embeds: [embed] });
+      }
+
+      return interaction.reply({ content: `❌ Activity "${activityKey}" not yet implemented.`, ephemeral: true });
+    }
+
+    // ─── /downtime check — auto-advance and show status ───
+    if (sub === 'check') {
+      // Auto-advance everything for this character first
+      const advances = downtime.autoAdvanceAll(store, userId, charKey);
+      const active = downtime.listActiveEntries(store, userId, charKey);
+
+      if (active.length === 0) {
+        const bank = downtime.getBank(store, userId, charKey).bank;
+        return interaction.reply({
+          content: `**${c.name}** has no active downtime activities. Banked days: **${bank}**.\nStart one with \`/downtime start\`.`,
+          ephemeral: true,
+        });
+      }
+
       saveDowntime(store);
+
+      const lines = active.map(entry => {
+        const def = downtime.ACTIVITIES[entry.activity];
+        const adv = advances.find(a => a.entry.id === entry.id);
+        const advText = adv && adv.addedDays > 0
+          ? ` *(+${adv.addedDays} day${adv.addedDays === 1 ? '' : 's'} since last check, +${downtime.formatCopper(adv.addedCp)})*`
+          : '';
+        const statusBadge = entry.status === 'ready-to-complete' ? ' ✅ **READY TO COMPLETE**' : '';
+        const earnedText = entry.result?.totalEarnedCp != null
+          ? `Earned: **${downtime.formatCopper(entry.result.totalEarnedCp)}**`
+          : '';
+        return `• **${def.name}** (${entry.params.skill ?? '?'}) — ID \`${entry.id}\`${statusBadge}\n` +
+               `  Day ${entry.elapsedDays}/${entry.plannedDays} · ${earnedText}${advText}`;
+      });
+
+      const bank = downtime.getBank(store, userId, charKey).bank;
+      const embed = new EmbedBuilder()
+        .setColor(0x6f4e37)
+        .setTitle(`🛠️ ${c.name}'s Downtime`)
+        .setDescription(lines.join('\n\n'))
+        .setFooter({ text: `Banked downtime days: ${bank}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime complete ───────────────────────────
+    if (sub === 'complete') {
+      const entryId = interaction.options.getString('activity');
+      // Auto-advance first so we know if it's actually done
+      downtime.autoAdvanceAll(store, userId, charKey);
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      if (entry.status === 'completed') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` is already completed.`, ephemeral: true });
+      }
+      if (entry.status === 'cancelled') {
+        return interaction.reply({ content: `❌ Activity \`${entryId}\` was cancelled.`, ephemeral: true });
+      }
+
+      // Allow completing early — partial credit for partial days.
+      const result = downtime.completeEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
+      const earned = entry.result?.totalEarnedCp ?? 0;
+      const earlyNote = entry.elapsedDays < entry.plannedDays
+        ? `\n*(Completed early at day ${entry.elapsedDays}/${entry.plannedDays}.)*`
+        : '';
+      const embed = new EmbedBuilder()
+        .setColor(0x2ECC71)
+        .setTitle(`✅ ${c.name} completes ${def.name}`)
+        .setDescription(
+          `**Total earned:** ${downtime.formatCopper(earned)}\n` +
+          `**Days worked:** ${entry.elapsedDays}\n` +
+          `**Skill used:** ${entry.params.skill}${earlyNote}\n\n` +
+          `*Add this to your character's coin pouch with \`/coin add\` (or however you track money).*`
+        )
+        .setFooter({ text: `Activity ID: ${entry.id}` });
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── /downtime cancel ─────────────────────────────
+    if (sub === 'cancel') {
+      const entryId = interaction.options.getString('activity');
+      const entry = downtime.getEntry(store, userId, charKey, entryId);
+      if (!entry) {
+        return interaction.reply({ content: `❌ No downtime activity with ID \`${entryId}\` for ${c.name}.`, ephemeral: true });
+      }
+      const result = downtime.cancelEntry(store, userId, charKey, entryId);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[entry.activity];
       return interaction.reply({
-        content: `🗑️ ${charDisplayName}'s downtime reset to 0 (was ${result.before}).`,
-        ephemeral: true,
+        content: `🚫 Cancelled **${def.name}** (\`${entry.id}\`). ${entry.result?.totalEarnedCp ? `Forfeited ${downtime.formatCopper(entry.result.totalEarnedCp)}.` : 'No earnings forfeited.'}`,
       });
     }
 
-    return interaction.reply({ content: `Unknown subcommand: ${sub}`, ephemeral: true });
+    // ─── /downtime spend — apply banked days to an activity ───
+    if (sub === 'spend') {
+      const entryId = interaction.options.getString('activity');
+      const days = interaction.options.getInteger('days');
+      const result = downtime.spendBankedDays(store, userId, charKey, entryId, days);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+      saveDowntime(store);
+
+      const def = downtime.ACTIVITIES[result.entry.activity];
+      const completedNote = result.entry.status === 'ready-to-complete'
+        ? `\n✅ **Activity is now ready to complete!** Use \`/downtime complete activity:${result.entry.id}\`.`
+        : '';
+      return interaction.reply({
+        content: `🪙 Applied **${result.daysApplied}** banked day${result.daysApplied === 1 ? '' : 's'} to ${def.name} (\`${result.entry.id}\`).\n` +
+                 `Earned **+${downtime.formatCopper(result.addedCp)}** (total: ${downtime.formatCopper(result.entry.result?.totalEarnedCp ?? 0)}).\n` +
+                 `Days now ${result.entry.elapsedDays}/${result.entry.plannedDays}. Bank balance: **${store[userId][charKey].bank}**.${completedNote}`,
+      });
+    }
+
+    // ─── /downtime bank — show banked days + recent history ───
+    if (sub === 'bank') {
+      const { bank, history } = downtime.getBank(store, userId, charKey);
+      const recent = history.slice(-10).reverse();
+      const histLines = recent.length === 0
+        ? '*No history yet.*'
+        : recent.map(h => {
+            const sign = h.delta > 0 ? '+' : '';
+            const date = h.ts.slice(0, 10);
+            return `${date} · **${sign}${h.delta}** — ${h.reason}`;
+          }).join('\n');
+      const embed = new EmbedBuilder()
+        .setColor(0xF39C12)
+        .setTitle(`🪙 ${c.name}'s Downtime Bank`)
+        .setDescription(`**Banked days:** ${bank}\n\n**Recent activity:**\n${histLines}`)
+        .setFooter({ text: 'GMs award days with /downtime award' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // ─── /downtime award — GM grants days to a player's character ───
+    // Permission: anyone can use this. (We could restrict to GMs but downtime
+    // awards are usually announced openly anyway. Easy to add a check later.)
+    if (sub === 'award') {
+      // The character we resolved above is the AWARDER's character.
+      // The award target is a different player's character — read from options.
+      const targetPlayer = interaction.options.getUser('player');
+      const targetCharName = interaction.options.getString('targetcharacter');
+      const days = interaction.options.getInteger('days');
+      const reason = interaction.options.getString('reason') ?? 'GM award';
+
+      if (!targetPlayer) {
+        return interaction.reply({ content: '❌ Specify a `player:` (and `targetcharacter:` if they have multiple).', ephemeral: true });
+      }
+      if (days === 0) {
+        return interaction.reply({ content: '❌ Award amount must be non-zero. Use a negative number to remove days.', ephemeral: true });
+      }
+
+      const targetCharacters = loadCharacters(); // re-read so we have fresh data
+      const { error: terr, charKey: tCharKey, char: tCharEntry } = resolveChar(targetPlayer.id, targetCharName, targetCharacters);
+      if (terr) return interaction.reply({ content: `❌ Couldn't find that character: ${terr}`, ephemeral: true });
+
+      const newBalance = downtime.awardDays(store, targetPlayer.id, tCharKey, days, reason);
+      saveDowntime(store);
+
+      const sign = days > 0 ? '+' : '';
+      const verb = days > 0 ? 'awarded' : 'removed';
+      return interaction.reply({
+        content: `🪙 ${verb === 'awarded' ? 'Awarded' : 'Removed'} **${sign}${days}** downtime day${Math.abs(days) === 1 ? '' : 's'} ${days > 0 ? 'to' : 'from'} <@${targetPlayer.id}>'s **${tCharEntry.data.name}**${reason ? `: *${reason}*` : ''}.\nNew balance: **${newBalance}**.`,
+      });
+    }
   }
 
   // ─── /weather ─────────────────────────────────────────────────────
