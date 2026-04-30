@@ -921,7 +921,7 @@ async function restoreAllFromSupabase() {
         saved:      new Date().toISOString(),
       };
     }
-    atomicWriteJson(dataPath('characters.json'), characters);
+    atomicWriteJson('characters.json', characters);
     console.log(`[Supabase] restore: wrote ${charRows?.length ?? 0} characters`);
 
     // ── 3. Bags ──────────────────────────────────────────────────────────────
@@ -956,7 +956,7 @@ async function restoreAllFromSupabase() {
       else bagsUpserted++;
     }
 
-    atomicWriteJson(dataPath('bags.json'), bags);
+    atomicWriteJson('bags.json', bags);
     console.log(`[Supabase] restore: wrote ${bagRows?.length ?? 0} bags (backfilled ${bagsUpserted} new)`);
 
     // ── 4. Downtime ──────────────────────────────────────────────────────────
@@ -976,7 +976,7 @@ async function restoreAllFromSupabase() {
         log:              row.log ?? [],
       };
     }
-    atomicWriteJson(dataPath('downtime.json'), downtime);
+    atomicWriteJson('downtime.json', downtime);
     console.log(`[Supabase] restore: wrote ${dtRows?.length ?? 0} downtime records`);
 
     // ── 5. User snippets ─────────────────────────────────────────────────────
@@ -1010,7 +1010,7 @@ async function restoreAllFromSupabase() {
       else snipsUpserted++;
     }
 
-    atomicWriteJson(dataPath('snippets.json'), snippets);
+    atomicWriteJson('snippets.json', snippets);
     console.log(`[Supabase] restore: wrote ${userSnipRows?.length ?? 0} user snippet sets (backfilled ${snipsUpserted} new)`);
 
     // ── 6. Guild snippets ────────────────────────────────────────────────────
@@ -1024,7 +1024,7 @@ async function restoreAllFromSupabase() {
       if (!row.discord_guild_id || !row.snippets) continue;
       serverSnippets[row.discord_guild_id] = row.snippets;
     }
-    atomicWriteJson(dataPath('server_snippets.json'), serverSnippets);
+    atomicWriteJson('server_snippets.json', serverSnippets);
     console.log(`[Supabase] restore: wrote ${guildSnipRows?.length ?? 0} guild snippet sets`);
 
     // ── 7. Guild state: calendar + weather ──────────────────────────────────
@@ -1082,9 +1082,9 @@ async function restoreAllFromSupabase() {
       }
     }
 
-    atomicWriteJson(dataPath('calendar-state.json'), calState);
-    atomicWriteJson(dataPath('weather-state.json'),  wxState);
-    atomicWriteJson(dataPath('bot-settings.json'),   botSettings);
+    atomicWriteJson('calendar-state.json', calState);
+    atomicWriteJson('weather-state.json',  wxState);
+    atomicWriteJson('bot-settings.json',   botSettings);
     console.log(`[Supabase] restore: wrote guild state for ${guildStateRows?.length ?? 0} guilds`);
 
     // ── 8. Homebrew entries (monsters, spells, items) ────────────────────────
