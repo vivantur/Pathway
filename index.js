@@ -5249,15 +5249,32 @@ function buildHeritageEmbed(heritage) {
   return embed;
 }
 
-function buildAncestryHeritagesPage(ancestry) {
+function buildAncestryHeritagesPage(ancestry, ancestrySlug) {
   const embed = new EmbedBuilder()
     .setTitle(`${ancestry.name} — Heritages`)
     .setColor(ANCESTRY_COLORS.heritage)
     .setFooter({ text: `Source: ${ancestry.source} • Page 2/3` });
 
-  if (!hasHeritages(ancestry)) {
-    // Versatile heritages and AoN-imported entries don't have heritage data
-    // baked in. Be honest about it rather than rendering an empty embed.
+  // Three sources of heritage data, in priority order:
+  //   1. Heritages baked into the ancestry object (legacy/homebrew entries)
+  //   2. Heritages in heritages.json keyed by the ancestry slug
+  //   3. None — fall back to "view on AoN" message
+  let heritageEntries = null;
+
+  if (hasHeritages(ancestry)) {
+    heritageEntries = ancestry.heritages.map(h => ({
+      name: h.name,
+      description: h.description,
+    }));
+  } else if (ancestrySlug && heritagesByAncestry[ancestrySlug]?.length) {
+    // Look up via the heritages.json index
+    heritageEntries = heritagesByAncestry[ancestrySlug]
+      .map(slug => heritageDatabase[slug])
+      .filter(Boolean)
+      .map(h => ({ name: h.name, description: h.description }));
+  }
+
+  if (!heritageEntries || heritageEntries.length === 0) {
     const aonNote = ancestry.aon_url
       ? `\n\n[View on Archives of Nethys](${ancestry.aon_url})`
       : '';
@@ -5267,10 +5284,30 @@ function buildAncestryHeritagesPage(ancestry) {
     return embed;
   }
 
-  embed.setDescription('Choose one heritage at character creation.');
-  for (const h of ancestry.heritages) {
-    const desc = (h.description || '*No description.*').slice(0, 1024);
-    embed.addFields({ name: `◈ ${h.name}`, value: desc, inline: false });
+  // Discord caps total embed body at 6000 chars. Each field is also capped
+  // at 1024. Some ancestries (like Dwarf with 9 heritages, or Catfolk with 8)
+  // can blow that budget if every heritage description is full-length.
+  // Strategy: trim descriptions and add a footer hint if anything got cut.
+  const descIntro = `Choose one heritage at character creation. *(${heritageEntries.length} available — use \`/heritage <name>\` for full details.)*`;
+  embed.setDescription(descIntro);
+
+  // Per-heritage budget: remaining chars / count, capped at 400 chars to keep
+  // the page readable.
+  const budgetPerHeritage = Math.min(400, Math.floor((5500 - descIntro.length) / heritageEntries.length));
+  let trimmed = false;
+  for (const h of heritageEntries) {
+    const raw = h.description || '*No description.*';
+    let value;
+    if (raw.length <= budgetPerHeritage) {
+      value = raw;
+    } else {
+      value = raw.slice(0, budgetPerHeritage - 3).trimEnd() + '...';
+      trimmed = true;
+    }
+    embed.addFields({ name: `◈ ${h.name}`, value, inline: false });
+  }
+  if (trimmed) {
+    embed.setFooter({ text: `Source: ${ancestry.source} • Page 2/3 • Some descriptions trimmed — use /heritage for full text` });
   }
   return embed;
 }
@@ -5310,7 +5347,12 @@ function buildAncestryButtons(currentPage, ancestryKey, ancestry) {
   // If the ancestry doesn't have heritage/feat data, show those buttons in
   // Secondary (grey) style so users can tell at a glance they'll get a
   // "not yet available — view on AoN" message instead of full data.
-  const heritagesStyle = ancestry && hasHeritages(ancestry)
+  // For heritages: check both the embedded array AND the heritages.json
+  // index — most ancestries get their heritage data from the central file
+  // since the AoN-imported ancestries don't have heritages baked in.
+  const hasHeritageData = (ancestry && hasHeritages(ancestry))
+    || (ancestryKey && heritagesByAncestry[ancestryKey]?.length > 0);
+  const heritagesStyle = hasHeritageData
     ? ButtonStyle.Primary
     : ButtonStyle.Secondary;
   const featsStyle = ancestry && hasAncestryFeats(ancestry)
@@ -5942,7 +5984,7 @@ client.on('interactionCreate', async (interaction) => {
     if (!ancestry) return interaction.update({ content: '❌ Could not reload ancestry data.', components: [] });
     let newEmbed;
     if (pageIndex === 0) newEmbed = buildAncestryCorePage(ancestry);
-    if (pageIndex === 1) newEmbed = buildAncestryHeritagesPage(ancestry);
+    if (pageIndex === 1) newEmbed = buildAncestryHeritagesPage(ancestry, ancestryKey);
     if (pageIndex === 2) newEmbed = buildAncestryFeatsPage(ancestry);
     return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, ancestryKey, ancestry)] });
   }
