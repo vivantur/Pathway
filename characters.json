@@ -1506,7 +1506,8 @@
             "Acrobatics": 6,
             "Athletics": 6,
             "Stealth": 6
-          }
+          },
+          "art": "https://media.discordapp.net/attachments/1465080216279056586/1496354706845339658/image.png?ex=69f4c92b&is=69f377ab&hm=6e0913ef7a71537dbc16e48f8b34d44ff33ce5311d2e589e480800e9ac94ca76&=&format=webp&quality=lossless&width=1406&height=937"
         }
       },
       "activeCompanion": "abyss"
