@@ -3933,14 +3933,14 @@
         ],
         "specials": [
           "Dragon Eidolon",
+          "Breath Weapon",
           "Manifest Eidolon",
           "Act Together",
           "Share Senses",
           "Link Spells",
           "Evolution Feat",
-          "Breath Weapon",
           "Darkvision",
-          "Barrage",
+          "Horned",
           "Shared Vigilance",
           "Unlimited Signature Spells",
           "Dragonscaled Kobold"
@@ -3955,7 +3955,7 @@
           "6737edaf-8689-499d-b9a0-065974b0fe79": {
             "containerName": "Spacious Pouch I",
             "bagOfHolding": true,
-            "backpack": true,
+            "backpack": false,
             "augmentations": false
           }
         },
@@ -4031,12 +4031,6 @@
             "Invested"
           ],
           [
-            "Ladder",
-            1,
-            "6737edaf-8689-499d-b9a0-065974b0fe79",
-            "Invested"
-          ],
-          [
             "Signal Whistle",
             1,
             "Invested"
@@ -4044,7 +4038,11 @@
           [
             "Thieves' Toolkit",
             1,
-            "6737edaf-8689-499d-b9a0-065974b0fe79",
+            "Invested"
+          ],
+          [
+            "Spacious Pouch I",
+            1,
             "Invested"
           ]
         ],
@@ -4054,11 +4052,30 @@
           "master": [],
           "legendary": []
         },
-        "weapons": [],
+        "weapons": [
+          {
+            "name": "Fist",
+            "qty": 1,
+            "prof": "unarmed",
+            "die": "d4",
+            "pot": 1,
+            "str": "striking",
+            "mat": null,
+            "display": "+1 Striking Fist",
+            "runes": [],
+            "damageType": "B",
+            "attack": 9,
+            "damageBonus": 0,
+            "extraDamage": [],
+            "increasedDice": false,
+            "isInventor": false,
+            "grade": ""
+          }
+        ],
         "money": {
           "cp": 4,
-          "sp": 1,
-          "gp": 17,
+          "sp": 6,
+          "gp": 16,
           "pp": 0
         },
         "armor": [
@@ -4101,11 +4118,11 @@
               {
                 "spellLevel": 0,
                 "list": [
-                  "Slashing Gust",
+                  "Electric Arc",
                   "Detect Magic",
                   "Light",
                   "Protect Companion",
-                  "Warp Step"
+                  "Slashing Gust"
                 ]
               },
               {
@@ -4159,19 +4176,7 @@
       "art": null,
       "senses": null,
       "edits": null,
-      "saved": "2026-04-25T20:18:37.268Z",
-      "overlay": {
-        "spellbook": [],
-        "repertoire_swaps": [],
-        "prepared_override": {},
-        "daily": {
-          "focus_spent": 0,
-          "hero_points": 1,
-          "slots_used": {},
-          "last_rest_at": null
-        }
-      },
-      "hp": 39
+      "saved": "2026-04-30T13:54:22.989Z"
     },
     "_activeChar": "kasa"
   }
