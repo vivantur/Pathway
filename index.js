@@ -11316,14 +11316,13 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (sub === 'set') {
-      // Override — allows going above 3 if the GM really wants to
       const value = interaction.options.getInteger('value');
       if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
+      if (value > HERO_POINTS_MAX) return interaction.reply({ content: `❌ Hero Points can't exceed **${HERO_POINTS_MAX}** (PF2e cap). Use \`/hero add\` to grant up to the max.`, ephemeral: true });
       charEntry.heroPoints = value;
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
-      const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
-      const note = `✏️ Set to **${value}**${overflow}.`;
+      const note = `✏️ Set to **${value}**.`;
       return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
     }
 
@@ -11513,7 +11512,13 @@ client.on('interactionCreate', async (interaction) => {
       });
 
       const sign = amount >= 0 ? '+' : '';
-      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP`;
+      // Warn when a deduction was partially absorbed by the 0-floor so the GM
+      // knows the full amount wasn't deducted (e.g. tried -100 but only had 50).
+      const actualDelta = newXp - oldXp;
+      const clampWarning = amount < 0 && actualDelta !== amount
+        ? `\n⚠️ *Could only deduct ${Math.abs(actualDelta)} XP — balance was already at ${oldXp}.*`
+        : '';
+      const note = `${amount >= 0 ? '✨' : '📉'} **${sign}${amount} XP**${reason ? ` — *${reason}*` : ''}\n${oldXp} → **${newXp}** XP${clampWarning}`;
       const replyPayload = { embeds: [buildXpEmbed(char, charEntry, { note, showLog: false })] };
 
       // If they crossed a 1000 XP threshold, post a celebratory level-up embed too
@@ -11806,9 +11811,9 @@ client.on('interactionCreate', async (interaction) => {
           rollText = `(rolled ${r.roll} ${fmt(r.mod)})`;
         }
 
-        // Use stored HP only if it's a positive number — 0 means the companion
-        // was defeated last encounter and should re-enter at full health.
-        const companionHp = (comp.currentHp != null && comp.currentHp > 0) ? comp.currentHp : scaled.maxHp;
+        // Use stored HP when it has been explicitly set (including 0 for an
+        // unconscious companion), fall back to maxHp only when never recorded.
+        const companionHp = comp.currentHp != null ? comp.currentHp : scaled.maxHp;
         addCombatant(channelId, {
           name: comp.displayName,
           initiative,
@@ -11877,6 +11882,13 @@ client.on('interactionCreate', async (interaction) => {
       const ac = interaction.options.getInteger('ac');
       const resultOverride = interaction.options.getInteger('result');
 
+      // Validate HP and AC before creating the combatant. hp/ac are optional
+      // Discord options (null = not provided), so only reject explicitly bad values.
+      if (hp !== null && hp < 1) return interaction.reply({ content: '❌ HP must be at least 1.', ephemeral: true });
+      if (ac !== null && ac < 0) return interaction.reply({ content: '❌ AC cannot be negative.', ephemeral: true });
+      const finalHp = hp ?? 1;
+      const finalAc = ac ?? 10;
+
       if (enc.combatants.some(x => x.name.toLowerCase() === name.toLowerCase())) return interaction.reply({ content: `❌ A combatant named "${name}" already exists. Use a unique name (e.g. "Goblin 1").`, ephemeral: true });
 
       let initiative, rollText;
@@ -11892,15 +11904,15 @@ client.on('interactionCreate', async (interaction) => {
       addCombatant(channelId, {
         name,
         initiative,
-        hp,
-        maxHp: hp,
-        ac,
+        hp: finalHp,
+        maxHp: finalHp,
+        ac: finalAc,
         ownerId: userId,
         isNpc: true,
         effects: [],
       });
 
-      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}.`);
+      await interaction.reply(`**${name}** joined initiative at **${initiative}** ${rollText}. HP ${finalHp} · AC ${finalAc}`);
       await updateSummary(interaction.channel, enc);
       return;
     }
