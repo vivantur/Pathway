@@ -607,6 +607,196 @@ async function logEncounterEvent(enc, eventType, { actor = null, target = null, 
   }
 }
 
+// Upsert a single character's downtime record to Supabase.
+// Called fire-and-forget after every spend/grant/accrue/reset.
+async function syncDowntimeToSupabase(discordId, charKey, record) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', discordId)
+      .single();
+    if (!userRow) return;
+
+    const { error } = await sb.from('downtime').upsert({
+      user_id:           userRow.id,
+      char_key:          charKey,
+      bank:              record.bank,
+      last_accrual_date: record.lastAccrualDate,
+      log:               record.log,
+    }, { onConflict: 'user_id,char_key' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] downtime sync failed:', err.message);
+  }
+}
+
+async function syncBagToSupabase(discordId, userBag) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: userRow } = await sb.from('users').select('id').eq('discord_id', discordId).single();
+    if (!userRow) return;
+    const { error } = await sb.from('bags').upsert({
+      user_id:    userRow.id,
+      bag_name:   userBag.bagName ?? 'Bag 1',
+      categories: userBag.categories ?? {},
+    }, { onConflict: 'user_id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] bag sync failed:', err.message);
+  }
+}
+
+async function syncHomebrewEntryToSupabase(type, entryKey, entry) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('homebrew_entries').upsert({
+      type,
+      entry_key: entryKey,
+      name:      entry.name,
+      data:      entry,
+      added_by:  entry._addedBy ?? null,
+    }, { onConflict: 'type,entry_key' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] homebrew sync failed:', err.message);
+  }
+}
+
+async function deleteHomebrewEntryFromSupabase(type, entryKey) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('homebrew_entries').delete()
+      .eq('type', type).eq('entry_key', entryKey);
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] homebrew delete failed:', err.message);
+  }
+}
+
+async function syncUserSnippetsToSupabase(discordId, snippets) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: userRow } = await sb.from('users').select('id').eq('discord_id', discordId).single();
+    if (!userRow) return;
+    const { error } = await sb.from('user_snippets').upsert({
+      user_id:  userRow.id,
+      snippets: snippets ?? {},
+    }, { onConflict: 'user_id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] user snippets sync failed:', err.message);
+  }
+}
+
+async function syncGuildSnippetsToSupabase(guildId, snippets) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('guild_snippets').upsert({
+      discord_guild_id: String(guildId),
+      snippets:         snippets ?? {},
+    }, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] guild snippets sync failed:', err.message);
+  }
+}
+
+async function syncMonsterArtToSupabase(guildId, guildArt) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('monster_art').upsert({
+      discord_guild_id: String(guildId),
+      art:              guildArt ?? {},
+    }, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] monster art sync failed:', err.message);
+  }
+}
+
+async function syncMonsterEditsToSupabase(guildId, guildEdits) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('monster_edits').upsert({
+      discord_guild_id: String(guildId),
+      edits:            guildEdits ?? {},
+    }, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] monster edits sync failed:', err.message);
+  }
+}
+
+// patch: { calendar?: {...}|null, weather?: {...}|null }
+// Uses patch semantics: only the provided keys are written, preserving
+// the other column. First write does an insert; subsequent writes use
+// column-level update so /calendar set doesn't wipe the weather column.
+async function syncGuildStateToSupabase(guildId, patch) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const gid = String(guildId);
+
+    // Try update first (row probably already exists after first bot use)
+    const { data: existing, error: selectErr } = await sb
+      .from('guild_state')
+      .select('id')
+      .eq('discord_guild_id', gid)
+      .maybeSingle();
+    if (selectErr) throw selectErr;
+
+    if (existing) {
+      const { error } = await sb
+        .from('guild_state')
+        .update(patch)
+        .eq('discord_guild_id', gid);
+      if (error) throw error;
+    } else {
+      const { error } = await sb
+        .from('guild_state')
+        .insert({ discord_guild_id: gid, ...patch });
+      if (error) throw error;
+    }
+  } catch (err) {
+    console.error('[Supabase] guild state sync failed:', err.message);
+  }
+}
+
+async function syncNotesToSupabase(discordId, charKey, book) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', discordId)
+      .single();
+    if (!userRow) return;
+
+    const { error } = await sb.from('character_notes').upsert({
+      user_id:  userRow.id,
+      char_key: charKey,
+      next_id:  book.nextId,
+      notes:    book.notes,
+    }, { onConflict: 'user_id,char_key' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] notes sync failed:', err.message);
+  }
+}
+
 // Pull all active characters for a Discord user from Supabase and merge any
 // that aren't already in the local in-memory characters map. Returns the number
 // of new entries added. Never throws — Supabase failures are silent.
@@ -672,8 +862,18 @@ module.exports = {
   preserveHomebrewDuringReseed,
   getSupabase,
   syncAllCharactersToSupabase,
+  syncDowntimeToSupabase,
   syncEncounterToSupabase,
   endEncounterInSupabase,
   logEncounterEvent,
   mergeCharactersFromSupabase,
+  syncNotesToSupabase,
+  syncGuildStateToSupabase,
+  syncBagToSupabase,
+  syncHomebrewEntryToSupabase,
+  deleteHomebrewEntryFromSupabase,
+  syncUserSnippetsToSupabase,
+  syncGuildSnippetsToSupabase,
+  syncMonsterArtToSupabase,
+  syncMonsterEditsToSupabase,
 };

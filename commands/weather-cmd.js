@@ -26,6 +26,29 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const golarionWeather = require('../systems/weather');
 const eberronWeather = require('../systems/eberronWeather');
 const settings = require('../systems/settings');
+const { syncGuildStateToSupabase } = require('../utils/storage');
+
+function buildWeatherSnapshot(guildId, wx) {
+  try {
+    const state = wx.getWeather(guildId);
+    if (!state || !state.current) return null;
+    const c = state.current;
+    return {
+      climate: state.climate,
+      season: state.season,
+      day: state.day,
+      temperatureF: c.temperatureF,
+      temperatureCategory: c.temperatureCategory,
+      effectiveTemperatureCategory: c.effectiveTemperatureCategory,
+      precipitation: c.precipitation,
+      wind: c.wind,
+      fog: c.fog,
+      soaked: c.soaked,
+      description: wx.describeWeather(c),
+      updatedAt: new Date().toISOString(),
+    };
+  } catch { return null; }
+}
 
 // Pick the right weather engine for a guild. Both engines export the same
 // public API so handlers below can use `wx` interchangeably. Default is
@@ -197,6 +220,7 @@ async function cmdClimate(interaction, guildId, wx) {
   // First-time creation if needed
   await wx.ensureWeather(guildId, { climate, season: season || 'spring' });
   await wx.setClimate(guildId, climate, season);
+  syncGuildStateToSupabase(guildId, { weather: buildWeatherSnapshot(guildId, wx) });
   const state = wx.getWeather(guildId);
   // Climate emoji prefers engine-specific (Eberron) over the legacy CLIMATE_EMOJI map.
   const climEmoji = wx.RULES.climates[climate]?.emoji || CLIMATE_EMOJI[climate] || '';
@@ -213,6 +237,7 @@ async function cmdSet(interaction, guildId, wx) {
   const component = interaction.options.getString('component');
   const value = interaction.options.getString('value');
   await wx.setComponent(guildId, component, isNaN(Number(value)) ? value : Number(value));
+  syncGuildStateToSupabase(guildId, { weather: buildWeatherSnapshot(guildId, wx) });
   const state = wx.getWeather(guildId);
   const embed = buildWeatherEmbed(state, state.current, {
     title: `Weather updated — ${component} → ${value}`,
@@ -228,6 +253,7 @@ async function cmdRoll(interaction, guildId, wx) {
     return interaction.reply({ content: 'No climate set yet. Use `/weather climate` first.', ephemeral: true });
   }
   await wx.rollWeather(guildId);
+  syncGuildStateToSupabase(guildId, { weather: buildWeatherSnapshot(guildId, wx) });
   const fresh = wx.getWeather(guildId);
   const embed = buildWeatherEmbed(fresh, fresh.current, { title: '🎲 Rolled new weather for today' }, wx);
   return interaction.reply({ embeds: [embed] });
@@ -242,6 +268,7 @@ async function cmdAdvance(interaction, guildId, wx) {
     return interaction.reply({ content: 'No climate set yet. Use `/weather climate` first.', ephemeral: true });
   }
   await wx.advanceDays(guildId, days);
+  syncGuildStateToSupabase(guildId, { weather: buildWeatherSnapshot(guildId, wx) });
   const fresh = wx.getWeather(guildId);
   const embed = buildWeatherEmbed(fresh, fresh.current, {
     title: `⏭️ Advanced ${days} day${days === 1 ? '' : 's'} — now Day ${fresh.day}`,
@@ -315,6 +342,7 @@ async function cmdApply(interaction, guildId, encountersModule, wx) {
 async function cmdClear(interaction, guildId, wx) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can clear weather state.', ephemeral: true });
   await wx.clear(guildId);
+  syncGuildStateToSupabase(guildId, { weather: null });
   return interaction.reply({ content: '🗑️ Weather state cleared for this server.', ephemeral: true });
 }
 
