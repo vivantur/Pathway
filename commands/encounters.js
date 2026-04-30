@@ -5,7 +5,7 @@
 // Each combatant = { name, initiative, hp, maxHp, ac, ownerId, isNpc, effects: [] }
 // Each effect = { name, value, duration, modifiers: {...}, isPreset, presetKey, appliedBy }
 
-const { syncEncounterToSupabase, endEncounterInSupabase } = require('../utils/storage');
+const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require('../utils/storage');
 
 const encounters = new Map();
 
@@ -268,6 +268,41 @@ function _advancePastDelayed(enc) {
   return channelId ? advanceTurn(channelId) : null;
 }
 
+// On bot startup, reload any encounters that were active when the process last
+// stopped. This prevents combat from evaporating on Railway redeploys.
+// summaryMessageId can't be recovered (Discord messages aren't stored in
+// Supabase), so the pinned summary won't auto-update after recovery — but
+// all HP, turn order, and effects are fully restored.
+async function restoreEncountersFromSupabase() {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: rows, error } = await sb
+      .from('encounters')
+      .select('*')
+      .eq('status', 'active');
+    if (error) throw error;
+    if (!rows || rows.length === 0) return;
+    let count = 0;
+    for (const row of rows) {
+      if (encounters.has(row.channel_id)) continue; // already in memory
+      encounters.set(row.channel_id, {
+        combatants:       row.combatants ?? [],
+        turnIndex:        row.turn_index ?? 0,
+        round:            row.round ?? 1,
+        gmId:             row.gm_discord_id ?? null,
+        guildId:          row.discord_guild_id,
+        summaryMessageId: null,
+        supabaseId:       row.id,
+      });
+      count++;
+    }
+    if (count > 0) console.log(`[Supabase] Restored ${count} active encounter(s) from Supabase`);
+  } catch (err) {
+    console.error('[Supabase] encounter restore failed:', err.message);
+  }
+}
+
 module.exports = {
   getEncounter,
   createEncounter,
@@ -283,4 +318,5 @@ module.exports = {
   clearEffects,
   delayCombatant,
   rejoinFromDelay,
+  restoreEncountersFromSupabase,
 };

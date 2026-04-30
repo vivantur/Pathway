@@ -505,7 +505,12 @@ async function syncAllCharactersToSupabase(characters) {
           experience:       d.xp ?? 0,
           pathbuilder_data: d,
           current_hp:       charEntry.hp ?? null,
-          overlay:          charEntry.overlay ?? {},
+          overlay:          {
+            ...(charEntry.overlay ?? {}),
+            ...(charEntry.companions && Object.keys(charEntry.companions).length > 0
+              ? { companions: charEntry.companions }
+              : {}),
+          },
           hero_points:      charEntry.overlay?.daily?.hero_points ?? 1,
           dying:            charEntry.dying ?? 0,
           wounded:          charEntry.wounded ?? 0,
@@ -665,6 +670,7 @@ module.exports = {
   backupJsonToGitHub,
   shouldForceReseed,
   preserveHomebrewDuringReseed,
+  getSupabase,
   syncAllCharactersToSupabase,
   syncEncounterToSupabase,
   endEncounterInSupabase,

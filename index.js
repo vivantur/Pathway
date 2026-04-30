@@ -41,6 +41,7 @@ const {
   clearEffects,
   delayCombatant,
   rejoinFromDelay,
+  restoreEncountersFromSupabase,
 } = encounters;
 const { getPreset, listPresets } = require('./systems/effects');
 const downtime = require('./commands/downtime');
@@ -5189,7 +5190,10 @@ function buildHelpButtons(currentCategory) {
 }
 
 // ── Bot ready ─────────────────────────────────────────────────────────────────
-client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!`); });
+client.once('clientReady', async () => {
+  console.log(`Logged in as ${client.user.tag}!`);
+  await restoreEncountersFromSupabase();
+});
 
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
@@ -7467,6 +7471,25 @@ client.on('interactionCreate', async (interaction) => {
       saveCharacters(characters);
       const charName = characters[userId][charKey].name;
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
+    }
+
+    else if (sub === 'sync') {
+      const userId = interaction.user.id;
+      await interaction.deferReply({ ephemeral: true });
+      const characters = loadCharacters();
+      const before = new Set(Object.keys(characters[userId] ?? {}).filter(k => !k.startsWith('_')));
+      const added = await mergeCharactersFromSupabase(userId, characters);
+      if (added > 0) saveCharacters(characters);
+      if (added === 0) {
+        return interaction.editReply('✅ Already up to date — no new characters found in the web app.');
+      }
+      const newChars = Object.entries(characters[userId] ?? {})
+        .filter(([k]) => !k.startsWith('_') && !before.has(k))
+        .map(([, e]) => `**${e.name}**`);
+      return interaction.editReply(
+        `✅ Synced ${added} character${added !== 1 ? 's' : ''} from the web app: ${newChars.join(', ')}\n` +
+        `Use \`/char active character:<name>\` to set one as your default.`
+      );
     }
 
     else if (sub === 'feat') {

@@ -191,6 +191,7 @@ const charCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('max').setDescription('New max HP, or "reset" to clear override').setRequired(false))
     .addIntegerOption(o => o.setName('current').setDescription('New current HP').setRequired(false).setMinValue(0))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('sync').setDescription('Pull characters you created on the Pathway web app into Discord.'))
   .addSubcommand(s => s.setName('template').setDescription('Download a blank character template (.txt) to fill in manually.'))
   .addSubcommand(s => s.setName('howto').setDescription('Show a step-by-step guide for importing from Pathbuilder.'));
 
