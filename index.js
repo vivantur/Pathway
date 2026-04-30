@@ -12939,36 +12939,60 @@ client.on('interactionCreate', async (interaction) => {
       if (monsterInput) {
         const displayName = resolveMonsterDisplayName(monsterInput);
         const key = monsterKey(displayName);
-        const entry = guild[key];
-        if (!entry || entry.attacks.length === 0) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**.`, ephemeral: true });
+        const libEntry = guild[key];
+
+        // Pull bestiary attacks too (with library overlay applied so user
+        // overrides show through). Without this, /m attack list would say
+        // "no attacks" for canonical creatures like Aasimar Redeemer that
+        // have built-in attacks in the bestiary.
+        const { monster } = findMonster(displayName);
+        let bestiaryAttacks = [];
+        if (monster) {
+          const edits = getMonsterEdit(guildId, monster.name);
+          const edited = applyMonsterEdits(monster, edits);
+          const withLibrary = applyMonsterAttackLibrary(edited, guildId);
+          bestiaryAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+        }
+        const libAttacks = libEntry?.attacks ?? [];
+
+        // Use bestiary list if available (already includes library overlay);
+        // fall back to library-only for pure homebrew.
+        const allAttacks = bestiaryAttacks.length > 0 ? bestiaryAttacks : libAttacks;
+
+        if (allAttacks.length === 0) {
+          return interaction.reply({
+            content: `❌ No attacks for **${displayName}** in the bestiary or saved library.`,
+            ephemeral: true,
+          });
+        }
+
         const embed = new EmbedBuilder()
           .setColor(0x8B0000)
-          .setTitle(`👹 ${entry.displayName} — Saved Attacks`)
-          .setFooter({ text: `${entry.attacks.length} attack${entry.attacks.length === 1 ? '' : 's'} · /monsterattack use to roll` });
-        for (const a of entry.attacks) {
+          .setTitle(`${displayName} — Available Attacks`)
+          .setFooter({ text: `${allAttacks.length} attack${allAttacks.length === 1 ? '' : 's'} · /m attack use to roll` });
+        for (const a of allAttacks) {
           let line;
           if (a.kind === 'save') {
-            line = `DC ${a.saveDC} ${a.saveType} · ${a.damage} ${a.damageType}`;
+            line = `DC ${a.saveDC} ${a.saveType} · ${a.damage} ${a.damageType ?? 'damage'}`;
           } else {
             const traitText = a.traits?.length ? ` *(${a.traits.join(', ')})*` : '';
             const extra = a.extraDamage ? ` + ${a.extraDamage} ${a.extraType ?? ''}`.trimEnd() : '';
-            line = `${fmt(a.bonus)} · ${a.damage} ${a.damageType}${extra}${traitText}`;
+            line = `${fmt(a.bonus)} · ${a.damage} ${a.damageType ?? ''}${extra}${traitText}`;
           }
-          const kindIcon = a.kind === 'save' ? '💨' : a.kind === 'spell' ? '✨' : '⚔️';
-          embed.addFields({ name: `${kindIcon} ${a.name}`, value: line, inline: false });
+          embed.addFields({ name: a.name, value: line, inline: false });
         }
         return interaction.reply({ embeds: [embed] });
       }
-      // List all monsters
+      // List all monsters in the saved library (bestiary list is too big).
       const entries = Object.values(guild);
-      if (entries.length === 0) return interaction.reply({ content: `📖 No saved monsters yet. Use \`/monsterattack add\` to save one.`, ephemeral: true });
+      if (entries.length === 0) return interaction.reply({ content: `📖 No saved monsters in the library yet.\n\nNote: Bestiary creatures already have their attacks built in — try \`/m attack use attacker:<combatant> monster:Goblin Warrior attack:dogslicer\` directly.\n\nUse \`/m attack add\` to save custom or homebrew attacks.`, ephemeral: true });
       entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
-      const lines = entries.map(e => `• **${e.displayName}** — ${e.attacks.length} attack${e.attacks.length === 1 ? '' : 's'}`);
+      const lines = entries.map(e => `• **${e.displayName}** — ${e.attacks.length} custom attack${e.attacks.length === 1 ? '' : 's'}`);
       const embed = new EmbedBuilder()
         .setColor(0x8B0000)
-        .setTitle(`📖 Saved Monsters (${entries.length})`)
+        .setTitle(`Saved Library (${entries.length} monster${entries.length === 1 ? '' : 's'})`)
         .setDescription(lines.join('\n'))
-        .setFooter({ text: '/monsterattack list monster:<name> to see attacks' });
+        .setFooter({ text: 'These are CUSTOM saved attacks. Bestiary creatures have their attacks built-in.' });
       return interaction.reply({ embeds: [embed] });
     }
 
@@ -12980,22 +13004,72 @@ client.on('interactionCreate', async (interaction) => {
       const targetName = interaction.options.getString('target');
       const explicitMap = interaction.options.getInteger('map'); // null if unset
 
-      const store = loadMonsterAttacks();
-      const guild = getGuildMonsters(store, guildId);
-      const displayName = resolveMonsterDisplayName(monsterInput);
-      const key = monsterKey(displayName);
-      const entry = guild[key];
-      if (!entry) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**. Use \`/monsterattack add\` first.`, ephemeral: true });
-      const attack = findSavedAttack(entry, attackQuery);
-      if (!attack) return interaction.reply({ content: `❌ **${displayName}** has no attack matching "${attackQuery}". Try \`/monsterattack list monster:${displayName}\`.`, ephemeral: true });
-
       const channelId = interaction.channel.id;
       const enc = getEncounter(channelId);
       if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
-      if (interaction.user.id !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/monsterattack use`.', ephemeral: true });
+      if (interaction.user.id !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/m attack use`.', ephemeral: true });
 
       const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
       if (!attacker) return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
+
+      // Resolve monster name → both bestiary built-in attacks AND saved-library
+      // attacks. The bestiary already has Aasimar Redeemer's "longsword +15"
+      // built in, so we must NOT require a /m attack add for canonical
+      // creatures. The saved library is purely additive (custom attacks,
+      // homebrew tweaks, overrides).
+      const displayName = resolveMonsterDisplayName(monsterInput);
+      const { monster } = findMonster(displayName);
+
+      // Collect bestiary built-in attacks (already merged with any library
+      // overrides via the same pipeline /init addmonster uses).
+      let bestiaryAttacks = [];
+      if (monster) {
+        const edits = getMonsterEdit(guildId, monster.name);
+        const edited = applyMonsterEdits(monster, edits);
+        const withLibrary = applyMonsterAttackLibrary(edited, guildId);
+        bestiaryAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+      }
+
+      // Also pull straight from the saved-attack store. applyMonsterAttackLibrary
+      // already merges these into bestiaryAttacks above, but for monsters NOT
+      // in the bestiary (pure homebrew) we fall back to the library directly.
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, guildId);
+      const libEntry = guild[monsterKey(displayName)];
+      const libAttacks = libEntry?.attacks ?? [];
+
+      // Merge: prefer bestiary list (already overlay-applied), fall back to
+      // library-only for homebrew. Dedupe by lowercase name so we don't
+      // double-list the same attack from both sources.
+      const allAttacks = bestiaryAttacks.length > 0 ? bestiaryAttacks : libAttacks;
+
+      if (allAttacks.length === 0) {
+        return interaction.reply({
+          content: `❌ **${displayName}** has no attacks in the bestiary or in the saved library. Use \`/m attack add\` to define one.`,
+          ephemeral: true,
+        });
+      }
+
+      // Find the requested attack: exact match first, then unambiguous substring.
+      const q = String(attackQuery ?? '').toLowerCase().trim();
+      let attack = allAttacks.find(a => String(a.name ?? '').toLowerCase() === q);
+      if (!attack) {
+        const partial = allAttacks.filter(a => String(a.name ?? '').toLowerCase().includes(q));
+        if (partial.length === 1) attack = partial[0];
+        else if (partial.length > 1) {
+          return interaction.reply({
+            content: `🔍 Multiple attacks match "${attackQuery}" on **${displayName}**: ${partial.map(a => `\`${a.name}\``).join(', ')}. Be more specific.`,
+            ephemeral: true,
+          });
+        }
+      }
+      if (!attack) {
+        const available = allAttacks.map(a => `\`${a.name}\``).join(', ');
+        return interaction.reply({
+          content: `❌ **${displayName}** has no attack matching "${attackQuery}".\nAvailable: ${available}`,
+          ephemeral: true,
+        });
+      }
 
       let target = null;
       if (targetName) {
