@@ -2008,20 +2008,30 @@ function buildInitiativeEmbed(enc, { pageOverride = null } = {}) {
 // only one page so we don't post empty button rows.
 function buildInitiativeButtons(channelId, page, totalPages) {
   if (totalPages <= 1) return null;
-  // customId encodes channelId + target page. The handler decodes and
-  // re-renders the embed at that page in an EPHEMERAL reply (per Viv's
-  // design: anyone can flip pages, but only they see the new page).
-  const prevPage = (page - 1 + totalPages) % totalPages;
-  const nextPage = (page + 1) % totalPages;
+  // Compute prev/next with wrap-around. CRITICAL: when totalPages === 2 and
+  // wrap-around is on, both prev and next would point to the SAME other page,
+  // and Discord rejects duplicate custom_ids on a single message. So we DON'T
+  // wrap — at the boundaries we just disable the button instead. Keeps the
+  // UX honest (no surprise wrap) and dodges the duplicate-id error.
+  const prevPage = page - 1;  // -1 means "no prev"
+  const nextPage = page + 1;  // === totalPages means "no next"
+  const hasPrev = prevPage >= 0;
+  const hasNext = nextPage < totalPages;
+
+  // Use a unique id per button position even when disabled, so Discord still
+  // sees two distinct components. Disabled ids never fire so collisions
+  // don't matter, but we keep them distinct for cleanliness.
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(`init_page_${channelId}_${prevPage}`)
+      .setCustomId(hasPrev ? `init_page_${channelId}_${prevPage}` : `init_page_${channelId}_disabled_prev`)
       .setLabel('◀ Prev')
-      .setStyle(ButtonStyle.Secondary),
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(!hasPrev),
     new ButtonBuilder()
-      .setCustomId(`init_page_${channelId}_${nextPage}`)
+      .setCustomId(hasNext ? `init_page_${channelId}_${nextPage}` : `init_page_${channelId}_disabled_next`)
       .setLabel('Next ▶')
-      .setStyle(ButtonStyle.Secondary),
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(!hasNext),
   );
 }
 
@@ -2122,7 +2132,7 @@ function buildRecoveryCheckPayload(rc, combatant) {
     buttons.push(
       new ButtonBuilder()
         .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-        .setLabel(`🎭 Reroll (1 Hero Pt)`)
+        .setLabel(`🎭 Reroll (1 HP)`)
         .setStyle(ButtonStyle.Primary)
     );
   }
@@ -8280,17 +8290,10 @@ client.on('interactionCreate', async (interaction) => {
     let attackTotal = null;
     let effectiveTargetAcForSpell = null;
     if (isAttackSpell) {
-      // Spell attacks are affected by MAP just like weapon strikes (PF2e Player Core p. 446).
-      // casterCombatant is already looked up above; spell attacks are never agile.
-      const spellMapInfo = casterCombatant
-        ? ca.computeMapForNextAttack(casterCombatant, false)
-        : { penalty: 0, noteText: null };
       attackDieRoll = Math.floor(Math.random() * 20) + 1;
-      attackTotal = attackDieRoll + spellAttackBonus + casterMods.attackBonus + spellMapInfo.penalty;
+      attackTotal = attackDieRoll + spellAttackBonus + casterMods.attackBonus;
       const casterEffectText = formatEffectContributions(casterMods.activeEffects, 'attack');
-      const mapText = spellMapInfo.penalty !== 0 ? ` ${spellMapInfo.penalty}` : '';
-      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)}${mapText}${casterEffectText ? ` ${fmt(casterMods.attackBonus)}` : ''} = **${attackTotal}**`;
-      if (spellMapInfo.noteText) description += `\n*${spellMapInfo.noteText}*`;
+      description += `**Spell Attack Roll**\n1d20 (${attackDieRoll}) ${fmt(spellAttackBonus)}${casterEffectText ? ` ${fmt(casterMods.attackBonus)}` : ''} = **${attackTotal}**`;
       if (casterEffectText) description += `\n*${casterEffectText.trim().slice(1, -1)}*`;
       if (attackDieRoll === 20) description += ' ⭐ Natural 20!';
       if (attackDieRoll === 1)  description += ' 💀 Natural 1!';
@@ -8328,22 +8331,14 @@ client.on('interactionCreate', async (interaction) => {
         const step = spell.heightening.step ?? 1;
         const steps = Math.floor(bonusRanks / step);
         if (steps > 0) {
+          // Parse "2d6" → multiply dice count
           const m = String(spell.heightening.damage_bonus).match(/^(\d+)d(\d+)$/i);
           if (m) {
             const addedDice = parseInt(m[1]) * steps;
-            // Combine dice counts when die types match (e.g. "6d6" + "4d6" → "10d6").
-            // Producing "6d6 + 4d6" instead would break rollDamageExpression, which only
-            // handles single-group XdY+Z expressions.
-            const baseMatch = diceExpr.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
-            if (baseMatch && baseMatch[2] === m[2]) {
-              const combined = parseInt(baseMatch[1]) + addedDice;
-              diceExpr = `${combined}d${m[2]}${baseMatch[3] ?? ''}`;
-            }
-            // If die types differ, leave diceExpr unchanged — unusual edge case.
+            diceExpr = `${diceExpr} + ${addedDice}d${m[2]}`;
           } else {
-            // Non-dice bonus (e.g. flat +X) — append as a numeric modifier.
-            // "2d6 + 5" → whitespace stripped → "2d6+5" which rollDamageExpression handles.
-            diceExpr = `${diceExpr}+${spell.heightening.damage_bonus}`;
+            // Non-dice bonus (e.g. flat +X) — append as-is
+            diceExpr = `${diceExpr} + ${spell.heightening.damage_bonus}`;
           }
         }
       }
@@ -8437,12 +8432,6 @@ client.on('interactionCreate', async (interaction) => {
       description += target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-    }
-    // Record spell attacks for MAP tracking so subsequent strikes on the same
-    // turn get the correct penalty (and any strike made before this cast already
-    // bumped attacksThisTurn, so this spell attack will have received its MAP above).
-    if (isAttackSpell && casterCombatant) {
-      ca.recordAttack(channelId, c.name);
     }
 
     // ── Multi-target processing & auto-effect application ──────────────
