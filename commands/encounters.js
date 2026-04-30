@@ -1,8 +1,11 @@
 // encounters.js
 // In-memory encounter store, keyed by channelId.
-// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId, summaryMessageId }
+// Each encounter = { combatants: [], turnIndex: 0, round: 1, gmId, guildId, summaryMessageId,
+//                    supabaseId (set after first Supabase sync) }
 // Each combatant = { name, initiative, hp, maxHp, ac, ownerId, isNpc, effects: [] }
 // Each effect = { name, value, duration, modifiers: {...}, isPreset, presetKey, appliedBy }
+
+const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require('../utils/storage');
 
 const encounters = new Map();
 
@@ -10,19 +13,24 @@ function getEncounter(channelId) {
   return encounters.get(channelId) || null;
 }
 
-function createEncounter(channelId, gmId) {
+function createEncounter(channelId, gmId, guildId = null) {
   const encounter = {
     combatants: [],
     turnIndex: 0,
     round: 1,
     gmId,
+    guildId,
     summaryMessageId: null,
+    supabaseId: null,
   };
   encounters.set(channelId, encounter);
+  syncEncounterToSupabase(channelId, encounter);
   return encounter;
 }
 
 function deleteEncounter(channelId) {
+  const enc = encounters.get(channelId);
+  if (enc) endEncounterInSupabase(enc);
   encounters.delete(channelId);
 }
 
@@ -44,6 +52,7 @@ function addCombatant(channelId, combatant) {
     if (b.maxHp !== a.maxHp) return b.maxHp - a.maxHp;
     return a.name.localeCompare(b.name);
   });
+  syncEncounterToSupabase(channelId, enc);
   return enc;
 }
 
@@ -57,6 +66,7 @@ function removeCombatant(channelId, name) {
   if (idx < enc.turnIndex) enc.turnIndex--;
   enc.combatants.splice(idx, 1);
   if (enc.turnIndex >= enc.combatants.length) enc.turnIndex = 0;
+  syncEncounterToSupabase(channelId, enc);
   return enc;
 }
 
@@ -98,9 +108,11 @@ function advanceTurn(channelId) {
       });
     }
 
+    syncEncounterToSupabase(channelId, enc);
     return { enc, current, expiredEffects };
   }
   // All combatants delayed; return current with no advance (defensive)
+  syncEncounterToSupabase(channelId, enc);
   return { enc, current: enc.combatants[enc.turnIndex], expiredEffects };
 }
 
@@ -112,6 +124,7 @@ function modifyHp(channelId, name, delta) {
   );
   if (!c) return null;
   c.hp = Math.max(0, Math.min(c.maxHp, c.hp + delta));
+  syncEncounterToSupabase(channelId, enc);
   return c;
 }
 
@@ -148,6 +161,7 @@ function addEffect(channelId, combatantName, effect) {
     replaced = true;
   }
   combatant.effects.push(effect);
+  syncEncounterToSupabase(channelId, enc);
   return { combatant, effect, replaced };
 }
 
@@ -162,6 +176,7 @@ function removeEffect(channelId, combatantName, effectName) {
   );
   if (idx === -1) return null;
   const [removed] = combatant.effects.splice(idx, 1);
+  syncEncounterToSupabase(channelId, enc);
   return { combatant, effect: removed };
 }
 
@@ -253,6 +268,41 @@ function _advancePastDelayed(enc) {
   return channelId ? advanceTurn(channelId) : null;
 }
 
+// On bot startup, reload any encounters that were active when the process last
+// stopped. This prevents combat from evaporating on Railway redeploys.
+// summaryMessageId can't be recovered (Discord messages aren't stored in
+// Supabase), so the pinned summary won't auto-update after recovery — but
+// all HP, turn order, and effects are fully restored.
+async function restoreEncountersFromSupabase() {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: rows, error } = await sb
+      .from('encounters')
+      .select('*')
+      .eq('status', 'active');
+    if (error) throw error;
+    if (!rows || rows.length === 0) return;
+    let count = 0;
+    for (const row of rows) {
+      if (encounters.has(row.channel_id)) continue; // already in memory
+      encounters.set(row.channel_id, {
+        combatants:       row.combatants ?? [],
+        turnIndex:        row.turn_index ?? 0,
+        round:            row.round ?? 1,
+        gmId:             row.gm_discord_id ?? null,
+        guildId:          row.discord_guild_id,
+        summaryMessageId: null,
+        supabaseId:       row.id,
+      });
+      count++;
+    }
+    if (count > 0) console.log(`[Supabase] Restored ${count} active encounter(s) from Supabase`);
+  } catch (err) {
+    console.error('[Supabase] encounter restore failed:', err.message);
+  }
+}
+
 module.exports = {
   getEncounter,
   createEncounter,
@@ -268,4 +318,5 @@ module.exports = {
   clearEffects,
   delayCombatant,
   rejoinFromDelay,
+  restoreEncountersFromSupabase,
 };

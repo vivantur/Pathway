@@ -25,6 +25,33 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const golarionCalendar = require('../systems/calendar');
 const eberronCalendar = require('../systems/eberronCalendar');
 const settings = require('../systems/settings');
+const { syncGuildStateToSupabase } = require('../utils/storage');
+
+const SEASON_EMOJI_MAP = { spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️' };
+
+function buildCalendarSnapshot(guildId, date, cal) {
+  try {
+    const season = cal.seasonOf(date.month);
+    const holidays = cal.getHolidaysOn(date.year, date.month, date.day);
+    const next = cal.getNextHoliday(date.year, date.month, date.day);
+    return {
+      year: date.year,
+      month: date.month,
+      day: date.day,
+      setting: settings.getCampaignSetting(guildId),
+      weekday: cal.weekdayName(date.year, date.month, date.day),
+      monthName: cal.MONTH_NAMES[date.month - 1],
+      season,
+      seasonEmoji: SEASON_EMOJI_MAP[season] ?? '',
+      description: cal.describeDate(date),
+      holidays: holidays.map(h => h.name),
+      nextHoliday: next
+        ? { name: next.holiday.name, daysAway: next.daysAway, dateString: cal.describeDate(next.occursOn, { includeWeekday: false }) }
+        : null,
+      updatedAt: new Date().toISOString(),
+    };
+  } catch { return null; }
+}
 
 // Pick the right engine for a guild. Defaults to Golarion for backward
 // compatibility — every existing server keeps its current experience until
@@ -276,7 +303,9 @@ async function cmdSet(interaction, guildId, weatherModule, cal) {
   const day = interaction.options.getInteger('day');
   await cal.setDate(guildId, year, month, day);
   await syncWeatherSeason(weatherModule, guildId, { year, month, day }, cal);
-  const embed = buildTodayEmbed(cal.getDate(guildId), cal)
+  const date = cal.getDate(guildId);
+  syncGuildStateToSupabase(guildId, { calendar: buildCalendarSnapshot(guildId, date, cal) });
+  const embed = buildTodayEmbed(date, cal)
     .setTitle(`📅 Date set — ${cal.describeDate({ year, month, day })}`);
   return interaction.reply({ embeds: [embed] });
 }
@@ -292,6 +321,7 @@ async function cmdAdvance(interaction, guildId, weatherModule, cal) {
   await cal.advance(guildId, days);
   const date = cal.getDate(guildId);
   await syncWeatherSeason(weatherModule, guildId, date, cal);
+  syncGuildStateToSupabase(guildId, { calendar: buildCalendarSnapshot(guildId, date, cal) });
   const verb = days >= 0 ? 'Advanced' : 'Rewound';
   const embed = buildTodayEmbed(date, cal)
     .setTitle(`⏭️ ${verb} ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`);
@@ -440,6 +470,7 @@ async function cmdMoon(interaction, guildId, cal) {
 async function cmdClear(interaction, guildId, cal) {
   if (!isGm(interaction)) return interaction.reply({ content: '❌ Only GMs can clear the calendar.', ephemeral: true });
   await cal.clear(guildId);
+  syncGuildStateToSupabase(guildId, { calendar: null });
   return interaction.reply({ content: '🗑️ Calendar state cleared for this server. Use `/calendar today` or `/calendar set` to start again.', ephemeral: true });
 }
 
