@@ -931,13 +931,33 @@ async function restoreAllFromSupabase() {
     if (bagErr) throw bagErr;
 
     const bags = loadJson('bags.json', { default: {}, quiet: true }) || {};
+
+    // Pull Supabase rows into local JSON (Supabase wins on conflict)
+    const bagsInSupabase = new Set();
     for (const row of bagRows ?? []) {
       const discordId = bySupabaseId[row.user_id];
       if (!discordId) continue;
+      bagsInSupabase.add(discordId);
       bags[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories: row.categories ?? {} };
     }
+
+    // Backfill: push any local bags that Supabase doesn't know about yet
+    let bagsUpserted = 0;
+    for (const [discordId, userBag] of Object.entries(bags)) {
+      if (bagsInSupabase.has(discordId)) continue;
+      const supabaseUserId = byDiscordId[discordId];
+      if (!supabaseUserId) continue;
+      const { error: uErr } = await sb.from('bags').upsert({
+        user_id:    supabaseUserId,
+        bag_name:   userBag.bagName ?? 'Bag 1',
+        categories: userBag.categories ?? {},
+      }, { onConflict: 'user_id' });
+      if (uErr) console.error(`[Supabase] bag backfill failed for ${discordId}:`, uErr.message);
+      else bagsUpserted++;
+    }
+
     atomicWriteJson(dataPath('bags.json'), bags);
-    console.log(`[Supabase] restore: wrote ${bagRows?.length ?? 0} bags`);
+    console.log(`[Supabase] restore: wrote ${bagRows?.length ?? 0} bags (backfilled ${bagsUpserted} new)`);
 
     // ── 4. Downtime ──────────────────────────────────────────────────────────
     const { data: dtRows, error: dtErr } = await sb
@@ -966,13 +986,32 @@ async function restoreAllFromSupabase() {
     if (usErr) throw usErr;
 
     const snippets = loadJson('snippets.json', { default: {}, quiet: true }) || {};
+
+    // Pull Supabase rows into local JSON
+    const snipsInSupabase = new Set();
     for (const row of userSnipRows ?? []) {
       const discordId = bySupabaseId[row.user_id];
       if (!discordId || !row.snippets) continue;
+      snipsInSupabase.add(discordId);
       snippets[discordId] = row.snippets;
     }
+
+    // Backfill: push any local snippet maps that Supabase doesn't know about yet
+    let snipsUpserted = 0;
+    for (const [discordId, userSnips] of Object.entries(snippets)) {
+      if (snipsInSupabase.has(discordId) || !userSnips || Object.keys(userSnips).length === 0) continue;
+      const supabaseUserId = byDiscordId[discordId];
+      if (!supabaseUserId) continue;
+      const { error: uErr } = await sb.from('user_snippets').upsert({
+        user_id:  supabaseUserId,
+        snippets: userSnips,
+      }, { onConflict: 'user_id' });
+      if (uErr) console.error(`[Supabase] snippet backfill failed for ${discordId}:`, uErr.message);
+      else snipsUpserted++;
+    }
+
     atomicWriteJson(dataPath('snippets.json'), snippets);
-    console.log(`[Supabase] restore: wrote ${userSnipRows?.length ?? 0} user snippet sets`);
+    console.log(`[Supabase] restore: wrote ${userSnipRows?.length ?? 0} user snippet sets (backfilled ${snipsUpserted} new)`);
 
     // ── 6. Guild snippets ────────────────────────────────────────────────────
     const { data: guildSnipRows, error: gsErr } = await sb
