@@ -978,6 +978,22 @@ const mCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('monster').setDescription('Monster/combatant name.').setRequired(true).setAutocomplete(true))
     .addStringOption(o => o.setName('skill').setDescription('Skill name.').setRequired(true).setAutocomplete(true))
     .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against.').setRequired(false))
+    .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)))
+  .addSubcommand(s => s.setName('cast')
+    .setDescription('Cast a monster spell or save-based ability in combat v2.')
+    .addStringOption(o => o.setName('monster').setDescription('Casting combatant.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('spell').setDescription('Spell or ability name.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('target').setDescription('Target combatant.').setRequired(false).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('level').setDescription('Cast at this rank.').setRequired(false).setMinValue(1).setMaxValue(10))
+    .addIntegerOption(o => o.setName('dc').setDescription('Override spell/ability DC.').setRequired(false))
+    .addIntegerOption(o => o.setName('attack_bonus').setDescription('Override spell attack bonus.').setRequired(false))
+    .addStringOption(o => o.setName('damage').setDescription('Manual damage expression, e.g. 4d6.').setRequired(false))
+    .addStringOption(o => o.setName('save').setDescription('Manual save type for abilities.').setRequired(false)
+      .addChoices(
+        { name: 'Fortitude', value: 'fort' },
+        { name: 'Reflex', value: 'ref' },
+        { name: 'Will', value: 'will' },
+      ))
     .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)));
 
 const rCommand = new SlashCommandBuilder()
