@@ -1325,6 +1325,50 @@ function setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDataba
       }
     })
     .on('postgres_changes', {
+      event:  'UPDATE',
+      schema: 'public',
+      table:  'homebrew_entries',
+    }, (payload) => {
+      const { type, entry_key, name, data } = payload.new;
+      // For spells the in-memory lookup is by name, not entry_key — use
+      // payload.old.name so a rename still finds and replaces the right entry.
+      const oldName = payload.old?.name ?? name;
+      try {
+        if (type === 'monster') {
+          // entry_key never changes on PATCH; replace in-place by key
+          bestiaryDatabase[entry_key] = { name, ...data };
+          console.log(`[homebrew:realtime] ~ monster "${name}" (${entry_key})`);
+
+        } else if (type === 'spell') {
+          const entry = { name, ...data };
+          // First try to find by old name (handles renames)
+          const byOldName = spellDatabase.findIndex(
+            s => normalize(s.name) === normalize(oldName) && s._homebrew
+          );
+          if (byOldName >= 0) {
+            spellDatabase.splice(byOldName, 1, entry);
+          } else {
+            // Fall back to new name in case of partial state
+            const byNewName = spellDatabase.findIndex(
+              s => normalize(s.name) === normalize(name) && s._homebrew
+            );
+            if (byNewName >= 0) spellDatabase.splice(byNewName, 1, entry);
+            else spellDatabase.push(entry);
+          }
+          console.log(`[homebrew:realtime] ~ spell "${name}"`);
+
+        } else if (type === 'item') {
+          const entry = { id: entry_key, name, ...data };
+          const idx = itemDatabase.findIndex(i => i.id === entry_key);
+          if (idx >= 0) itemDatabase.splice(idx, 1, entry);
+          else itemDatabase.push(entry);
+          console.log(`[homebrew:realtime] ~ item "${name}" (${entry_key})`);
+        }
+      } catch (err) {
+        console.error(`[homebrew:realtime] UPDATE handler error:`, err.message);
+      }
+    })
+    .on('postgres_changes', {
       event:  'DELETE',
       schema: 'public',
       table:  'homebrew_entries',
