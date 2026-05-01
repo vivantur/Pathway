@@ -2359,6 +2359,55 @@ function combatV2CheckEmbed(actor, result) {
     .setDescription(lines.join('\n'));
 }
 
+function combatV2SaveKey(saveType) {
+  const key = String(saveType ?? '').toLowerCase();
+  if (key.startsWith('fort')) return 'fort';
+  if (key.startsWith('ref')) return 'ref';
+  if (key.startsWith('will')) return 'will';
+  return null;
+}
+
+function combatV2DegreeLabel(degree) {
+  return {
+    criticalSuccess: 'Critical Success',
+    success: 'Success',
+    failure: 'Failure',
+    criticalFailure: 'Critical Failure',
+  }[degree] ?? 'Result';
+}
+
+function combatV2LegacyDegree(degree) {
+  return {
+    criticalSuccess: 'crit-success',
+    success: 'success',
+    failure: 'failure',
+    criticalFailure: 'crit-failure',
+  }[degree] ?? degree;
+}
+
+function combatV2PickCaster(charEntry, spell, casterName = null) {
+  const c = charEntry?.data ?? {};
+  const casters = charOverlay.getCasters(c);
+  if (!casters.length) return null;
+  if (casterName) return charOverlay.findCaster(c, casterName);
+  const spellTraditions = (spell.traditions ?? []).map(t => String(t).toLowerCase());
+  return casters.find(sc => spellTraditions.includes(String(sc.magicTradition ?? '').toLowerCase())) ?? casters[0];
+}
+
+function combatV2CasterStats(charEntry, spell, casterName = null) {
+  const c = charEntry?.data ?? {};
+  const caster = combatV2PickCaster(charEntry, spell, casterName);
+  const traditionProfMap = { arcane: 'castingArcane', divine: 'castingDivine', occult: 'castingOccult', primal: 'castingPrimal' };
+  const tradAbilMap = { arcane: 'int', divine: 'wis', occult: 'cha', primal: 'wis' };
+  const tradition = String(caster?.magicTradition ?? spell.traditions?.[0] ?? 'arcane').toLowerCase();
+  const keyAbility = String(caster?.ability ?? tradAbilMap[tradition] ?? 'int').toLowerCase();
+  const keyMod = Math.floor((((c.abilities ?? {})[keyAbility] ?? 10) - 10) / 2);
+  const profKey = traditionProfMap[tradition] ?? 'castingArcane';
+  const profNum = (c.proficiencies ?? {})[profKey] ?? 2;
+  const profBonus = calcProfNum(profNum, c.level ?? 1);
+  return { caster, attack: keyMod + profBonus, dc: 10 + keyMod + profBonus, tradition };
+}
+
 function combatV2CompanionAttacks(comp, scaled) {
   const attacks = [];
   if (scaled.primaryAttack) {
@@ -6671,6 +6720,14 @@ client.on('interactionCreate', async (interaction) => {
             const names = new Set(Object.values(COMBAT_V2_SKILL_LABELS));
             for (const [key, raw] of Object.entries(actor?.skills ?? {})) names.add(raw?.label ?? key);
             suggestions = pick([...names]);
+          } else if (focused.name === 'spell' && sub === 'cast') {
+            suggestions = pick(spellDatabase.map(s => s.name).filter(Boolean));
+          } else if (focused.name === 'caster' && sub === 'cast') {
+            try {
+              const characters = loadCharacters();
+              const { char: charEntry } = resolveChar(interaction.user.id, null, characters) || {};
+              suggestions = pick(charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : []);
+            } catch { suggestions = []; }
           }
         }
         else if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
@@ -12886,6 +12943,158 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = combatV2Rolls.rollCheck({ actor, stat: skill.modifier, dc, bonus, label: `${skill.label} Check`, effectKind: 'skill' });
       return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
+    }
+
+    if (sub === 'cast') {
+      await interaction.deferReply();
+      const spellName = interaction.options.getString('spell');
+      const castLevel = interaction.options.getInteger('level');
+      const targetName = interaction.options.getString('target');
+      const casterName = interaction.options.getString('caster');
+      const bonus = interaction.options.getInteger('bonus') ?? 0;
+
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(userId, null, characters);
+      if (error) return interaction.editReply(error);
+
+      const rawSpell = findSpell(spellName);
+      if (rawSpell?.ambiguous) return interaction.editReply(spellAmbiguityMessage(rawSpell));
+      if (!rawSpell) return interaction.editReply(`Couldn't find a spell called **${spellName}**.`);
+      const spell = normalizeSpell(rawSpell);
+      charOverlay.ensureOverlay(charEntry);
+      const casterStats = combatV2CasterStats(charEntry, spell, casterName);
+      if (!casterStats.caster) return interaction.editReply(`**${charEntry.data.name}** does not have a spellcaster entry configured.`);
+
+      let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+      let target = encounter ? combatV2PickTarget(encounter, actor, targetName) : null;
+      const inCombat = !!actor;
+      if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.editReply('It is not your combatant. Use `/init view` to check the tracker.');
+      }
+      if (!actor) {
+        actor = {
+          name: charEntry.data.name,
+          ownerId: userId,
+          effects: [],
+        };
+        target = null;
+      }
+      if (targetName && !target) return interaction.editReply(`No target named **"${targetName}"** in combat.`);
+
+      const effectiveLevel = castLevel ?? spell.level ?? 1;
+      const isCantrip = spell.type === 'Cantrip';
+      const consumesSlot = !isCantrip && effectiveLevel > 0;
+      const warnings = [];
+      if (consumesSlot) {
+        const slots = charOverlay.getSlotsRemaining(charEntry, casterStats.caster.name, effectiveLevel);
+        if (slots && slots.max > 0 && slots.current <= 0) {
+          warnings.push(`${casterStats.caster.name} has no rank ${effectiveLevel} slots remaining. Casting anyway.`);
+        } else if (slots && slots.max === 0) {
+          warnings.push(`${casterStats.caster.name} has no rank ${effectiveLevel} slots. Casting anyway.`);
+        }
+        charOverlay.spendSlot(charEntry, casterStats.caster.name, effectiveLevel);
+        saveCharacters(characters);
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`${actor.name} casts ${spell.name}`);
+      if (charEntry.art) embed.setThumbnail(charEntry.art);
+
+      const lines = [];
+      lines.push(`*${isCantrip ? `Cantrip ${effectiveLevel}` : `Rank ${effectiveLevel}`} ${casterStats.tradition} spell*`);
+      if (spell.cast) lines.push(`**Cast** ${spell.cast}`);
+      if (spell.range) lines.push(`**Range** ${spell.range}`);
+      if (spell.area) lines.push(`**Area** ${spell.area}`);
+      if (spell.target) lines.push(`**Target** ${spell.target}`);
+      if (target) lines.push(`**Combat Target** ${target.name}`);
+      lines.push('');
+
+      const resolved = resolveSpellDamage(spell, effectiveLevel);
+      const damageRoll = resolved?.diceExpr ? rollCompoundExpression(resolved.diceExpr) : null;
+      const damageType = resolved?.damageType ?? spell.damageType ?? null;
+      let appliedLine = null;
+
+      if (spell.isAttackSpell) {
+        const targetEffects = combatV2Rolls.effectTotals(target);
+        const dc = target?.ac != null ? target.ac + targetEffects.ac : null;
+        const result = combatV2Rolls.rollCheck({
+          actor,
+          stat: casterStats.attack,
+          dc,
+          bonus,
+          label: 'Spell Attack',
+          effectKind: 'attack',
+        });
+        lines.push(`**Spell Attack**`);
+        lines.push(`1d20 (${result.die}) ${fmt(casterStats.attack)}${result.effectBonus ? ` ${fmt(result.effectBonus)} effects` : ''}${bonus ? ` ${fmt(bonus)} bonus` : ''} = **${result.total}**`);
+        if (target && dc != null) lines.push(`vs AC ${dc}: **${combatV2DegreeLabel(result.degree)}**`);
+        if (damageRoll) {
+          if (['success', 'criticalSuccess'].includes(result.degree)) {
+            const baseDamage = result.degree === 'criticalSuccess' ? damageRoll.total * 2 : damageRoll.total;
+            const defended = target ? combatV2Rolls.applyDefenses(baseDamage, damageType, target) : { finalDamage: baseDamage, notes: [] };
+            lines.push(`**Damage${result.degree === 'criticalSuccess' ? ' (crit x2)' : ''}** ${damageRoll.display} = **${defended.finalDamage}**${damageType ? ` ${damageType}` : ''}`);
+            if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
+            if (inCombat && target && defended.finalDamage > 0) {
+              const beforeHp = target.hp;
+              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+              appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
+            }
+          } else {
+            lines.push('*No damage.*');
+          }
+        }
+      } else if (spell.savingThrow) {
+        const saveKey = combatV2SaveKey(spell.savingThrow);
+        lines.push(`**${spell.saveIsBasic ? 'Basic ' : ''}${spell.savingThrow} Save DC ${casterStats.dc}**`);
+        if (target && saveKey && target.saves?.[saveKey] != null) {
+          const result = combatV2Rolls.rollCheck({
+            actor: target,
+            stat: Number(target.saves[saveKey]),
+            dc: casterStats.dc,
+            bonus: 0,
+            label: `${spell.savingThrow} Save`,
+            effectKind: 'save',
+          });
+          lines.push(`${target.name}: 1d20 (${result.die}) ${fmt(result.stat)}${result.effectBonus ? ` ${fmt(result.effectBonus)} effects` : ''} = **${result.total}**`);
+          lines.push(`**${combatV2DegreeLabel(result.degree)}**`);
+          if (damageRoll) {
+            const fullDamage = spell.saveIsBasic ? basicSaveDamage(damageRoll.total, combatV2LegacyDegree(result.degree)) : damageRoll.total;
+            const defended = target ? combatV2Rolls.applyDefenses(fullDamage, damageType, target) : { finalDamage: fullDamage, notes: [] };
+            lines.push(`**Damage** ${damageRoll.display} -> **${defended.finalDamage}**${damageType ? ` ${damageType}` : ''}`);
+            if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
+            if (inCombat && target && defended.finalDamage > 0 && (spell.saveIsBasic || result.degree === 'failure' || result.degree === 'criticalFailure')) {
+              const beforeHp = target.hp;
+              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+              appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
+            }
+          }
+        } else if (target) {
+          lines.push(`${target.name}'s save bonus is not recorded.`);
+        } else if (damageRoll) {
+          lines.push(`Damage if applicable: ${damageRoll.display} = **${damageRoll.total}**${damageType ? ` ${damageType}` : ''}`);
+        }
+      } else if (damageRoll) {
+        lines.push(`**Damage** ${damageRoll.display} = **${damageRoll.total}**${damageType ? ` ${damageType}` : ''}`);
+      }
+
+      if (resolved?.heightenedNote) lines.push(`*Heightened: ${resolved.heightenedNote}*`);
+      const shortDesc = spell.description ?? '';
+      if (shortDesc && shortDesc !== '*No description available.*') {
+        lines.push('');
+        lines.push(shortDesc.length > 300 ? `${shortDesc.slice(0, 300)}...\n*Use \`/spell ${spell.name}\` for full details.*` : shortDesc);
+      }
+      embed.setDescription(lines.join('\n').slice(0, 4096));
+      let footer = `${charEntry.data.name} · Spell Attack ${fmt(casterStats.attack)} · DC ${casterStats.dc}`;
+      if (consumesSlot) {
+        const slotsNow = charOverlay.getSlotsRemaining(charEntry, casterStats.caster.name, effectiveLevel);
+        if (slotsNow?.max > 0) footer += ` · Rank ${effectiveLevel} slots: ${slotsNow.current}/${slotsNow.max}`;
+      }
+      embed.setFooter({ text: footer });
+
+      if (inCombat) await updateCombatV2Summary(interaction.channel, encounter);
+      const content = [warnings.join('\n'), appliedLine].filter(Boolean).join('\n') || undefined;
+      return interaction.editReply({ content, embeds: [embed] });
     }
 
     return interaction.reply({ content: `Unknown /i action: ${sub}`, ephemeral: true });
