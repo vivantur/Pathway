@@ -45,6 +45,12 @@ const { resolveSpellDamage, rollCompoundExpression } = require('./utils/spellDam
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
+const TOKEN = process.env.TOKEN || process.env.DISCORD_TOKEN;
+if (!TOKEN) {
+  console.error('Missing required environment variable: TOKEN or DISCORD_TOKEN');
+  process.exit(1);
+}
+
 const encounters = require('./commands/encounters');
 const {
   getEncounter,
@@ -123,6 +129,7 @@ client.on('shardError', error => {
 // Catch uncaught exceptions to prevent crashes from synchronous errors too.
 process.on('uncaughtException', error => {
   console.error('Uncaught exception:', error);
+  process.exit(1);
 });
 
 let spellDatabase = loadGamedata('spells.json', {
@@ -426,12 +433,21 @@ let companionDatabase = loadGamedata('companions.json', {
   count: arr => arr.length,
 });
 
+let charactersCache = null;
+
 function loadCharacters() {
-  try { return JSON.parse(fs.readFileSync(dataPath('characters.json'), 'utf8')); }
-  catch { return {}; }
+  if (charactersCache) return charactersCache;
+  try {
+    charactersCache = JSON.parse(fs.readFileSync(dataPath('characters.json'), 'utf8'));
+  } catch {
+    charactersCache = {};
+  }
+  return charactersCache;
 }
+
 function saveCharacters(data) {
-  return saveJson('characters.json', data);
+  charactersCache = data || {};
+  return saveJson('characters.json', charactersCache);
 }
 
 // ── Downtime helpers ──────────────────────────────────────────────────────────
@@ -2493,10 +2509,23 @@ function findSpell(spellName) {
   const normalize = str => str.toLowerCase().trim()
     .replace(/[\u2018\u2019\u02bc]/g, "'").replace(/[\u201c\u201d]/g, '"');
   const query = normalize(spellName);
-  return spellDatabase.find(s => normalize(s.name ?? '') === query)
-    || spellDatabase.find(s => normalize(s.name ?? '').startsWith(query))
+  const exact = spellDatabase.filter(s => normalize(s.name ?? '') === query);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return { ambiguous: true, query: spellName, matches: exact };
+  return spellDatabase.find(s => normalize(s.name ?? '').startsWith(query))
     || spellDatabase.find(s => normalize(s.name ?? '').includes(query))
     || null;
+}
+
+function spellAmbiguityMessage(result) {
+  const lines = (result.matches ?? []).slice(0, 10).map((s, i) => {
+    const rank = s.type === 'Cantrip' ? 'cantrip' : `rank ${s.level ?? '?'}`;
+    const source = s.source ? `, ${s.source}` : '';
+    const traits = Array.isArray(s.traits) && s.traits.length ? `, traits: ${s.traits.slice(0, 4).join(', ')}` : '';
+    return `${i + 1}. **${s.name}** (${rank}${source}${traits})`;
+  });
+  const more = (result.matches?.length ?? 0) > 10 ? `\n...and ${(result.matches.length - 10)} more.` : '';
+  return `Multiple spell entries match **${result.query}**:\n${lines.join('\n')}${more}\n\nPlease narrow the spell data first; Pathway will not guess between duplicate official versions.`;
 }
 
 // ── Rules lookup ──────────────────────────────────────────────────────────────
@@ -8389,6 +8418,7 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'spell') {
     await interaction.deferReply();
     const spell = findSpell(interaction.options.getString('name'));
+    if (spell?.ambiguous) return interaction.editReply(spellAmbiguityMessage(spell));
     if (!spell) return interaction.editReply(`Couldn't find that spell. Check the spelling and try again!`);
     await interaction.editReply({ embeds: [buildSpellEmbed(spell)] });
   }
@@ -8404,6 +8434,7 @@ client.on('interactionCreate', async (interaction) => {
     const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
     if (error) return interaction.editReply(error);
     const rawSpell = findSpell(spellName);
+    if (rawSpell?.ambiguous) return interaction.editReply(spellAmbiguityMessage(rawSpell));
     if (!rawSpell) return interaction.editReply(`Couldn't find a spell called **${spellName}**. Check the spelling and try again!`);
     const spell = normalizeSpell(rawSpell);
     const c = charEntry.data;
@@ -8847,6 +8878,7 @@ client.on('interactionCreate', async (interaction) => {
       if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
       // Validate via spellDatabase
       const rawSpell = findSpell(spellName);
+      if (rawSpell?.ambiguous) return interaction.reply({ content: spellAmbiguityMessage(rawSpell), ephemeral: true });
       if (!rawSpell) return interaction.reply({ content: `❌ Couldn't find a spell called **${spellName}**.`, ephemeral: true });
       const spell = normalizeSpell(rawSpell);
       const rank = spell.type === 'Cantrip' ? 0 : Number(spell.level ?? 1);
@@ -8921,6 +8953,7 @@ client.on('interactionCreate', async (interaction) => {
       if (picked.error) return interaction.reply({ content: picked.error, ephemeral: true });
       // Validate the replacement spell exists
       const rawSpell = findSpell(addName);
+      if (rawSpell?.ambiguous) return interaction.reply({ content: spellAmbiguityMessage(rawSpell), ephemeral: true });
       if (!rawSpell) return interaction.reply({ content: `❌ Couldn't find a spell called **${addName}** in the database.`, ephemeral: true });
       const r = charOverlay.swapRepertoire(charEntry, picked.caster.name, rank, removeName, addName);
       if (!r.ok) return interaction.reply({ content: `❌ ${r.error}`, ephemeral: true });
@@ -14237,4 +14270,4 @@ client.on('interactionCreate', async (interaction) => {
 
 });
 
-client.login(process.env.TOKEN);
+client.login(TOKEN);

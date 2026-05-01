@@ -6,6 +6,8 @@ gamedata/aon-raw/*.json
 # Local backups — don't push these
 gamedata/*.backup
 *.backup
+characters.json
+saves/*.json
 
 # The usual suspects
 node_modules/
