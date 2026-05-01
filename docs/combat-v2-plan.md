@@ -52,7 +52,7 @@ Goal: replace the legacy combat commands with an Avrae-style PF2e combat workflo
 2. Wire `/init start/end/view/next/prev`. Done.
 3. Wire `/init add` for PCs, monsters, NPCs, companions, duplicate monsters, and grouped initiative. Done.
 4. Wire `/i attack`, `/i save`, `/i skill`, `/i cast`. Done.
-5. Wire monster commands: `/mattack`, `/m save`, `/m skill`, `/m cast`, `/m attacks`. In progress: `/mattack`, `/m save`, `/m skill`, and `/m cast` done.
+5. Wire monster commands: `/mattack`, `/m save`, `/m skill`, `/m cast`, `/m attacks`. Done.
 6. Wire HP, temp HP, effects, remove, and modify commands. In progress: `/init hp`, `/init thp`, `/init effect`, `/init removeeffect`, `/init effects`, and `/init remove` done.
 7. Replace legacy deploy command definitions.
 8. Remove or archive legacy combat handlers after parity testing.

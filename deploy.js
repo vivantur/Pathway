@@ -994,6 +994,10 @@ const mCommand = new SlashCommandBuilder()
         { name: 'Reflex', value: 'ref' },
         { name: 'Will', value: 'will' },
       ))
+    .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)))
+  .addSubcommand(s => s.setName('attacks')
+    .setDescription('List a monster combatant\'s attacks and spells.')
+    .addStringOption(o => o.setName('monster').setDescription('Monster/combatant name.').setRequired(true).setAutocomplete(true))
     .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)));
 
 const rCommand = new SlashCommandBuilder()
