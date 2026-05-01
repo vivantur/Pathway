@@ -16287,6 +16287,107 @@ client.on('interactionCreate', async (interaction) => {
     const characters = loadCharacters();
     let store = loadDowntime();
 
+    // Current downtime engine: a per-character bank of downtime days. The old
+    // activity tracker code below is kept only as historical scaffolding, but
+    // every registered downtime command is handled here and returns before it.
+    if (['check', 'spend', 'grant', 'log', 'reset'].includes(sub)) {
+      const charNameArg = interaction.options.getString('character');
+      const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+
+      const c = charEntry.data ?? {};
+      const charName = c.name ?? charEntry.name ?? 'Character';
+
+      if (sub === 'check') {
+        const accrual = downtime.accrue(store, userId, charKey);
+        const status = downtime.getStatus(store, userId, charKey);
+        const recent = downtime.getLog(store, userId, charKey, 5);
+        saveDowntime(store);
+
+        const accrualLine = accrual.added > 0
+          ? `Added **${accrual.added}** day${accrual.added === 1 ? '' : 's'} since your last downtime check.`
+          : 'No new downtime days accrued today.';
+        const capLine = accrual.capped > 0
+          ? `\n**${accrual.capped}** day${accrual.capped === 1 ? '' : 's'} hit the ${downtime.MAX_BANK}-day cap.`
+          : '';
+        const logLines = recent.length
+          ? recent.map(e => {
+              const sign = e.delta > 0 ? '+' : '';
+              return `• ${sign}${e.delta} day${Math.abs(e.delta) === 1 ? '' : 's'} · ${e.kind} · balance ${e.balance} · ${e.reason ?? 'no reason'}`;
+            }).join('\n')
+          : '*No downtime history yet.*';
+
+        const embed = new EmbedBuilder()
+          .setColor(0x6f4e37)
+          .setTitle(`🛠️ ${charName}'s Downtime`)
+          .setDescription(
+            `**Banked days:** ${status.bank}/${status.capacity}\n` +
+            `${accrualLine}${capLine}\n\n` +
+            `**Recent activity:**\n${logLines}`
+          )
+          .setFooter({ text: `Last accrual date: ${status.lastAccrualDate}` });
+        if (charEntry.art) embed.setThumbnail(charEntry.art);
+        return interaction.reply({ embeds: [embed] });
+      }
+
+      if (sub === 'spend') {
+        const days = interaction.options.getInteger('days');
+        const reason = interaction.options.getString('reason');
+        const result = downtime.spend(store, userId, charKey, days, reason, userId);
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        saveDowntime(store);
+        return interaction.reply({
+          content: `🪙 **${charName}** spent **${days}** downtime day${days === 1 ? '' : 's'} on **${reason}**.\nBank balance: **${result.balance}**/${downtime.MAX_BANK}.`,
+        });
+      }
+
+      if (sub === 'grant') {
+        const days = interaction.options.getInteger('days');
+        const reason = interaction.options.getString('reason');
+        const result = downtime.grant(store, userId, charKey, days, reason, userId);
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        saveDowntime(store);
+        const capLine = result.capped > 0
+          ? `\n${result.capped} day${result.capped === 1 ? '' : 's'} could not be added because the bank is capped at ${downtime.MAX_BANK}.`
+          : '';
+        return interaction.reply({
+          content: `🪙 Added **${result.added}** downtime day${result.added === 1 ? '' : 's'} to **${charName}**: **${reason}**.\nBank balance: **${result.balance}**/${downtime.MAX_BANK}.${capLine}`,
+        });
+      }
+
+      if (sub === 'log') {
+        downtime.accrue(store, userId, charKey);
+        const recent = downtime.getLog(store, userId, charKey, 10);
+        saveDowntime(store);
+        const lines = recent.length
+          ? recent.map(e => {
+              const sign = e.delta > 0 ? '+' : '';
+              const date = String(e.ts ?? '').slice(0, 10) || 'unknown date';
+              return `• ${date} — ${sign}${e.delta} day${Math.abs(e.delta) === 1 ? '' : 's'} · ${e.kind} · balance ${e.balance} · ${e.reason ?? 'no reason'}`;
+            }).join('\n')
+          : '*No history yet.*';
+        const embed = new EmbedBuilder()
+          .setColor(0xF39C12)
+          .setTitle(`🪙 ${charName}'s Downtime Log`)
+          .setDescription(lines);
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+
+      if (sub === 'reset') {
+        const result = downtime.reset(store, userId, charKey, userId, 'manual reset');
+        saveDowntime(store);
+        return interaction.reply({
+          content: `🧹 Reset **${charName}**'s downtime bank from **${result.before}** to **0**.`,
+          ephemeral: true,
+        });
+      }
+    }
+
+    return interaction.reply({
+      content: `❌ This downtime subcommand is from an older command version. Try restarting Discord, then use \`/downtime check\`, \`/downtime spend\`, \`/downtime grant\`, \`/downtime log\`, or \`/downtime reset\`.`,
+      ephemeral: true,
+    });
+
     // ─── /downtime list — show available activities ───
     if (sub === 'list') {
       const lines = Object.entries(downtime.ACTIVITIES).map(([key, def]) =>
