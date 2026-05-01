@@ -2574,6 +2574,34 @@ function normalizeReferenceQuery(str) {
     .replace(/\s+/g, ' ');
 }
 
+function referenceSourcePriority(entry) {
+  const source = String(entry?.source ?? '').toLowerCase();
+  const category = String(entry?.category ?? '').toLowerCase();
+  const text = `${source} ${category}`;
+  const priorities = [
+    'player core 2',
+    'player core',
+    'gm core',
+    'monster core',
+    'rage of elements',
+    'war of immortals',
+    'core rulebook',
+    'gamemastery guide',
+    'bestiary',
+  ];
+  const index = priorities.findIndex(name => text.includes(name));
+  return index === -1 ? priorities.length : index;
+}
+
+function pickReferenceEntry(entries) {
+  return [...entries].sort((a, b) =>
+    referenceSourcePriority(a) - referenceSourcePriority(b) ||
+    String(a.source ?? '').localeCompare(String(b.source ?? '')) ||
+    String(a.category ?? '').localeCompare(String(b.category ?? '')) ||
+    String(a.name ?? '').localeCompare(String(b.name ?? ''))
+  )[0] ?? null;
+}
+
 function findReference(commandName, query) {
   const q = normalizeReferenceQuery(query);
   const db = referenceDatabases[commandName] ?? [];
@@ -2581,7 +2609,7 @@ function findReference(commandName, query) {
 
   const exact = db.filter(e => normalizeReferenceQuery(e.name) === q || normalizeReferenceQuery(e.slug) === q);
   if (exact.length === 1) return { entry: exact[0], matches: [] };
-  if (exact.length > 1) return { entry: null, matches: exact, exactDuplicates: true };
+  if (exact.length > 1) return { entry: pickReferenceEntry(exact), matches: [], exactDuplicates: true };
 
   const starts = db.filter(e => normalizeReferenceQuery(e.name).startsWith(q));
   if (starts.length === 1) return { entry: starts[0], matches: [] };
@@ -6294,7 +6322,7 @@ client.on('interactionCreate', async (interaction) => {
         let suggestions = [];
 
         if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
-          suggestions = pick((referenceDatabases[cmd] ?? []).map(e => e.name).filter(Boolean));
+          suggestions = pick([...new Set((referenceDatabases[cmd] ?? []).map(e => e.name).filter(Boolean))]);
         }
         else if (cmd === 'item' && focused.name === 'name') {
           suggestions = pick(itemDatabase.map(i => i.name));
