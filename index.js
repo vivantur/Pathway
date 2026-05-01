@@ -6892,6 +6892,16 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           }
         }
+        else if (cmd === 'mattack') {
+          const v2 = combatV2State.getEncounter(interaction.channel.id);
+          if (focused.name === 'attacker' || focused.name === 'target') {
+            suggestions = pick((v2?.combatants ?? []).map(c => c.name));
+          } else if (focused.name === 'name') {
+            const attackerName = interaction.options.getString('attacker');
+            const attacker = v2 ? combatV2State.findCombatant(v2, attackerName) : null;
+            suggestions = pick((attacker?.attacks ?? []).map(a => a.name).filter(Boolean));
+          }
+        }
         else if ((cmd === 'rest' || cmd === 'refocus' || cmd === 'resource')) {
           const characters = loadCharacters();
           if (focused.name === 'character') {
@@ -9876,6 +9886,62 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'mattack') {
     const channelId = interaction.channel.id;
     const userId = interaction.user.id;
+    const v2Encounter = combatV2State.getEncounter(channelId);
+    if (v2Encounter) {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can use `/mattack` in combat v2.', ephemeral: true });
+      const attackerName = interaction.options.getString('attacker');
+      const attackName = interaction.options.getString('name');
+      const targetName = interaction.options.getString('target');
+      const manualBonus = interaction.options.getInteger('bonus');
+      const manualDamage = interaction.options.getString('damage');
+      const manualType = interaction.options.getString('type');
+      const mapOverride = interaction.options.getInteger('map');
+      const agile = interaction.options.getBoolean('agile') ?? false;
+
+      const attacker = combatV2State.findCombatant(v2Encounter, attackerName);
+      if (!attacker) return interaction.reply({ content: `No combatant named **"${attackerName}"** in combat.`, ephemeral: true });
+      const target = combatV2State.findCombatant(v2Encounter, targetName);
+      if (!target) return interaction.reply({ content: `No combatant named **"${targetName}"** in combat.`, ephemeral: true });
+
+      let attack = combatV2FindAttack(attacker, attackName);
+      if (!attack && manualBonus == null && !manualDamage) {
+        return interaction.reply({ content: `No saved attack matching **"${attackName}"** found for **${attacker.name}**. Add manual \`bonus\` and \`damage\`, or use one of:\n${combatV2AttackListText(attacker)}`, ephemeral: true });
+      }
+      if (!attack) {
+        attack = {
+          name: attackName,
+          bonus: manualBonus ?? 0,
+          damage: manualDamage ?? '1d4',
+          damageType: manualType ?? 'damage',
+          traits: agile ? ['agile'] : [],
+          source: 'manual',
+        };
+      } else {
+        attack = {
+          ...attack,
+          bonus: manualBonus ?? attack.bonus,
+          damage: manualDamage ?? attack.damage,
+          damageType: manualType ?? attack.damageType,
+          traits: agile && !(attack.traits ?? []).some(t => String(t).toLowerCase() === 'agile')
+            ? [...(attack.traits ?? []), 'agile']
+            : (attack.traits ?? []),
+        };
+      }
+
+      const [result] = combatV2Rolls.rollAttack({ attacker, target, attack, map: mapOverride, count: 1 });
+      const embed = combatV2Render.renderAttackResult(result).setTitle(`${attacker.name} attacks with ${attack.name}`);
+      let content;
+      if (['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
+        const beforeHp = target.hp;
+        const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
+        content = `**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
+      }
+      if (mapOverride === null) attacker.attacksThisTurn = (attacker.attacksThisTurn ?? 0) + 1;
+      await interaction.reply({ content, embeds: [embed] });
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return;
+    }
+
     const enc = getEncounter(channelId);
 
     if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
@@ -9889,6 +9955,10 @@ client.on('interactionCreate', async (interaction) => {
     const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
     const explicitMap = interaction.options.getInteger('map'); // null if unset
     const agile = interaction.options.getBoolean('agile') ?? false;
+
+    if (attackBonus == null || !damageExpr) {
+      return interaction.reply({ content: 'Legacy `/mattack` needs both `bonus` and `damage`. In combat v2 those are optional when using a saved attack.', ephemeral: true });
+    }
 
     const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
     if (!attacker) return interaction.reply({ content: `❌ No combatant named "${attackerName}" in this encounter.`, ephemeral: true });
