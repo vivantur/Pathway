@@ -1059,8 +1059,12 @@ const initCommand = new SlashCommandBuilder()
   // ── HP in combat ──
   .addSubcommand(s => s.setName('hp')
     .setDescription('Apply HP change to a combatant (positive = heal, negative = damage).')
-    .addStringOption(o => o.setName('name').setDescription('Combatant name').setRequired(true))
+    .addStringOption(o => o.setName('name').setDescription('Combatant name').setRequired(true).setAutocomplete(true))
     .addIntegerOption(o => o.setName('change').setDescription('HP change (positive to heal, negative to damage)').setRequired(true)))
+  .addSubcommand(s => s.setName('thp')
+    .setDescription('Set temporary HP on a combatant.')
+    .addStringOption(o => o.setName('name').setDescription('Combatant name').setRequired(true).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('Temporary HP amount').setRequired(true).setMinValue(0)))
   // ── Effects / conditions ──
   .addSubcommand(s => s.setName('effect')
     .setDescription('Apply an effect or condition to a combatant.')

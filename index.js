@@ -7055,9 +7055,10 @@ client.on('interactionCreate', async (interaction) => {
           } else {
             // removeeffect: pull effects from the named target
             const targetName = interaction.options.getString('target');
-            const enc = getEncounter(interaction.channel.id);
+            const v2 = combatV2State.getEncounter(interaction.channel.id);
+            const enc = v2 ?? getEncounter(interaction.channel.id);
             if (enc && targetName) {
-              const target = findCombatant(enc, targetName);
+              const target = v2 ? combatV2State.findCombatant(v2, targetName) : findCombatant(enc, targetName);
               if (target?.effects) {
                 suggestions = pick(target.effects.map(e => e.name));
               }
@@ -7070,14 +7071,14 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'init' && focused.name === 'target') {
           // Autocomplete combatants currently in this channel's encounter
-          const enc = getEncounter(interaction.channel.id);
+          const enc = combatV2State.getEncounter(interaction.channel.id) ?? getEncounter(interaction.channel.id);
           if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'init' && focused.name === 'name'
-                 && ['hp', 'remove', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
+                 && ['hp', 'thp', 'remove', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
           // Autocomplete combatants for any subcommand that takes a 'name' parameter
           // referring to a combatant in the encounter.
-          const enc = getEncounter(interaction.channel.id);
+          const enc = combatV2State.getEncounter(interaction.channel.id) ?? getEncounter(interaction.channel.id);
           if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'monsteradd' && focused.name === 'monster') {
@@ -13264,6 +13265,101 @@ client.on('interactionCreate', async (interaction) => {
       await clearCombatV2Summary(interaction.channel, v2Encounter);
       combatV2State.endEncounter(channelId);
       return interaction.reply('Combat ended.');
+    }
+
+    if (v2Encounter && sub === 'hp') {
+      const name = interaction.options.getString('name');
+      const change = interaction.options.getInteger('change');
+      const combatant = combatV2State.findCombatant(v2Encounter, name);
+      if (!combatant) return interaction.reply({ content: `No combatant named **"${name}"** in combat.`, ephemeral: true });
+      if (combatant.ownerId !== userId && v2Encounter.gmId !== userId) {
+        return interaction.reply({ content: 'You can only modify HP for your own combatant, unless you are the GM.', ephemeral: true });
+      }
+      const result = combatV2State.applyHp(channelId, combatant.name, change);
+      const verb = change >= 0 ? 'healed' : 'took';
+      await interaction.reply(`**${result.combatant.name}** ${verb} **${Math.abs(change)}**: ${result.before.hp}/${result.combatant.maxHp} -> ${result.combatant.hp}/${result.combatant.maxHp} HP${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp HP)` : ''}`);
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'thp') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can set temp HP for combatants right now.', ephemeral: true });
+      const name = interaction.options.getString('name');
+      const amount = interaction.options.getInteger('amount');
+      const result = combatV2State.setTempHp(channelId, name, amount);
+      await interaction.reply(`**${result.combatant.name}** temp HP: ${result.before} -> **${result.combatant.tempHp}**.`);
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'remove') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can remove combatants.', ephemeral: true });
+      const name = interaction.options.getString('name');
+      const result = combatV2State.removeCombatant(channelId, name);
+      await interaction.reply(`Removed **${result.combatant.name}** from combat.`);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'effect') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can add effects.', ephemeral: true });
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+      const value = interaction.options.getInteger('value');
+      const duration = interaction.options.getInteger('duration');
+      const target = combatV2State.findCombatant(v2Encounter, targetName);
+      if (!target) return interaction.reply({ content: `No combatant named **"${targetName}"** in combat.`, ephemeral: true });
+      const preset = getPreset(effectName);
+      const effect = preset ? {
+        name: preset.name,
+        value: preset.scaling ? (value ?? 1) : null,
+        duration: duration ?? null,
+        modifiers: preset.build(value ?? 1),
+        source: 'preset',
+      } : {
+        name: effectName,
+        value: value ?? null,
+        duration: duration ?? null,
+        modifiers: {
+          attackBonus: interaction.options.getInteger('attack_bonus') ?? 0,
+          damageBonus: interaction.options.getInteger('damage_bonus') ?? 0,
+          acBonus: interaction.options.getInteger('ac_bonus') ?? 0,
+          saveBonus: interaction.options.getInteger('save_bonus') ?? 0,
+          skillBonus: interaction.options.getInteger('skill_bonus') ?? 0,
+          description: interaction.options.getString('description') ?? '',
+        },
+        source: 'custom',
+      };
+      const result = combatV2State.addEffect(channelId, target.name, effect);
+      await interaction.reply(`Added **${result.effect.name}${result.effect.value ? ` ${result.effect.value}` : ''}** to **${result.combatant.name}**.`);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'removeeffect') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can remove effects.', ephemeral: true });
+      const targetName = interaction.options.getString('target');
+      const effectName = interaction.options.getString('name');
+      const result = combatV2State.removeEffect(channelId, targetName, effectName);
+      await interaction.reply(`Removed **${result.effect.name}** from **${result.combatant.name}**.`);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'effects') {
+      const targetName = interaction.options.getString('target');
+      const target = combatV2State.findCombatant(v2Encounter, targetName);
+      if (!target) return interaction.reply({ content: `No combatant named **"${targetName}"** in combat.`, ephemeral: true });
+      const lines = (target.effects ?? []).map(e => {
+        const value = e.value != null ? ` ${e.value}` : '';
+        const durationText = e.duration != null ? ` (${e.duration} rounds)` : '';
+        return `• **${e.name}${value}**${durationText}`;
+      });
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`${target.name}'s Effects`)
+        .setDescription(lines.length ? lines.join('\n') : 'No active effects.');
+      return interaction.reply({ embeds: [embed], ephemeral: target.hidden && userId === v2Encounter.gmId });
     }
 
     if (!v2Encounter && ['view', 'prev'].includes(sub)) {
