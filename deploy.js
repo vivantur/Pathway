@@ -446,6 +446,28 @@ const skillinfoCommand = new SlashCommandBuilder()
   .setDescription('Look up full details on a skill (actions, DCs, uses).')
   .addStringOption(o => o.setName('skill').setDescription('Skill name').setRequired(true).setAutocomplete(true));
 
+const referenceCommand = (name, description, optionDescription = 'Name to look up') => new SlashCommandBuilder()
+  .setName(name)
+  .setDescription(description)
+  .addStringOption(o => o.setName('name').setDescription(optionDescription).setRequired(true).setAutocomplete(true));
+
+const actionCommand = referenceCommand('action', 'Look up a PF2e action or activity.', 'Action or activity name');
+const hazardCommand = referenceCommand('hazard', 'Look up a PF2e hazard.', 'Hazard name');
+const ritualCommand = referenceCommand('ritual', 'Look up a PF2e ritual.', 'Ritual name');
+const traitCommand = referenceCommand('trait', 'Look up a PF2e trait.', 'Trait name');
+const afflictionCommand = referenceCommand('affliction', 'Look up a PF2e curse or disease.', 'Affliction name');
+const languageCommand = referenceCommand('language', 'Look up a PF2e language.', 'Language name');
+const domainCommand = referenceCommand('domain', 'Look up a PF2e deity domain.', 'Domain name');
+const planeCommand = referenceCommand('plane', 'Look up a PF2e plane.', 'Plane name');
+const relicCommand = referenceCommand('relic', 'Look up a PF2e relic or relic gift.', 'Relic or gift name');
+const familiarCommand = referenceCommand('familiar', 'Look up familiar abilities and specific familiars.', 'Familiar entry name');
+const vehicleCommand = referenceCommand('vehicle', 'Look up a PF2e vehicle.', 'Vehicle name');
+const siegeCommand = referenceCommand('siege', 'Look up a PF2e siege weapon.', 'Siege weapon name');
+const kingdomCommand = referenceCommand('kingdom', 'Look up kingdom structures and events.', 'Kingdom entry name');
+const classfeatureCommand = referenceCommand('classfeature', 'Look up class features and class options.', 'Class feature or option name');
+const creatureextraCommand = referenceCommand('creatureextra', 'Look up creature abilities and adjustments.', 'Creature ability or adjustment name');
+const sourcebookCommand = referenceCommand('sourcebook', 'Look up PF2e source books and products.', 'Source name');
+
 const classCommand = new SlashCommandBuilder()
   .setName('class')
   .setDescription('Look up a class from the game database.')
@@ -1201,6 +1223,22 @@ const commands = [
   classCommand,
   companionCommand,
   conditionCommand,
+  actionCommand,
+  hazardCommand,
+  ritualCommand,
+  traitCommand,
+  afflictionCommand,
+  languageCommand,
+  domainCommand,
+  planeCommand,
+  relicCommand,
+  familiarCommand,
+  vehicleCommand,
+  siegeCommand,
+  kingdomCommand,
+  classfeatureCommand,
+  creatureextraCommand,
+  sourcebookCommand,
   deityCommand,
   featCommand,
   heritageCommand,

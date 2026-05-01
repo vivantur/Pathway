@@ -22,9 +22,11 @@
 //     file (delete the file or use --force to re-fetch).
 //
 // Categories pulled (matches AoN's `category` field on each document):
-//   action, ancestry, archetype, armor, article, background, class, creature,
-//   creature-family, deity, equipment, feat, hazard, rules, skill, shield,
-//   spell, source, trait, weapon, weapon-group
+//   action, ancestry, archetype, armor, article, background, class,
+//   class-feature, creature, creature-family, deity, equipment, feat, hazard,
+//   rules, skill, shield, spell, source, trait, weapon, weapon-group, plus
+//   subsystem/reference categories such as ritual, relic, language, domain,
+//   plane, vehicle, disease, curse, familiar-ability, and kingdom data.
 //
 // OUTPUT: gamedata/aon-raw/<category>.json — an array of documents in the
 //         exact shape AoN returns them. We don't touch the data; we just
@@ -50,10 +52,26 @@ const USER_AGENT = 'PathwayBot/1.0 (Discord bot for PF2e; https://github.com/viv
 const ALL_CATEGORIES = [
   'action', 'skill', 'trait', 'weapon-group',
   'ancestry', 'background', 'class', 'archetype',
-  'deity', 'source', 'rules', 'article',
+  'class-feature', 'deity', 'source', 'rules', 'article',
   'shield', 'armor', 'weapon',
   'feat', 'hazard', 'creature-family',
   'equipment', 'spell', 'creature',
+  'ritual', 'relic', 'set-relic',
+  'familiar-ability', 'familiar-specific',
+  'language', 'domain', 'plane',
+  'curse', 'disease',
+  'vehicle', 'siege-weapon',
+  'kingdom-structure', 'kingdom-event',
+  'skill-general-action', 'weather-hazard',
+  'animal-companion', 'animal-companion-specialization', 'animal-companion-advanced', 'animal-companion-unique',
+  'creature-ability', 'creature-adjustment', 'creature-theme-template',
+  'source', 'sidebar', 'category-page',
+  'bloodline', 'lesson', 'patron', 'mystery', 'cause', 'doctrine', 'instinct',
+  'muse', 'racket', 'research-field', 'arcane-school', 'arcane-thesis',
+  'eidolon', 'implement', 'innovation', 'hybrid-study', 'methodology',
+  'conscious-mind', 'subconscious-mind',
+  'hunters-edge', 'druidic-order', 'apparition', 'way', 'style',
+  'mythic-calling', 'ikon', 'destiny', 'epithet',
 ];
 
 const OUTPUT_DIR = path.join(__dirname, '..', 'gamedata', 'aon-raw');

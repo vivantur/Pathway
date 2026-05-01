@@ -433,6 +433,45 @@ let companionDatabase = loadGamedata('companions.json', {
   count: arr => arr.length,
 });
 
+const REFERENCE_DATABASE_CONFIG = {
+  action:        { file: 'actions.json',         key: 'actions',          label: 'actions and activities', icon: '⚡', color: 0x2ecc71 },
+  hazard:        { file: 'hazards.json',         key: 'hazards',          label: 'hazards', icon: '⚠️', color: 0xe67e22 },
+  ritual:        { file: 'rituals.json',         key: 'rituals',          label: 'rituals', icon: '🕯️', color: 0x8e44ad },
+  trait:         { file: 'traits.json',          key: 'traits',           label: 'traits', icon: '🏷️', color: 0xf39c12 },
+  affliction:    { file: 'afflictions.json',     key: 'afflictions',      label: 'afflictions', icon: '☣️', color: 0x8b0000 },
+  language:      { file: 'languages.json',       key: 'languages',        label: 'languages', icon: '🗣️', color: 0x3498db },
+  domain:        { file: 'domains.json',         key: 'domains',          label: 'domains', icon: '⛩️', color: 0x9b59b6 },
+  plane:         { file: 'planes.json',          key: 'planes',           label: 'planes', icon: '🌌', color: 0x34495e },
+  relic:         { file: 'relics.json',          key: 'relics',           label: 'relics', icon: '💎', color: 0x16a085 },
+  familiar:      { file: 'familiars.json',       key: 'familiars',        label: 'familiars', icon: '🐾', color: 0x27ae60 },
+  vehicle:       { file: 'vehicles.json',        key: 'vehicles',         label: 'vehicles', icon: '🛞', color: 0x95a5a6 },
+  siege:         { file: 'siege-weapons.json',   key: 'siege_weapons',    label: 'siege weapons', icon: '🏹', color: 0x7f8c8d },
+  kingdom:       { file: 'kingdom.json',         key: 'kingdom',          label: 'kingdom entries', icon: '🏰', color: 0xd4ac0d },
+  classfeature:  { file: 'class-features.json',  key: 'class_features',   label: 'class features', icon: '🎓', color: 0x4a90d9 },
+  creatureextra: { file: 'creature-extras.json', key: 'creature_extras',  label: 'creature extras', icon: '🧬', color: 0x1abc9c },
+  sourcebook:    { file: 'sources.json',         key: 'sources',          label: 'sources', icon: '📚', color: 0x7289da },
+};
+
+function loadReferenceDatabase(commandName, cfg) {
+  return loadGamedata(cfg.file, {
+    default: [],
+    label: cfg.label,
+    transform: raw => {
+      const inner = raw?.[cfg.key] ?? raw;
+      const arr = Array.isArray(inner) ? inner : Object.values(inner ?? {});
+      return arr.filter(e => e && typeof e.name === 'string' && e.name.length > 0);
+    },
+    count: arr => arr.length,
+  }).map(e => ({ ...e, _referenceCommand: commandName }));
+}
+
+const referenceDatabases = Object.fromEntries(
+  Object.entries(REFERENCE_DATABASE_CONFIG).map(([commandName, cfg]) => [
+    commandName,
+    loadReferenceDatabase(commandName, cfg),
+  ])
+);
+
 let charactersCache = null;
 
 function loadCharacters() {
@@ -2526,6 +2565,79 @@ function spellAmbiguityMessage(result) {
   });
   const more = (result.matches?.length ?? 0) > 10 ? `\n...and ${(result.matches.length - 10)} more.` : '';
   return `Multiple spell entries match **${result.query}**:\n${lines.join('\n')}${more}\n\nPlease narrow the spell data first; Pathway will not guess between duplicate official versions.`;
+}
+
+function normalizeReferenceQuery(str) {
+  return String(str ?? '').toLowerCase().trim()
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, ' ');
+}
+
+function findReference(commandName, query) {
+  const q = normalizeReferenceQuery(query);
+  const db = referenceDatabases[commandName] ?? [];
+  if (!q) return { entry: null, matches: [] };
+
+  const exact = db.filter(e => normalizeReferenceQuery(e.name) === q || normalizeReferenceQuery(e.slug) === q);
+  if (exact.length === 1) return { entry: exact[0], matches: [] };
+  if (exact.length > 1) return { entry: null, matches: exact, exactDuplicates: true };
+
+  const starts = db.filter(e => normalizeReferenceQuery(e.name).startsWith(q));
+  if (starts.length === 1) return { entry: starts[0], matches: [] };
+  if (starts.length > 1 && starts.length <= 25) return { entry: null, matches: starts };
+
+  const contains = db.filter(e => normalizeReferenceQuery(e.name).includes(q));
+  if (contains.length === 1) return { entry: contains[0], matches: [] };
+  if (contains.length > 1) return { entry: null, matches: contains.slice(0, 25), total: contains.length };
+
+  return { entry: null, matches: [] };
+}
+
+function referenceCategoryLabel(category) {
+  return String(category ?? 'reference')
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function truncateField(value, max = 1024) {
+  const text = String(value ?? '').trim();
+  if (text.length <= max) return text;
+  return text.slice(0, max - 3).trimEnd() + '...';
+}
+
+function buildReferenceEmbed(commandName, entry) {
+  const cfg = REFERENCE_DATABASE_CONFIG[commandName] ?? {};
+  const level = entry.level != null && !Number.isNaN(entry.level) ? ` ${entry.level}` : '';
+  const category = referenceCategoryLabel(entry.category);
+  const embed = new EmbedBuilder()
+    .setColor(cfg.color ?? 0x7289da)
+    .setTitle(`${cfg.icon ?? '📖'} ${entry.name}`)
+    .setDescription(truncateField(entry.description || entry.summary || 'No description available.', 3900));
+
+  const meta = [];
+  if (category) meta.push(category);
+  if (entry.rarity && entry.rarity !== 'Common') meta.push(entry.rarity);
+  if (level) meta.push(`Level${level}`);
+  if (meta.length) embed.addFields({ name: 'Type', value: meta.join(' • '), inline: true });
+  if (entry.actions) embed.addFields({ name: 'Actions', value: truncateField(entry.actions, 256), inline: true });
+  if (entry.traits?.length) embed.addFields({ name: 'Traits', value: truncateField(entry.traits.join(', '), 1024), inline: false });
+  if (entry.trigger) embed.addFields({ name: 'Trigger', value: truncateField(entry.trigger), inline: false });
+  if (entry.requirements) embed.addFields({ name: 'Requirements', value: truncateField(entry.requirements), inline: false });
+  if (entry.frequency) embed.addFields({ name: 'Frequency', value: truncateField(entry.frequency), inline: false });
+  if (entry.prerequisite) embed.addFields({ name: 'Prerequisites', value: truncateField(entry.prerequisite), inline: false });
+  if (entry.access) embed.addFields({ name: 'Access', value: truncateField(entry.access), inline: false });
+  if (entry.price_raw || entry.bulk_raw) {
+    embed.addFields({
+      name: 'Stats',
+      value: [`Price: ${entry.price_raw ?? '—'}`, `Bulk: ${entry.bulk_raw ?? '—'}`].join(' • '),
+      inline: false,
+    });
+  }
+  if (entry.aon_url) embed.addFields({ name: 'AoN', value: entry.aon_url, inline: false });
+  embed.setFooter({ text: `${cfg.label ?? 'Reference'} • ${entry.source ?? 'Pathfinder 2e'}` });
+  return embed;
 }
 
 // ── Rules lookup ──────────────────────────────────────────────────────────────
@@ -6181,7 +6293,10 @@ client.on('interactionCreate', async (interaction) => {
 
         let suggestions = [];
 
-        if (cmd === 'item' && focused.name === 'name') {
+        if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
+          suggestions = pick((referenceDatabases[cmd] ?? []).map(e => e.name).filter(Boolean));
+        }
+        else if (cmd === 'item' && focused.name === 'name') {
           suggestions = pick(itemDatabase.map(i => i.name));
         }
         else if ((cmd === 'spell' && focused.name === 'name') ||
@@ -9740,6 +9855,35 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /rule ───────────────────────────────────────────────────────
+  else if (REFERENCE_DATABASE_CONFIG[commandName]) {
+    const input = interaction.options.getString('name');
+    const { entry, matches, exactDuplicates, total } = findReference(commandName, input);
+    const cfg = REFERENCE_DATABASE_CONFIG[commandName];
+
+    if (entry) {
+      return interaction.reply({ embeds: [buildReferenceEmbed(commandName, entry)] });
+    }
+
+    if (matches && matches.length > 1) {
+      const sorted = [...matches].sort((a, b) => a.name.localeCompare(b.name));
+      const preview = sorted.slice(0, 20)
+        .map(e => `• **${e.name}** *(${referenceCategoryLabel(e.category)}${e.source ? `, ${e.source}` : ''})*`)
+        .join('\n');
+      const extra = total && total > 20 ? `\n*...and ${total - 20} more. Try narrowing your search.*` : '';
+      const header = exactDuplicates
+        ? `🔍 Multiple ${cfg.label} share the exact name **"${input}"**:`
+        : `🔍 Multiple ${cfg.label} match **"${input}"**. Did you mean one of these?`;
+      return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
+    }
+
+    const names = (referenceDatabases[commandName] ?? []).map(e => e.name).filter(Boolean);
+    const hint = didYouMeanLine(input, names);
+    return interaction.reply({
+      content: `❌ No ${cfg.label.slice(0, -1) || 'entry'} found for **"${input}"**.${hint || ' Check your spelling or try another name.'}`,
+      ephemeral: true,
+    });
+  }
+
   else if (commandName === 'rule') {
     const input = interaction.options.getString('name');
     const { rule, matches } = findRule(input);
