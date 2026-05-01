@@ -60,4 +60,5 @@ Goal: replace the legacy combat commands with an Avrae-style PF2e combat workflo
 10. Wire player HP/temp HP shortcuts. Done.
 11. Wire delay and rejoin. Done.
 12. Wire player join/effect/remove shortcuts. Done.
-13. Remove or archive legacy combat handlers after parity testing.
+13. Discord parity test with `combat-v2-discord-test-checklist.md`.
+14. Remove or archive legacy combat handlers after parity testing.
