@@ -13220,11 +13220,12 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'join') {
       if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter here. Ask the GM to use `/init start`.', ephemeral: true });
+      await interaction.deferReply();
       const characters = loadCharacters();
       const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-      if (error) return interaction.reply({ content: error, ephemeral: true });
+      if (error) return interaction.editReply(error);
       const c = charEntry.data;
-      if (combatV2HasName(encounter, c.name)) return interaction.reply({ content: `**${c.name}** is already in combat.`, ephemeral: true });
+      if (combatV2HasName(encounter, c.name)) return interaction.editReply(`**${c.name}** is already in combat.`);
       const maxHp = computeCharMaxHp(charEntry);
       const initMod = interaction.options.getInteger('bonus') ?? computeCharPerception(charEntry);
       const rolled = combatV2Initiative(initMod, interaction.options.getInteger('result'));
@@ -13246,8 +13247,14 @@ client.on('interactionCreate', async (interaction) => {
         },
         skills: combatV2CharacterSkills(charEntry),
       });
-      await updateCombatV2Summary(interaction.channel, encounter);
-      return interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
+      let warning = '';
+      try {
+        await updateCombatV2Summary(interaction.channel, encounter);
+      } catch (err) {
+        console.error('combat v2 join summary update failed:', err);
+        warning = '\n⚠️ Joined, but I could not update the pinned combat tracker. Check my channel permissions.';
+      }
+      return interaction.editReply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.${warning}`);
     }
 
     if (sub === 'attacks') {
