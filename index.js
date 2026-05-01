@@ -13813,6 +13813,35 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply(`${mention} **${reactor.name}** reaction prompt: *${reason}*\nUse \`/i reaction actor:${reactor.name}\` if the reaction is used.`);
     }
 
+    if (v2Encounter && sub === 'delay') {
+      const current = combatV2State.currentCombatant(v2Encounter);
+      if (!current) return interaction.reply({ content: 'No current combatant to delay.', ephemeral: true });
+      if (userId !== v2Encounter.gmId && current.ownerId !== userId) {
+        return interaction.reply({ content: 'Only the current combatant owner or GM can delay this turn.', ephemeral: true });
+      }
+      const result = combatV2State.delayCombatant(channelId, current.name);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      const next = result.current ? ` Next up: **${result.current.name}**.` : '';
+      return interaction.reply(`**${result.combatant.name}** delays.${next}`);
+    }
+
+    if (v2Encounter && sub === 'rejoin') {
+      const name = interaction.options.getString('name');
+      const targetName = interaction.options.getString('target');
+      const combatant = combatV2State.findCombatant(v2Encounter, name);
+      if (!combatant) return interaction.reply({ content: `No combatant named **"${name}"** in combat.`, ephemeral: true });
+      if (userId !== v2Encounter.gmId && combatant.ownerId !== userId) {
+        return interaction.reply({ content: 'Only the combatant owner or GM can rejoin this turn.', ephemeral: true });
+      }
+      if (!combatant.delayed) return interaction.reply({ content: `**${combatant.name}** is not delaying.`, ephemeral: true });
+      if (targetName && !combatV2State.findCombatant(v2Encounter, targetName)) {
+        return interaction.reply({ content: `No combatant named **"${targetName}"** in combat.`, ephemeral: true });
+      }
+      const result = combatV2State.rejoinCombatant(channelId, combatant.name, targetName);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return interaction.reply(`**${result.combatant.name}** rejoins initiative and acts now.`);
+    }
+
     if (!v2Encounter && ['view', 'prev'].includes(sub)) {
       return interaction.reply({ content: 'No active combat v2 encounter. Start one with `/init start`.', ephemeral: true });
     }
