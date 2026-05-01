@@ -3362,6 +3362,30 @@ function normalizeItemQuery(str) {
     .replace(/\s+/g, ' ');
 }
 
+function itemSourceRank(item) {
+  const source = String(item?.source ?? item?.source?.source_text ?? '').toLowerCase();
+  const aon = String(item?.aon_url ?? '');
+  let rank = 0;
+  if (source.includes('player core') || source.includes('gm core')) rank += 100;
+  if (source.includes('rage of elements') || source.includes('war of immortals')) rank += 80;
+  if (!source.includes('legacy') && !source.includes('core rulebook')) rank += 10;
+  if (item?.pfs_availability === 'Standard') rank += 5;
+  const idMatch = aon.match(/ID=(\d+)/i);
+  if (idMatch) rank += Math.min(Number(idMatch[1]) / 10000, 1);
+  return rank;
+}
+
+function choosePreferredItem(candidates) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+  const sorted = [...candidates].sort((a, b) =>
+    itemSourceRank(b) - itemSourceRank(a) ||
+    (b.level ?? -1) - (a.level ?? -1) ||
+    String(a.source ?? '').localeCompare(String(b.source ?? '')) ||
+    String(a.aon_url ?? '').localeCompare(String(b.aon_url ?? ''))
+  );
+  return sorted[0];
+}
+
 function findItem(query, levelFilter) {
   const q = normalizeItemQuery(query);
   if (!q) return { item: null, matches: [] };
@@ -3376,7 +3400,7 @@ function findItem(query, levelFilter) {
     i.name.toLowerCase() === q
   );
   if (exact.length === 1) return { item: exact[0], matches: [] };
-  if (exact.length > 1)   return { item: null, matches: exact, exactDuplicates: true };
+  if (exact.length > 1)   return { item: choosePreferredItem(exact), matches: exact, exactDuplicates: true, autoSelected: true };
 
   // 2. Starts-with match
   const starts = pool.filter(i => i.name.toLowerCase().startsWith(q));
@@ -3430,8 +3454,10 @@ function buildItemEmbed(item) {
   const traitsDisplay = traitChips.length ? `*${traitChips.join(', ')}*` : null;
 
   // Source line
-  const sourceText = item.source?.source_text
-    ?? (item.source?.book ? `${item.source.book}${item.source.page ? ` pg. ${item.source.page}` : ''}` : null);
+  const sourceText = typeof item.source === 'string'
+    ? item.source
+    : item.source?.source_text
+      ?? (item.source?.book ? `${item.source.book}${item.source.page ? ` pg. ${item.source.page}` : ''}` : null);
 
   // Category line (e.g. "Weapons · Specific Magic Weapons")
   const categoryLine = [item.category, item.subcategory].filter(Boolean).join(' · ');
