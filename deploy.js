@@ -995,6 +995,23 @@ const mCommand = new SlashCommandBuilder()
         { name: 'Will', value: 'will' },
       ))
     .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)))
+  .addSubcommand(s => s.setName('ability')
+    .setDescription('Use a monster ability that calls for a target save.')
+    .addStringOption(o => o.setName('monster').setDescription('Acting combatant.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('name').setDescription('Ability name, e.g. Vitality Drain.').setRequired(true))
+    .addStringOption(o => o.setName('target').setDescription('Target combatant.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('save').setDescription('Target save.').setRequired(true)
+      .addChoices(
+        { name: 'Fortitude', value: 'fort' },
+        { name: 'Reflex', value: 'ref' },
+        { name: 'Will', value: 'will' },
+      ))
+    .addIntegerOption(o => o.setName('dc').setDescription('Save DC.').setRequired(true))
+    .addStringOption(o => o.setName('damage').setDescription('Optional damage expression, e.g. 4d6.').setRequired(false))
+    .addStringOption(o => o.setName('type').setDescription('Damage type, e.g. void, mental, poison.').setRequired(false))
+    .addBooleanOption(o => o.setName('basic').setDescription('Apply basic-save damage scaling. Default true if damage is present.').setRequired(false))
+    .addStringOption(o => o.setName('notes').setDescription('Effect reminder shown after the save.').setRequired(false))
+    .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)))
   .addSubcommand(s => s.setName('attacks')
     .setDescription('List a monster combatant\'s attacks and spells.')
     .addStringOption(o => o.setName('monster').setDescription('Monster/combatant name.').setRequired(true).setAutocomplete(true))

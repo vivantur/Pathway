@@ -56,4 +56,5 @@ Goal: replace the legacy combat commands with an Avrae-style PF2e combat workflo
 6. Wire HP, temp HP, effects, remove, and modify commands. Done.
 7. Wire reactions and reaction prompts. Done.
 8. Replace legacy deploy command definitions.
-9. Remove or archive legacy combat handlers after parity testing.
+9. Wire save-based monster abilities. Done.
+10. Remove or archive legacy combat handlers after parity testing.

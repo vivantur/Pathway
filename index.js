@@ -6758,6 +6758,7 @@ client.on('interactionCreate', async (interaction) => {
             if (sub === 'show') cmd = 'monster';
             else if (sub === 'save' || sub === 'skill') cmd = 'monsterroll';
             else if (sub === 'cast') cmd = 'monstercast';
+            else if (sub === 'ability') cmd = 'monsterability';
             else if (sub === 'attacks') cmd = 'monsterattacks';
           }
         }
@@ -6996,6 +6997,12 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'monsterattacks') {
           const v2 = combatV2State.getEncounter(interaction.channel.id);
           if (focused.name === 'monster') {
+            suggestions = pick((v2?.combatants ?? []).map(c => c.name));
+          }
+        }
+        else if (cmd === 'monsterability') {
+          const v2 = combatV2State.getEncounter(interaction.channel.id);
+          if (focused.name === 'monster' || focused.name === 'target') {
             suggestions = pick((v2?.combatants ?? []).map(c => c.name));
           }
         }
@@ -7433,6 +7440,7 @@ client.on('interactionCreate', async (interaction) => {
       if (sub === 'show') commandName = 'monster';
       else if (sub === 'save' || sub === 'skill') commandName = 'monsterroll';
       else if (sub === 'cast') commandName = 'monstercast';
+      else if (sub === 'ability') commandName = 'monsterability';
       else if (sub === 'attacks') commandName = 'monsterattacks';
       // Everything else: /m alone or unknown — fall through with no rewrite,
       // which will hit the catch-all "unknown command" handler.
@@ -10300,6 +10308,70 @@ client.on('interactionCreate', async (interaction) => {
       .addFields({ name: 'Attacks', value: attackText.slice(0, 1024), inline: false });
     if (spellLines.length) embed.addFields({ name: 'Spells', value: spellLines.join('\n').slice(0, 1024), inline: false });
     return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
+  }
+
+  else if (commandName === 'monsterability') {
+    const channelId = interaction.channel.id;
+    const encounter = combatV2State.getEncounter(channelId);
+    const wantPublic = interaction.options.getBoolean('public') ?? true;
+    if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter in this channel. Start one with `/init start`.', ephemeral: true });
+    if (interaction.user.id !== encounter.gmId) return interaction.reply({ content: 'Only the GM can use `/m ability`.', ephemeral: true });
+
+    const actorName = interaction.options.getString('monster');
+    const abilityName = interaction.options.getString('name');
+    const targetName = interaction.options.getString('target');
+    const saveKey = combatV2SaveKey(interaction.options.getString('save'));
+    const dc = interaction.options.getInteger('dc');
+    const damageExpr = interaction.options.getString('damage');
+    const damageType = interaction.options.getString('type');
+    const isBasic = interaction.options.getBoolean('basic') ?? !!damageExpr;
+    const notes = interaction.options.getString('notes');
+
+    const actor = combatV2State.findCombatant(encounter, actorName);
+    if (!actor) return interaction.reply({ content: `No combatant named **"${actorName}"** in combat v2.`, ephemeral: true });
+    const target = combatV2State.findCombatant(encounter, targetName);
+    if (!target) return interaction.reply({ content: `No combatant named **"${targetName}"** in combat v2.`, ephemeral: true });
+    if (!saveKey) return interaction.reply({ content: 'Unknown save type.', ephemeral: true });
+    if (target.saves?.[saveKey] == null) return interaction.reply({ content: `**${target.name}** does not have that save recorded.`, ephemeral: true });
+
+    const saveLabels = { fort: 'Fortitude', ref: 'Reflex', will: 'Will' };
+    const result = combatV2Rolls.rollCheck({
+      actor: target,
+      stat: Number(target.saves[saveKey]),
+      dc,
+      label: `${saveLabels[saveKey]} Save`,
+      effectKind: 'save',
+    });
+    const lines = [
+      `**Target** ${target.name}`,
+      `**${saveLabels[saveKey]} Save DC ${dc}**`,
+      `1d20 (${result.die}) ${fmt(result.stat)}${result.effectBonus ? ` ${fmt(result.effectBonus)} effects` : ''} = **${result.total}**`,
+      `**${combatV2DegreeLabel(result.degree)}**`,
+    ];
+
+    let appliedLine = null;
+    if (damageExpr) {
+      const damageRoll = rollCompoundExpression(damageExpr);
+      if (!damageRoll) return interaction.reply({ content: `Could not parse damage expression **${damageExpr}**.`, ephemeral: true });
+      const scaledDamage = isBasic ? basicSaveDamage(damageRoll.total, combatV2LegacyDegree(result.degree)) : damageRoll.total;
+      const defended = combatV2Rolls.applyDefenses(scaledDamage, damageType, target);
+      lines.push('', `**Damage${isBasic ? ' (basic save)' : ''}** ${damageRoll.display} -> **${defended.finalDamage}**${damageType ? ` ${damageType}` : ''}`);
+      if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
+      if (defended.finalDamage > 0 && (isBasic || result.degree === 'failure' || result.degree === 'criticalFailure')) {
+        const beforeHp = target.hp;
+        const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+        appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
+      }
+    }
+    if (notes) lines.push('', `**Effect Reminder** ${notes}`);
+
+    const embed = new EmbedBuilder()
+      .setColor(0x9B59B6)
+      .setTitle(`${actor.name}: ${abilityName}`)
+      .setDescription(lines.join('\n').slice(0, 4096));
+    await interaction.reply({ content: appliedLine ?? undefined, embeds: [embed], ephemeral: !wantPublic });
+    await updateCombatV2Summary(interaction.channel, encounter);
+    return;
   }
 
   else if (commandName === 'roll' || commandName === 'r') {
