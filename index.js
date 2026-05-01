@@ -13250,6 +13250,49 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply(`**${actor.name}** used their reaction: ${reason}.`);
     }
 
+    if (sub === 'hp') {
+      const actorName = interaction.options.getString('actor');
+      const change = interaction.options.getInteger('change');
+      const setValue = interaction.options.getInteger('set');
+      if (change == null && setValue == null) return interaction.reply({ content: 'Use either `change:` or `set:`.', ephemeral: true });
+      if (change != null && setValue != null) return interaction.reply({ content: 'Use only one of `change:` or `set:`.', ephemeral: true });
+
+      const actor = encounter ? combatV2PickActor(encounter, userId, actorName) : null;
+      if (actor) {
+        if (userId !== encounter.gmId && actor.ownerId !== userId) {
+          return interaction.reply({ content: 'You can only modify HP for your own combatant.', ephemeral: true });
+        }
+        const result = setValue != null
+          ? combatV2State.applyHp(channelId, actor.name, setValue, { mode: 'set' })
+          : combatV2State.applyHp(channelId, actor.name, change);
+        await updateCombatV2Summary(interaction.channel, result.encounter);
+        return interaction.reply(`**${result.combatant.name}** HP: ${result.before.hp}/${result.combatant.maxHp} -> **${result.combatant.hp}/${result.combatant.maxHp}**${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp)` : ''}`);
+      }
+
+      const characters = loadCharacters();
+      const { error, charKey, char: charEntry } = resolveChar(userId, null, characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+      const oldHp = getCharacterHp(charEntry);
+      const newHp = setCharacterHp(charEntry, setValue != null ? setValue : oldHp + change);
+      characters[userId][charKey] = charEntry;
+      saveCharacters(characters);
+      return interaction.reply({ embeds: [buildCharHpEmbed(charEntry.data, charEntry, `HP: ${oldHp} -> **${newHp}**.`)] });
+    }
+
+    if (sub === 'thp') {
+      const amount = interaction.options.getInteger('amount');
+      if (!encounter) return interaction.reply({ content: 'Temporary HP is currently tracked on combat v2 combatants. Start/join initiative first.', ephemeral: true });
+      const actorName = interaction.options.getString('actor');
+      const actor = combatV2PickActor(encounter, userId, actorName);
+      if (!actor) return interaction.reply({ content: 'I could not find exactly one combatant you control. Use `actor:` to choose one.', ephemeral: true });
+      if (userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'You can only set temp HP for your own combatant.', ephemeral: true });
+      }
+      const result = combatV2State.setTempHp(channelId, actor.name, amount);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return interaction.reply(`**${result.combatant.name}** temp HP: ${result.before} -> **${result.combatant.tempHp}**.`);
+    }
+
     if (sub === 'attack') {
       const attackName = interaction.options.getString('name');
       const targetName = interaction.options.getString('target');
