@@ -9856,12 +9856,14 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /rule ───────────────────────────────────────────────────────
   else if (REFERENCE_DATABASE_CONFIG[commandName]) {
+    await interaction.deferReply();
+    try {
     const input = interaction.options.getString('name');
     const { entry, matches, exactDuplicates, total } = findReference(commandName, input);
     const cfg = REFERENCE_DATABASE_CONFIG[commandName];
 
     if (entry) {
-      return interaction.reply({ embeds: [buildReferenceEmbed(commandName, entry)] });
+      return interaction.editReply({ embeds: [buildReferenceEmbed(commandName, entry)] });
     }
 
     if (matches && matches.length > 1) {
@@ -9873,15 +9875,18 @@ client.on('interactionCreate', async (interaction) => {
       const header = exactDuplicates
         ? `🔍 Multiple ${cfg.label} share the exact name **"${input}"**:`
         : `🔍 Multiple ${cfg.label} match **"${input}"**. Did you mean one of these?`;
-      return interaction.reply({ content: `${header}\n${preview}${extra}`, ephemeral: true });
+      return interaction.editReply({ content: `${header}\n${preview}${extra}` });
     }
 
     const names = (referenceDatabases[commandName] ?? []).map(e => e.name).filter(Boolean);
     const hint = didYouMeanLine(input, names);
-    return interaction.reply({
+    return interaction.editReply({
       content: `❌ No ${cfg.label.slice(0, -1) || 'entry'} found for **"${input}"**.${hint || ' Check your spelling or try another name.'}`,
-      ephemeral: true,
     });
+    } catch (err) {
+      console.error(`/${commandName} reference lookup failed:`, err);
+      return interaction.editReply('Sorry, that reference lookup failed while the bot was building the response. Please try again.');
+    }
   }
 
   else if (commandName === 'rule') {
@@ -14411,6 +14416,12 @@ client.on('interactionCreate', async (interaction) => {
     return calendarCmd.handleCalendar(interaction, weatherEngine);
   }
 
+  else {
+    return interaction.reply({
+      content: `This bot build does not have a handler for /${commandName}. Redeploy the latest code and run the command deploy script again.`,
+      ephemeral: true,
+    });
+  }
 
 });
 
