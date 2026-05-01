@@ -3811,13 +3811,60 @@ function getCombatantAttacks(combatant, guildId) {
   return Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
 }
 
+function findCombatantLoose(enc, name) {
+  if (!enc || !name) return null;
+  const q = String(name).toLowerCase().trim();
+  const exact = enc.combatants.find(c => c.name.toLowerCase() === q);
+  if (exact) return exact;
+  const partial = enc.combatants.filter(c => c.name.toLowerCase().includes(q));
+  return partial.length === 1 ? partial[0] : null;
+}
+
+function pickDefaultAttacker(enc, userId, attackerName) {
+  if (!enc || enc.combatants.length === 0) return null;
+  if (attackerName) return findCombatantLoose(enc, attackerName);
+  const current = enc.combatants[enc.turnIndex] ?? null;
+  if (current && (current.ownerId === userId || userId === enc.gmId)) return current;
+  const owned = enc.combatants.filter(c => c.ownerId === userId && c.hp > 0);
+  return owned.length === 1 ? owned[0] : current;
+}
+
+function pickDefaultTarget(enc, attacker, targetName) {
+  if (!enc || !attacker) return null;
+  if (targetName) return findCombatantLoose(enc, targetName);
+  const enemies = enc.combatants.filter(c =>
+    c.name.toLowerCase() !== attacker.name.toLowerCase() &&
+    c.hp > 0 &&
+    c.isNpc !== attacker.isNpc
+  );
+  return enemies[0] ?? null;
+}
+
+function findCharacterEntryForCombatant(characters, combatant) {
+  if (!combatant?.ownerId) return null;
+  const owned = characters[combatant.ownerId] ?? {};
+  for (const key of Object.keys(owned).filter(k => !k.startsWith('_'))) {
+    const entry = owned[key];
+    const charName = entry?.data?.name ?? entry?.name;
+    if (charName && charName.toLowerCase() === combatant.name.toLowerCase()) {
+      return { charKey: key, char: entry, companion: null };
+    }
+    const companions = entry?.companions ?? {};
+    const companion = Object.values(companions).find(c =>
+      c?.displayName && c.displayName.toLowerCase() === combatant.name.toLowerCase()
+    );
+    if (companion) return { charKey: key, char: entry, companion };
+  }
+  return null;
+}
+
 // Find a specific named attack on a combatant. Tries exact match first,
 // then case-insensitive, then substring. Returns null if nothing matches.
 function findCombatantAttack(combatant, attackName, guildId) {
   const attacks = getCombatantAttacks(combatant, guildId);
   if (attacks.length === 0) return null;
   const q = String(attackName ?? '').toLowerCase().trim();
-  if (!q) return null;
+  if (!q) return attacks[0];
   // 1. Exact (case-insensitive) match
   const exact = attacks.find(a => String(a.name ?? '').toLowerCase() === q);
   if (exact) return exact;
@@ -6918,6 +6965,7 @@ client.on('interactionCreate', async (interaction) => {
       // which will hit the catch-all "unknown command" handler.
     }
   }
+  if (commandName === 'i') commandName = 'init';
 
   // ─── /ping ───────────────────────────────────────────────────────
   if (commandName === 'ping') {
@@ -12719,29 +12767,132 @@ client.on('interactionCreate', async (interaction) => {
     // bonus + damage every time. Now: /init attack monster:Goblin Warrior
     // attack:dogslicer target:Bard does it all.
     if (sub === 'attack') {
-      if (userId !== enc.gmId) {
-        return interaction.reply({ content: '❌ Only the GM can use `/init attack`.', ephemeral: true });
-      }
-
       const attackerName = interaction.options.getString('monster');
       const attackName = interaction.options.getString('attack');
       const targetName = interaction.options.getString('target');
       const extraBonus = interaction.options.getInteger('bonus') ?? 0;
       const explicitMap = interaction.options.getInteger('map'); // null if unset
 
-      // 1. Look up the attacker as a combatant in the encounter
-      const attacker = enc.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase());
+      // 1. Look up the attacker as a combatant in the encounter. If omitted,
+      // default to the current turn when it belongs to the caller/GM, otherwise
+      // the caller's only living combatant.
+      const attacker = pickDefaultAttacker(enc, userId, attackerName);
       if (!attacker) {
         return interaction.reply({
-          content: `❌ No combatant named **"${attackerName}"** in this encounter. Use \`/init list\` to see who's in initiative.`,
+          content: attackerName
+            ? `❌ No combatant named **"${attackerName}"** in this encounter. Use \`/init list\` to see who's in initiative.`
+            : '❌ I could not tell who is attacking. Use `monster:<name>` once, or wait until your combatant is the current turn.',
           ephemeral: true,
         });
       }
+      if (userId !== enc.gmId && attacker.ownerId !== userId) {
+        return interaction.reply({ content: `❌ You can only attack with your own combatant. I resolved the attacker as **${attacker.name}**.`, ephemeral: true });
+      }
       if (!attacker.isNpc) {
-        return interaction.reply({
-          content: `❌ **${attacker.name}** is a player character — they should use \`/attack\` themselves. \`/init attack\` is for monsters/NPCs only.`,
-          ephemeral: true,
-        });
+        const characters = loadCharacters();
+        const resolved = findCharacterEntryForCombatant(characters, attacker);
+        if (!resolved?.char) return interaction.reply({ content: `❌ I found **${attacker.name}** in initiative, but couldn't match it to a saved character or companion.`, ephemeral: true });
+        const target = pickDefaultTarget(enc, attacker, targetName);
+        if (targetName && !target) return interaction.reply({ content: `❌ No combatant named **"${targetName}"** in this encounter.`, ephemeral: true });
+
+        const charEntry = resolved.char;
+        const char = charEntry.data;
+        const attacks = [];
+        if (resolved.companion) {
+          const comp = resolved.companion;
+          const scaled = scaleCompanion(comp, char);
+          if (scaled.primaryAttack) attacks.push({
+            name: scaled.primaryAttack.name,
+            bonus: scaled.attackBonus,
+            damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
+            damageType: scaled.damageType ?? '',
+            traits: scaled.primaryAttack.traits ?? [],
+            title: `${comp.displayName} attacks with ${scaled.primaryAttack.name}!`,
+            footer: `${char.name}'s companion`,
+            thumbnail: comp.art ?? charEntry.art ?? null,
+          });
+          for (const a of (comp.customAttacks ?? [])) attacks.push({
+            name: a.name, bonus: a.bonus, damage: a.damage, damageType: a.damageType ?? '', traits: a.traits ?? [],
+            title: `${comp.displayName} attacks with ${a.name}!`, footer: `${char.name}'s companion`, thumbnail: comp.art ?? charEntry.art ?? null,
+          });
+        } else {
+          for (const w of (char.weapons ?? [])) {
+            const damageType = w.damageType === 'P' ? 'piercing'
+              : w.damageType === 'S' ? 'slashing'
+              : w.damageType === 'B' ? 'bludgeoning'
+              : (w.damageType ?? '').toLowerCase();
+            attacks.push({
+              name: w.display ?? w.name,
+              bonus: w.attack ?? 0,
+              damage: `${w.die ?? '1d4'}${w.damageBonus ? (w.damageBonus > 0 ? '+' : '') + w.damageBonus : ''}`,
+              damageType,
+              traits: w.traits ?? [],
+              title: `${char.name} attacks with ${w.display ?? w.name}!`,
+              footer: `${char.name} · Attack ${fmt(w.attack ?? 0)} · ${w.die ?? ''}${w.damageBonus ? fmt(w.damageBonus) : ''} ${damageType}`,
+              thumbnail: charEntry.art ?? null,
+            });
+          }
+        }
+        if (attacks.length === 0) return interaction.reply({ content: `❌ **${attacker.name}** has no attacks configured.`, ephemeral: true });
+        const chosen = attackName
+          ? attacks.find(a => a.name.toLowerCase() === attackName.toLowerCase()) ?? attacks.find(a => a.name.toLowerCase().includes(attackName.toLowerCase()))
+          : attacks[0];
+        if (!chosen) return interaction.reply({ content: `❌ No attack matching **"${attackName}"**. Available: ${attacks.map(a => a.name).join(', ')}`, ephemeral: true });
+
+        const agile = (chosen.traits ?? []).map(t => String(t).toLowerCase()).includes('agile');
+        const mapInfo = explicitMap !== null
+          ? { penalty: calculateMap(explicitMap, agile), noteText: explicitMap > 0 ? `MAP ${calculateMap(explicitMap, agile)} (manual)` : null }
+          : ca.computeMapForNextAttack(attacker, agile);
+        const attackerMods = sumEffectModifiers(attacker);
+        const targetMods = target ? sumEffectModifiers(target) : { acBonus: 0, activeEffects: [] };
+        const dieRoll = Math.floor(Math.random() * 20) + 1;
+        const attackTotal = dieRoll + chosen.bonus + extraBonus + mapInfo.penalty + attackerMods.attackBonus;
+        const baseTargetAc = target?.ac ?? null;
+        const effectiveTargetAc = baseTargetAc !== null ? baseTargetAc + targetMods.acBonus : null;
+        const degree = effectiveTargetAc !== null ? determineDegreeOfSuccess(attackTotal, dieRoll, effectiveTargetAc) : null;
+        const dmg = rollCompoundExpression(chosen.damage);
+        let finalDamage = dmg ? Math.max(1, dmg.total + attackerMods.damageBonus) : 0;
+        const preCritDamage = finalDamage;
+        if (degree === 'crit-success') finalDamage *= 2;
+
+        const mapText = mapInfo.penalty !== 0 ? ` ${fmt(mapInfo.penalty)}` : '';
+        const bonusText = extraBonus !== 0 ? ` ${fmt(extraBonus)}` : '';
+        const attackerEffectText = formatEffectContributions(attackerMods.activeEffects, 'attack');
+        let attackLine = `**Attack Roll**\n1d20 (${dieRoll}) ${fmt(chosen.bonus)}${mapText}${bonusText}${attackerEffectText ? ` ${fmt(attackerMods.attackBonus)}` : ''} = **${attackTotal}**`;
+        if (mapInfo.noteText) attackLine += `\n*${mapInfo.noteText}*`;
+        if (attackerEffectText) attackLine += `\n*${attackerEffectText.trim().slice(1, -1)}*`;
+        if (dieRoll === 20) attackLine += '\n⭐ Natural 20!';
+        if (dieRoll === 1) attackLine += '\n💀 Natural 1!';
+
+        let outcomeLine = target ? `🎯 Attack against **${target.name}** (AC unknown — GM decides)` : 'No target selected.';
+        if (degree === 'crit-success') outcomeLine = `🎯 **Critical Hit on ${target.name}!** AC ${effectiveTargetAc}`;
+        else if (degree === 'success') outcomeLine = `✅ **Hit on ${target.name}!** AC ${effectiveTargetAc}`;
+        else if (degree === 'failure') outcomeLine = `❌ **Miss on ${target.name}.** AC ${effectiveTargetAc}`;
+        else if (degree === 'crit-failure') outcomeLine = `💢 **Critical Miss on ${target.name}.** AC ${effectiveTargetAc}`;
+
+        let damageLine = '';
+        if (dmg && (degree === 'success' || degree === 'crit-success' || !target)) {
+          damageLine = degree === 'crit-success'
+            ? `**Damage (CRIT × 2)**\n${dmg.display}${attackerMods.damageBonus ? ` ${fmt(attackerMods.damageBonus)}` : ''} = ${preCritDamage} × 2 = **${finalDamage} ${chosen.damageType}**`
+            : `**Damage**\n${dmg.display}${attackerMods.damageBonus ? ` ${fmt(attackerMods.damageBonus)}` : ''} = **${finalDamage} ${chosen.damageType}**`;
+        }
+        let hpLine = '';
+        if (target && finalDamage > 0 && (degree === 'success' || degree === 'crit-success')) {
+          const dmgResult = ca.applyDamage(channelId, target.name, finalDamage, { isCrit: degree === 'crit-success' });
+          hpLine = target.isNpc
+            ? `\n❤️ **${target.name}** took ${finalDamage} damage${dmgResult?.displaySuffix ?? ''}`
+            : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dmgResult?.displaySuffix ?? ''}`;
+        }
+        if (explicitMap === null) ca.recordAttack(channelId, attacker.name);
+        const embed = new EmbedBuilder()
+          .setColor(0xC0392B)
+          .setTitle(`⚔️ ${chosen.title}`)
+          .setDescription([attackLine, '', damageLine || null, outcomeLine, hpLine || null].filter(Boolean).join('\n'))
+          .setFooter({ text: chosen.footer });
+        if (chosen.thumbnail) embed.setThumbnail(chosen.thumbnail);
+        await interaction.reply({ embeds: [embed] });
+        await updateSummary(interaction.channel, enc);
+        return;
       }
       if (!attacker.bestiaryKey) {
         return interaction.reply({
@@ -12762,10 +12913,11 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
-      // 3. Look up the target
-      const target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+      // 3. Look up the target. If omitted, pick the first living opposing
+      // combatant so the short form can resolve in ordinary PC-vs-monster turns.
+      const target = pickDefaultTarget(enc, attacker, targetName);
       if (!target) {
-        return interaction.reply({ content: `❌ No combatant named **"${targetName}"** in this encounter.`, ephemeral: true });
+        return interaction.reply({ content: targetName ? `❌ No combatant named **"${targetName}"** in this encounter.` : '❌ I could not choose a target. Use `target:<name>`.', ephemeral: true });
       }
 
       const baseAttackBonus = typeof atk.to_hit === 'number' ? atk.to_hit : 0;

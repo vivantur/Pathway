@@ -1016,10 +1016,10 @@ const initCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('name').setDescription('Combatant name').setRequired(true)))
   // ── GM attack ──
   .addSubcommand(s => s.setName('attack')
-    .setDescription('GM: roll a bestiary creature\'s attack against a target (auto-MAP, damage on hit).')
-    .addStringOption(o => o.setName('monster').setDescription('Attacker name (must be in initiative, added via /init addmonster)').setRequired(true))
-    .addStringOption(o => o.setName('attack').setDescription('Attack name (partial match OK)').setRequired(true))
-    .addStringOption(o => o.setName('target').setDescription('Target combatant name').setRequired(true))
+    .setDescription('Roll the current combatant\'s attack with smart defaults.')
+    .addStringOption(o => o.setName('monster').setDescription('Attacker override (defaults to your/current combatant)').setRequired(false))
+    .addStringOption(o => o.setName('attack').setDescription('Attack override (defaults to first/primary attack)').setRequired(false))
+    .addStringOption(o => o.setName('target').setDescription('Target override (defaults to first opposing combatant)').setRequired(false))
     .addIntegerOption(o => o.setName('bonus').setDescription('Extra attack bonus or penalty').setRequired(false))
     .addIntegerOption(o => o.setName('map').setDescription('Override MAP (0=first, 1=second, 2=third attack)').setRequired(false).setMinValue(0).setMaxValue(2)))
   // ── HP in combat ──
@@ -1076,6 +1076,14 @@ const initCommand = new SlashCommandBuilder()
     .setDescription('Rejoin initiative after delaying.')
     .addStringOption(o => o.setName('name').setDescription('Delayed combatant name').setRequired(true))
     .addStringOption(o => o.setName('target').setDescription('Rejoin just before this combatant (omit to act now)').setRequired(false)));
+
+const iCommand = {
+  toJSON: () => ({
+    ...initCommand.toJSON(),
+    name: 'i',
+    description: 'Quick alias for /init.',
+  }),
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /downtime
@@ -1188,6 +1196,7 @@ const commands = [
   serversnippetCommand,
   // Combat & rolls
   initCommand,
+  iCommand,
   attackCommand,
   mattackCommand,
   rollCommand,
