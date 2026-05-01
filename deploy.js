@@ -959,6 +959,27 @@ const monsterRollCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 // /r (quick alias for /roll)
 // ─────────────────────────────────────────────────────────────────────────────
+const mCommand = new SlashCommandBuilder()
+  .setName('m')
+  .setDescription('GM: quick monster actions.')
+  .addSubcommand(s => s.setName('save')
+    .setDescription('Roll a save for a monster or v2 combatant.')
+    .addStringOption(o => o.setName('monster').setDescription('Monster/combatant name.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('save').setDescription('Which save to roll.').setRequired(true)
+      .addChoices(
+        { name: 'Fortitude', value: 'fort' },
+        { name: 'Reflex', value: 'ref' },
+        { name: 'Will', value: 'will' },
+      ))
+    .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against.').setRequired(false))
+    .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)))
+  .addSubcommand(s => s.setName('skill')
+    .setDescription('Roll a skill check for a monster or v2 combatant.')
+    .addStringOption(o => o.setName('monster').setDescription('Monster/combatant name.').setRequired(true).setAutocomplete(true))
+    .addStringOption(o => o.setName('skill').setDescription('Skill name.').setRequired(true).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against.').setRequired(false))
+    .addBooleanOption(o => o.setName('public').setDescription('Set false for GM-only. Default true.').setRequired(false)));
+
 const rCommand = new SlashCommandBuilder()
   .setName('r')
   .setDescription('Quick alias for /roll. Roll dice with snippet expansion (e.g. /r 1d20+@hylia.athletics).')
@@ -1297,6 +1318,7 @@ const commands = [
   ruleCommand,
   skillinfoCommand,
   // Monster tools
+  mCommand,
   monsterAttackCommand,
   monsterRollCommand,
   monsteraddCommand,

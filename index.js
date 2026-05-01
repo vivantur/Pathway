@@ -6696,6 +6696,7 @@ client.on('interactionCreate', async (interaction) => {
           else {
             const sub = interaction.options.getSubcommand(false);
             if (sub === 'show') cmd = 'monster';
+            else if (sub === 'save' || sub === 'skill') cmd = 'monsterroll';
           }
         }
 
@@ -6900,6 +6901,21 @@ client.on('interactionCreate', async (interaction) => {
             const attackerName = interaction.options.getString('attacker');
             const attacker = v2 ? combatV2State.findCombatant(v2, attackerName) : null;
             suggestions = pick((attacker?.attacks ?? []).map(a => a.name).filter(Boolean));
+          }
+        }
+        else if (cmd === 'monsterroll') {
+          const v2 = combatV2State.getEncounter(interaction.channel.id);
+          if (focused.name === 'monster') {
+            suggestions = pick([
+              ...(v2?.combatants ?? []).filter(c => c.isNpc).map(c => c.name),
+              ...Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean),
+            ]);
+          } else if (focused.name === 'skill') {
+            const monsterName = interaction.options.getString('monster');
+            const actor = v2 ? combatV2State.findCombatant(v2, monsterName) : null;
+            const names = new Set(Object.values(COMBAT_V2_SKILL_LABELS));
+            for (const [key, raw] of Object.entries(actor?.skills ?? {})) names.add(raw?.label ?? key);
+            suggestions = pick([...names]);
           }
         }
         else if ((cmd === 'rest' || cmd === 'refocus' || cmd === 'resource')) {
@@ -7333,6 +7349,7 @@ client.on('interactionCreate', async (interaction) => {
       // No group — must be top-level subcommand like /m show
       const sub = interaction.options.getSubcommand(false);
       if (sub === 'show') commandName = 'monster';
+      else if (sub === 'save' || sub === 'skill') commandName = 'monsterroll';
       // Everything else: /m alone or unknown — fall through with no rewrite,
       // which will hit the catch-all "unknown command" handler.
     }
@@ -11782,6 +11799,34 @@ client.on('interactionCreate', async (interaction) => {
     const wantPublic = interaction.options.getBoolean('public') ?? true;
     const guildId = interaction.guildId;
     const channelId = interaction.channel?.id;
+    const v2Encounter = channelId ? combatV2State.getEncounter(channelId) : null;
+    if (v2Encounter) {
+      if (interaction.user.id !== v2Encounter.gmId) {
+        return interaction.reply({ content: 'Only the GM can roll for monsters in active combat v2.', ephemeral: true });
+      }
+      const combatant = combatV2State.findCombatant(v2Encounter, monsterInput);
+      if (!combatant) return interaction.reply({ content: `No combatant named **"${monsterInput}"** in combat v2.`, ephemeral: true });
+
+      if (sub === 'save') {
+        const saveKey = combatV2SaveKey(interaction.options.getString('save'));
+        const saveLabels = { fort: 'Fortitude Save', ref: 'Reflex Save', will: 'Will Save' };
+        const stat = combatant.saves?.[saveKey];
+        if (stat == null) return interaction.reply({ content: `**${combatant.name}** does not have a ${saveLabels[saveKey] ?? 'save'} modifier recorded.`, ephemeral: true });
+        const result = combatV2Rolls.rollCheck({ actor: combatant, stat: Number(stat), dc, label: saveLabels[saveKey], effectKind: 'save' });
+        return interaction.reply({ embeds: [combatV2CheckEmbed(combatant, result)], ephemeral: !wantPublic });
+      }
+
+      if (sub === 'skill') {
+        const skillName = interaction.options.getString('skill');
+        const skill = combatV2FindSkill(combatant, skillName);
+        if (!skill) {
+          const available = Object.keys(combatant.skills ?? {}).slice(0, 20).join(', ') || 'none';
+          return interaction.reply({ content: `No skill matching **"${skillName}"** found for **${combatant.name}**. Available: ${available}.`, ephemeral: true });
+        }
+        const result = combatV2Rolls.rollCheck({ actor: combatant, stat: skill.modifier, dc, label: `${skill.label} Check`, effectKind: 'skill' });
+        return interaction.reply({ embeds: [combatV2CheckEmbed(combatant, result)], ephemeral: !wantPublic });
+      }
+    }
 
     // Find the monster's data. First check active encounter for a combatant
     // by that name (so init effects + GM edits apply), then fall back to
