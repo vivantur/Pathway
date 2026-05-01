@@ -75,6 +75,8 @@ const { parseSpellStatBlock, toSlug: spellSlug } = require('./parsers/spellParse
 const { parseItemStatBlock,  toSlug: itemSlug  } = require('./parsers/itemParser');
 const charOverlay = require('./systems/characterOverlay');
 const ca = require('./systems/combatAutomation');
+const combatV2State = require('./systems/combatV2/state');
+const combatV2Render = require('./systems/combatV2/render');
 // Spell effects auto-application: maps spell names to mechanical effects
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
 // their save degree of success. Used by /cast.
@@ -2205,6 +2207,38 @@ async function clearSummary(channel, enc) {
   if (!enc?.summaryMessageId) return;
   try {
     const msg = await channel.messages.fetch(enc.summaryMessageId);
+    try { await msg.unpin(); } catch {}
+  } catch {}
+}
+
+async function updateCombatV2Summary(channel, encounter, { gmView = false } = {}) {
+  if (!encounter) return null;
+  const { embed, page, totalPages } = combatV2Render.renderEncounter(encounter, { gmView });
+  const components = combatV2Render.pageButtons(channel.id, page, totalPages);
+  const payload = { embeds: [embed], components };
+
+  if (encounter.summaryMessageId) {
+    try {
+      const existing = await channel.messages.fetch(encounter.summaryMessageId);
+      await existing.edit(payload);
+      return existing;
+    } catch {}
+  }
+
+  const msg = await channel.send(payload);
+  encounter.summaryMessageId = msg.id;
+  try {
+    await msg.pin();
+  } catch (err) {
+    console.warn('Could not pin combat v2 summary message:', err.message);
+  }
+  return msg;
+}
+
+async function clearCombatV2Summary(channel, encounter) {
+  if (!encounter?.summaryMessageId) return;
+  try {
+    const msg = await channel.messages.fetch(encounter.summaryMessageId);
     try { await msg.unpin(); } catch {}
   } catch {}
 }
@@ -5895,6 +5929,30 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     // ─── Monster-attack save roll button ────────────────────────────
+    if (interaction.customId.startsWith('cv2_page_')) {
+      const tail = interaction.customId.slice('cv2_page_'.length);
+      const lastUnderscore = tail.lastIndexOf('_');
+      if (lastUnderscore < 0) {
+        return interaction.reply({ content: 'Malformed combat page button.', ephemeral: true });
+      }
+      const channelId = tail.slice(0, lastUnderscore);
+      const targetPage = parseInt(tail.slice(lastUnderscore + 1), 10);
+      const enc = combatV2State.getEncounter(channelId);
+      if (!enc) {
+        if (interaction.message.flags?.has('Ephemeral')) {
+          return interaction.update({ content: 'The combat has ended.', embeds: [], components: [] });
+        }
+        return interaction.reply({ content: 'The combat has ended.', ephemeral: true });
+      }
+      const gmView = interaction.user.id === enc.gmId;
+      const { embed, page, totalPages } = combatV2Render.renderEncounter(enc, { page: targetPage, gmView });
+      const components = combatV2Render.pageButtons(channelId, page, totalPages);
+      const isOnEphemeral = !!(interaction.message.flags?.has?.('Ephemeral')
+        || (typeof interaction.message.flags === 'object' && interaction.message.flags?.bitfield & 64));
+      if (isOnEphemeral) return interaction.update({ embeds: [embed], components });
+      return interaction.reply({ embeds: [embed], components, ephemeral: true });
+    }
+
     if (interaction.customId.startsWith('msave_')) {
       // customId shape: msave_<saveType>_<dc>
       const [, saveType, dcStr] = interaction.customId.split('_');
@@ -12442,6 +12500,56 @@ client.on('interactionCreate', async (interaction) => {
     const sub = interaction.options.getSubcommand();
     const channelId = interaction.channel.id;
     const userId = interaction.user.id;
+
+    if (sub === 'start') {
+      if (combatV2State.getEncounter(channelId) || getEncounter(channelId)) {
+        return interaction.reply({ content: 'An encounter is already active here. Use `/init end` first.', ephemeral: true });
+      }
+      const newEnc = combatV2State.createEncounter(channelId, {
+        guildId: interaction.guildId,
+        gmId: userId,
+        name: `Combat in #${interaction.channel?.name ?? 'channel'}`,
+      });
+      await interaction.reply(`Combat started. <@${userId}> is the GM.\nUse \`/init view\` to show the tracker. Next up: \`/init add\` will add PCs, monsters, NPCs, and companions into combat v2.`);
+      await updateCombatV2Summary(interaction.channel, newEnc);
+      return;
+    }
+
+    const v2Encounter = combatV2State.getEncounter(channelId);
+    if (v2Encounter && (sub === 'view' || sub === 'list')) {
+      const gmView = userId === v2Encounter.gmId;
+      const { embed, page, totalPages } = combatV2Render.renderEncounter(v2Encounter, { gmView });
+      const components = combatV2Render.pageButtons(channelId, page, totalPages);
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return interaction.reply({ embeds: [embed], components, ephemeral: gmView });
+    }
+
+    if (v2Encounter && sub === 'next') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can advance turns.', ephemeral: true });
+      if (v2Encounter.combatants.length === 0) return interaction.reply({ content: 'No combatants in the encounter yet.', ephemeral: true });
+      const { current, encounter } = combatV2State.advanceTurn(channelId, 1);
+      await updateCombatV2Summary(interaction.channel, encounter);
+      return interaction.reply(`Next turn: **${current.name}**. Round **${encounter.round}**.`);
+    }
+
+    if (v2Encounter && sub === 'prev') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can move turns backward.', ephemeral: true });
+      if (v2Encounter.combatants.length === 0) return interaction.reply({ content: 'No combatants in the encounter yet.', ephemeral: true });
+      const { current, encounter } = combatV2State.advanceTurn(channelId, -1);
+      await updateCombatV2Summary(interaction.channel, encounter);
+      return interaction.reply(`Previous turn: **${current.name}**. Round **${encounter.round}**.`);
+    }
+
+    if (v2Encounter && sub === 'end') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can end the encounter.', ephemeral: true });
+      await clearCombatV2Summary(interaction.channel, v2Encounter);
+      combatV2State.endEncounter(channelId);
+      return interaction.reply('Combat ended.');
+    }
+
+    if (!v2Encounter && ['view', 'prev'].includes(sub)) {
+      return interaction.reply({ content: 'No active combat v2 encounter. Start one with `/init start`.', ephemeral: true });
+    }
 
     if (sub === 'start') {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });

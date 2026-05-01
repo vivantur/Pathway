@@ -988,6 +988,8 @@ const initCommand = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('start').setDescription('Start a new encounter in this channel.'))
   .addSubcommand(s => s.setName('end').setDescription('End the current encounter and clear the tracker.'))
   .addSubcommand(s => s.setName('next').setDescription('Advance to the next combatant\'s turn.'))
+  .addSubcommand(s => s.setName('prev').setDescription('Move back to the previous combatant\'s turn.'))
+  .addSubcommand(s => s.setName('view').setDescription('Show the current combat tracker.'))
   .addSubcommand(s => s.setName('list').setDescription('Show the current initiative order and HP.'))
   // ── Adding combatants ──
   .addSubcommand(s => s.setName('add')
