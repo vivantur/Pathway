@@ -866,6 +866,107 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
   }
 }
 
+// ── Gamedata restore catalogue ────────────────────────────────────────────────
+// Maps Supabase gamedata categories → the file/topKey shape the bot expects.
+// 'array' strategy reconstructs an array (e.g. deities); all others rebuild
+// a { [topKey]: { slug: entry } } object.
+const GAMEDATA_RESTORE_MAP = [
+  { category: 'actions',         file: 'actions.json',         topKey: 'actions',         strategy: 'slug_map' },
+  { category: 'afflictions',     file: 'afflictions.json',     topKey: 'afflictions',     strategy: 'slug_map' },
+  { category: 'backgrounds',     file: 'background.json',      topKey: 'backgrounds',     strategy: 'slug_map' },
+  { category: 'class_features',  file: 'class-features.json',  topKey: 'class_features',  strategy: 'slug_map' },
+  { category: 'classes',         file: 'classes.json',         topKey: 'classes',         strategy: 'slug_map' },
+  { category: 'companions',      file: 'companions.json',      topKey: 'companions',      strategy: 'slug_map' },
+  { category: 'conditions',      file: 'conditions.json',      topKey: 'Conditions',      strategy: 'slug_map' },
+  { category: 'creature_extras', file: 'creature-extras.json', topKey: 'creature_extras', strategy: 'slug_map' },
+  { category: 'deities',         file: 'deities.json',         topKey: 'deities',         strategy: 'array'    },
+  { category: 'domains',         file: 'domains.json',         topKey: 'domains',         strategy: 'slug_map' },
+  { category: 'familiars',       file: 'familiars.json',       topKey: 'familiars',       strategy: 'slug_map' },
+  { category: 'hazards',         file: 'hazards.json',         topKey: 'hazards',         strategy: 'slug_map' },
+  { category: 'heritages',       file: 'heritages.json',       topKey: 'by_slug',         strategy: 'slug_map' },
+  { category: 'kingdom',         file: 'kingdom.json',         topKey: 'kingdom',         strategy: 'slug_map' },
+  { category: 'languages',       file: 'languages.json',       topKey: 'languages',       strategy: 'slug_map' },
+  { category: 'planes',          file: 'planes.json',          topKey: 'planes',          strategy: 'slug_map' },
+  { category: 'relics',          file: 'relics.json',          topKey: 'relics',          strategy: 'slug_map' },
+  { category: 'rituals',         file: 'rituals.json',         topKey: 'rituals',         strategy: 'slug_map' },
+  { category: 'rules',           file: 'rules.json',           topKey: 'Rulebook',        strategy: 'slug_map' },
+  { category: 'siege_weapons',   file: 'siege-weapons.json',   topKey: 'siege_weapons',   strategy: 'slug_map' },
+  { category: 'skills',          file: 'skills.json',          topKey: 'skills',          strategy: 'slug_map' },
+  { category: 'sources',         file: 'sources.json',         topKey: 'sources',         strategy: 'slug_map' },
+  { category: 'traits',          file: 'traits.json',          topKey: 'traits',          strategy: 'slug_map' },
+  { category: 'vehicles',        file: 'vehicles.json',        topKey: 'vehicles',        strategy: 'slug_map' },
+];
+
+// Fetches all rows from the `gamedata` Supabase table and writes them to
+// gamedata/ files, creating the directory if it doesn't exist. Called as
+// step 9 of restoreAllFromSupabase(). Skips silently if the table is empty
+// (e.g. seeder hasn't run yet) — the bot falls back to whatever files exist
+// on disk.
+async function restoreGamedataFromSupabase(sb) {
+  const { data: rows, error } = await sb
+    .from('gamedata')
+    .select('category, slug, data');
+  if (error) throw error;
+  if (!rows || rows.length === 0) {
+    console.log('[Supabase] restore: gamedata table empty — using bundled files');
+    return;
+  }
+
+  // Group rows by category
+  const byCategory = {};
+  for (const row of rows) {
+    if (!row.category || !row.slug || !row.data) continue;
+    if (!byCategory[row.category]) byCategory[row.category] = {};
+    byCategory[row.category][row.slug] = row.data;
+  }
+
+  // Ensure gamedata/ directory exists (it may not on a fresh Railway container
+  // if we've removed the files from git)
+  try { fs.mkdirSync(GAMEDATA_DIR, { recursive: true }); } catch (_) {}
+
+  let filesWritten = 0;
+  for (const { category, file, topKey, strategy } of GAMEDATA_RESTORE_MAP) {
+    const entries = byCategory[category];
+    if (!entries || Object.keys(entries).length === 0) continue;
+
+    let payload;
+    if (strategy === 'array') {
+      payload = { [topKey]: Object.values(entries) };
+    } else if (category === 'heritages') {
+      // heritages.json needs both by_slug AND by_ancestry indexes.
+      // by_ancestry was not stored in Supabase — rebuild it from by_slug.
+      const byAncestry = {};
+      for (const [slug, h] of Object.entries(entries)) {
+        if (!h) continue;
+        const ancestry = h.ancestry ?? null;
+        if (!ancestry) {
+          if (!byAncestry._versatile) byAncestry._versatile = [];
+          byAncestry._versatile.push(slug);
+        } else {
+          const key = String(ancestry).toLowerCase();
+          if (!byAncestry[key]) byAncestry[key] = [];
+          byAncestry[key].push(slug);
+        }
+      }
+      payload = { by_slug: entries, by_ancestry: byAncestry };
+    } else {
+      payload = { [topKey]: entries };
+    }
+
+    const target = gamedataPath(file);
+    const tmp = `${target}.tmp`;
+    try {
+      fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
+      fs.renameSync(tmp, target);
+      filesWritten++;
+    } catch (e) {
+      console.error(`[Supabase] restore: failed to write ${file}:`, e.message);
+    }
+  }
+
+  console.log(`[Supabase] restore: wrote ${filesWritten} gamedata files (${rows.length} total entries)`);
+}
+
 // ── Startup restore from Supabase ─────────────────────────────────────────────
 // Called once in clientReady BEFORE any user interaction is possible.
 // Pulls every synced table back into local JSON so the bot always boots from
@@ -1157,6 +1258,9 @@ async function restoreAllFromSupabase() {
     const hbCount = Object.keys(homebrewByType.monster).length + homebrewByType.spell.length + homebrewByType.item.length;
     console.log(`[Supabase] restore: spliced ${hbCount} homebrew entries into gamedata`);
 
+    // ── 9. Generic gamedata (actions, conditions, traits, etc.) ─────────────
+    await restoreGamedataFromSupabase(sb);
+
     console.log('[Supabase] startup restore complete ✓');
   } catch (err) {
     // Never crash the bot on a restore failure — log and continue.
@@ -1182,6 +1286,7 @@ module.exports = {
   getSupabase,
   isSyncDegraded,
   restoreAllFromSupabase,
+  restoreGamedataFromSupabase,
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncEncounterToSupabase,
