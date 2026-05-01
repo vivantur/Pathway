@@ -18,6 +18,10 @@ const {
   loadGamedata,
   saveJson,
   mutateJson,
+  restoreAllFromSupabase,
+  syncHomebrewEntryToSupabase,
+  deleteHomebrewEntryFromSupabase,
+  setupHomebrewRealtimeSync,
 } = require('./utils/storage');
 
 // Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
@@ -388,7 +392,7 @@ function removeItemFromDatabase(nameOrSlug) {
   }
   itemDatabase.splice(idx, 1);
   persistItems();
-  return { removed: true, name: removed.name };
+  return { removed: true, name: removed.name, entryKey: removed.id || itemSlug(removed.name) };
 }
 
 // File shape: { metadata: {...}, deities: [ {...} ] }
@@ -6222,7 +6226,151 @@ function buildHelpButtons(currentCategory) {
 }
 
 // ── Bot ready ─────────────────────────────────────────────────────────────────
-client.once('clientReady', () => { console.log(`Logged in as ${client.user.tag}!`); });
+// After restoreAllFromSupabase() writes homebrew back into gamedata/ files, the
+// module-level database arrays are still holding the pre-restore image content.
+// We mutate them in-place so every closure that captured the original reference
+// immediately sees the restored homebrew without a restart.
+function reloadDatabasesAfterRestore() {
+  // ── Core content (may include homebrew spliced in by restoreAllFromSupabase) ──
+
+  try {
+    const rawBestiary = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
+    const freshCreatures = rawBestiary.creatures ?? rawBestiary;
+    for (const key of Object.keys(bestiaryDatabase)) {
+      if (!(key in freshCreatures)) delete bestiaryDatabase[key];
+    }
+    Object.assign(bestiaryDatabase, freshCreatures);
+    console.log(`[reload] bestiary: ${Object.keys(bestiaryDatabase).length} creatures`);
+  } catch (e) { console.error('[reload] bestiary failed:', e.message); }
+
+  try {
+    const rawSpells = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
+    const freshSpells = Array.isArray(rawSpells) ? rawSpells : [];
+    spellDatabase.splice(0, spellDatabase.length, ...freshSpells);
+    console.log(`[reload] spells: ${spellDatabase.length} spells`);
+  } catch (e) { console.error('[reload] spells failed:', e.message); }
+
+  try {
+    const rawItems = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
+    const itemsObj = rawItems.items ?? rawItems;
+    const freshItems = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+    itemDatabase.splice(0, itemDatabase.length, ...freshItems);
+    console.log(`[reload] items: ${itemDatabase.length} items`);
+  } catch (e) { console.error('[reload] items failed:', e.message); }
+
+  // ── Reference data (restored from gamedata Supabase table) ──────────────────
+  // These databases are all populated by restoreGamedataFromSupabase() writing
+  // files to gamedata/ — so by the time we reach here they're on disk.
+  // We reload in-place so existing closures see the fresh data.
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('background.json'), 'utf8'));
+    const fresh = raw.backgrounds ?? raw;
+    for (const key of Object.keys(backgroundDatabase)) delete backgroundDatabase[key];
+    Object.assign(backgroundDatabase, fresh);
+    console.log(`[reload] backgrounds: ${Object.keys(backgroundDatabase).length}`);
+  } catch (e) { console.error('[reload] backgrounds failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('feats.json'), 'utf8'));
+    const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
+    const fresh = rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+    featDatabase.splice(0, featDatabase.length, ...fresh);
+    console.log(`[reload] feats: ${featDatabase.length}`);
+  } catch (e) { console.error('[reload] feats failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('rules.json'), 'utf8'));
+    for (const key of Object.keys(rulesDatabase)) delete rulesDatabase[key];
+    Object.assign(rulesDatabase, raw);
+    // Re-merge conditions
+    try {
+      const cond = JSON.parse(fs.readFileSync(gamedataPath('conditions.json'), 'utf8'));
+      if (cond?.Conditions) rulesDatabase.Conditions = { ...(rulesDatabase.Conditions ?? {}), ...cond.Conditions };
+    } catch (_) {}
+    console.log(`[reload] rules: reloaded`);
+  } catch (e) { console.error('[reload] rules failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('heritages.json'), 'utf8'));
+    const fresh = raw.by_slug ?? {};
+    for (const key of Object.keys(heritageDatabase)) delete heritageDatabase[key];
+    Object.assign(heritageDatabase, fresh);
+    // Rebuild by_ancestry index from by_slug
+    const freshByAncestry = {};
+    for (const [slug, h] of Object.entries(fresh)) {
+      if (!h) continue;
+      const ancestry = h.ancestry ?? null;
+      if (!ancestry) {
+        if (!freshByAncestry._versatile) freshByAncestry._versatile = [];
+        freshByAncestry._versatile.push(slug);
+      } else {
+        const key = String(ancestry).toLowerCase();
+        if (!freshByAncestry[key]) freshByAncestry[key] = [];
+        freshByAncestry[key].push(slug);
+      }
+    }
+    for (const key of Object.keys(heritagesByAncestry)) delete heritagesByAncestry[key];
+    Object.assign(heritagesByAncestry, raw.by_ancestry ?? freshByAncestry);
+    console.log(`[reload] heritages: ${Object.keys(heritageDatabase).length}`);
+  } catch (e) { console.error('[reload] heritages failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('deities.json'), 'utf8'));
+    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
+    const fresh = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+    deityDatabase.splice(0, deityDatabase.length, ...fresh);
+    console.log(`[reload] deities: ${deityDatabase.length}`);
+  } catch (e) { console.error('[reload] deities failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('skills.json'), 'utf8'));
+    const fresh = raw.skills ?? raw;
+    for (const key of Object.keys(skillDatabase)) delete skillDatabase[key];
+    Object.assign(skillDatabase, fresh);
+    console.log(`[reload] skills: ${Object.keys(skillDatabase).length}`);
+  } catch (e) { console.error('[reload] skills failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('classes.json'), 'utf8'));
+    const fresh = raw.classes ?? raw;
+    for (const key of Object.keys(classDatabase)) delete classDatabase[key];
+    Object.assign(classDatabase, fresh);
+    console.log(`[reload] classes: ${Object.keys(classDatabase).length}`);
+  } catch (e) { console.error('[reload] classes failed:', e.message); }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('companions.json'), 'utf8'));
+    const inner = raw.companions ?? raw;
+    const fresh = (Array.isArray(inner)
+      ? inner
+      : Object.entries(inner).map(([slug, comp]) => ({ slug, ...comp }))
+    ).filter(c => c && typeof c.name === 'string' && c.name.length > 0);
+    companionDatabase.splice(0, companionDatabase.length, ...fresh);
+    console.log(`[reload] companions: ${companionDatabase.length}`);
+  } catch (e) { console.error('[reload] companions failed:', e.message); }
+
+  // ── Lazy reference databases (REFERENCE_DATABASE_CONFIG) ────────────────────
+  // These are loaded on first use, but reload them now if the files exist so
+  // the first command invocation doesn't hit stale data.
+  for (const [commandName, cfg] of Object.entries(REFERENCE_DATABASE_CONFIG)) {
+    try {
+      const fresh = loadReferenceDatabase(commandName, cfg);
+      const arr = referenceDatabases[commandName];
+      if (arr) arr.splice(0, arr.length, ...fresh);
+    } catch (e) { console.error(`[reload] ${commandName} failed:`, e.message); }
+  }
+  console.log('[reload] all databases reloaded from Supabase-restored files ✓');
+}
+
+client.once('clientReady', async () => {
+  console.log(`Logged in as ${client.user.tag}!`);
+  await restoreAllFromSupabase();
+  reloadDatabasesAfterRestore();
+  // Subscribe to live homebrew changes so entries added/removed via the
+  // web UI take effect immediately without a bot restart.
+  setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
+});
 
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
@@ -11792,7 +11940,9 @@ client.on('interactionCreate', async (interaction) => {
       // preserveHomebrewDuringReseed in storage.js — entries without it are
       // assumed to be canonical/repo data and get replaced on reseed.
       result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const slug = addMonsterToBestiary(result.entry, result.slug);
+      syncHomebrewEntryToSupabase('monster', slug, result.entry);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
         ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
@@ -11832,7 +11982,9 @@ client.on('interactionCreate', async (interaction) => {
       // Tag as homebrew so the volume's reseed-preservation step keeps it.
       // (See /monsteradd paste handler above for why this matters.)
       result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const slug = addMonsterToBestiary(result.entry, result.slug);
+      syncHomebrewEntryToSupabase('monster', slug, result.entry);
       const preview = buildMonsterEmbed(result.entry, null);
       const warnLine = result.warnings.length
         ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}`
@@ -11850,6 +12002,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No creature found for \`${input}\` in the bestiary.`, ephemeral: true });
       }
+      deleteHomebrewEntryFromSupabase('monster', result.key);
       return interaction.reply({ content: `🗑️ Removed **${result.name}** (key: \`${result.key}\`) from the global bestiary.`, ephemeral: true });
     }
 
@@ -11880,7 +12033,10 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply({ ephemeral: true });
       const result = parseSpellStatBlock(raw);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const finalName = addSpellToDatabase(result.entry);
+      syncHomebrewEntryToSupabase('spell', finalName.toLowerCase().replace(/\s+/g, '-'), result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view. Remove with \`/spelladd remove spell:${finalName}\`.`,
@@ -11910,7 +12066,10 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = parseSpellStatBlock(body);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const finalName = addSpellToDatabase(result.entry);
+      syncHomebrewEntryToSupabase('spell', finalName.toLowerCase().replace(/\s+/g, '-'), result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global spell database.${warnLine}\nUse \`/spell name:${finalName}\` to view.`,
@@ -11927,6 +12086,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No homebrew spell found matching \`${input}\`.`, ephemeral: true });
       }
+      deleteHomebrewEntryFromSupabase('spell', result.name.toLowerCase().replace(/\s+/g, '-'));
       return interaction.reply({ content: `🗑️ Removed homebrew spell **${result.name}** from the database.`, ephemeral: true });
     }
 
@@ -11956,7 +12116,10 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply({ ephemeral: true });
       const result = parseItemStatBlock(raw);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const finalName = addItemToDatabase(result.entry);
+      syncHomebrewEntryToSupabase('item', result.entry.id, result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view. Remove with \`/itemadd remove item:${finalName}\`.`,
@@ -11986,7 +12149,10 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = parseItemStatBlock(body);
       if (!result.ok) return interaction.editReply({ content: `❌ Parse failed: ${result.error}` });
+      result.entry._homebrew = true;
+      result.entry._addedBy = interaction.user.id;
       const finalName = addItemToDatabase(result.entry);
+      syncHomebrewEntryToSupabase('item', result.entry.id, result.entry);
       const warnLine = result.warnings.length ? `\n⚠️ Warnings:\n• ${result.warnings.join('\n• ')}` : '';
       return interaction.editReply({
         content: `✅ Added **${finalName}** to the global item database.${warnLine}\nUse \`/item name:${finalName}\` to view.`,
@@ -12003,6 +12169,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!result.removed) {
         return interaction.reply({ content: `❌ No homebrew item found matching \`${input}\`.`, ephemeral: true });
       }
+      deleteHomebrewEntryFromSupabase('item', result.entryKey);
       return interaction.reply({ content: `🗑️ Removed homebrew item **${result.name}** from the database.`, ephemeral: true });
     }
 
