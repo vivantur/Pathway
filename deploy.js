@@ -1341,13 +1341,11 @@ const commands = [
   // Combat & rolls
   initCommand,
   iCommand,
-  attackCommand,
   mattackCommand,
   rollCommand,
   rCommand,
   skillCommand,
   perceptionCommand,
-  initiativeCommand,
   saveCommand,
   // Spells
   spellCommand,
@@ -1401,8 +1399,6 @@ const commands = [
   skillinfoCommand,
   // Monster tools
   mCommand,
-  monsterAttackCommand,
-  monsterRollCommand,
   monsteraddCommand,
   monsterartCommand,
   monstereditCommand,
@@ -1414,7 +1410,16 @@ const commands = [
   weatherCommand,
 ].map(c => c.toJSON());
 
-const commandNames = new Set(commands.map(c => c.name));
+const retiredCombatCommandNames = new Set([
+  'attack',
+  'initiative',
+  'monsterattack',
+  'monsterroll',
+]);
+const commandNames = new Set([
+  ...commands.map(c => c.name),
+  ...retiredCombatCommandNames,
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Deploy

@@ -10054,9 +10054,42 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    const enc = getEncounter(channelId);
+    const outOfCombatAttackerName = interaction.options.getString('attacker');
+    const outOfCombatAttackName = interaction.options.getString('name');
+    const outOfCombatTargetName = interaction.options.getString('target');
+    const outOfCombatBonus = interaction.options.getInteger('bonus');
+    const outOfCombatDamage = interaction.options.getString('damage');
+    const outOfCombatType = interaction.options.getString('type') ?? 'damage';
+    const outOfCombatMap = interaction.options.getInteger('map');
+    const outOfCombatAgile = interaction.options.getBoolean('agile') ?? false;
 
-    if (!enc) return interaction.reply({ content: '❌ No active encounter in this channel. Start one with `/init start`.', ephemeral: true });
+    if (outOfCombatBonus == null || !outOfCombatDamage) {
+      return interaction.reply({
+        content: 'Outside initiative, `/mattack` needs `bonus:` and `damage:`. Inside combat v2 those are optional when the attacker has saved attacks.',
+        ephemeral: true,
+      });
+    }
+
+    const outOfCombatAttack = {
+      name: outOfCombatAttackName,
+      bonus: outOfCombatBonus,
+      damage: outOfCombatDamage,
+      damageType: outOfCombatType,
+      traits: outOfCombatAgile ? ['agile'] : [],
+      source: 'manual',
+    };
+    const [outOfCombatResult] = combatV2Rolls.rollAttack({
+      attacker: { name: outOfCombatAttackerName, attacksThisTurn: 0, effects: [] },
+      target: null,
+      attack: outOfCombatAttack,
+      map: outOfCombatMap,
+      count: 1,
+    });
+    const outOfCombatEmbed = combatV2Render.renderAttackResult(outOfCombatResult)
+      .setTitle(`${outOfCombatAttackerName} attacks${outOfCombatTargetName ? ` ${outOfCombatTargetName}` : ''} with ${outOfCombatAttack.name}`);
+    return interaction.reply({ embeds: [outOfCombatEmbed] });
+
+    const enc = getEncounter(channelId);
     if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
 
     const attackerName = interaction.options.getString('attacker');
@@ -14157,6 +14190,11 @@ client.on('interactionCreate', async (interaction) => {
       await updateCombatV2Summary(interaction.channel, v2Encounter);
       return;
     }
+
+    return interaction.reply({
+      content: 'No active combat v2 encounter here. Use `/init start`, then add combatants with `/init add`, `/init addmonster`, or `/i join`.',
+      ephemeral: true,
+    });
 
     if (sub === 'start') {
       if (getEncounter(channelId)) return interaction.reply({ content: '⚠️ An encounter is already active here. Use `/init end` first.', ephemeral: true });
