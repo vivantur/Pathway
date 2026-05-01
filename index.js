@@ -639,17 +639,26 @@ function getGuildArt(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
   return store[guildId];
 }
+function monsterBuiltinArtUrl(monsterOrName) {
+  if (!monsterOrName || typeof monsterOrName === 'string') return null;
+  const raw = Array.isArray(monsterOrName.image) ? monsterOrName.image[0] : monsterOrName.image;
+  if (!raw || typeof raw !== 'string') return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return `https://2e.aonprd.com${raw}`;
+  return `https://2e.aonprd.com/${raw.replace(/^\/+/, '')}`;
+}
 // Look up a saved art URL for a monster in a given guild. Returns null if none.
 // The monster arg can be either a bestiary creature object (preferred) or a raw string name.
 function lookupMonsterArt(guildId, monsterOrName) {
-  if (!guildId) return null;
-  const store = loadMonsterArt();
-  const guild = store[guildId];
-  if (!guild) return null;
+  let saved = null;
   const name = typeof monsterOrName === 'string' ? monsterOrName : monsterOrName?.name;
-  if (!name) return null;
-  const key = monsterKey(name);
-  return guild[key]?.url ?? null;
+  if (guildId && name) {
+    const store = loadMonsterArt();
+    const guild = store[guildId];
+    const key = monsterKey(name);
+    saved = guild?.[key]?.url ?? null;
+  }
+  return saved ?? monsterBuiltinArtUrl(monsterOrName);
 }
 
 // ── Monster edits store helpers ───────────────────────────────────────────────
