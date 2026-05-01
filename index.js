@@ -2408,6 +2408,24 @@ function combatV2CasterStats(charEntry, spell, casterName = null) {
   return { caster, attack: keyMod + profBonus, dc: 10 + keyMod + profBonus, tradition };
 }
 
+function combatV2ParseDefenseMap(input) {
+  if (input == null) return null;
+  const map = {};
+  for (const part of String(input).split(',')) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^(.+?)\s+(-?\d+)$/);
+    if (!match) continue;
+    map[match[1].trim().toLowerCase()] = Number(match[2]);
+  }
+  return map;
+}
+
+function combatV2ParseList(input) {
+  if (input == null) return null;
+  return String(input).split(',').map(s => s.trim()).filter(Boolean);
+}
+
 function combatV2CompanionAttacks(comp, scaled) {
   const attacks = [];
   if (scaled.primaryAttack) {
@@ -2461,6 +2479,24 @@ function combatV2MonsterStats(monster, guildId) {
       }
     }
   }
+  const resistanceMap = {};
+  for (const r of rich?.defenses?.resistances ?? []) {
+    if (typeof r === 'string') {
+      const match = r.match(/^(.+?)\s+(\d+)$/);
+      if (match) resistanceMap[match[1].trim().toLowerCase()] = Number(match[2]);
+    } else if (r?.type && r?.value != null) {
+      resistanceMap[String(r.type).toLowerCase()] = Number(r.value);
+    }
+  }
+  const weaknessMap = {};
+  for (const w of rich?.defenses?.weaknesses ?? []) {
+    if (typeof w === 'string') {
+      const match = w.match(/^(.+?)\s+(\d+)$/);
+      if (match) weaknessMap[match[1].trim().toLowerCase()] = Number(match[2]);
+    } else if (w?.type && w?.value != null) {
+      weaknessMap[String(w.type).toLowerCase()] = Number(w.value);
+    }
+  }
   return {
     monster: withLibrary,
     hp: core.hp ?? summary.summary?.hp?.value ?? rich?.defenses?.hp ?? 1,
@@ -2475,6 +2511,9 @@ function combatV2MonsterStats(monster, guildId) {
       : (rich?.skills && typeof rich.skills === 'object') ? { ...rich.skills }
       : {},
     spells,
+    resistances: resistanceMap,
+    weaknesses: weaknessMap,
+    immunities: Array.isArray(rich?.defenses?.immunities) ? rich.defenses.immunities : [],
     attacks: rawAttacks.map(a => {
       const normalized = normalizeAttackForRolling(a);
       return {
@@ -7117,7 +7156,7 @@ client.on('interactionCreate', async (interaction) => {
           if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'init' && focused.name === 'name'
-                 && ['hp', 'thp', 'remove', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
+                 && ['hp', 'thp', 'remove', 'modify', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
           // Autocomplete combatants for any subcommand that takes a 'name' parameter
           // referring to a combatant in the encounter.
           const enc = combatV2State.getEncounter(interaction.channel.id) ?? getEncounter(interaction.channel.id);
@@ -13485,6 +13524,68 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
+    if (v2Encounter && sub === 'modify') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can modify combatants.', ephemeral: true });
+      const name = interaction.options.getString('name');
+      const target = combatV2State.findCombatant(v2Encounter, name);
+      if (!target) return interaction.reply({ content: `No combatant named **"${name}"** in combat.`, ephemeral: true });
+
+      const patch = {};
+      const changes = [];
+      const newName = interaction.options.getString('new_name');
+      if (newName) {
+        const existing = combatV2State.findCombatant(v2Encounter, newName);
+        if (existing && existing.id !== target.id) return interaction.reply({ content: `A combatant named **${newName}** already exists.`, ephemeral: true });
+        patch.name = newName.trim();
+        changes.push(`name -> ${patch.name}`);
+      }
+      const initiative = interaction.options.getInteger('initiative');
+      if (initiative != null) { patch.initiative = initiative; changes.push(`initiative -> ${initiative}`); }
+      const maxHp = interaction.options.getInteger('max_hp');
+      if (maxHp != null) { patch.maxHp = maxHp; changes.push(`max HP -> ${maxHp}`); }
+      const hp = interaction.options.getInteger('hp');
+      if (hp != null) {
+        patch.hp = Math.min(hp, maxHp ?? target.maxHp);
+        changes.push(`HP -> ${patch.hp}`);
+      } else if (maxHp != null && target.hp > maxHp) {
+        patch.hp = maxHp;
+        changes.push(`HP clamped -> ${maxHp}`);
+      }
+      const ac = interaction.options.getInteger('ac');
+      if (ac != null) { patch.ac = ac; changes.push(`AC -> ${ac}`); }
+      const hidden = interaction.options.getBoolean('hidden');
+      if (hidden != null) { patch.hidden = hidden; changes.push(`hidden -> ${hidden}`); }
+      const group = interaction.options.getString('group');
+      if (group != null) { patch.groupId = group.trim() || null; changes.push(`group -> ${patch.groupId ?? 'none'}`); }
+
+      const saves = { ...(target.saves ?? {}) };
+      let changedSaves = false;
+      for (const [opt, key] of [['fort', 'fort'], ['ref', 'ref'], ['will', 'will']]) {
+        const value = interaction.options.getInteger(opt);
+        if (value != null) {
+          saves[key] = value;
+          changedSaves = true;
+          changes.push(`${opt} -> ${value}`);
+        }
+      }
+      if (changedSaves) patch.saves = saves;
+
+      const resistances = combatV2ParseDefenseMap(interaction.options.getString('resistances'));
+      if (resistances) { patch.resistances = resistances; changes.push(`resistances updated`); }
+      const weaknesses = combatV2ParseDefenseMap(interaction.options.getString('weaknesses'));
+      if (weaknesses) { patch.weaknesses = weaknesses; changes.push(`weaknesses updated`); }
+      const immunities = combatV2ParseList(interaction.options.getString('immunities'));
+      if (immunities) { patch.immunities = immunities; changes.push(`immunities updated`); }
+      const notes = interaction.options.getString('notes');
+      if (notes != null) { patch.notes = notes; changes.push('notes updated'); }
+
+      if (!changes.length) return interaction.reply({ content: 'No changes provided.', ephemeral: true });
+      const result = combatV2State.modifyCombatant(channelId, target.name, patch);
+      await interaction.reply(`Updated **${result.combatant.name}**: ${changes.join(', ')}.`);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return;
+    }
+
     if (v2Encounter && sub === 'effect') {
       if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can add effects.', ephemeral: true });
       const targetName = interaction.options.getString('target');
@@ -13692,6 +13793,9 @@ client.on('interactionCreate', async (interaction) => {
             saves: stats.saves,
             skills: stats.skills,
             spells: stats.spells,
+            resistances: stats.resistances,
+            weaknesses: stats.weaknesses,
+            immunities: stats.immunities,
             attacks: stats.attacks,
             ownerId: v2Encounter.gmId,
             sourceKey: monster.name,
@@ -13768,6 +13872,9 @@ client.on('interactionCreate', async (interaction) => {
           saves: stats.saves,
           skills: stats.skills,
           spells: stats.spells,
+          resistances: stats.resistances,
+          weaknesses: stats.weaknesses,
+          immunities: stats.immunities,
           attacks: stats.attacks,
           ownerId: v2Encounter.gmId,
           sourceKey: monster.name,
