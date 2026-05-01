@@ -109,17 +109,18 @@ function applyDefenses(damage, damageType, defender) {
   return { finalDamage, notes };
 }
 
-function rollCheck({ actor, stat = 0, dc = null, bonus = 0, label = 'Check' }) {
+function rollCheck({ actor, stat = 0, dc = null, bonus = 0, label = 'Check', effectKind = 'skill' }) {
   const effects = effectTotals(actor);
   const die = rollDie(20);
-  const total = die + stat + bonus + effects.skill;
+  const effectBonus = effects[effectKind] ?? 0;
+  const total = die + stat + bonus + effectBonus;
   return {
     kind: 'check',
     label,
     die,
     stat,
     bonus,
-    effectBonus: effects.skill,
+    effectBonus,
     total,
     dc,
     degree: degreeOfSuccess(total, die, dc),

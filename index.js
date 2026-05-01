@@ -2282,6 +2282,83 @@ function combatV2CharacterSave(c, saveType) {
   return abilityMod + calcProfNum(c.proficiencies?.[key] ?? 0, c.level ?? 1);
 }
 
+const COMBAT_V2_SKILL_LABELS = {
+  acrobatics: 'Acrobatics',
+  arcana: 'Arcana',
+  athletics: 'Athletics',
+  crafting: 'Crafting',
+  deception: 'Deception',
+  diplomacy: 'Diplomacy',
+  intimidation: 'Intimidation',
+  medicine: 'Medicine',
+  nature: 'Nature',
+  occultism: 'Occultism',
+  performance: 'Performance',
+  religion: 'Religion',
+  society: 'Society',
+  stealth: 'Stealth',
+  survival: 'Survival',
+  thievery: 'Thievery',
+};
+
+function combatV2NormalizeSkillName(input) {
+  const q = String(input ?? '').toLowerCase().trim();
+  if (!q) return null;
+  const slug = q.replace(/[^a-z0-9]+/g, '');
+  return Object.keys(COMBAT_V2_SKILL_LABELS).find(key => key === q || key.replace(/[^a-z0-9]+/g, '') === slug)
+    ?? Object.keys(COMBAT_V2_SKILL_LABELS).find(key => key.startsWith(q) || COMBAT_V2_SKILL_LABELS[key].toLowerCase().startsWith(q))
+    ?? null;
+}
+
+function combatV2CharacterSkills(charEntry) {
+  const skills = {};
+  for (const [key, label] of Object.entries(COMBAT_V2_SKILL_LABELS)) {
+    const mod = computeCharSkillModifier(charEntry, key);
+    if (mod) skills[key] = { label, modifier: mod.modifier, profLabel: mod.profLabel };
+  }
+  return skills;
+}
+
+function combatV2FindSkill(actor, input) {
+  const skills = actor?.skills ?? {};
+  const normalized = combatV2NormalizeSkillName(input);
+  if (normalized && skills[normalized] != null) {
+    const raw = skills[normalized];
+    return typeof raw === 'number'
+      ? { key: normalized, label: COMBAT_V2_SKILL_LABELS[normalized], modifier: raw }
+      : { key: normalized, label: raw.label ?? COMBAT_V2_SKILL_LABELS[normalized], modifier: Number(raw.modifier ?? raw.total ?? 0) };
+  }
+
+  const q = String(input ?? '').toLowerCase().trim();
+  for (const [key, raw] of Object.entries(skills)) {
+    const label = raw?.label ?? key;
+    if (key.toLowerCase() === q || label.toLowerCase() === q || label.toLowerCase().includes(q)) {
+      return typeof raw === 'number'
+        ? { key, label, modifier: raw }
+        : { key, label, modifier: Number(raw.modifier ?? raw.total ?? raw ?? 0) };
+    }
+  }
+  return null;
+}
+
+function combatV2CheckEmbed(actor, result) {
+  const lines = [
+    `1d20 (${result.die}) ${fmt(result.stat)}`,
+  ];
+  if (result.effectBonus) lines[0] += ` ${fmt(result.effectBonus)} effects`;
+  if (result.bonus) lines[0] += ` ${fmt(result.bonus)} bonus`;
+  lines[0] += ` = **${result.total}**`;
+  if (result.dc != null) lines.push(`DC ${result.dc}: **${combatV2Rolls.degreeLabel(result.degree)}**`);
+  return new EmbedBuilder()
+    .setColor(result.degree === 'criticalSuccess' ? 0x2ecc71
+      : result.degree === 'success' ? 0x27ae60
+      : result.degree === 'criticalFailure' ? 0x992d22
+      : result.degree === 'failure' ? 0xc0392b
+      : 0x5865f2)
+    .setTitle(`${actor.name}: ${result.label}`)
+    .setDescription(lines.join('\n'));
+}
+
 function combatV2CompanionAttacks(comp, scaled) {
   const attacks = [];
   if (scaled.primaryAttack) {
@@ -2325,6 +2402,9 @@ function combatV2MonsterStats(monster, guildId) {
       ref: rich?.saves?.reflex ?? core.reflex ?? null,
       will: rich?.saves?.will ?? core.will ?? null,
     },
+    skills: (rich?._skillTotals && typeof rich._skillTotals === 'object') ? { ...rich._skillTotals }
+      : (rich?.skills && typeof rich.skills === 'object') ? { ...rich.skills }
+      : {},
     attacks: rawAttacks.map(a => {
       const normalized = normalizeAttackForRolling(a);
       return {
@@ -6578,7 +6658,22 @@ client.on('interactionCreate', async (interaction) => {
 
         let suggestions = [];
 
-        if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
+        if (cmd === 'i') {
+          const sub = interaction.options.getSubcommand(false);
+          const v2 = combatV2State.getEncounter(interaction.channel.id);
+          const actorName = interaction.options.getString('actor') ?? null;
+          const actor = v2 ? combatV2PickActor(v2, interaction.user.id, actorName) : null;
+          if (focused.name === 'target' || focused.name === 'actor') {
+            suggestions = pick((v2?.combatants ?? []).map(c => c.name));
+          } else if (focused.name === 'name' && sub === 'attack') {
+            suggestions = pick((actor?.attacks ?? []).map(a => a.name).filter(Boolean));
+          } else if (focused.name === 'name' && sub === 'skill') {
+            const names = new Set(Object.values(COMBAT_V2_SKILL_LABELS));
+            for (const [key, raw] of Object.entries(actor?.skills ?? {})) names.add(raw?.label ?? key);
+            suggestions = pick([...names]);
+          }
+        }
+        else if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
           suggestions = pick([...new Set((referenceDatabases[cmd] ?? []).map(e => e.name).filter(Boolean))]);
         }
         else if (cmd === 'item' && focused.name === 'name') {
@@ -12697,6 +12792,12 @@ client.on('interactionCreate', async (interaction) => {
           maxHp: computeCharMaxHp(charEntry),
           ac: charEntry.data.acTotal?.acTotal ?? null,
           attacks: combatV2CharacterAttacks(charEntry),
+          saves: {
+            fort: combatV2CharacterSave(charEntry.data, 'fortitude'),
+            ref: combatV2CharacterSave(charEntry.data, 'reflex'),
+            will: combatV2CharacterSave(charEntry.data, 'will'),
+          },
+          skills: combatV2CharacterSkills(charEntry),
           effects: [],
           attacksThisTurn: 0,
         };
@@ -12721,6 +12822,70 @@ client.on('interactionCreate', async (interaction) => {
       if (inCombat && mapOverride === null) actor.attacksThisTurn = (actor.attacksThisTurn ?? 0) + count;
       if (inCombat) await updateCombatV2Summary(interaction.channel, encounter);
       return interaction.reply({ content: hpLines.length ? hpLines.join('\n') : undefined, embeds: embeds.slice(0, 10) });
+    }
+
+    if (sub === 'save') {
+      const saveKey = interaction.options.getString('name');
+      const dc = interaction.options.getInteger('dc');
+      const bonus = interaction.options.getInteger('bonus') ?? 0;
+      let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+
+      if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
+      }
+
+      if (!actor) {
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, null, characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
+        actor = {
+          name: charEntry.data.name,
+          ownerId: userId,
+          saves: {
+            fort: combatV2CharacterSave(charEntry.data, 'fortitude'),
+            ref: combatV2CharacterSave(charEntry.data, 'reflex'),
+            will: combatV2CharacterSave(charEntry.data, 'will'),
+          },
+          effects: [],
+        };
+      }
+
+      const saveLabels = { fort: 'Fortitude Save', ref: 'Reflex Save', will: 'Will Save' };
+      const stat = actor.saves?.[saveKey];
+      if (stat == null) return interaction.reply({ content: `**${actor.name}** does not have a ${saveLabels[saveKey] ?? saveKey} modifier recorded.`, ephemeral: true });
+      const result = combatV2Rolls.rollCheck({ actor, stat: Number(stat), dc, bonus, label: saveLabels[saveKey] ?? 'Save', effectKind: 'save' });
+      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
+    }
+
+    if (sub === 'skill') {
+      const skillName = interaction.options.getString('name');
+      const dc = interaction.options.getInteger('dc');
+      const bonus = interaction.options.getInteger('bonus') ?? 0;
+      let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+
+      if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
+      }
+
+      if (!actor) {
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, null, characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
+        actor = {
+          name: charEntry.data.name,
+          ownerId: userId,
+          skills: combatV2CharacterSkills(charEntry),
+          effects: [],
+        };
+      }
+
+      const skill = combatV2FindSkill(actor, skillName);
+      if (!skill) {
+        const available = Object.keys(actor.skills ?? {}).slice(0, 20).join(', ') || 'none';
+        return interaction.reply({ content: `No skill matching **"${skillName}"** found for **${actor.name}**. Available: ${available}.`, ephemeral: true });
+      }
+      const result = combatV2Rolls.rollCheck({ actor, stat: skill.modifier, dc, bonus, label: `${skill.label} Check`, effectKind: 'skill' });
+      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
     }
 
     return interaction.reply({ content: `Unknown /i action: ${sub}`, ephemeral: true });
@@ -12819,6 +12984,7 @@ client.on('interactionCreate', async (interaction) => {
             ref: combatV2CharacterSave(c, 'reflex'),
             will: combatV2CharacterSave(c, 'will'),
           },
+          skills: combatV2CharacterSkills(charEntry),
         });
         await interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
         await updateCombatV2Summary(interaction.channel, v2Encounter);
@@ -12853,6 +13019,7 @@ client.on('interactionCreate', async (interaction) => {
           sourceKey: comp.baseType,
           attacks: combatV2CompanionAttacks(comp, scaled),
           saves: scaled.saves,
+          skills: comp.skills ?? {},
           notes: `${charEntry.data.name}'s ${comp.form} companion`,
         });
         await interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
@@ -12919,6 +13086,7 @@ client.on('interactionCreate', async (interaction) => {
             maxHp: hp,
             ac: stats.ac,
             saves: stats.saves,
+            skills: stats.skills,
             attacks: stats.attacks,
             ownerId: v2Encounter.gmId,
             sourceKey: monster.name,
@@ -12993,6 +13161,7 @@ client.on('interactionCreate', async (interaction) => {
           maxHp: hp,
           ac: stats.ac,
           saves: stats.saves,
+          skills: stats.skills,
           attacks: stats.attacks,
           ownerId: v2Encounter.gmId,
           sourceKey: monster.name,

@@ -1100,6 +1100,21 @@ const iCommand = new SlashCommandBuilder()
     .addIntegerOption(o => o.setName('n').setDescription('Number of attack rolls.').setRequired(false).setMinValue(1).setMaxValue(10))
     .addIntegerOption(o => o.setName('bonus').setDescription('Extra attack bonus or penalty.').setRequired(false))
     .addIntegerOption(o => o.setName('map').setDescription('Override MAP step. 0=first, 1=second, 2=third.').setRequired(false).setMinValue(0).setMaxValue(2)))
+  .addSubcommand(s => s.setName('save')
+    .setDescription('Roll a saving throw in or out of initiative.')
+    .addStringOption(o => o.setName('name').setDescription('Save type.').setRequired(true)
+      .addChoices(
+        { name: 'Fortitude', value: 'fort' },
+        { name: 'Reflex', value: 'ref' },
+        { name: 'Will', value: 'will' },
+      ))
+    .addIntegerOption(o => o.setName('dc').setDescription('Optional DC.').setRequired(false))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty.').setRequired(false)))
+  .addSubcommand(s => s.setName('skill')
+    .setDescription('Roll a skill check in or out of initiative.')
+    .addStringOption(o => o.setName('name').setDescription('Skill name.').setRequired(true).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('dc').setDescription('Optional DC.').setRequired(false))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty.').setRequired(false)))
   .addSubcommand(s => s.setName('attacks')
     .setDescription('List available attacks for yourself or a combatant.')
     .addStringOption(o => o.setName('actor').setDescription('Combatant name; omit for current/your actor.').setRequired(false).setAutocomplete(true)));
