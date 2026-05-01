@@ -2243,6 +2243,117 @@ async function clearCombatV2Summary(channel, encounter) {
   } catch {}
 }
 
+function combatV2Initiative(modifier, resultOverride = null) {
+  if (resultOverride !== null && resultOverride !== undefined) {
+    return { initiative: resultOverride, text: `(set to ${resultOverride})` };
+  }
+  const roll = rollD20Plus(modifier ?? 0);
+  return { initiative: roll.total, text: `(rolled ${roll.roll} ${fmt(roll.mod)})` };
+}
+
+function combatV2CharacterAttacks(charEntry) {
+  const c = charEntry?.data ?? {};
+  return (c.weapons ?? []).map(w => {
+    const damageType = w.damageType === 'P' ? 'piercing'
+      : w.damageType === 'S' ? 'slashing'
+      : w.damageType === 'B' ? 'bludgeoning'
+      : (w.damageType ?? '').toLowerCase();
+    return {
+      name: w.display ?? w.name,
+      bonus: w.attack ?? 0,
+      damage: `${w.die ?? '1d4'}${w.damageBonus ? (w.damageBonus > 0 ? '+' : '') + w.damageBonus : ''}`,
+      damageType,
+      traits: w.traits ?? [],
+      source: 'character',
+    };
+  });
+}
+
+function combatV2CharacterSave(c, saveType) {
+  const key = saveType === 'fortitude' ? 'fortitude'
+    : saveType === 'reflex' ? 'reflex'
+    : saveType === 'will' ? 'will'
+    : saveType;
+  const abilityKey = key === 'fortitude' ? 'con'
+    : key === 'reflex' ? 'dex'
+    : 'wis';
+  const abilityMod = Math.floor(((c.abilities?.[abilityKey] ?? 10) - 10) / 2);
+  return abilityMod + calcProfNum(c.proficiencies?.[key] ?? 0, c.level ?? 1);
+}
+
+function combatV2CompanionAttacks(comp, scaled) {
+  const attacks = [];
+  if (scaled.primaryAttack) {
+    attacks.push({
+      name: scaled.primaryAttack.name,
+      bonus: scaled.attackBonus,
+      damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
+      damageType: scaled.damageType ?? '',
+      traits: scaled.primaryAttack.traits ?? [],
+      source: 'companion',
+    });
+  }
+  for (const a of (comp.customAttacks ?? [])) {
+    attacks.push({
+      name: a.name,
+      bonus: a.bonus ?? 0,
+      damage: a.damage ?? '1d4',
+      damageType: a.damageType ?? '',
+      traits: a.traits ?? [],
+      source: 'companion-custom',
+    });
+  }
+  return attacks;
+}
+
+function combatV2MonsterStats(monster, guildId) {
+  const edits = guildId ? getMonsterEdit(guildId, monster.name) : null;
+  const edited = applyMonsterEdits(monster, edits);
+  const withLibrary = guildId ? applyMonsterAttackLibrary(edited, guildId) : edited;
+  const core = withLibrary.core ?? {};
+  const summary = withLibrary.summary ?? {};
+  const rich = withLibrary.rich ?? null;
+  const rawAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+  return {
+    monster: withLibrary,
+    hp: core.hp ?? summary.summary?.hp?.value ?? rich?.defenses?.hp ?? 1,
+    ac: core.ac ?? summary.summary?.ac ?? rich?.defenses?.ac ?? null,
+    perception: core.perception ?? summary.summary?.perception ?? rich?.perception ?? 0,
+    saves: {
+      fort: rich?.saves?.fortitude ?? core.fortitude ?? null,
+      ref: rich?.saves?.reflex ?? core.reflex ?? null,
+      will: rich?.saves?.will ?? core.will ?? null,
+    },
+    attacks: rawAttacks.map(a => {
+      const normalized = normalizeAttackForRolling(a);
+      return {
+        name: normalized.name,
+        bonus: normalized.bonus ?? normalized.to_hit ?? 0,
+        damage: normalized.damage ?? '1d4',
+        damageType: normalized.damageType ?? '',
+        traits: normalized.traits ?? [],
+        source: 'bestiary',
+      };
+    }),
+  };
+}
+
+function uniqueCombatV2Name(encounter, baseName, count, index) {
+  const taken = new Set((encounter?.combatants ?? []).map(c => c.name.toLowerCase()));
+  if (count === 1 && !taken.has(baseName.toLowerCase())) return baseName;
+  let suffix = index;
+  let name = `${baseName} ${suffix}`;
+  while (taken.has(name.toLowerCase())) {
+    suffix += 1;
+    name = `${baseName} ${suffix}`;
+  }
+  return name;
+}
+
+function combatV2HasName(encounter, name) {
+  return (encounter?.combatants ?? []).some(c => c.name.toLowerCase() === String(name).toLowerCase());
+}
+
 // ── Recovery check display helper ────────────────────────────────────────────
 // Builds the embed + optional Hero Point buttons for a recovery check result.
 // Used by both /init next (auto-roll on dying combatant's turn start) and
@@ -12549,6 +12660,230 @@ client.on('interactionCreate', async (interaction) => {
 
     if (!v2Encounter && ['view', 'prev'].includes(sub)) {
       return interaction.reply({ content: 'No active combat v2 encounter. Start one with `/init start`.', ephemeral: true });
+    }
+
+    if (v2Encounter && sub === 'add') {
+      const kind = interaction.options.getString('kind') ?? (interaction.options.getString('companion') ? 'companion' : 'pc');
+      const nameArg = interaction.options.getString('name');
+      const companionArg = interaction.options.getString('companion');
+      const resultOverride = interaction.options.getInteger('result');
+      const bonusOverride = interaction.options.getInteger('bonus');
+      const count = interaction.options.getInteger('count') ?? 1;
+      const groupId = interaction.options.getString('group');
+
+      if (['monster', 'npc'].includes(kind) && userId !== v2Encounter.gmId) {
+        return interaction.reply({ content: 'Only the GM can add monsters or NPCs.', ephemeral: true });
+      }
+
+      if (kind === 'pc') {
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character') ?? nameArg, characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
+        const c = charEntry.data;
+        if (combatV2HasName(v2Encounter, c.name)) return interaction.reply({ content: `**${c.name}** is already in combat.`, ephemeral: true });
+        const maxHp = computeCharMaxHp(charEntry);
+        const initMod = bonusOverride ?? computeCharPerception(charEntry);
+        const rolled = combatV2Initiative(initMod, resultOverride);
+        const { combatant } = combatV2State.addCombatant(channelId, {
+          name: c.name,
+          type: 'pc',
+          isNpc: false,
+          hidden: false,
+          initiative: rolled.initiative,
+          hp: charEntry.hp ?? maxHp,
+          maxHp,
+          ac: c.acTotal?.acTotal ?? null,
+          ownerId: userId,
+          attacks: combatV2CharacterAttacks(charEntry),
+          saves: {
+            fort: combatV2CharacterSave(c, 'fortitude'),
+            ref: combatV2CharacterSave(c, 'reflex'),
+            will: combatV2CharacterSave(c, 'will'),
+          },
+        });
+        await interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
+        await updateCombatV2Summary(interaction.channel, v2Encounter);
+        return;
+      }
+
+      if (kind === 'companion') {
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
+        const companions = charEntry.companions ?? {};
+        const query = companionArg ?? nameArg ?? charEntry.activeCompanion ?? 'active';
+        const key = String(query).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        let comp = companions[key];
+        if (!comp && (query === 'active' || !query)) comp = companions[charEntry.activeCompanion];
+        if (!comp) comp = Object.values(companions).find(c => c.displayName?.toLowerCase() === String(query).toLowerCase());
+        if (!comp) return interaction.reply({ content: `No companion "${query}" found for **${charEntry.data.name}**.`, ephemeral: true });
+        if (combatV2HasName(v2Encounter, comp.displayName)) return interaction.reply({ content: `**${comp.displayName}** is already in combat.`, ephemeral: true });
+        const scaled = scaleCompanion(comp, charEntry.data);
+        const initMod = bonusOverride ?? scaled.perception ?? 0;
+        const rolled = combatV2Initiative(initMod, resultOverride);
+        const { combatant } = combatV2State.addCombatant(channelId, {
+          name: comp.displayName,
+          type: 'companion',
+          isNpc: false,
+          hidden: false,
+          initiative: rolled.initiative,
+          hp: comp.currentHp ?? scaled.maxHp,
+          maxHp: scaled.maxHp,
+          ac: scaled.ac,
+          ownerId: userId,
+          sourceKey: comp.baseType,
+          attacks: combatV2CompanionAttacks(comp, scaled),
+          saves: scaled.saves,
+          notes: `${charEntry.data.name}'s ${comp.form} companion`,
+        });
+        await interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
+        await updateCombatV2Summary(interaction.channel, v2Encounter);
+        return;
+      }
+
+      if (kind === 'npc') {
+        const name = nameArg ?? 'NPC';
+        const hp = interaction.options.getInteger('hp') ?? 1;
+        const ac = interaction.options.getInteger('ac');
+        const initMod = bonusOverride ?? 0;
+        const added = [];
+        for (let i = 1; i <= count; i += 1) {
+          const rolled = combatV2Initiative(initMod, resultOverride);
+          const uniqueName = uniqueCombatV2Name(v2Encounter, name, count, i);
+          const { combatant } = combatV2State.addCombatant(channelId, {
+            name: uniqueName,
+            type: 'npc',
+            isNpc: true,
+            hidden: true,
+            initiative: rolled.initiative,
+            groupId,
+            hp,
+            maxHp: hp,
+            ac,
+            ownerId: userId,
+          });
+          added.push(`**${combatant.name}** init ${combatant.initiative}`);
+        }
+        await interaction.reply(`Added ${added.join(', ')}.`);
+        await updateCombatV2Summary(interaction.channel, v2Encounter);
+        return;
+      }
+
+      if (kind === 'monster') {
+        const input = nameArg;
+        if (!input) return interaction.reply({ content: 'Monster add needs `name:<monster name>`.', ephemeral: true });
+        const { monster, matches, total } = findMonster(input);
+        if (!monster) {
+          if (matches?.length > 1) {
+            const preview = matches.slice(0, 10).map(n => `• **${n}**`).join('\n');
+            const extra = (total ?? matches.length) > 10 ? `\n*...and ${(total ?? matches.length) - 10} more.*` : '';
+            return interaction.reply({ content: `Multiple creatures match **"${input}"**:\n${preview}${extra}`, ephemeral: true });
+          }
+          return interaction.reply({ content: `No creature named **"${input}"** in the bestiary.`, ephemeral: true });
+        }
+        const stats = combatV2MonsterStats(monster, interaction.guildId);
+        const initMod = bonusOverride ?? stats.perception ?? 0;
+        const sharedRoll = resultOverride !== null || groupId ? combatV2Initiative(initMod, resultOverride) : null;
+        const added = [];
+        for (let i = 1; i <= count; i += 1) {
+          const rolled = sharedRoll ?? combatV2Initiative(initMod, resultOverride);
+          const hp = stats.hp;
+          const uniqueName = uniqueCombatV2Name(v2Encounter, monster.name, count, i);
+          const { combatant } = combatV2State.addCombatant(channelId, {
+            name: uniqueName,
+            type: 'monster',
+            isNpc: true,
+            hidden: true,
+            initiative: rolled.initiative,
+            groupId: groupId ?? (count > 1 && sharedRoll ? monster.name : null),
+            hp,
+            maxHp: hp,
+            ac: stats.ac,
+            saves: stats.saves,
+            attacks: stats.attacks,
+            ownerId: v2Encounter.gmId,
+            sourceKey: monster.name,
+          });
+          added.push(`**${combatant.name}** init ${combatant.initiative}`);
+        }
+        await interaction.reply(`Added ${count === 1 ? monster.name : `${count} ${monster.name}s`} to combat.`);
+        await interaction.followUp({ content: `GM details: ${added.join(', ')}. HP ${stats.hp}, AC ${stats.ac ?? '?'}.`, ephemeral: true });
+        await updateCombatV2Summary(interaction.channel, v2Encounter);
+        return;
+      }
+    }
+
+    if (v2Encounter && sub === 'addnpc') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can add NPCs.', ephemeral: true });
+      const name = interaction.options.getString('name');
+      const hp = interaction.options.getInteger('hp');
+      const ac = interaction.options.getInteger('ac');
+      const bonus = interaction.options.getInteger('bonus') ?? 0;
+      const resultOverride = interaction.options.getInteger('result');
+      const rolled = combatV2Initiative(bonus, resultOverride);
+      if (combatV2HasName(v2Encounter, name)) return interaction.reply({ content: `A combatant named **${name}** is already in combat.`, ephemeral: true });
+      const { combatant } = combatV2State.addCombatant(channelId, {
+        name,
+        type: 'npc',
+        isNpc: true,
+        hidden: true,
+        initiative: rolled.initiative,
+        hp,
+        maxHp: hp,
+        ac,
+        ownerId: userId,
+      });
+      await interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'addmonster') {
+      if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can add monsters.', ephemeral: true });
+      const input = interaction.options.getString('monster');
+      const count = interaction.options.getInteger('count') ?? 1;
+      const initMode = interaction.options.getString('init_mode') ?? 'per_copy';
+      const hpMode = interaction.options.getString('hp_mode') ?? 'fixed';
+      const bonusOverride = interaction.options.getInteger('bonus');
+      const resultOverride = interaction.options.getInteger('result');
+      const { monster, matches, total } = findMonster(input);
+      if (!monster) {
+        if (matches?.length > 1) {
+          const preview = matches.slice(0, 10).map(n => `• **${n}**`).join('\n');
+          const extra = (total ?? matches.length) > 10 ? `\n*...and ${(total ?? matches.length) - 10} more.*` : '';
+          return interaction.reply({ content: `Multiple creatures match **"${input}"**:\n${preview}${extra}`, ephemeral: true });
+        }
+        return interaction.reply({ content: `No creature named **"${input}"** in the bestiary.`, ephemeral: true });
+      }
+      const stats = combatV2MonsterStats(monster, interaction.guildId);
+      const initMod = bonusOverride ?? stats.perception ?? 0;
+      const sharedRoll = initMode === 'shared' || resultOverride !== null ? combatV2Initiative(initMod, resultOverride) : null;
+      const added = [];
+      for (let i = 1; i <= count; i += 1) {
+        const rolled = sharedRoll ?? combatV2Initiative(initMod, resultOverride);
+        const uniqueName = uniqueCombatV2Name(v2Encounter, monster.name, count, i);
+        const hp = hpMode === 'varied' ? Math.max(1, stats.hp + Math.floor(Math.random() * 11) - 5) : stats.hp;
+        const { combatant } = combatV2State.addCombatant(channelId, {
+          name: uniqueName,
+          type: 'monster',
+          isNpc: true,
+          hidden: true,
+          initiative: rolled.initiative,
+          groupId: initMode === 'shared' && count > 1 ? monster.name : null,
+          hp,
+          maxHp: hp,
+          ac: stats.ac,
+          saves: stats.saves,
+          attacks: stats.attacks,
+          ownerId: v2Encounter.gmId,
+          sourceKey: monster.name,
+        });
+        added.push(`**${combatant.name}** init ${combatant.initiative}`);
+      }
+      await interaction.reply(`Added ${count === 1 ? monster.name : `${count} ${monster.name}s`} to combat.`);
+      await interaction.followUp({ content: `GM details: ${added.join(', ')}. Base HP ${stats.hp}, AC ${stats.ac ?? '?'}.`, ephemeral: true });
+      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      return;
     }
 
     if (sub === 'start') {

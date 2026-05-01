@@ -48,9 +48,9 @@ Goal: replace the legacy combat commands with an Avrae-style PF2e combat workflo
 
 ## Migration Order
 
-1. Add the isolated v2 state, roll, and render modules.
-2. Wire `/init start/end/view/next/prev`.
-3. Wire `/init add` for PCs, monsters, NPCs, companions, duplicate monsters, and grouped initiative.
+1. Add the isolated v2 state, roll, and render modules. Done.
+2. Wire `/init start/end/view/next/prev`. Done.
+3. Wire `/init add` for PCs, monsters, NPCs, companions, duplicate monsters, and grouped initiative. Done.
 4. Wire `/i attack`, `/i save`, `/i skill`, `/i cast`.
 5. Wire monster commands: `/mattack`, `/m save`, `/m skill`, `/m cast`, `/m attacks`.
 6. Wire HP, temp HP, effects, remove, and modify commands.

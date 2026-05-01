@@ -993,10 +993,21 @@ const initCommand = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('list').setDescription('Show the current initiative order and HP.'))
   // ── Adding combatants ──
   .addSubcommand(s => s.setName('add')
-    .setDescription('Add yourself (or your companion) to initiative.')
+    .setDescription('Add yourself, a PC, companion, NPC, or monster to initiative.')
+    .addStringOption(o => o.setName('kind').setDescription('Combatant type for combat v2.').setRequired(false).addChoices(
+      { name: 'Player', value: 'pc' },
+      { name: 'Companion', value: 'companion' },
+      { name: 'Monster', value: 'monster' },
+      { name: 'NPC', value: 'npc' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('Name or lookup query for combat v2.').setRequired(false).setAutocomplete(true))
     .addStringOption(o => o.setName('companion').setDescription('Add a companion instead (e.g. "Shadow")').setRequired(false))
     .addIntegerOption(o => o.setName('bonus').setDescription('Override initiative bonus (default: your Perception)').setRequired(false))
     .addIntegerOption(o => o.setName('result').setDescription('Use this exact initiative result instead of rolling').setRequired(false))
+    .addIntegerOption(o => o.setName('hp').setDescription('HP for NPCs/custom combatants.').setRequired(false).setMinValue(1))
+    .addIntegerOption(o => o.setName('ac').setDescription('AC for NPCs/custom combatants.').setRequired(false))
+    .addIntegerOption(o => o.setName('count').setDescription('How many copies to add for monsters/NPCs.').setRequired(false).setMinValue(1).setMaxValue(50))
+    .addStringOption(o => o.setName('group').setDescription('Shared group label for same-initiative creatures.').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character to add (default: active)').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('addnpc')
     .setDescription('GM: add a custom NPC/monster to initiative.')
