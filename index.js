@@ -2371,6 +2371,72 @@ function combatV2SaveKey(saveType) {
   return null;
 }
 
+function firstNumber(...values) {
+  for (const value of values) {
+    if (value == null || value === '') continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function combatV2NormalizeMonsterSaves(core = {}, summary = {}, rich = null) {
+  const summaryObj = summary.summary ?? summary ?? {};
+  const richSaves = rich?.saves ?? rich?.defenses?.saves ?? {};
+  const coreSaves = core.saves ?? {};
+  return {
+    fort: firstNumber(
+      richSaves.fort,
+      richSaves.fortitude,
+      richSaves.Fortitude,
+      coreSaves.fort,
+      coreSaves.fortitude,
+      core.fort,
+      core.fortitude,
+      summaryObj.fort,
+      summaryObj.fortitude,
+      summaryObj.Fortitude,
+    ),
+    ref: firstNumber(
+      richSaves.ref,
+      richSaves.reflex,
+      richSaves.Reflex,
+      coreSaves.ref,
+      coreSaves.reflex,
+      core.ref,
+      core.reflex,
+      summaryObj.ref,
+      summaryObj.reflex,
+      summaryObj.Reflex,
+    ),
+    will: firstNumber(
+      richSaves.will,
+      richSaves.Will,
+      coreSaves.will,
+      core.will,
+      summaryObj.will,
+      summaryObj.Will,
+    ),
+  };
+}
+
+function combatV2SaveModifier(combatant, saveKey, guildId = null) {
+  const direct = combatant?.saves?.[saveKey];
+  if (direct != null) {
+    const number = Number(direct);
+    if (Number.isFinite(number)) return number;
+  }
+  const lookupName = combatant?.sourceKey ?? combatant?.bestiaryKey ?? combatant?.name;
+  if (!lookupName) return null;
+  try {
+    const { monster } = findMonster(lookupName);
+    if (!monster) return null;
+    return combatV2MonsterStats(monster, guildId).saves?.[saveKey] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function combatV2DegreeLabel(degree) {
   return {
     criticalSuccess: 'Critical Success',
@@ -2506,11 +2572,7 @@ function combatV2MonsterStats(monster, guildId) {
     hp: core.hp ?? summary.summary?.hp?.value ?? rich?.defenses?.hp ?? 1,
     ac: core.ac ?? summary.summary?.ac ?? rich?.defenses?.ac ?? null,
     perception: core.perception ?? summary.summary?.perception ?? rich?.perception ?? 0,
-    saves: {
-      fort: rich?.saves?.fortitude ?? core.fortitude ?? null,
-      ref: rich?.saves?.reflex ?? core.reflex ?? null,
-      will: rich?.saves?.will ?? core.will ?? null,
-    },
+    saves: combatV2NormalizeMonsterSaves(core, summary, rich),
     skills: (rich?._skillTotals && typeof rich._skillTotals === 'object') ? { ...rich._skillTotals }
       : (rich?.skills && typeof rich.skills === 'object') ? { ...rich.skills }
       : {},
@@ -10432,8 +10494,9 @@ client.on('interactionCreate', async (interaction) => {
     } else if (saveKey) {
       const saveLabels = { fort: 'Fortitude', ref: 'Reflex', will: 'Will' };
       lines.push(`**${spell.saveIsBasic ? 'Basic ' : ''}${saveLabels[saveKey] ?? saveKey} Save DC ${dc}**`);
-      if (target && target.saves?.[saveKey] != null) {
-        const result = combatV2Rolls.rollCheck({ actor: target, stat: Number(target.saves[saveKey]), dc, label: `${saveLabels[saveKey]} Save`, effectKind: 'save' });
+      const targetSave = target && saveKey ? combatV2SaveModifier(target, saveKey, interaction.guildId) : null;
+      if (target && targetSave != null) {
+        const result = combatV2Rolls.rollCheck({ actor: target, stat: targetSave, dc, label: `${saveLabels[saveKey]} Save`, effectKind: 'save' });
         lines.push(`${target.name}: 1d20 (${result.die}) ${fmt(result.stat)}${result.effectBonus ? ` ${fmt(result.effectBonus)} effects` : ''} = **${result.total}**`);
         lines.push(`**${combatV2DegreeLabel(result.degree)}**`);
         if (damageRoll) {
@@ -10516,12 +10579,13 @@ client.on('interactionCreate', async (interaction) => {
     const target = combatV2State.findCombatant(encounter, targetName);
     if (!target) return interaction.reply({ content: `No combatant named **"${targetName}"** in combat v2.`, ephemeral: true });
     if (!saveKey) return interaction.reply({ content: 'Unknown save type.', ephemeral: true });
-    if (target.saves?.[saveKey] == null) return interaction.reply({ content: `**${target.name}** does not have that save recorded.`, ephemeral: true });
+    const targetSave = combatV2SaveModifier(target, saveKey, interaction.guildId);
+    if (targetSave == null) return interaction.reply({ content: `**${target.name}** does not have that save recorded.`, ephemeral: true });
 
     const saveLabels = { fort: 'Fortitude', ref: 'Reflex', will: 'Will' };
     const result = combatV2Rolls.rollCheck({
       actor: target,
-      stat: Number(target.saves[saveKey]),
+      stat: targetSave,
       dc,
       label: `${saveLabels[saveKey]} Save`,
       effectKind: 'save',
@@ -12309,7 +12373,7 @@ client.on('interactionCreate', async (interaction) => {
       if (sub === 'save') {
         const saveKey = combatV2SaveKey(interaction.options.getString('save'));
         const saveLabels = { fort: 'Fortitude Save', ref: 'Reflex Save', will: 'Will Save' };
-        const stat = combatant.saves?.[saveKey];
+        const stat = combatV2SaveModifier(combatant, saveKey, interaction.guildId);
         if (stat == null) return interaction.reply({ content: `**${combatant.name}** does not have a ${saveLabels[saveKey] ?? 'save'} modifier recorded.`, ephemeral: true });
         const result = combatV2Rolls.rollCheck({ actor: combatant, stat: Number(stat), dc, label: saveLabels[saveKey], effectKind: 'save' });
         return interaction.reply({ embeds: [combatV2CheckEmbed(combatant, result)], ephemeral: !wantPublic });
@@ -13656,7 +13720,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const saveLabels = { fort: 'Fortitude Save', ref: 'Reflex Save', will: 'Will Save' };
-      const stat = actor.saves?.[saveKey];
+      const stat = combatV2SaveModifier(actor, saveKey, interaction.guildId);
       if (stat == null) return interaction.reply({ content: `**${actor.name}** does not have a ${saveLabels[saveKey] ?? saveKey} modifier recorded.`, ephemeral: true });
       const result = combatV2Rolls.rollCheck({ actor, stat: Number(stat), dc, bonus, label: saveLabels[saveKey] ?? 'Save', effectKind: 'save' });
       return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
@@ -13795,10 +13859,11 @@ client.on('interactionCreate', async (interaction) => {
       } else if (spell.savingThrow) {
         const saveKey = combatV2SaveKey(spell.savingThrow);
         lines.push(`**${spell.saveIsBasic ? 'Basic ' : ''}${spell.savingThrow} Save DC ${casterStats.dc}**`);
-        if (target && saveKey && target.saves?.[saveKey] != null) {
+        const targetSave = target && saveKey ? combatV2SaveModifier(target, saveKey, interaction.guildId) : null;
+        if (target && saveKey && targetSave != null) {
           const result = combatV2Rolls.rollCheck({
             actor: target,
-            stat: Number(target.saves[saveKey]),
+            stat: targetSave,
             dc: casterStats.dc,
             bonus: 0,
             label: `${spell.savingThrow} Save`,
