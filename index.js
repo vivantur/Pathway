@@ -13160,6 +13160,24 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
+    if (sub === 'reaction') {
+      if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter here.', ephemeral: true });
+      const actorName = interaction.options.getString('actor');
+      const reason = interaction.options.getString('reason') ?? 'reaction';
+      const actor = combatV2PickActor(encounter, userId, actorName);
+      if (!actor) return interaction.reply({ content: 'I could not find exactly one combatant you control. Use `actor:` to choose one.', ephemeral: true });
+      if (userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'You can only mark reactions for your own combatant.', ephemeral: true });
+      }
+      if (actor.hasReaction === false) return interaction.reply({ content: `**${actor.name}** does not have reactions enabled.`, ephemeral: true });
+      if (actor.reactionUsed) return interaction.reply({ content: `**${actor.name}** has already used their reaction this round.`, ephemeral: true });
+      actor.reactionUsed = true;
+      encounter.updatedAt = new Date().toISOString();
+      encounter.log.push({ at: encounter.updatedAt, kind: 'reaction', name: actor.name, reason });
+      await updateCombatV2Summary(interaction.channel, encounter);
+      return interaction.reply(`**${actor.name}** used their reaction: ${reason}.`);
+    }
+
     if (sub === 'attack') {
       const attackName = interaction.options.getString('name');
       const targetName = interaction.options.getString('target');
@@ -13645,6 +13663,39 @@ client.on('interactionCreate', async (interaction) => {
         .setTitle(`${target.name}'s Effects`)
         .setDescription(lines.length ? lines.join('\n') : 'No active effects.');
       return interaction.reply({ embeds: [embed], ephemeral: target.hidden && userId === v2Encounter.gmId });
+    }
+
+    if (v2Encounter && sub === 'move') {
+      const moverName = interaction.options.getString('name');
+      const mover = combatV2State.findCombatant(v2Encounter, moverName);
+      if (!mover) return interaction.reply({ content: `No combatant named **"${moverName}"** in combat.`, ephemeral: true });
+      const reactors = v2Encounter.combatants.filter(c =>
+        c.id !== mover.id &&
+        c.hp > 0 &&
+        c.hasReaction !== false &&
+        !c.reactionUsed &&
+        c.isNpc !== mover.isNpc
+      );
+      if (!reactors.length) return interaction.reply(`**${mover.name}** moves. No opposing combatants have reactions available.`);
+      const lines = [`**${mover.name}** moves. Potential reactions:`];
+      for (const reactor of reactors.slice(0, 10)) {
+        const mention = reactor.isNpc ? `<@${v2Encounter.gmId}>` : (reactor.ownerId ? `<@${reactor.ownerId}>` : '');
+        lines.push(`${mention} **${reactor.name}** can react. Use \`/i reaction actor:${reactor.name}\` if they do.`);
+      }
+      if (reactors.length > 10) lines.push(`*...and ${reactors.length - 10} more.*`);
+      return interaction.reply(lines.join('\n'));
+    }
+
+    if (v2Encounter && sub === 'reaction') {
+      const reactorName = interaction.options.getString('name');
+      const reason = interaction.options.getString('reason') ?? 'reaction trigger';
+      const reactor = combatV2State.findCombatant(v2Encounter, reactorName);
+      if (!reactor) return interaction.reply({ content: `No combatant named **"${reactorName}"** in combat.`, ephemeral: true });
+      if (reactor.hasReaction === false || reactor.reactionUsed || reactor.hp <= 0) {
+        return interaction.reply({ content: `**${reactor.name}** does not currently have a reaction available.`, ephemeral: true });
+      }
+      const mention = reactor.isNpc ? `<@${v2Encounter.gmId}>` : (reactor.ownerId ? `<@${reactor.ownerId}>` : '');
+      return interaction.reply(`${mention} **${reactor.name}** reaction prompt: *${reason}*\nUse \`/i reaction actor:${reactor.name}\` if the reaction is used.`);
     }
 
     if (!v2Encounter && ['view', 'prev'].includes(sub)) {
