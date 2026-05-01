@@ -6792,6 +6792,9 @@ client.on('interactionCreate', async (interaction) => {
               const { char: charEntry } = resolveChar(interaction.user.id, null, characters) || {};
               suggestions = pick(charEntry ? charOverlay.getCasters(charEntry.data).map(c => c.name) : []);
             } catch { suggestions = []; }
+          } else if (focused.name === 'character' && sub === 'join') {
+            const characters = loadCharacters();
+            suggestions = pick(Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name));
           }
         }
         else if (REFERENCE_DATABASE_CONFIG[cmd] && focused.name === 'name') {
@@ -13215,6 +13218,38 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const encounter = combatV2State.getEncounter(channelId);
 
+    if (sub === 'join') {
+      if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter here. Ask the GM to use `/init start`.', ephemeral: true });
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+      const c = charEntry.data;
+      if (combatV2HasName(encounter, c.name)) return interaction.reply({ content: `**${c.name}** is already in combat.`, ephemeral: true });
+      const maxHp = computeCharMaxHp(charEntry);
+      const initMod = interaction.options.getInteger('bonus') ?? computeCharPerception(charEntry);
+      const rolled = combatV2Initiative(initMod, interaction.options.getInteger('result'));
+      const { combatant } = combatV2State.addCombatant(channelId, {
+        name: c.name,
+        type: 'pc',
+        isNpc: false,
+        hidden: false,
+        initiative: rolled.initiative,
+        hp: charEntry.hp ?? maxHp,
+        maxHp,
+        ac: c.acTotal?.acTotal ?? null,
+        ownerId: userId,
+        attacks: combatV2CharacterAttacks(charEntry),
+        saves: {
+          fort: combatV2CharacterSave(c, 'fortitude'),
+          ref: combatV2CharacterSave(c, 'reflex'),
+          will: combatV2CharacterSave(c, 'will'),
+        },
+        skills: combatV2CharacterSkills(charEntry),
+      });
+      await updateCombatV2Summary(interaction.channel, encounter);
+      return interaction.reply(`**${combatant.name}** joined combat at **${combatant.initiative}** ${rolled.text}.`);
+    }
+
     if (sub === 'attacks') {
       const actorName = interaction.options.getString('actor');
       const actor = encounter ? combatV2PickActor(encounter, userId, actorName) : null;
@@ -13291,6 +13326,40 @@ client.on('interactionCreate', async (interaction) => {
       const result = combatV2State.setTempHp(channelId, actor.name, amount);
       await updateCombatV2Summary(interaction.channel, result.encounter);
       return interaction.reply(`**${result.combatant.name}** temp HP: ${result.before} -> **${result.combatant.tempHp}**.`);
+    }
+
+    if (sub === 'effect') {
+      if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter here.', ephemeral: true });
+      const actorName = interaction.options.getString('actor');
+      const actor = combatV2PickActor(encounter, userId, actorName);
+      if (!actor) return interaction.reply({ content: 'I could not find exactly one combatant you control. Use `actor:` to choose one.', ephemeral: true });
+      if (userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'You can only view effects for your own combatant.', ephemeral: true });
+      }
+      const lines = (actor.effects ?? []).map(e => {
+        const value = e.value != null ? ` ${e.value}` : '';
+        const durationText = e.duration != null ? ` (${e.duration} rounds)` : '';
+        const desc = e.modifiers?.description ? ` - ${e.modifiers.description}` : '';
+        return `• **${e.name}${value}**${durationText}${desc}`;
+      });
+      const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle(`${actor.name}'s Effects`)
+        .setDescription(lines.length ? lines.join('\n') : 'No active effects.');
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'remove') {
+      if (!encounter) return interaction.reply({ content: 'No active combat v2 encounter here.', ephemeral: true });
+      const actorName = interaction.options.getString('actor');
+      const actor = combatV2PickActor(encounter, userId, actorName);
+      if (!actor) return interaction.reply({ content: 'I could not find exactly one combatant you control. Use `actor:` to choose one.', ephemeral: true });
+      if (userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'You can only remove your own combatant.', ephemeral: true });
+      }
+      const result = combatV2State.removeCombatant(channelId, actor.name);
+      await updateCombatV2Summary(interaction.channel, result.encounter);
+      return interaction.reply(`Removed **${result.combatant.name}** from combat.`);
     }
 
     if (sub === 'attack') {

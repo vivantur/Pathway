@@ -59,4 +59,5 @@ Goal: replace the legacy combat commands with an Avrae-style PF2e combat workflo
 9. Wire save-based monster abilities. Done.
 10. Wire player HP/temp HP shortcuts. Done.
 11. Wire delay and rejoin. Done.
-12. Remove or archive legacy combat handlers after parity testing.
+12. Wire player join/effect/remove shortcuts. Done.
+13. Remove or archive legacy combat handlers after parity testing.
