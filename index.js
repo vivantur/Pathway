@@ -21,6 +21,7 @@ const {
   restoreAllFromSupabase,
   syncHomebrewEntryToSupabase,
   deleteHomebrewEntryFromSupabase,
+  setupHomebrewRealtimeSync,
 } = require('./utils/storage');
 
 // Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
@@ -5991,6 +5992,9 @@ client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
   await restoreAllFromSupabase();
   reloadDatabasesAfterRestore();
+  // Subscribe to live homebrew changes so entries added/removed via the
+  // web UI take effect immediately without a bot restart.
+  setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
 });
 
 // ── Interaction handler ───────────────────────────────────────────────────────

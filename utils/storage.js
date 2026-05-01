@@ -1269,6 +1269,101 @@ async function restoreAllFromSupabase() {
   }
 }
 
+// ── Homebrew realtime sync ────────────────────────────────────────────────────
+//
+// Subscribes to Supabase Realtime postgres_changes on homebrew_entries.
+// INSERT events immediately splice the entry into the relevant in-memory
+// database; DELETE events remove it. Both mutations happen in-place so
+// existing closures throughout index.js see the change immediately.
+//
+// Requires REPLICA IDENTITY FULL on homebrew_entries (migration applied)
+// so DELETE payloads include all columns, not just the primary key.
+//
+// Call once after restoreAllFromSupabase() + reloadDatabasesAfterRestore().
+
+function setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase }) {
+  const sb = getSupabase();
+  if (!sb) {
+    console.warn('[homebrew:realtime] Supabase not available — live sync disabled');
+    return;
+  }
+
+  function normalize(s) {
+    return (s ?? '').toLowerCase().trim();
+  }
+
+  sb.channel('homebrew-live')
+    .on('postgres_changes', {
+      event:  'INSERT',
+      schema: 'public',
+      table:  'homebrew_entries',
+    }, (payload) => {
+      const { type, entry_key, name, data } = payload.new;
+      try {
+        if (type === 'monster') {
+          bestiaryDatabase[entry_key] = { name, ...data };
+          console.log(`[homebrew:realtime] + monster "${name}" (${entry_key})`);
+
+        } else if (type === 'spell') {
+          const entry = { name, ...data };
+          const idx = spellDatabase.findIndex(
+            s => normalize(s.name) === normalize(name) && s._homebrew
+          );
+          if (idx >= 0) spellDatabase.splice(idx, 1, entry);
+          else spellDatabase.push(entry);
+          console.log(`[homebrew:realtime] + spell "${name}"`);
+
+        } else if (type === 'item') {
+          const entry = { id: entry_key, name, ...data };
+          const idx = itemDatabase.findIndex(i => i.id === entry_key);
+          if (idx >= 0) itemDatabase.splice(idx, 1, entry);
+          else itemDatabase.push(entry);
+          console.log(`[homebrew:realtime] + item "${name}" (${entry_key})`);
+        }
+      } catch (err) {
+        console.error(`[homebrew:realtime] INSERT handler error:`, err.message);
+      }
+    })
+    .on('postgres_changes', {
+      event:  'DELETE',
+      schema: 'public',
+      table:  'homebrew_entries',
+    }, (payload) => {
+      const { type, entry_key, name } = payload.old;
+      try {
+        if (type === 'monster') {
+          delete bestiaryDatabase[entry_key];
+          console.log(`[homebrew:realtime] - monster "${name}" (${entry_key})`);
+
+        } else if (type === 'spell') {
+          const idx = spellDatabase.findIndex(
+            s => normalize(s.name) === normalize(name) && s._homebrew
+          );
+          if (idx >= 0) {
+            spellDatabase.splice(idx, 1);
+            console.log(`[homebrew:realtime] - spell "${name}"`);
+          }
+
+        } else if (type === 'item') {
+          const idx = itemDatabase.findIndex(i => i.id === entry_key);
+          if (idx >= 0) {
+            itemDatabase.splice(idx, 1);
+            console.log(`[homebrew:realtime] - item "${name}" (${entry_key})`);
+          }
+        }
+      } catch (err) {
+        console.error(`[homebrew:realtime] DELETE handler error:`, err.message);
+      }
+    })
+    .subscribe((status, err) => {
+      if (err) {
+        console.error('[homebrew:realtime] subscription error:', err.message);
+      } else {
+        console.log(`[homebrew:realtime] ${status}`);
+      }
+    });
+}
+
 module.exports = {
   DATA_DIR,
   GAMEDATA_DIR,
@@ -1302,4 +1397,5 @@ module.exports = {
   syncGuildSnippetsToSupabase,
   syncMonsterArtToSupabase,
   syncMonsterEditsToSupabase,
+  setupHomebrewRealtimeSync,
 };
