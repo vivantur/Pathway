@@ -1090,13 +1090,19 @@ const initCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('name').setDescription('Delayed combatant name').setRequired(true))
     .addStringOption(o => o.setName('target').setDescription('Rejoin just before this combatant (omit to act now)').setRequired(false)));
 
-const iCommand = {
-  toJSON: () => ({
-    ...initCommand.toJSON(),
-    name: 'i',
-    description: 'Quick alias for /init.',
-  }),
-};
+const iCommand = new SlashCommandBuilder()
+  .setName('i')
+  .setDescription('Combat v2 player actions.')
+  .addSubcommand(s => s.setName('attack')
+    .setDescription('Attack in or out of initiative.')
+    .addStringOption(o => o.setName('name').setDescription('Attack name; omit for first/primary attack.').setRequired(false).setAutocomplete(true))
+    .addStringOption(o => o.setName('target').setDescription('Target combatant; omit for first opposing target.').setRequired(false).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('n').setDescription('Number of attack rolls.').setRequired(false).setMinValue(1).setMaxValue(10))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Extra attack bonus or penalty.').setRequired(false))
+    .addIntegerOption(o => o.setName('map').setDescription('Override MAP step. 0=first, 1=second, 2=third.').setRequired(false).setMinValue(0).setMaxValue(2)))
+  .addSubcommand(s => s.setName('attacks')
+    .setDescription('List available attacks for yourself or a combatant.')
+    .addStringOption(o => o.setName('actor').setDescription('Combatant name; omit for current/your actor.').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /downtime

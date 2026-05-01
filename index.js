@@ -77,6 +77,7 @@ const charOverlay = require('./systems/characterOverlay');
 const ca = require('./systems/combatAutomation');
 const combatV2State = require('./systems/combatV2/state');
 const combatV2Render = require('./systems/combatV2/render');
+const combatV2Rolls = require('./systems/combatV2/rolls');
 // Spell effects auto-application: maps spell names to mechanical effects
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
 // their save degree of success. Used by /cast.
@@ -2352,6 +2353,46 @@ function uniqueCombatV2Name(encounter, baseName, count, index) {
 
 function combatV2HasName(encounter, name) {
   return (encounter?.combatants ?? []).some(c => c.name.toLowerCase() === String(name).toLowerCase());
+}
+
+function combatV2PickActor(encounter, userId, actorName = null) {
+  if (!encounter) return null;
+  if (actorName) return combatV2State.findCombatant(encounter, actorName);
+  const current = combatV2State.currentCombatant(encounter);
+  if (current && (current.ownerId === userId || userId === encounter.gmId)) return current;
+  const owned = encounter.combatants.filter(c => c.ownerId === userId && c.hp > 0);
+  return owned.length === 1 ? owned[0] : null;
+}
+
+function combatV2PickTarget(encounter, actor, targetName = null) {
+  if (!encounter || !actor) return null;
+  if (targetName) return combatV2State.findCombatant(encounter, targetName);
+  const enemies = encounter.combatants.filter(c =>
+    c.id !== actor.id &&
+    c.hp > 0 &&
+    c.isNpc !== actor.isNpc
+  );
+  return enemies[0] ?? null;
+}
+
+function combatV2FindAttack(actor, attackName = null) {
+  const attacks = actor?.attacks ?? [];
+  if (attacks.length === 0) return null;
+  if (!attackName) return attacks[0];
+  const q = String(attackName).toLowerCase().trim();
+  return attacks.find(a => a.name.toLowerCase() === q)
+    ?? attacks.find(a => a.name.toLowerCase().includes(q))
+    ?? null;
+}
+
+function combatV2AttackListText(actor) {
+  const attacks = actor?.attacks ?? [];
+  if (!attacks.length) return `**${actor?.name ?? 'Actor'}** has no attacks configured.`;
+  return attacks.map(a => {
+    const traits = a.traits?.length ? ` (${a.traits.join(', ')})` : '';
+    const damage = a.damage ? `, ${a.damage}${a.damageType ? ` ${a.damageType}` : ''}` : '';
+    return `• **${a.name}** ${fmt(a.bonus ?? 0)}${damage}${traits}`;
+  }).join('\n');
 }
 
 // ── Recovery check display helper ────────────────────────────────────────────
@@ -7134,8 +7175,6 @@ client.on('interactionCreate', async (interaction) => {
       // which will hit the catch-all "unknown command" handler.
     }
   }
-  if (commandName === 'i') commandName = 'init';
-
   // ─── /ping ───────────────────────────────────────────────────────
   if (commandName === 'ping') {
     await interaction.reply('Pong! 🏓 Bot is alive and running.');
@@ -12607,6 +12646,86 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /init ───────────────────────────────────────────────────────
+  else if (commandName === 'i') {
+    const sub = interaction.options.getSubcommand();
+    const channelId = interaction.channel.id;
+    const userId = interaction.user.id;
+    const encounter = combatV2State.getEncounter(channelId);
+
+    if (sub === 'attacks') {
+      const actorName = interaction.options.getString('actor');
+      const actor = encounter ? combatV2PickActor(encounter, userId, actorName) : null;
+      if (actor) {
+        if (userId !== encounter.gmId && actor.ownerId !== userId) return interaction.reply({ content: 'You can only list attacks for your own combatant.', ephemeral: true });
+        const embed = new EmbedBuilder().setColor(0x8b0000).setTitle(`${actor.name}'s Attacks`).setDescription(combatV2AttackListText(actor));
+        return interaction.reply({ embeds: [embed], ephemeral: actor.hidden && userId === encounter.gmId });
+      }
+
+      const characters = loadCharacters();
+      const { error, char: charEntry } = resolveChar(userId, null, characters);
+      if (error) return interaction.reply({ content: error, ephemeral: true });
+      const pseudo = { name: charEntry.data.name, attacks: combatV2CharacterAttacks(charEntry) };
+      const embed = new EmbedBuilder().setColor(0x8b0000).setTitle(`${pseudo.name}'s Attacks`).setDescription(combatV2AttackListText(pseudo));
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'attack') {
+      const attackName = interaction.options.getString('name');
+      const targetName = interaction.options.getString('target');
+      const count = interaction.options.getInteger('n') ?? 1;
+      const bonus = interaction.options.getInteger('bonus') ?? 0;
+      const mapOverride = interaction.options.getInteger('map');
+
+      let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+      let target = encounter ? combatV2PickTarget(encounter, actor, targetName) : null;
+      const inCombat = !!actor;
+
+      if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
+        return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
+      }
+
+      if (!actor) {
+        const characters = loadCharacters();
+        const { error, char: charEntry } = resolveChar(userId, null, characters);
+        if (error) return interaction.reply({ content: error, ephemeral: true });
+        actor = {
+          id: `char-${userId}`,
+          name: charEntry.data.name,
+          ownerId: userId,
+          isNpc: false,
+          hp: charEntry.hp ?? computeCharMaxHp(charEntry),
+          maxHp: computeCharMaxHp(charEntry),
+          ac: charEntry.data.acTotal?.acTotal ?? null,
+          attacks: combatV2CharacterAttacks(charEntry),
+          effects: [],
+          attacksThisTurn: 0,
+        };
+        target = null;
+      }
+
+      const attack = combatV2FindAttack(actor, attackName);
+      if (!attack) return interaction.reply({ content: `No attack ${attackName ? `matching **"${attackName}" ` : ''}found for **${actor.name}**.\n${combatV2AttackListText(actor)}`, ephemeral: true });
+      if (targetName && !target) return interaction.reply({ content: `No target named **"${targetName}"** in combat.`, ephemeral: true });
+
+      const results = combatV2Rolls.rollAttack({ attacker: actor, target, attack, bonus, map: mapOverride, count });
+      const embeds = [];
+      const hpLines = [];
+      for (const result of results) {
+        embeds.push(combatV2Render.renderAttackResult(result).setTitle(`${actor.name} attacks with ${attack.name}`));
+        if (inCombat && target && ['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
+          const beforeHp = target.hp;
+          const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
+          hpLines.push(`**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`);
+        }
+      }
+      if (inCombat && mapOverride === null) actor.attacksThisTurn = (actor.attacksThisTurn ?? 0) + count;
+      if (inCombat) await updateCombatV2Summary(interaction.channel, encounter);
+      return interaction.reply({ content: hpLines.length ? hpLines.join('\n') : undefined, embeds: embeds.slice(0, 10) });
+    }
+
+    return interaction.reply({ content: `Unknown /i action: ${sub}`, ephemeral: true });
+  }
+
   else if (commandName === 'init') {
     const sub = interaction.options.getSubcommand();
     const channelId = interaction.channel.id;
