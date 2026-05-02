@@ -8043,9 +8043,10 @@ client.on('interactionCreate', async (interaction) => {
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
+      const blankHolderLine = '　'.repeat(64);
       const pageHolder = new EmbedBuilder()
         .setColor(0x1f1d36)
-        .setDescription(title ? `**${title}**` : '\u200b');
+        .setDescription(title ? `**${title}**` : blankHolderLine);
       return await interaction.editReply({ embeds: [pageHolder] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
