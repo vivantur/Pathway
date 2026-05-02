@@ -405,6 +405,7 @@ let deityDatabase = loadGamedata('deities.json', {
   },
   count: arr => arr.length,
 });
+console.log(`[startup] deity autocomplete entries: ${deityDatabase.length}`);
 
 // File shape: { _meta: {...}, skills: { key: {...} } }
 let skillDatabase = loadGamedata('skills.json', {
@@ -3579,35 +3580,47 @@ function findDeity(query) {
 
 function deityAutocompleteChoices(query) {
   const q = String(query ?? '').trim();
+  const sorted = [...deityDatabase]
+    .filter(d => d?.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const choice = (deity) => {
+    const suffix = deity.epithet ? ` (${deity.epithet})` : '';
+    const label = `${deity.name}${suffix}`;
+    return {
+      name: label.length > 100 ? `${label.slice(0, 97)}...` : label,
+      value: deity.name,
+    };
+  };
+
   if (!q) {
-    return deityDatabase
-      .map(d => d.name)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b))
-      .slice(0, 25)
-      .map(name => ({ name, value: name }));
+    return sorted.slice(0, 25).map(choice);
   }
 
-  return deityDatabase
+  const byName = sorted.filter(d => deityComparable(d.name).includes(deityComparable(q)));
+  const byExtraText = sorted.filter(d =>
+    !byName.includes(d) && deityComparable(deitySearchText(d)).includes(deityComparable(q))
+  );
+  const fuzzy = sorted
+    .filter(d => !byName.includes(d) && !byExtraText.includes(d))
     .map(d => {
       const score = Math.max(
         fuzzyScore(q, d.name),
         d.epithet ? fuzzyScore(q, d.epithet) * 0.95 : 0,
-        deityComparable(deitySearchText(d)).includes(deityComparable(q)) ? 0.84 : 0,
       );
       return { deity: d, score };
     })
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score || a.deity.name.localeCompare(b.deity.name))
-    .slice(0, 25)
-    .map(({ deity }) => {
-      const suffix = deity.epithet ? ` (${deity.epithet})` : '';
-      const label = `${deity.name}${suffix}`;
-      return {
-        name: label.length > 100 ? `${label.slice(0, 97)}...` : label,
-        value: deity.name,
-      };
-    });
+    .map(x => x.deity);
+
+  const merged = [];
+  for (const deity of [...byName, ...byExtraText, ...fuzzy, ...sorted]) {
+    if (merged.some(d => d.name === deity.name)) continue;
+    merged.push(deity);
+    if (merged.length >= 25) break;
+  }
+  return merged.map(choice);
 }
 
 function buildDeityEmbed(deity) {
