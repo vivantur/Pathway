@@ -6391,7 +6391,7 @@ const HELP_CATEGORIES = {
     commands: [
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file or Pathbuilder ID. Keeps your overlay additions.', options: 'file or id', example: '/char update id:122550' },
-      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID (experimental — often blocked by Pathbuilder\'s allowlist).', options: 'id', example: '/char import id:122550' },
+      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID.', options: 'id', example: '/char import id:122550' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
@@ -8074,22 +8074,6 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'add') {
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
-      const idInput = interaction.options.getString('id');
-      if (!attachment && !idInput) {
-        return interaction.editReply('Please attach a `.json`/`.txt` file or provide a Pathbuilder JSON ID.');
-      }
-      if (!attachment) {
-        try {
-          const parsedRef = parsePathbuilderRef(idInput);
-          if (parsedRef.error) return interaction.editReply(`âŒ ${parsedRef.error}`);
-          const fetched = await fetchPathbuilderCharacter(parsedRef.id);
-          if (fetched.error) return interaction.editReply(fetched.error);
-          const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true });
-          if (saved.error) return interaction.editReply(`âŒ ${saved.error}`);
-          if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
-          return interaction.editReply(`âœ… **${saved.name}** updated to level ${saved.level} from Pathbuilder ID \`${fetched.id}\`! *(hero points, XP, current HP, and bag preserved.)*`);
-        } catch (err) { console.error(err); return interaction.editReply('Something went wrong. Try again!'); }
-      }
       const nameLower = attachment.name.toLowerCase();
       if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
         return interaction.editReply('Please attach a `.json` **or** `.txt` file. To make one on mobile:\n1. In Pathbuilder → Menu → **Export JSON** → **Copy JSON**\n2. Paste into Notes app / Google Keep / any text editor\n3. Save/share as a `.txt` file\n4. Attach it here and run `/char add` again.');
@@ -8110,6 +8094,22 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'update') {
       await interaction.deferReply();
       const attachment = interaction.options.getAttachment('file');
+      const idInput = interaction.options.getString('id');
+      if (!attachment && !idInput) {
+        return interaction.editReply('Please attach a `.json`/`.txt` file or provide a Pathbuilder JSON ID.');
+      }
+      if (!attachment) {
+        try {
+          const parsedRef = parsePathbuilderRef(idInput);
+          if (parsedRef.error) return interaction.editReply(`âŒ ${parsedRef.error}`);
+          const fetched = await fetchPathbuilderCharacter(parsedRef.id);
+          if (fetched.error) return interaction.editReply(fetched.error);
+          const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true });
+          if (saved.error) return interaction.editReply(`âŒ ${saved.error}`);
+          if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
+          return interaction.editReply(`âœ… **${saved.name}** updated to level ${saved.level} from Pathbuilder ID \`${fetched.id}\`! *(hero points, XP, current HP, and bag preserved.)*`);
+        } catch (err) { console.error(err); return interaction.editReply('Something went wrong. Try again!'); }
+      }
       const nameLower = attachment.name.toLowerCase();
       if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
         return interaction.editReply('Please attach a `.json` or `.txt` file exported from Pathbuilder.');
