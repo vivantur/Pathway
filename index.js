@@ -5941,6 +5941,54 @@ function buildHeritageEmbed(heritage) {
   return embed;
 }
 
+function ancestrySlugVariants(input) {
+  const raw = String(input ?? '').toLowerCase().trim();
+  const dash = raw.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const underscore = raw.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return [...new Set([raw, underscore, dash].filter(Boolean))];
+}
+
+function findAncestry(input) {
+  if (!input || !ancestryDatabase) return null;
+  const variants = ancestrySlugVariants(input);
+
+  for (const key of variants) {
+    if (ancestryDatabase[key]) return { key, ancestry: ancestryDatabase[key] };
+  }
+
+  const lower = String(input).toLowerCase().trim();
+  for (const [key, ancestry] of Object.entries(ancestryDatabase)) {
+    if (ancestry?.name?.toLowerCase() === lower) return { key, ancestry };
+  }
+
+  const substringMatches = Object.entries(ancestryDatabase).filter(([, ancestry]) =>
+    ancestry?.name?.toLowerCase().includes(lower)
+  );
+  if (substringMatches.length === 1) {
+    const [key, ancestry] = substringMatches[0];
+    return { key, ancestry };
+  }
+
+  const scored = Object.entries(ancestryDatabase)
+    .map(([key, ancestry]) => ({ key, ancestry, s: fuzzyScore(input, ancestry?.name ?? key) }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s);
+  if (scored.length === 0) return null;
+  const top = scored[0];
+  const runnerUp = scored[1];
+  if (top.s >= 0.55 && (!runnerUp || top.s - runnerUp.s >= 0.15)) {
+    return { key: top.key, ancestry: top.ancestry };
+  }
+  return null;
+}
+
+function ancestryHeritageSlugs(ancestrySlug) {
+  for (const key of ancestrySlugVariants(ancestrySlug)) {
+    if (heritagesByAncestry[key]?.length) return heritagesByAncestry[key];
+  }
+  return [];
+}
+
 function buildAncestryHeritagesPage(ancestry, ancestrySlug) {
   const embed = new EmbedBuilder()
     .setTitle(`${ancestry.name} — Heritages`)
@@ -5958,9 +6006,9 @@ function buildAncestryHeritagesPage(ancestry, ancestrySlug) {
       name: h.name,
       description: h.description,
     }));
-  } else if (ancestrySlug && heritagesByAncestry[ancestrySlug]?.length) {
+  } else if (ancestrySlug && ancestryHeritageSlugs(ancestrySlug).length) {
     // Look up via the heritages.json index
-    heritageEntries = heritagesByAncestry[ancestrySlug]
+    heritageEntries = ancestryHeritageSlugs(ancestrySlug)
       .map(slug => heritageDatabase[slug])
       .filter(Boolean)
       .map(h => ({ name: h.name, description: h.description }));
@@ -6043,7 +6091,7 @@ function buildAncestryButtons(currentPage, ancestryKey, ancestry) {
   // index — most ancestries get their heritage data from the central file
   // since the AoN-imported ancestries don't have heritages baked in.
   const hasHeritageData = (ancestry && hasHeritages(ancestry))
-    || (ancestryKey && heritagesByAncestry[ancestryKey]?.length > 0);
+    || (ancestryKey && ancestryHeritageSlugs(ancestryKey).length > 0);
   const heritagesStyle = hasHeritageData
     ? ButtonStyle.Primary
     : ButtonStyle.Secondary;
@@ -6840,13 +6888,14 @@ client.on('interactionCreate', async (interaction) => {
     const parts = interaction.customId.split('_');
     const pageIndex = parseInt(parts[parts.length - 1], 10);
     const ancestryKey = parts.slice(1, parts.length - 1).join('_');
-    const ancestry = ancestryDatabase[ancestryKey];
+    const resolvedAncestry = findAncestry(ancestryKey);
+    const ancestry = resolvedAncestry?.ancestry;
     if (!ancestry) return interaction.update({ content: '❌ Could not reload ancestry data.', components: [] });
     let newEmbed;
     if (pageIndex === 0) newEmbed = buildAncestryCorePage(ancestry);
-    if (pageIndex === 1) newEmbed = buildAncestryHeritagesPage(ancestry, ancestryKey);
+    if (pageIndex === 1) newEmbed = buildAncestryHeritagesPage(ancestry, resolvedAncestry.key);
     if (pageIndex === 2) newEmbed = buildAncestryFeatsPage(ancestry);
-    return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, ancestryKey, ancestry)] });
+    return interaction.update({ embeds: [newEmbed], components: [buildAncestryButtons(pageIndex, resolvedAncestry.key, ancestry)] });
   }
 
   if (!interaction.isChatInputCommand()) {
@@ -10825,13 +10874,18 @@ client.on('interactionCreate', async (interaction) => {
   // ─── /ancestry ───────────────────────────────────────────────────
   else if (commandName === 'ancestry') {
     const input = interaction.options.getString('name');
-    const key = input.toLowerCase().trim();
-    const ancestry = ancestryDatabase[key];
+    const resolvedAncestry = findAncestry(input);
+    const key = resolvedAncestry?.key;
+    const ancestry = resolvedAncestry?.ancestry;
     if (!ancestry) {
       const _names = Object.values(ancestryDatabase).map(a => a?.name).filter(Boolean);
       const _hint = didYouMeanLine(input, _names);
+      const available = Object.entries(ancestryDatabase)
+        .filter(([, a]) => a?.name)
+        .map(([key]) => key)
+        .join(', ');
       return interaction.reply({
-        content: `❌ No ancestry found for **"${input}"**.${_hint || ` Available: ${Object.keys(ancestryDatabase).join(', ')}`}`,
+        content: `❌ No ancestry found for **"${input}"**.${_hint || ` Available: ${available}`}`,
         ephemeral: true,
       });
     }
