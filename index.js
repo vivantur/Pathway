@@ -3531,6 +3531,24 @@ function deityComparable(str) {
     .trim();
 }
 
+function preferDeityRecord(matches) {
+  if (!Array.isArray(matches) || matches.length === 0) return null;
+  const scored = matches.map(d => {
+    const source = String(d.source ?? d.source_text ?? '');
+    let score = 0;
+    if (/Divine Mysteries/i.test(source)) score += 100;
+    if (/Player Core|Player Core 2|War of Immortals|Battlecry/i.test(source)) score += 50;
+    if (d.pfs_availability === 'Standard') score += 10;
+    if (d.aon_id) {
+      const id = parseInt(String(d.aon_id).replace(/\D+/g, ''), 10);
+      if (Number.isFinite(id)) score += Math.min(id / 1000, 1);
+    }
+    return { deity: d, score };
+  });
+  scored.sort((a, b) => b.score - a.score || String(a.deity.name).localeCompare(String(b.deity.name)));
+  return scored[0].deity;
+}
+
 function findDeity(query) {
   const q = normalizeDeityQuery(query);
   const comparable = deityComparable(query);
@@ -3539,12 +3557,12 @@ function findDeity(query) {
   // 1. Exact name match
   const exact = deityDatabase.filter(d => normalizeDeityQuery(d.name) === q || deityComparable(d.name) === comparable);
   if (exact.length === 1) return { deity: exact[0], matches: [] };
-  if (exact.length > 1)   return { deity: null, matches: exact, exactDuplicates: true };
+  if (exact.length > 1)   return { deity: preferDeityRecord(exact), matches: [] };
 
   // 2. Exact epithet/title match
   const epithetExact = deityDatabase.filter(d => d.epithet && deityComparable(d.epithet) === comparable);
   if (epithetExact.length === 1) return { deity: epithetExact[0], matches: [] };
-  if (epithetExact.length > 1) return { deity: null, matches: epithetExact };
+  if (epithetExact.length > 1) return { deity: preferDeityRecord(epithetExact), matches: [] };
 
   // 3. Starts-with
   const starts = deityDatabase.filter(d => deityComparable(d.name).startsWith(comparable));
@@ -3580,9 +3598,16 @@ function findDeity(query) {
 
 function deityAutocompleteChoices(query) {
   const q = String(query ?? '').trim();
+  const seenNames = new Set();
   const sorted = [...deityDatabase]
     .filter(d => d?.name)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter(d => {
+      const key = normalizeDeityQuery(d.name);
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
 
   const choice = (deity) => {
     const suffix = deity.epithet ? ` (${deity.epithet})` : '';
