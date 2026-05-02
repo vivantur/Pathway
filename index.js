@@ -405,7 +405,17 @@ let deityDatabase = loadGamedata('deities.json', {
   },
   count: arr => arr.length,
 });
-console.log(`[startup] deity autocomplete entries: ${deityDatabase.length}`);
+const eberronDeityDatabase = loadGamedata('eberron-deities.json', {
+  default: [],
+  label: 'Eberron deities from database',
+  transform: raw => {
+    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
+    return rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+  },
+  count: arr => arr.length,
+});
+deityDatabase.push(...eberronDeityDatabase);
+console.log(`[startup] deity autocomplete entries: ${deityDatabase.length} (${eberronDeityDatabase.length} Eberron)`);
 
 // File shape: { _meta: {...}, skills: { key: {...} } }
 let skillDatabase = loadGamedata('skills.json', {
@@ -3518,6 +3528,7 @@ function deitySearchText(deity) {
     deity?.aon_id,
     deity?.source,
     deity?.source_text,
+    ...(deity?.aliases ?? []),
     ...(deity?.areas_of_concern ?? []),
     ...(deity?.pantheons ?? []),
   ].filter(Boolean).join(' ');
@@ -6581,8 +6592,12 @@ function reloadDatabasesAfterRestore() {
     const raw = JSON.parse(fs.readFileSync(gamedataPath('deities.json'), 'utf8'));
     const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
     const fresh = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-    deityDatabase.splice(0, deityDatabase.length, ...fresh);
-    console.log(`[reload] deities: ${deityDatabase.length}`);
+    const eberronRaw = JSON.parse(fs.readFileSync(gamedataPath('eberron-deities.json'), 'utf8'));
+    const rawEberronDeities = Array.isArray(eberronRaw) ? eberronRaw : (eberronRaw.deities ?? []);
+    const freshEberron = rawEberronDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+    eberronDeityDatabase.splice(0, eberronDeityDatabase.length, ...freshEberron);
+    deityDatabase.splice(0, deityDatabase.length, ...fresh, ...freshEberron);
+    console.log(`[reload] deities: ${deityDatabase.length} (${freshEberron.length} Eberron)`);
   } catch (e) { console.error('[reload] deities failed:', e.message); }
 
   try {
