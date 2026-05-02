@@ -8043,16 +8043,10 @@ client.on('interactionCreate', async (interaction) => {
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
-      const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-      if (title) {
-        const embed = new EmbedBuilder()
-          .setColor(0x4a90d9)
-          .setTitle(`✦  ${title}  ✦`)
-          .setDescription(bar);
-        await interaction.editReply({ embeds: [embed] });
-      } else {
-        await interaction.editReply(bar);
-      }
+      const pageHolder = new EmbedBuilder()
+        .setColor(0x1f1d36)
+        .setDescription(title ? `**${title}**` : '\u200b');
+      return await interaction.editReply({ embeds: [pageHolder] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
         console.error('/br error:', err);
