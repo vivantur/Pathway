@@ -8039,7 +8039,7 @@ client.on('interactionCreate', async (interaction) => {
   //
   // Deferred immediately because Railway cold starts can otherwise push
   // past Discord's 3-second reply window and cause 10062 errors.
-  else if (commandName === 'br') {
+  else if (commandName === 'br' || commandName === 'break') {
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');

@@ -74,6 +74,11 @@ const brCommand = new SlashCommandBuilder()
   .setDescription('Post a visual scene-break divider (Avrae-style).')
   .addStringOption(o => o.setName('title').setDescription('Optional scene title to embed in the divider.').setRequired(false));
 
+const breakCommand = new SlashCommandBuilder()
+  .setName('break')
+  .setDescription('Post a visual scene-break divider (Avrae-style).')
+  .addStringOption(o => o.setName('title').setDescription('Optional scene title to embed in the divider.').setRequired(false));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // /char
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1338,6 +1343,7 @@ const commands = [
   // Utility
   pingCommand,
   brCommand,
+  breakCommand,
   helpCommand,
   diagnoseCommand,
   // Character management
