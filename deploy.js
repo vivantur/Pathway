@@ -83,8 +83,9 @@ const charCommand = new SlashCommandBuilder()
   // Import subcommands
   .addSubcommand(s => s.setName('add').setDescription('Import a new character from a Pathbuilder JSON file (.json or .txt).')
     .addAttachmentOption(o => o.setName('file').setDescription('Pathbuilder JSON file (.json or .txt)').setRequired(true)))
-  .addSubcommand(s => s.setName('update').setDescription('Re-import a character from a new Pathbuilder JSON, keeping HP/XP/overlay.')
-    .addAttachmentOption(o => o.setName('file').setDescription('Updated Pathbuilder JSON file').setRequired(true)))
+  .addSubcommand(s => s.setName('update').setDescription('Re-import from a Pathbuilder JSON file or ID, keeping HP/XP/overlay.')
+    .addAttachmentOption(o => o.setName('file').setDescription('Updated Pathbuilder JSON file').setRequired(false))
+    .addStringOption(o => o.setName('id').setDescription('Pathbuilder JSON ID or export URL').setRequired(false)))
   .addSubcommand(s => s.setName('import').setDescription('Import directly from your Pathbuilder JSON ID (requires bot to be whitelisted).')
     .addIntegerOption(o => o.setName('id').setDescription('Your 6-digit Pathbuilder share ID').setRequired(true).setMinValue(1).setMaxValue(99999999)))
   // View / management
