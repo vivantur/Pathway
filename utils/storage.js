@@ -928,6 +928,16 @@ async function restoreGamedataFromSupabase(sb) {
   for (const { category, file, topKey, strategy } of GAMEDATA_RESTORE_MAP) {
     const entries = byCategory[category];
     if (!entries || Object.keys(entries).length === 0) continue;
+    const target = gamedataPath(file);
+    const incomingCount = Object.keys(entries).length;
+    const bundledCount = countGamedataEntriesOnDisk(target, topKey, strategy, category);
+    if (bundledCount > incomingCount) {
+      console.warn(
+        `[Supabase] restore: skipped stale ${file} for category "${category}" ` +
+        `(${incomingCount} Supabase entries < ${bundledCount} bundled entries)`
+      );
+      continue;
+    }
 
     let payload;
     if (strategy === 'array') {
@@ -953,7 +963,6 @@ async function restoreGamedataFromSupabase(sb) {
       payload = { [topKey]: entries };
     }
 
-    const target = gamedataPath(file);
     const tmp = `${target}.tmp`;
     try {
       fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
@@ -965,6 +974,27 @@ async function restoreGamedataFromSupabase(sb) {
   }
 
   console.log(`[Supabase] restore: wrote ${filesWritten} gamedata files (${rows.length} total entries)`);
+}
+
+function countGamedataEntriesOnDisk(target, topKey, strategy, category) {
+  try {
+    if (!fs.existsSync(target)) return 0;
+    const raw = JSON.parse(fs.readFileSync(target, 'utf8'));
+    if (strategy === 'array') {
+      const arr = raw?.[topKey];
+      return Array.isArray(arr) ? arr.length : 0;
+    }
+    if (category === 'heritages') {
+      return Object.keys(raw?.by_slug ?? {}).length;
+    }
+    const map = raw?.[topKey] ?? raw;
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return 0;
+    return Object.entries(map)
+      .filter(([key]) => !['_meta', 'meta', 'metadata'].includes(key))
+      .length;
+  } catch {
+    return 0;
+  }
 }
 
 // ── Startup restore from Supabase ─────────────────────────────────────────────
