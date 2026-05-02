@@ -3510,25 +3510,104 @@ function normalizeDeityQuery(str) {
     .replace(/\s+/g, ' ');
 }
 
+function deitySearchText(deity) {
+  return [
+    deity?.name,
+    deity?.epithet,
+    deity?.aon_id,
+    deity?.source,
+    deity?.source_text,
+    ...(deity?.areas_of_concern ?? []),
+    ...(deity?.pantheons ?? []),
+  ].filter(Boolean).join(' ');
+}
+
+function deityComparable(str) {
+  return normalizeDeityQuery(str)
+    .replace(/&amp;/g, '&')
+    .replace(/\band\b/g, '&')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 function findDeity(query) {
   const q = normalizeDeityQuery(query);
+  const comparable = deityComparable(query);
   if (!q) return { deity: null, matches: [] };
 
   // 1. Exact name match
-  const exact = deityDatabase.filter(d => d.name.toLowerCase() === q);
+  const exact = deityDatabase.filter(d => normalizeDeityQuery(d.name) === q || deityComparable(d.name) === comparable);
   if (exact.length === 1) return { deity: exact[0], matches: [] };
   if (exact.length > 1)   return { deity: null, matches: exact, exactDuplicates: true };
 
-  // 2. Starts-with
-  const starts = deityDatabase.filter(d => d.name.toLowerCase().startsWith(q));
-  if (starts.length === 1) return { deity: starts[0], matches: [] };
+  // 2. Exact epithet/title match
+  const epithetExact = deityDatabase.filter(d => d.epithet && deityComparable(d.epithet) === comparable);
+  if (epithetExact.length === 1) return { deity: epithetExact[0], matches: [] };
+  if (epithetExact.length > 1) return { deity: null, matches: epithetExact };
 
-  // 3. Contains
-  const contains = deityDatabase.filter(d => d.name.toLowerCase().includes(q));
+  // 3. Starts-with
+  const starts = deityDatabase.filter(d => deityComparable(d.name).startsWith(comparable));
+  if (starts.length === 1) return { deity: starts[0], matches: [] };
+  if (starts.length > 1) return { deity: null, matches: starts };
+
+  // 4. Contains across name, title, pantheon, and areas of concern.
+  const contains = deityDatabase.filter(d => deityComparable(deitySearchText(d)).includes(comparable));
   if (contains.length === 1) return { deity: contains[0], matches: [] };
   if (contains.length > 1)   return { deity: null, matches: contains };
 
+  // 5. Fuzzy name/title match for minor typos.
+  const scored = deityDatabase
+    .map(d => ({
+      deity: d,
+      s: Math.max(
+        fuzzyScore(query, d.name),
+        d.epithet ? fuzzyScore(query, d.epithet) * 0.95 : 0,
+      ),
+    }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s || a.deity.name.localeCompare(b.deity.name));
+  if (scored.length) {
+    const top = scored[0];
+    const runnerUp = scored[1];
+    if (top.s >= 0.55 && (!runnerUp || top.s - runnerUp.s >= 0.15)) {
+      return { deity: top.deity, matches: [] };
+    }
+  }
+
   return { deity: null, matches: [] };
+}
+
+function deityAutocompleteChoices(query) {
+  const q = String(query ?? '').trim();
+  if (!q) {
+    return deityDatabase
+      .map(d => d.name)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 25)
+      .map(name => ({ name, value: name }));
+  }
+
+  return deityDatabase
+    .map(d => {
+      const score = Math.max(
+        fuzzyScore(q, d.name),
+        d.epithet ? fuzzyScore(q, d.epithet) * 0.95 : 0,
+        deityComparable(deitySearchText(d)).includes(deityComparable(q)) ? 0.84 : 0,
+      );
+      return { deity: d, score };
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.deity.name.localeCompare(b.deity.name))
+    .slice(0, 25)
+    .map(({ deity }) => {
+      const suffix = deity.epithet ? ` (${deity.epithet})` : '';
+      const label = `${deity.name}${suffix}`;
+      return {
+        name: label.length > 100 ? `${label.slice(0, 97)}...` : label,
+        value: deity.name,
+      };
+    });
 }
 
 function buildDeityEmbed(deity) {
@@ -5824,8 +5903,8 @@ function buildAncestryCorePage(ancestry) {
 // the embed visually scannable instead of all-text.
 const SECTION_EMOJIS = {
   'Description':          '📖',
-  'Edicts':               '✅',
-  'Anathema':             '🚫',
+  'You Might...':         '✅',
+  'Others Probably...':   '💬',
   'Physical Description': '🧍',
   'Society':              '🏛️',
   'Beliefs':              '🕯️',
@@ -7479,7 +7558,7 @@ client.on('interactionCreate', async (interaction) => {
           suggestions = pick(itemDatabase.filter(i => i._homebrew).map(i => i.name).filter(Boolean));
         }
         else if (cmd === 'deity' && focused.name === 'name') {
-          suggestions = pick(deityDatabase.map(d => d.name));
+          suggestions = deityAutocompleteChoices(focused.value);
         }
         else if (cmd === 'skillinfo') {
           if (focused.name === 'skill') {

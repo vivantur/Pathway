@@ -9,8 +9,8 @@
 
 const SECTION_LABELS = [
   'Description',
-  'Edicts',
-  'Anathema',
+  'You Might...',
+  'Others Probably...',
   'Physical Description',
   'Society',
   'Beliefs',
@@ -83,6 +83,23 @@ function cleanLoreChunk(chunk) {
     .trim();
 }
 
+function cleanSectionContent(label, chunk) {
+  const cleaned = chunk
+    .replace(/([.!?])(?=[A-Z])/g, '$1\n')
+    .trim();
+
+  if (label === 'You Might...' || label === 'Others Probably...') {
+    const lines = cleaned
+      .split(/\n+/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(s => s.startsWith('•') ? s : `• ${s}`);
+    return lines.join('\n');
+  }
+
+  return cleaned;
+}
+
 /**
  * Parse a raw AoN-imported description into [{label, content}] sections.
  * Returns an empty array if the description is empty or unparseable.
@@ -111,13 +128,14 @@ function parseDescription(rawDescription) {
   for (const chunk of chunks) {
     if (!chunk) continue;
     if (isSampleNames(chunk) && !sampleNamesFound) {
-      sections.push({ label: 'Sample Names', content: chunk });
+      sections.push({ label: 'Sample Names', content: cleanSectionContent('Sample Names', chunk) });
       sampleNamesFound = true;
     } else if (labelIdx < SECTION_LABELS.length) {
-      sections.push({ label: SECTION_LABELS[labelIdx], content: chunk });
+      const label = SECTION_LABELS[labelIdx];
+      sections.push({ label, content: cleanSectionContent(label, chunk) });
       labelIdx++;
     } else {
-      sections.push({ label: 'Special Ability', content: chunk });
+      sections.push({ label: 'Special Ability', content: cleanSectionContent('Special Ability', chunk) });
     }
   }
   return sections;
