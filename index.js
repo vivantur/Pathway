@@ -417,6 +417,17 @@ const eberronDeityDatabase = loadGamedata('eberron-deities.json', {
 deityDatabase.push(...eberronDeityDatabase);
 console.log(`[startup] deity autocomplete entries: ${deityDatabase.length} (${eberronDeityDatabase.length} Eberron)`);
 
+const eberronHouseDatabase = loadGamedata('eberron-houses.json', {
+  default: [],
+  label: 'Eberron Dragonmarked Houses from database',
+  transform: raw => {
+    const rawHouses = Array.isArray(raw) ? raw : (raw.houses ?? []);
+    return rawHouses.filter(h => h && typeof h.name === 'string' && h.name.length > 0);
+  },
+  count: arr => arr.length,
+});
+console.log(`[startup] Eberron house entries: ${eberronHouseDatabase.length}`);
+
 // File shape: { _meta: {...}, skills: { key: {...} } }
 let skillDatabase = loadGamedata('skills.json', {
   default: {},
@@ -3729,6 +3740,121 @@ function formatDeityMatchLine(deity) {
 
 // ── Skill lookup ──────────────────────────────────────────────────────────────
 // Finds a skill by slug key (e.g. "athletics"), display name, or partial match.
+// -- Eberron lookup -----------------------------------------------------------
+function normalizeEberronQuery(str) {
+  return String(str ?? '')
+    .toLowerCase()
+    .replace(/[''`]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function eberronHouseSearchText(house) {
+  return [
+    house?.name,
+    house?.short_name,
+    house?.mark,
+    house?.associated_people,
+    house?.headquarters,
+    ...(house?.aliases ?? []),
+    ...(house?.guilds ?? []),
+    ...(house?.services ?? []),
+    ...(house?.common_skills ?? []),
+  ].filter(Boolean).join(' ');
+}
+
+function findEberronHouse(query) {
+  const q = normalizeEberronQuery(query);
+  if (!q) return { house: null, matches: [] };
+
+  const exact = eberronHouseDatabase.filter(h =>
+    normalizeEberronQuery(h.name) === q ||
+    normalizeEberronQuery(h.short_name) === q ||
+    normalizeEberronQuery(h.mark) === q ||
+    (h.aliases ?? []).some(a => normalizeEberronQuery(a) === q)
+  );
+  if (exact.length === 1) return { house: exact[0], matches: [] };
+  if (exact.length > 1) return { house: null, matches: exact };
+
+  const starts = eberronHouseDatabase.filter(h =>
+    normalizeEberronQuery(h.name).startsWith(q) ||
+    normalizeEberronQuery(h.short_name).startsWith(q) ||
+    normalizeEberronQuery(h.mark).startsWith(q)
+  );
+  if (starts.length === 1) return { house: starts[0], matches: [] };
+  if (starts.length > 1) return { house: null, matches: starts };
+
+  const contains = eberronHouseDatabase.filter(h => normalizeEberronQuery(eberronHouseSearchText(h)).includes(q));
+  if (contains.length === 1) return { house: contains[0], matches: [] };
+  if (contains.length > 1) return { house: null, matches: contains };
+
+  const scored = eberronHouseDatabase
+    .map(h => ({ house: h, score: fuzzyScore(q, normalizeEberronQuery(eberronHouseSearchText(h))) }))
+    .filter(x => x.score >= 0.55)
+    .sort((a, b) => b.score - a.score || a.house.name.localeCompare(b.house.name));
+  if (scored.length === 1 || (scored[0] && scored[0].score >= 0.72)) return { house: scored[0].house, matches: [] };
+  if (scored.length > 1) return { house: null, matches: scored.slice(0, 10).map(x => x.house) };
+
+  return { house: null, matches: [] };
+}
+
+function eberronHouseAutocompleteChoices(query) {
+  const q = normalizeEberronQuery(query);
+  const sorted = [...eberronHouseDatabase].sort((a, b) => a.name.localeCompare(b.name));
+  const source = q
+    ? sorted.filter(h => normalizeEberronQuery(eberronHouseSearchText(h)).includes(q))
+    : sorted;
+  const fallback = fuzzyPick(String(query ?? ''), sorted.map(h => h.name))
+    .map(choice => sorted.find(h => h.name === choice.value))
+    .filter(Boolean);
+  const merged = [];
+  for (const house of [...source, ...fallback, ...sorted]) {
+    if (merged.some(h => h.name === house.name)) continue;
+    merged.push(house);
+    if (merged.length >= 25) break;
+  }
+  return merged.map(h => ({
+    name: `${h.name}${h.mark ? ` (${h.mark})` : ''}`.slice(0, 100),
+    value: h.name,
+  }));
+}
+
+function formatHouseList(values) {
+  return (values ?? []).length ? values.join(', ') : 'None listed';
+}
+
+function bulletHouseList(values) {
+  return (values ?? []).length ? values.map(v => `- ${v}`).join('\n') : 'None listed';
+}
+
+function buildEberronHouseEmbed(house) {
+  const embed = new EmbedBuilder()
+    .setColor(0x8f6b2f)
+    .setTitle(house.name)
+    .setDescription(truncateField(house.summary || 'No summary available.', 3900))
+    .setFooter({ text: 'Eberron Dragonmarked House Lookup' });
+
+  const identity = [];
+  if (house.mark) identity.push(`Mark: ${house.mark}`);
+  if (house.associated_people) identity.push(`Associated people: ${house.associated_people}`);
+  if (house.headquarters) identity.push(`Headquarters: ${house.headquarters}`);
+  if (identity.length) embed.addFields({ name: 'Identity', value: truncateField(identity.join('\n')), inline: false });
+
+  if (house.guilds?.length) embed.addFields({ name: 'Guilds', value: truncateField(formatHouseList(house.guilds)), inline: false });
+  if (house.services?.length) embed.addFields({ name: 'Services', value: truncateField(formatHouseList(house.services)), inline: false });
+  if (house.common_skills?.length) embed.addFields({ name: 'Useful PF2e Skills', value: truncateField(formatHouseList(house.common_skills)), inline: false });
+  if (house.campaign_uses?.length) embed.addFields({ name: 'Campaign Uses', value: truncateField(bulletHouseList(house.campaign_uses)), inline: false });
+  if (house.npc_roles?.length) embed.addFields({ name: 'NPC Roles', value: truncateField(formatHouseList(house.npc_roles)), inline: false });
+  if (house.complications?.length) embed.addFields({ name: 'Complications', value: truncateField(bulletHouseList(house.complications)), inline: false });
+  return embed;
+}
+
+function formatEberronHouseMatchLine(house) {
+  return `- **${house.name}**${house.mark ? ` - ${house.mark}` : ''}`;
+}
+
 function findSkill(query) {
   if (!query) return { skill: null, key: null, matches: [] };
   const q = String(query).toLowerCase().trim();
@@ -6601,6 +6727,14 @@ function reloadDatabasesAfterRestore() {
   } catch (e) { console.error('[reload] deities failed:', e.message); }
 
   try {
+    const raw = JSON.parse(fs.readFileSync(gamedataPath('eberron-houses.json'), 'utf8'));
+    const rawHouses = Array.isArray(raw) ? raw : (raw.houses ?? []);
+    const fresh = rawHouses.filter(h => h && typeof h.name === 'string' && h.name.length > 0);
+    eberronHouseDatabase.splice(0, eberronHouseDatabase.length, ...fresh);
+    console.log(`[reload] Eberron houses: ${eberronHouseDatabase.length}`);
+  } catch (e) { console.error('[reload] Eberron houses failed:', e.message); }
+
+  try {
     const raw = JSON.parse(fs.readFileSync(gamedataPath('skills.json'), 'utf8'));
     const fresh = raw.skills ?? raw;
     for (const key of Object.keys(skillDatabase)) delete skillDatabase[key];
@@ -7612,6 +7746,9 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'deity' && focused.name === 'name') {
           suggestions = deityAutocompleteChoices(focused.value);
+        }
+        else if (cmd === 'eberron' && focused.name === 'name') {
+          suggestions = eberronHouseAutocompleteChoices(focused.value);
         }
         else if (cmd === 'skillinfo') {
           if (focused.name === 'skill') {
@@ -11271,6 +11408,40 @@ client.on('interactionCreate', async (interaction) => {
   // Rules-reference lookup for the 16 core PF2e Remaster skills. Pulls
   // the character's current modifier in when a character is loaded.
   // 3-page button nav: Overview / Actions / DCs & Examples.
+  else if (commandName === 'eberron') {
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'house') {
+      const input = interaction.options.getString('name');
+      const { house, matches } = findEberronHouse(input);
+
+      if (house) {
+        return interaction.reply({ embeds: [buildEberronHouseEmbed(house)] });
+      }
+
+      if (matches && matches.length > 1) {
+        const preview = matches
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .slice(0, 20)
+          .map(formatEberronHouseMatchLine)
+          .join('\n');
+        return interaction.reply({
+          content: `Multiple Eberron houses match **"${input}"**. Did you mean one of these?\n${preview}`,
+          ephemeral: true,
+        });
+      }
+
+      const names = eberronHouseDatabase.map(h => h.name);
+      const hint = didYouMeanLine(input, names);
+      return interaction.reply({
+        content: `No Eberron house found for **"${input}"**.${hint || ' Try a house name, dragonmark, or service.'}`,
+        ephemeral: true,
+      });
+    }
+
+    return interaction.reply({ content: 'Unknown Eberron lookup. Try `/eberron house`.', ephemeral: true });
+  }
+
   else if (commandName === 'skillinfo') {
     const input = interaction.options.getString('skill');
     const { skill, key: skillKey, matches } = findSkill(input);

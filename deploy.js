@@ -1326,6 +1326,13 @@ const weatherCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 // Master command list
 // ─────────────────────────────────────────────────────────────────────────────
+const eberronCommand = new SlashCommandBuilder()
+  .setName('eberron')
+  .setDescription('Eberron campaign reference lookups.')
+  .addSubcommand(s => s.setName('house')
+    .setDescription('Look up a Dragonmarked House.')
+    .addStringOption(o => o.setName('name').setDescription('House name, dragonmark, or service').setRequired(true).setAutocomplete(true)));
+
 const commands = [
   // Utility
   pingCommand,
@@ -1408,6 +1415,7 @@ const commands = [
   // Calendar & weather
   calendarCommand,
   weatherCommand,
+  eberronCommand,
 ].map(c => c.toJSON());
 
 const retiredCombatCommandNames = new Set([
