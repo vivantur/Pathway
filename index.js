@@ -8044,7 +8044,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
       if (!title) {
-        return await interaction.editReply(`\`\`\`\n${'\u2800'.repeat(92)}\n\`\`\``);
+        return await interaction.editReply(`\`${'\u2800'.repeat(140)}\``);
       }
       const discordSafeBlankHolderLine = '\u2800'.repeat(64);
       const blankHolderLine = '　'.repeat(64);
