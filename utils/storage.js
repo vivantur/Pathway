@@ -653,18 +653,101 @@ async function syncDowntimeToSupabase(discordId, charKey, record) {
   }
 }
 
+// ── Shared bag helper: flatten a userBag into a list of plain entries ─────────
+function _flattenBagEntries(userBag) {
+  const entries = [];
+  let sortOrder = 0;
+  for (const [category, items] of Object.entries(userBag.categories ?? {})) {
+    for (const raw of (Array.isArray(items) ? items : [])) {
+      const entry = typeof raw === 'string' ? { name: raw, qty: 1 } : raw;
+      if (!entry?.name) continue;
+      entries.push({
+        category,
+        name:      String(entry.name).trim(),
+        qty:       Math.max(1, Number(entry.qty) || 1),
+        sortOrder: sortOrder++,
+      });
+    }
+  }
+  return entries;
+}
+
+// ── Shared bag helper: resolve item names → Supabase UUIDs (batch) ────────────
+// Returns { itemIdByNameLower, homebrewIdByNameLower }
+async function _resolveItemNames(sb, names) {
+  const uniqueNames = [...new Set(names)];
+  const itemIdByNameLower     = {};
+  const homebrewIdByNameLower = {};
+  if (uniqueNames.length === 0) return { itemIdByNameLower, homebrewIdByNameLower };
+
+  const { data: officialMatches } = await sb
+    .from('items')
+    .select('id, name')
+    .in('name', uniqueNames);
+  for (const row of officialMatches ?? []) {
+    itemIdByNameLower[row.name.toLowerCase()] = row.id;
+  }
+
+  const unresolved = uniqueNames.filter(n => !itemIdByNameLower[n.toLowerCase()]);
+  if (unresolved.length > 0) {
+    const { data: homebrewMatches } = await sb
+      .from('homebrew_entries')
+      .select('id, name')
+      .eq('type', 'item')
+      .in('name', unresolved);
+    for (const row of homebrewMatches ?? []) {
+      homebrewIdByNameLower[row.name.toLowerCase()] = row.id;
+    }
+  }
+
+  return { itemIdByNameLower, homebrewIdByNameLower };
+}
+
+// ── Shared bag helper: build bag_items insert rows from entries + id maps ─────
+function _buildBagItemRows(userId, entries, itemIdByNameLower, homebrewIdByNameLower) {
+  return entries.map(e => {
+    const nl        = e.name.toLowerCase();
+    const itemId    = itemIdByNameLower[nl]     ?? null;
+    const homebrewId = homebrewIdByNameLower[nl] ?? null;
+    return {
+      user_id:      userId,
+      category:     e.category,
+      item_id:      itemId,
+      homebrew_id:  homebrewId,
+      custom_name:  (!itemId && !homebrewId) ? e.name : null,
+      display_name: e.name,
+      quantity:     e.qty,
+      sort_order:   e.sortOrder,
+    };
+  });
+}
+
 async function syncBagToSupabase(discordId, userBag) {
   try {
     const sb = getSupabase();
     if (!sb) return;
     const { data: userRow } = await sb.from('users').select('id').eq('discord_id', discordId).single();
     if (!userRow) return;
-    const { error } = await sb.from('bags').upsert({
-      user_id:    userRow.id,
+    const userId = userRow.id;
+
+    // Keep bag metadata (name) in bags table
+    await sb.from('bags').upsert({
+      user_id:    userId,
       bag_name:   userBag.bagName ?? 'Bag 1',
-      categories: userBag.categories ?? {},
+      categories: {},   // deprecated; kept empty for schema compat during cutover
     }, { onConflict: 'user_id' });
-    if (error) throw error;
+
+    // Flatten, resolve, delete-and-reinsert bag_items
+    const entries = _flattenBagEntries(userBag);
+    await sb.from('bag_items').delete().eq('user_id', userId);
+
+    if (entries.length > 0) {
+      const { itemIdByNameLower, homebrewIdByNameLower } =
+        await _resolveItemNames(sb, entries.map(e => e.name));
+      const rows = _buildBagItemRows(userId, entries, itemIdByNameLower, homebrewIdByNameLower);
+      const { error } = await sb.from('bag_items').insert(rows);
+      if (error) throw error;
+    }
   } catch (err) {
     console.error('[Supabase] bag sync failed:', err.message);
   }
@@ -840,7 +923,7 @@ async function syncAllNotesToSupabase(notes) {
   }
 }
 
-// Sync entire bags.json → Supabase bags table.
+// Sync entire bags.json → Supabase bags + bag_items tables.
 async function syncAllBagsToSupabase(bags) {
   try {
     const sb = getSupabase();
@@ -849,19 +932,57 @@ async function syncAllBagsToSupabase(bags) {
     if (discordIds.length === 0) return;
     const userMap = await _buildDiscordToUserMap(sb, discordIds);
 
-    const upserts = [];
+    // 1. Upsert bag metadata rows (name only; categories column is legacy)
+    const bagUpserts = [];
     for (const [discordId, userBag] of Object.entries(bags)) {
       const userId = userMap[discordId];
       if (!userId || !userBag) continue;
-      upserts.push({
-        user_id:    userId,
-        bag_name:   userBag.bagName ?? 'Bag 1',
-        categories: userBag.categories ?? {},
-      });
+      bagUpserts.push({ user_id: userId, bag_name: userBag.bagName ?? 'Bag 1', categories: {} });
     }
-    if (upserts.length === 0) return;
-    const { error } = await sb.from('bags').upsert(upserts, { onConflict: 'user_id' });
-    if (error) throw error;
+    if (bagUpserts.length === 0) return;
+    const { error: bagErr } = await sb.from('bags').upsert(bagUpserts, { onConflict: 'user_id' });
+    if (bagErr) throw bagErr;
+
+    // 2. Collect ALL entries across all users
+    const allEntries = []; // { userId, category, name, qty, sortOrder }
+    const affectedUserIds = [];
+    for (const [discordId, userBag] of Object.entries(bags)) {
+      const userId = userMap[discordId];
+      if (!userId || !userBag) continue;
+      affectedUserIds.push(userId);
+      const flat = _flattenBagEntries(userBag);
+      for (const e of flat) allEntries.push({ ...e, userId });
+    }
+
+    // 3. Delete all bag_items for these users in one shot
+    if (affectedUserIds.length > 0) {
+      const { error: delErr } = await sb.from('bag_items').delete().in('user_id', affectedUserIds);
+      if (delErr) throw delErr;
+    }
+
+    // 4. Resolve all item names in two queries, then insert all rows
+    if (allEntries.length > 0) {
+      const allNames = [...new Set(allEntries.map(e => e.name))];
+      const { itemIdByNameLower, homebrewIdByNameLower } = await _resolveItemNames(sb, allNames);
+
+      const rows = [];
+      for (const e of allEntries) {
+        const nameLower = e.name.toLowerCase();
+        rows.push({
+          user_id:      e.userId,
+          category:     e.category,
+          display_name: e.name,
+          quantity:     e.qty,
+          sort_order:   e.sortOrder,
+          item_id:      itemIdByNameLower[nameLower] ?? null,
+          homebrew_id:  homebrewIdByNameLower[nameLower] ?? null,
+          custom_name:  (!itemIdByNameLower[nameLower] && !homebrewIdByNameLower[nameLower]) ? e.name : null,
+        });
+      }
+      const { error: insErr } = await sb.from('bag_items').insert(rows);
+      if (insErr) throw insErr;
+    }
+
     _recordSyncSuccess();
   } catch (err) {
     _recordSyncFailure();
@@ -1330,12 +1451,27 @@ async function restoreAllFromSupabase() {
     console.log(`[Supabase] restore: wrote ${charRows?.length ?? 0} characters`);
 
     // ── 3. Bags ──────────────────────────────────────────────────────────────
+    // Fetch bag metadata and normalized bag_items separately, then reconstruct
+    // the local bags.json shape: { [discordId]: { bagName, categories: { Cat: [{name,qty}] } } }
     const { data: bagRows, error: bagErr } = await sb
       .from('bags')
-      .select('user_id, bag_name, categories');
+      .select('user_id, bag_name');
     if (bagErr) throw bagErr;
 
+    const { data: bagItemRows, error: biErr } = await sb
+      .from('bag_items')
+      .select('user_id, category, display_name, quantity, sort_order')
+      .order('sort_order', { ascending: true });
+    if (biErr) throw biErr;
+
     const bags = loadJson('bags.json', { default: {}, quiet: true }) || {};
+
+    // Index bag_items by supabase user_id for fast lookup
+    const itemsByUserId = {};
+    for (const item of bagItemRows ?? []) {
+      if (!itemsByUserId[item.user_id]) itemsByUserId[item.user_id] = [];
+      itemsByUserId[item.user_id].push(item);
+    }
 
     // Pull Supabase rows into local JSON (Supabase wins on conflict)
     const bagsInSupabase = new Set();
@@ -1343,7 +1479,16 @@ async function restoreAllFromSupabase() {
       const discordId = bySupabaseId[row.user_id];
       if (!discordId) continue;
       bagsInSupabase.add(discordId);
-      bags[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories: row.categories ?? {} };
+
+      // Reconstruct categories from bag_items
+      const categories = {};
+      for (const item of itemsByUserId[row.user_id] ?? []) {
+        const cat = item.category ?? 'General';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push({ name: item.display_name, qty: item.quantity ?? 1 });
+      }
+
+      bags[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories };
     }
 
     // Backfill: push any local bags that Supabase doesn't know about yet
@@ -1352,13 +1497,25 @@ async function restoreAllFromSupabase() {
       if (bagsInSupabase.has(discordId)) continue;
       const supabaseUserId = byDiscordId[discordId];
       if (!supabaseUserId) continue;
+
+      // Upsert bag metadata
       const { error: uErr } = await sb.from('bags').upsert({
         user_id:    supabaseUserId,
         bag_name:   userBag.bagName ?? 'Bag 1',
-        categories: userBag.categories ?? {},
+        categories: {},
       }, { onConflict: 'user_id' });
-      if (uErr) console.error(`[Supabase] bag backfill failed for ${discordId}:`, uErr.message);
-      else bagsUpserted++;
+      if (uErr) { console.error(`[Supabase] bag backfill failed for ${discordId}:`, uErr.message); continue; }
+
+      // Insert bag_items for backfilled user
+      const entries = _flattenBagEntries(userBag);
+      if (entries.length > 0) {
+        const { itemIdByNameLower, homebrewIdByNameLower } =
+          await _resolveItemNames(sb, entries.map(e => e.name));
+        const rows = _buildBagItemRows(supabaseUserId, entries, itemIdByNameLower, homebrewIdByNameLower);
+        const { error: biUErr } = await sb.from('bag_items').insert(rows);
+        if (biUErr) console.error(`[Supabase] bag_items backfill failed for ${discordId}:`, biUErr.message);
+      }
+      bagsUpserted++;
     }
 
     atomicWriteJson('bags.json', bags);
