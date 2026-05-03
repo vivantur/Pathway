@@ -404,6 +404,8 @@ function saveJson(filename, data) {
     } catch (err) {
       console.error(`GitHub backup failed for ${filename}:`, err.message);
     }
+    // Fire-and-forget Supabase sync — never blocks the save, never throws.
+    _syncFileToSupabase(filename, data);
   });
 }
 
@@ -449,11 +451,13 @@ function mutateJson(filename, opts, mutator) {
       atomicWriteJson(filename, current);
       try { await backupJsonToGitHub(filename, current); }
       catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
+      _syncFileToSupabase(filename, current);
       return current;
     }
     atomicWriteJson(filename, next);
     try { await backupJsonToGitHub(filename, next); }
     catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
+    _syncFileToSupabase(filename, next);
     return next;
   });
 }
@@ -750,6 +754,276 @@ async function syncMonsterEditsToSupabase(guildId, guildEdits) {
     if (error) throw error;
   } catch (err) {
     console.error('[Supabase] monster edits sync failed:', err.message);
+  }
+}
+
+// ── Batch "sync whole file" helpers ──────────────────────────────────────────
+// These are called from _syncFileToSupabase() after every saveJson/mutateJson
+// write so that Supabase always reflects the current on-disk state.
+// All functions are fire-and-forget: they never throw to callers.
+
+// Shared helper: fetch discord_id → supabase user_id for a set of discord IDs.
+async function _buildDiscordToUserMap(sb, discordIds) {
+  if (!discordIds || discordIds.length === 0) return {};
+  const { data: rows, error } = await sb
+    .from('users')
+    .select('id, discord_id')
+    .in('discord_id', discordIds);
+  if (error) throw error;
+  return Object.fromEntries((rows ?? []).map(u => [u.discord_id, u.id]));
+}
+
+// Sync entire downtime.json → Supabase downtime table.
+async function syncAllDowntimeToSupabase(downtime) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !downtime) return;
+    const discordIds = Object.keys(downtime).filter(k => /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+    const userMap = await _buildDiscordToUserMap(sb, discordIds);
+
+    const upserts = [];
+    for (const [discordId, userDt] of Object.entries(downtime)) {
+      const userId = userMap[discordId];
+      if (!userId || typeof userDt !== 'object') continue;
+      for (const [charKey, record] of Object.entries(userDt)) {
+        if (!record || charKey.startsWith('_')) continue;
+        upserts.push({
+          user_id:           userId,
+          char_key:          charKey,
+          bank:              record.bank ?? 0,
+          last_accrual_date: record.lastAccrualDate ?? null,
+          log:               record.log ?? [],
+        });
+      }
+    }
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('downtime').upsert(upserts, { onConflict: 'user_id,char_key' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] downtime full sync failed:', err.message);
+  }
+}
+
+// Sync entire notes.json → Supabase character_notes table.
+async function syncAllNotesToSupabase(notes) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !notes) return;
+    const discordIds = Object.keys(notes).filter(k => /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+    const userMap = await _buildDiscordToUserMap(sb, discordIds);
+
+    const upserts = [];
+    for (const [discordId, userNotes] of Object.entries(notes)) {
+      const userId = userMap[discordId];
+      if (!userId || typeof userNotes !== 'object') continue;
+      for (const [charKey, book] of Object.entries(userNotes)) {
+        if (!book || charKey.startsWith('_')) continue;
+        upserts.push({
+          user_id:  userId,
+          char_key: charKey,
+          next_id:  book.nextId ?? 1,
+          notes:    book.notes ?? [],
+        });
+      }
+    }
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('character_notes').upsert(upserts, { onConflict: 'user_id,char_key' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] notes full sync failed:', err.message);
+  }
+}
+
+// Sync entire bags.json → Supabase bags table.
+async function syncAllBagsToSupabase(bags) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !bags) return;
+    const discordIds = Object.keys(bags).filter(k => /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+    const userMap = await _buildDiscordToUserMap(sb, discordIds);
+
+    const upserts = [];
+    for (const [discordId, userBag] of Object.entries(bags)) {
+      const userId = userMap[discordId];
+      if (!userId || !userBag) continue;
+      upserts.push({
+        user_id:    userId,
+        bag_name:   userBag.bagName ?? 'Bag 1',
+        categories: userBag.categories ?? {},
+      });
+    }
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('bags').upsert(upserts, { onConflict: 'user_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] bags full sync failed:', err.message);
+  }
+}
+
+// Sync entire snippets.json → Supabase user_snippets table.
+async function syncAllUserSnippetsToSupabase(snippets) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !snippets) return;
+    const discordIds = Object.keys(snippets).filter(k => /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+    const userMap = await _buildDiscordToUserMap(sb, discordIds);
+
+    const upserts = [];
+    for (const [discordId, userSnips] of Object.entries(snippets)) {
+      const userId = userMap[discordId];
+      if (!userId || !userSnips) continue;
+      upserts.push({ user_id: userId, snippets: userSnips });
+    }
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('user_snippets').upsert(upserts, { onConflict: 'user_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] user snippets full sync failed:', err.message);
+  }
+}
+
+// Sync entire server_snippets.json → Supabase guild_snippets table.
+async function syncAllGuildSnippetsToSupabase(serverSnippets) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !serverSnippets) return;
+    const upserts = Object.entries(serverSnippets)
+      .filter(([guildId, snips]) => guildId && snips)
+      .map(([guildId, snips]) => ({ discord_guild_id: String(guildId), snippets: snips }));
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('guild_snippets').upsert(upserts, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] guild snippets full sync failed:', err.message);
+  }
+}
+
+// Sync entire monster_art.json → Supabase monster_art table.
+async function syncAllMonsterArtToSupabase(monsterArt) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !monsterArt) return;
+    const upserts = Object.entries(monsterArt)
+      .filter(([guildId, art]) => guildId && art)
+      .map(([guildId, art]) => ({ discord_guild_id: String(guildId), art }));
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('monster_art').upsert(upserts, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] monster art full sync failed:', err.message);
+  }
+}
+
+// Sync entire monster_edits.json → Supabase monster_edits table.
+async function syncAllMonsterEditsToSupabase(monsterEdits) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !monsterEdits) return;
+    const upserts = Object.entries(monsterEdits)
+      .filter(([guildId, edits]) => guildId && edits)
+      .map(([guildId, edits]) => ({ discord_guild_id: String(guildId), edits }));
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('monster_edits').upsert(upserts, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] monster edits full sync failed:', err.message);
+  }
+}
+
+// Sync entire monster_attacks.json → Supabase monster_attacks table.
+async function syncAllMonsterAttacksToSupabase(monsterAttacks) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !monsterAttacks) return;
+    const upserts = Object.entries(monsterAttacks)
+      .filter(([guildId, attacks]) => guildId && attacks)
+      .map(([guildId, attacks]) => ({ discord_guild_id: String(guildId), attacks }));
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('monster_attacks').upsert(upserts, { onConflict: 'discord_guild_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] monster attacks full sync failed:', err.message);
+  }
+}
+
+// Sync bot-settings.json → Supabase guild_state.settings column.
+async function syncAllBotSettingsToSupabase(botSettings) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !botSettings) return;
+    for (const [guildId, settings] of Object.entries(botSettings)) {
+      if (!guildId || !settings) continue;
+      // Re-use the existing patch helper — just update the settings column.
+      await syncGuildStateToSupabase(guildId, { settings });
+    }
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] bot settings full sync failed:', err.message);
+  }
+}
+
+// ── Per-file sync dispatcher ──────────────────────────────────────────────────
+// Called fire-and-forget from saveJson/mutateJson after every successful write.
+// Maps filenames to their Supabase sync function. Unknown filenames are ignored.
+function _syncFileToSupabase(filename, data) {
+  if (!data) return;
+  switch (filename) {
+    case 'characters.json':
+      syncAllCharactersToSupabase(data).catch(() => {});
+      break;
+    case 'downtime.json':
+      syncAllDowntimeToSupabase(data).catch(() => {});
+      break;
+    case 'notes.json':
+      syncAllNotesToSupabase(data).catch(() => {});
+      break;
+    case 'bags.json':
+      syncAllBagsToSupabase(data).catch(() => {});
+      break;
+    case 'snippets.json':
+      syncAllUserSnippetsToSupabase(data).catch(() => {});
+      break;
+    case 'server_snippets.json':
+      syncAllGuildSnippetsToSupabase(data).catch(() => {});
+      break;
+    case 'monster_art.json':
+      syncAllMonsterArtToSupabase(data).catch(() => {});
+      break;
+    case 'monster_edits.json':
+      syncAllMonsterEditsToSupabase(data).catch(() => {});
+      break;
+    case 'monster_attacks.json':
+      syncAllMonsterAttacksToSupabase(data).catch(() => {});
+      break;
+    case 'bot-settings.json':
+      syncAllBotSettingsToSupabase(data).catch(() => {});
+      break;
+    // calendar-state.json and weather-state.json are synced per-mutation
+    // by the calendar/weather command handlers via syncGuildStateToSupabase.
+    // No bulk sync needed here.
+    default:
+      break;
   }
 }
 
@@ -1158,10 +1432,10 @@ async function restoreAllFromSupabase() {
     atomicWriteJson('server_snippets.json', serverSnippets);
     console.log(`[Supabase] restore: wrote ${guildSnipRows?.length ?? 0} guild snippet sets`);
 
-    // ── 7. Guild state: calendar + weather ──────────────────────────────────
+    // ── 7. Guild state: calendar + weather + settings ───────────────────────
     const { data: guildStateRows, error: gsStateErr } = await sb
       .from('guild_state')
-      .select('discord_guild_id, calendar, weather');
+      .select('discord_guild_id, calendar, weather, settings');
     if (gsStateErr) throw gsStateErr;
 
     const calState  = loadJson('calendar-state.json', { default: {}, quiet: true }) || {};
@@ -1175,11 +1449,16 @@ async function restoreAllFromSupabase() {
       const cal = row.calendar;
       if (cal?.year && cal?.month && cal?.day) {
         calState[gid] = { year: cal.year, month: cal.month, day: cal.day };
-        // Also restore campaign setting (golarion / eberron)
+        // Also restore campaign setting from calendar (legacy path)
         if (cal.setting) {
           if (!botSettings[gid]) botSettings[gid] = {};
           botSettings[gid].campaignSetting = cal.setting;
         }
+      }
+
+      // Restore settings column (authoritative — overrides calendar.setting)
+      if (row.settings && typeof row.settings === 'object') {
+        botSettings[gid] = { ...(botSettings[gid] ?? {}), ...row.settings };
       }
 
       const wx = row.weather;
@@ -1217,6 +1496,71 @@ async function restoreAllFromSupabase() {
     atomicWriteJson('weather-state.json',  wxState);
     atomicWriteJson('bot-settings.json',   botSettings);
     console.log(`[Supabase] restore: wrote guild state for ${guildStateRows?.length ?? 0} guilds`);
+
+    // ── 7b. Monster attacks ──────────────────────────────────────────────────
+    const { data: attackRows, error: attackErr } = await sb
+      .from('monster_attacks')
+      .select('discord_guild_id, attacks');
+    if (attackErr) {
+      // Table may not exist yet (migration pending) — skip gracefully
+      if (attackErr.code !== '42P01') throw attackErr;
+      console.log('[Supabase] restore: monster_attacks table not yet migrated — skipping');
+    } else {
+      const monsterAttacks = loadJson('monster_attacks.json', { default: {}, quiet: true }) || {};
+      for (const row of attackRows ?? []) {
+        if (!row.discord_guild_id) continue;
+        monsterAttacks[row.discord_guild_id] = row.attacks ?? {};
+      }
+      atomicWriteJson('monster_attacks.json', monsterAttacks);
+      console.log(`[Supabase] restore: wrote monster attacks for ${attackRows?.length ?? 0} guilds`);
+    }
+
+    // ── 7c. Notes ────────────────────────────────────────────────────────────
+    const { data: noteRows, error: noteErr } = await sb
+      .from('character_notes')
+      .select('user_id, char_key, next_id, notes');
+    if (noteErr) throw noteErr;
+
+    const notesData = loadJson('notes.json', { default: {}, quiet: true }) || {};
+    for (const row of noteRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId || !row.char_key) continue;
+      if (!notesData[discordId]) notesData[discordId] = {};
+      notesData[discordId][row.char_key] = {
+        nextId: row.next_id ?? 1,
+        notes:  row.notes   ?? [],
+      };
+    }
+    atomicWriteJson('notes.json', notesData);
+    console.log(`[Supabase] restore: wrote ${noteRows?.length ?? 0} note books`);
+
+    // ── 7d. Monster art ──────────────────────────────────────────────────────
+    const { data: artRows, error: artErr } = await sb
+      .from('monster_art')
+      .select('discord_guild_id, art');
+    if (artErr) throw artErr;
+
+    const monsterArtData = loadJson('monster_art.json', { default: {}, quiet: true }) || {};
+    for (const row of artRows ?? []) {
+      if (!row.discord_guild_id) continue;
+      monsterArtData[row.discord_guild_id] = row.art ?? {};
+    }
+    atomicWriteJson('monster_art.json', monsterArtData);
+    console.log(`[Supabase] restore: wrote monster art for ${artRows?.length ?? 0} guilds`);
+
+    // ── 7e. Monster edits ────────────────────────────────────────────────────
+    const { data: editRows, error: editErr } = await sb
+      .from('monster_edits')
+      .select('discord_guild_id, edits');
+    if (editErr) throw editErr;
+
+    const monsterEditsData = loadJson('monster_edits.json', { default: {}, quiet: true }) || {};
+    for (const row of editRows ?? []) {
+      if (!row.discord_guild_id) continue;
+      monsterEditsData[row.discord_guild_id] = row.edits ?? {};
+    }
+    atomicWriteJson('monster_edits.json', monsterEditsData);
+    console.log(`[Supabase] restore: wrote monster edits for ${editRows?.length ?? 0} guilds`);
 
     // ── 8. Homebrew entries (monsters, spells, items) ────────────────────────
     // These are written into gamedata/ (which resets on every Railway deploy).
@@ -1456,6 +1800,7 @@ module.exports = {
   isSyncDegraded,
   restoreAllFromSupabase,
   restoreGamedataFromSupabase,
+  // Single-record sync (used by command handlers that know which record changed)
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,
   syncEncounterToSupabase,
@@ -1471,5 +1816,15 @@ module.exports = {
   syncGuildSnippetsToSupabase,
   syncMonsterArtToSupabase,
   syncMonsterEditsToSupabase,
+  // Batch "whole file" sync (called automatically from saveJson/mutateJson)
+  syncAllDowntimeToSupabase,
+  syncAllNotesToSupabase,
+  syncAllBagsToSupabase,
+  syncAllUserSnippetsToSupabase,
+  syncAllGuildSnippetsToSupabase,
+  syncAllMonsterArtToSupabase,
+  syncAllMonsterEditsToSupabase,
+  syncAllMonsterAttacksToSupabase,
+  syncAllBotSettingsToSupabase,
   setupHomebrewRealtimeSync,
 };
