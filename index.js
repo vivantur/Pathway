@@ -8043,10 +8043,11 @@ client.on('interactionCreate', async (interaction) => {
     try {
       await interaction.deferReply();
       const title = interaction.options.getString('title');
+      const discordSafeBlankHolderLine = '\u2800'.repeat(64);
       const blankHolderLine = '　'.repeat(64);
       const pageHolder = new EmbedBuilder()
         .setColor(0x1f1d36)
-        .setDescription(title ? `**${title}**` : blankHolderLine);
+        .setDescription(title ? `**${title}**` : discordSafeBlankHolderLine);
       return await interaction.editReply({ embeds: [pageHolder] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
