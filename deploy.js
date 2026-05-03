@@ -93,6 +93,7 @@ const charCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('id').setDescription('Pathbuilder JSON ID or export URL').setRequired(false)))
   .addSubcommand(s => s.setName('import').setDescription('Import directly from your Pathbuilder JSON ID (requires bot to be whitelisted).')
     .addIntegerOption(o => o.setName('id').setDescription('Your 6-digit Pathbuilder share ID').setRequired(true).setMinValue(1).setMaxValue(99999999)))
+  .addSubcommand(s => s.setName('create').setDescription('Create a blank character sheet with a popup.'))
   // View / management
   .addSubcommand(s => s.setName('list').setDescription('List all characters saved under your account.'))
   .addSubcommand(s => s.setName('active')

@@ -1244,6 +1244,93 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
   return { ok: true, key, name: char.name, level: char.level, replaced: existed };
 }
 
+function createBlankCharacterData({ name, className, ancestry, heritage, level }) {
+  const lvl = Math.max(1, Math.min(20, Number.parseInt(level, 10) || 1));
+  const characterName = String(name ?? '').trim();
+  return {
+    name: characterName,
+    class: String(className ?? '').trim() || 'Adventurer',
+    dualClass: null,
+    level: lvl,
+    ancestry: String(ancestry ?? '').trim() || 'Unknown',
+    heritage: String(heritage ?? '').trim() || '',
+    background: '',
+    alignment: 'N',
+    gender: '',
+    age: '',
+    deity: '',
+    size: 0,
+    keyability: '',
+    languages: ['Common'],
+    attributes: {
+      ancestryhp: 8,
+      classhp: 8,
+      bonushp: 0,
+      bonushpPerLevel: 0,
+      speed: 25,
+      speedBonus: 0,
+    },
+    abilities: {
+      str: 10,
+      dex: 10,
+      con: 10,
+      int: 10,
+      wis: 10,
+      cha: 10,
+      breakdown: { ancestryFree: [], ancestryBoosts: [], ancestryFlaws: [], backgroundBoosts: [], classBoosts: [], mapLevelledBoosts: {} },
+    },
+    proficiencies: {
+      classDC: 0,
+      perception: 0,
+      fortitude: 0,
+      reflex: 0,
+      will: 0,
+      heavy: 0, medium: 0, light: 0, unarmored: 0,
+      advanced: 0, martial: 0, simple: 0, unarmed: 0,
+      castingArcane: 0, castingDivine: 0, castingOccult: 0, castingPrimal: 0,
+      acrobatics: 0, arcana: 0, athletics: 0, crafting: 0,
+      deception: 0, diplomacy: 0, intimidation: 0, medicine: 0,
+      nature: 0, occultism: 0, performance: 0, religion: 0,
+      society: 0, stealth: 0, survival: 0, thievery: 0,
+    },
+    acTotal: { acTotal: 10, acProfBonus: 0, acAbilityBonus: 0, acItemBonus: 0, acValue: 10 },
+    lores: [],
+    weapons: [],
+    feats: [],
+    specials: [],
+    equipment: [],
+    money: { cp: 0, sp: 0, gp: 0, pp: 0 },
+    spellCasters: [],
+    focus: {},
+    specificProficiencies: {},
+    armor: [],
+    formula: [],
+    pets: [],
+    senses: '',
+    _pathwayCreated: true,
+  };
+}
+
+function saveCreatedCharacter(userId, char) {
+  if (!char?.name) return { error: 'Character name is required.' };
+  const characters = loadCharacters();
+  if (!characters[userId]) characters[userId] = {};
+  const key = char.name.toLowerCase().replace(/\s+/g, '-');
+  if (characters[userId][key]) return { error: `You already have a character named **${char.name}**. Use a different name or remove the old one first.` };
+  const entry = {
+    name: char.name,
+    data: char,
+    art: null,
+    senses: null,
+    edits: {},
+    saved: new Date().toISOString(),
+  };
+  characters[userId][key] = entry;
+  if (!characters[userId]._activeChar) characters[userId]._activeChar = key;
+  saveCharacters(characters);
+  return { ok: true, key, name: char.name, level: char.level, maxHp: computeCharMaxHp(entry) };
+}
+
 // Try to parse a JSON string that may have extra wrapping (code blocks,
 // leading/trailing text, nested `{"success":true,"build":{...}}` wrapper).
 // Returns { char } or { error }.
@@ -6392,6 +6479,7 @@ const HELP_CATEGORIES = {
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
       { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file or Pathbuilder ID. Keeps your overlay additions.', options: 'file or id', example: '/char update id:122550' },
       { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID.', options: 'id', example: '/char import id:122550' },
+      { name: '/char create', summary: 'Create a blank character sheet through a popup, then fill in the rest with edit commands.', options: '', example: '/char create' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
       { name: '/char howto', summary: 'Platform-specific step-by-step guidance for getting your character sheet into the bot.', options: '', example: '/char howto' },
@@ -7186,6 +7274,29 @@ client.on('interactionCreate', async (interaction) => {
     // the user was editing at the time the modal opened.
     if (interaction.isModalSubmit?.()) {
       try {
+        if (interaction.customId === 'char_create_modal') {
+          await interaction.deferReply({ ephemeral: true });
+          const name = interaction.fields.getTextInputValue('name').trim();
+          const className = interaction.fields.getTextInputValue('class').trim();
+          const ancestry = interaction.fields.getTextInputValue('ancestry').trim();
+          const heritage = interaction.fields.getTextInputValue('heritage').trim();
+          const levelRaw = interaction.fields.getTextInputValue('level').trim() || '1';
+
+          if (!name) return interaction.editReply('❌ Character name is required.');
+          const level = Number.parseInt(levelRaw, 10);
+          if (!Number.isFinite(level) || level < 1 || level > 20) {
+            return interaction.editReply(`❌ Level must be a whole number from 1 to 20. Got "${levelRaw}".`);
+          }
+
+          const char = createBlankCharacterData({ name, className, ancestry, heritage, level });
+          const saved = saveCreatedCharacter(interaction.user.id, char);
+          if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
+          return interaction.editReply(
+            `✅ **${saved.name}** created as a blank level ${saved.level} character.\n` +
+            `Use \`/sheet name:${saved.name}\` to view it, then fill in details with \`/char ability\`, \`/char stat\`, \`/char skill\`, \`/char weapon\`, \`/char item\`, and \`/char edit\`.`
+          );
+        }
+
         if (interaction.customId.startsWith('char_edit_modal:')) {
           await interaction.deferReply({ ephemeral: true });
           const charKey = interaction.customId.slice('char_edit_modal:'.length);
@@ -8067,6 +8178,29 @@ client.on('interactionCreate', async (interaction) => {
   // ─── /char ───────────────────────────────────────────────────────
   else if (commandName === 'char') {
     const sub = interaction.options.getSubcommand();
+
+    if (sub === 'create') {
+      const modal = new ModalBuilder()
+        .setCustomId('char_create_modal')
+        .setTitle('Create Blank Character');
+
+      const mk = (id, label, placeholder, required = false) => new TextInputBuilder()
+        .setCustomId(id)
+        .setLabel(label)
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder(placeholder)
+        .setRequired(required)
+        .setMaxLength(100);
+
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(mk('name', 'Character Name', 'Viv', true)),
+        new ActionRowBuilder().addComponents(mk('class', 'Class', 'Fighter')),
+        new ActionRowBuilder().addComponents(mk('ancestry', 'Ancestry', 'Human')),
+        new ActionRowBuilder().addComponents(mk('heritage', 'Heritage', 'Versatile Human')),
+        new ActionRowBuilder().addComponents(mk('level', 'Level', '1', true).setMaxLength(2)),
+      );
+      return interaction.showModal(modal);
+    }
 
     if (sub === 'add') {
       await interaction.deferReply();
