@@ -8046,11 +8046,9 @@ client.on('interactionCreate', async (interaction) => {
       if (!title) {
         return await interaction.editReply('```\n\u200b\n```');
       }
-      const discordSafeBlankHolderLine = '\u2800'.repeat(64);
-      const blankHolderLine = '　'.repeat(64);
       const pageHolder = new EmbedBuilder()
         .setColor(0x1f1d36)
-        .setDescription(title ? `**${title}**` : discordSafeBlankHolderLine);
+        .setDescription(`**${title}**`);
       return await interaction.editReply({ embeds: [pageHolder] });
     } catch (err) {
       if (!isDeadInteractionError(err)) {
