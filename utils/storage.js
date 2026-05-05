@@ -562,6 +562,131 @@ async function syncAllCharactersToSupabase(characters) {
   }
 }
 
+// ── Companion sync helpers ─────────────────────────────────────────────────────
+// Upsert a single companion row. Called (awaited) by every /companion subcommand
+// that mutates state so data is durable before the bot replies.
+async function syncCompanionToSupabase(discordId, charKey, compKey, comp, isActive) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', discordId)
+      .maybeSingle();
+    if (!userRow) return;
+
+    const { error } = await sb.from('companions').upsert({
+      user_id:      userRow.id,
+      char_key:     charKey,
+      comp_key:     compKey,
+      display_name: comp.displayName ?? compKey,
+      base_type:    comp.baseType ?? comp.type ?? 'unknown',
+      form:         comp.form ?? 'young',
+      notes:        comp.notes ?? '',
+      current_hp:   comp.currentHp ?? comp.hp ?? null,
+      is_active:    !!isActive,
+      custom_stats: {
+        customStats:     comp.customStats     ?? null,
+        art:             comp.art             ?? null,
+        skills:          comp.skills          ?? null,
+        customAbilities: comp.customAbilities ?? null,
+        customAttacks:   comp.customAttacks   ?? null,
+        overrides:       comp.overrides       ?? null,
+      },
+    }, { onConflict: 'user_id,char_key,comp_key' });
+
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] companion sync failed:', err.message);
+  }
+}
+
+// Delete a single companion row. Called (awaited) by /companion remove.
+async function deleteCompanionFromSupabase(discordId, charKey, compKey) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', discordId)
+      .maybeSingle();
+    if (!userRow) return;
+
+    const { error } = await sb.from('companions')
+      .delete()
+      .eq('user_id', userRow.id)
+      .eq('char_key', charKey)
+      .eq('comp_key', compKey);
+
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Supabase] companion delete failed:', err.message);
+  }
+}
+
+// Bulk backfill: upsert all companions for all characters from the in-memory map.
+// One-time migration helper — call from a bot admin command or startup if needed.
+async function syncAllCompanionsToSupabase(characters) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const discordIds = Object.keys(characters).filter(k => /^\d+$/.test(k));
+    if (discordIds.length === 0) return;
+
+    const { data: userRows } = await sb
+      .from('users')
+      .select('id, discord_id')
+      .in('discord_id', discordIds);
+    if (!userRows || userRows.length === 0) return;
+
+    const userMap = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
+
+    const upserts = [];
+    for (const [discordId, userChars] of Object.entries(characters)) {
+      const userId = userMap[discordId];
+      if (!userId) continue;
+      for (const [charKey, charEntry] of Object.entries(userChars)) {
+        if (charKey.startsWith('_') || !charEntry?.companions) continue;
+        for (const [compKey, comp] of Object.entries(charEntry.companions)) {
+          if (!comp?.displayName) continue;
+          upserts.push({
+            user_id:      userId,
+            char_key:     charKey,
+            comp_key:     compKey,
+            display_name: comp.displayName,
+            base_type:    comp.baseType ?? comp.type ?? 'unknown',
+            form:         comp.form ?? 'young',
+            notes:        comp.notes ?? '',
+            current_hp:   comp.currentHp ?? comp.hp ?? null,
+            is_active:    charEntry.activeCompanion === compKey,
+            custom_stats: {
+              customStats:     comp.customStats     ?? null,
+              art:             comp.art             ?? null,
+              skills:          comp.skills          ?? null,
+              customAbilities: comp.customAbilities ?? null,
+              customAttacks:   comp.customAttacks   ?? null,
+              overrides:       comp.overrides       ?? null,
+            },
+          });
+        }
+      }
+    }
+
+    if (upserts.length === 0) return;
+    const { error } = await sb.from('companions')
+      .upsert(upserts, { onConflict: 'user_id,char_key,comp_key' });
+    if (error) throw error;
+    console.log(`[Supabase] companion backfill: upserted ${upserts.length} companions`);
+  } catch (err) {
+    console.error('[Supabase] companion backfill failed:', err.message);
+  }
+}
+
 // Upsert the full encounter snapshot. Called after every state mutation so
 // the web combat tracker stays current. Stores the encounter's Supabase UUID
 // on enc.supabaseId so event logging can reference it without another lookup.
@@ -1973,6 +2098,10 @@ module.exports = {
   isSyncDegraded,
   restoreAllFromSupabase,
   restoreGamedataFromSupabase,
+  // Companion sync (Phase 1 — dedicated companions table)
+  syncCompanionToSupabase,
+  deleteCompanionFromSupabase,
+  syncAllCompanionsToSupabase,
   // Single-record sync (used by command handlers that know which record changed)
   syncAllCharactersToSupabase,
   syncDowntimeToSupabase,

@@ -22,6 +22,8 @@ const {
   syncHomebrewEntryToSupabase,
   deleteHomebrewEntryFromSupabase,
   setupHomebrewRealtimeSync,
+  syncCompanionToSupabase,
+  deleteCompanionFromSupabase,
 } = require('./utils/storage');
 
 // Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
@@ -11996,6 +11998,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!charEntry.activeCompanion) charEntry.activeCompanion = compKey;
       characters[interaction.user.id][charKey] = charEntry;
       await saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `🐾 **${displayName}** (${custom ? 'custom: ' + baseInput : baseInput}, ${form}) added to **${char.name}**'s companions!${charEntry.activeCompanion === compKey ? ' *(active)*' : ''}\nUse \`/companion sheet\` to view.` });
     }
 
@@ -12023,6 +12026,7 @@ client.on('interactionCreate', async (interaction) => {
         comp.currentHp = scaled.maxHp;
         characters[interaction.user.id][charKey] = charEntry;
         await saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, compKey === charEntry.activeCompanion);
       }
       return interaction.reply({ embeds: [buildCompanionSheetEmbed(comp, scaled, char, charEntry, compKey === charEntry.activeCompanion)] });
     }
@@ -12037,9 +12041,14 @@ client.on('interactionCreate', async (interaction) => {
       }
       const compKey = companionSlug(compNameArg);
       if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
+      const prevActiveKey = charEntry.activeCompanion;
       charEntry.activeCompanion = compKey;
       characters[interaction.user.id][charKey] = charEntry;
       await saveCharacters(characters);
+      if (prevActiveKey && prevActiveKey !== compKey && charEntry.companions[prevActiveKey]) {
+        await syncCompanionToSupabase(interaction.user.id, charKey, prevActiveKey, charEntry.companions[prevActiveKey], false);
+      }
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], true);
       return interaction.reply({ content: `⭐ **${charEntry.companions[compKey].displayName}** is now **${char.name}**'s active companion.` });
     }
 
@@ -12092,6 +12101,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       characters[interaction.user.id][charKey] = charEntry;
       await saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `🔄 **${charEntry.companions[compKey].displayName}**: **${oldForm}** → **${newForm}**.\nNew max HP: **${scaled.maxHp}** · Attack: **+${scaled.attackBonus}** · AC: **${scaled.ac}**` });
     }
 
@@ -12108,6 +12118,7 @@ client.on('interactionCreate', async (interaction) => {
       else comp.currentHp = scaled.maxHp;
       characters[interaction.user.id][charKey] = charEntry;
       await saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `❤️ **${comp.displayName}**: ${comp.currentHp}/${scaled.maxHp} HP.` });
     }
 
@@ -12126,6 +12137,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       characters[interaction.user.id][charKey] = charEntry;
       await saveCharacters(characters);
+      await deleteCompanionFromSupabase(interaction.user.id, charKey, compKey);
       return interaction.reply({ content: `🗑️ Removed **${name}** from **${char.name}**'s companions.` });
     }
 
@@ -12142,6 +12154,7 @@ client.on('interactionCreate', async (interaction) => {
         delete charEntry.companions[compKey].art;
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🗑️ Cleared portrait for **${charEntry.companions[compKey].displayName}**.`, ephemeral: true });
       }
       // Basic URL validation — must start with http(s) and point at a plausible image host
@@ -12151,6 +12164,7 @@ client.on('interactionCreate', async (interaction) => {
       charEntry.companions[compKey].art = url.trim();
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `🖼️ Updated portrait for **${charEntry.companions[compKey].displayName}**.\nView it with \`/companion sheet\`.`, ephemeral: true });
     }
 
@@ -12473,6 +12487,7 @@ client.on('interactionCreate', async (interaction) => {
 
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `✏️ **${comp.displayName}** — ${displayLabel} set to **${displayValue}**.\nView with \`/companion sheet\`. Undo with \`/companion reset stat:${stat}\`.`, ephemeral: true });
     }
 
@@ -12505,6 +12520,7 @@ client.on('interactionCreate', async (interaction) => {
 
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `↺ Reset \`${stat}\` on **${comp.displayName}** to auto-calculated.`, ephemeral: true });
     }
 
@@ -12519,6 +12535,7 @@ client.on('interactionCreate', async (interaction) => {
       comp.overrides = { abilities: {}, saves: {} };
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `↺ Cleared all stat overrides on **${comp.displayName}**. Using auto-calculated stats again.`, ephemeral: true });
     }
 
@@ -12559,6 +12576,7 @@ client.on('interactionCreate', async (interaction) => {
         });
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `⚔️ Added **${atkName}** to **${comp.displayName}**'s attacks.`, ephemeral: true });
       }
 
@@ -12570,6 +12588,7 @@ client.on('interactionCreate', async (interaction) => {
         const [removed] = comp.customAttacks.splice(idx, 1);
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s attacks.`, ephemeral: true });
       }
 
@@ -12618,6 +12637,7 @@ client.on('interactionCreate', async (interaction) => {
         });
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `✨ Added **${abName}** to **${comp.displayName}**'s abilities.`, ephemeral: true });
       }
 
@@ -12629,6 +12649,7 @@ client.on('interactionCreate', async (interaction) => {
         const [removed] = comp.customAbilities.splice(idx, 1);
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${comp.displayName}**'s abilities.`, ephemeral: true });
       }
 
@@ -12677,6 +12698,7 @@ client.on('interactionCreate', async (interaction) => {
         comp.skills[displayName] = bonus;
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🎯 Set **${displayName}** to **${fmt(bonus)}** on **${comp.displayName}**.`, ephemeral: true });
       }
 
@@ -12689,6 +12711,7 @@ client.on('interactionCreate', async (interaction) => {
         delete comp.skills[foundKey];
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🗑️ Cleared **${foundKey}** from **${comp.displayName}**.`, ephemeral: true });
       }
 
@@ -12716,12 +12739,14 @@ client.on('interactionCreate', async (interaction) => {
         comp.notes = '';
         characters[interaction.user.id][charKey] = charEntry;
         saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
         return interaction.reply({ content: `🗑️ Cleared notes on **${comp.displayName}**.`, ephemeral: true });
       }
       if (text.length > 1000) return interaction.reply({ content: `❌ Notes too long (1000 chars max).`, ephemeral: true });
       comp.notes = text;
       characters[interaction.user.id][charKey] = charEntry;
       saveCharacters(characters);
+      await syncCompanionToSupabase(interaction.user.id, charKey, compKey, comp, charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `📝 Updated notes on **${comp.displayName}**.`, ephemeral: true });
     }
   }
