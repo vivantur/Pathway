@@ -11946,26 +11946,29 @@ client.on('interactionCreate', async (interaction) => {
     // Tracking subcommands require a character
     const characters = loadCharacters();
     const charNameArg = interaction.options.getString('character');
-    // ── DIAGNOSTIC: log what /companion is seeing ──────────────────
-    console.log(`[companion DEBUG] sub=${sub}, userId=${interaction.user.id}, charNameArg=${charNameArg}`);
-    console.log(`[companion DEBUG] characters[userId] keys: ${Object.keys(characters[interaction.user.id] ?? {}).join(', ') || '(NONE)'}`);
-    console.log(`[companion DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
-    console.log(`[companion DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
     if (error) {
-      console.log(`[companion DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error, ephemeral: true });
     }
-    console.log(`[companion DEBUG] resolveChar succeeded: charKey=${charKey}, name=${charEntry?.name}`);
     const char = charEntry.data;
     if (!charEntry.companions) charEntry.companions = {};
+
+    const getOptionString = optionName => {
+      try { return interaction.options.getString(optionName); }
+      catch { return null; }
+    };
+    const companionSlug = value => String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const companionNameArg = () => getOptionString('companion') ?? getOptionString('name');
 
     if (sub === 'add') {
       const displayName = interaction.options.getString('name');
       const baseInput = interaction.options.getString('base');
       const form = interaction.options.getString('form') ?? 'young';
       const custom = interaction.options.getBoolean('custom') ?? false;
-      const compKey = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!displayName || !baseInput) {
+        return interaction.reply({ content: '❌ Companion add needs both a display name and a base companion type.', ephemeral: true });
+      }
+      const compKey = companionSlug(displayName);
       if (charEntry.companions[compKey]) return interaction.reply({ content: `❌ **${char.name}** already has a companion named **${displayName}**.`, ephemeral: true });
       let baseType, customStats = null;
       if (custom) {
@@ -11992,7 +11995,7 @@ client.on('interactionCreate', async (interaction) => {
       charEntry.companions[compKey] = { displayName, baseType, form, notes: '', customStats, currentHp: null };
       if (!charEntry.activeCompanion) charEntry.activeCompanion = compKey;
       characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       return interaction.reply({ content: `🐾 **${displayName}** (${custom ? 'custom: ' + baseInput : baseInput}, ${form}) added to **${char.name}**'s companions!${charEntry.activeCompanion === compKey ? ' *(active)*' : ''}\nUse \`/companion sheet\` to view.` });
     }
 
@@ -12011,15 +12014,15 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (sub === 'sheet') {
-      const compNameArg = interaction.options.getString('companion');
-      const compKey = compNameArg ? compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : charEntry.activeCompanion;
+      const compNameArg = companionNameArg();
+      const compKey = compNameArg ? companionSlug(compNameArg) : charEntry.activeCompanion;
       if (!compKey || !charEntry.companions[compKey]) return interaction.reply({ content: `❌ ${compNameArg ? 'No companion named "' + compNameArg + '"' : char.name + ' has no active companion'}.`, ephemeral: true });
       const comp = charEntry.companions[compKey];
       const scaled = scaleCompanion(comp, char);
       if (comp.currentHp === null || comp.currentHp === undefined) {
         comp.currentHp = scaled.maxHp;
         characters[interaction.user.id][charKey] = charEntry;
-        saveCharacters(characters);
+        await saveCharacters(characters);
       }
       return interaction.reply({ embeds: [buildCompanionSheetEmbed(comp, scaled, char, charEntry, compKey === charEntry.activeCompanion)] });
     }
@@ -12028,16 +12031,15 @@ client.on('interactionCreate', async (interaction) => {
     // The slash command schema in deploy.js uses `name`, but earlier code
     // used `companion`. We accept both so users hitting either don't crash.
     if (sub === 'active' || sub === 'swap') {
-      const compNameArg = interaction.options.getString('name')
-        ?? interaction.options.getString('companion');
+      const compNameArg = companionNameArg();
       if (!compNameArg) {
         return interaction.reply({ content: `❌ Please specify a companion. Use \`/companion mine\` to see your options.`, ephemeral: true });
       }
-      const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const compKey = companionSlug(compNameArg);
       if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
       charEntry.activeCompanion = compKey;
       characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       return interaction.reply({ content: `⭐ **${charEntry.companions[compKey].displayName}** is now **${char.name}**'s active companion.` });
     }
 
@@ -12089,7 +12091,7 @@ client.on('interactionCreate', async (interaction) => {
         charEntry.companions[compKey].currentHp = scaled.maxHp;
       }
       characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       return interaction.reply({ content: `🔄 **${charEntry.companions[compKey].displayName}**: **${oldForm}** → **${newForm}**.\nNew max HP: **${scaled.maxHp}** · Attack: **+${scaled.attackBonus}** · AC: **${scaled.ac}**` });
     }
 
@@ -12105,13 +12107,16 @@ client.on('interactionCreate', async (interaction) => {
       else if (change !== null && change !== undefined) comp.currentHp = Math.max(0, Math.min(scaled.maxHp, (comp.currentHp ?? scaled.maxHp) + change));
       else comp.currentHp = scaled.maxHp;
       characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       return interaction.reply({ content: `❤️ **${comp.displayName}**: ${comp.currentHp}/${scaled.maxHp} HP.` });
     }
 
     if (sub === 'remove') {
-      const compNameArg = interaction.options.getString('companion');
-      const compKey = compNameArg.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const compNameArg = companionNameArg();
+      if (!compNameArg) {
+        return interaction.reply({ content: `❌ Please specify a companion to remove. Use \`/companion mine\` to see your options.`, ephemeral: true });
+      }
+      const compKey = companionSlug(compNameArg);
       if (!charEntry.companions[compKey]) return interaction.reply({ content: `❌ No companion named "${compNameArg}".`, ephemeral: true });
       const name = charEntry.companions[compKey].displayName;
       delete charEntry.companions[compKey];
@@ -12120,7 +12125,7 @@ client.on('interactionCreate', async (interaction) => {
         charEntry.activeCompanion = remaining[0] ?? null;
       }
       characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       return interaction.reply({ content: `🗑️ Removed **${name}** from **${char.name}**'s companions.` });
     }
 
