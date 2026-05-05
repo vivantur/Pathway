@@ -1,0 +1,4370 @@
+{
+  "format_notes": "Each item formatted to match bot input form. Categories follow PF2e conventions (Adventuring Gear, Alchemical, Material, Treasure, etc). Page numbers sequential for catalog organization.",
+  "items": [
+    {
+      "item_name": "Aberrant Flesh",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "reagent"
+      ],
+      "price": "2 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 1,
+      "description": "A pulsing chunk of flesh harvested from an aberration, slick with otherworldly humors that defy normal anatomy. Used as a primary reagent when crafting mutagens or unstable potions, it grants a +1 item bonus to Crafting checks for such items. Spoils within 7 days unless preserved with alchemical salts."
+    },
+    {
+      "item_name": "Otherworldly Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "divination"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 2,
+      "description": "An eye that sees what should not be seen, removed intact from an aberration's skull. When dissolved in a true seeing potion or used in a divination scroll, it doubles the duration of the effect. Brief contact with the eye causes the holder to glimpse fleeting visions of impossible geometries."
+    },
+    {
+      "item_name": "Preserved Tentacle",
+      "category": "Crafting Material",
+      "subcategory": "Component",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical"
+      ],
+      "price": "5 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 3,
+      "description": "A severed aberrant tentacle, cured and made supple with curing oils. Crafted into a whip, it grants the finesse trait if it lacked one, and the weapon deals an additional 1 bludgeoning damage on a successful Trip attempt."
+    },
+    {
+      "item_name": "Aberrant Ichor",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "mental"
+      ],
+      "price": "15 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 4,
+      "description": "A vial of dark, viscous fluid that whispers when shaken. Used as the base for Confusion Oil and similar mind-affecting alchemical items, it imparts a +1 item bonus to the DC of mental effects in items it is used to craft."
+    },
+    {
+      "item_name": "Pulsing Brain Matter",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "mental",
+        "occult"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 5,
+      "description": "Cerebral tissue still twitching in your hand, salvaged from a creature whose mind worked along impossible axes. A required component when crafting psychic-themed scrolls, wands, or talismans, reducing the material cost by 25%."
+    },
+    {
+      "item_name": "Chitinous Plating",
+      "category": "Crafting Material",
+      "subcategory": "Armor Component",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "10 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 6,
+      "description": "Hardened plates of aberrant shell, ridged and pitted in unfamiliar ways. When integrated into hide armor during crafting, the wearer gains a +1 item bonus to AC against aberrations."
+    },
+    {
+      "item_name": "Psychic Residue",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "mental"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 7,
+      "description": "A shimmering, faintly luminescent dust scraped from the cooling brain of a psionic creature. Used in mental resilience elixirs, it grants the resulting potion a +1 item bonus to saves against mental effects for 10 minutes."
+    },
+    {
+      "item_name": "Warped Bone",
+      "category": "Crafting Material",
+      "subcategory": "Bone",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "4 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 8,
+      "description": "Bone fused at unsettling angles, with subtly wrong joint structures. A weapon haft made from warped bone grants its wielder a +1 status bonus to Intimidation checks made to Demoralize while wielding it."
+    },
+    {
+      "item_name": "Phase Tissue",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 9,
+      "description": "Translucent flesh that shifts between solid and ethereal at the edge of perception. A required reagent for crafting Blink and Dimension Door scrolls, halving the time required to scribe them."
+    },
+    {
+      "item_name": "Eldritch Mucus",
+      "category": "Alchemical",
+      "subcategory": "Adhesive",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "3 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 10,
+      "description": "A jar of clinging, faintly luminescent slime. Functions as a tanglefoot bag (lesser) when thrown, applying the immobilized condition until escaped (DC 17). Has a 5-foot splash."
+    },
+    {
+      "item_name": "Mindflayed Cerebral Fluid",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "mental",
+        "occult"
+      ],
+      "price": "120 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 11,
+      "description": "Spinal fluid drawn from a mind-controlling aberration, shimmering with stolen thoughts. A required ingredient when crafting potions of suggestion or charm, increasing the spell's DC by 1."
+    },
+    {
+      "item_name": "Aberrant Hide",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "30 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 12,
+      "description": "The pebbled, shifting hide of an aberration, tanned with care to preserve its strange properties. Armor crafted from aberrant hide grants the wearer resistance 2 to mental damage."
+    },
+    {
+      "item_name": "Vestigial Limb",
+      "category": "Treasure",
+      "subcategory": "Trophy",
+      "item_level": 2,
+      "rarity": "Common",
+      "traits": [],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 13,
+      "description": "A non-functional appendage cut from an aberrant body — extra limb, false eye stalk, or quivering protuberance. Scholars who study the Dark Tapestry will pay handsomely for an intact specimen, often double its base value."
+    },
+    {
+      "item_name": "Crystallized Madness",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "emotion",
+        "mental"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 14,
+      "description": "A jagged crystal grown from the petrified terror of an aberration's victim. Used in confusion or fear-based magic items, it grants those items a +1 item bonus to their DCs."
+    },
+    {
+      "item_name": "Dark Tapestry Splinter",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 16,
+      "rarity": "Unique",
+      "traits": [
+        "magical",
+        "occult"
+      ],
+      "price": "500 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 15,
+      "description": "A sliver of frozen void found embedded in the descendants of Great Old Ones. Required as a focus for planar travel rituals targeting the Dark Tapestry, the Far Realms, or other distant cosmic locations."
+    },
+    {
+      "item_name": "Mucous Membrane",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "6 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 16,
+      "description": "A peeled section of aberrant mucous membrane, sticky and chemically unstable. Used in adhesive bombs, it grants the bomb the sticky trait, persisting for 1 round after a hit."
+    },
+    {
+      "item_name": "Quivering Mass",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 17,
+      "description": "A faintly twitching lump of unidentifiable aberrant tissue that may still be partially alive. Useful as a familiar component or as feed for breeding alchemical pests; spoils in 3 days unpreserved."
+    },
+    {
+      "item_name": "Beak",
+      "category": "Crafting Material",
+      "subcategory": "Animal Part",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "2 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 18,
+      "description": "The hardened beak of a bird, raptor, or other beaked creature. Carved into a piercing tool, awl, or pen nib; ground beak makes a durable black ink valued by scribes."
+    },
+    {
+      "item_name": "Musk Gland",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 2,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 19,
+      "description": "A pungent gland extracted from a beast of similar species. Refined into perfume base, animal lure, or hunter's attractant — when used as bait, it grants a +2 item bonus to Survival checks to attract animals of the source's type."
+    },
+    {
+      "item_name": "Castor Sac",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 2,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "12 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 20,
+      "description": "A glandular sac harvested from beavers, capybaras, and similar rodents. Provides analgesic compounds used in mild pain relievers and a sweet-musk perfume base; ingestion grants a +1 item bonus to flat checks against mild pain effects."
+    },
+    {
+      "item_name": "Bear Bile",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "healing"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 21,
+      "description": "Bitter green bile drained from a bear's gallbladder. A potent component for minor healing brews; an elixir crafted with bear bile heals an additional 1d4 HP on consumption."
+    },
+    {
+      "item_name": "Scorpion Stinger",
+      "category": "Crafting Material",
+      "subcategory": "Animal Part",
+      "item_level": 2,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "12 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 22,
+      "description": "The hooked, hollow stinger of a giant scorpion. Mounted as a dagger or arrowhead, it can hold a single dose of injury poison and grants a +1 item bonus to Crafting checks to apply that poison."
+    },
+    {
+      "item_name": "Astral Essence",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 23,
+      "description": "A swirling silver vapor sealed in crystal, harvested from a creature native to the Astral Plane. Required as a focus when scribing scrolls of Astral Projection, halving the gp cost of the scroll's materials."
+    },
+    {
+      "item_name": "Silver Cord Fragment",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 24,
+      "description": "A length of severed silver cord, gleaming impossibly bright. Used in soul-binding magic, or woven into a magical rope that grants its wielder a +1 item bonus to Athletics checks to Climb."
+    },
+    {
+      "item_name": "Astral Crystal",
+      "category": "Magical Component",
+      "subcategory": "Crystal",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "200 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 25,
+      "description": "A crystal of solidified astral matter that hovers slightly above any surface it rests on. Functions as a substitute material for crafting low-grade aeon stones, storing 1 cantrip of stored spell energy when properly attuned."
+    },
+    {
+      "item_name": "Dimensional Dust",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 26,
+      "description": "A pinch of glittering dust scraped from the seams between planes. Tossed in the air, it functions as Dust of Disappearance for 1 round, granting greater invisibility in a 5-foot radius."
+    },
+    {
+      "item_name": "Stellar Ichor",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "light"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 27,
+      "description": "Glowing silver-blue blood from an astral creature, sealed in a crystal vial. When activated, it sheds bright light in a 30-foot radius for 1 hour and counts as sunlight for the purposes of damaging vulnerable creatures."
+    },
+    {
+      "item_name": "Void Shard",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "negative"
+      ],
+      "price": "250 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 28,
+      "description": "A jagged sliver of cold black nothing that drinks light from the air around it. Used to craft negative-energy weapons, granting an additional 1d6 negative damage on critical hits."
+    },
+    {
+      "item_name": "Plane-Touched Hide",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [],
+      "price": "150 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 29,
+      "description": "Hide from an astral creature, lighter than expected and faintly translucent at the edges. Armor crafted from plane-touched hide reduces its Bulk by 1 (minimum L) and grants resistance 3 to force damage."
+    },
+    {
+      "item_name": "Cosmic Residue",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "divination"
+      ],
+      "price": "40 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 30,
+      "description": "Glittering powder collected from astral creatures, resembling pulverized stars. Sprinkled onto a divination focus, it grants a +2 item bonus to your next divination check made within 1 minute."
+    },
+    {
+      "item_name": "Starlight Sinew",
+      "category": "Crafting Material",
+      "subcategory": "Sinew",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "120 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 31,
+      "description": "Tendons that gleam like spun moonlight. A bowstring made from starlight sinew allows the bow to fire arrows of pure light when no ammunition is loaded, dealing 1d6 damage with no range increment penalty within 60 feet."
+    },
+    {
+      "item_name": "Astral Compass",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 14,
+      "rarity": "Unique",
+      "traits": [
+        "invested",
+        "magical",
+        "divination"
+      ],
+      "price": "500 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 32,
+      "description": "A spectral organ removed from an astral creature, beating in time with a chosen location. Once tethered to a place, location, or person via a 1-hour ritual, it always points unerringly toward that target across any plane."
+    },
+    {
+      "item_name": "Beast Heart",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 33,
+      "description": "The still-warm heart of a magical beast, drawn out whole. Required to brew a Potion of Bestial Form or Animal Aspect, granting the resulting potion a +1 item bonus to a chosen attribute while transformed."
+    },
+    {
+      "item_name": "Mystical Fang",
+      "category": "Crafting Material",
+      "subcategory": "Tooth",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 34,
+      "description": "A tooth pried from a magical beast, gleaming with residual enchantment. A dagger crafted from a mystical fang counts as +1 striking and is treated as a magical weapon for the purpose of overcoming resistances."
+    },
+    {
+      "item_name": "Enchanted Claw",
+      "category": "Crafting Material",
+      "subcategory": "Claw",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 35,
+      "description": "A claw with traces of magical aura still clinging to it. Used as a focus when etching runes on handwraps of mighty blows, reducing the cost of inscribing potency runes by 10%."
+    },
+    {
+      "item_name": "Magical Blood",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 36,
+      "description": "Blood that retains a faint magical resonance, drawn from a beast within an hour of death. Refined into magical inks for scrolls or used as a healing reagent that adds +1 to the HP healed by any potion it is brewed into."
+    },
+    {
+      "item_name": "Beast Marrow",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "22 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 37,
+      "description": "Rich, oily marrow from a magical beast's bones. A required component for strength-based elixirs; ingestion grants a +1 item bonus to Athletics for 10 minutes."
+    },
+    {
+      "item_name": "Charged Sinew",
+      "category": "Crafting Material",
+      "subcategory": "Sinew",
+      "item_level": 6,
+      "rarity": "Rare",
+      "traits": [
+        "electricity",
+        "magical"
+      ],
+      "price": "60 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 38,
+      "description": "Sinew from a beast that channeled lightning, tingling faintly to the touch. A bowstring made from charged sinew adds 1d4 electricity damage to ranged attacks made with the bow."
+    },
+    {
+      "item_name": "Owlbear Pelt",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "50 gp",
+      "bulk": "1",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 39,
+      "description": "The thick, feathered pelt of an owlbear, fierce and warm. Worn as a cloak, it grants cold resistance 2 and a +1 item bonus to Intimidation checks against animals."
+    },
+    {
+      "item_name": "Gorgon Scale",
+      "category": "Crafting Material",
+      "subcategory": "Scale",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 40,
+      "description": "A heavy iron-gray scale from a gorgon, immune to its own breath weapon. Armor or shields incorporating gorgon scales grant the wearer a +1 item bonus to saves against petrification."
+    },
+    {
+      "item_name": "Hippogriff Feather",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 41,
+      "description": "A bold, striped feather from a hippogriff's wing. Used as fletching grants the arrow the feather fall property if the wielder falls within 1 round of firing; also a required component for Feather Fall scrolls."
+    },
+    {
+      "item_name": "Chimera Tri-Heart",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "200 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 42,
+      "description": "The fused triple heart of a chimera, each chamber distinct. Required ingredient when brewing a multi-attack mutagen; the resulting mutagen grants its imbiber an additional Strike on a successful Strike for 1 round, 1/day."
+    },
+    {
+      "item_name": "Griffon Talon",
+      "category": "Crafting Material",
+      "subcategory": "Talon",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 43,
+      "description": "A massive, hooked talon from a griffon. Mounted onto a haft, it functions as a +0 climbing pick or as an aerial weapon (treat as light pick) with the agile trait."
+    },
+    {
+      "item_name": "Basilisk Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "occult"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 44,
+      "description": "A cloudy yellow eye that still seems to follow you across the room. Required component for crafting scrolls of Flesh to Stone; reduces the gp cost of the scroll by 25%."
+    },
+    {
+      "item_name": "Cockatrice Feather",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "90 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 45,
+      "description": "A barbed, half-feathered half-scaled plume from a cockatrice. Carved into a quill, it serves as the writing implement for petrification spell scrolls."
+    },
+    {
+      "item_name": "Stirge Proboscis",
+      "category": "Crafting Material",
+      "subcategory": "Animal Part",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "4 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 46,
+      "description": "The hollow, blood-draining needle of a stirge, surprisingly clean once flushed. Used as a medical leeching instrument or as the working end of a phlebotomist's tool."
+    },
+    {
+      "item_name": "Bulette Shell Plate",
+      "category": "Crafting Material",
+      "subcategory": "Shell",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [],
+      "price": "120 gp",
+      "bulk": "2",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 47,
+      "description": "A massive, ridged plate of bulette shell, harder than steel. A shield crafted from bulette shell gains +2 to Hardness and increases its HP by 5."
+    },
+    {
+      "item_name": "Displacer Beast Hide",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "illusion"
+      ],
+      "price": "250 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 48,
+      "description": "The shifting black hide of a displacer beast, never quite where you look for it. Used as the primary material for crafting a Cloak of Displacement (Lesser), reducing the gp crafting cost by 30%."
+    },
+    {
+      "item_name": "Pegasus Feather",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 49,
+      "description": "A long, gleaming white feather from a pegasus's wing. A required component when crafting a pair of Wings of Flying, halving the brewing time."
+    },
+    {
+      "item_name": "Hydra Heart",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "healing"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 50,
+      "description": "The pulsing, regenerating heart of a hydra, still trying to mend itself. Required ingredient for a Regeneration Elixir, granting fast healing 5 for 1 minute upon consumption."
+    },
+    {
+      "item_name": "Celestial Feather",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "good",
+        "holy"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 51,
+      "description": "A gleaming feather shed by an angel, faintly humming with celestial harmony. A required component when creating Holy Water, doubling the volume produced from a single ritual."
+    },
+    {
+      "item_name": "Halo Fragment",
+      "category": "Magical Component",
+      "subcategory": "Light Source",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "holy",
+        "light",
+        "magical"
+      ],
+      "price": "250 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 52,
+      "description": "A shard of solidified light, broken from the halo of a slain celestial. Sheds bright light in a 30-foot radius and required for crafting Daylight scrolls; the resulting scroll's daylight counts as natural sunlight."
+    },
+    {
+      "item_name": "Sacred Ichor",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "good",
+        "holy",
+        "healing"
+      ],
+      "price": "60 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 53,
+      "description": "Liquid gold drawn from a celestial's wound, warm and faintly luminous. Used in healing potion crafting, it grants +1 to the HP recovered when used in the Heal action."
+    },
+    {
+      "item_name": "Divine Tear",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "good",
+        "holy"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 54,
+      "description": "A single tear shed by a celestial, captured before it could vanish. Used as the focal component for Lesser Restoration scrolls and rituals; halves the time to brew."
+    },
+    {
+      "item_name": "Empyreal Bone",
+      "category": "Crafting Material",
+      "subcategory": "Bone",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "holy"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 55,
+      "description": "A bone from a celestial, white as polished moonstone and warm to the touch. Carved into a holy symbol that grants its wielder a +1 item bonus to attack rolls against creatures with the evil trait."
+    },
+    {
+      "item_name": "Solar Dust",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fire",
+        "light"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 56,
+      "description": "Glowing golden powder collected from a solar's wake. Sheds bright light in a 60-foot radius for 1 hour and counts as sunlight, dealing 1d8 damage to undead and fiends in the area each round."
+    },
+    {
+      "item_name": "Sanctified Blood",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "good",
+        "holy"
+      ],
+      "price": "75 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 57,
+      "description": "Blood from a celestial, still warm and golden. The primary ingredient for Holy Water; one vial yields 4 doses of holy water when properly consecrated."
+    },
+    {
+      "item_name": "Gold-Touched Scale",
+      "category": "Crafting Material",
+      "subcategory": "Scale",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "holy"
+      ],
+      "price": "200 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 58,
+      "description": "A radiant scale from a celestial dragon or drake, gleaming like polished electrum. Armor crafted with gold-touched scales gains the holy weapon property at no rune slot cost (must be applied during crafting)."
+    },
+    {
+      "item_name": "Celestial Heart",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 13,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "holy",
+        "magical"
+      ],
+      "price": "400 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 59,
+      "description": "The still-glowing heart of a celestial. A required ritual component for Resurrect; reduces the gp cost of the resurrection ritual by 50% and grants the caster a +2 circumstance bonus to the primary check."
+    },
+    {
+      "item_name": "Angelic Plumage",
+      "category": "Crafting Material",
+      "subcategory": "Feather",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "good"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 60,
+      "description": "Soft, white feathers shed naturally from a celestial. Used to trim sacred vestments; clothing trimmed in angelic plumage grants its wearer a +1 status bonus to Religion checks."
+    },
+    {
+      "item_name": "Holy Essence",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 7,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "good",
+        "holy",
+        "healing"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 61,
+      "description": "A vial of distilled celestial light, shimmering with divine grace. Used in crafting Moderate Healing Potions; the resulting potion heals 1d6 additional HP."
+    },
+    {
+      "item_name": "Empyrean Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "divination",
+        "good"
+      ],
+      "price": "220 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 62,
+      "description": "An eye still bright with divine sight, taken from an empyreal celestial. Required component for True Seeing scrolls; halves the time required to scribe."
+    },
+    {
+      "item_name": "Songbird Throat",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "magical",
+        "sonic"
+      ],
+      "price": "180 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 63,
+      "description": "The vocal apparatus of a Lillend, preserved with sacred salts. When integrated into a bardic instrument during crafting, the instrument grants its bearer a +1 item bonus to Performance checks and adds 1d4 sonic damage to performance-based spells."
+    },
+    {
+      "item_name": "Trumpet Archon Reed",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "good",
+        "magical",
+        "sonic"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 64,
+      "description": "A reed from the trumpet of a Trumpet Archon, eternally vibrating with divine song. Carved into a wind instrument, the player can cast Sound Burst (heightened to 2nd) once per day."
+    },
+    {
+      "item_name": "Solar Sword Shard",
+      "category": "Magical Component",
+      "subcategory": "Rune Material",
+      "item_level": 18,
+      "rarity": "Unique",
+      "traits": [
+        "fire",
+        "good",
+        "holy",
+        "magical"
+      ],
+      "price": "800 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 65,
+      "description": "A fragment of a solar's flaming sword, still burning with divine fire. Required as the catalyst component when etching a Greater Flaming or Holy property rune; halves the rune's gp cost."
+    },
+    {
+      "item_name": "Animating Core",
+      "category": "Magical Component",
+      "subcategory": "Construct Component",
+      "item_level": 7,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "75 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 66,
+      "description": "A pulsing crystal core that powered a construct, still humming with residual energy. Functions as a substitute spellheart with 1 cantrip charge, or can be used as a power source for crafting other constructs."
+    },
+    {
+      "item_name": "Magical Wiring",
+      "category": "Crafting Material",
+      "subcategory": "Construct Component",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 67,
+      "description": "Spool of fine, faintly humming filament salvaged from a clockwork construct. A required material when crafting Clockwork Constructs or magical traps; grants +1 item bonus to the resulting trap's DC."
+    },
+    {
+      "item_name": "Reinforced Plating",
+      "category": "Crafting Material",
+      "subcategory": "Armor Component",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "15 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 68,
+      "description": "Heavy, articulated plates from a construct's body. When integrated into a shield during crafting, the shield gains +1 Hardness."
+    },
+    {
+      "item_name": "Clockwork Gears",
+      "category": "Crafting Material",
+      "subcategory": "Mechanical",
+      "item_level": 2,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "10 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 69,
+      "description": "A bundle of small brass gears, springs, and pins. Required for crafting mechanical traps, clockwork tools, or timepieces; a clean set grants +1 item bonus to relevant Crafting checks."
+    },
+    {
+      "item_name": "Stone Fragment",
+      "category": "Crafting Material",
+      "subcategory": "Stone",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "earth",
+        "magical"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 70,
+      "description": "A chunk of magic-imbued stone broken from a stone golem. Crafted into sling stones (10 per chunk) deals an additional 1 damage; or used to reinforce items, granting +1 to Hardness."
+    },
+    {
+      "item_name": "Flesh Patches",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "necromancy"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 71,
+      "description": "Hand-stitched panels of flesh harvested from a flesh golem. Required component for necromantic crafting and the assembly of new flesh constructs; can be applied as a healing patch granting fast healing 1 for 1 minute."
+    },
+    {
+      "item_name": "Glass Eyes",
+      "category": "Treasure",
+      "subcategory": "Trinket",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 72,
+      "description": "A pair of perfectly polished glass eyes from an animated mannequin or similar construct. Useful as decorative items or as a focus for scrying spells, granting a +1 item bonus to Scry's targeting check."
+    },
+    {
+      "item_name": "Crystal Heart",
+      "category": "Magical Component",
+      "subcategory": "Construct Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 73,
+      "description": "A crystalline heart that powered a golem, still pulsing with stored magic. Can hold a single spell of 4th rank or lower for later release; recharging requires a 1-day ritual and the matching spell slot."
+    },
+    {
+      "item_name": "Soul Gem",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "200 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 74,
+      "description": "A faceted gem with a glimmer of trapped soul-light still flickering inside. Required component for soul-binding rituals and the creation of bound undead servants."
+    },
+    {
+      "item_name": "Animation Glyph",
+      "category": "Magical Component",
+      "subcategory": "Glyph",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "50 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 75,
+      "description": "An etched glyph carefully removed from a construct's chassis. Used as a focus for Animate Object scrolls, halving the gp cost to scribe."
+    },
+    {
+      "item_name": "Animating Rune",
+      "category": "Magical Component",
+      "subcategory": "Rune",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "250 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 76,
+      "description": "An intact animating rune carved into a small plate. Affixed to a Tiny or smaller object during a 1-day ritual, it animates the object as a minor construct (using statistics for an Animated Tool) under the binder's command."
+    },
+    {
+      "item_name": "Clay Body Fragment",
+      "category": "Crafting Material",
+      "subcategory": "Construct Component",
+      "item_level": 2,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "12 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 77,
+      "description": "A handful of magically conditioned clay from a clay golem, malleable yet stable. Excellent for sculpting and used as a primary material in golem-construction or sympathetic magic."
+    },
+    {
+      "item_name": "Heat Sink Coil",
+      "category": "Crafting Material",
+      "subcategory": "Construct Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 78,
+      "description": "A tightly coiled metal piece harvested from an inevitable or steam-driven construct. Integrated into armor, it grants the wearer fire resistance 2."
+    },
+    {
+      "item_name": "Dragon Heart",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 13,
+      "rarity": "Rare",
+      "traits": [
+        "dragon",
+        "magical"
+      ],
+      "price": "500 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 79,
+      "description": "The still-warm heart of a dragon, twice the size of a man's torso. A potent ritual component for resistance potions and dragon-bound rituals; potions using a dragon heart grant +2 to the resistance value."
+    },
+    {
+      "item_name": "Dragon Wing Membrane",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "dragon"
+      ],
+      "price": "200 gp",
+      "bulk": "2",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 80,
+      "description": "Tough, leathery membrane stretched between dragon wing-bones. Tents and cloaks crafted from dragon wing membrane grant resistance 5 to the dragon's energy type and weather no environmental damage."
+    },
+    {
+      "item_name": "Dragon Eye",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "dragon",
+        "divination",
+        "magical"
+      ],
+      "price": "400 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 81,
+      "description": "The piercing, slit-pupiled eye of a dragon, preserved in oil. Required component for True Seeing scrolls (greater) or Crystal Ball construction; halves the gp crafting cost of the latter."
+    },
+    {
+      "item_name": "Dragon Sinew",
+      "category": "Crafting Material",
+      "subcategory": "Sinew",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "dragon"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 82,
+      "description": "Cord-thick sinew from a dragon, strong enough to suspend a wagon. A bowstring made from dragon sinew grants the bow a +1 item bonus to damage rolls."
+    },
+    {
+      "item_name": "Dragon Horn",
+      "category": "Crafting Material",
+      "subcategory": "Horn",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "dragon"
+      ],
+      "price": "250 gp",
+      "bulk": "1",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 83,
+      "description": "A spiraling, polished horn taken from a dragon's brow. Carved into a horn instrument that emits a fearsome blast — once per day, the wielder can cast Fear (1st rank) at DC 25 by sounding the horn."
+    },
+    {
+      "item_name": "Breath Gland (Fire)",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "dragon",
+        "fire"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 84,
+      "description": "The intact breath gland of a fire-breathing dragon, still warm to the touch. Required component for crafting a Greater Flaming property rune or 4 doses of Alchemist's Fire (Greater)."
+    },
+    {
+      "item_name": "Breath Gland (Cold)",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "cold",
+        "consumable",
+        "dragon"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 85,
+      "description": "The frozen breath gland of an ice-breathing dragon, painfully cold to handle. Required component for crafting a Greater Frost property rune or 4 doses of Frost Vial (Greater)."
+    },
+    {
+      "item_name": "Breath Gland (Acid)",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "acid",
+        "alchemical",
+        "consumable",
+        "dragon"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 86,
+      "description": "An acid-leaking breath gland from a green or black dragon, kept in a glass jar. Required component for crafting a Greater Corrosive property rune or 4 doses of Acid Flask (Greater)."
+    },
+    {
+      "item_name": "Breath Gland (Electricity)",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "dragon",
+        "electricity"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 87,
+      "description": "A breath gland that arcs with stray sparks. Required component for crafting a Greater Shock property rune or 4 doses of Bottled Lightning (Greater)."
+    },
+    {
+      "item_name": "Breath Gland (Poison)",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "dragon",
+        "poison"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 88,
+      "description": "A black, ichor-streaked gland that fumes faintly when opened. Required component for a Greater Corrosive rune or yields 4 doses of a powerful injury poison (DC 28 Fortitude, 2d6 poison damage on each stage)."
+    },
+    {
+      "item_name": "Dragon Liver",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "dragon",
+        "healing"
+      ],
+      "price": "175 gp",
+      "bulk": "1",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 89,
+      "description": "The dense, dark liver of a dragon, large enough to fill a barrel. Required component for crafting Antitoxin or Antiplague (major); a single liver yields 6 doses."
+    },
+    {
+      "item_name": "Gizzard Stone",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "dragon",
+        "magical"
+      ],
+      "price": "200 gp",
+      "bulk": "L",
+      "usage": "carried",
+      "source_book": "Homebrew",
+      "page": 90,
+      "description": "A polished stone removed from a dragon's gizzard, swirled with veins of metal. While carried, the bearer gains a +1 item bonus to Society checks to appraise treasure and to find hidden coins or gems within 30 feet (1/day, 1 hour duration)."
+    },
+    {
+      "item_name": "Dragon Egg",
+      "category": "Treasure",
+      "subcategory": "Curio",
+      "item_level": 17,
+      "rarity": "Unique",
+      "traits": [
+        "dragon"
+      ],
+      "price": "5,000 gp",
+      "bulk": "2",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 91,
+      "description": "An enormous, leathery egg, warm to the touch and pulsing faintly within. With proper care (Wisdom DC 30 over 6 months), it may hatch into a wyrmling of the appropriate dragon variety. Black-market value is staggering."
+    },
+    {
+      "item_name": "Hoard Treasure",
+      "category": "Trade Good",
+      "subcategory": "Coin Hoard",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 92,
+      "description": "Coins, polished gems, and small valuables found in the dragon's stomach or gizzard. The bearer of dragon-gizzard treasure gains a +1 status bonus to Diplomacy checks against creatures who covet treasure (1/day for 1 hour)."
+    },
+    {
+      "item_name": "Tail Spike",
+      "category": "Crafting Material",
+      "subcategory": "Spike",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "dragon"
+      ],
+      "price": "60 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 93,
+      "description": "A wickedly sharp spine harvested from a dragon's tail. Mounted on a polearm haft, it functions as a +0 striking glaive; or as massive ammunition for siege weapons (deals +1d8 damage)."
+    },
+    {
+      "item_name": "Dragon Whisker",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "dragon",
+        "magical"
+      ],
+      "price": "175 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 94,
+      "description": "A long, sensitive whisker plucked from a dragon's snout. Required component for Detect Magic scrolls (greater) or sensory enhancement potions, granting +2 to Perception for 10 minutes when used in a brew."
+    },
+    {
+      "item_name": "Crystallized Flame",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fire"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 95,
+      "description": "A jagged shard of frozen, faintly glowing flame from a fire elemental. Required component for crafting Alchemist's Fire (Greater); also functions as ammunition for elemental-themed weapons."
+    },
+    {
+      "item_name": "Frozen Heart",
+      "category": "Magical Component",
+      "subcategory": "Elemental Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "cold",
+        "elemental",
+        "magical"
+      ],
+      "price": "120 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 96,
+      "description": "The crystalline core of a cold elemental, eternally weeping frost. Used to craft a Frost Vial (Greater) — instead of the standard 2d6 cold, it deals 4d6 cold and applies the slowed 1 condition for 1 round on a hit."
+    },
+    {
+      "item_name": "Stormcloud Fragment",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "electricity",
+        "elemental"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 97,
+      "description": "A pinch of solid storm-vapor harvested from an air elemental, crackling between the fingers. Used to craft Bottled Lightning (Major) or as material for shock weapon enhancements."
+    },
+    {
+      "item_name": "Granite Core",
+      "category": "Crafting Material",
+      "subcategory": "Stone",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "earth",
+        "elemental"
+      ],
+      "price": "60 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 98,
+      "description": "A dense block of stone from an earth elemental's core, harder than any quarried granite. Used in shield rune crafting; a shield reinforced with a granite core gains +1 to Hardness."
+    },
+    {
+      "item_name": "Magma Stone",
+      "category": "Alchemical",
+      "subcategory": "Bomb",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "bomb",
+        "consumable",
+        "fire"
+      ],
+      "price": "90 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 99,
+      "description": "A jagged stone laced with veins of slow-flowing lava. Thrown as a bomb, deals 3d6 fire damage with 1d6 splash damage and creates difficult terrain in a 5-foot radius for 1 minute."
+    },
+    {
+      "item_name": "Wind Essence",
+      "category": "Magical Component",
+      "subcategory": "Elemental Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "air",
+        "elemental",
+        "magical"
+      ],
+      "price": "40 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 100,
+      "description": "A jar of howling wind, pressurized and faintly cool. Released, functions as a Gust of Wind scroll (1/use); also used as a primary component for air-themed magic items."
+    },
+    {
+      "item_name": "Tidewater Vial",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "elemental",
+        "water"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 101,
+      "description": "A vial that endlessly refills with seawater, taken from a water elemental. Provides 1 gallon of fresh water per day when uncorked, or can be poured out as a Hydraulic Push (1st rank) effect once per day."
+    },
+    {
+      "item_name": "Sand Fragment",
+      "category": "Crafting Material",
+      "subcategory": "Stone",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "5 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 102,
+      "description": "A pouch of fine, magically-tinged sand from a sand elemental. Useful in glassmaking (yields +10% volume) or as a fine abrasive for polishing weapons (grants +1 item bonus to a Crafting check to repair)."
+    },
+    {
+      "item_name": "Salt Crystal",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 103,
+      "description": "A pure white crystal of magical salt from a brine elemental. Sprinkled in a 5-foot circle, prevents incorporeal undead from crossing it for 1 hour."
+    },
+    {
+      "item_name": "Smoke Plume",
+      "category": "Alchemical",
+      "subcategory": "Bomb",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "bomb",
+        "consumable"
+      ],
+      "price": "10 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 104,
+      "description": "A bottled cloud of smoke from a smoke elemental. When thrown, creates a 10-foot cloud of dense smoke for 1 minute, granting concealment to creatures within."
+    },
+    {
+      "item_name": "Ash Pile",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 105,
+      "description": "Hot ash gathered from a magma elemental's wake. A potent flux for blacksmithing (grants +1 item bonus to Crafting checks to forge metal items) or used in glasswork."
+    },
+    {
+      "item_name": "Mud Concentrate",
+      "category": "Crafting Material",
+      "subcategory": "Stone",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 106,
+      "description": "Magically dense mud from a mud elemental, dries to stone-hardness within a minute. Used as rapid-construction mortar; a single jar bonds 30 cubic feet of stone in 1 minute."
+    },
+    {
+      "item_name": "Wisp of Negative Energy",
+      "category": "Magical Component",
+      "subcategory": "Elemental Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy",
+        "negative"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 107,
+      "description": "A bottle of writhing black mist, draining warmth from anything it touches. Required component for major necromancy crafting; halves the gp cost of crafting an undead-themed item."
+    },
+    {
+      "item_name": "Spark of Positive Energy",
+      "category": "Magical Component",
+      "subcategory": "Elemental Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "healing",
+        "magical",
+        "positive"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 108,
+      "description": "A jar of pure, dancing white-gold light. When used to brew a healing potion, the potion heals an additional 1d8 HP and removes the sickened condition."
+    },
+    {
+      "item_name": "Ectoplasmic Residue",
+      "category": "Magical Component",
+      "subcategory": "Rune Material",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "incorporeal",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 109,
+      "description": "Slick, vaguely opalescent goo that lingers after an incorporeal undead is destroyed. Required component for etching the Ghost Touch property rune; halves the rune's gp cost."
+    },
+    {
+      "item_name": "Ethereal Essence",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "incorporeal",
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 110,
+      "description": "Vaporous mist captured from a creature native to the Ethereal Plane. Required component for crafting Ethereal Jaunt scrolls; halves the time required to scribe."
+    },
+    {
+      "item_name": "Spectral Dust",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "incorporeal"
+      ],
+      "price": "45 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 111,
+      "description": "Powdered ectoplasm with a faintly luminescent shimmer. Sprinkled on the air, reveals invisible creatures within 30 feet for 1 round; or used in invisibility potions to add 1 round of duration."
+    },
+    {
+      "item_name": "Veil Fragment",
+      "category": "Magical Component",
+      "subcategory": "Cloth",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "incorporeal",
+        "magical"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 112,
+      "description": "A scrap of impossibly thin gauze from the boundary between Material and Ethereal. Required as the primary fabric for crafting a Cloak of Etherealness, halving the gp cost."
+    },
+    {
+      "item_name": "Phasing Membrane",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "200 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 113,
+      "description": "Translucent membrane that briefly phases out of reality when struck. Armor crafted from phasing membrane lets the wearer reduce the first damage they take each round by 5 (force damage only)."
+    },
+    {
+      "item_name": "Ghost Silver",
+      "category": "Material",
+      "subcategory": "Precious Material",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "precious"
+      ],
+      "price": "250 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 114,
+      "description": "A spectral metal forged from condensed ectoplasm, gleaming with otherworldly light. Weapons made of ghost silver bypass the resistances of incorporeal creatures and deal full damage to them."
+    },
+    {
+      "item_name": "Borderland Splinter",
+      "category": "Magical Component",
+      "subcategory": "Planar Component",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "60 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 115,
+      "description": "A fragment of the wall between worlds, hard yet shifting in the hand. Required component for Pass Through Earth scrolls or rituals to bypass solid barriers."
+    },
+    {
+      "item_name": "Wispy Tail",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical"
+      ],
+      "price": "40 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 116,
+      "description": "The wispy, tail-like extremity of an ethereal creature. Functions as a quill that can write on incorporeal mediums and on smoke, water, or air; messages persist for 10 minutes."
+    },
+    {
+      "item_name": "Fey Dust",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fey",
+        "sleep"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 117,
+      "description": "Glittering dust shaken from fey wings. Used to craft Sleep Arrows (DC 19 Will save or fall unconscious for 1 minute) or as a primary component for dream-themed potions."
+    },
+    {
+      "item_name": "Pixie Wing",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fey"
+      ],
+      "price": "35 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 118,
+      "description": "An iridescent pixie wing, fragile as a moth's. Used in Feather Fall potions to extend duration to 10 minutes, or as the focal component for minor flight scrolls."
+    },
+    {
+      "item_name": "Fey Heart",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "enchantment",
+        "fey",
+        "magical"
+      ],
+      "price": "250 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 119,
+      "description": "A still-fluttering heart from a slain fey, glowing softly. Required component for charm or dominate person rituals; grants the caster +1 to the primary check."
+    },
+    {
+      "item_name": "Faerie Blood",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fey",
+        "light"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 120,
+      "description": "Glowing pink blood drawn from a faerie's wound. Bottled, functions as a Faerie Fire scroll once per day; or used as the primary reagent in light-based potions."
+    },
+    {
+      "item_name": "Mystical Hair",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "enchantment",
+        "fey",
+        "magical"
+      ],
+      "price": "60 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 121,
+      "description": "A long strand of fey hair — silver, gold, or impossibly green. Used in subtle enchantment crafting; clothing or jewelry incorporating mystical hair grants the wearer a +1 item bonus to Diplomacy checks."
+    },
+    {
+      "item_name": "Dryad Bark",
+      "category": "Crafting Material",
+      "subcategory": "Wood",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "fey",
+        "plant"
+      ],
+      "price": "40 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 122,
+      "description": "A panel of bark peeled from a dryad's tree-bonded form, lightweight yet stronger than steel. A serviceable substitute for Darkwood, granting -1 Bulk on items crafted from it."
+    },
+    {
+      "item_name": "Will-o'-Wisp Essence",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "fey",
+        "light",
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 123,
+      "description": "Captured swamp-light from a destroyed will-o'-wisp. Used in crafting a Lantern of Revealing or in light-based traps that deal 2d6 force damage and trigger truesight in the area."
+    },
+    {
+      "item_name": "Redcap's Cap",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "cursed",
+        "fey",
+        "magical"
+      ],
+      "price": "75 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 124,
+      "description": "A red felt cap soaked in the blood of countless victims. While worn, the wielder's weapon counts as +1 striking, but the wielder gains the cursed trait — they cannot rest until they have drawn blood with the weapon at least once that day."
+    },
+    {
+      "item_name": "Pooka Fur",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "fey"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 125,
+      "description": "Soft, glittering fur from a fey shapeshifter. Sewn into a cloak, the wearer can reroll a single failed save against an illusion effect once per day."
+    },
+    {
+      "item_name": "Satyr Horn",
+      "category": "Magical Item",
+      "subcategory": "Instrument",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "enchantment",
+        "fey",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 126,
+      "description": "A spiraled satyr's horn carved into a set of pipes. Once per day, the player can attempt to charm all listeners within 30 feet (DC 19 Will save) for 1 minute."
+    },
+    {
+      "item_name": "Fey Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "divination",
+        "fey"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 127,
+      "description": "An iridescent fey eye, still bright with second sight. Required component for True Seeing scrolls or potions; the resulting potion's True Seeing also reveals concealed faerie creatures."
+    },
+    {
+      "item_name": "Glamour Essence",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "fey",
+        "illusion",
+        "magical"
+      ],
+      "price": "120 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 128,
+      "description": "A shimmering essence harvested from a fey illusionist. Required component when crafting Disguise Self scrolls or any illusion-based magical items; halves the gp cost."
+    },
+    {
+      "item_name": "Faewine",
+      "category": "Magical Item",
+      "subcategory": "Drink",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "consumable",
+        "fey",
+        "hallucinogen",
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 129,
+      "description": "Wine fermented from fey-grown grapes, glowing pink in the bottle. A drinker experiences vivid hallucinations for 1 hour, but gains a +2 status bonus to Performance checks during that time. DC 20 Fortitude or take a -1 status penalty to Will saves while affected."
+    },
+    {
+      "item_name": "Unicorn Horn",
+      "category": "Magical Item",
+      "subcategory": "Wand",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "fey",
+        "good",
+        "healing",
+        "magical"
+      ],
+      "price": "750 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 130,
+      "description": "A spiraling silver horn from a unicorn, warm with residual magic. The horn detects poison within 30 feet at will; the bearer can also cast Heal (3rd rank) once per day by touching the wounded with the horn. Can be made into a Holy Water analog (greater) by grinding."
+    },
+    {
+      "item_name": "Unicorn Hair",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "fey",
+        "good",
+        "healing",
+        "magical"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 131,
+      "description": "Long, silver hair from a unicorn's mane. Used as the core for crafting healing-themed wands; or as a primary reagent in healing potions, granting +2 HP healed per dose."
+    },
+    {
+      "item_name": "Brownie Tools",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "fey",
+        "magical"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 132,
+      "description": "A set of tiny crafting tools (knife, needle, awl) that work themselves when not observed. While left near a project for 8 hours, they make minor repairs or finishings — counts as Aid for one Crafting check per day."
+    },
+    {
+      "item_name": "Dryad's Acorn",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "fey",
+        "magical",
+        "plant"
+      ],
+      "price": "100 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 133,
+      "description": "A glowing acorn from a dryad's bonded tree, still tied to nature. Planted in soil and tended for 1 month, it grows into a Tiny awakened tree — a potential plant familiar with the Speech ability."
+    },
+    {
+      "item_name": "Sprite Wings",
+      "category": "Crafting Material",
+      "subcategory": "Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "fey"
+      ],
+      "price": "18 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 134,
+      "description": "A pair of iridescent sprite wings. Used as fletching for arrows; arrows so fletched ignore concealment from cover and gain +1 to attack rolls."
+    },
+    {
+      "item_name": "Quickling Sinew",
+      "category": "Crafting Material",
+      "subcategory": "Sinew",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "fey"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 135,
+      "description": "Sinew from a quickling, taut and almost too quick to handle. Required component when crafting Boots of Speed (or Lesser); reduces gp cost by 25%."
+    },
+    {
+      "item_name": "Boggard Croak Sac",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fey",
+        "sonic"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 136,
+      "description": "The vocal sac of a boggard, distended and faintly croaking. Brewed into a Voice-Altering Potion (mimic any voice for 10 minutes), or used as a thunder bomb component to add 1d4 sonic damage."
+    },
+    {
+      "item_name": "Nymph Tear",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fey",
+        "healing"
+      ],
+      "price": "300 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 137,
+      "description": "A tear shed by a nymph, captured before it could vanish. Required component for crafting a Major Healing Potion, granting it +5 HP healed and removing one disease or poison effect."
+    },
+    {
+      "item_name": "Fiendish Hide",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "evil",
+        "fiend"
+      ],
+      "price": "45 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 138,
+      "description": "Demon or devil hide tanned with brimstone. Armor crafted from fiendish hide grants fire resistance 2 and a +1 item bonus to AC against attacks made by good-aligned creatures."
+    },
+    {
+      "item_name": "Fiendish Horn",
+      "category": "Crafting Material",
+      "subcategory": "Horn",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "evil",
+        "fiend"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 139,
+      "description": "A jagged horn from a demon or devil, still warm. Carved into an unholy symbol, it grants the wielder a +1 item bonus to Intimidation checks made to Demoralize."
+    },
+    {
+      "item_name": "Demon Tooth",
+      "category": "Crafting Material",
+      "subcategory": "Tooth",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "evil",
+        "fiend"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 140,
+      "description": "A wickedly serrated demon tooth, still smelling of brimstone. Mounted as a dagger, it counts as a magical weapon and adds +1 evil damage to attacks against good-aligned creatures."
+    },
+    {
+      "item_name": "Hellfire Ember",
+      "category": "Alchemical",
+      "subcategory": "Bomb",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "bomb",
+        "consumable",
+        "evil",
+        "fire",
+        "fiend"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 141,
+      "description": "A burning ember from a fiend's body, eternally smoldering. Thrown as a bomb, deals 4d6 fire damage and 1d6 evil damage with 2d6 splash; ignites unattended objects in a 10-foot radius."
+    },
+    {
+      "item_name": "Devil's Contract Scrap",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "fiend",
+        "magical"
+      ],
+      "price": "75 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 142,
+      "description": "A torn fragment of a contract written in infernal blood. While held, the bearer gains a +1 item bonus to Society checks regarding legal matters; if used as a focus during a binding agreement, the agreement gains supernatural enforcement."
+    },
+    {
+      "item_name": "Fiendish Blood",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "evil",
+        "fiend"
+      ],
+      "price": "60 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 143,
+      "description": "Black, smoking blood from a slain fiend. The primary ingredient in Unholy Water (analog to Holy Water but deals damage to good creatures); also used in bane mutagens against good targets."
+    },
+    {
+      "item_name": "Imp Wing",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "evil",
+        "fiend",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 144,
+      "description": "A leathery, batlike imp wing. Used as a focus for fiendish familiar bonding, or as a minor flight charm — once per day, the wearer can fall feather-light for 1 round."
+    },
+    {
+      "item_name": "Pit Fiend Scale",
+      "category": "Material",
+      "subcategory": "Precious Material",
+      "item_level": 13,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "fiend",
+        "fire"
+      ],
+      "price": "400 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 145,
+      "description": "A massive black scale from a pit fiend, immune to flame. Required material for crafting Hellish Armor (Greater); the resulting armor grants fire immunity 1/day for 1 minute."
+    },
+    {
+      "item_name": "Succubus Tear",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "cursed",
+        "evil",
+        "enchantment",
+        "fiend"
+      ],
+      "price": "250 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 146,
+      "description": "A tear shed by a succubus or incubus, dark with regret. Required component for Charm Person scrolls (greater); used in cursed love potions that grant the target the charmed condition for 1 day (DC 26 Will save)."
+    },
+    {
+      "item_name": "Cloven Hoof",
+      "category": "Crafting Material",
+      "subcategory": "Hoof",
+      "item_level": 2,
+      "rarity": "Common",
+      "traits": [
+        "evil",
+        "fiend"
+      ],
+      "price": "15 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 147,
+      "description": "The cloven hoof of a fiend, blackened and scorched. Mounted as a fitting for cursed boots (grants speed but inflicts a -1 to Reflex saves), or rendered as an ingredient in haste potions."
+    },
+    {
+      "item_name": "Fiendish Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "evil",
+        "fiend"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 148,
+      "description": "A glowing red fiend eye that watches even after harvest. Used to brew Darkvision Potion (greater, 60-foot darkvision for 8 hours) or as a scrying focus."
+    },
+    {
+      "item_name": "Damned Soul Residue",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "magical",
+        "necromancy"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 149,
+      "description": "A wisp of trapped damned soul, screaming faintly. Used as a focus in soul-binding rituals or in the inscription of unholy weapons; weapons so blessed deal +1d6 evil damage on a critical hit."
+    },
+    {
+      "item_name": "Tail Barb",
+      "category": "Ammunition",
+      "subcategory": "Dart",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "evil",
+        "fiend",
+        "poison"
+      ],
+      "price": "25 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 150,
+      "description": "A barbed tail-tip from a fiend, pre-coated with infernal venom. Functions as a +1 dart that delivers a single dose of poison (DC 22 Fort, 1d6 poison damage and sickened 1)."
+    },
+    {
+      "item_name": "Forked Tongue",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fiend"
+      ],
+      "price": "40 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 151,
+      "description": "A forked tongue from a devil or serpent-like fiend. Required component for a Glibness Potion (1-hour duration); the imbiber gains a +1 item bonus to Deception checks while the potion lasts."
+    },
+    {
+      "item_name": "Demonic Ichor",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "acid",
+        "alchemical",
+        "consumable",
+        "evil",
+        "fiend"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 152,
+      "description": "Caustic black blood from an abyssal demon. Used to craft Acid Flask (Greater) or as a primary reagent in demonic enhancement mutagens (+1 status to Athletics for 1 minute, sickened 1 afterward)."
+    },
+    {
+      "item_name": "Hag Eye",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "evil",
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 153,
+      "description": "An eye plucked from a hag's coven, still able to peer into other minds. Functions as a focus for a coven's communal scrying — three eyes used together can scry on any creature within 1 mile (DC 27 Will save)."
+    },
+    {
+      "item_name": "Devil Bone",
+      "category": "Crafting Material",
+      "subcategory": "Bone",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "fiend"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 154,
+      "description": "Bone from a slain devil, blackened by infernal fire. Weapons crafted from devil bone count as magical and grant a +1 item bonus to attack rolls against good-aligned creatures."
+    },
+    {
+      "item_name": "Brimstone Heart",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "fiend",
+        "fire"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 155,
+      "description": "A burning, sulfurous heart from a fire-aspected fiend. Used in fire-immunity rituals or as a primary reagent in Major Alchemist's Fire — boosts the bomb's damage by an additional 2d6."
+    },
+    {
+      "item_name": "Babau Drool",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "acid",
+        "alchemical",
+        "consumable",
+        "fiend"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 156,
+      "description": "Acidic saliva from a babau demon, sealed in a leather flask. Coats a weapon for 1 minute, adding 1 acid damage per strike, or applied to armor as a corrosive grease that damages opponents who hit the wearer (1 acid damage per hit for 1 minute)."
+    },
+    {
+      "item_name": "Erinyes Feather",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "evil",
+        "fiend"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 157,
+      "description": "A jet-black feather from an erinyes's wing. Used as fletching for crossbow bolts (counts as +1 striking and bypasses cover concealment by 1 step), or as a focus in truth-pact ritual components."
+    },
+    {
+      "item_name": "Spore Sac",
+      "category": "Alchemical",
+      "subcategory": "Bomb",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "bomb",
+        "consumable"
+      ],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 158,
+      "description": "A swollen sac of fungal spores. Thrown, releases a 5-foot cloud of spores for 1 round; creatures within DC 17 Fort or fall asleep (light sleep for 1 round)."
+    },
+    {
+      "item_name": "Mycelial Strand",
+      "category": "Crafting Material",
+      "subcategory": "Cordage",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "3 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 159,
+      "description": "A coil of fungal mycelium, surprisingly tough and slightly elastic. Functions as 30 feet of basic cordage; will bind to most surfaces if dampened."
+    },
+    {
+      "item_name": "Phosphorescent Spore",
+      "category": "Alchemical",
+      "subcategory": "Light Source",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "light"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 160,
+      "description": "A jar of glowing fungal spores. Activated, sheds bright light in a 20-foot radius for 1 hour. Functions as a sunrod analog but does not count as sunlight."
+    },
+    {
+      "item_name": "Myconid Cap",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "mental"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 161,
+      "description": "A dried myconid cap, faintly twitching. Brewed into a communication potion that establishes mind-link telepathy with willing creatures within 30 feet for 10 minutes."
+    },
+    {
+      "item_name": "Violet Fungus Stalk",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "necromancy"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 162,
+      "description": "A withered, purple-veined stalk from a violet fungus. Used to brew an Energy Drain Ointment that reduces a struck creature's HP maximum by 1d4 for 1 minute (DC 19 Fort negates)."
+    },
+    {
+      "item_name": "Shrieker Fragment",
+      "category": "Alchemical",
+      "subcategory": "Trap Component",
+      "item_level": 2,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "12 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 163,
+      "description": "A piece of dried shrieker fungus, sensitive to motion and light. Functions as a basic alarm (loudly screeches if disturbed); also used as a primary component for shrieker traps."
+    },
+    {
+      "item_name": "Fungal Bile",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "6 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 164,
+      "description": "A bottle of acrid yellow fluid extracted from various fungi. Used as a powerful adhesive (10 minutes set time) or as a component in antitoxin brewing."
+    },
+    {
+      "item_name": "Mold Spores",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "disease"
+      ],
+      "price": "4 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 165,
+      "description": "A vial of dormant mold spores. Used as a disease component in cursed traps (DC 17 Fort or contract Mold Lung, sickened 1 for 1d4 days)."
+    },
+    {
+      "item_name": "Truffle",
+      "category": "Trade Good",
+      "subcategory": "Food",
+      "item_level": 5,
+      "rarity": "Rare",
+      "traits": [],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 166,
+      "description": "A rare magical truffle harvested by following sentient fungi. Highly prized by gourmets and alchemists; consumed, grants a +1 status bonus to a single skill check within 1 hour."
+    },
+    {
+      "item_name": "Myceloid Heart",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "plant"
+      ],
+      "price": "80 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 167,
+      "description": "The pulsing fungal heart of a myceloid colony. Required component for Plant Growth or Awaken Plant scrolls; doubles the area affected by Plant Growth."
+    },
+    {
+      "item_name": "Glow Cap",
+      "category": "Magical Item",
+      "subcategory": "Light Source",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "light"
+      ],
+      "price": "5 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 168,
+      "description": "A bioluminescent fungus cap, dried and waxed. Sheds dim light in a 10-foot radius for 24 hours when activated by squeezing."
+    },
+    {
+      "item_name": "Humanoid Tooth",
+      "category": "Treasure",
+      "subcategory": "Trophy",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "1 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 169,
+      "description": "A single humanoid tooth, ground or whole. Used in folk magic and ritual reagents; may be valuable as a sympathetic component for divinations targeting the original owner."
+    },
+    {
+      "item_name": "Humanoid Blood",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "3 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 170,
+      "description": "A vial of fresh humanoid blood. Used as a sympathetic magic focus or as an ingredient in some ritual sacrifices; spoils within 24 hours unpreserved."
+    },
+    {
+      "item_name": "Humanoid Heart",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 171,
+      "description": "A still-warm humanoid heart, harvested with care. Required component for many necromancy rituals or as the focus in a lich phylactery's bonding ritual."
+    },
+    {
+      "item_name": "Humanoid Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "divination"
+      ],
+      "price": "15 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 172,
+      "description": "A preserved humanoid eye. Used as a scrying component (grants +1 item bonus to scry the eye's original owner) or in eye-of-the-beholder spell crafting."
+    },
+    {
+      "item_name": "Humanoid Tongue",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "necromancy"
+      ],
+      "price": "12 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 173,
+      "description": "A preserved humanoid tongue. Used as a Speak with Dead component (the dead must be the tongue's owner) or in voice-stealing potions that mimic the original owner's voice."
+    },
+    {
+      "item_name": "Orc Tusk",
+      "category": "Treasure",
+      "subcategory": "Trophy",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "5 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 174,
+      "description": "A heavy orc tusk, often carved with clan symbols. Functions as a bounty token in lawful regions (collected for 1-5 gp per tusk depending on region)."
+    },
+    {
+      "item_name": "Goblin Ear",
+      "category": "Treasure",
+      "subcategory": "Trophy",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "1 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 175,
+      "description": "A pointed goblin ear, dried and strung. Functions as a bounty token (1 sp per ear typical); a string of goblin ears grants a +1 status bonus to Intimidation checks against goblins for 1 day."
+    },
+    {
+      "item_name": "Kobold Scale",
+      "category": "Crafting Material",
+      "subcategory": "Scale",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "2 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 176,
+      "description": "A small, lightweight scale from a kobold. Used in crafting lightweight scale armor, or as a cheap dragon-scale substitute for decorative purposes."
+    },
+    {
+      "item_name": "Gnoll Pelt",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 177,
+      "description": "The spotted, sun-dried pelt of a gnoll. Worn as a cloak in desert environments, grants the wearer a +1 item bonus to Stealth checks in arid biomes."
+    },
+    {
+      "item_name": "Lizardfolk Scale",
+      "category": "Crafting Material",
+      "subcategory": "Scale",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "6 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 178,
+      "description": "Tough, ridged scale from a lizardfolk warrior. Reinforces existing scale mail to gain +1 to Hardness; or used to craft new lightweight scale armor."
+    },
+    {
+      "item_name": "Troglodyte Stink Gland",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 179,
+      "description": "The musk gland of a troglodyte, retaining its noxious stench. Used to craft a Stinkbomb (DC 19 Fort or sickened 1 in a 10-foot radius for 1 minute) or to enhance other bombs by +1 to their save DC."
+    },
+    {
+      "item_name": "Bugbear Fur",
+      "category": "Crafting Material",
+      "subcategory": "Hide",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "7 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 180,
+      "description": "Thick, plush bugbear fur, surprisingly soft. Used to craft Quiet Boots (granting a +1 item bonus to Stealth) or padding for armor."
+    },
+    {
+      "item_name": "Hobgoblin Tooth",
+      "category": "Treasure",
+      "subcategory": "Trophy",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "3 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 181,
+      "description": "A square, blackened hobgoblin molar. Functions as a military bounty token in regions opposing hobgoblin armies; valuable to mercenary captains and recruiters."
+    },
+    {
+      "item_name": "Giant Heart",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 7,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "80 gp",
+      "bulk": "1",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 182,
+      "description": "The massive, still-warm heart of a giant. Required component for Bull's Strength potions; the resulting potion grants +2 status bonus to Athletics for 10 minutes."
+    },
+    {
+      "item_name": "Giant Bones",
+      "category": "Crafting Material",
+      "subcategory": "Bone",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "40 gp",
+      "bulk": "2",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 183,
+      "description": "Massive bones from a giant, useful for fortification or weaponry. A greatclub crafted from a giant's femur counts as a +0 striking weapon; or used as construction material."
+    },
+    {
+      "item_name": "Hag Coven Tooth",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "occult"
+      ],
+      "price": "100 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 184,
+      "description": "A tooth from a hag in a coven, still bound by the coven's magic. Used as a focus in dark magic rituals; three teeth from the same coven function as a coven scrying focus."
+    },
+    {
+      "item_name": "Drow Hand Crossbow Bolt",
+      "category": "Ammunition",
+      "subcategory": "Bolt",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "consumable",
+        "poison"
+      ],
+      "price": "5 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 185,
+      "description": "A finely-made hand crossbow bolt, pre-coated with drow sleep poison. On a hit, target makes DC 22 Fort save or falls unconscious for 1 minute (drow sleep poison)."
+    },
+    {
+      "item_name": "Duergar Beard",
+      "category": "Crafting Material",
+      "subcategory": "Wire",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 186,
+      "description": "Wire-tough hair shaved from a duergar's beard. Braided into wire-rope or used to reinforce metal armor (granting +1 to Hardness when integrated)."
+    },
+    {
+      "item_name": "Merfolk Scale",
+      "category": "Crafting Material",
+      "subcategory": "Scale",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 187,
+      "description": "Iridescent scale from a merfolk's tail. Integrated into armor, grants the wearer a +1 item bonus to Athletics (Swim) checks; or used in water-breathing potion crafting."
+    },
+    {
+      "item_name": "Ratfolk Whisker",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "5 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 188,
+      "description": "A long, sensitive whisker plucked from a ratfolk. Used as an ingredient in detect-trap potions; the brewer gains +1 item bonus to Perception checks for 1 hour to find traps."
+    },
+    {
+      "item_name": "Centaur Hoof",
+      "category": "Crafting Material",
+      "subcategory": "Hoof",
+      "item_level": 3,
+      "rarity": "Uncommon",
+      "traits": [],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 189,
+      "description": "A large, well-muscled centaur hoof. Crafted into light barding for horses, granting +1 item bonus to AC; or used in horseshoe crafting for swift mounts."
+    },
+    {
+      "item_name": "Halfling Lucky Foot",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "cursed",
+        "fortune",
+        "magical"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "carried",
+      "source_book": "Homebrew",
+      "page": 190,
+      "description": "A dried halfling foot worn on a leather thong. Once per day, the bearer can reroll a single failed luck-related check (such as a flat check); however, the original halfling's family will hunt the bearer until the foot is returned (cursed trait)."
+    },
+    {
+      "item_name": "Inevitable Gear",
+      "category": "Crafting Material",
+      "subcategory": "Construct Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "lawful",
+        "magical"
+      ],
+      "price": "150 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 191,
+      "description": "A perfectly machined gear from an inevitable, geometrically pure. Used in clockwork construct crafting or as a primary lawful bane component (weapon deals +1d6 damage to chaotic creatures)."
+    },
+    {
+      "item_name": "Psychopomp Veil",
+      "category": "Magical Component",
+      "subcategory": "Cloth",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "death",
+        "magical",
+        "necromancy"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 192,
+      "description": "A black, gauzy veil from a psychopomp. Required component for soul-binding rituals or for Speak with Dead scrolls; halves the gp cost of the latter."
+    },
+    {
+      "item_name": "Sahkil Talon",
+      "category": "Crafting Material",
+      "subcategory": "Talon",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "emotion",
+        "fear",
+        "magical"
+      ],
+      "price": "130 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 193,
+      "description": "A black, twisted talon from a sahkil, exuding dread. Mounted on a weapon, the weapon gains the fear-causing property — on a critical hit, target makes DC 25 Will or becomes frightened 1."
+    },
+    {
+      "item_name": "Protean Essence",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "chaotic",
+        "magical"
+      ],
+      "price": "140 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 194,
+      "description": "A vial of impossibly shifting matter from a protean. Used as a primary component in polymorph spells (halves time to scribe scrolls); functions as a chaotic bane component for weapons."
+    },
+    {
+      "item_name": "Axiomatic Crystal",
+      "category": "Magical Component",
+      "subcategory": "Crystal",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "lawful",
+        "magical"
+      ],
+      "price": "160 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 195,
+      "description": "A perfectly geometric crystal of pure law. Used in anti-chaos magic crafting; weapons crafted with axiomatic crystals deal +1d6 damage to chaotic creatures."
+    },
+    {
+      "item_name": "Truth Stone",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 196,
+      "description": "A smooth white stone from a monitor of truth. Once per day, the bearer can activate it to detect lies for 1 hour (DC 23 Will save to deceive)."
+    },
+    {
+      "item_name": "Order Shard",
+      "category": "Magical Component",
+      "subcategory": "Crystal",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "lawful",
+        "magical"
+      ],
+      "price": "60 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 197,
+      "description": "A small shard of crystallized law. Used as a primary reagent for lawful weapon enhancements; required for Banishment scrolls."
+    },
+    {
+      "item_name": "Chaotic Stardust",
+      "category": "Alchemical",
+      "subcategory": "Bomb",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "bomb",
+        "chaotic",
+        "consumable"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 198,
+      "description": "Glittering dust from chaos-aligned monitors. Used to craft a Confusion Bomb that on a hit causes the target to make DC 22 Will or become confused for 1 round; 1d6 mental splash."
+    },
+    {
+      "item_name": "Death's Coin",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "death",
+        "magical",
+        "necromancy"
+      ],
+      "price": "75 gp",
+      "bulk": "—",
+      "usage": "carried",
+      "source_book": "Homebrew",
+      "page": 199,
+      "description": "A black coin recovered from a psychopomp's pouch. When placed in the mouth of a dying creature, it grants +2 status bonus to recovery checks against the dying condition; can also pay Pharasma's ferryman during a Resurrection ritual to reduce gp cost by 25%."
+    },
+    {
+      "item_name": "Ooze Slime",
+      "category": "Alchemical",
+      "subcategory": "Adhesive",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "5 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 200,
+      "description": "A jar of viscous, color-changing ooze slime. Functions as the base for tanglefoot bag crafting; or used as a versatile adhesive."
+    },
+    {
+      "item_name": "Gel Sample",
+      "category": "Alchemical",
+      "subcategory": "Salve",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "healing"
+      ],
+      "price": "6 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 201,
+      "description": "A cooling, soothing gel from a gentle ooze. Functions as a minor healing salve (heals 1d4 HP when applied as a 2-action activity)."
+    },
+    {
+      "item_name": "Caustic Bile",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "acid",
+        "alchemical",
+        "consumable"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 202,
+      "description": "A flask of intensely acidic ooze bile. Used to craft Acid Flask (Greater) — yields 2 doses per flask of bile — or as a corrosive coating for weapons (1 acid damage per strike for 1 minute)."
+    },
+    {
+      "item_name": "Adhesive Mucus",
+      "category": "Alchemical",
+      "subcategory": "Adhesive",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 203,
+      "description": "A pouch of unusually sticky mucus from a clinging ooze. Used as a heavy-duty glue (sets in 1 round, holds 50 lbs.) or as a primary trap component."
+    },
+    {
+      "item_name": "Gelatinous Fragment",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "4 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 204,
+      "description": "A wobbling fragment of gelatinous cube. Coats a rope, granting climbers a +1 item bonus to Athletics (Climb) for 1 hour; or thrown to slow targets in a 5-foot square."
+    },
+    {
+      "item_name": "Ochre Residue",
+      "category": "Alchemical",
+      "subcategory": "Poison",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "poison"
+      ],
+      "price": "18 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 205,
+      "description": "Yellowish residue scraped from an ochre jelly. Coats a weapon as a paralytic injury poison (DC 19 Fort or paralyzed for 1 round on hit); 1 dose per residue."
+    },
+    {
+      "item_name": "Black Pudding Sample",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "acid",
+        "alchemical",
+        "consumable"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 206,
+      "description": "A jar of writhing black pudding ooze. When applied to a non-magical metal or wooden item, the item takes 2d6 acid damage per round until consumed (or until cleaned, 1 action)."
+    },
+    {
+      "item_name": "Slime Mold",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "7 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 207,
+      "description": "Preserved slime mold, dried into a hard cake. Used as a coating to prevent further mold contamination on stored goods (lasts 1 month) or as the base for survival rations."
+    },
+    {
+      "item_name": "Pseudopod Tip",
+      "category": "Treasure",
+      "subcategory": "Curio",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [],
+      "price": "2 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 208,
+      "description": "The severed tip of an ooze's pseudopod, jiggling lightly. A curio for alchemists and naturalists; valuable as a teaching specimen."
+    },
+    {
+      "item_name": "Ooze Heart",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "healing"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 209,
+      "description": "A pulsating, heart-like nucleus from an unusually old ooze. Required component for crafting a Regeneration Ointment (fast healing 2 for 1 minute when applied)."
+    },
+    {
+      "item_name": "Magical Pollen",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical",
+        "sleep"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 210,
+      "description": "Drifting pollen from a magical plant. Used to craft Sleep Arrows (DC 20 Will or unconscious) or as a primary component in charm-themed dust traps."
+    },
+    {
+      "item_name": "Awakened Leaf",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "plant"
+      ],
+      "price": "30 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 211,
+      "description": "A leaf that whispers when nothing else moves. Required component for druidic spell scrolls (e.g., Speak with Plants, Plant Growth); halves the gp cost of these scrolls."
+    },
+    {
+      "item_name": "Treant Bark",
+      "category": "Crafting Material",
+      "subcategory": "Wood",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "plant"
+      ],
+      "price": "80 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 212,
+      "description": "A panel of bark peeled from a treant, alive and breathing slowly. A serviceable Darkwood substitute (-1 Bulk on items crafted from it); also functions as a living staff that grants its bearer a +1 item bonus to Nature checks."
+    },
+    {
+      "item_name": "Sentient Vine",
+      "category": "Crafting Material",
+      "subcategory": "Cordage",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "plant"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 2 hands",
+      "source_book": "Homebrew",
+      "page": 213,
+      "description": "A 30-foot length of slowly writhing sentient vine. Functions as a Living Rope — once per day, can be commanded to entangle a target within 30 feet (DC 20 Reflex save); also a required component for Entangle scrolls."
+    },
+    {
+      "item_name": "Tendril",
+      "category": "Crafting Material",
+      "subcategory": "Cordage",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "plant"
+      ],
+      "price": "5 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 214,
+      "description": "A length of tough plant tendril. Used as a strong cordage substitute (50 feet per harvested length); or as a whip-craft material for druids who eschew leather."
+    },
+    {
+      "item_name": "Heartwood",
+      "category": "Crafting Material",
+      "subcategory": "Wood",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "plant"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 215,
+      "description": "A piece of heartwood cut from a magical tree's core, glowing softly. Used as a wand-quality wood; staves and wands made from heartwood gain +1 to spell attack rolls or DCs at the GM's discretion."
+    },
+    {
+      "item_name": "Petal",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "enchantment"
+      ],
+      "price": "8 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 216,
+      "description": "A petal from a magical or sentient flower. Used as the primary aromatic in charm potions; the resulting potion grants the imbiber +1 item bonus to Diplomacy for 10 minutes."
+    },
+    {
+      "item_name": "Root Bulb",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable"
+      ],
+      "price": "4 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 217,
+      "description": "A fat tuber-like root from a magical plant. A common ingredient in strength tonics; the resulting tonic grants +1 status bonus to Athletics for 10 minutes."
+    },
+    {
+      "item_name": "Vegepygmy Sprout",
+      "category": "Magical Component",
+      "subcategory": "Familiar Component",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "plant"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 218,
+      "description": "A young vegepygmy sprout, freshly potted. With proper care over 1 week, can be bonded as a plant familiar; or used as a primary component for Speak with Plants (Lesser) scrolls."
+    },
+    {
+      "item_name": "Mandragora Root",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 7,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "fear",
+        "sleep"
+      ],
+      "price": "75 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 219,
+      "description": "A screaming, twisted humanoid-shaped root. Used to brew a Greater Sleep Potion (DC 24 Will or unconscious 1 hour) or as the principal reagent in fear bombs."
+    },
+    {
+      "item_name": "Shambling Mound Heart",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "electricity",
+        "magical",
+        "plant"
+      ],
+      "price": "150 gp",
+      "bulk": "1",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 220,
+      "description": "The dense, vine-wrapped core of a shambling mound, drinking ambient electricity. Required component for armor with electricity resistance — armor incorporating a shambling mound heart grants the wearer electricity resistance 5."
+    },
+    {
+      "item_name": "Yellow Musk Pollen",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "enchantment",
+        "mental"
+      ],
+      "price": "100 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 221,
+      "description": "Bright yellow pollen from a yellow musk creeper. A potent charm-based dust (DC 24 Will or charmed for 1 minute) or as a primary reagent in mind control elixirs."
+    },
+    {
+      "item_name": "Quickwood Branch",
+      "category": "Crafting Material",
+      "subcategory": "Wood",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "plant"
+      ],
+      "price": "50 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 222,
+      "description": "A branch from a quickwood tree, still living. Functions as a +0 club, and the wielder gains a +1 status bonus to Athletics checks while wielded."
+    },
+    {
+      "item_name": "Spirit Essence",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "50 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 223,
+      "description": "A bottled wisp of spirit-essence. Required component for Speak with Dead scrolls or for Bind Spirit rituals; halves the gp cost of the latter."
+    },
+    {
+      "item_name": "Soul Fragment",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 224,
+      "description": "A shard of trapped soul-stuff. Used in soul-binding rituals or as the focal component for crafting a phylactery analog (functions as a lich's phylactery for non-lich casters at GM's discretion)."
+    },
+    {
+      "item_name": "Memory Echo",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "magical",
+        "mental"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 225,
+      "description": "A captured memory crystallized into a faint, faceted shard. Required component for Modify Memory scrolls or as a focus for Reincarnate rituals."
+    },
+    {
+      "item_name": "Whispered Sigh",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "emotion",
+        "magical"
+      ],
+      "price": "30 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 226,
+      "description": "A glass vial containing a single bottled emotion (joy, grief, anger, etc.). Used as a bardic component, granting +1 item bonus to Performance checks invoking that emotion; or activated to project the emotion in a 10-foot aura for 1 round."
+    },
+    {
+      "item_name": "Spirit Glass",
+      "category": "Magical Component",
+      "subcategory": "Crystal",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "magical"
+      ],
+      "price": "175 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 227,
+      "description": "A panel of glass that briefly displays the faces of nearby spirits. Required component for Crystal Ball construction or as a stand-alone scrying focus, granting +1 item bonus to scrying attempts."
+    },
+    {
+      "item_name": "Phantasmal Ash",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "magical"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 228,
+      "description": "Silver-gray ash from a destroyed spirit. Used as the primary reagent for invisibility powder (1 dose grants invisibility for 1 round) or as a ghost form ointment."
+    },
+    {
+      "item_name": "Ancestral Dust",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "divination",
+        "magical",
+        "spirit"
+      ],
+      "price": "40 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 229,
+      "description": "Dust collected from an ancestral spirit's manifestation. Required for Ancestral Guidance scrolls; halves the gp cost. Also used in spirit-binding rituals."
+    },
+    {
+      "item_name": "Veiled Tear",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "divination",
+        "magical"
+      ],
+      "price": "100 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 230,
+      "description": "A weeping spirit's tear, silver and shimmering. Used in Etheric Vision components; the bearer gains a +1 item bonus to Perception checks against incorporeal creatures for 1 day after consumption."
+    },
+    {
+      "item_name": "Loa Token",
+      "category": "Magical Item",
+      "subcategory": "Trinket",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "120 gp",
+      "bulk": "L",
+      "usage": "carried",
+      "source_book": "Homebrew",
+      "page": 231,
+      "description": "A spirit-token bound to a specific Loa. Functions as a focus for possession rituals or as a spirit-binding charm; once per day, the bearer can call upon the bound Loa for guidance (treat as Augury)."
+    },
+    {
+      "item_name": "Spectral Voice",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "divination",
+        "magical"
+      ],
+      "price": "45 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 232,
+      "description": "A captured echo of a spirit's voice. Required component for Message scrolls (greater range) or whispered command items."
+    },
+    {
+      "item_name": "Entropy Mote",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 8,
+      "rarity": "Rare",
+      "traits": [
+        "magical"
+      ],
+      "price": "90 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 233,
+      "description": "A mote of pure entropy from a destructive spirit. Required ingredient for Disintegrate potions; the resulting potion deals 4d10 damage on consumption to a touched target (DC 25 Fort halves)."
+    },
+    {
+      "item_name": "Preserved Skull",
+      "category": "Magical Component",
+      "subcategory": "Necromancy Focus",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "25 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 234,
+      "description": "A skull preserved with embalming alchemy, eyes faintly glowing. Required component for Animate Dead spells or as a necromancy focus, granting +1 item bonus to necromancy spell DCs for 1 round when invoked."
+    },
+    {
+      "item_name": "Necrotic Flesh",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "disease",
+        "necromancy",
+        "negative"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 235,
+      "description": "Rotting flesh from an undead, kept malign with necromantic preservation. Used as a primary ingredient in disease-themed traps, or as the active component in Ghoul Touch ointment (paralyzes target for 1 round on hit, DC 20 Fort)."
+    },
+    {
+      "item_name": "Vampire Fang",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 236,
+      "description": "A pristine vampire fang, still razor-sharp. Required component for Charm Person scrolls or for crafting a vampiric weapon enhancement that grants the wielder 1d6 temporary HP on a critical hit."
+    },
+    {
+      "item_name": "Lich Phylactery Shard",
+      "category": "Magical Component",
+      "subcategory": "Ritual Component",
+      "item_level": 16,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "magical",
+        "necromancy"
+      ],
+      "price": "500 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 237,
+      "description": "A shard of a destroyed lich phylactery, still humming with corrupted magic. Required component for soul-binding rituals; use with extreme caution — improper handling may bind the user's soul instead."
+    },
+    {
+      "item_name": "Ghostly Ectoplasm",
+      "category": "Magical Component",
+      "subcategory": "Rune Material",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "incorporeal",
+        "magical"
+      ],
+      "price": "35 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 238,
+      "description": "Sticky ectoplasm from a corporeal undead manifestation. Required component for Ghost Touch property runes (halves rune gp cost) or for crafting minor weapons that strike incorporeal creatures normally."
+    },
+    {
+      "item_name": "Grave Dust",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "necromancy"
+      ],
+      "price": "8 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 239,
+      "description": "Sanctified dust from old graves. Used as a base reagent for Animate Dead components, or sprinkled in a 5-foot circle to ward against undead for 1 hour (DC 17 Will to cross)."
+    },
+    {
+      "item_name": "Mummy Wrappings",
+      "category": "Crafting Material",
+      "subcategory": "Cloth",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "cursed",
+        "necromancy"
+      ],
+      "price": "20 gp",
+      "bulk": "L",
+      "usage": "worn",
+      "source_book": "Homebrew",
+      "page": 240,
+      "description": "Linen wrappings from a mummy, still bearing dust of ages. When worn as bandages or armor padding, grants resistance 1 to all damage but the wearer takes a -1 status penalty to Reflex saves (cursed)."
+    },
+    {
+      "item_name": "Ghoul Claw",
+      "category": "Crafting Material",
+      "subcategory": "Claw",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "necromancy",
+        "paralyze"
+      ],
+      "price": "22 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 241,
+      "description": "A blackened claw from a ghoul, still bearing paralytic toxin. Mounted as a dagger, the wielder can apply 1 dose of paralysis poison per day (DC 20 Fort or paralyzed for 1 round)."
+    },
+    {
+      "item_name": "Wraith Essence",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy",
+        "negative"
+      ],
+      "price": "175 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 242,
+      "description": "A vial of bottled wraith-essence, cold to the touch. Required component for energy drain weapon enhancements; weapon deals an additional 1d4 negative damage and drains 1 HP from target on a critical hit."
+    },
+    {
+      "item_name": "Rotted Heart",
+      "category": "Magical Component",
+      "subcategory": "Necromancy Focus",
+      "item_level": 4,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "30 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 243,
+      "description": "The desiccated, rotting heart of an undead. Used as a focus for necromantic rituals or as a Create Undead component, granting +1 item bonus to the resulting undead's HP."
+    },
+    {
+      "item_name": "Banshee Hair",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy",
+        "sonic"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 244,
+      "description": "A length of stark white hair from a banshee, still vibrating with sorrow. Required component for Wail of the Banshee scrolls; halves the gp cost. Also used as the active ingredient in sonic damage components."
+    },
+    {
+      "item_name": "Death Knight Plate",
+      "category": "Crafting Material",
+      "subcategory": "Armor",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "necromancy"
+      ],
+      "price": "250 gp",
+      "bulk": "1",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 245,
+      "description": "A blackened plate from a death knight's armor, dense and runed with hate. Major armor crafting material; armor incorporating death knight plate grants the wearer resistance 2 to slashing damage."
+    },
+    {
+      "item_name": "Specter's Veil",
+      "category": "Magical Component",
+      "subcategory": "Cloth",
+      "item_level": 10,
+      "rarity": "Rare",
+      "traits": [
+        "incorporeal",
+        "magical",
+        "necromancy"
+      ],
+      "price": "180 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 246,
+      "description": "A misty, half-tangible veil from a specter. Required component for crafting a Shadowmeld Cloak — once per day, the wearer can become invisible for 1 round in dim light or darker."
+    },
+    {
+      "item_name": "Wight Eye",
+      "category": "Alchemical",
+      "subcategory": "Component",
+      "item_level": 6,
+      "rarity": "Uncommon",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "necromancy"
+      ],
+      "price": "60 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 247,
+      "description": "A glassy wight eye, still seeing in darkness. Used to brew a Greater Darkvision Potion (8 hours, 60-foot darkvision); also a component for life drain weapon enhancements."
+    },
+    {
+      "item_name": "Skeleton Femur",
+      "category": "Crafting Material",
+      "subcategory": "Bone",
+      "item_level": 1,
+      "rarity": "Common",
+      "traits": [],
+      "price": "3 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 248,
+      "description": "A femur from a skeletal undead. Wielded as a +0 club; or used as a focus for low-level necromancy spells, granting +0 item bonus (useful for non-magical shrines)."
+    },
+    {
+      "item_name": "Zombie Tooth",
+      "category": "Alchemical",
+      "subcategory": "Reagent",
+      "item_level": 0,
+      "rarity": "Common",
+      "traits": [
+        "alchemical",
+        "consumable",
+        "disease"
+      ],
+      "price": "2 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 249,
+      "description": "A blackened, rotted tooth from a zombie. Used as a disease component in rot-arrow poisons (DC 16 Fort or sickened 1 for 1 hour on hit)."
+    },
+    {
+      "item_name": "Lich Cold Fingerbone",
+      "category": "Magical Component",
+      "subcategory": "Wand Material",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "cold",
+        "magical",
+        "necromancy"
+      ],
+      "price": "220 gp",
+      "bulk": "—",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 250,
+      "description": "A skeletal finger from a lich, eternally cold. Used as the core of a Wand of Cold (Lesser); or as the principal component in Finger of Death scrolls."
+    },
+    {
+      "item_name": "Dread Wraith Heart",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 12,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy",
+        "negative"
+      ],
+      "price": "350 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 251,
+      "description": "The vestigial heart-place of a dread wraith, still ripples with negative energy. Used as the focus for crafting a Soul Cage; or as a primary ingredient in energy drain weapon enchantments (deals +1d6 negative damage on hit)."
+    },
+    {
+      "item_name": "Bodak Eye",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 11,
+      "rarity": "Rare",
+      "traits": [
+        "death",
+        "magical",
+        "negative"
+      ],
+      "price": "200 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 252,
+      "description": "An eye from a bodak, still capable of inflicting death-gaze. Used to craft a death-gaze weapon (1/day, target makes DC 27 Fort or takes 6d6 negative damage) or in greater fear potions."
+    },
+    {
+      "item_name": "Devourer Soul Cache",
+      "category": "Magical Component",
+      "subcategory": "Soul Storage",
+      "item_level": 13,
+      "rarity": "Rare",
+      "traits": [
+        "evil",
+        "magical",
+        "necromancy"
+      ],
+      "price": "300 gp",
+      "bulk": "L",
+      "usage": "held in 1 hand",
+      "source_book": "Homebrew",
+      "page": 253,
+      "description": "A pulsing crystal-cage from a devourer, capable of holding a soul. Functions as a soul-trapping focus for Trap the Soul rituals; or as the central component in major necromantic creation rituals."
+    },
+    {
+      "item_name": "Vampire Cloak Tatters",
+      "category": "Crafting Material",
+      "subcategory": "Cloth",
+      "item_level": 5,
+      "rarity": "Uncommon",
+      "traits": [
+        "magical",
+        "necromancy"
+      ],
+      "price": "40 gp",
+      "bulk": "L",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 254,
+      "description": "Tattered black cloth from a vampire's cloak, still smelling of blood. Required material for crafting a Cloak of Bats; the resulting cloak grants its wearer the ability to transform into a swarm of bats once per day for 10 minutes."
+    },
+    {
+      "item_name": "Mohrg Tongue",
+      "category": "Magical Component",
+      "subcategory": "Component",
+      "item_level": 9,
+      "rarity": "Rare",
+      "traits": [
+        "magical",
+        "necromancy",
+        "paralyze"
+      ],
+      "price": "150 gp",
+      "bulk": "—",
+      "usage": "—",
+      "source_book": "Homebrew",
+      "page": 255,
+      "description": "The long, prehensile tongue of a mohrg. Used as a primary ingredient in paralysis weapon enchantments (target hit makes DC 24 Fort or paralyzed 1 round); also a component for Bestow Curse scrolls."
+    }
+  ]
+}

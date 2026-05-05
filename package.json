@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "deploy": "node deploy.js",
-    "deploy:guild": "node deploy.js --guild"
+    "deploy:guild": "node deploy.js --guild",
+    "import:homebrew-items": "node supabase/import-homebrew-items.js"
   },
   "keywords": [],
   "author": "",
