@@ -12633,7 +12633,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /monster ────────────────────────────────────────────────────
-  else if (commandName === 'hunts') {
+  else if (commandName === 'hunt') {
     const sub = interaction.options.getSubcommand();
     if (sub === 'start') {
       const trait = interaction.options.getString('trait');

@@ -478,8 +478,8 @@ const huntSkillChoices = [
   { name: 'Society', value: 'Society' },
 ];
 
-const huntsCommand = new SlashCommandBuilder()
-  .setName('hunts')
+const huntCommand = new SlashCommandBuilder()
+  .setName('hunt')
   .setDescription('Find a balanced bestiary creature for a hunt.')
   .addSubcommand(s => s.setName('start')
     .setDescription('Roll to track a creature and generate the encounter.')
@@ -1464,7 +1464,7 @@ const commands = [
   featCommand,
   harvestCommand,
   heritageCommand,
-  huntsCommand,
+  huntCommand,
   itemCommand,
   monsterCommand,
   ruleCommand,
