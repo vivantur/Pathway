@@ -118,6 +118,15 @@ process.on('unhandledRejection', error => {
   console.error('Unhandled rejection:', error);
 });
 
+// Flush all in-flight Supabase syncs before Railway kills the container.
+// Railway sends SIGTERM then waits 30 s before SIGKILL — enough for one sync.
+process.on('SIGTERM', async () => {
+  console.log('[shutdown] SIGTERM received — flushing Supabase syncs…');
+  const { drainSupabaseSyncs } = require('./utils/storage');
+  try { await drainSupabaseSyncs(); } catch { /* errors already logged inside storage.js */ }
+  process.exit(0);
+});
+
 // Critical: discord.js emits 'error' events on the Client when something goes
 // wrong (network blips, expired interactions, rate-limit issues). If nothing
 // listens for that event, Node treats it as a fatal error and crashes the

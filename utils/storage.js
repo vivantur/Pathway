@@ -473,6 +473,22 @@ const { getSupabase } = require('./supabase');
 let _syncConsecutiveFailures = 0;
 const SYNC_DEGRADED_THRESHOLD = 3;
 
+// In-flight Supabase sync promises — drained on SIGTERM so Railway rolling
+// deploys don't kill the process before companion/character state is flushed.
+const _inflightSyncs = new Set();
+
+function _trackSync(p) {
+  const tracked = Promise.resolve(p).finally(() => _inflightSyncs.delete(tracked));
+  _inflightSyncs.add(tracked);
+  return tracked;
+}
+
+async function drainSupabaseSyncs() {
+  if (_inflightSyncs.size === 0) return;
+  console.log(`[Supabase] draining ${_inflightSyncs.size} in-flight sync(s) before shutdown…`);
+  await Promise.allSettled([..._inflightSyncs]);
+}
+
 function _recordSyncSuccess() { _syncConsecutiveFailures = 0; }
 function _recordSyncFailure() { _syncConsecutiveFailures++; }
 
@@ -1111,34 +1127,34 @@ function _syncFileToSupabase(filename, data) {
   if (!data) return;
   switch (filename) {
     case 'characters.json':
-      syncAllCharactersToSupabase(data).catch(() => {});
+      _trackSync(syncAllCharactersToSupabase(data).catch(() => {}));
       break;
     case 'downtime.json':
-      syncAllDowntimeToSupabase(data).catch(() => {});
+      _trackSync(syncAllDowntimeToSupabase(data).catch(() => {}));
       break;
     case 'notes.json':
-      syncAllNotesToSupabase(data).catch(() => {});
+      _trackSync(syncAllNotesToSupabase(data).catch(() => {}));
       break;
     case 'bags.json':
-      syncAllBagsToSupabase(data).catch(() => {});
+      _trackSync(syncAllBagsToSupabase(data).catch(() => {}));
       break;
     case 'snippets.json':
-      syncAllUserSnippetsToSupabase(data).catch(() => {});
+      _trackSync(syncAllUserSnippetsToSupabase(data).catch(() => {}));
       break;
     case 'server_snippets.json':
-      syncAllGuildSnippetsToSupabase(data).catch(() => {});
+      _trackSync(syncAllGuildSnippetsToSupabase(data).catch(() => {}));
       break;
     case 'monster_art.json':
-      syncAllMonsterArtToSupabase(data).catch(() => {});
+      _trackSync(syncAllMonsterArtToSupabase(data).catch(() => {}));
       break;
     case 'monster_edits.json':
-      syncAllMonsterEditsToSupabase(data).catch(() => {});
+      _trackSync(syncAllMonsterEditsToSupabase(data).catch(() => {}));
       break;
     case 'monster_attacks.json':
-      syncAllMonsterAttacksToSupabase(data).catch(() => {});
+      _trackSync(syncAllMonsterAttacksToSupabase(data).catch(() => {}));
       break;
     case 'bot-settings.json':
-      syncAllBotSettingsToSupabase(data).catch(() => {});
+      _trackSync(syncAllBotSettingsToSupabase(data).catch(() => {}));
       break;
     // calendar-state.json and weather-state.json are synced per-mutation
     // by the calendar/weather command handlers via syncGuildStateToSupabase.
@@ -1984,4 +2000,5 @@ module.exports = {
   syncAllMonsterAttacksToSupabase,
   syncAllBotSettingsToSupabase,
   setupHomebrewRealtimeSync,
+  drainSupabaseSyncs,
 };
