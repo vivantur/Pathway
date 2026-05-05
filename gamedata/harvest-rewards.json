@@ -1,0 +1,277 @@
+{
+  "title": "Pathfinder 2e Monster Bestiary Harvest Table",
+  "description": "Harvest rewards organized by creature trait. PF2e entries reference existing Pathfinder 2e concepts or analogs; Homebrew entries are flavorful additions for campaign use.",
+  "usage_notes": {
+    "check": "Nature, Survival, Medicine, or the creature identification skill at the GM's discretion. Crafting may apply for processing components.",
+    "dc_by_rarity": {
+      "common": "Standard DC for creature's level",
+      "uncommon": "+2 to creature's level DC",
+      "rare": "+5 to creature's level DC",
+      "unique": "+10 to creature's level DC, often requiring specific tools or rituals"
+    },
+    "value_scaling": "Multiply listed value by creature level / 5, minimum x1, for higher-level creatures."
+  },
+  "creature_types": {
+    "Aberration": {
+      "count_in_bestiary": 259,
+      "harvest_items": [
+        { "name": "Aberrant Flesh", "rarity": "common", "type": "alchemical_reagent", "value_gp": 2, "source": "Homebrew", "use": "Alchemical reagent for mutagens and unstable potions; spoils in 1 week." },
+        { "name": "Preserved Tentacle", "rarity": "common", "type": "crafting_material", "value_gp": 5, "source": "Homebrew", "use": "Used in whip crafting or flexible tool work." },
+        { "name": "Warped Bone", "rarity": "common", "type": "crafting_material", "value_gp": 4, "source": "Homebrew", "use": "Bone weapon haft or occult trophy." },
+        { "name": "Aberrant Ichor", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 15, "source": "Homebrew", "use": "Base for confusion oil and mind-affecting alchemical items." },
+        { "name": "Otherworldly Eye", "rarity": "uncommon", "type": "magical_component", "value_gp": 25, "source": "Homebrew", "use": "Component for true seeing potions and divination scrolls." },
+        { "name": "Pulsing Brain Matter", "rarity": "rare", "type": "magical_component", "value_gp": 80, "source": "Homebrew", "use": "Crafting psychic-themed scrolls and wands." },
+        { "name": "Phase Tissue", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Crafting blink or dimension door scrolls." },
+        { "name": "Dark Tapestry Splinter", "rarity": "unique", "type": "magical_component", "value_gp": 500, "source": "Homebrew", "use": "Planar travel and ancient occult ritual component." }
+      ]
+    },
+    "Animal": {
+      "count_in_bestiary": 531,
+      "harvest_items": [
+        { "name": "Animal Hide", "rarity": "common", "type": "crafting_material", "value_gp": 2, "source": "PF2e (leather armor base)", "use": "Tanned into leather or used for armor crafting." },
+        { "name": "Fresh Meat", "rarity": "common", "type": "ration", "value_gp": 0.5, "source": "PF2e (Rations equivalent)", "use": "Provides food or camp supplies." },
+        { "name": "Bones", "rarity": "common", "type": "crafting_material", "value_gp": 1, "source": "PF2e", "use": "Bone weapons, tools, fertilizer, or trophies." },
+        { "name": "Claws / Talons", "rarity": "common", "type": "crafting_material", "value_gp": 3, "source": "PF2e", "use": "Piercing tools, jewelry, fishhooks, or trophy charms." },
+        { "name": "Pelt / Fur", "rarity": "common", "type": "crafting_material", "value_gp": 3, "source": "PF2e", "use": "Fur trim, cold-weather garments, or trade good." },
+        { "name": "Musk Gland", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 8, "source": "Homebrew", "use": "Perfume base, animal lures, and hunter attractants." },
+        { "name": "Venom Sac", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 20, "source": "PF2e (Venom analog)", "use": "Crafting injury poisons from venomous animals." },
+        { "name": "Pearl", "rarity": "rare", "type": "trade_good", "value_gp": 100, "source": "PF2e", "use": "Jewelry, spell component, or luxury trade good." }
+      ]
+    },
+    "Astral": {
+      "count_in_bestiary": 13,
+      "harvest_items": [
+        { "name": "Dimensional Dust", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 30, "source": "Homebrew", "use": "Teleportation focus or dust of disappearance analog." },
+        { "name": "Cosmic Residue", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 40, "source": "Homebrew", "use": "Glittering powder that aids divination." },
+        { "name": "Astral Essence", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Component for astral projection scrolls." },
+        { "name": "Starlight Sinew", "rarity": "rare", "type": "crafting_material", "value_gp": 120, "source": "Homebrew", "use": "Bowstrings or bindings for light-themed items." },
+        { "name": "Silver Cord Fragment", "rarity": "rare", "type": "magical_component", "value_gp": 150, "source": "Homebrew", "use": "Soul-binding or planar tether magic." },
+        { "name": "Astral Crystal", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew (analog: PF2e Aeon Stone)", "use": "Stores spell energy or substitutes in aeon stone crafting." },
+        { "name": "Void Shard", "rarity": "rare", "type": "magical_component", "value_gp": 250, "source": "Homebrew", "use": "Component in void or negative energy weapons." },
+        { "name": "Astral Compass", "rarity": "unique", "type": "trinket", "value_gp": 500, "source": "Homebrew", "use": "Spectral organ that points toward a tethered location." }
+      ]
+    },
+    "Beast": {
+      "count_in_bestiary": 344,
+      "harvest_items": [
+        { "name": "Magical Hide", "rarity": "uncommon", "type": "crafting_material", "value_gp": 25, "source": "PF2e (special hide armors)", "use": "Beast hide armor or minor magical resistance material." },
+        { "name": "Mystical Fang", "rarity": "uncommon", "type": "crafting_material", "value_gp": 20, "source": "Homebrew", "use": "Magical weapon focus or dagger material." },
+        { "name": "Beast Heart", "rarity": "uncommon", "type": "magical_component", "value_gp": 35, "source": "Homebrew", "use": "Potion of bestial form or animal aspect ingredient." },
+        { "name": "Magical Blood", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 30, "source": "Homebrew", "use": "Ink for magic scrolls or healing reagent." },
+        { "name": "Owlbear Pelt", "rarity": "uncommon", "type": "crafting_material", "value_gp": 50, "source": "Homebrew", "use": "Warm armor, cloak, or intimidating trophy." },
+        { "name": "Basilisk Eye", "rarity": "rare", "type": "magical_component", "value_gp": 175, "source": "Homebrew", "use": "Petrification spell component." },
+        { "name": "Chimera Tri-Heart", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Multi-attack mutagen ingredient." },
+        { "name": "Hydra Heart", "rarity": "rare", "type": "magical_component", "value_gp": 300, "source": "Homebrew", "use": "Regeneration elixir or troll oil analog." }
+      ]
+    },
+    "Celestial": {
+      "count_in_bestiary": 77,
+      "harvest_items": [
+        { "name": "Celestial Feather", "rarity": "uncommon", "type": "magical_component", "value_gp": 50, "source": "Homebrew", "use": "Holy water creation or angelic quill." },
+        { "name": "Sacred Ichor", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 60, "source": "Homebrew", "use": "Healing potion ingredient or divine reagent." },
+        { "name": "Sanctified Blood", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 75, "source": "Homebrew", "use": "Holy water primary ingredient." },
+        { "name": "Angelic Plumage", "rarity": "uncommon", "type": "crafting_material", "value_gp": 30, "source": "Homebrew", "use": "Holy clothing trim or religious focus." },
+        { "name": "Solar Dust", "rarity": "rare", "type": "alchemical_reagent", "value_gp": 100, "source": "Homebrew (analog: PF2e Sunrod)", "use": "Glowing powder, sunlight emulation, or undead bane reagent." },
+        { "name": "Divine Tear", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Component in restoration magic." },
+        { "name": "Celestial Heart", "rarity": "rare", "type": "magical_component", "value_gp": 400, "source": "Homebrew", "use": "Resurrection ritual component." },
+        { "name": "Solar Sword Shard", "rarity": "unique", "type": "magical_component", "value_gp": 800, "source": "Homebrew", "use": "Component in flaming holy weapon runes." }
+      ]
+    },
+    "Construct": {
+      "count_in_bestiary": 223,
+      "harvest_items": [
+        { "name": "Reinforced Plating", "rarity": "common", "type": "crafting_material", "value_gp": 15, "source": "Homebrew", "use": "Shield reinforcement or armor repair." },
+        { "name": "Iron Plating", "rarity": "common", "type": "crafting_material", "value_gp": 5, "source": "PF2e (raw materials)", "use": "Smithing common armor and weapons." },
+        { "name": "Clockwork Gears", "rarity": "uncommon", "type": "crafting_material", "value_gp": 10, "source": "Homebrew", "use": "Mechanical traps and time-piece crafting." },
+        { "name": "Animating Core / Crystal", "rarity": "uncommon", "type": "magical_component", "value_gp": 75, "source": "Homebrew (analog: PF2e Spellheart)", "use": "Powers other constructs or magical devices." },
+        { "name": "Animation Glyph", "rarity": "uncommon", "type": "magical_component", "value_gp": 50, "source": "Homebrew", "use": "Animate objects scroll component." },
+        { "name": "Adamantine Shards", "rarity": "rare", "type": "precious_material", "value_gp": 500, "source": "PF2e (Adamantine)", "use": "Crafting low-grade adamantine items." },
+        { "name": "Mithral Shavings", "rarity": "rare", "type": "precious_material", "value_gp": 400, "source": "PF2e (Mithral / Dawnsilver)", "use": "Crafting lightweight items." },
+        { "name": "Orichalcum Filament", "rarity": "rare", "type": "precious_material", "value_gp": 1000, "source": "PF2e (Orichalcum)", "use": "Time-resistant or high-end magical crafting." }
+      ]
+    },
+    "Dragon": {
+      "count_in_bestiary": 317,
+      "harvest_items": [
+        { "name": "Dragon Fang / Tooth", "rarity": "uncommon", "type": "crafting_material", "value_gp": 80, "source": "PF2e", "use": "Crafted into daggers, spear tips, or trophies." },
+        { "name": "Dragon Claw", "rarity": "uncommon", "type": "crafting_material", "value_gp": 100, "source": "PF2e", "use": "Razor weapon, piercing tool, or dragon-slayer trophy." },
+        { "name": "Tail Spike", "rarity": "uncommon", "type": "crafting_material", "value_gp": 60, "source": "Homebrew", "use": "Polearm head or oversized ammunition." },
+        { "name": "Dragon Scale", "rarity": "rare", "type": "precious_material", "value_gp": 200, "source": "PF2e (Dragonhide)", "use": "Crafts dragonhide armor and shields." },
+        { "name": "Dragon Blood", "rarity": "rare", "type": "alchemical_reagent", "value_gp": 250, "source": "PF2e (Dragon's Blood analog)", "use": "Bloodbane elixirs or sorcerer awakening rituals." },
+        { "name": "Dragon Heart", "rarity": "rare", "type": "magical_component", "value_gp": 500, "source": "Homebrew", "use": "Powerful ritual component and resistance potion ingredient." },
+        { "name": "Breath Gland", "rarity": "rare", "type": "alchemical_reagent", "value_gp": 300, "source": "Homebrew", "use": "Energy rune, bomb, or breath-themed item crafting." },
+        { "name": "Dragon Egg", "rarity": "unique", "type": "trinket", "value_gp": 5000, "source": "Homebrew", "use": "Could hatch with proper care; enormous black-market value." }
+      ]
+    },
+    "Elemental": {
+      "count_in_bestiary": 228,
+      "harvest_items": [
+        { "name": "Elemental Mote", "rarity": "common", "type": "magical_component", "value_gp": 15, "source": "PF2e (analog: sigil-tied components)", "use": "Cantrip-level elemental focus." },
+        { "name": "Sand Fragment", "rarity": "common", "type": "crafting_material", "value_gp": 5, "source": "Homebrew", "use": "Glassmaking or abrasive material." },
+        { "name": "Elemental Gem", "rarity": "uncommon", "type": "magical_component", "value_gp": 50, "source": "PF2e (analog: Elemental Gems)", "use": "Elemental weapon runes or spell components." },
+        { "name": "Crystallized Flame", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 30, "source": "Homebrew", "use": "Greater alchemist's fire or fire weapon material." },
+        { "name": "Wind Essence", "rarity": "uncommon", "type": "magical_component", "value_gp": 40, "source": "Homebrew", "use": "Bottled wind or gust spell scroll component." },
+        { "name": "Stormcloud Fragment", "rarity": "rare", "type": "alchemical_reagent", "value_gp": 100, "source": "Homebrew", "use": "Major bottled lightning or shock weapon material." },
+        { "name": "Frozen Heart", "rarity": "rare", "type": "magical_component", "value_gp": 120, "source": "Homebrew", "use": "Cold elemental core or supreme frost vial reagent." },
+        { "name": "Spark of Positive Energy", "rarity": "rare", "type": "magical_component", "value_gp": 150, "source": "Homebrew", "use": "Healing potion enhancement." }
+      ]
+    },
+    "Ethereal": {
+      "count_in_bestiary": 20,
+      "harvest_items": [
+        { "name": "Ectoplasmic Residue", "rarity": "uncommon", "type": "magical_component", "value_gp": 30, "source": "Homebrew", "use": "Ghost touch rune crafting." },
+        { "name": "Spectral Dust", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 45, "source": "Homebrew", "use": "Invisibility potions or ghost detection powder." },
+        { "name": "Borderland Splinter", "rarity": "uncommon", "type": "magical_component", "value_gp": 60, "source": "Homebrew", "use": "Pass-through or phasing magic component." },
+        { "name": "Ethereal Essence", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Etherealness scroll component." },
+        { "name": "Veil Fragment", "rarity": "rare", "type": "magical_component", "value_gp": 175, "source": "Homebrew", "use": "Cloak of etherealness crafting." },
+        { "name": "Phasing Membrane", "rarity": "rare", "type": "crafting_material", "value_gp": 200, "source": "Homebrew", "use": "Dimensional armor crafting." },
+        { "name": "Ghost Silver", "rarity": "rare", "type": "precious_material", "value_gp": 250, "source": "Homebrew (analog: PF2e Silver)", "use": "Affects incorporeal creatures normally." }
+      ]
+    },
+    "Fey": {
+      "count_in_bestiary": 232,
+      "harvest_items": [
+        { "name": "Fey Dust", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 25, "source": "Homebrew (analog: PF2e Pixie Dust)", "use": "Sleep arrow ammunition or dream powders." },
+        { "name": "Pixie Wing", "rarity": "uncommon", "type": "magical_component", "value_gp": 35, "source": "Homebrew", "use": "Feather fall potion or minor flight scroll." },
+        { "name": "Dryad Bark", "rarity": "uncommon", "type": "crafting_material", "value_gp": 40, "source": "Homebrew (analog: Darkwood)", "use": "Druidic foci or lightweight wood." },
+        { "name": "Satyr Horn", "rarity": "uncommon", "type": "crafting_material", "value_gp": 30, "source": "Homebrew", "use": "Carved into charming pipes or instruments." },
+        { "name": "Glamour Essence", "rarity": "rare", "type": "magical_component", "value_gp": 120, "source": "Homebrew", "use": "Disguise self or illusion magic component." },
+        { "name": "Unicorn Hair", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Wand cores or healing potion ingredient." },
+        { "name": "Nymph Tear", "rarity": "rare", "type": "magical_component", "value_gp": 300, "source": "Homebrew", "use": "Major healing potion component." },
+        { "name": "Unicorn Horn", "rarity": "rare", "type": "magical_component", "value_gp": 750, "source": "Homebrew", "use": "Holy water or powerful healing magic component." }
+      ]
+    },
+    "Fiend": {
+      "count_in_bestiary": 301,
+      "harvest_items": [
+        { "name": "Brimstone", "rarity": "common", "type": "alchemical_reagent", "value_gp": 8, "source": "PF2e (sulfur)", "use": "Fire bomb component or smokestick analog." },
+        { "name": "Cloven Hoof", "rarity": "common", "type": "crafting_material", "value_gp": 15, "source": "Homebrew", "use": "Cursed boots or haste potion ingredient." },
+        { "name": "Fiendish Horn", "rarity": "uncommon", "type": "crafting_material", "value_gp": 50, "source": "Homebrew", "use": "Carved into unholy symbols or intimidation focus." },
+        { "name": "Fiendish Blood", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 60, "source": "Homebrew", "use": "Unholy water analog or bane mutagens." },
+        { "name": "Demonic Ichor", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 50, "source": "Homebrew", "use": "Greater acid flask or demonic enhancement potion." },
+        { "name": "Hellfire Ember", "rarity": "rare", "type": "alchemical_reagent", "value_gp": 100, "source": "Homebrew", "use": "Hellfire bomb or major alchemist's fire." },
+        { "name": "Damned Soul Residue", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Soul-binding rituals or bound unholy weapons." },
+        { "name": "Brimstone Heart", "rarity": "rare", "type": "magical_component", "value_gp": 300, "source": "Homebrew", "use": "Fire immunity ritual or major fire reagent." }
+      ]
+    },
+    "Fungus": {
+      "count_in_bestiary": 41,
+      "harvest_items": [
+        { "name": "Spore Sac", "rarity": "common", "type": "alchemical_reagent", "value_gp": 8, "source": "Homebrew", "use": "Smokestick or sleeping powder component." },
+        { "name": "Fungal Cap", "rarity": "common", "type": "alchemical_reagent", "value_gp": 5, "source": "PF2e (fungi/poisons analog)", "use": "Potion base or hallucinogen ingredient." },
+        { "name": "Mycelial Strand", "rarity": "common", "type": "crafting_material", "value_gp": 3, "source": "Homebrew", "use": "Cordage or binding material." },
+        { "name": "Glow Cap", "rarity": "common", "type": "trinket", "value_gp": 5, "source": "Homebrew", "use": "Persistent light source for 1 day." },
+        { "name": "Phosphorescent Spore", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 25, "source": "Homebrew", "use": "Light source or sunrod analog." },
+        { "name": "Toxic Mold", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 30, "source": "PF2e (mold hazards analog)", "use": "Inhaled poison ingredient." },
+        { "name": "Truffle", "rarity": "rare", "type": "trade_good", "value_gp": 100, "source": "Homebrew", "use": "Luxury food or culinary trade good." },
+        { "name": "Myceloid Heart", "rarity": "rare", "type": "magical_component", "value_gp": 80, "source": "Homebrew", "use": "Plant growth scroll or awaken plant component." }
+      ]
+    },
+    "Humanoid": {
+      "count_in_bestiary": 1472,
+      "harvest_items": [
+        { "name": "Humanoid Hair", "rarity": "common", "type": "magical_component", "value_gp": 1, "source": "PF2e (sympathetic component)", "use": "Sympathetic magic or scrying focus." },
+        { "name": "Humanoid Bone / Skull", "rarity": "common", "type": "crafting_material", "value_gp": 5, "source": "PF2e (necromancy component)", "use": "Necromancy components or trophy." },
+        { "name": "Humanoid Blood", "rarity": "common", "type": "alchemical_reagent", "value_gp": 3, "source": "Homebrew", "use": "Sympathetic magic or dark ritual component." },
+        { "name": "Goblin Ear", "rarity": "common", "type": "trophy", "value_gp": 1, "source": "Homebrew", "use": "Goblin bounty token." },
+        { "name": "Kobold Scale", "rarity": "common", "type": "crafting_material", "value_gp": 2, "source": "Homebrew", "use": "Lightweight scale armor or dragon-scale substitute." },
+        { "name": "Troglodyte Stink Gland", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 18, "source": "Homebrew", "use": "Stinkbomb or bomb potency reagent." },
+        { "name": "Giant Heart", "rarity": "uncommon", "type": "magical_component", "value_gp": 80, "source": "Homebrew", "use": "Strength enhancement potions." },
+        { "name": "Hag Coven Tooth", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Coven scrying focus or dark magic component." }
+      ]
+    },
+    "Monitor": {
+      "count_in_bestiary": 75,
+      "harvest_items": [
+        { "name": "Order Shard", "rarity": "uncommon", "type": "magical_component", "value_gp": 60, "source": "Homebrew", "use": "Lawful weapon enhancement or banishment scroll." },
+        { "name": "Chaotic Stardust", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 50, "source": "Homebrew", "use": "Confusion bomb component." },
+        { "name": "Death's Coin", "rarity": "rare", "type": "trinket", "value_gp": 75, "source": "Homebrew", "use": "Soul passage or psychopomp-related ritual token." },
+        { "name": "Truth Stone", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Truth magic or oath-binding component." },
+        { "name": "Protean Essence", "rarity": "rare", "type": "magical_component", "value_gp": 140, "source": "Homebrew", "use": "Polymorph component or chaotic bane reagent." },
+        { "name": "Inevitable Gear", "rarity": "rare", "type": "crafting_material", "value_gp": 150, "source": "Homebrew", "use": "Clockwork crafting or lawful bane component." },
+        { "name": "Psychopomp Veil", "rarity": "rare", "type": "magical_component", "value_gp": 175, "source": "Homebrew", "use": "Soul-binding component or speak with dead scroll." },
+        { "name": "Aeon Stone Shard", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "PF2e (Aeon Stone)", "use": "Crafts minor aeon stones or stores spell energy." }
+      ]
+    },
+    "Ooze": {
+      "count_in_bestiary": 59,
+      "harvest_items": [
+        { "name": "Ooze Slime", "rarity": "common", "type": "alchemical_reagent", "value_gp": 5, "source": "Homebrew", "use": "Adhesive or tanglefoot bag analog." },
+        { "name": "Acid Sac", "rarity": "common", "type": "alchemical_reagent", "value_gp": 10, "source": "PF2e (Acid Flask)", "use": "Acid flask production." },
+        { "name": "Gel Sample", "rarity": "common", "type": "alchemical_reagent", "value_gp": 6, "source": "Homebrew", "use": "Soothing gel or minor healing salve." },
+        { "name": "Adhesive Mucus", "rarity": "common", "type": "alchemical_reagent", "value_gp": 8, "source": "Homebrew", "use": "Strong glue or trap construction." },
+        { "name": "Caustic Bile", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 25, "source": "Homebrew", "use": "Greater acid flask or corrosive coating." },
+        { "name": "Black Pudding Sample", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 30, "source": "Homebrew", "use": "Metal and wood eating reagent." },
+        { "name": "Ooze Heart", "rarity": "rare", "type": "magical_component", "value_gp": 100, "source": "Homebrew", "use": "Regeneration ointment or healing potion." }
+      ]
+    },
+    "Plant": {
+      "count_in_bestiary": 141,
+      "harvest_items": [
+        { "name": "Plant Sap", "rarity": "common", "type": "alchemical_reagent", "value_gp": 3, "source": "PF2e (sap analog)", "use": "Healing salve base or adhesive." },
+        { "name": "Tendril", "rarity": "common", "type": "crafting_material", "value_gp": 5, "source": "Homebrew", "use": "Strong cordage or whip component." },
+        { "name": "Root Bulb", "rarity": "common", "type": "alchemical_reagent", "value_gp": 4, "source": "Homebrew", "use": "Strength tonic ingredient." },
+        { "name": "Magical Pollen", "rarity": "uncommon", "type": "alchemical_reagent", "value_gp": 25, "source": "Homebrew", "use": "Sleep arrow ammunition or charm dust." },
+        { "name": "Sentient Vine", "rarity": "uncommon", "type": "crafting_material", "value_gp": 35, "source": "Homebrew", "use": "Living rope or entangle scroll component." },
+        { "name": "Treant Bark", "rarity": "rare", "type": "crafting_material", "value_gp": 80, "source": "Homebrew (analog: Darkwood)", "use": "Darkwood substitute or living staff." },
+        { "name": "Heartwood", "rarity": "rare", "type": "crafting_material", "value_gp": 100, "source": "Homebrew", "use": "Wand-quality wood or magical staff." },
+        { "name": "Shambling Mound Heart", "rarity": "rare", "type": "magical_component", "value_gp": 150, "source": "Homebrew", "use": "Lightning resistance armor component." }
+      ]
+    },
+    "Spirit": {
+      "count_in_bestiary": 135,
+      "harvest_items": [
+        { "name": "Whispered Sigh", "rarity": "uncommon", "type": "trinket", "value_gp": 30, "source": "Homebrew", "use": "Bottled emotion or bardic component." },
+        { "name": "Spirit Essence", "rarity": "uncommon", "type": "magical_component", "value_gp": 50, "source": "Homebrew", "use": "Speak with dead scroll or bind spirit ritual." },
+        { "name": "Ancestral Dust", "rarity": "uncommon", "type": "magical_component", "value_gp": 40, "source": "Homebrew", "use": "Ancestral guidance scroll or spirit binding." },
+        { "name": "Spectral Voice", "rarity": "uncommon", "type": "magical_component", "value_gp": 45, "source": "Homebrew", "use": "Message scroll or whispered command component." },
+        { "name": "Entropy Mote", "rarity": "rare", "type": "magical_component", "value_gp": 90, "source": "Homebrew", "use": "Disintegrate-themed ingredient." },
+        { "name": "Memory Echo", "rarity": "rare", "type": "magical_component", "value_gp": 150, "source": "Homebrew", "use": "Modify memory scroll or reincarnate component." },
+        { "name": "Spirit Glass", "rarity": "rare", "type": "magical_component", "value_gp": 175, "source": "Homebrew", "use": "Crystal ball component or scrying focus." },
+        { "name": "Soul Fragment", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Soul-binding rituals or lich phylactery analog." }
+      ]
+    },
+    "Undead": {
+      "count_in_bestiary": 540,
+      "harvest_items": [
+        { "name": "Undead Bone", "rarity": "common", "type": "crafting_material", "value_gp": 4, "source": "PF2e (component)", "use": "Necromancy component or bone weapons." },
+        { "name": "Grave Dust", "rarity": "common", "type": "alchemical_reagent", "value_gp": 8, "source": "Homebrew", "use": "Animate dead component or undead bane reagent." },
+        { "name": "Skeleton Femur", "rarity": "common", "type": "crafting_material", "value_gp": 3, "source": "Homebrew", "use": "Bone club or necromancy focus." },
+        { "name": "Preserved Skull", "rarity": "uncommon", "type": "magical_component", "value_gp": 25, "source": "Homebrew", "use": "Animate dead component or necromancy focus." },
+        { "name": "Ghostly Ectoplasm", "rarity": "uncommon", "type": "magical_component", "value_gp": 35, "source": "Homebrew", "use": "Ghost touch rune or minor ghostly weapon component." },
+        { "name": "Vampire Fang", "rarity": "rare", "type": "magical_component", "value_gp": 200, "source": "Homebrew", "use": "Charm component or vampiric weapon enhancement." },
+        { "name": "Wraith Essence", "rarity": "rare", "type": "magical_component", "value_gp": 175, "source": "Homebrew", "use": "Energy drain weapon component." },
+        { "name": "Lich Phylactery Shard", "rarity": "rare", "type": "magical_component", "value_gp": 500, "source": "Homebrew", "use": "Soul-binding ritual component; use with extreme caution." }
+      ]
+    }
+  },
+  "general_notes": {
+    "harvesting_rules": {
+      "time_per_creature": "10 minutes per creature size category (Tiny=10min, Medium=10min, Large=20min, Huge=30min, Gargantuan=60min)",
+      "tool_required": "A bladed tool such as a dagger, butcher knife, or harvesting kit. Without proper tools, take a -2 to checks.",
+      "freshness": "Most components spoil within 1d4 days unless preserved with salt, magic, or alchemical preservative.",
+      "skill_check": "Make a single harvest check against the creature's harvest DC. Critical success yields extra components; critical failure renders the corpse useless.",
+      "moral_considerations": "Harvesting humanoids, celestials, fey, and other sapient creatures can carry social and karmic consequences."
+    },
+    "value_modifiers": {
+      "creature_quality": {
+        "weak": "x0.5 value",
+        "standard": "x1 value",
+        "elite": "x1.5 value",
+        "named/unique": "x2 to x5 value"
+      },
+      "preservation": {
+        "fresh": "Full value within 24 hours",
+        "preserved": "Full value with proper preservation kit",
+        "spoiled": "10% value or less"
+      }
+    },
+    "tools_recommended": [
+      { "name": "Harvesting Kit", "value_gp": 5, "source": "Homebrew (analog: PF2e Healer's Tools)", "use": "Required for clean component extraction." },
+      { "name": "Preservation Salts", "value_gp": 2, "source": "Homebrew", "use": "Preserves up to 5 Bulk of components for 1 week." },
+      { "name": "Alchemical Preservative", "value_gp": 10, "source": "PF2e (Smelling Salts analog)", "use": "Preserves components indefinitely." },
+      { "name": "Skinning Knife", "value_gp": 1, "source": "PF2e (Dagger)", "use": "Simple harvesting tool." },
+      { "name": "Bone Saw", "value_gp": 3, "source": "PF2e (Crafter's Book analog)", "use": "Required for bone harvesting." }
+    ]
+  }
+}

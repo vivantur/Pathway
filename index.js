@@ -151,6 +151,13 @@ let ancestryDatabase = loadGamedata('ancestries.json', {
   count: obj => Object.keys(obj).length,
 });
 
+let harvestRewardsDatabase = loadGamedata('harvest-rewards.json', {
+  default: { creature_types: {} },
+  label: 'harvest reward tables',
+  transform: raw => raw ?? { creature_types: {} },
+  count: obj => Object.keys(obj.creature_types ?? {}).length,
+});
+
 let archetypeDatabase = loadGamedata('archetypes.json', {
   default: {},
   label: 'archetypes from database',
@@ -4926,12 +4933,56 @@ function huntDegreeLabel(degree) {
     : 'Critical Failure';
 }
 
-function huntMaterialValue(level, degree) {
-  const base = Math.max(1, Math.round((Number(level) + 2) * 2));
-  if (degree === 2) return base * 2;
-  if (degree === 1) return base;
-  if (degree === 0) return Math.max(1, Math.floor(base / 4));
-  return 0;
+const HARVEST_RARITY_RANK = { common: 0, uncommon: 1, rare: 2, unique: 3 };
+
+function harvestTraitTable(trait) {
+  const tables = harvestRewardsDatabase?.creature_types ?? {};
+  const wanted = String(trait ?? '').toLowerCase();
+  return Object.entries(tables).find(([key]) => key.toLowerCase() === wanted)?.[1] ?? null;
+}
+
+function harvestScaleValue(value, level) {
+  const base = Number(value) || 0;
+  if (base <= 0) return 0;
+  const scale = Math.max(1, (Number(level) || 0) / 5);
+  return Math.round(base * scale * 100) / 100;
+}
+
+function harvestAllowedRarity(degree) {
+  if (degree >= 2) return 2;
+  if (degree === 1) return 1;
+  if (degree === 0) return 0;
+  return -1;
+}
+
+function pickHarvestRewards(trait, level, degree) {
+  const table = harvestTraitTable(trait);
+  if (!table?.harvest_items?.length || degree < 0) {
+    return { table, items: [], totalValue: 0 };
+  }
+
+  const maxRank = harvestAllowedRarity(degree);
+  const pool = table.harvest_items.filter(item => {
+    const rank = HARVEST_RARITY_RANK[String(item.rarity ?? 'common').toLowerCase()] ?? 0;
+    return rank <= maxRank;
+  });
+  const fallbackPool = table.harvest_items.filter(item => String(item.rarity ?? 'common').toLowerCase() !== 'unique');
+  const source = pool.length ? pool : fallbackPool;
+  if (!source.length) return { table, items: [], totalValue: 0 };
+
+  const count = degree >= 2 ? Math.min(2, source.length) : 1;
+  const shuffled = [...source].sort(() => Math.random() - 0.5);
+  const items = shuffled.slice(0, count).map(item => ({
+    ...item,
+    scaled_value_gp: harvestScaleValue(item.value_gp, level),
+  }));
+  const valueMultiplier = degree === 0 ? 0.25 : 1;
+  const totalValue = Math.round(items.reduce((sum, item) => sum + item.scaled_value_gp, 0) * valueMultiplier * 100) / 100;
+  return { table, items, totalValue };
+}
+
+function formatHarvestValue(value) {
+  return `${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} gp`;
 }
 
 function buildHuntEmbed({ monster, trait, skill, modifier, roll, total, dc, degree, targetLevel, players, difficulty }) {
@@ -4954,20 +5005,42 @@ function buildHuntEmbed({ monster, trait, skill, modifier, roll, total, dc, degr
 
 function buildHarvestEmbed({ monster, trait, skill, modifier, roll, total, dc, degree }) {
   const level = huntMonsterLevel(monster) ?? 0;
-  const value = huntMaterialValue(level, degree);
+  const rewards = pickHarvestRewards(trait, level, degree);
+  const traitName = trait.charAt(0).toUpperCase() + trait.slice(1);
   const reward = degree >= 1
-    ? `Recover useful ${trait} materials worth about **${value} gp**.`
+    ? `Recover useful **${traitName}** components worth about **${formatHarvestValue(rewards.totalValue)}**.`
     : degree === 0
-      ? `Recover damaged scraps worth about **${value} gp**.`
+      ? `Recover damaged **${traitName}** scraps worth about **${formatHarvestValue(rewards.totalValue)}**.`
       : 'The useful parts are ruined or unsafe to use.';
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(degree >= 1 ? 0xf1c40f : 0x7f8c8d)
     .setTitle(`Harvest: ${monster.name}`)
     .setDescription(reward)
     .addFields(
       { name: 'Harvest Check', value: `${skill} ${fmt(modifier)}: d20 ${roll.roll} ${fmt(modifier)} = **${total}** vs DC ${dc}\n**${huntDegreeLabel(degree)}**`, inline: false },
-      { name: 'Suggested Use', value: 'Use as crafting materials, alchemical ingredients, trophies, spell components, or sellable monster parts at GM discretion.', inline: false },
     );
+  if (rewards.items.length) {
+    embed.addFields({
+      name: degree === 0 ? 'Damaged Component' : 'Harvested Components',
+      value: rewards.items.map(item => {
+        const rarity = String(item.rarity ?? 'common');
+        const type = String(item.type ?? 'component').replace(/_/g, ' ');
+        return `**${item.name}** (${rarity}, ${type}) - ${formatHarvestValue(item.scaled_value_gp)}\n${item.use ?? 'Useful as a crafting, alchemical, spell, or trophy component.'}`;
+      }).join('\n\n').slice(0, 1024),
+      inline: false,
+    });
+    const sources = [...new Set(rewards.items.map(item => item.source).filter(Boolean))];
+    if (sources.length) {
+      embed.addFields({ name: 'Source Notes', value: sources.join('; ').slice(0, 1024), inline: false });
+    }
+  } else {
+    embed.addFields({
+      name: 'Suggested Use',
+      value: 'Use as crafting materials, alchemical ingredients, trophies, spell components, or sellable monster parts at GM discretion.',
+      inline: false,
+    });
+  }
+  return embed;
 }
 
 // Format a single ability score modifier for the embed (e.g. "+3", "-1").
@@ -6887,6 +6960,13 @@ function reloadDatabasesAfterRestore() {
     Object.assign(bestiaryDatabase, freshCreatures);
     console.log(`[reload] bestiary: ${Object.keys(bestiaryDatabase).length} creatures`);
   } catch (e) { console.error('[reload] bestiary failed:', e.message); }
+
+  try {
+    const fresh = JSON.parse(fs.readFileSync(gamedataPath('harvest-rewards.json'), 'utf8'));
+    for (const key of Object.keys(harvestRewardsDatabase)) delete harvestRewardsDatabase[key];
+    Object.assign(harvestRewardsDatabase, fresh ?? { creature_types: {} });
+    console.log(`[reload] harvest rewards: ${Object.keys(harvestRewardsDatabase.creature_types ?? {}).length} tables`);
+  } catch (e) { console.error('[reload] harvest rewards failed:', e.message); }
 
   try {
     const rawSpells = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
