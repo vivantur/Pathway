@@ -448,6 +448,61 @@ const deityCommand = new SlashCommandBuilder()
   .setDescription('Look up a deity from the game database.')
   .addStringOption(o => o.setName('name').setDescription('Deity name (partial match OK)').setRequired(true).setAutocomplete(true));
 
+const huntTraitChoices = [
+  { name: 'Aberration', value: 'aberration' },
+  { name: 'Animal', value: 'animal' },
+  { name: 'Astral', value: 'astral' },
+  { name: 'Beast', value: 'beast' },
+  { name: 'Celestial', value: 'celestial' },
+  { name: 'Construct', value: 'construct' },
+  { name: 'Dragon', value: 'dragon' },
+  { name: 'Elemental', value: 'elemental' },
+  { name: 'Ethereal', value: 'ethereal' },
+  { name: 'Fey', value: 'fey' },
+  { name: 'Fiend', value: 'fiend' },
+  { name: 'Fungus', value: 'fungus' },
+  { name: 'Humanoid', value: 'humanoid' },
+  { name: 'Monitor', value: 'monitor' },
+  { name: 'Ooze', value: 'ooze' },
+  { name: 'Plant', value: 'plant' },
+  { name: 'Spirit', value: 'spirit' },
+  { name: 'Undead', value: 'undead' },
+];
+
+const huntSkillChoices = [
+  { name: 'Arcana', value: 'Arcana' },
+  { name: 'Crafting', value: 'Crafting' },
+  { name: 'Nature', value: 'Nature' },
+  { name: 'Occultism', value: 'Occultism' },
+  { name: 'Religion', value: 'Religion' },
+  { name: 'Society', value: 'Society' },
+];
+
+const huntsCommand = new SlashCommandBuilder()
+  .setName('hunts')
+  .setDescription('Find a balanced bestiary creature for a hunt.')
+  .addSubcommand(s => s.setName('start')
+    .setDescription('Roll to track a creature and generate the encounter.')
+    .addStringOption(o => o.setName('trait').setDescription('Creature trait to hunt.').setRequired(true).addChoices(...huntTraitChoices))
+    .addIntegerOption(o => o.setName('level').setDescription('Party level.').setRequired(true).setMinValue(1).setMaxValue(25))
+    .addIntegerOption(o => o.setName('players').setDescription('Number of player characters.').setRequired(true).setMinValue(1).setMaxValue(8))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Total skill modifier for the hunting check.').setRequired(true))
+    .addStringOption(o => o.setName('difficulty').setDescription('Encounter difficulty.').setRequired(false).addChoices(
+      { name: 'Trivial', value: 'trivial' },
+      { name: 'Low', value: 'low' },
+      { name: 'Moderate', value: 'moderate' },
+      { name: 'Severe', value: 'severe' },
+      { name: 'Extreme', value: 'extreme' },
+    ))
+    .addStringOption(o => o.setName('skill').setDescription('Skill used; defaults from creature trait table.').setRequired(false).addChoices(...huntSkillChoices)));
+
+const harvestCommand = new SlashCommandBuilder()
+  .setName('harvest')
+  .setDescription('Harvest useful materials from a defeated creature.')
+  .addStringOption(o => o.setName('creature').setDescription('Creature name from the bestiary.').setRequired(true).setAutocomplete(true))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Total skill modifier for the harvest check.').setRequired(true))
+  .addStringOption(o => o.setName('skill').setDescription('Skill used; defaults from creature trait table.').setRequired(false).addChoices(...huntSkillChoices));
+
 const skillinfoCommand = new SlashCommandBuilder()
   .setName('skillinfo')
   .setDescription('Look up full details on a skill (actions, DCs, uses).')
@@ -1407,7 +1462,9 @@ const commands = [
   sourcebookCommand,
   deityCommand,
   featCommand,
+  harvestCommand,
   heritageCommand,
+  huntsCommand,
   itemCommand,
   monsterCommand,
   ruleCommand,

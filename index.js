@@ -4827,6 +4827,149 @@ function findMonster(query) {
   return { monster: null, matches: [] };
 }
 
+const HUNT_CREATURE_SKILLS = {
+  aberration: ['Occultism'],
+  animal: ['Nature'],
+  astral: ['Occultism'],
+  beast: ['Arcana', 'Nature'],
+  celestial: ['Religion'],
+  construct: ['Arcana', 'Crafting'],
+  dragon: ['Arcana'],
+  elemental: ['Arcana', 'Nature'],
+  ethereal: ['Occultism'],
+  fey: ['Nature'],
+  fiend: ['Religion'],
+  fungus: ['Nature'],
+  humanoid: ['Society'],
+  monitor: ['Religion'],
+  ooze: ['Occultism'],
+  plant: ['Nature'],
+  spirit: ['Occultism'],
+  undead: ['Religion'],
+};
+
+const HUNT_LEVEL_DCS = {
+  '-1': 13, 0: 14, 1: 15, 2: 16, 3: 18, 4: 19, 5: 20, 6: 22, 7: 23, 8: 24, 9: 26,
+  10: 27, 11: 28, 12: 30, 13: 31, 14: 32, 15: 34, 16: 35, 17: 36, 18: 38, 19: 39,
+  20: 40, 21: 42, 22: 44, 23: 46, 24: 48, 25: 50,
+};
+
+const HUNT_DIFFICULTY_BUDGETS = { trivial: 40, low: 60, moderate: 80, severe: 120, extreme: 160 };
+const HUNT_XP_BY_RELATIVE_LEVEL = new Map([
+  [-4, 10], [-3, 15], [-2, 20], [-1, 30], [0, 40], [1, 60], [2, 80], [3, 120], [4, 160],
+]);
+
+function huntDcByLevel(level) {
+  const lvl = Math.max(-1, Math.min(25, Number(level) || 0));
+  return HUNT_LEVEL_DCS[lvl] ?? HUNT_LEVEL_DCS[String(lvl)] ?? 14;
+}
+
+function huntMonsterLevel(monster) {
+  return monster?.core?.level ?? monster?.summary?.summary?.level ?? monster?.summary?.level ?? monster?.level ?? null;
+}
+
+function huntMonsterTraits(monster) {
+  return (monster?.core?.traits ?? monster?.traits ?? []).map(t => String(t).toLowerCase());
+}
+
+function huntXpForCreature(partyLevel, creatureLevel) {
+  const relative = Math.max(-4, Math.min(4, Number(creatureLevel) - Number(partyLevel)));
+  return HUNT_XP_BY_RELATIVE_LEVEL.get(relative) ?? 40;
+}
+
+function huntTargetCreatureLevel(partyLevel, players, difficulty) {
+  const baseBudget = HUNT_DIFFICULTY_BUDGETS[difficulty] ?? HUNT_DIFFICULTY_BUDGETS.moderate;
+  const budget = Math.max(10, Math.round(baseBudget * Math.max(1, players) / 4));
+  let bestLevel = Number(partyLevel);
+  let bestXp = 0;
+  for (let rel = -4; rel <= 4; rel++) {
+    const xp = HUNT_XP_BY_RELATIVE_LEVEL.get(rel);
+    if (xp <= budget && xp >= bestXp) {
+      bestXp = xp;
+      bestLevel = Number(partyLevel) + rel;
+    }
+  }
+  return Math.max(-1, Math.min(25, bestLevel));
+}
+
+function findHuntCandidates({ trait, partyLevel, players, difficulty }) {
+  const targetLevel = huntTargetCreatureLevel(partyLevel, players, difficulty);
+  const entries = Object.values(bestiaryDatabase).filter(m => {
+    const level = huntMonsterLevel(m);
+    if (level == null || Number(level) !== targetLevel) return false;
+    return huntMonsterTraits(m).includes(trait);
+  });
+  if (entries.length) return { candidates: entries, targetLevel };
+
+  const fallback = Object.values(bestiaryDatabase)
+    .filter(m => {
+      const level = huntMonsterLevel(m);
+      return level != null
+        && Math.abs(Number(level) - targetLevel) <= 1
+        && huntMonsterTraits(m).includes(trait);
+    })
+    .sort((a, b) => Math.abs(huntMonsterLevel(a) - targetLevel) - Math.abs(huntMonsterLevel(b) - targetLevel));
+  return { candidates: fallback, targetLevel };
+}
+
+function huntDegree(total, die, dc) {
+  let degree = total >= dc + 10 ? 2 : total >= dc ? 1 : total <= dc - 10 ? -1 : 0;
+  if (die === 20) degree += 1;
+  if (die === 1) degree -= 1;
+  return Math.max(-1, Math.min(2, degree));
+}
+
+function huntDegreeLabel(degree) {
+  return degree === 2 ? 'Critical Success'
+    : degree === 1 ? 'Success'
+    : degree === 0 ? 'Failure'
+    : 'Critical Failure';
+}
+
+function huntMaterialValue(level, degree) {
+  const base = Math.max(1, Math.round((Number(level) + 2) * 2));
+  if (degree === 2) return base * 2;
+  if (degree === 1) return base;
+  if (degree === 0) return Math.max(1, Math.floor(base / 4));
+  return 0;
+}
+
+function buildHuntEmbed({ monster, trait, skill, modifier, roll, total, dc, degree, targetLevel, players, difficulty }) {
+  const level = huntMonsterLevel(monster);
+  const traits = huntMonsterTraits(monster).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+  const xp = huntXpForCreature(targetLevel, level);
+  const description = degree >= 1
+    ? `The party tracks signs of suitable prey and finds **${monster.name}**. Complete the encounter, then use \`/harvest creature:${monster.name}\`.`
+    : `The trail goes cold. The GM can still choose to run a complication, false trail, or different encounter.`;
+  return new EmbedBuilder()
+    .setColor(degree >= 1 ? 0x2ecc71 : 0x95a5a6)
+    .setTitle(`Hunt: ${monster.name}`)
+    .setDescription(description)
+    .addFields(
+      { name: 'Hunt Check', value: `${skill} ${fmt(modifier)}: d20 ${roll.roll} ${fmt(modifier)} = **${total}** vs DC ${dc}\n**${huntDegreeLabel(degree)}**`, inline: false },
+      { name: 'Encounter', value: `Party level ${targetLevel}, ${players} player${players === 1 ? '' : 's'}, ${difficulty}\nCreature ${level} (${xp} XP each by PF2e relative-level budget)`, inline: false },
+      { name: 'Creature Traits', value: traits.join(', ') || 'None listed', inline: false },
+    );
+}
+
+function buildHarvestEmbed({ monster, trait, skill, modifier, roll, total, dc, degree }) {
+  const level = huntMonsterLevel(monster) ?? 0;
+  const value = huntMaterialValue(level, degree);
+  const reward = degree >= 1
+    ? `Recover useful ${trait} materials worth about **${value} gp**.`
+    : degree === 0
+      ? `Recover damaged scraps worth about **${value} gp**.`
+      : 'The useful parts are ruined or unsafe to use.';
+  return new EmbedBuilder()
+    .setColor(degree >= 1 ? 0xf1c40f : 0x7f8c8d)
+    .setTitle(`Harvest: ${monster.name}`)
+    .setDescription(reward)
+    .addFields(
+      { name: 'Harvest Check', value: `${skill} ${fmt(modifier)}: d20 ${roll.roll} ${fmt(modifier)} = **${total}** vs DC ${dc}\n**${huntDegreeLabel(degree)}**`, inline: false },
+      { name: 'Suggested Use', value: 'Use as crafting materials, alchemical ingredients, trophies, spell components, or sellable monster parts at GM discretion.', inline: false },
+    );
+}
+
 // Format a single ability score modifier for the embed (e.g. "+3", "-1").
 function fmtMod(n) {
   if (n === undefined || n === null) return null;
@@ -7610,6 +7753,9 @@ client.on('interactionCreate', async (interaction) => {
           suggestions = pick(Object.values(backgroundDatabase).map(b => b?.name).filter(Boolean));
         }
         else if (cmd === 'monster' && focused.name === 'name') {
+          suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
+        }
+        else if (cmd === 'harvest' && focused.name === 'creature') {
           suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
         }
         else if (cmd === 'monsterart' && focused.name === 'monster') {
@@ -12487,6 +12633,68 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /monster ────────────────────────────────────────────────────
+  else if (commandName === 'hunts') {
+    const sub = interaction.options.getSubcommand();
+    if (sub === 'start') {
+      const trait = interaction.options.getString('trait');
+      const partyLevel = interaction.options.getInteger('level');
+      const players = interaction.options.getInteger('players');
+      const difficulty = interaction.options.getString('difficulty') ?? 'moderate';
+      const allowedSkills = HUNT_CREATURE_SKILLS[trait] ?? ['Nature'];
+      const skill = interaction.options.getString('skill') ?? allowedSkills[0];
+      if (!allowedSkills.includes(skill)) {
+        return interaction.reply({ content: `For **${trait}** hunts, use: ${allowedSkills.join(', ')}.`, ephemeral: true });
+      }
+      const modifier = interaction.options.getInteger('bonus');
+      const { candidates, targetLevel } = findHuntCandidates({ trait, partyLevel, players, difficulty });
+      if (!candidates.length) {
+        return interaction.reply({
+          content: `No ${trait} creatures found around creature level ${targetLevel}. Try a different trait, party level, or difficulty.`,
+          ephemeral: true,
+        });
+      }
+      const monster = candidates[Math.floor(Math.random() * candidates.length)];
+      const level = huntMonsterLevel(monster) ?? targetLevel;
+      const dc = huntDcByLevel(level);
+      const roll = rollD20Plus(modifier);
+      const degree = huntDegree(roll.total, roll.roll, dc);
+      return interaction.reply({
+        embeds: [buildHuntEmbed({
+          monster, trait, skill, modifier, roll, total: roll.total, dc, degree,
+          targetLevel: partyLevel, players, difficulty,
+        })],
+      });
+    }
+  }
+
+  else if (commandName === 'harvest') {
+    const input = interaction.options.getString('creature');
+    const modifier = interaction.options.getInteger('bonus');
+    const { monster, matches, total } = findMonster(input);
+    if (!monster) {
+      if (matches?.length) {
+        const preview = matches.slice(0, 20).map(n => `• **${n}**`).join('\n');
+        const extra = (total ?? matches.length) > 20 ? `\n*...and ${(total ?? matches.length) - 20} more. Try narrowing your search.*` : '';
+        return interaction.reply({ content: `Multiple creatures match **"${input}"**:\n${preview}${extra}`, ephemeral: true });
+      }
+      return interaction.reply({ content: `No creature found for **${input}**.`, ephemeral: true });
+    }
+    const traits = huntMonsterTraits(monster);
+    const trait = traits.find(t => HUNT_CREATURE_SKILLS[t]) ?? 'animal';
+    const allowedSkills = HUNT_CREATURE_SKILLS[trait] ?? ['Nature'];
+    const skill = interaction.options.getString('skill') ?? allowedSkills[0];
+    if (!allowedSkills.includes(skill)) {
+      return interaction.reply({ content: `For **${trait}** harvesting, use: ${allowedSkills.join(', ')}.`, ephemeral: true });
+    }
+    const level = huntMonsterLevel(monster) ?? 0;
+    const dc = huntDcByLevel(level);
+    const roll = rollD20Plus(modifier);
+    const degree = huntDegree(roll.total, roll.roll, dc);
+    return interaction.reply({
+      embeds: [buildHarvestEmbed({ monster, trait, skill, modifier, roll, total: roll.total, dc, degree })],
+    });
+  }
+
   else if (commandName === 'monster') {
     const input = interaction.options.getString('name');
     const { monster, matches, total } = findMonster(input);
