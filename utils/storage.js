@@ -497,9 +497,10 @@ function _recordSyncFailure() { _syncConsecutiveFailures++; }
 function isSyncDegraded() { return _syncConsecutiveFailures >= SYNC_DEGRADED_THRESHOLD; }
 
 // Sync all characters from the in-memory map to Supabase.
-// Called after saveCharacters so the web app sees current data.
-// Only syncs users who have already signed into the web app (have a users row).
-async function syncAllCharactersToSupabase(characters) {
+// Called after saveCharacters to write character state to Supabase.
+// Accepts an optional usernamesByDiscordId Map so bot-only users (who have
+// never logged into the web app) get a users row auto-created on first save.
+async function syncAllCharactersToSupabase(characters, usernamesByDiscordId) {
   try {
     const sb = getSupabase();
     if (!sb) return;
@@ -512,9 +513,25 @@ async function syncAllCharactersToSupabase(characters) {
       .select('id, discord_id')
       .in('discord_id', discordIds);
     if (userErr) throw userErr;
-    if (!userRows || userRows.length === 0) return;
 
-    const userMap = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
+    const userMap = Object.fromEntries((userRows ?? []).map(u => [u.discord_id, u.id]));
+
+    // Auto-create users rows for bot-only users whose username we know.
+    // Discord usernames are captured from interaction.user.username and passed
+    // in via the usernamesByDiscordId cache in index.js.
+    const missingIds = discordIds.filter(id => !userMap[id]);
+    if (missingIds.length > 0 && usernamesByDiscordId?.size > 0) {
+      const toCreate = missingIds
+        .filter(id => usernamesByDiscordId.has(id))
+        .map(id => ({ discord_id: id, discord_username: usernamesByDiscordId.get(id) }));
+      if (toCreate.length > 0) {
+        const { data: created } = await sb
+          .from('users')
+          .upsert(toCreate, { onConflict: 'discord_id' })
+          .select('id, discord_id');
+        for (const row of created ?? []) userMap[row.discord_id] = row.id;
+      }
+    }
 
     const upserts = [];
     for (const [discordId, userChars] of Object.entries(characters)) {
@@ -1535,17 +1552,19 @@ function countGamedataEntriesOnDisk(target, topKey, strategy, category) {
 
 // ── Startup restore from Supabase ─────────────────────────────────────────────
 // Called once in clientReady BEFORE any user interaction is possible.
-// Pulls every synced table back into local JSON so the bot always boots from
-// Supabase truth rather than stale (or missing) volume files.
+// Pulls every synced table back from Supabase at startup.
+// Characters are returned directly (no JSON file write) so index.js can
+// populate its in-memory cache without touching disk. All other data
+// (bags, downtime, notes, guild state, etc.) is still written to local
+// JSON files for now — those will migrate in Phase 2c-e.
 //
-// Safe to run on a healthy restart — it only OVERWRITES fields that exist in
-// Supabase; it never deletes local-only data.
+// Returns { characters } on success, or undefined on failure.
 async function restoreAllFromSupabase() {
   try {
     const sb = getSupabase();
     if (!sb) {
       console.log('[Supabase] restore skipped — no client (env vars not set)');
-      return;
+      return { characters: {} };
     }
     console.log('[Supabase] starting startup restore…');
 
@@ -1556,26 +1575,28 @@ async function restoreAllFromSupabase() {
     if (userErr) throw userErr;
     if (!userRows || userRows.length === 0) {
       console.log('[Supabase] restore: no users found, skipping');
-      return;
+      return { characters: {} };
     }
     const bySupabaseId = Object.fromEntries(userRows.map(u => [u.id,    u.discord_id]));
     const byDiscordId  = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
 
     // ── 2. Characters ────────────────────────────────────────────────────────
+    // Build the characters map directly from Supabase — no JSON file read or
+    // write. index.js uses the returned map to seed its charactersCache so
+    // loadCharacters() returns Supabase data without touching disk.
     const { data: charRows, error: charErr } = await sb
       .from('characters')
       .select('user_id, char_key, name, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id')
       .eq('status', 'active');
     if (charErr) throw charErr;
 
-    const characters = loadJson('characters.json', { default: {}, quiet: true }) || {};
+    const characters = {};
     for (const row of charRows ?? []) {
       const discordId = bySupabaseId[row.user_id];
       if (!discordId || !row.char_key) continue;
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
       if (!characters[discordId]) characters[discordId] = {};
-      // Always overwrite from Supabase — it is the source of truth.
       characters[discordId][row.char_key] = {
         name:       build.name,
         data:       build,
@@ -1588,8 +1609,7 @@ async function restoreAllFromSupabase() {
         saved:      new Date().toISOString(),
       };
     }
-    atomicWriteJson('characters.json', characters);
-    console.log(`[Supabase] restore: wrote ${charRows?.length ?? 0} characters`);
+    console.log(`[Supabase] restore: loaded ${charRows?.length ?? 0} characters`);
 
     // ── 3. Bags ──────────────────────────────────────────────────────────────
     // Fetch bag metadata and normalized bag_items separately, then reconstruct
@@ -1934,9 +1954,10 @@ async function restoreAllFromSupabase() {
     await restoreGamedataFromSupabase(sb);
 
     console.log('[Supabase] startup restore complete ✓');
+    return { characters };
   } catch (err) {
     // Never crash the bot on a restore failure — log and continue.
-    // The bot will run from whatever JSON files are on disk.
+    // Without a return value, index.js falls back to an empty characters map.
     console.error('[Supabase] startup restore failed:', err.message);
   }
 }

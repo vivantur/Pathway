@@ -19,6 +19,7 @@ const {
   saveJson,
   mutateJson,
   restoreAllFromSupabase,
+  syncAllCharactersToSupabase,
   syncHomebrewEntryToSupabase,
   deleteHomebrewEntryFromSupabase,
   setupHomebrewRealtimeSync,
@@ -521,19 +522,21 @@ const referenceDatabases = Object.fromEntries(
 
 let charactersCache = null;
 
+// Keyed by Discord snowflake ID — populated at the top of every interactionCreate
+// so syncAllCharactersToSupabase can auto-create users rows for bot-only users.
+const usernameCache = new Map();
+
 function loadCharacters() {
-  if (charactersCache) return charactersCache;
-  try {
-    charactersCache = JSON.parse(fs.readFileSync(dataPath('characters.json'), 'utf8'));
-  } catch {
-    charactersCache = {};
-  }
-  return charactersCache;
+  // charactersCache is seeded from Supabase in clientReady (restoreAllFromSupabase).
+  // If for any reason it's still null (e.g. restore failed), return an empty map.
+  return charactersCache ?? (charactersCache = {});
 }
 
-function saveCharacters(data) {
+async function saveCharacters(data) {
   charactersCache = data || {};
-  return saveJson('characters.json', charactersCache);
+  // Write directly to Supabase — no JSON file. usernameCache lets us auto-create
+  // users rows for Discord-only users who haven't signed into the web app yet.
+  await syncAllCharactersToSupabase(data, usernameCache);
 }
 
 // ── Downtime helpers ──────────────────────────────────────────────────────────
@@ -7113,7 +7116,10 @@ function reloadDatabasesAfterRestore() {
 
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
-  await restoreAllFromSupabase();
+  const restored = await restoreAllFromSupabase();
+  // Seed the characters cache directly from Supabase data (no JSON file read).
+  // If restore failed, restored is undefined and we start with an empty map.
+  if (restored?.characters) charactersCache = restored.characters;
   reloadDatabasesAfterRestore();
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
@@ -7122,6 +7128,9 @@ client.once('clientReady', async () => {
 
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
+  // Cache the Discord username so saveCharacters can auto-create users rows
+  // for bot-only users who haven't logged into the web app.
+  if (interaction.user) usernameCache.set(interaction.user.id, interaction.user.username);
 
   if (interaction.isButton()) {
     // ─── Initiative pagination buttons ──────────────────────────────
