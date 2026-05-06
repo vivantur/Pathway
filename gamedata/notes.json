@@ -1,6 +1,0 @@
-{
-  "_meta": {
-    "version": 1,
-    "description": "Per-character session notes. Keyed by '<ownerId>:<charKey>'. Each character has { nextId, notes: [] }."
-  }
-}

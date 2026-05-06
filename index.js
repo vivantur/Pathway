@@ -6944,8 +6944,8 @@ client.once('clientReady', async () => {
   seedJsonCache('calendar-state.json', restored?.calendarState ?? {});
   seedJsonCache('weather-state.json',  restored?.weatherState  ?? {});
   seedJsonCache('bot-settings.json',   restored?.botSettings   ?? {});
-  // Phase 3: load reference databases (bestiary/spells/items/gamedata) directly
-  // from Supabase into memory — no disk writes, no disk reads.
+  // Load reference databases (bestiary/spells/items/gamedata) from Supabase
+  // directly into memory. Throws if Supabase is unreachable or table is empty.
   const spellEffectsData = {};
   const calendarData = {};  // populated with { golarion: {...}, eberron: {...} }
   const weatherData = {};   // populated with { golarion: {...}, eberron: {...} }
@@ -10687,7 +10687,6 @@ client.on('interactionCreate', async (interaction) => {
       'cwd()/characters.json':      path.join(process.cwd(), 'characters.json'),
       'cwd()/saves/characters.json': path.join(process.cwd(), 'saves', 'characters.json'),
       'cwd()/data/characters.json':  path.join(process.cwd(), 'data', 'characters.json'),
-      'cwd()/gamedata/characters.json': path.join(process.cwd(), 'gamedata', 'characters.json'),
       '/app/data/characters.json':   '/app/data/characters.json',
       '/app/characters.json':        '/app/characters.json',
       '/app/saves/characters.json':  '/app/saves/characters.json',
