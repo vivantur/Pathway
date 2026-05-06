@@ -482,10 +482,51 @@ async function syncAllCharactersToSupabase(characters, usernamesByDiscordId) {
       .from('characters')
       .upsert(upserts, { onConflict: 'user_id,char_key' });
     if (error) throw error;
+
+    for (const [discordId, userChars] of Object.entries(characters)) {
+      const userId = userMap[discordId];
+      if (!userId || !userChars || typeof userChars !== 'object') continue;
+      const activeKey = userChars._activeChar;
+      const nextActiveKey = activeKey && userChars[activeKey] ? activeKey : null;
+      const { error: activeErr } = await sb
+        .from('users')
+        .update({ active_char_key: nextActiveKey })
+        .eq('id', userId);
+      if (activeErr) throw activeErr;
+    }
+
     _recordSyncSuccess();
   } catch (err) {
     _recordSyncFailure();
     console.error('[Supabase] character sync failed:', err.message);
+  }
+}
+
+async function syncActiveCharacterToSupabase(discordId, activeCharKey, discordUsername = null) {
+  try {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const payload = { discord_id: String(discordId) };
+    if (discordUsername) payload.discord_username = discordUsername;
+
+    const { data: userRow, error: userErr } = await sb
+      .from('users')
+      .upsert(payload, { onConflict: 'discord_id' })
+      .select('id')
+      .single();
+    if (userErr) throw userErr;
+    if (!userRow?.id) return;
+
+    const { error } = await sb
+      .from('users')
+      .update({ active_char_key: activeCharKey || null })
+      .eq('id', userRow.id);
+    if (error) throw error;
+    _recordSyncSuccess();
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] active character sync failed:', err.message);
   }
 }
 
@@ -1295,7 +1336,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
 
     const { data: userRow } = await sb
       .from('users')
-      .select('id')
+      .select('id, active_char_key')
       .eq('discord_id', discordId)
       .single();
     if (!userRow) return 0;
@@ -1331,6 +1372,9 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
         saved:      new Date().toISOString(),
       };
       added++;
+    }
+    if (userRow.active_char_key && charactersMap[discordId]?.[userRow.active_char_key]) {
+      charactersMap[discordId]._activeChar = userRow.active_char_key;
     }
     return added;
   } catch (err) {
@@ -1690,7 +1734,7 @@ async function restoreAllFromSupabase() {
     // ── 1. Fetch user map: discord_id → supabase user_id ────────────────────
     const { data: userRows, error: userErr } = await sb
       .from('users')
-      .select('id, discord_id');
+      .select('id, discord_id, active_char_key');
     if (userErr) throw userErr;
     if (!userRows || userRows.length === 0) {
       console.log('[Supabase] restore: no users found, skipping');
@@ -1759,6 +1803,14 @@ async function restoreAllFromSupabase() {
       if (row.is_active) charEntry.activeCompanion = row.comp_key;
     }
     console.log(`[Supabase] restore: loaded ${compRows?.length ?? 0} companions`);
+
+    for (const row of userRows ?? []) {
+      const discordId = row.discord_id;
+      const activeKey = row.active_char_key;
+      if (discordId && activeKey && characters[discordId]?.[activeKey]) {
+        characters[discordId]._activeChar = activeKey;
+      }
+    }
 
     // ── 3. Bags ──────────────────────────────────────────────────────────────
     // Fetch bag metadata and normalized bag_items separately, then reconstruct
@@ -2230,6 +2282,7 @@ module.exports = {
   syncAllCompanionsToSupabase,
   // Single-record sync (used by command handlers that know which record changed)
   syncAllCharactersToSupabase,
+  syncActiveCharacterToSupabase,
   syncDowntimeToSupabase,
   syncEncounterToSupabase,
   endEncounterInSupabase,

@@ -16,6 +16,7 @@ const {
   restoreAllFromSupabase,
   loadReferenceDatabasesFromSupabase,
   syncAllCharactersToSupabase,
+  syncActiveCharacterToSupabase,
   syncHomebrewEntryToSupabase,
   deleteHomebrewEntryFromSupabase,
   setupHomebrewRealtimeSync,
@@ -9199,7 +9200,8 @@ client.on('interactionCreate', async (interaction) => {
       // /char active action:clear
       if (action === 'clear') {
         delete characters[userId]._activeChar;
-        saveCharacters(characters);
+        await syncActiveCharacterToSupabase(userId, null, interaction.user.username);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Active character cleared. Commands will now prompt you to choose when you have multiple characters.`, ephemeral: true });
       }
 
@@ -9222,7 +9224,8 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ Couldn't find **${nameArg}**.\nYour characters: ${names}`, ephemeral: true });
       }
       characters[userId]._activeChar = charKey;
-      saveCharacters(characters);
+      await syncActiveCharacterToSupabase(userId, charKey, interaction.user.username);
+      await saveCharacters(characters);
       const charName = characters[userId][charKey].name;
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
     }
