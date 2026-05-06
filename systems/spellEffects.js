@@ -33,20 +33,11 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
+let RULES = null;
 
-const RULES = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', 'gamedata', 'spell-effects.json'),
-      'utf8'
-    ));
-  } catch (err) {
-    console.error('spellEffects.js: failed to load gamedata/spell-effects.json:', err.message);
-    return null;
-  }
-})();
+function setRules(data) {
+  RULES = data ?? null;
+}
 
 // Normalize a spell name for lookup (lowercase, trim, collapse spaces).
 function normalizeName(name) {
@@ -166,4 +157,5 @@ module.exports = {
   resolveEffectsForDegree,
   applyEffectsToCombatant,
   formatEffectSummary,
+  setRules,
 };

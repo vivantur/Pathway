@@ -144,55 +144,33 @@ function dataPath(filename, { seedFromRepo = false, repoRoot = process.cwd() } =
 // that needs to survive redeploys. Reference data ships with the repo and
 // just needs to be readable.
 //
-// Resolves filenames relative to the bot's project root, regardless of where
-// the bot was started from. Falls back to process.cwd() if path detection
-// fails (which it shouldn't, since this file lives at utils/storage.js).
-const GAMEDATA_DIR = (() => {
-  // utils/storage.js → ../gamedata
-  try {
-    return path.join(__dirname, '..', 'gamedata');
-  } catch {
-    return path.join(process.cwd(), 'gamedata');
-  }
-})();
+// ── gamedata/ ARCHIVED ───────────────────────────────────────────────────────
+//
+// The gamedata/ JSON files are no longer read at runtime. All reference data
+// (bestiary, spells, items, feats, conditions, etc.) is loaded from Supabase
+// at startup by loadReferenceDatabasesFromSupabase().
+//
+// The archive is preserved in git tag: gamedata-archive-20260506
+// The files remain on disk for the AoN transformer tools (tools/aon-*.js) only.
+//
+// If you see one of these functions called at runtime, something is wrong —
+// a caller was not updated when the disk layer was removed. Fix it by routing
+// through loadReferenceDatabasesFromSupabase() instead.
 
-function gamedataPath(filename) {
-  return path.join(GAMEDATA_DIR, filename);
+function gamedataPath(_filename) {
+  throw new Error(
+    '[gamedata] gamedataPath() is no longer available — gamedata/ has been archived. ' +
+    'All reference data loads from Supabase at startup via loadReferenceDatabasesFromSupabase(). ' +
+    'See git tag gamedata-archive-20260506 to recover the source files.'
+  );
 }
 
-// Read a reference-data file from gamedata/. Mirrors loadJson's signature
-// for drop-in compatibility, minus the seedFromRepo / fromRepo flags
-// (always reads from gamedata/).
-function loadGamedata(filename, opts = {}) {
-  const {
-    default: defaultValue = null,
-    label,
-    count,
-    transform,
-    quiet = false,
-  } = opts;
-
-  const target = gamedataPath(filename);
-  try {
-    const raw = JSON.parse(fs.readFileSync(target, 'utf8'));
-    const data = transform ? transform(raw) : raw;
-    if (!quiet) {
-      const noun = label || filename.replace(/\.json$/, '');
-      if (typeof count === 'function') {
-        try {
-          console.log(`Loaded ${count(data)} ${noun}.`);
-        } catch {
-          console.log(`Loaded ${noun}.`);
-        }
-      } else {
-        console.log(`Loaded ${noun}.`);
-      }
-    }
-    return data;
-  } catch (err) {
-    console.error(`Could not load gamedata/${filename}:`, err.message);
-    return defaultValue;
-  }
+function loadGamedata(_filename, _opts) {
+  throw new Error(
+    '[gamedata] loadGamedata() is no longer available — gamedata/ has been archived. ' +
+    'All reference data loads from Supabase at startup via loadReferenceDatabasesFromSupabase(). ' +
+    'See git tag gamedata-archive-20260506 to recover the source files.'
+  );
 }
 
 
@@ -1417,124 +1395,44 @@ const REF_CMD_TO_CATEGORY = {
   sourcebook:    'sources',
 };
 
-// Kept for manual/migration use only. No longer called at startup —
-// loadReferenceDatabasesFromSupabase() populates memory directly.
-async function restoreGamedataFromSupabase(sb) {
-  const { data: rows, error } = await sb
-    .from('gamedata')
-    .select('category, slug, data');
-  if (error) throw error;
-  if (!rows || rows.length === 0) {
-    console.log('[Supabase] restore: gamedata table empty — using bundled files');
-    return;
-  }
-
-  // Group rows by category
-  const byCategory = {};
-  for (const row of rows) {
-    if (!row.category || !row.slug || !row.data) continue;
-    if (!byCategory[row.category]) byCategory[row.category] = {};
-    byCategory[row.category][row.slug] = row.data;
-  }
-
-  // Ensure gamedata/ directory exists (it may not on a fresh Railway container
-  // if we've removed the files from git)
-  try { fs.mkdirSync(GAMEDATA_DIR, { recursive: true }); } catch (_) {}
-
-  let filesWritten = 0;
-  for (const { category, file, topKey, strategy } of GAMEDATA_RESTORE_MAP) {
-    const entries = byCategory[category];
-    if (!entries || Object.keys(entries).length === 0) continue;
-    const target = gamedataPath(file);
-    const incomingCount = Object.keys(entries).length;
-    const bundledCount = countGamedataEntriesOnDisk(target, topKey, strategy, category);
-    if (bundledCount > incomingCount) {
-      console.warn(
-        `[Supabase] restore: skipped stale ${file} for category "${category}" ` +
-        `(${incomingCount} Supabase entries < ${bundledCount} bundled entries)`
-      );
-      continue;
-    }
-
-    let payload;
-    if (strategy === 'array') {
-      payload = { [topKey]: Object.values(entries) };
-    } else if (category === 'heritages') {
-      // heritages.json needs both by_slug AND by_ancestry indexes.
-      // by_ancestry was not stored in Supabase — rebuild it from by_slug.
-      const byAncestry = {};
-      for (const [slug, h] of Object.entries(entries)) {
-        if (!h) continue;
-        const ancestry = h.ancestry ?? null;
-        if (!ancestry) {
-          if (!byAncestry._versatile) byAncestry._versatile = [];
-          byAncestry._versatile.push(slug);
-        } else {
-          const key = String(ancestry).toLowerCase();
-          if (!byAncestry[key]) byAncestry[key] = [];
-          byAncestry[key].push(slug);
-        }
-      }
-      payload = { by_slug: entries, by_ancestry: byAncestry };
-    } else {
-      payload = { [topKey]: entries };
-    }
-
-    const tmp = `${target}.tmp`;
-    try {
-      fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
-      fs.renameSync(tmp, target);
-      filesWritten++;
-    } catch (e) {
-      console.error(`[Supabase] restore: failed to write ${file}:`, e.message);
-    }
-  }
-
-  console.log(`[Supabase] restore: wrote ${filesWritten} gamedata files (${rows.length} total entries)`);
+// ARCHIVED — restoreGamedataFromSupabase() wrote Supabase data back to disk.
+// That two-step (Supabase → disk → memory) has been replaced by
+// loadReferenceDatabasesFromSupabase() which populates memory directly.
+// The gamedata/ JSON files are no longer read or written at runtime.
+// See git tag gamedata-archive-20260506.
+async function restoreGamedataFromSupabase(_sb) {
+  throw new Error(
+    '[gamedata] restoreGamedataFromSupabase() is no longer available — ' +
+    'gamedata/ has been archived. Reference data loads directly into memory via ' +
+    'loadReferenceDatabasesFromSupabase(). See git tag gamedata-archive-20260506.'
+  );
 }
 
-function countGamedataEntriesOnDisk(target, topKey, strategy, category) {
-  try {
-    if (!fs.existsSync(target)) return 0;
-    const raw = JSON.parse(fs.readFileSync(target, 'utf8'));
-    if (strategy === 'array') {
-      const arr = raw?.[topKey];
-      return Array.isArray(arr) ? arr.length : 0;
-    }
-    if (category === 'heritages') {
-      return Object.keys(raw?.by_slug ?? {}).length;
-    }
-    const map = raw?.[topKey] ?? raw;
-    if (!map || typeof map !== 'object' || Array.isArray(map)) return 0;
-    return Object.entries(map)
-      .filter(([key]) => !['_meta', 'meta', 'metadata'].includes(key))
-      .length;
-  } catch {
-    return 0;
-  }
-}
-
-// ── Phase 3: load reference databases directly from Supabase (no disk writes) ──
+// ── Load reference databases directly from Supabase (authoritative) ─────────
 //
-// Replaces the restoreGamedataFromSupabase (disk write) +
-// reloadDatabasesAfterRestore (disk read) two-step. Caller passes references
-// to every in-place database object/array; this function mutates them directly.
+// Called once at clientReady. Populates every in-memory reference array/object
+// from Supabase typed tables (monsters, spells, items) and the generic gamedata
+// table (backgrounds, feats, conditions, heritages, deities, etc.).
 //
-// Databases NOT covered here (kept at their initial loadGamedata() values from
-// bundled files): featDatabase, ancestryDatabase, archetypeDatabase,
-// harvestRewardsDatabase, eberronDeityDatabase, eberronHouseDatabase.
+// Throws on Supabase unavailability or empty gamedata table — the bot must not
+// come online with empty reference databases (commands would silently return
+// nothing). Homebrew and typed-table failures are non-fatal (logged, not thrown).
 //
 // dbs must include:
 //   bestiaryDatabase, spellDatabase, itemDatabase,
 //   backgroundDatabase, rulesDatabase, heritageDatabase, heritagesByAncestry,
 //   deityDatabase, eberronDeityDatabase, eberronHouseDatabase,
 //   skillDatabase, classDatabase, companionDatabase, referenceDatabases,
-//   ancestryDatabase, archetypeDatabase, featDatabase, harvestRewardsDatabase
+//   ancestryDatabase, archetypeDatabase, featDatabase, harvestRewardsDatabase,
+//   spellEffectsData, calendarData, weatherData
 async function loadReferenceDatabasesFromSupabase(dbs) {
   const sb = getSupabase();
   if (!sb) {
-    console.warn('[startup] Supabase unavailable — reference databases use bundled files only');
-    return;
+    throw new Error(
+      '[startup] FATAL: Supabase is unavailable — reference databases cannot be loaded. ' +
+      'The bot requires a live Supabase connection at startup. ' +
+      'Check SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.'
+    );
   }
 
   // ── Typed table: monsters ────────────────────────────────────────────────────
@@ -1611,8 +1509,11 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
     const { data: gdRows, error } = await sb.from('gamedata').select('category, slug, data');
     if (error) throw error;
     if (!gdRows || gdRows.length === 0) {
-      console.log('[startup] gamedata table empty — reference databases use bundled files');
-      return;
+      throw new Error(
+        '[startup] FATAL: gamedata table is empty — reference databases cannot be loaded. ' +
+        'Run the seeder to populate it: ' +
+        'cd web/frontend && npx tsx scripts/seed_gamedata_supabase.ts'
+      );
     }
 
     const byCategory = {};
@@ -1716,6 +1617,30 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
         db.splice(0, db.length, ...arr.map(e => ({ ...e, _referenceCommand: cmd })));
         console.log(`[startup] ${cmd}: ${arr.length}`);
       }
+    }
+
+    // ── spell_effects → spellEffectsData ─────────────────────────────────────
+    if (dbs.spellEffectsData && byCategory.spell_effects) {
+      for (const [slug, entry] of Object.entries(byCategory.spell_effects)) {
+        if (entry) dbs.spellEffectsData[slug] = entry;
+      }
+      console.log(`[startup] spell_effects: ${Object.keys(dbs.spellEffectsData).length} entries`);
+    }
+
+    // ── calendar_rules → calendarData ────────────────────────────────────────
+    if (dbs.calendarData && byCategory.calendar_rules) {
+      for (const [slug, entry] of Object.entries(byCategory.calendar_rules)) {
+        if (entry) dbs.calendarData[slug] = entry;
+      }
+      console.log(`[startup] calendar_rules: ${Object.keys(dbs.calendarData).length} variants (${Object.keys(dbs.calendarData).join(', ')})`);
+    }
+
+    // ── weather_rules → weatherData ──────────────────────────────────────────
+    if (dbs.weatherData && byCategory.weather_rules) {
+      for (const [slug, entry] of Object.entries(byCategory.weather_rules)) {
+        if (entry) dbs.weatherData[slug] = entry;
+      }
+      console.log(`[startup] weather_rules: ${Object.keys(dbs.weatherData).length} variants (${Object.keys(dbs.weatherData).join(', ')})`);
     }
 
     console.log(`[startup] gamedata: ${gdRows.length} entries → reference databases populated ✓`);
@@ -2277,9 +2202,7 @@ function setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDataba
 module.exports = {
   DATA_DIR,
   dataPath,
-  gamedataPath,
   loadJson,
-  loadGamedata,
   mutateJson,
   seedJsonCache,
   getSupabase,

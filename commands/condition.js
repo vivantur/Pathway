@@ -3,12 +3,15 @@
 // Data source: ../gamedata/conditions.json
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
 
 // Load the conditions database once at startup.
-const conditionsPath = path.join(__dirname, '..', 'gamedata', 'conditions.json');
-const conditions = JSON.parse(fs.readFileSync(conditionsPath, 'utf8'));
+// Graceful fallback: if the gamedata file is absent (data now lives in Supabase),
+// conditions will be an empty object and the command will use runtime data instead.
+let conditions = {};
+try {
+  conditions = JSON.parse(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'gamedata', 'conditions.json'), 'utf8'));
+} catch (_) { /* file not present — conditions loaded from Supabase at runtime */ }
 
 /**
  * Look up a condition by name. Handles:

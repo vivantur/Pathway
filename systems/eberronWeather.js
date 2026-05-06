@@ -16,21 +16,13 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
 const { loadJson, mutateJson } = require('../utils/storage');
 
-const RULES = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', 'gamedata', 'eberron-weather.json'),
-      'utf8'
-    ));
-  } catch (err) {
-    console.error('eberronWeather.js: failed to load gamedata/eberron-weather.json:', err.message);
-    return null;
-  }
-})();
+let RULES = null;
+
+function setRules(data) {
+  RULES = data ?? null;
+}
 
 const STATE_FILE = 'weather-state.json';
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -418,6 +410,7 @@ module.exports = {
   clear,
   describeWeather,
   buildEffectsForCombatant,
+  setRules,
   _internal: {
     rollOneDay,
     weightedPick,

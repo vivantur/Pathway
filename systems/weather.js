@@ -30,24 +30,13 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
 const { loadJson, mutateJson } = require('../utils/storage');
 
-// ── Load the static rules data ───────────────────────────────────────────────
-// gamedata/weather.json ships in the repo; it's read-only at runtime.
-// We load once at module init (it's tiny — ~20 KB).
-const RULES = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', 'gamedata', 'weather.json'),
-      'utf8'
-    ));
-  } catch (err) {
-    console.error('weather.js: failed to load gamedata/weather.json:', err.message);
-    return null;
-  }
-})();
+let RULES = null;
+
+function setRules(data) {
+  RULES = data ?? null;
+}
 
 const STATE_FILE = 'weather-state.json';
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -477,6 +466,7 @@ module.exports = {
   // Output helpers
   describeWeather,
   buildEffectsForCombatant,
+  setRules,
   // Internal helpers, exported for testing
   _internal: {
     rollOneDay,
