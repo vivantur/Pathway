@@ -1433,9 +1433,11 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
   }
 
   // Supabase JS defaults to 1 000 rows per query regardless of table size.
-  // Use range-based pagination to fetch all rows without a hard-coded limit.
+  // PostgREST enforces a server-side max-rows cap (1 000 on hosted Supabase).
+  // PAGE must be ≤ that cap: if PAGE > max-rows, the first response is always
+  // < PAGE and the loop exits after one iteration — same as no pagination.
   async function fetchAllRows(table, columns) {
-    const PAGE = 2000;
+    const PAGE = 1000; // must stay ≤ PostgREST max-rows (1 000 on Supabase)
     const rows = [];
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await sb
