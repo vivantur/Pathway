@@ -36,6 +36,38 @@ const MAX_LOG_ENTRIES = 100; // Cap log size so a year of daily checks doesn't b
 const MAX_GRANT_PER_CALL = 200; // Sanity bound for /downtime grant
 const MAX_SPEND_PER_CALL = 200; // Sanity bound for /downtime spend
 
+const STANDARD_DCS_BY_LEVEL = new Map([
+  [0, 14], [1, 15], [2, 16], [3, 18], [4, 19], [5, 20],
+  [6, 22], [7, 23], [8, 24], [9, 26], [10, 27], [11, 28],
+  [12, 30], [13, 31], [14, 32], [15, 34], [16, 35], [17, 36],
+  [18, 38], [19, 39], [20, 40],
+]);
+
+const INCOME_CP_BY_LEVEL = {
+  0:  { failure: 1, trained: 5, expert: 5, master: 5, legendary: 5 },
+  1:  { failure: 2, trained: 20, expert: 20, master: 20, legendary: 20 },
+  2:  { failure: 4, trained: 30, expert: 30, master: 30, legendary: 30 },
+  3:  { failure: 8, trained: 50, expert: 50, master: 50, legendary: 50 },
+  4:  { failure: 10, trained: 70, expert: 80, master: 80, legendary: 80 },
+  5:  { failure: 20, trained: 90, expert: 100, master: 100, legendary: 100 },
+  6:  { failure: 30, trained: 150, expert: 200, master: 200, legendary: 200 },
+  7:  { failure: 40, trained: 200, expert: 250, master: 250, legendary: 250 },
+  8:  { failure: 50, trained: 250, expert: 300, master: 300, legendary: 300 },
+  9:  { failure: 60, trained: 300, expert: 400, master: 400, legendary: 400 },
+  10: { failure: 70, trained: 400, expert: 500, master: 600, legendary: 600 },
+  11: { failure: 80, trained: 500, expert: 600, master: 800, legendary: 800 },
+  12: { failure: 90, trained: 600, expert: 800, master: 1000, legendary: 1000 },
+  13: { failure: 100, trained: 700, expert: 1000, master: 1500, legendary: 1500 },
+  14: { failure: 150, trained: 800, expert: 1500, master: 2000, legendary: 2000 },
+  15: { failure: 200, trained: 1000, expert: 2000, master: 2800, legendary: 2800 },
+  16: { failure: 250, trained: 1300, expert: 2500, master: 3600, legendary: 4000 },
+  17: { failure: 300, trained: 1500, expert: 3000, master: 4500, legendary: 5500 },
+  18: { failure: 400, trained: 2000, expert: 4500, master: 7000, legendary: 9000 },
+  19: { failure: 600, trained: 3000, expert: 6000, master: 10000, legendary: 13000 },
+  20: { failure: 800, trained: 4000, expert: 7500, master: 15000, legendary: 20000 },
+  21: { failure: 800, trained: 5000, expert: 9000, master: 17500, legendary: 30000 },
+};
+
 // ── Date helpers ────────────────────────────────────────────────────────────
 // We use UTC YYYY-MM-DD strings as our "day boundary" so accrual is consistent
 // regardless of timezone. The day boundary is midnight UTC.
@@ -47,6 +79,47 @@ function daysBetween(fromDateStr, toDateStr) {
   const from = new Date(fromDateStr + 'T00:00:00Z');
   const to   = new Date(toDateStr   + 'T00:00:00Z');
   return Math.floor((to - from) / 86400000);
+}
+
+function clampTaskLevel(level) {
+  const n = Number.isInteger(level) ? level : 0;
+  return Math.max(0, Math.min(20, n));
+}
+
+function taskLevelDC(level, adjustment = 'normal') {
+  const base = STANDARD_DCS_BY_LEVEL.get(clampTaskLevel(level)) ?? 14;
+  const adj = { easy: -2, normal: 0, hard: 2, veryhard: 5, incredible: 10 }[String(adjustment || 'normal').toLowerCase()] ?? 0;
+  return base + adj;
+}
+
+function profRankKey(profNum) {
+  if (profNum >= 8) return 'legendary';
+  if (profNum >= 6) return 'master';
+  if (profNum >= 4) return 'expert';
+  if (profNum >= 2) return 'trained';
+  return 'untrained';
+}
+
+function dailyIncomeCopper({ taskLevel, profRank, outcome }) {
+  if (outcome === 'crit-failure') return 0;
+  const effectiveLevel = outcome === 'crit-success'
+    ? Math.min(21, clampTaskLevel(taskLevel) + 1)
+    : clampTaskLevel(taskLevel);
+  const row = INCOME_CP_BY_LEVEL[effectiveLevel] ?? INCOME_CP_BY_LEVEL[0];
+  if (outcome === 'failure') return row.failure;
+  return row[profRankKey(profRank)] ?? 0;
+}
+
+function formatCopper(cp) {
+  if (!cp) return '0 cp';
+  const gp = Math.floor(cp / 100);
+  const sp = Math.floor((cp % 100) / 10);
+  const copper = cp % 10;
+  const parts = [];
+  if (gp) parts.push(`${gp} gp`);
+  if (sp) parts.push(`${sp} sp`);
+  if (copper) parts.push(`${copper} cp`);
+  return parts.join(' ');
 }
 
 // ── Per-character record helper ─────────────────────────────────────────────
@@ -233,6 +306,10 @@ module.exports = {
   // Reads
   getStatus,
   getLog,
+  taskLevelDC,
+  dailyIncomeCopper,
+  formatCopper,
+  profRankKey,
   // Date helpers (for testing)
   isoDate,
   daysBetween,

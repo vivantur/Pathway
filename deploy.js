@@ -1317,6 +1317,102 @@ const downtimeCommand = new SlashCommandBuilder()
     .setDescription('Reset downtime to 0 (irreversible).')
     .addStringOption(o => o.setName('character').setDescription('Defaults to your active character.').setRequired(false)));
 
+const addDowntimeCharacterOption = command => command
+  .addStringOption(o => o.setName('character').setDescription('Defaults to your active character.').setRequired(false));
+const addDowntimeRollOptions = (command, skillDescription = 'Skill to roll.') => addDowntimeCharacterOption(command
+  .addStringOption(o => o.setName('skill').setDescription(skillDescription).setRequired(true))
+  .addIntegerOption(o => o.setName('dc').setDescription('Override DC. If omitted, uses level + difficulty.').setRequired(false).setMinValue(1).setMaxValue(60))
+  .addIntegerOption(o => o.setName('level').setDescription('Task or target level for the standard DC.').setRequired(false).setMinValue(0).setMaxValue(20))
+  .addStringOption(o => o.setName('difficulty').setDescription('DC adjustment.')
+    .setRequired(false)
+    .addChoices(
+      { name: 'Normal', value: 'normal' },
+      { name: 'Hard (+2)', value: 'hard' },
+      { name: 'Very Hard (+5)', value: 'veryhard' },
+      { name: 'Incredible (+10)', value: 'incredible' },
+      { name: 'Easy (-2)', value: 'easy' },
+    ))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Extra circumstance/status/item bonus or penalty.').setRequired(false).setMinValue(-30).setMaxValue(30))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend.').setRequired(false).setMinValue(1).setMaxValue(200)));
+
+const craftCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('craft')
+  .setDescription('Downtime: craft an item with Crafting.')
+  .addStringOption(o => o.setName('item').setDescription('Item being crafted.').setRequired(true))
+  .addIntegerOption(o => o.setName('item_level').setDescription('Item level.').setRequired(true).setMinValue(0).setMaxValue(20))
+  .addIntegerOption(o => o.setName('dc').setDescription('Override Crafting DC.').setRequired(false).setMinValue(1).setMaxValue(60))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty.').setRequired(false).setMinValue(-30).setMaxValue(30))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend; Craft normally starts at 4.').setRequired(false).setMinValue(1).setMaxValue(200)));
+
+const forgeryCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('forgery')
+  .setDescription('Downtime: create a forged document with Society.')
+  .addStringOption(o => o.setName('document').setDescription('Document being forged.').setRequired(true))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Circumstance bonus for similar docs/handwriting sample.').setRequired(false).setMinValue(-30).setMaxValue(30))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend.').setRequired(false).setMinValue(1).setMaxValue(200)));
+
+const incomeCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('income')
+  .setDescription('Downtime: Earn Income with a trained skill.')
+  .addStringOption(o => o.setName('skill').setDescription('Skill used for the job, such as Crafting, Performance, or Lore.').setRequired(true))
+  .addIntegerOption(o => o.setName('task_level').setDescription('Task level offered by the GM.').setRequired(true).setMinValue(0).setMaxValue(20))
+  .addIntegerOption(o => o.setName('days').setDescription('Days worked.').setRequired(false).setMinValue(1).setMaxValue(200))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty.').setRequired(false).setMinValue(-30).setMaxValue(30)));
+
+const learnnameCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('learnname')
+  .setDescription('Downtime: learn a creature private or true name.'), 'Recall Knowledge skill for the creature type.');
+const longrestCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('longrest')
+  .setDescription('Downtime: spend a full day and night resting.')
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend.').setRequired(false).setMinValue(1).setMaxValue(200)));
+const subsistCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('subsist')
+  .setDescription('Downtime: provide food and shelter.'), 'Society in a settlement, Survival in the wild, or another GM-approved skill.');
+const treatdiseaseCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('treatdisease')
+  .setDescription('Downtime: treat a diseased creature with Medicine.')
+  .addStringOption(o => o.setName('target').setDescription('Creature being treated.').setRequired(true))
+  .addIntegerOption(o => o.setName('dc').setDescription('Disease DC.').setRequired(true).setMinValue(1).setMaxValue(60))
+  .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty.').setRequired(false).setMinValue(-30).setMaxValue(30))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend.').setRequired(false).setMinValue(1).setMaxValue(200)));
+
+const bribeCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('bribe')
+  .setDescription('Infiltration downtime: bribe a contact for Edge Points.'), 'Deception or Diplomacy.');
+const forgedocumentsCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('forgedocuments')
+  .setDescription('Infiltration downtime: prepare forged paperwork props.'), 'Society.');
+const gaincontactCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('gaincontact')
+  .setDescription('Infiltration downtime: gain a useful contact.'), 'Diplomacy, Society, or appropriate Lore.');
+const gossipCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('gossip')
+  .setDescription('Infiltration downtime: gather rumors about the target.'), 'Diplomacy.');
+const scoutCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('scout')
+  .setDescription('Infiltration downtime: observe a location or group.'), 'Perception, Society, or Stealth.');
+const disguiseCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('disguise')
+  .setDescription('Infiltration downtime: secure disguises.'), 'Crafting, Deception, Performance, or Society.');
+
+const cramCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('cram')
+  .setDescription('Academia downtime: study twice at a tiring cost.')
+  .addStringOption(o => o.setName('branch').setDescription('Branch or topic you cram for.').setRequired(true))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend.').setRequired(false).setMinValue(1).setMaxValue(200)));
+const researchCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('research')
+  .setDescription('Academia downtime: practical research in the field.'), 'GM-approved research skill.');
+const studyCommand = addDowntimeRollOptions(new SlashCommandBuilder()
+  .setName('study')
+  .setDescription('Academia downtime: study a primary or secondary branch.'), 'Associated branch skill.');
+const retrainCommand = addDowntimeCharacterOption(new SlashCommandBuilder()
+  .setName('retrain')
+  .setDescription('Downtime: retrain a feat, skill increase, or class feature.')
+  .addStringOption(o => o.setName('change').setDescription('What you are retraining.').setRequired(true))
+  .addIntegerOption(o => o.setName('days').setDescription('Downtime days to spend; most retraining takes 7.').setRequired(false).setMinValue(1).setMaxValue(200)));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // /calendar
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1437,6 +1533,23 @@ const commands = [
   notesCommand,
   // Downtime
   downtimeCommand,
+  craftCommand,
+  forgeryCommand,
+  incomeCommand,
+  learnnameCommand,
+  longrestCommand,
+  subsistCommand,
+  treatdiseaseCommand,
+  bribeCommand,
+  forgedocumentsCommand,
+  gaincontactCommand,
+  gossipCommand,
+  scoutCommand,
+  disguiseCommand,
+  cramCommand,
+  researchCommand,
+  studyCommand,
+  retrainCommand,
   // Lookup commands
   ancestryCommand,
   archetypeCommand,
