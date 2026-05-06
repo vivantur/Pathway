@@ -11,20 +11,26 @@ const path = require('path');
 const {
   DATA_DIR,
   dataPath,
-  gamedataPath,
-  atomicWriteJson,
-  atomicWriteGamedata,
   loadJson,
   loadGamedata,
-  saveJson,
   mutateJson,
   restoreAllFromSupabase,
+  loadReferenceDatabasesFromSupabase,
   syncAllCharactersToSupabase,
   syncHomebrewEntryToSupabase,
   deleteHomebrewEntryFromSupabase,
   setupHomebrewRealtimeSync,
   syncCompanionToSupabase,
   deleteCompanionFromSupabase,
+  syncAllBagsToSupabase,
+  syncAllDowntimeToSupabase,
+  syncAllNotesToSupabase,
+  syncAllUserSnippetsToSupabase,
+  syncAllGuildSnippetsToSupabase,
+  syncAllMonsterArtToSupabase,
+  syncAllMonsterEditsToSupabase,
+  syncAllMonsterAttacksToSupabase,
+  seedJsonCache,
 } = require('./utils/storage');
 
 // Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
@@ -265,23 +271,6 @@ function isBotOwner(userId) {
 // Atomic write: dump to a temp file, fsync, then rename. If anything goes wrong
 // mid-write, bestiary.json is either the old version or the new version — never
 // a half-written file.
-function persistBestiary() {
-  // Re-read metadata so we don't blow it away, and rewrite the whole file
-  // with updated creatures.
-  let metadata = null;
-  try {
-    const existing = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
-    metadata = existing.metadata ?? null;
-  } catch (_) { /* ignore, we'll write without metadata */ }
-
-  const payload = { creatures: bestiaryDatabase };
-  if (metadata) payload.metadata = metadata;
-  // Put metadata first for readability, but JSON key order is just cosmetic
-  const ordered = metadata ? { metadata, creatures: bestiaryDatabase } : payload;
-
-  atomicWriteGamedata('bestiary.json', ordered);
-}
-
 function addMonsterToBestiary(entry, slug) {
   // If a key collision happens, append _2, _3, ... so we don't overwrite.
   let finalSlug = slug;
@@ -291,7 +280,6 @@ function addMonsterToBestiary(entry, slug) {
     counter++;
   }
   bestiaryDatabase[finalSlug] = entry;
-  persistBestiary();
   return finalSlug;
 }
 
@@ -300,25 +288,18 @@ function removeMonsterFromBestiary(slugOrName) {
   if (bestiaryDatabase[slugOrName]) {
     const removed = bestiaryDatabase[slugOrName];
     delete bestiaryDatabase[slugOrName];
-    persistBestiary();
     return { removed: true, key: slugOrName, name: removed.name };
   }
   const normalize = s => String(s ?? '').toLowerCase().trim();
   const match = Object.entries(bestiaryDatabase).find(([, m]) => normalize(m.name) === normalize(slugOrName));
   if (match) {
     delete bestiaryDatabase[match[0]];
-    persistBestiary();
     return { removed: true, key: match[0], name: match[1].name };
   }
   return { removed: false };
 }
 
 // ── Spell database mutation helpers ───────────────────────────────────────────
-// spells.json is a flat array on disk. Atomic temp-file write, same as bestiary.
-function persistSpells() {
-  atomicWriteGamedata('spells.json', spellDatabase);
-}
-
 function addSpellToDatabase(entry) {
   const normalize = s => String(s ?? '').toLowerCase().trim();
   let finalName = entry.name;
@@ -329,7 +310,6 @@ function addSpellToDatabase(entry) {
   }
   entry.name = finalName;
   spellDatabase.push(entry);
-  persistSpells();
   return finalName;
 }
 
@@ -344,7 +324,6 @@ function removeSpellFromDatabase(nameOrSlug) {
     return { removed: false, protected: true, name: removed.name };
   }
   spellDatabase.splice(idx, 1);
-  persistSpells();
   return { removed: true, name: removed.name };
 }
 
@@ -361,25 +340,6 @@ let itemDatabase = loadGamedata('items.json', {
 });
 
 // ── Item database mutation helpers ────────────────────────────────────────────
-// itemDatabase is a flat array in memory, but items.json on disk is
-// { meta, items: { slug: {...} } }. Persist rebuilds the map from the array.
-function persistItems() {
-  let meta = null;
-  try {
-    const existing = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
-    meta = existing.meta ?? null;
-  } catch (_) { /* ignore */ }
-
-  const itemsMap = {};
-  for (const item of itemDatabase) {
-    const key = item.id || itemSlug(item.name);
-    itemsMap[key] = item;
-  }
-  const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
-
-  atomicWriteGamedata('items.json', payload);
-}
-
 function addItemToDatabase(entry) {
   const normalize = s => String(s ?? '').toLowerCase().trim();
   let finalName = entry.name;
@@ -394,7 +354,6 @@ function addItemToDatabase(entry) {
   entry.id = finalId;
   entry.lookup_name = finalName.toLowerCase();
   itemDatabase.push(entry);
-  persistItems();
   return finalName;
 }
 
@@ -410,7 +369,6 @@ function removeItemFromDatabase(nameOrSlug) {
     return { removed: false, protected: true, name: removed.name };
   }
   itemDatabase.splice(idx, 1);
-  persistItems();
   return { removed: true, name: removed.name, entryKey: removed.id || itemSlug(removed.name) };
 }
 
@@ -526,6 +484,15 @@ let charactersCache = null;
 // so syncAllCharactersToSupabase can auto-create users rows for bot-only users.
 const usernameCache = new Map();
 
+let bagsCache = null;
+let downtimeCache = null;
+let notesCache = null;
+let snippetsCache = null;
+let serverSnippetsCache = null;
+let monsterArtCache = null;
+let monsterEditsCache = null;
+let monsterAttacksCache = null;
+
 function loadCharacters() {
   // charactersCache is seeded from Supabase in clientReady (restoreAllFromSupabase).
   // If for any reason it's still null (e.g. restore failed), return an empty map.
@@ -541,14 +508,13 @@ async function saveCharacters(data) {
 
 // ── Downtime helpers ──────────────────────────────────────────────────────────
 // Downtime activities and the per-character bank of downtime days are stored
-// in downtime.json (separate from characters.json so character imports don't
-// blow them away). See downtime.js for the data shape.
+// in Supabase (cache-based; no JSON file). See downtime.js for the data shape.
 function loadDowntime() {
-  try { return JSON.parse(fs.readFileSync(dataPath('downtime.json'), 'utf8')); }
-  catch { return {}; }
+  return downtimeCache ?? (downtimeCache = {});
 }
-function saveDowntime(data) {
-  saveJson('downtime.json', data);
+async function saveDowntime(data) {
+  downtimeCache = data || {};
+  await syncAllDowntimeToSupabase(data);
 }
 
 const DOWNTIME_SKILL_ABILITIES = {
@@ -650,11 +616,11 @@ const SIMPLE_DOWNTIME_COMMANDS = new Set([
 
 // ── Bag helpers ───────────────────────────────────────────────────────────────
 function loadBags() {
-  try { return JSON.parse(fs.readFileSync(dataPath('bags.json'), 'utf8')); }
-  catch { return {}; }
+  return bagsCache ?? (bagsCache = {});
 }
-function saveBags(data) {
-  saveJson('bags.json', data);
+async function saveBags(data) {
+  bagsCache = data || {};
+  await syncAllBagsToSupabase(data);
 }
 
 // ── Snippet helpers ──────────────────────────────────────────────────────────
@@ -663,11 +629,11 @@ function saveBags(data) {
 // Example: user creates `sneaky` => `+2d6[sneak]`, then /roll 1d20+5 sneaky
 // expands to /roll 1d20+5 +2d6[sneak] before parsing.
 function loadSnippets() {
-  try { return JSON.parse(fs.readFileSync(dataPath('snippets.json'), 'utf8')); }
-  catch { return {}; }
+  return snippetsCache ?? (snippetsCache = {});
 }
-function saveSnippets(data) {
-  saveJson('snippets.json', data);
+async function saveSnippets(data) {
+  snippetsCache = data || {};
+  await syncAllUserSnippetsToSupabase(data);
 }
 // Validate a snippet name: letters/numbers/underscore only, 1-24 chars, not
 // colliding with reserved roll modifiers.
@@ -716,11 +682,11 @@ function validateSnippetExpansion(expansion) {
 // in the server can use them. Personal snippets take precedence over
 // server snippets with the same name.
 function loadServerSnippets() {
-  try { return JSON.parse(fs.readFileSync(dataPath('server_snippets.json'), 'utf8')); }
-  catch { return {}; }
+  return serverSnippetsCache ?? (serverSnippetsCache = {});
 }
-function saveServerSnippets(data) {
-  saveJson('server_snippets.json', data);
+async function saveServerSnippets(data) {
+  serverSnippetsCache = data || {};
+  await syncAllGuildSnippetsToSupabase(data);
 }
 // Merge personal + server snippets for a given user+guild. Personal wins
 // on name collision. Returns { [name]: expansion }.
@@ -732,13 +698,13 @@ function mergedSnippetsFor(userId, guildId) {
 }
 
 // ── Monster attack library helpers ────────────────────────────────────────────
-// File shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
+// Shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
 function loadMonsterAttacks() {
-  try { return JSON.parse(fs.readFileSync(dataPath('monster_attacks.json'), 'utf8')); }
-  catch { return {}; }
+  return monsterAttacksCache ?? (monsterAttacksCache = {});
 }
-function saveMonsterAttacks(data) {
-  saveJson('monster_attacks.json', data);
+async function saveMonsterAttacks(data) {
+  monsterAttacksCache = data || {};
+  await syncAllMonsterAttacksToSupabase(data);
 }
 function monsterKey(name) {
   return String(name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -766,14 +732,14 @@ function findSavedAttack(monsterEntry, attackName) {
 }
 
 // ── Monster art library helpers ───────────────────────────────────────────────
-// File shape: { [guildId]: { [monsterKey]: { displayName, url, setBy, setAt } } }
+// Shape: { [guildId]: { [monsterKey]: { displayName, url, setBy, setAt } } }
 // Per-guild so a GM on one server can't affect another's art.
 function loadMonsterArt() {
-  try { return JSON.parse(fs.readFileSync(dataPath('monster_art.json'), 'utf8')); }
-  catch { return {}; }
+  return monsterArtCache ?? (monsterArtCache = {});
 }
-function saveMonsterArt(data) {
-  saveJson('monster_art.json', data);
+async function saveMonsterArt(data) {
+  monsterArtCache = data || {};
+  await syncAllMonsterArtToSupabase(data);
 }
 function getGuildArt(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -820,11 +786,11 @@ function lookupMonsterArt(guildId, monsterOrName) {
 //     ability_modifiers: { str, dex, con, int, wis, cha },
 //   } } }
 function loadMonsterEdits() {
-  try { return JSON.parse(fs.readFileSync(dataPath('monster_edits.json'), 'utf8')); }
-  catch { return {}; }
+  return monsterEditsCache ?? (monsterEditsCache = {});
 }
-function saveMonsterEdits(data) {
-  saveJson('monster_edits.json', data);
+async function saveMonsterEdits(data) {
+  monsterEditsCache = data || {};
+  await syncAllMonsterEditsToSupabase(data);
 }
 function getGuildEdits(store, guildId) {
   if (!store[guildId]) store[guildId] = {};
@@ -5747,18 +5713,12 @@ const NOTE_CATEGORIES = {
 const NOTE_CATEGORY_ORDER = ['npcs', 'locations', 'plot-threads', 'influence', 'items'];
 
 function loadNotes() {
-  try { return JSON.parse(fs.readFileSync(dataPath('notes.json'), 'utf8')); }
-  catch { return { _meta: { version: 1 } }; }
+  return notesCache ?? (notesCache = {});
 }
 
-function saveNotes(notes) {
-  try {
-    saveJson('notes.json', notes);
-    return true;
-  } catch (err) {
-    console.error('Failed to save notes.json:', err);
-    return false;
-  }
+async function saveNotes(notes) {
+  notesCache = notes || {};
+  await syncAllNotesToSupabase(notes);
 }
 
 // Compose the storage key for a character's notebook
@@ -7130,169 +7090,47 @@ function buildHelpButtons(currentCategory) {
 }
 
 // ── Bot ready ─────────────────────────────────────────────────────────────────
-// After restoreAllFromSupabase() writes homebrew back into gamedata/ files, the
-// module-level database arrays are still holding the pre-restore image content.
-// We mutate them in-place so every closure that captured the original reference
-// immediately sees the restored homebrew without a restart.
-function reloadDatabasesAfterRestore() {
-  // ── Core content (may include homebrew spliced in by restoreAllFromSupabase) ──
-
-  try {
-    const rawBestiary = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
-    const freshCreatures = rawBestiary.creatures ?? rawBestiary;
-    for (const key of Object.keys(bestiaryDatabase)) {
-      if (!(key in freshCreatures)) delete bestiaryDatabase[key];
-    }
-    Object.assign(bestiaryDatabase, freshCreatures);
-    console.log(`[reload] bestiary: ${Object.keys(bestiaryDatabase).length} creatures`);
-  } catch (e) { console.error('[reload] bestiary failed:', e.message); }
-
-  try {
-    const fresh = JSON.parse(fs.readFileSync(gamedataPath('harvest-rewards.json'), 'utf8'));
-    for (const key of Object.keys(harvestRewardsDatabase)) delete harvestRewardsDatabase[key];
-    Object.assign(harvestRewardsDatabase, fresh ?? { creature_types: {} });
-    console.log(`[reload] harvest rewards: ${Object.keys(harvestRewardsDatabase.creature_types ?? {}).length} tables`);
-  } catch (e) { console.error('[reload] harvest rewards failed:', e.message); }
-
-  try {
-    const rawSpells = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
-    const freshSpells = Array.isArray(rawSpells) ? rawSpells : [];
-    spellDatabase.splice(0, spellDatabase.length, ...freshSpells);
-    console.log(`[reload] spells: ${spellDatabase.length} spells`);
-  } catch (e) { console.error('[reload] spells failed:', e.message); }
-
-  try {
-    const rawItems = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
-    const itemsObj = rawItems.items ?? rawItems;
-    const freshItems = Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
-    itemDatabase.splice(0, itemDatabase.length, ...freshItems);
-    console.log(`[reload] items: ${itemDatabase.length} items`);
-  } catch (e) { console.error('[reload] items failed:', e.message); }
-
-  // ── Reference data (restored from gamedata Supabase table) ──────────────────
-  // These databases are all populated by restoreGamedataFromSupabase() writing
-  // files to gamedata/ — so by the time we reach here they're on disk.
-  // We reload in-place so existing closures see the fresh data.
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('background.json'), 'utf8'));
-    const fresh = raw.backgrounds ?? raw;
-    for (const key of Object.keys(backgroundDatabase)) delete backgroundDatabase[key];
-    Object.assign(backgroundDatabase, fresh);
-    console.log(`[reload] backgrounds: ${Object.keys(backgroundDatabase).length}`);
-  } catch (e) { console.error('[reload] backgrounds failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('feats.json'), 'utf8'));
-    const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
-    const fresh = rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
-    featDatabase.splice(0, featDatabase.length, ...fresh);
-    console.log(`[reload] feats: ${featDatabase.length}`);
-  } catch (e) { console.error('[reload] feats failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('rules.json'), 'utf8'));
-    for (const key of Object.keys(rulesDatabase)) delete rulesDatabase[key];
-    Object.assign(rulesDatabase, raw);
-    // Re-merge conditions
-    try {
-      const cond = JSON.parse(fs.readFileSync(gamedataPath('conditions.json'), 'utf8'));
-      if (cond?.Conditions) rulesDatabase.Conditions = { ...(rulesDatabase.Conditions ?? {}), ...cond.Conditions };
-    } catch (_) {}
-    console.log(`[reload] rules: reloaded`);
-  } catch (e) { console.error('[reload] rules failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('heritages.json'), 'utf8'));
-    const fresh = raw.by_slug ?? {};
-    for (const key of Object.keys(heritageDatabase)) delete heritageDatabase[key];
-    Object.assign(heritageDatabase, fresh);
-    // Rebuild by_ancestry index from by_slug
-    const freshByAncestry = {};
-    for (const [slug, h] of Object.entries(fresh)) {
-      if (!h) continue;
-      const ancestry = h.ancestry ?? null;
-      if (!ancestry) {
-        if (!freshByAncestry._versatile) freshByAncestry._versatile = [];
-        freshByAncestry._versatile.push(slug);
-      } else {
-        const key = String(ancestry).toLowerCase();
-        if (!freshByAncestry[key]) freshByAncestry[key] = [];
-        freshByAncestry[key].push(slug);
-      }
-    }
-    for (const key of Object.keys(heritagesByAncestry)) delete heritagesByAncestry[key];
-    Object.assign(heritagesByAncestry, raw.by_ancestry ?? freshByAncestry);
-    console.log(`[reload] heritages: ${Object.keys(heritageDatabase).length}`);
-  } catch (e) { console.error('[reload] heritages failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('deities.json'), 'utf8'));
-    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
-    const fresh = rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-    const eberronRaw = JSON.parse(fs.readFileSync(gamedataPath('eberron-deities.json'), 'utf8'));
-    const rawEberronDeities = Array.isArray(eberronRaw) ? eberronRaw : (eberronRaw.deities ?? []);
-    const freshEberron = rawEberronDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-    eberronDeityDatabase.splice(0, eberronDeityDatabase.length, ...freshEberron);
-    deityDatabase.splice(0, deityDatabase.length, ...fresh, ...freshEberron);
-    console.log(`[reload] deities: ${deityDatabase.length} (${freshEberron.length} Eberron)`);
-  } catch (e) { console.error('[reload] deities failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('eberron-houses.json'), 'utf8'));
-    const rawHouses = Array.isArray(raw) ? raw : (raw.houses ?? []);
-    const fresh = rawHouses.filter(h => h && typeof h.name === 'string' && h.name.length > 0);
-    eberronHouseDatabase.splice(0, eberronHouseDatabase.length, ...fresh);
-    console.log(`[reload] Eberron houses: ${eberronHouseDatabase.length}`);
-  } catch (e) { console.error('[reload] Eberron houses failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('skills.json'), 'utf8'));
-    const fresh = raw.skills ?? raw;
-    for (const key of Object.keys(skillDatabase)) delete skillDatabase[key];
-    Object.assign(skillDatabase, fresh);
-    console.log(`[reload] skills: ${Object.keys(skillDatabase).length}`);
-  } catch (e) { console.error('[reload] skills failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('classes.json'), 'utf8'));
-    const fresh = raw.classes ?? raw;
-    for (const key of Object.keys(classDatabase)) delete classDatabase[key];
-    Object.assign(classDatabase, fresh);
-    console.log(`[reload] classes: ${Object.keys(classDatabase).length}`);
-  } catch (e) { console.error('[reload] classes failed:', e.message); }
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(gamedataPath('companions.json'), 'utf8'));
-    const inner = raw.companions ?? raw;
-    const fresh = (Array.isArray(inner)
-      ? inner
-      : Object.entries(inner).map(([slug, comp]) => ({ slug, ...comp }))
-    ).filter(c => c && typeof c.name === 'string' && c.name.length > 0);
-    companionDatabase.splice(0, companionDatabase.length, ...fresh);
-    console.log(`[reload] companions: ${companionDatabase.length}`);
-  } catch (e) { console.error('[reload] companions failed:', e.message); }
-
-  // ── Lazy reference databases (REFERENCE_DATABASE_CONFIG) ────────────────────
-  // These are loaded on first use, but reload them now if the files exist so
-  // the first command invocation doesn't hit stale data.
-  for (const [commandName, cfg] of Object.entries(REFERENCE_DATABASE_CONFIG)) {
-    try {
-      const fresh = loadReferenceDatabase(commandName, cfg);
-      const arr = referenceDatabases[commandName];
-      if (arr) arr.splice(0, arr.length, ...fresh);
-    } catch (e) { console.error(`[reload] ${commandName} failed:`, e.message); }
-  }
-  console.log('[reload] all databases reloaded from Supabase-restored files ✓');
-}
-
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
   const restored = await restoreAllFromSupabase();
-  // Seed the characters cache directly from Supabase data (no JSON file read).
-  // If restore failed, restored is undefined and we start with an empty map.
-  if (restored?.characters) charactersCache = restored.characters;
-  reloadDatabasesAfterRestore();
+  // Seed all caches directly from Supabase data (no JSON file reads).
+  // If restore failed, restored is undefined and caches start empty.
+  if (restored?.characters)     charactersCache     = restored.characters;
+  if (restored?.bags)           bagsCache           = restored.bags;
+  if (restored?.downtime)       downtimeCache       = restored.downtime;
+  if (restored?.notes)          notesCache          = restored.notes;
+  if (restored?.snippets)       snippetsCache       = restored.snippets;
+  if (restored?.serverSnippets) serverSnippetsCache = restored.serverSnippets;
+  if (restored?.monsterArt)     monsterArtCache     = restored.monsterArt;
+  if (restored?.monsterEdits)   monsterEditsCache   = restored.monsterEdits;
+  if (restored?.monsterAttacks) monsterAttacksCache = restored.monsterAttacks;
+  // Guild state: seed the JSON cache so loadJson/mutateJson for these files
+  // use in-memory state instead of reading from disk.
+  seedJsonCache('calendar-state.json', restored?.calendarState ?? {});
+  seedJsonCache('weather-state.json',  restored?.weatherState  ?? {});
+  seedJsonCache('bot-settings.json',   restored?.botSettings   ?? {});
+  // Phase 3: load reference databases (bestiary/spells/items/gamedata) directly
+  // from Supabase into memory — no disk writes, no disk reads.
+  await loadReferenceDatabasesFromSupabase({
+    bestiaryDatabase,
+    spellDatabase,
+    itemDatabase,
+    backgroundDatabase,
+    rulesDatabase,
+    heritageDatabase,
+    heritagesByAncestry,
+    deityDatabase,
+    eberronDeityDatabase,
+    eberronHouseDatabase,
+    skillDatabase,
+    classDatabase,
+    companionDatabase,
+    referenceDatabases,
+    ancestryDatabase,
+    archetypeDatabase,
+    featDatabase,
+    harvestRewardsDatabase,
+  });
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
   setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
@@ -9883,7 +9721,7 @@ client.on('interactionCreate', async (interaction) => {
 
       const existed = !!userSnippets[name.toLowerCase()];
       snippets[interaction.user.id] = { ...userSnippets, [name.toLowerCase()]: expansion };
-      saveSnippets(snippets);
+      await saveSnippets(snippets);
       // Detect arg count to give an accurate usage hint
       const argCount = (expansion.match(/%\d+/g) ?? []).length
         ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
@@ -9944,7 +9782,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!userSnippets[name]) return interaction.reply({ content: `❌ No snippet named \`${name}\`.`, ephemeral: true });
       delete userSnippets[name];
       snippets[interaction.user.id] = userSnippets;
-      saveSnippets(snippets);
+      await saveSnippets(snippets);
       return interaction.reply({ content: `🗑️ Deleted snippet **${name}**.`, ephemeral: true });
     }
 
@@ -9986,7 +9824,7 @@ client.on('interactionCreate', async (interaction) => {
 
       const existed = !!guildSnippets[name.toLowerCase()];
       all[interaction.guildId] = { ...guildSnippets, [name.toLowerCase()]: expansion };
-      saveServerSnippets(all);
+      await saveServerSnippets(all);
       const argCount = (expansion.match(/%\d+/g) ?? []).length
         ? Math.max(...[...expansion.matchAll(/%(\d+)/g)].map(m => parseInt(m[1])))
         : 0;
@@ -10048,7 +9886,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!guildSnippets[name]) return interaction.reply({ content: `❌ No server snippet named \`${name}\`.`, ephemeral: true });
       delete guildSnippets[name];
       all[interaction.guildId] = guildSnippets;
-      saveServerSnippets(all);
+      await saveServerSnippets(all);
       return interaction.reply({ content: `🗑️ Deleted server snippet **${name}**.` });
     }
 
@@ -13367,7 +13205,7 @@ client.on('interactionCreate', async (interaction) => {
         setBy: interaction.user.id,
         setAt: new Date().toISOString(),
       };
-      saveMonsterArt(store);
+      await saveMonsterArt(store);
 
       const embed = new EmbedBuilder()
         .setColor(0x2ecc71)
@@ -13393,7 +13231,7 @@ client.on('interactionCreate', async (interaction) => {
       // Prune empty guild bucket so the file stays tidy.
       if (Object.keys(guild).length === 0) delete store[guildId];
       else store[guildId] = guild;
-      saveMonsterArt(store);
+      await saveMonsterArt(store);
       return interaction.reply({ content: `🗑️ Removed art for **${displayName}**.`, ephemeral: true });
     }
 
@@ -13698,7 +13536,7 @@ client.on('interactionCreate', async (interaction) => {
       if (existingIdx >= 0) bucket[existingIdx] = newAbility;
       else bucket.push(newAbility);
 
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       const verb = existingIdx >= 0 ? 'Updated' : 'Added';
       return interaction.reply({ content: `✅ ${verb} ability **${name}** on **${displayName}** (slot: ${slot}).`, ephemeral: true });
     }
@@ -13717,7 +13555,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ **${displayName}** already has item **${item}**.`, ephemeral: true });
       }
       entry.items.push(item);
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Added item **${item}** to **${displayName}**.`, ephemeral: true });
     }
 
@@ -13735,7 +13573,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ **${displayName}** already speaks **${lang}**.`, ephemeral: true });
       }
       entry.languages.push(lang);
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Added language **${lang}** to **${displayName}**.`, ephemeral: true });
     }
 
@@ -13752,7 +13590,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       const normalized = skillName.charAt(0).toUpperCase() + skillName.slice(1).toLowerCase();
       entry.skills[normalized] = modifier;
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Set **${normalized}** ${modifier >= 0 ? '+' : ''}${modifier} on **${displayName}**.`, ephemeral: true });
     }
 
@@ -13781,7 +13619,7 @@ client.on('interactionCreate', async (interaction) => {
       const idx = entry.attacks.findIndex(a => a.name?.toLowerCase() === name.toLowerCase());
       if (idx >= 0) entry.attacks[idx] = newAtk;
       else entry.attacks.push(newAtk);
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ ${idx >= 0 ? 'Updated' : 'Added'} attack **${name}** on **${displayName}**.`, ephemeral: true });
     }
 
@@ -13801,7 +13639,7 @@ client.on('interactionCreate', async (interaction) => {
         entry.ability_modifiers = base && typeof base === 'object' ? { ...base } : {};
       }
       entry.ability_modifiers[which] = value;
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Set **${which.toUpperCase()}** ${value >= 0 ? '+' : ''}${value} on **${displayName}**.`, ephemeral: true });
     }
 
@@ -13812,7 +13650,7 @@ client.on('interactionCreate', async (interaction) => {
       const displayName = resolveName(monsterInput);
       const { store, entry } = ensureMonsterEdit(guildId, displayName, interaction.user.id);
       entry.description = description;
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Description set on **${displayName}**.`, ephemeral: true });
     }
 
@@ -13842,7 +13680,7 @@ client.on('interactionCreate', async (interaction) => {
       if (applied.length === 0) {
         return interaction.reply({ content: `❌ JSON had none of the recognized fields: ${allowed.join(', ')}`, ephemeral: true });
       }
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `✅ Applied fields [${applied.join(', ')}] to **${displayName}**.`, ephemeral: true });
     }
 
@@ -13927,7 +13765,7 @@ client.on('interactionCreate', async (interaction) => {
       } else {
         return interaction.reply({ content: `❌ \`field\` must be one of: ability, item, language, skill, attack.`, ephemeral: true });
       }
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `🗑️ Removed ${field} **${value}** from **${displayName}**.`, ephemeral: true });
     }
 
@@ -13943,7 +13781,7 @@ client.on('interactionCreate', async (interaction) => {
       delete guild[monsterKey(displayName)];
       if (Object.keys(guild).length === 0) delete store[guildId];
       else store[guildId] = guild;
-      saveMonsterEdits(store);
+      await saveMonsterEdits(store);
       return interaction.reply({ content: `🗑️ Wiped all edits for **${displayName}**.`, ephemeral: true });
     }
   }
@@ -13969,7 +13807,7 @@ client.on('interactionCreate', async (interaction) => {
     if (sub === 'rename') {
       const newName = interaction.options.getString('name');
       userBag.bagName = newName;
-      saveBags(bags);
+      await saveBags(bags);
       return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
     }
     if (sub === 'add') {
@@ -13995,7 +13833,7 @@ client.on('interactionCreate', async (interaction) => {
       } else {
         bucket.push({ name: displayName, qty });
       }
-      saveBags(bags);
+      await saveBags(bags);
 
       const tag = data ? '' : ' *(homebrew)*';
       const qtyLabel = qty > 1 ? ` ×${qty}` : '';
@@ -14021,7 +13859,7 @@ client.on('interactionCreate', async (interaction) => {
         bucket[idx] = { name: existing.name, qty: existing.qty - qty };
       }
       if (bucket.length === 0) delete userBag.categories[category];
-      saveBags(bags);
+      await saveBags(bags);
 
       const removedQty = qty == null ? existing.qty : Math.min(qty, existing.qty);
       const qtyLabel = removedQty > 1 ? ` ×${removedQty}` : '';
@@ -14031,12 +13869,12 @@ client.on('interactionCreate', async (interaction) => {
       const category = interaction.options.getString('category').trim();
       if (!userBag.categories[category]) return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
       delete userBag.categories[category];
-      saveBags(bags);
+      await saveBags(bags);
       return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
     }
     if (sub === 'clear') {
       userBag.categories = {};
-      saveBags(bags);
+      await saveBags(bags);
       return interaction.reply({ content: `🗑️ Your bag has been cleared!`, ephemeral: true });
     }
   }
@@ -14471,9 +14309,7 @@ client.on('interactionCreate', async (interaction) => {
         authorId: interaction.user.id,
         authorName: interaction.user.username,
       });
-      if (!saveNotes(notesData)) {
-        return interaction.reply({ content: `❌ Failed to save the note. Try again?`, ephemeral: true });
-      }
+      await saveNotes(notesData);
       const cat = NOTE_CATEGORIES[category];
       return interaction.reply({
         content: `${cat.icon} Added note \`#${note.id}\` to **${char.name}**'s ${cat.label}${pinned ? ' *(pinned)*' : ''}.\n> ${truncateNote(text, 200)}`,
@@ -14537,7 +14373,7 @@ client.on('interactionCreate', async (interaction) => {
       if (newText.length > 1800) return interaction.reply({ content: `❌ Note too long (${newText.length} chars, max 1800).`, ephemeral: true });
       note.text = newText;
       note.editedAt = new Date().toISOString();
-      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      await saveNotes(notesData);
       return interaction.reply({ embeds: [buildNoteDetailEmbed(char, note)] });
     }
 
@@ -14550,7 +14386,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `❌ Only the person who wrote note **#${id}** (${note.authorName}) can remove it.`, ephemeral: true });
       }
       book.notes = book.notes.filter(n => n.id !== id);
-      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      await saveNotes(notesData);
       const cat = NOTE_CATEGORIES[note.category];
       return interaction.reply({ content: `🗑️ Removed note \`#${id}\` from **${char.name}**'s ${cat.label}.` });
     }
@@ -14561,7 +14397,7 @@ client.on('interactionCreate', async (interaction) => {
       const note = findNote(id);
       if (!note) return interaction.reply({ content: `❌ No note with ID **#${id}**.`, ephemeral: true });
       note.pinned = !note.pinned;
-      if (!saveNotes(notesData)) return interaction.reply({ content: `❌ Failed to save.`, ephemeral: true });
+      await saveNotes(notesData);
       return interaction.reply({
         content: `${note.pinned ? '📌' : '📍'} Note \`#${id}\` is now ${note.pinned ? '**pinned**' : '**unpinned**'}.`,
       });
@@ -16948,7 +16784,7 @@ client.on('interactionCreate', async (interaction) => {
       };
       if (existingIdx >= 0) guild[key].attacks[existingIdx] = entry;
       else guild[key].attacks.push(entry);
-      saveMonsterAttacks(store);
+      await saveMonsterAttacks(store);
       const verb = existingIdx >= 0 ? 'Updated' : 'Saved';
       const kindLabel = sub === 'addspell' ? 'spell attack' : 'strike';
       const traitText = traits.length ? ` *(${traits.join(', ')})*` : '';
@@ -16974,7 +16810,7 @@ client.on('interactionCreate', async (interaction) => {
       const entry = { name: attackName, kind: 'save', saveType, saveDC: dc, damage, damageType };
       if (existingIdx >= 0) guild[key].attacks[existingIdx] = entry;
       else guild[key].attacks.push(entry);
-      saveMonsterAttacks(store);
+      await saveMonsterAttacks(store);
       const verb = existingIdx >= 0 ? 'Updated' : 'Saved';
       return interaction.reply({ content: `✅ ${verb} save attack **${attackName}** on **${displayName}**: DC ${dc} ${saveType}, ${damage} ${damageType}`, ephemeral: true });
     }
@@ -16992,7 +16828,7 @@ client.on('interactionCreate', async (interaction) => {
       if (idx < 0) return interaction.reply({ content: `❌ **${displayName}** has no attack named "${attackName}".`, ephemeral: true });
       const removed = guild[key].attacks.splice(idx, 1)[0];
       if (guild[key].attacks.length === 0) delete guild[key];
-      saveMonsterAttacks(store);
+      await saveMonsterAttacks(store);
       return interaction.reply({ content: `🗑️ Removed **${removed.name}** from **${displayName}**.`, ephemeral: true });
     }
 
@@ -17005,7 +16841,7 @@ client.on('interactionCreate', async (interaction) => {
       const key = monsterKey(displayName);
       if (!guild[key]) return interaction.reply({ content: `❌ No saved attacks for **${displayName}**.`, ephemeral: true });
       delete guild[key];
-      saveMonsterAttacks(store);
+      await saveMonsterAttacks(store);
       return interaction.reply({ content: `🗑️ Cleared all attacks for **${displayName}**.`, ephemeral: true });
     }
 
@@ -17606,7 +17442,7 @@ client.on('interactionCreate', async (interaction) => {
         const accrual = downtime.accrue(store, userId, charKey);
         const status = downtime.getStatus(store, userId, charKey);
         const recent = downtime.getLog(store, userId, charKey, 5);
-        saveDowntime(store);
+        await saveDowntime(store);
 
         const accrualLine = accrual.added > 0
           ? `Added **${accrual.added}** day${accrual.added === 1 ? '' : 's'} since your last downtime check.`
@@ -17638,8 +17474,8 @@ client.on('interactionCreate', async (interaction) => {
         const days = interaction.options.getInteger('days');
         const reason = interaction.options.getString('reason');
         const result = downtime.spend(store, userId, charKey, days, reason, userId);
-        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}` });
-        saveDowntime(store);
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        await saveDowntime(store);
         return interaction.reply({
           content: `🪙 **${charName}** spent **${days}** downtime day${days === 1 ? '' : 's'} on **${reason}**.\nBank balance: **${result.balance}**/${downtime.MAX_BANK}.`,
         });
@@ -17649,8 +17485,8 @@ client.on('interactionCreate', async (interaction) => {
         const days = interaction.options.getInteger('days');
         const reason = interaction.options.getString('reason');
         const result = downtime.grant(store, userId, charKey, days, reason, userId);
-        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}` });
-        saveDowntime(store);
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        await saveDowntime(store);
         const capLine = result.capped > 0
           ? `\n${result.capped} day${result.capped === 1 ? '' : 's'} could not be added because the bank is capped at ${downtime.MAX_BANK}.`
           : '';
@@ -17662,7 +17498,7 @@ client.on('interactionCreate', async (interaction) => {
       if (sub === 'log') {
         downtime.accrue(store, userId, charKey);
         const recent = downtime.getLog(store, userId, charKey, 10);
-        saveDowntime(store);
+        await saveDowntime(store);
         const lines = recent.length
           ? recent.map(e => {
               const sign = e.delta > 0 ? '+' : '';
@@ -17679,7 +17515,7 @@ client.on('interactionCreate', async (interaction) => {
 
       if (sub === 'reset') {
         const result = downtime.reset(store, userId, charKey, userId, 'manual reset');
-        saveDowntime(store);
+        await saveDowntime(store);
         return interaction.reply({
           content: `🧹 Reset **${charName}**'s downtime bank from **${result.before}** to **0**.`,
         });
@@ -17809,7 +17645,7 @@ client.on('interactionCreate', async (interaction) => {
         if (!result.ok) {
           return interaction.reply({ content: `❌ Could not start activity: ${result.reason}`, ephemeral: true });
         }
-        saveDowntime(store);
+        await saveDowntime(store);
 
         const outcomeEmoji = { 'crit-success': '🌟', success: '✅', failure: '⚠️' }[outcome];
         const outcomeLabel = { 'crit-success': 'Critical Success!', success: 'Success', failure: 'Failure (shoddy work)' }[outcome];
@@ -17847,7 +17683,7 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
-      saveDowntime(store);
+      await saveDowntime(store);
 
       const lines = active.map(entry => {
         const def = downtime.ACTIVITIES[entry.activity];
@@ -17892,7 +17728,7 @@ client.on('interactionCreate', async (interaction) => {
       // Allow completing early — partial credit for partial days.
       const result = downtime.completeEntry(store, userId, charKey, entryId);
       if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      saveDowntime(store);
+      await saveDowntime(store);
 
       const def = downtime.ACTIVITIES[entry.activity];
       const earned = entry.result?.totalEarnedCp ?? 0;
@@ -17922,7 +17758,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = downtime.cancelEntry(store, userId, charKey, entryId);
       if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      saveDowntime(store);
+      await saveDowntime(store);
 
       const def = downtime.ACTIVITIES[entry.activity];
       return interaction.reply({
@@ -17936,7 +17772,7 @@ client.on('interactionCreate', async (interaction) => {
       const days = interaction.options.getInteger('days');
       const result = downtime.spendBankedDays(store, userId, charKey, entryId, days);
       if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      saveDowntime(store);
+      await saveDowntime(store);
 
       const def = downtime.ACTIVITIES[result.entry.activity];
       const completedNote = result.entry.status === 'ready-to-complete'
@@ -17991,7 +17827,7 @@ client.on('interactionCreate', async (interaction) => {
       if (terr) return interaction.reply({ content: `❌ Couldn't find that character: ${terr}`, ephemeral: true });
 
       const newBalance = downtime.awardDays(store, targetPlayer.id, tCharKey, days, reason);
-      saveDowntime(store);
+      await saveDowntime(store);
 
       const sign = days > 0 ? '+' : '';
       const verb = days > 0 ? 'awarded' : 'removed';

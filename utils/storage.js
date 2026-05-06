@@ -195,17 +195,6 @@ function loadGamedata(filename, opts = {}) {
   }
 }
 
-// Atomic write to gamedata/. Used by /spelladd /itemadd /monsteradd to
-// persist homebrew additions. Note: in production on Railway, gamedata/
-// is part of the deployed image — writes here will be lost on redeploy
-// unless committed to git. The user accepted this trade-off for simplicity
-// (homebrew is rare; you can re-run `/spelladd` after a redeploy if needed).
-function atomicWriteGamedata(filename, payload) {
-  const target = gamedataPath(filename);
-  const tmp = `${target}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
-  fs.renameSync(tmp, target);
-}
 
 // ── Persistent-data path (DATA_DIR) ─────────────────────────────────────────
 
@@ -250,60 +239,6 @@ function atomicWriteJson(filename, payload) {
   fs.renameSync(tmp, target);
 }
 
-const GITHUB_BACKUP_FILES = new Set(
-  String(process.env.GITHUB_BACKUP_FILES || 'characters.json')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
-);
-
-function githubConfig() {
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO;
-  const branch = process.env.GITHUB_BRANCH || 'main';
-  if (!token || !repo) return null;
-  return { token, repo, branch };
-}
-
-async function backupJsonToGitHub(filename, data) {
-  if (!GITHUB_BACKUP_FILES.has(filename)) return { skipped: true };
-  const cfg = githubConfig();
-  if (!cfg) return { skipped: true };
-
-  const apiUrl = `https://api.github.com/repos/${cfg.repo}/contents/${encodeURIComponent(filename)}`;
-  const headers = {
-    Authorization: `Bearer ${cfg.token}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'Pathway-Bot',
-  };
-
-  let sha = null;
-  const current = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
-  if (current.ok) {
-    const body = await current.json();
-    sha = body.sha;
-  } else if (current.status !== 404) {
-    throw new Error(`GitHub read failed for ${filename}: ${current.status} ${await current.text()}`);
-  }
-
-  const content = Buffer.from(JSON.stringify(data, null, 2), 'utf8').toString('base64');
-  const update = await fetch(apiUrl, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({
-      message: `Backup ${filename} from Pathway`,
-      content,
-      branch: cfg.branch,
-      sha,
-    }),
-  });
-
-  if (!update.ok) {
-    throw new Error(`GitHub write failed for ${filename}: ${update.status} ${await update.text()}`);
-  }
-  return { ok: true };
-}
 
 // ── Generic JSON loader ──────────────────────────────────────────────────────
 // Replaces the ~10 copy-pasted try/catch blocks at the top of index.js.
@@ -335,6 +270,18 @@ async function backupJsonToGitHub(filename, data) {
 //                  (useful for files like feats.json that wrap their array in
 //                  { metadata, feats: [...] }). Default: identity.
 //   quiet:         suppress the success log (default: false)
+// ── In-memory JSON cache (Phase 2d) ─────────────────────────────────────────
+// Allows guild-state files (calendar-state.json, weather-state.json,
+// bot-settings.json) to live purely in memory after startup restore.
+// Call seedJsonCache(filename, data) once during clientReady to enable;
+// after that, loadJson() returns from memory and mutateJson() operates
+// on memory (no disk read/write) while still firing Supabase sync.
+const _jsonCaches = new Map();
+
+function seedJsonCache(filename, data) {
+  _jsonCaches.set(filename, data ?? {});
+}
+
 function loadJson(filename, opts = {}) {
   const {
     default: defaultValue = null,
@@ -346,6 +293,13 @@ function loadJson(filename, opts = {}) {
     transform,
     quiet = false,
   } = opts;
+
+  // In-memory override: return cached data for guild-state files.
+  // fromRepo files always read from disk (they're reference data, not state).
+  if (!fromRepo && _jsonCaches.has(filename)) {
+    const raw = _jsonCaches.get(filename);
+    return transform ? transform(raw) : raw;
+  }
 
   // Pick the right file to read. Bundled static data loads straight from the
   // repo (read-only). Seeded/user files go through dataPath (writable volume).
@@ -375,36 +329,10 @@ function loadJson(filename, opts = {}) {
   }
 }
 
-// Save a JSON file safely. This is the ONE function index.js (and any
-// command handler) should call to persist user data. It guarantees:
-//
-//   1. ATOMIC WRITES — temp file + rename, so a crash mid-write can't
-//      leave a corrupt or half-written file on the volume.
-//   2. SERIALIZED WRITES — concurrent calls for the same filename queue
-//      up instead of racing at the filesystem level.
-//   3. GITHUB BACKUP — fire-and-forget commit of files listed in
-//      GITHUB_BACKUP_FILES (default: characters.json) to your repo,
-//      giving you a recoverable history of every save.
-//
-// IMPORTANT: saveJson alone does NOT fix the read-modify-write race that
-// happens when two handlers do `load → modify → save` concurrently — both
-// load the same starting state, both modify their copy, the second save
-// overwrites the first. For files where multiple users may write at once
-// (especially characters.json), use mutateJson() instead, which serializes
-// the entire load-modify-save cycle.
-//
-// Returns a Promise. Most callers don't need to await it (the in-memory
-// state is already correct), but you can await if you want to confirm
-// the durable write succeeded before proceeding.
+// Kept for the disk-fallback path in mutateJson; no longer called directly.
 function saveJson(filename, data) {
   return queueWrite(filename, async () => {
     atomicWriteJson(filename, data);
-    try {
-      await backupJsonToGitHub(filename, data);
-    } catch (err) {
-      console.error(`GitHub backup failed for ${filename}:`, err.message);
-    }
-    // Fire-and-forget Supabase sync — never blocks the save, never throws.
     _syncFileToSupabase(filename, data);
   });
 }
@@ -439,6 +367,17 @@ function mutateJson(filename, opts, mutator) {
   if (typeof opts === 'function') { mutator = opts; opts = {}; }
   const { default: defaultValue = null } = opts || {};
   return queueWrite(filename, async () => {
+    // In-memory path: operate on the cache without touching disk.
+    if (_jsonCaches.has(filename)) {
+      const current = _jsonCaches.get(filename)
+        ?? (typeof defaultValue === 'function' ? defaultValue() : defaultValue);
+      const next = await mutator(current);
+      const result = next !== undefined ? next : current;
+      _jsonCaches.set(filename, result);
+      _syncFileToSupabase(filename, result);
+      return result;
+    }
+
     let current;
     try {
       current = JSON.parse(fs.readFileSync(dataPath(filename), 'utf8'));
@@ -449,14 +388,10 @@ function mutateJson(filename, opts, mutator) {
     if (next === undefined) {
       // Mutator didn't return — assume they mutated in place.
       atomicWriteJson(filename, current);
-      try { await backupJsonToGitHub(filename, current); }
-      catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
       _syncFileToSupabase(filename, current);
       return current;
     }
     atomicWriteJson(filename, next);
-    try { await backupJsonToGitHub(filename, next); }
-    catch (err) { console.error(`GitHub backup failed for ${filename}:`, err.message); }
     _syncFileToSupabase(filename, next);
     return next;
   });
@@ -1048,29 +983,39 @@ async function syncAllDowntimeToSupabase(downtime) {
   }
 }
 
-// Sync entire notes.json → Supabase character_notes table.
+// Sync entire notes map → Supabase character_notes table.
+// Notes are stored as flat "discordId:charKey" composite keys (e.g.
+// "123456789012345:warrior-mage"), NOT as nested { discordId: { charKey: book } }.
 async function syncAllNotesToSupabase(notes) {
   try {
     const sb = getSupabase();
     if (!sb || !notes) return;
-    const discordIds = Object.keys(notes).filter(k => /^\d+$/.test(k));
-    if (discordIds.length === 0) return;
+
+    // Parse "discordId:charKey" flat keys
+    const entries = [];
+    for (const [key, book] of Object.entries(notes)) {
+      if (key.startsWith('_') || !book) continue;
+      const colonIdx = key.indexOf(':');
+      if (colonIdx < 0) continue;
+      const discordId = key.slice(0, colonIdx);
+      const charKey = key.slice(colonIdx + 1);
+      if (!/^\d+$/.test(discordId)) continue;
+      entries.push({ discordId, charKey, book });
+    }
+    if (entries.length === 0) return;
+
+    const discordIds = [...new Set(entries.map(e => e.discordId))];
     const userMap = await _buildDiscordToUserMap(sb, discordIds);
 
-    const upserts = [];
-    for (const [discordId, userNotes] of Object.entries(notes)) {
-      const userId = userMap[discordId];
-      if (!userId || typeof userNotes !== 'object') continue;
-      for (const [charKey, book] of Object.entries(userNotes)) {
-        if (!book || charKey.startsWith('_')) continue;
-        upserts.push({
-          user_id:  userId,
-          char_key: charKey,
-          next_id:  book.nextId ?? 1,
-          notes:    book.notes ?? [],
-        });
-      }
-    }
+    const upserts = entries
+      .filter(e => userMap[e.discordId])
+      .map(e => ({
+        user_id:  userMap[e.discordId],
+        char_key: e.charKey,
+        next_id:  e.book.nextId ?? 1,
+        notes:    e.book.notes ?? [],
+      }));
+
     if (upserts.length === 0) return;
     const { error } = await sb.from('character_notes').upsert(upserts, { onConflict: 'user_id,char_key' });
     if (error) throw error;
@@ -1450,11 +1395,30 @@ const GAMEDATA_RESTORE_MAP = [
   { category: 'vehicles',        file: 'vehicles.json',        topKey: 'vehicles',        strategy: 'slug_map' },
 ];
 
-// Fetches all rows from the `gamedata` Supabase table and writes them to
-// gamedata/ files, creating the directory if it doesn't exist. Called as
-// step 9 of restoreAllFromSupabase(). Skips silently if the table is empty
-// (e.g. seeder hasn't run yet) — the bot falls back to whatever files exist
-// on disk.
+// Maps REFERENCE_DATABASE_CONFIG command names → gamedata table category values.
+// Used by loadReferenceDatabasesFromSupabase() to know which byCategory bucket
+// to read for each slash-command reference database.
+const REF_CMD_TO_CATEGORY = {
+  action:        'actions',
+  hazard:        'hazards',
+  ritual:        'rituals',
+  trait:         'traits',
+  affliction:    'afflictions',
+  language:      'languages',
+  domain:        'domains',
+  plane:         'planes',
+  relic:         'relics',
+  familiar:      'familiars',
+  vehicle:       'vehicles',
+  siege:         'siege_weapons',
+  kingdom:       'kingdom',
+  classfeature:  'class_features',
+  creatureextra: 'creature_extras',
+  sourcebook:    'sources',
+};
+
+// Kept for manual/migration use only. No longer called at startup —
+// loadReferenceDatabasesFromSupabase() populates memory directly.
 async function restoreGamedataFromSupabase(sb) {
   const { data: rows, error } = await sb
     .from('gamedata')
@@ -1550,6 +1514,221 @@ function countGamedataEntriesOnDisk(target, topKey, strategy, category) {
   }
 }
 
+// ── Phase 3: load reference databases directly from Supabase (no disk writes) ──
+//
+// Replaces the restoreGamedataFromSupabase (disk write) +
+// reloadDatabasesAfterRestore (disk read) two-step. Caller passes references
+// to every in-place database object/array; this function mutates them directly.
+//
+// Databases NOT covered here (kept at their initial loadGamedata() values from
+// bundled files): featDatabase, ancestryDatabase, archetypeDatabase,
+// harvestRewardsDatabase, eberronDeityDatabase, eberronHouseDatabase.
+//
+// dbs must include:
+//   bestiaryDatabase, spellDatabase, itemDatabase,
+//   backgroundDatabase, rulesDatabase, heritageDatabase, heritagesByAncestry,
+//   deityDatabase, eberronDeityDatabase, eberronHouseDatabase,
+//   skillDatabase, classDatabase, companionDatabase, referenceDatabases,
+//   ancestryDatabase, archetypeDatabase, featDatabase, harvestRewardsDatabase
+async function loadReferenceDatabasesFromSupabase(dbs) {
+  const sb = getSupabase();
+  if (!sb) {
+    console.warn('[startup] Supabase unavailable — reference databases use bundled files only');
+    return;
+  }
+
+  // ── Typed table: monsters ────────────────────────────────────────────────────
+  try {
+    const { data: monsterRows, error } = await sb.from('monsters').select('monster_metadata');
+    if (!error && monsterRows?.length > 0) {
+      const freshCreatures = Object.fromEntries(
+        monsterRows.map(r => [r.monster_metadata?.key, r.monster_metadata]).filter(([k, v]) => k && v)
+      );
+      // Clear non-homebrew entries then merge fresh canonical set
+      for (const k of Object.keys(dbs.bestiaryDatabase)) {
+        if (!dbs.bestiaryDatabase[k]?._homebrew) delete dbs.bestiaryDatabase[k];
+      }
+      Object.assign(dbs.bestiaryDatabase, freshCreatures);
+      console.log(`[startup] bestiary: ${Object.keys(dbs.bestiaryDatabase).length} creatures`);
+    }
+  } catch (e) { console.error('[startup] bestiary load failed:', e.message); }
+
+  // ── Typed table: spells ──────────────────────────────────────────────────────
+  try {
+    const { data: spellRows, error } = await sb.from('spells').select('spell_metadata');
+    if (!error && spellRows?.length > 0) {
+      const homebrew = dbs.spellDatabase.filter(s => s._homebrew);
+      const fresh = spellRows.map(r => r.spell_metadata).filter(Boolean);
+      dbs.spellDatabase.splice(0, dbs.spellDatabase.length, ...fresh, ...homebrew);
+      console.log(`[startup] spells: ${dbs.spellDatabase.length}`);
+    }
+  } catch (e) { console.error('[startup] spells load failed:', e.message); }
+
+  // ── Typed table: items ───────────────────────────────────────────────────────
+  try {
+    const { data: itemRows, error } = await sb.from('items').select('item_metadata');
+    if (!error && itemRows?.length > 0) {
+      const homebrew = dbs.itemDatabase.filter(i => i._homebrew);
+      const fresh = itemRows.map(r => r.item_metadata).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
+      dbs.itemDatabase.splice(0, dbs.itemDatabase.length, ...fresh, ...homebrew);
+      console.log(`[startup] items: ${dbs.itemDatabase.length}`);
+    }
+  } catch (e) { console.error('[startup] items load failed:', e.message); }
+
+  // ── homebrew_entries → splice into typed databases ───────────────────────────
+  try {
+    const { data: homebrewRows, error } = await sb.from('homebrew_entries').select('type, entry_key, data');
+    if (!error && homebrewRows?.length > 0) {
+      let hbCount = 0;
+      const norm = s => String(s ?? '').toLowerCase();
+      for (const row of homebrewRows) {
+        if (!row.type || !row.data) continue;
+        if (row.type === 'monster' && row.entry_key) {
+          dbs.bestiaryDatabase[row.entry_key] = { ...row.data, _homebrew: true };
+          hbCount++;
+        } else if (row.type === 'spell') {
+          const name = norm(row.data.name);
+          const idx = dbs.spellDatabase.findIndex(s => s._homebrew && norm(s.name) === name);
+          if (idx >= 0) dbs.spellDatabase.splice(idx, 1, { ...row.data, _homebrew: true });
+          else dbs.spellDatabase.push({ ...row.data, _homebrew: true });
+          hbCount++;
+        } else if (row.type === 'item') {
+          const key = row.data.id || norm(row.data.name).replace(/\s+/g, '-');
+          const idx = dbs.itemDatabase.findIndex(i =>
+            i._homebrew && (i.id === key || norm(i.name) === norm(row.data.name))
+          );
+          if (idx >= 0) dbs.itemDatabase.splice(idx, 1, { ...row.data, _homebrew: true });
+          else dbs.itemDatabase.push({ ...row.data, _homebrew: true });
+          hbCount++;
+        }
+      }
+      if (hbCount > 0) console.log(`[startup] homebrew: spliced ${hbCount} entries`);
+    }
+  } catch (e) { console.error('[startup] homebrew entries load failed:', e.message); }
+
+  // ── gamedata table → backgrounds, rules, conditions, heritages, etc. ─────────
+  try {
+    const { data: gdRows, error } = await sb.from('gamedata').select('category, slug, data');
+    if (error) throw error;
+    if (!gdRows || gdRows.length === 0) {
+      console.log('[startup] gamedata table empty — reference databases use bundled files');
+      return;
+    }
+
+    const byCategory = {};
+    for (const row of gdRows) {
+      if (!row.category || !row.slug || !row.data) continue;
+      if (!byCategory[row.category]) byCategory[row.category] = {};
+      byCategory[row.category][row.slug] = row.data;
+    }
+
+    _mergeIntoObject(dbs.backgroundDatabase, byCategory.backgrounds, 'backgrounds');
+
+    if (byCategory.rules) _mergeIntoObject(dbs.rulesDatabase, byCategory.rules, 'rules');
+    if (byCategory.conditions) {
+      dbs.rulesDatabase.Conditions = { ...(dbs.rulesDatabase.Conditions ?? {}), ...byCategory.conditions };
+      console.log(`[startup] conditions: ${Object.keys(byCategory.conditions).length}`);
+    }
+
+    if (byCategory.heritages) {
+      _mergeIntoObject(dbs.heritageDatabase, byCategory.heritages, 'heritages');
+      const freshByAncestry = {};
+      for (const [slug, h] of Object.entries(byCategory.heritages)) {
+        if (!h) continue;
+        const ancestry = h.ancestry ?? null;
+        if (!ancestry) {
+          (freshByAncestry._versatile = freshByAncestry._versatile ?? []).push(slug);
+        } else {
+          const ak = String(ancestry).toLowerCase();
+          (freshByAncestry[ak] = freshByAncestry[ak] ?? []).push(slug);
+        }
+      }
+      for (const k of Object.keys(dbs.heritagesByAncestry)) delete dbs.heritagesByAncestry[k];
+      Object.assign(dbs.heritagesByAncestry, freshByAncestry);
+    }
+
+    // Eberron deities — processed before the main deities merge so deityDatabase
+    // gets the Supabase version of both canonical and Eberron entries.
+    if (byCategory.eberron_deities) {
+      const fresh = Object.values(byCategory.eberron_deities).filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+      dbs.eberronDeityDatabase.splice(0, dbs.eberronDeityDatabase.length, ...fresh);
+      console.log(`[startup] eberron_deities: ${dbs.eberronDeityDatabase.length}`);
+    }
+    if (byCategory.eberron_houses) {
+      const fresh = Object.values(byCategory.eberron_houses).filter(h => h && typeof h.name === 'string' && h.name.length > 0);
+      dbs.eberronHouseDatabase.splice(0, dbs.eberronHouseDatabase.length, ...fresh);
+      console.log(`[startup] eberron_houses: ${dbs.eberronHouseDatabase.length}`);
+    }
+
+    if (byCategory.deities) {
+      const fresh = Object.values(byCategory.deities).filter(d => d && typeof d.name === 'string' && d.name.length > 0);
+      dbs.deityDatabase.splice(0, dbs.deityDatabase.length, ...fresh, ...dbs.eberronDeityDatabase);
+      console.log(`[startup] deities: ${dbs.deityDatabase.length} (${dbs.eberronDeityDatabase.length} Eberron)`);
+    }
+
+    _mergeIntoObject(dbs.skillDatabase,  byCategory.skills,   'skills');
+    _mergeIntoObject(dbs.classDatabase,  byCategory.classes,  'classes');
+
+    if (byCategory.companions) {
+      const fresh = Object.entries(byCategory.companions)
+        .map(([slug, comp]) => ({ slug, ...comp }))
+        .filter(c => c && typeof c.name === 'string' && c.name.length > 0);
+      dbs.companionDatabase.splice(0, dbs.companionDatabase.length, ...fresh);
+      console.log(`[startup] companion types: ${dbs.companionDatabase.length}`);
+    }
+
+    // Ancestries and archetypes (top-level slug maps, no wrapper key)
+    _mergeIntoObject(dbs.ancestryDatabase,  byCategory.ancestries, 'ancestries');
+    _mergeIntoObject(dbs.archetypeDatabase, byCategory.archetypes, 'archetypes');
+
+    // Feats (stored as aon_id-keyed slug map; convert to array for the database)
+    if (byCategory.feats) {
+      const fresh = Object.values(byCategory.feats)
+        .filter(f => f && typeof f.name === 'string' && f.name.length > 1);
+      dbs.featDatabase.splice(0, dbs.featDatabase.length, ...fresh);
+      console.log(`[startup] feats: ${dbs.featDatabase.length}`);
+    }
+
+    // Harvest rewards (one row per creature type; reconstruct { creature_types } shape)
+    if (byCategory.harvest_rewards) {
+      const types = {};
+      for (const entry of Object.values(byCategory.harvest_rewards)) {
+        if (!entry) continue;
+        const typeName = entry.type_name;
+        if (!typeName) continue;
+        const { type_name: _, ...rest } = entry;
+        types[typeName] = rest;
+      }
+      if (Object.keys(types).length > 0) {
+        for (const k of Object.keys(dbs.harvestRewardsDatabase)) delete dbs.harvestRewardsDatabase[k];
+        Object.assign(dbs.harvestRewardsDatabase, { creature_types: types });
+        console.log(`[startup] harvest_rewards: ${Object.keys(types).length} types`);
+      }
+    }
+
+    // REFERENCE_DATABASE_CONFIG entries (actions, hazards, rituals, traits, etc.)
+    for (const [cmd, categoryKey] of Object.entries(REF_CMD_TO_CATEGORY)) {
+      const entries = byCategory[categoryKey];
+      if (!entries) continue;
+      const arr = Object.values(entries).filter(e => e && typeof e.name === 'string' && e.name.length > 0);
+      const db = dbs.referenceDatabases[cmd];
+      if (db) {
+        db.splice(0, db.length, ...arr.map(e => ({ ...e, _referenceCommand: cmd })));
+        console.log(`[startup] ${cmd}: ${arr.length}`);
+      }
+    }
+
+    console.log(`[startup] gamedata: ${gdRows.length} entries → reference databases populated ✓`);
+  } catch (e) { console.error('[startup] gamedata load failed:', e.message); }
+}
+
+function _mergeIntoObject(target, entries, label) {
+  if (!entries || Object.keys(entries).length === 0) return;
+  for (const k of Object.keys(target)) delete target[k];
+  Object.assign(target, entries);
+  console.log(`[startup] ${label}: ${Object.keys(target).length}`);
+}
+
 // ── Startup restore from Supabase ─────────────────────────────────────────────
 // Called once in clientReady BEFORE any user interaction is possible.
 // Pulls every synced table back from Supabase at startup.
@@ -1564,7 +1743,7 @@ async function restoreAllFromSupabase() {
     const sb = getSupabase();
     if (!sb) {
       console.log('[Supabase] restore skipped — no client (env vars not set)');
-      return { characters: {} };
+      return { characters: {}, bags: {}, downtime: {}, notes: {}, snippets: {}, serverSnippets: {}, monsterArt: {}, monsterEdits: {}, monsterAttacks: {}, calendarState: {}, weatherState: {}, botSettings: {} };
     }
     console.log('[Supabase] starting startup restore…');
 
@@ -1575,7 +1754,7 @@ async function restoreAllFromSupabase() {
     if (userErr) throw userErr;
     if (!userRows || userRows.length === 0) {
       console.log('[Supabase] restore: no users found, skipping');
-      return { characters: {} };
+      return { characters: {}, bags: {}, downtime: {}, notes: {}, snippets: {}, serverSnippets: {}, monsterArt: {}, monsterEdits: {}, monsterAttacks: {}, calendarState: {}, weatherState: {}, botSettings: {} };
     }
     const bySupabaseId = Object.fromEntries(userRows.map(u => [u.id,    u.discord_id]));
     const byDiscordId  = Object.fromEntries(userRows.map(u => [u.discord_id, u.id]));
@@ -1610,6 +1789,36 @@ async function restoreAllFromSupabase() {
       };
     }
     console.log(`[Supabase] restore: loaded ${charRows?.length ?? 0} characters`);
+
+    // ── 2b. Companions from dedicated table ─────────────────────────────────
+    const { data: compRows, error: compErr } = await sb
+      .from('companions')
+      .select('user_id, char_key, comp_key, display_name, base_type, form, notes, current_hp, custom_stats, is_active');
+    if (compErr) throw compErr;
+
+    for (const row of compRows ?? []) {
+      const discordId = bySupabaseId[row.user_id];
+      if (!discordId || !row.char_key || !row.comp_key) continue;
+      const charEntry = characters[discordId]?.[row.char_key];
+      if (!charEntry) continue;
+      if (!charEntry.companions) charEntry.companions = {};
+      const cs = row.custom_stats ?? {};
+      charEntry.companions[row.comp_key] = {
+        displayName:     row.display_name,
+        baseType:        row.base_type,
+        form:            row.form ?? 'young',
+        notes:           row.notes ?? '',
+        currentHp:       row.current_hp ?? null,
+        customStats:     cs.customStats     ?? null,
+        art:             cs.art             ?? null,
+        skills:          cs.skills          ?? null,
+        customAbilities: cs.customAbilities ?? null,
+        customAttacks:   cs.customAttacks   ?? null,
+        overrides:       cs.overrides       ?? null,
+      };
+      if (row.is_active) charEntry.activeCompanion = row.comp_key;
+    }
+    console.log(`[Supabase] restore: loaded ${compRows?.length ?? 0} companions`);
 
     // ── 3. Bags ──────────────────────────────────────────────────────────────
     // Fetch bag metadata and normalized bag_items separately, then reconstruct
@@ -1679,8 +1888,8 @@ async function restoreAllFromSupabase() {
       bagsUpserted++;
     }
 
-    atomicWriteJson('bags.json', bags);
-    console.log(`[Supabase] restore: wrote ${bagRows?.length ?? 0} bags (backfilled ${bagsUpserted} new)`);
+    // bags is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded ${bagRows?.length ?? 0} bags (backfilled ${bagsUpserted} new)`);
 
     // ── 4. Downtime ──────────────────────────────────────────────────────────
     const { data: dtRows, error: dtErr } = await sb
@@ -1699,8 +1908,8 @@ async function restoreAllFromSupabase() {
         log:              row.log ?? [],
       };
     }
-    atomicWriteJson('downtime.json', downtime);
-    console.log(`[Supabase] restore: wrote ${dtRows?.length ?? 0} downtime records`);
+    // downtime is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded ${dtRows?.length ?? 0} downtime records`);
 
     // ── 5. User snippets ─────────────────────────────────────────────────────
     const { data: userSnipRows, error: usErr } = await sb
@@ -1733,8 +1942,8 @@ async function restoreAllFromSupabase() {
       else snipsUpserted++;
     }
 
-    atomicWriteJson('snippets.json', snippets);
-    console.log(`[Supabase] restore: wrote ${userSnipRows?.length ?? 0} user snippet sets (backfilled ${snipsUpserted} new)`);
+    // snippets is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded ${userSnipRows?.length ?? 0} user snippet sets (backfilled ${snipsUpserted} new)`);
 
     // ── 6. Guild snippets ────────────────────────────────────────────────────
     const { data: guildSnipRows, error: gsErr } = await sb
@@ -1747,8 +1956,8 @@ async function restoreAllFromSupabase() {
       if (!row.discord_guild_id || !row.snippets) continue;
       serverSnippets[row.discord_guild_id] = row.snippets;
     }
-    atomicWriteJson('server_snippets.json', serverSnippets);
-    console.log(`[Supabase] restore: wrote ${guildSnipRows?.length ?? 0} guild snippet sets`);
+    // serverSnippets is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded ${guildSnipRows?.length ?? 0} guild snippet sets`);
 
     // ── 7. Guild state: calendar + weather + settings ───────────────────────
     const { data: guildStateRows, error: gsStateErr } = await sb
@@ -1810,12 +2019,12 @@ async function restoreAllFromSupabase() {
       }
     }
 
-    atomicWriteJson('calendar-state.json', calState);
-    atomicWriteJson('weather-state.json',  wxState);
-    atomicWriteJson('bot-settings.json',   botSettings);
-    console.log(`[Supabase] restore: wrote guild state for ${guildStateRows?.length ?? 0} guilds`);
+    // calState, wxState, botSettings are collected for return — index.js seeds
+    // the _jsonCaches map so loadJson/mutateJson use memory instead of disk.
+    console.log(`[Supabase] restore: loaded guild state for ${guildStateRows?.length ?? 0} guilds`);
 
     // ── 7b. Monster attacks ──────────────────────────────────────────────────
+    const monsterAttacks = loadJson('monster_attacks.json', { default: {}, quiet: true }) || {};
     const { data: attackRows, error: attackErr } = await sb
       .from('monster_attacks')
       .select('discord_guild_id, attacks');
@@ -1824,13 +2033,12 @@ async function restoreAllFromSupabase() {
       if (attackErr.code !== '42P01') throw attackErr;
       console.log('[Supabase] restore: monster_attacks table not yet migrated — skipping');
     } else {
-      const monsterAttacks = loadJson('monster_attacks.json', { default: {}, quiet: true }) || {};
       for (const row of attackRows ?? []) {
         if (!row.discord_guild_id) continue;
         monsterAttacks[row.discord_guild_id] = row.attacks ?? {};
       }
-      atomicWriteJson('monster_attacks.json', monsterAttacks);
-      console.log(`[Supabase] restore: wrote monster attacks for ${attackRows?.length ?? 0} guilds`);
+      // monsterAttacks is collected for return — no atomicWriteJson
+      console.log(`[Supabase] restore: loaded monster attacks for ${attackRows?.length ?? 0} guilds`);
     }
 
     // ── 7c. Notes ────────────────────────────────────────────────────────────
@@ -1839,18 +2047,52 @@ async function restoreAllFromSupabase() {
       .select('user_id, char_key, next_id, notes');
     if (noteErr) throw noteErr;
 
-    const notesData = loadJson('notes.json', { default: {}, quiet: true }) || {};
+    // Load disk notes (may be flat "discordId:charKey" keys, or nested from a prior buggy restore)
+    const rawDiskNotes = loadJson('notes.json', { default: {}, quiet: true }) || {};
+
+    // Normalize to flat key format: "discordId:charKey"
+    const diskNotes = {};
+    for (const [key, val] of Object.entries(rawDiskNotes)) {
+      if (key.startsWith('_') || !val) continue;
+      if (/^\d+$/.test(key) && typeof val === 'object') {
+        // Nested format from a buggy previous restore — convert to flat
+        for (const [charKey, book] of Object.entries(val)) {
+          if (book && charKey && !charKey.startsWith('_')) diskNotes[`${key}:${charKey}`] = book;
+        }
+      } else if (key.includes(':')) {
+        diskNotes[key] = val;  // already flat
+      }
+    }
+
+    // Build final notes map: Supabase wins on conflict, backfill disk-only entries
+    const notesInSupabase = new Set();
+    const notes = { ...diskNotes };
     for (const row of noteRows ?? []) {
       const discordId = bySupabaseId[row.user_id];
       if (!discordId || !row.char_key) continue;
-      if (!notesData[discordId]) notesData[discordId] = {};
-      notesData[discordId][row.char_key] = {
-        nextId: row.next_id ?? 1,
-        notes:  row.notes   ?? [],
-      };
+      const flatKey = `${discordId}:${row.char_key}`;
+      notesInSupabase.add(flatKey);
+      notes[flatKey] = { nextId: row.next_id ?? 1, notes: row.notes ?? [] };
     }
-    atomicWriteJson('notes.json', notesData);
-    console.log(`[Supabase] restore: wrote ${noteRows?.length ?? 0} note books`);
+
+    // Backfill disk-only note books to Supabase (fixes the broken sync that never ran)
+    let notesUpserted = 0;
+    for (const [flatKey, book] of Object.entries(diskNotes)) {
+      if (notesInSupabase.has(flatKey) || !book) continue;
+      const colonIdx = flatKey.indexOf(':');
+      if (colonIdx < 0) continue;
+      const discordId = flatKey.slice(0, colonIdx);
+      const charKey = flatKey.slice(colonIdx + 1);
+      const userId = byDiscordId[discordId];
+      if (!userId) continue;
+      const { error: nbErr } = await sb.from('character_notes').upsert({
+        user_id: userId, char_key: charKey, next_id: book.nextId ?? 1, notes: book.notes ?? [],
+      }, { onConflict: 'user_id,char_key' });
+      if (nbErr) console.error(`[Supabase] notes backfill failed for ${flatKey}:`, nbErr.message);
+      else notesUpserted++;
+    }
+    console.log(`[Supabase] restore: loaded ${noteRows?.length ?? 0} note books (backfilled ${notesUpserted} new)`);
+    // notes is collected for return — no atomicWriteJson
 
     // ── 7d. Monster art ──────────────────────────────────────────────────────
     const { data: artRows, error: artErr } = await sb
@@ -1858,13 +2100,13 @@ async function restoreAllFromSupabase() {
       .select('discord_guild_id, art');
     if (artErr) throw artErr;
 
-    const monsterArtData = loadJson('monster_art.json', { default: {}, quiet: true }) || {};
+    const monsterArt = loadJson('monster_art.json', { default: {}, quiet: true }) || {};
     for (const row of artRows ?? []) {
       if (!row.discord_guild_id) continue;
-      monsterArtData[row.discord_guild_id] = row.art ?? {};
+      monsterArt[row.discord_guild_id] = row.art ?? {};
     }
-    atomicWriteJson('monster_art.json', monsterArtData);
-    console.log(`[Supabase] restore: wrote monster art for ${artRows?.length ?? 0} guilds`);
+    // monsterArt is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded monster art for ${artRows?.length ?? 0} guilds`);
 
     // ── 7e. Monster edits ────────────────────────────────────────────────────
     const { data: editRows, error: editErr } = await sb
@@ -1872,92 +2114,23 @@ async function restoreAllFromSupabase() {
       .select('discord_guild_id, edits');
     if (editErr) throw editErr;
 
-    const monsterEditsData = loadJson('monster_edits.json', { default: {}, quiet: true }) || {};
+    const monsterEdits = loadJson('monster_edits.json', { default: {}, quiet: true }) || {};
     for (const row of editRows ?? []) {
       if (!row.discord_guild_id) continue;
-      monsterEditsData[row.discord_guild_id] = row.edits ?? {};
+      monsterEdits[row.discord_guild_id] = row.edits ?? {};
     }
-    atomicWriteJson('monster_edits.json', monsterEditsData);
-    console.log(`[Supabase] restore: wrote monster edits for ${editRows?.length ?? 0} guilds`);
+    // monsterEdits is collected for return — no atomicWriteJson
+    console.log(`[Supabase] restore: loaded monster edits for ${editRows?.length ?? 0} guilds`);
 
-    // ── 8. Homebrew entries (monsters, spells, items) ────────────────────────
-    // These are written into gamedata/ (which resets on every Railway deploy).
-    // By restoring from Supabase at startup, /spelladd and /monsteradd content
-    // survives redeploys without manual re-entry.
-    const { data: homebrewRows, error: hbErr } = await sb
-      .from('homebrew_entries')
-      .select('type, entry_key, data');
-    if (hbErr) throw hbErr;
-
-    const homebrewByType = { monster: {}, spell: [], item: [] };
-    for (const row of homebrewRows ?? []) {
-      if (!row.type || !row.data) continue;
-      if (row.type === 'monster' && row.entry_key) {
-        homebrewByType.monster[row.entry_key] = { ...row.data, _homebrew: true };
-      } else if (row.type === 'spell') {
-        homebrewByType.spell.push({ ...row.data, _homebrew: true });
-      } else if (row.type === 'item') {
-        homebrewByType.item.push({ ...row.data, _homebrew: true });
-      }
-    }
-
-    // Monsters — bestiary.json shape: { metadata?, creatures: { slug: entry } }
-    if (Object.keys(homebrewByType.monster).length > 0) {
-      try {
-        const existing = JSON.parse(fs.readFileSync(gamedataPath('bestiary.json'), 'utf8'));
-        const metadata = existing.metadata ?? null;
-        const creatures = existing.creatures ?? existing;
-        const merged = { ...creatures, ...homebrewByType.monster };
-        const payload = metadata ? { metadata, creatures: merged } : { creatures: merged };
-        atomicWriteGamedata('bestiary.json', payload);
-      } catch (e) {
-        console.error('[Supabase] restore: bestiary patch failed:', e.message);
-      }
-    }
-
-    // Spells — spells.json shape: flat array
-    if (homebrewByType.spell.length > 0) {
-      try {
-        const existing = JSON.parse(fs.readFileSync(gamedataPath('spells.json'), 'utf8'));
-        const canonical = Array.isArray(existing) ? existing : [];
-        const homebrewNames = new Set(homebrewByType.spell.map(s => String(s.name).toLowerCase()));
-        // Remove any stale homebrew entries with the same name, then append fresh
-        const merged = canonical.filter(s => !s._homebrew || !homebrewNames.has(String(s.name).toLowerCase()))
-          .concat(homebrewByType.spell);
-        atomicWriteGamedata('spells.json', merged);
-      } catch (e) {
-        console.error('[Supabase] restore: spells patch failed:', e.message);
-      }
-    }
-
-    // Items — items.json shape: { meta?, items: { slug: entry } }
-    if (homebrewByType.item.length > 0) {
-      try {
-        const existing = JSON.parse(fs.readFileSync(gamedataPath('items.json'), 'utf8'));
-        const meta = existing.meta ?? null;
-        const itemsMap = existing.items ?? existing;
-        for (const item of homebrewByType.item) {
-          const key = item.id || String(item.name).toLowerCase().replace(/\s+/g, '-');
-          itemsMap[key] = { ...item, _homebrew: true };
-        }
-        const payload = meta ? { meta, items: itemsMap } : { items: itemsMap };
-        atomicWriteGamedata('items.json', payload);
-      } catch (e) {
-        console.error('[Supabase] restore: items patch failed:', e.message);
-      }
-    }
-
-    const hbCount = Object.keys(homebrewByType.monster).length + homebrewByType.spell.length + homebrewByType.item.length;
-    console.log(`[Supabase] restore: spliced ${hbCount} homebrew entries into gamedata`);
-
-    // ── 9. Generic gamedata (actions, conditions, traits, etc.) ─────────────
-    await restoreGamedataFromSupabase(sb);
+    // Steps 8 and 9 (homebrew + gamedata) are handled by
+    // loadReferenceDatabasesFromSupabase() called separately in clientReady
+    // after this function returns. They no longer write to disk.
 
     console.log('[Supabase] startup restore complete ✓');
-    return { characters };
+    return { characters, bags, downtime, notes, snippets, serverSnippets, monsterArt, monsterEdits, monsterAttacks, calendarState: calState, weatherState: wxState, botSettings };
   } catch (err) {
     // Never crash the bot on a restore failure — log and continue.
-    // Without a return value, index.js falls back to an empty characters map.
+    // Without a return value, index.js falls back to an empty caches.
     console.error('[Supabase] startup restore failed:', err.message);
   }
 }
@@ -2103,22 +2276,16 @@ function setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDataba
 
 module.exports = {
   DATA_DIR,
-  GAMEDATA_DIR,
   dataPath,
   gamedataPath,
-  atomicWriteJson,
-  atomicWriteGamedata,
   loadJson,
   loadGamedata,
-  saveJson,
   mutateJson,
-  backupJsonToGitHub,
-  shouldForceReseed,
-  preserveHomebrewDuringReseed,
+  seedJsonCache,
   getSupabase,
   isSyncDegraded,
   restoreAllFromSupabase,
-  restoreGamedataFromSupabase,
+  loadReferenceDatabasesFromSupabase,
   // Companion sync (Phase 1 — dedicated companions table)
   syncCompanionToSupabase,
   deleteCompanionFromSupabase,
