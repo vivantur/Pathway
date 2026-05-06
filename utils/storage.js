@@ -466,12 +466,9 @@ async function syncAllCharactersToSupabase(characters, usernamesByDiscordId) {
           experience:       d.xp ?? 0,
           pathbuilder_data: d,
           current_hp:       charEntry.hp ?? null,
-          overlay:          {
-            ...(charEntry.overlay ?? {}),
-            ...(charEntry.companions && Object.keys(charEntry.companions).length > 0
-              ? { companions: charEntry.companions }
-              : {}),
-          },
+          // companions are NOT stored in overlay — they live in the dedicated
+          // companions table and are synced via syncCompanionToSupabase().
+          overlay:          { ...(charEntry.overlay ?? {}) },
           hero_points:      charEntry.heroPoints ?? charEntry.overlay?.daily?.hero_points ?? 1,
           dying:            charEntry.dying ?? 0,
           wounded:          charEntry.wounded ?? 0,
