@@ -3917,6 +3917,50 @@ function deityAutocompleteChoices(query) {
   return merged.map(choice);
 }
 
+function findEberronDeity(query) {
+  const q = normalizeDeityQuery(query);
+  const comparable = deityComparable(query);
+  if (!q) return { deity: null, matches: [] };
+
+  const exact = eberronDeityDatabase.filter(d => normalizeDeityQuery(d.name) === q || deityComparable(d.name) === comparable);
+  if (exact.length === 1) return { deity: exact[0], matches: [] };
+  if (exact.length > 1) return { deity: preferDeityRecord(exact), matches: [] };
+
+  const aliasExact = eberronDeityDatabase.filter(d => (d.aliases ?? []).some(a => deityComparable(a) === comparable));
+  if (aliasExact.length === 1) return { deity: aliasExact[0], matches: [] };
+  if (aliasExact.length > 1) return { deity: preferDeityRecord(aliasExact), matches: [] };
+
+  const starts = eberronDeityDatabase.filter(d => deityComparable(d.name).startsWith(comparable));
+  if (starts.length === 1) return { deity: starts[0], matches: [] };
+  if (starts.length > 1) return { deity: null, matches: starts };
+
+  const contains = eberronDeityDatabase.filter(d => deityComparable(deitySearchText(d)).includes(comparable));
+  if (contains.length === 1) return { deity: contains[0], matches: [] };
+  if (contains.length > 1) return { deity: null, matches: contains };
+
+  return { deity: null, matches: [] };
+}
+
+function eberronDeityAutocompleteChoices(query) {
+  const q = deityComparable(query);
+  const sorted = [...eberronDeityDatabase].filter(d => d?.name).sort((a, b) => a.name.localeCompare(b.name));
+  const source = q ? sorted.filter(d => deityComparable(deitySearchText(d)).includes(q)) : sorted;
+  const merged = [];
+  for (const deity of [...source, ...sorted]) {
+    if (merged.some(d => d.name === deity.name)) continue;
+    merged.push(deity);
+    if (merged.length >= 25) break;
+  }
+  return merged.map(d => {
+    const suffix = d.epithet ? ` (${d.epithet})` : '';
+    const label = `${d.name}${suffix}`;
+    return {
+      name: label.length > 100 ? `${label.slice(0, 97)}...` : label,
+      value: d.name,
+    };
+  });
+}
+
 function buildDeityEmbed(deity) {
   // Color by PFS availability
   const pfsColor = {
@@ -8248,7 +8292,10 @@ client.on('interactionCreate', async (interaction) => {
           suggestions = deityAutocompleteChoices(focused.value);
         }
         else if (cmd === 'eberron' && focused.name === 'name') {
-          suggestions = eberronHouseAutocompleteChoices(focused.value);
+          const sub = interaction.options.getSubcommand(false);
+          suggestions = sub === 'deity'
+            ? eberronDeityAutocompleteChoices(focused.value)
+            : eberronHouseAutocompleteChoices(focused.value);
         }
         else if (cmd === 'skillinfo') {
           if (focused.name === 'skill') {
@@ -11975,7 +12022,35 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    return interaction.reply({ content: 'Unknown Eberron lookup. Try `/eberron house`.', ephemeral: true });
+    if (sub === 'deity') {
+      const input = interaction.options.getString('name');
+      const { deity, matches } = findEberronDeity(input);
+
+      if (deity) {
+        return interaction.reply({ embeds: [buildDeityEmbed(deity)] });
+      }
+
+      if (matches && matches.length > 1) {
+        const preview = matches
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .slice(0, 20)
+          .map(formatDeityMatchLine)
+          .join('\n');
+        return interaction.reply({
+          content: `Multiple Eberron deities or faiths match **"${input}"**. Did you mean one of these?\n${preview}`,
+          ephemeral: true,
+        });
+      }
+
+      const names = eberronDeityDatabase.map(d => d.name);
+      const hint = didYouMeanLine(input, names);
+      return interaction.reply({
+        content: `No Eberron deity or faith found for **"${input}"**.${hint || ' Try a deity, faith, pantheon, or alias.'}`,
+        ephemeral: true,
+      });
+    }
+
+    return interaction.reply({ content: 'Unknown Eberron lookup. Try `/eberron house` or `/eberron deity`.', ephemeral: true });
   }
 
   else if (commandName === 'skillinfo') {

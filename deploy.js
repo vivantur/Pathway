@@ -1489,7 +1489,10 @@ const eberronCommand = new SlashCommandBuilder()
   .setDescription('Eberron campaign reference lookups.')
   .addSubcommand(s => s.setName('house')
     .setDescription('Look up a Dragonmarked House.')
-    .addStringOption(o => o.setName('name').setDescription('House name, dragonmark, or service').setRequired(true).setAutocomplete(true)));
+    .addStringOption(o => o.setName('name').setDescription('House name, dragonmark, or service').setRequired(true).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('deity')
+    .setDescription('Look up an Eberron deity, faith, or religious tradition.')
+    .addStringOption(o => o.setName('name').setDescription('Deity, faith, pantheon, or alias').setRequired(true).setAutocomplete(true)));
 
 const commands = [
   // Utility
