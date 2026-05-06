@@ -196,6 +196,11 @@ const sheetCommand = new SlashCommandBuilder()
   .setDescription('Display your full character sheet.')
   .addStringOption(o => o.setName('name').setDescription('Character name (leave blank for active)').setRequired(false).setAutocomplete(true));
 
+const featsCommand = new SlashCommandBuilder()
+  .setName('feats')
+  .setDescription("Display your character's feats in a compact block.")
+  .addStringOption(o => o.setName('character').setDescription('Character name (leave blank for active)').setRequired(false).setAutocomplete(true));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // /portrait
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1504,6 +1509,7 @@ const commands = [
   // Character management
   charCommand,
   sheetCommand,
+  featsCommand,
   portraitCommand,
   snippetCommand,
   serversnippetCommand,

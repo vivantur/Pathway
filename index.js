@@ -1877,6 +1877,66 @@ function resolveChar(userId, nameArg, characters) {
   return { charKey, char: characters[userId][charKey] };
 }
 
+function normalizeCharacterFeat(feat) {
+  if (Array.isArray(feat)) {
+    return {
+      name: String(feat[0] ?? '').trim(),
+      source: String(feat[1] ?? '').trim(),
+      level: feat[2] ?? null,
+      type: String(feat[3] ?? '').trim(),
+    };
+  }
+  if (feat && typeof feat === 'object') {
+    return {
+      name: String(feat.name ?? feat.feat ?? '').trim(),
+      source: String(feat.source ?? feat.sourceText ?? '').trim(),
+      level: feat.level ?? feat.takenLevel ?? null,
+      type: String(feat.type ?? feat.category ?? '').trim(),
+    };
+  }
+  return { name: String(feat ?? '').trim(), source: '', level: null, type: '' };
+}
+
+function buildCharacterFeatsBlock(charEntry) {
+  const feats = (charEntry.data?.feats ?? [])
+    .map(normalizeCharacterFeat)
+    .filter(f => f.name)
+    .sort((a, b) => {
+      const al = Number.isFinite(Number(a.level)) ? Number(a.level) : 999;
+      const bl = Number.isFinite(Number(b.level)) ? Number(b.level) : 999;
+      return al - bl || a.name.localeCompare(b.name);
+    });
+
+  if (feats.length === 0) return 'No feats recorded';
+
+  const lines = feats.map(feat => {
+    const prefix = feat.level !== null && feat.level !== undefined && feat.level !== ''
+      ? `L${feat.level}`
+      : '--';
+    return `${prefix} ${feat.name}`;
+  });
+
+  const half = Math.ceil(lines.length / 2);
+  const col1 = lines.slice(0, half);
+  const col2 = lines.slice(half);
+  const rows = [];
+  let hidden = 0;
+
+  for (let i = 0; i < col1.length; i++) {
+    const row = `${col1[i].slice(0, 29).padEnd(31)}${(col2[i] ?? '').slice(0, 29)}`;
+    const next = [...rows, row];
+    const wouldBe = `\`\`\`\n${next.join('\n')}\n\`\`\``;
+    if (wouldBe.length > 980) {
+      hidden = lines.length - rows.length * 2;
+      break;
+    }
+    rows.push(row);
+  }
+
+  const suffix = hidden > 0 ? `\n*${hidden} more not shown in this compact view.*` : '';
+  return `\`\`\`\n${rows.join('\n')}\n\`\`\`${suffix}`;
+}
+
 function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
   const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(title).setDescription(breakdown);
   if (thumbnail) embed.setThumbnail(thumbnail);
@@ -6686,6 +6746,7 @@ const HELP_CATEGORIES = {
       { name: '/char active', summary: 'Set a default character so you don\'t have to type character: every time.', options: 'character (or action:clear)', example: '/char active character:Hylia' },
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
+      { name: '/feats', summary: 'Show your character\'s feats in a compact block.', options: 'character', example: '/feats' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset, max)', example: '/hp max value:52' },
       { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80' },
@@ -7821,7 +7882,7 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
-        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait') && focused.name === 'character') {
+        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -8134,9 +8195,16 @@ client.on('interactionCreate', async (interaction) => {
             const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           } else if (focused.name === 'name') {
-            // Suggest from feat database (full list is ~5000, filter by typed input)
+            // Add uses the full feat database; remove uses feats already on the active character.
+            const action = interaction.options.getString('action');
             const q = String(focused.value ?? '').toLowerCase();
-            if (q.length >= 2 && typeof featDatabase !== 'undefined') {
+            if (action === 'remove') {
+              const characters = loadCharacters();
+              const charArg = interaction.options.getString('character');
+              const { char: ce } = resolveChar(interaction.user.id, charArg, characters) || {};
+              const ownFeats = (ce?.data?.feats ?? []).map(f => normalizeCharacterFeat(f).name).filter(Boolean);
+              suggestions = pick([...new Set(ownFeats)]);
+            } else if (q.length >= 2 && typeof featDatabase !== 'undefined') {
               suggestions = pick(featDatabase.filter(f => f.name && f.name.toLowerCase().includes(q)).map(f => f.name));
             }
           }
@@ -9243,7 +9311,7 @@ client.on('interactionCreate', async (interaction) => {
         // Pathbuilder stores feats as arrays: [name, sourceText, level, ...]
         ce2.data.feats.push([featName, '', featLevel, '']);
         characters2[userId][ck2] = ce2;
-        saveCharacters(characters2);
+        await saveCharacters(characters2);
         return interaction.reply({ content: `✅ Added feat **${featName}** (level ${featLevel}) to **${ce2.data.name}**.` });
       }
       if (action === 'remove') {
@@ -9254,20 +9322,28 @@ client.on('interactionCreate', async (interaction) => {
         });
         if (ce2.data.feats.length === before) return interaction.reply({ content: `❌ Feat "${featName}" not found on **${ce2.data.name}**.`, ephemeral: true });
         characters2[userId][ck2] = ce2;
-        saveCharacters(characters2);
+        await saveCharacters(characters2);
         return interaction.reply({ content: `🗑️ Removed feat **${featName}** from **${ce2.data.name}**.` });
       }
-      if (action === 'list') {
-        const feats = ce2.data.feats ?? [];
-        if (feats.length === 0) return interaction.reply({ content: `**${ce2.data.name}** has no feats recorded.`, ephemeral: true });
-        const lines = feats.map(f => {
-          if (Array.isArray(f)) return `• **${f[0]}** ${f[2] ? '*(lvl ' + f[2] + ')*' : ''}`;
-          return `• **${f.name ?? f}**`;
-        });
-        const embed = new EmbedBuilder().setColor(0x9b59b6).setTitle(`📜 ${ce2.data.name}'s Feats`).setDescription(lines.join('\n').slice(0, 4000));
-        return interaction.reply({ embeds: [embed] });
-      }
     }
+  }
+
+  // ─── /feats ──────────────────────────────────────────────────────
+  else if (commandName === 'feats') {
+    const characters = loadCharacters();
+    const nameArg = interaction.options.getString('character');
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+
+    const c = charEntry.data ?? {};
+    const embed = new EmbedBuilder()
+      .setColor(0x9b59b6)
+      .setTitle(`${c.name ?? charEntry.name}'s Feats`)
+      .setDescription(buildCharacterFeatsBlock(charEntry))
+      .setFooter({ text: 'Pathway character feats' });
+
+    if (charEntry.art) embed.setThumbnail(charEntry.art);
+    return interaction.reply({ embeds: [embed] });
   }
 
   // ─── /sheet ──────────────────────────────────────────────────────
