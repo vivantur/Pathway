@@ -1879,11 +1879,13 @@ function resolveChar(userId, nameArg, characters) {
 
 function normalizeCharacterFeat(feat) {
   if (Array.isArray(feat)) {
+    const typeIndex = typeof feat[2] === 'string' ? 2 : 3;
+    const levelIndex = Number.isFinite(Number(feat[3])) ? 3 : 2;
     return {
       name: String(feat[0] ?? '').trim(),
       source: String(feat[1] ?? '').trim(),
-      level: feat[2] ?? null,
-      type: String(feat[3] ?? '').trim(),
+      level: feat[levelIndex] ?? null,
+      type: String(feat[typeIndex] ?? '').trim(),
     };
   }
   if (feat && typeof feat === 'object') {
@@ -1897,7 +1899,7 @@ function normalizeCharacterFeat(feat) {
   return { name: String(feat ?? '').trim(), source: '', level: null, type: '' };
 }
 
-function buildCharacterFeatsBlock(charEntry) {
+function buildCharacterFeatsFields(charEntry) {
   const feats = (charEntry.data?.feats ?? [])
     .map(normalizeCharacterFeat)
     .filter(f => f.name)
@@ -1907,34 +1909,73 @@ function buildCharacterFeatsBlock(charEntry) {
       return al - bl || a.name.localeCompare(b.name);
     });
 
-  if (feats.length === 0) return 'No feats recorded';
-
-  const lines = feats.map(feat => {
-    const prefix = feat.level !== null && feat.level !== undefined && feat.level !== ''
-      ? `L${feat.level}`
-      : '--';
-    return `${prefix} ${feat.name}`;
-  });
-
-  const half = Math.ceil(lines.length / 2);
-  const col1 = lines.slice(0, half);
-  const col2 = lines.slice(half);
-  const rows = [];
-  let hidden = 0;
-
-  for (let i = 0; i < col1.length; i++) {
-    const row = `${col1[i].slice(0, 29).padEnd(31)}${(col2[i] ?? '').slice(0, 29)}`;
-    const next = [...rows, row];
-    const wouldBe = `\`\`\`\n${next.join('\n')}\n\`\`\``;
-    if (wouldBe.length > 980) {
-      hidden = lines.length - rows.length * 2;
-      break;
-    }
-    rows.push(row);
+  if (feats.length === 0) {
+    return {
+      description: 'No feats recorded.',
+      fields: [],
+    };
   }
 
-  const suffix = hidden > 0 ? `\n*${hidden} more not shown in this compact view.*` : '';
-  return `\`\`\`\n${rows.join('\n')}\n\`\`\`${suffix}`;
+  const groups = new Map();
+  for (const feat of feats) {
+    const group = feat.type || 'Other Feats';
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(feat);
+  }
+
+  const preferredOrder = [
+    'Heritage',
+    'Ancestry Feat',
+    'Class Feat',
+    'Archetype Feat',
+    'Skill Feat',
+    'General Feat',
+    'Awarded Feat',
+    'Other Feats',
+  ];
+  const groupNames = [...groups.keys()].sort((a, b) => {
+    const ai = preferredOrder.indexOf(a);
+    const bi = preferredOrder.indexOf(b);
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    return a.localeCompare(b);
+  });
+  const fieldLabel = {
+    Heritage: 'Heritage',
+    'Ancestry Feat': 'Ancestry Feats',
+    'Class Feat': 'Class Feats',
+    'Archetype Feat': 'Archetype Feats',
+    'Skill Feat': 'Skill Feats',
+    'General Feat': 'General Feats',
+    'Awarded Feat': 'Awarded Feats',
+  };
+
+  let hidden = 0;
+  const fields = groupNames.map(groupName => {
+    const lines = [];
+    for (const feat of groups.get(groupName)) {
+      const level = feat.level !== null && feat.level !== undefined && feat.level !== ''
+        ? `**${feat.level}** `
+        : '';
+      const source = feat.source ? ` (${feat.source})` : '';
+      const line = `• ${level}${feat.name}${source}`;
+      if ([...lines, line].join('\n').length > 1000) {
+        hidden += 1;
+      } else {
+        lines.push(line);
+      }
+    }
+    return {
+      name: fieldLabel[groupName] ?? (groupName.endsWith('s') ? groupName : `${groupName}s`),
+      value: lines.join('\n') || 'No visible feats.',
+      inline: false,
+    };
+  });
+
+  const suffix = hidden > 0 ? ` ${hidden} additional feat${hidden === 1 ? '' : 's'} hidden by Discord's field limit.` : '';
+  return {
+    description: `${feats.length} feat${feats.length === 1 ? '' : 's'} recorded.${suffix}`,
+    fields,
+  };
 }
 
 function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
@@ -9336,10 +9377,12 @@ client.on('interactionCreate', async (interaction) => {
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data ?? {};
+    const featsView = buildCharacterFeatsFields(charEntry);
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
       .setTitle(`${c.name ?? charEntry.name}'s Feats`)
-      .setDescription(buildCharacterFeatsBlock(charEntry))
+      .setDescription(featsView.description)
+      .addFields(featsView.fields)
       .setFooter({ text: 'Pathway character feats' });
 
     if (charEntry.art) embed.setThumbnail(charEntry.art);
