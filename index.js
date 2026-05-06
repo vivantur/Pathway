@@ -6396,15 +6396,19 @@ function buildSpellEmbed(rawSpell) {
     embed.addFields({ name: 'Defense', value: `${basicPrefix}${spell.savingThrow}`, inline: false });
   }
   if (spell.damage)      embed.addFields({ name: 'Damage', value: spell.damage, inline: false });
+  const descriptionHasHeightened = /\bheightened\b/i.test(description);
   if (spell.heightening && typeof spell.heightening === 'object') {
     let htText = '';
     if (spell.heightening.type === 'per_rank' && spell.heightening.damage_bonus)
       htText = `Each rank above ${spell.level}: +${spell.heightening.damage_bonus} damage`;
     else if (spell.heightening.type === 'fixed' && spell.heightening.levels)
       htText = Object.entries(spell.heightening.levels).map(([k, v]) => `**${k}:** ${v}`).join('\n');
-    else htText = JSON.stringify(spell.heightening);
-    if (htText) embed.addFields({ name: '⬆️ Heightened', value: htText, inline: false });
-  } else if (spell.heightened?.trim()) {
+    else if (spell.heightening.extra_text)
+      htText = spell.heightening.type === 'per_rank' && spell.heightening.step
+        ? `Every +${spell.heightening.step} ranks: ${spell.heightening.extra_text}`
+        : String(spell.heightening.extra_text);
+    if (htText && !descriptionHasHeightened) embed.addFields({ name: '⬆️ Heightened', value: htText, inline: false });
+  } else if (spell.heightened?.trim() && !descriptionHasHeightened) {
     embed.addFields({ name: '⬆️ Heightened', value: spell.heightened, inline: false });
   }
   embed.setFooter({ text: `Pathfinder 2e · ${spell.source ?? 'Unknown source'}` });
