@@ -1435,10 +1435,27 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
     );
   }
 
+  // Supabase JS defaults to 1 000 rows per query regardless of table size.
+  // Use range-based pagination to fetch all rows without a hard-coded limit.
+  async function fetchAllRows(table, columns) {
+    const PAGE = 2000;
+    const rows = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await sb
+        .from(table)
+        .select(columns)
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (data?.length) rows.push(...data);
+      if (!data?.length || data.length < PAGE) break;
+    }
+    return rows;
+  }
+
   // ── Typed table: monsters ────────────────────────────────────────────────────
   try {
-    const { data: monsterRows, error } = await sb.from('monsters').select('monster_metadata');
-    if (!error && monsterRows?.length > 0) {
+    const monsterRows = await fetchAllRows('monsters', 'monster_metadata');
+    if (monsterRows.length > 0) {
       const freshCreatures = Object.fromEntries(
         monsterRows.map(r => [r.monster_metadata?.key, r.monster_metadata]).filter(([k, v]) => k && v)
       );
@@ -1453,10 +1470,10 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
 
   // ── Typed table: spells ──────────────────────────────────────────────────────
   try {
-    const { data: spellRows, error } = await sb.from('spells').select('spell_metadata');
-    if (!error && spellRows?.length > 0) {
+    const spellRows = await fetchAllRows('spells', 'spell_metadata');
+    if (spellRows.length > 0) {
       const homebrew = dbs.spellDatabase.filter(s => s._homebrew);
-      const fresh = spellRows.map(r => r.spell_metadata).filter(Boolean);
+      const fresh = spellRows.map(r => r.spell_metadata).filter(s => s && typeof s.name === 'string' && s.name.length > 0);
       dbs.spellDatabase.splice(0, dbs.spellDatabase.length, ...fresh, ...homebrew);
       console.log(`[startup] spells: ${dbs.spellDatabase.length}`);
     }
@@ -1464,8 +1481,8 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
 
   // ── Typed table: items ───────────────────────────────────────────────────────
   try {
-    const { data: itemRows, error } = await sb.from('items').select('item_metadata');
-    if (!error && itemRows?.length > 0) {
+    const itemRows = await fetchAllRows('items', 'item_metadata');
+    if (itemRows.length > 0) {
       const homebrew = dbs.itemDatabase.filter(i => i._homebrew);
       const fresh = itemRows.map(r => r.item_metadata).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
       dbs.itemDatabase.splice(0, dbs.itemDatabase.length, ...fresh, ...homebrew);
@@ -1506,8 +1523,7 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
 
   // ── gamedata table → backgrounds, rules, conditions, heritages, etc. ─────────
   try {
-    const { data: gdRows, error } = await sb.from('gamedata').select('category, slug, data');
-    if (error) throw error;
+    const gdRows = await fetchAllRows('gamedata', 'category, slug, data');
     if (!gdRows || gdRows.length === 0) {
       throw new Error(
         '[startup] FATAL: gamedata table is empty — reference databases cannot be loaded. ' +
