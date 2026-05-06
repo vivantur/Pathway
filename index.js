@@ -9342,11 +9342,11 @@ client.on('interactionCreate', async (interaction) => {
     else if (sub === 'feat') {
       const action = interaction.options.getString('action'); // add or remove
       const featName = interaction.options.getString('name');
-      const featLevel = interaction.options.getInteger('level') ?? charEntry.data?.level ?? 1;
       const userId = interaction.user.id;
       const characters2 = loadCharacters();
       const { error: e2, charKey: ck2, char: ce2 } = resolveChar(userId, interaction.options.getString('character'), characters2);
       if (e2) return interaction.reply({ content: e2, ephemeral: true });
+      const featLevel = interaction.options.getInteger('level') ?? ce2.data?.level ?? 1;
       if (!ce2.data.feats) ce2.data.feats = [];
       if (action === 'add') {
         // Pathbuilder stores feats as arrays: [name, sourceText, level, ...]
