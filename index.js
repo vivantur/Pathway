@@ -12,7 +12,6 @@ const {
   DATA_DIR,
   dataPath,
   loadJson,
-  loadGamedata,
   mutateJson,
   restoreAllFromSupabase,
   loadReferenceDatabasesFromSupabase,
@@ -157,106 +156,24 @@ process.on('uncaughtException', error => {
   process.exit(1);
 });
 
-let spellDatabase = loadGamedata('spells.json', {
-  default: [],
-  label: 'spells from database',
-  count: arr => arr.length,
-});
+let spellDatabase = [];
 
-let ancestryDatabase = loadGamedata('ancestries.json', {
-  default: {},
-  label: 'ancestries from database',
-  count: obj => Object.keys(obj).length,
-});
+let ancestryDatabase = {};
 
-let harvestRewardsDatabase = loadGamedata('harvest-rewards.json', {
-  default: { creature_types: {} },
-  label: 'harvest reward tables',
-  transform: raw => raw ?? { creature_types: {} },
-  count: obj => Object.keys(obj.creature_types ?? {}).length,
-});
+let harvestRewardsDatabase = { creature_types: {} };
 
-let archetypeDatabase = loadGamedata('archetypes.json', {
-  default: {},
-  label: 'archetypes from database',
-  count: obj => Object.keys(obj).length,
-});
+let archetypeDatabase = {};
 
-// File shape: { _meta: {...}, backgrounds: { key: {...} } }
-let backgroundDatabase = loadGamedata('background.json', {
-  default: {},
-  label: 'backgrounds from database',
-  transform: raw => raw.backgrounds ?? raw,
-  count: obj => Object.keys(obj).length,
-});
+let backgroundDatabase = {};
 
-// File shape: { metadata: {...}, feats: [ {...} ] }
-// Filters out parser garbage (feats with 1-character names like "U")
-let featDatabase = loadGamedata('feats.json', {
-  default: [],
-  label: 'feats from database',
-  transform: raw => {
-    const rawFeats = Array.isArray(raw) ? raw : (raw.feats ?? []);
-    return rawFeats.filter(f => f && typeof f.name === 'string' && f.name.length > 1);
-  },
-  count: arr => arr.length,
-});
+let featDatabase = [];
 
-let rulesDatabase = loadGamedata('rules.json', {
-  default: {},
-  label: 'rules entries from database',
-  count: obj => Object.values(obj).reduce((sum, cat) => {
-    // Skip _meta key, only count real categories
-    if (cat && typeof cat === 'object' && !Array.isArray(cat)) {
-      return sum + Object.keys(cat).length;
-    }
-    return sum;
-  }, 0),
-});
+let rulesDatabase = {};
 
-// Merge in conditions.json as its own category. The Archives of Nethys importer
-// only pulled rulebook chapter text, so /rule grabbed (and every other condition)
-// was returning "no rule found". Loading conditions separately and merging them
-// under a "Conditions" category lets findRule() pick them up automatically and
-// lets buildRuleEmbed() apply its existing red/🩸 condition styling for free.
-const conditionsData = loadGamedata('conditions.json', {
-  default: { Conditions: {} },
-  label: 'conditions from database',
-  count: obj => Object.keys(obj.Conditions ?? {}).length,
-});
-if (conditionsData?.Conditions) {
-  // Merge non-destructively: if a homebrew Conditions category already exists in
-  // rulesDatabase, layer the official data over it without nuking custom entries.
-  rulesDatabase.Conditions = { ...(rulesDatabase.Conditions ?? {}), ...conditionsData.Conditions };
-}
+const heritageDatabase = {};
+const heritagesByAncestry = {};
 
-// Heritages from Foundry pf2e dataset (Apache 2.0 / OGL).
-//
-// File shape:
-//   {
-//     _meta: {...},
-//     by_slug: { "anvil-dwarf": { name, slug, ancestry, ... }, ... },
-//     by_ancestry: { "dwarf": ["anvil-dwarf", ...], "_versatile": [...] }
-//   }
-//
-// We index by lowercased name AND by slug for fast lookup. Versatile heritages
-// (Aiuvarin, Nephilim, Dhampir, etc.) live under by_ancestry._versatile and
-// have ancestry === null.
-let heritagesData = loadGamedata('heritages.json', {
-  default: { by_slug: {}, by_ancestry: {} },
-  label: 'heritages from database',
-  count: obj => Object.keys(obj.by_slug ?? {}).length,
-});
-const heritageDatabase = heritagesData.by_slug ?? {};
-const heritagesByAncestry = heritagesData.by_ancestry ?? {};
-
-// File shape: { metadata: {...}, creatures: { key: {...} } }
-let bestiaryDatabase = loadGamedata('bestiary.json', {
-  default: {},
-  label: 'creatures from bestiary',
-  transform: raw => raw.creatures ?? raw,
-  count: obj => Object.keys(obj).length,
-});
+let bestiaryDatabase = {};
 
 // ── Bestiary mutation helpers ─────────────────────────────────────────────────
 // /monsteradd writes to the global bestiary.json. Keep this locked to the bot
@@ -327,17 +244,7 @@ function removeSpellFromDatabase(nameOrSlug) {
   return { removed: true, name: removed.name };
 }
 
-// File shape: { meta: {...}, items: { slug: {...} } }
-// Flattens to array and filters out malformed entries.
-let itemDatabase = loadGamedata('items.json', {
-  default: [],
-  label: 'items from database',
-  transform: raw => {
-    const itemsObj = raw.items ?? raw;
-    return Object.values(itemsObj).filter(i => i && typeof i.name === 'string' && i.name.length > 0);
-  },
-  count: arr => arr.length,
-});
+let itemDatabase = [];
 
 // ── Item database mutation helpers ────────────────────────────────────────────
 function addItemToDatabase(entry) {
@@ -372,72 +279,16 @@ function removeItemFromDatabase(nameOrSlug) {
   return { removed: true, name: removed.name, entryKey: removed.id || itemSlug(removed.name) };
 }
 
-// File shape: { metadata: {...}, deities: [ {...} ] }
-let deityDatabase = loadGamedata('deities.json', {
-  default: [],
-  label: 'deities from database',
-  transform: raw => {
-    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
-    return rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-  },
-  count: arr => arr.length,
-});
-const eberronDeityDatabase = loadGamedata('eberron-deities.json', {
-  default: [],
-  label: 'Eberron deities from database',
-  transform: raw => {
-    const rawDeities = Array.isArray(raw) ? raw : (raw.deities ?? []);
-    return rawDeities.filter(d => d && typeof d.name === 'string' && d.name.length > 0);
-  },
-  count: arr => arr.length,
-});
-deityDatabase.push(...eberronDeityDatabase);
-console.log(`[startup] deity autocomplete entries: ${deityDatabase.length} (${eberronDeityDatabase.length} Eberron)`);
+let deityDatabase = [];
+const eberronDeityDatabase = [];
 
-const eberronHouseDatabase = loadGamedata('eberron-houses.json', {
-  default: [],
-  label: 'Eberron Dragonmarked Houses from database',
-  transform: raw => {
-    const rawHouses = Array.isArray(raw) ? raw : (raw.houses ?? []);
-    return rawHouses.filter(h => h && typeof h.name === 'string' && h.name.length > 0);
-  },
-  count: arr => arr.length,
-});
-console.log(`[startup] Eberron house entries: ${eberronHouseDatabase.length}`);
+const eberronHouseDatabase = [];
 
-// File shape: { _meta: {...}, skills: { key: {...} } }
-let skillDatabase = loadGamedata('skills.json', {
-  default: {},
-  label: 'skills from database',
-  transform: raw => raw.skills ?? raw,
-  count: obj => Object.keys(obj).length,
-});
+let skillDatabase = {};
 
-let classDatabase = loadGamedata('classes.json', {
-  default: {},
-  label: 'classes from database',
-  transform: raw => raw.classes ?? raw,
-  count: obj => Object.keys(obj).length,
-});
+let classDatabase = {};
 
-// File shape: either { _meta, companions: { slug: {...} } } (keyed object),
-// { _meta, companions: [ {...} ] } (array), or the raw array/object itself.
-// Normalized to an array in all cases.
-let companionDatabase = loadGamedata('companions.json', {
-  default: [],
-  label: 'companions from database',
-  transform: raw => {
-    const inner = raw.companions ?? raw;
-    let arr = [];
-    if (Array.isArray(inner)) {
-      arr = inner;
-    } else if (inner && typeof inner === 'object') {
-      arr = Object.entries(inner).map(([slug, comp]) => ({ slug, ...comp }));
-    }
-    return arr.filter(c => c && typeof c.name === 'string' && c.name.length > 0);
-  },
-  count: arr => arr.length,
-});
+let companionDatabase = [];
 
 const REFERENCE_DATABASE_CONFIG = {
   action:        { file: 'actions.json',         key: 'actions',          label: 'actions and activities', icon: '⚡', color: 0x2ecc71 },
@@ -458,24 +309,8 @@ const REFERENCE_DATABASE_CONFIG = {
   sourcebook:    { file: 'sources.json',         key: 'sources',          label: 'sources', icon: '📚', color: 0x7289da },
 };
 
-function loadReferenceDatabase(commandName, cfg) {
-  return loadGamedata(cfg.file, {
-    default: [],
-    label: cfg.label,
-    transform: raw => {
-      const inner = raw?.[cfg.key] ?? raw;
-      const arr = Array.isArray(inner) ? inner : Object.values(inner ?? {});
-      return arr.filter(e => e && typeof e.name === 'string' && e.name.length > 0);
-    },
-    count: arr => arr.length,
-  }).map(e => ({ ...e, _referenceCommand: commandName }));
-}
-
 const referenceDatabases = Object.fromEntries(
-  Object.entries(REFERENCE_DATABASE_CONFIG).map(([commandName, cfg]) => [
-    commandName,
-    loadReferenceDatabase(commandName, cfg),
-  ])
+  Object.keys(REFERENCE_DATABASE_CONFIG).map(k => [k, []])
 );
 
 let charactersCache = null;
@@ -7111,6 +6946,9 @@ client.once('clientReady', async () => {
   seedJsonCache('bot-settings.json',   restored?.botSettings   ?? {});
   // Phase 3: load reference databases (bestiary/spells/items/gamedata) directly
   // from Supabase into memory — no disk writes, no disk reads.
+  const spellEffectsData = {};
+  const calendarData = {};  // populated with { golarion: {...}, eberron: {...} }
+  const weatherData = {};   // populated with { golarion: {...}, eberron: {...} }
   await loadReferenceDatabasesFromSupabase({
     bestiaryDatabase,
     spellDatabase,
@@ -7130,7 +6968,21 @@ client.once('clientReady', async () => {
     archetypeDatabase,
     featDatabase,
     harvestRewardsDatabase,
+    spellEffectsData,
+    calendarData,
+    weatherData,
   });
+  // Inject rules data into system modules now that Supabase has loaded them.
+  // Node's require cache means these return the same module objects as the top-
+  // level requires — no double-loading. The setRules() calls repopulate the
+  // module-level RULES variable and recompute any derived constants.
+  if (spellEffectsData && Object.keys(spellEffectsData).length) {
+    spellEffects.setRules(spellEffectsData);
+  }
+  if (calendarData?.golarion) require('./systems/calendar').setRules(calendarData.golarion);
+  if (calendarData?.eberron)  require('./systems/eberronCalendar').setRules(calendarData.eberron);
+  if (weatherData?.golarion)  weatherEngine.setRules(weatherData.golarion);
+  if (weatherData?.eberron)   require('./systems/eberronWeather').setRules(weatherData.eberron);
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
   setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });

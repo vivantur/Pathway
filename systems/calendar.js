@@ -34,53 +34,37 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
 const { loadJson, mutateJson } = require('../utils/storage');
-
-// ── Static rules data ────────────────────────────────────────────────────────
-const RULES = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', 'gamedata', 'calendar.json'),
-      'utf8'
-    ));
-  } catch (err) {
-    console.error('calendar.js: failed to load gamedata/calendar.json:', err.message);
-    return null;
-  }
-})();
 
 const STATE_FILE = 'calendar-state.json';
 
-// ── Constants derived from the data file ─────────────────────────────────────
-const MONTH_NAMES   = RULES ? RULES.months.map(m => m.name) : [];
-const WEEKDAY_NAMES = RULES ? RULES.weekdays.map(w => w.name) : [];
+// ── Static rules data (injected at startup via setRules) ─────────────────────
+let RULES = null;
+let MONTH_NAMES   = [];
+let WEEKDAY_NAMES = [];
+let EPOCH_OFFSET  = 0;
+let MOON_OFFSET   = 0;
 
-// Compute the "epoch offset" — how many days to add to the days-since-1/1/1-AR
-// count so that the anchor date lands on the configured weekday.
-const EPOCH_OFFSET = (() => {
-  if (!RULES) return 0;
+function setRules(data) {
+  if (!data) return;
+  RULES = data;
+  MONTH_NAMES   = RULES.months.map(m => m.name);
+  WEEKDAY_NAMES = RULES.weekdays.map(w => w.name);
+
   const a = RULES.anchor;
   const anchorWeekdayIdx = WEEKDAY_NAMES.indexOf(a.weekday);
   if (anchorWeekdayIdx === -1) {
     console.error(`calendar.js: anchor weekday "${a.weekday}" not found in weekdays list.`);
-    return 0;
+    EPOCH_OFFSET = 0;
+  } else {
+    const anchorDays = daysSinceEpoch(a.year, a.month, a.day);
+    EPOCH_OFFSET = ((anchorWeekdayIdx - (anchorDays % 7)) % 7 + 7) % 7;
   }
-  const anchorDays = daysSinceEpoch(a.year, a.month, a.day);
-  // We want: (anchorDays + offset) mod 7 === anchorWeekdayIdx.
-  return ((anchorWeekdayIdx - (anchorDays % 7)) % 7 + 7) % 7;
-})();
 
-// Same idea for the moon phase: how many days since "phase 0 of cycle".
-const MOON_OFFSET = (() => {
-  if (!RULES) return 0;
-  const a = RULES.anchor;
   const cycle = RULES.moon.cycleDays;
-  const anchorDays = daysSinceEpoch(a.year, a.month, a.day);
-  // We want: (anchorDays + offset) mod cycle === anchorPhase
-  return ((RULES.moon.anchorPhase - (anchorDays % cycle)) % cycle + cycle) % cycle;
-})();
+  const anchorDays2 = daysSinceEpoch(a.year, a.month, a.day);
+  MOON_OFFSET = ((RULES.moon.anchorPhase - (anchorDays2 % cycle)) % cycle + cycle) % cycle;
+}
 
 // ── Pure math helpers ────────────────────────────────────────────────────────
 
@@ -401,4 +385,5 @@ module.exports = {
   setDate,
   advance,
   clear,
+  setRules,
 };

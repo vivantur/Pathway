@@ -25,62 +25,43 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
 const { loadJson, mutateJson } = require('../utils/storage');
-
-// ── Static rules data ────────────────────────────────────────────────────────
-const RULES = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', 'gamedata', 'eberron-calendar.json'),
-      'utf8'
-    ));
-  } catch (err) {
-    console.error('eberronCalendar.js: failed to load gamedata/eberron-calendar.json:', err.message);
-    return null;
-  }
-})();
 
 const STATE_FILE = 'calendar-state.json';
 
-// ── Constants derived from the data file ─────────────────────────────────────
-const MONTH_NAMES   = RULES ? RULES.months.map(m => m.name) : [];
-const WEEKDAY_NAMES = RULES ? RULES.weekdays.map(w => w.name) : [];
+// ── Static rules data (injected at startup via setRules) ─────────────────────
+let RULES = null;
+let MONTH_NAMES        = [];
+let WEEKDAY_NAMES      = [];
+let EPOCH_OFFSET       = 0;
+let MOON_OFFSETS       = {};
+let PRIMARY_MOON_OFFSET = 0;
 
-// Compute the "epoch offset" — days to add so anchor date lands on configured weekday.
-const EPOCH_OFFSET = (() => {
-  if (!RULES) return 0;
+function setRules(data) {
+  if (!data) return;
+  RULES = data;
+  MONTH_NAMES   = RULES.months.map(m => m.name);
+  WEEKDAY_NAMES = RULES.weekdays.map(w => w.name);
+
   const a = RULES.anchor;
-  const anchorWeekdayIdx = WEEKDAY_NAMES.indexOf(a.weekday);
-  if (anchorWeekdayIdx === -1) {
-    console.error(`eberronCalendar.js: anchor weekday "${a.weekday}" not found in weekdays list.`);
-    return 0;
-  }
   const anchorDays = daysSinceEpoch(a.year, a.month, a.day);
-  return ((anchorWeekdayIdx - (anchorDays % 7)) % 7 + 7) % 7;
-})();
 
-// Per-moon offset map. Each moon gets its own anchor calculation so all 12
-// can be queried at once via getAllMoonPhases.
-const MOON_OFFSETS = (() => {
-  if (!RULES) return {};
-  const offsets = {};
-  const anchorDays = daysSinceEpoch(RULES.anchor.year, RULES.anchor.month, RULES.anchor.day);
+  // EPOCH_OFFSET
+  const anchorWeekdayIdx = WEEKDAY_NAMES.indexOf(a.weekday);
+  EPOCH_OFFSET = anchorWeekdayIdx === -1 ? 0
+    : ((anchorWeekdayIdx - (anchorDays % 7)) % 7 + 7) % 7;
+
+  // MOON_OFFSETS (per-moon)
+  MOON_OFFSETS = {};
   for (const moon of (RULES.moons || [])) {
     const cycle = moon.cycleDays;
-    offsets[moon.key] = ((moon.anchorPhase - (anchorDays % cycle)) % cycle + cycle) % cycle;
+    MOON_OFFSETS[moon.key] = ((moon.anchorPhase - (anchorDays % cycle)) % cycle + cycle) % cycle;
   }
-  return offsets;
-})();
 
-// Primary moon offset — headline moon shown by default (Olarune).
-const PRIMARY_MOON_OFFSET = (() => {
-  if (!RULES) return 0;
-  const cycle = RULES.moon.cycleDays;
-  const anchorDays = daysSinceEpoch(RULES.anchor.year, RULES.anchor.month, RULES.anchor.day);
-  return ((RULES.moon.anchorPhase - (anchorDays % cycle)) % cycle + cycle) % cycle;
-})();
+  // PRIMARY_MOON_OFFSET
+  const primaryCycle = RULES.moon.cycleDays;
+  PRIMARY_MOON_OFFSET = ((RULES.moon.anchorPhase - (anchorDays % primaryCycle)) % primaryCycle + primaryCycle) % primaryCycle;
+}
 
 // ── Pure math helpers ────────────────────────────────────────────────────────
 
@@ -452,4 +433,5 @@ module.exports = {
   setDate,
   advance,
   clear,
+  setRules,
 };

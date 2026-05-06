@@ -1718,6 +1718,30 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
       }
     }
 
+    // ── spell_effects → spellEffectsData ─────────────────────────────────────
+    if (dbs.spellEffectsData && byCategory.spell_effects) {
+      for (const [slug, entry] of Object.entries(byCategory.spell_effects)) {
+        if (entry) dbs.spellEffectsData[slug] = entry;
+      }
+      console.log(`[startup] spell_effects: ${Object.keys(dbs.spellEffectsData).length} entries`);
+    }
+
+    // ── calendar_rules → calendarData ────────────────────────────────────────
+    if (dbs.calendarData && byCategory.calendar_rules) {
+      for (const [slug, entry] of Object.entries(byCategory.calendar_rules)) {
+        if (entry) dbs.calendarData[slug] = entry;
+      }
+      console.log(`[startup] calendar_rules: ${Object.keys(dbs.calendarData).length} variants (${Object.keys(dbs.calendarData).join(', ')})`);
+    }
+
+    // ── weather_rules → weatherData ──────────────────────────────────────────
+    if (dbs.weatherData && byCategory.weather_rules) {
+      for (const [slug, entry] of Object.entries(byCategory.weather_rules)) {
+        if (entry) dbs.weatherData[slug] = entry;
+      }
+      console.log(`[startup] weather_rules: ${Object.keys(dbs.weatherData).length} variants (${Object.keys(dbs.weatherData).join(', ')})`);
+    }
+
     console.log(`[startup] gamedata: ${gdRows.length} entries → reference databases populated ✓`);
   } catch (e) { console.error('[startup] gamedata load failed:', e.message); }
 }
