@@ -2478,6 +2478,19 @@ function combatV2CharacterSkills(charEntry) {
 }
 
 function combatV2FindSkill(actor, input) {
+  const requested = String(input ?? '').toLowerCase().trim();
+  if (requested === 'perception' || requested === 'initiative' || requested === 'init') {
+    const perception = actor?.perception ?? actor?.stats?.perception ?? actor?.core?.perception ?? null;
+    if (perception != null) {
+      return {
+        key: requested === 'perception' ? 'perception' : 'initiative',
+        label: requested === 'perception' ? 'Perception' : 'Initiative',
+        modifier: Number(perception),
+        usesPerception: true,
+      };
+    }
+  }
+
   const skills = actor?.skills ?? {};
   const normalized = combatV2NormalizeSkillName(input);
   if (normalized && skills[normalized] != null) {
@@ -2487,7 +2500,7 @@ function combatV2FindSkill(actor, input) {
       : { key: normalized, label: raw.label ?? COMBAT_V2_SKILL_LABELS[normalized], modifier: Number(raw.modifier ?? raw.total ?? 0) };
   }
 
-  const q = String(input ?? '').toLowerCase().trim();
+  const q = requested;
   for (const [key, raw] of Object.entries(skills)) {
     const label = raw?.label ?? key;
     if (key.toLowerCase() === q || label.toLowerCase() === q || label.toLowerCase().includes(q)) {
@@ -7876,7 +7889,7 @@ client.on('interactionCreate', async (interaction) => {
           } else if (focused.name === 'skill') {
             const monsterName = interaction.options.getString('monster');
             const actor = v2 ? combatV2State.findCombatant(v2, monsterName) : null;
-            const names = new Set(Object.values(COMBAT_V2_SKILL_LABELS));
+            const names = new Set(['Perception', 'Initiative', ...Object.values(COMBAT_V2_SKILL_LABELS)]);
             for (const [key, raw] of Object.entries(actor?.skills ?? {})) names.add(raw?.label ?? key);
             suggestions = pick([...names]);
           }
@@ -13398,9 +13411,48 @@ client.on('interactionCreate', async (interaction) => {
     // ── /monsterroll skill ───────────────────────────────────────────
     if (sub === 'skill') {
       const skillInput = interaction.options.getString('skill').trim();
+      const skillQuery = skillInput.toLowerCase();
+      const isPerceptionRoll = ['perception', 'initiative', 'init'].includes(skillQuery);
+
+      if (isPerceptionRoll) {
+        const modifier = core.perception ?? summary.perception ?? rich?.perception ?? null;
+        if (modifier == null) {
+          return interaction.reply({ content: `❌ **${monster.name}** has no Perception modifier listed in the bestiary.`, ephemeral: true });
+        }
+
+        let effectBonus = 0;
+        if (combatant) {
+          const mods = sumEffectModifiers(combatant);
+          effectBonus = mods.perceptionBonus ?? mods.skillBonus ?? 0;
+        }
+        const totalModifier = Number(modifier) + effectBonus;
+        const r = rollD20Plus(totalModifier);
+
+        let breakdown = formatRollBreakdown(r.roll, totalModifier, 0, r.total, 20);
+        if (effectBonus !== 0) {
+          breakdown += `\n*base ${fmt(Number(modifier))}, effects ${fmt(effectBonus)}*`;
+        }
+        if (dc != null) {
+          const degree = determineDegreeOfSuccess(r.total, r.roll, dc);
+          const degreeNames = { 'crit-success': '⭐ Critical Success', 'success': '✅ Success', 'failure': '❌ Failure', 'crit-failure': '💀 Critical Failure' };
+          breakdown += `\nvs DC ${dc}: **${degreeNames[degree] ?? degree}**`;
+        }
+
+        const art = guildId ? lookupMonsterArt(guildId, monster) : null;
+        const label = skillQuery === 'perception' ? 'Perception' : 'Initiative';
+        const embed = buildRollEmbed({
+          title: `👁️ ${monster.name} rolls ${label}!`,
+          breakdown,
+          charName: `${monster.name} · Perception ${fmt(totalModifier)}`,
+          thumbnail: art,
+        });
+        embed.setColor(0x8B0000);
+        return interaction.reply({ embeds: [embed], ephemeral: !wantPublic });
+      }
+
       // Skills come from rich.skills as { "Athletics": 8, "Stealth": 5 }.
       // Match case-insensitively + allow partial.
-      const skillsObj = rich?.skills ?? {};
+      const skillsObj = rich?._skillTotals ?? rich?.skills ?? {};
       const skillKeys = Object.keys(skillsObj);
       if (skillKeys.length === 0) {
         return interaction.reply({ content: `❌ **${monster.name}** has no skills listed in the bestiary.`, ephemeral: true });
