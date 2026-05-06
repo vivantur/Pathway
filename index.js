@@ -638,7 +638,7 @@ function spendDowntimeDaysOrReply(store, interaction, userId, charKey, charName,
   downtime.accrue(store, userId, charKey);
   const result = downtime.spend(store, userId, charKey, days, reason, userId);
   if (!result.ok) {
-    return { ok: false, reply: { content: `Cannot spend downtime: ${result.reason}`, ephemeral: true } };
+    return { ok: false, reply: { content: `Cannot spend downtime: ${result.reason}` } };
   }
   return { ok: true, balance: result.balance };
 }
@@ -17235,15 +17235,15 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const skillName = interaction.options.getString('skill');
     const taskLevel = interaction.options.getInteger('task_level');
     const days = interaction.options.getInteger('days') ?? 1;
     const bonus = interaction.options.getInteger('bonus') ?? 0;
     const skill = getDowntimeSkillModifier(c, skillName);
-    if (skill.error) return interaction.reply({ content: skill.error, ephemeral: true });
-    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in ${skill.skill} to Earn Income.`, ephemeral: true });
+    if (skill.error) return interaction.reply({ content: skill.error });
+    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in ${skill.skill} to Earn Income.` });
 
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Earn Income (${skill.skill})`);
@@ -17273,13 +17273,13 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const days = interaction.options.getInteger('days') ?? 1;
     const bonus = interaction.options.getInteger('bonus') ?? 0;
     const document = interaction.options.getString('document');
     const skill = getDowntimeSkillModifier(c, 'society');
-    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Society to Create a Forgery.`, ephemeral: true });
+    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Society to Create a Forgery.` });
 
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Create Forgery (${document})`);
@@ -17298,14 +17298,14 @@ client.on('interactionCreate', async (interaction) => {
         `**Downtime bank:** ${spend.balance}/${downtime.MAX_BANK}`
       );
     if (charEntry.art) embed.setThumbnail(charEntry.art);
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed] });
   }
 
   else if (commandName === 'craft') {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const item = interaction.options.getString('item');
     const itemLevel = interaction.options.getInteger('item_level');
@@ -17313,7 +17313,7 @@ client.on('interactionCreate', async (interaction) => {
     const bonus = interaction.options.getInteger('bonus') ?? 0;
     const dc = interaction.options.getInteger('dc') ?? downtime.taskLevelDC(itemLevel);
     const skill = getDowntimeSkillModifier(c, 'crafting');
-    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Crafting to Craft items.`, ephemeral: true });
+    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Crafting to Craft items.` });
 
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Craft ${item}`);
@@ -17348,7 +17348,7 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const days = interaction.options.getInteger('days') ?? 1;
     const conMod = Math.floor((((c.abilities ?? {}).con ?? 10) - 10) / 2);
@@ -17369,14 +17369,14 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const target = interaction.options.getString('target');
     const dc = interaction.options.getInteger('dc');
     const days = interaction.options.getInteger('days') ?? 1;
     const bonus = interaction.options.getInteger('bonus') ?? 0;
     const skill = getDowntimeSkillModifier(c, 'medicine');
-    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Medicine to Treat Disease.`, ephemeral: true });
+    if (skill.profNum === 0) return interaction.reply({ content: `${c.name ?? 'This character'} must be trained in Medicine to Treat Disease.` });
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Treat Disease (${target})`);
     if (!spend.ok) return interaction.reply(spend.reply);
@@ -17393,7 +17393,6 @@ client.on('interactionCreate', async (interaction) => {
         .setColor(['criticalSuccess', 'success'].includes(roll.degree) ? 0x27AE60 : 0xC0392B)
         .setTitle(`${c.name ?? 'Character'} Treats Disease`)
         .setDescription(`**Target:** ${target}\n**Roll:** d20 (${roll.die}) ${fmt(skill.total)}${bonus ? ` ${fmt(bonus)}` : ''} = **${roll.total}** vs DC **${dc}**\n**Result:** ${downtimeDegreeLabel(roll.degree)}\n${resultText}\n**Downtime bank:** ${spend.balance}/${downtime.MAX_BANK}`)],
-      ephemeral: true,
     });
   }
 
@@ -17401,14 +17400,14 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const skillName = interaction.options.getString('skill');
     const days = interaction.options.getInteger('days') ?? (commandName === 'learnname' ? 7 : 1);
     const bonus = interaction.options.getInteger('bonus') ?? 0;
     const dc = downtimeDcFromOptions(interaction, c.level ?? 1, ['bribe', 'forgedocuments'].includes(commandName) ? 'hard' : 'normal');
     const skill = getDowntimeSkillModifier(c, skillName);
-    if (skill.error) return interaction.reply({ content: skill.error, ephemeral: true });
+    if (skill.error) return interaction.reply({ content: skill.error });
 
     const titleMap = {
       learnname: 'Learns a Name',
@@ -17451,14 +17450,14 @@ client.on('interactionCreate', async (interaction) => {
         `**Downtime bank:** ${spend.balance}/${downtime.MAX_BANK}`
       );
     if (charEntry.art) embed.setThumbnail(charEntry.art);
-    return interaction.reply({ embeds: [embed], ephemeral: ['learnname', 'bribe', 'forgedocuments', 'gossip', 'scout'].includes(commandName) });
+    return interaction.reply({ embeds: [embed] });
   }
 
   else if (commandName === 'cram' || commandName === 'retrain') {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const { error, charKey, char: charEntry } = resolveChar(userId, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
+    if (error) return interaction.reply({ content: error });
     const c = charEntry.data ?? {};
     const days = interaction.options.getInteger('days') ?? (commandName === 'retrain' ? 7 : 1);
     const subject = commandName === 'cram' ? interaction.options.getString('branch') : interaction.options.getString('change');
@@ -17474,7 +17473,6 @@ client.on('interactionCreate', async (interaction) => {
         .setColor(0x6f4e37)
         .setTitle(`${c.name ?? 'Character'} ${commandName === 'cram' ? 'Crams' : 'Retrains'}`)
         .setDescription(`${description}\n**Downtime bank:** ${spend.balance}/${downtime.MAX_BANK}`)],
-      ephemeral: true,
     });
   }
 
@@ -17493,7 +17491,7 @@ client.on('interactionCreate', async (interaction) => {
     if (['check', 'spend', 'grant', 'log', 'reset'].includes(sub)) {
       const charNameArg = interaction.options.getString('character');
       const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
-      if (error) return interaction.reply({ content: error, ephemeral: true });
+      if (error) return interaction.reply({ content: error });
 
       const c = charEntry.data ?? {};
       const charName = c.name ?? charEntry.name ?? 'Character';
@@ -17534,7 +17532,7 @@ client.on('interactionCreate', async (interaction) => {
         const days = interaction.options.getInteger('days');
         const reason = interaction.options.getString('reason');
         const result = downtime.spend(store, userId, charKey, days, reason, userId);
-        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}` });
         saveDowntime(store);
         return interaction.reply({
           content: `🪙 **${charName}** spent **${days}** downtime day${days === 1 ? '' : 's'} on **${reason}**.\nBank balance: **${result.balance}**/${downtime.MAX_BANK}.`,
@@ -17545,7 +17543,7 @@ client.on('interactionCreate', async (interaction) => {
         const days = interaction.options.getInteger('days');
         const reason = interaction.options.getString('reason');
         const result = downtime.grant(store, userId, charKey, days, reason, userId);
-        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        if (!result.ok) return interaction.reply({ content: `❌ ${result.reason}` });
         saveDowntime(store);
         const capLine = result.capped > 0
           ? `\n${result.capped} day${result.capped === 1 ? '' : 's'} could not be added because the bank is capped at ${downtime.MAX_BANK}.`
@@ -17570,7 +17568,7 @@ client.on('interactionCreate', async (interaction) => {
           .setColor(0xF39C12)
           .setTitle(`🪙 ${charName}'s Downtime Log`)
           .setDescription(lines);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed] });
       }
 
       if (sub === 'reset') {
@@ -17578,14 +17576,12 @@ client.on('interactionCreate', async (interaction) => {
         saveDowntime(store);
         return interaction.reply({
           content: `🧹 Reset **${charName}**'s downtime bank from **${result.before}** to **0**.`,
-          ephemeral: true,
         });
       }
     }
 
     return interaction.reply({
       content: `❌ This downtime subcommand is from an older command version. Try restarting Discord, then use \`/downtime check\`, \`/downtime spend\`, \`/downtime grant\`, \`/downtime log\`, or \`/downtime reset\`.`,
-      ephemeral: true,
     });
 
     // ─── /downtime list — show available activities ───
@@ -17598,7 +17594,7 @@ client.on('interactionCreate', async (interaction) => {
         .setTitle('🛠️ Available Downtime Activities')
         .setDescription(lines.join('\n') || 'No activities defined yet.')
         .setFooter({ text: 'Start with /downtime start' });
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return interaction.reply({ embeds: [embed] });
     }
 
     // For all other subcommands, we need the player's character.
@@ -17612,7 +17608,7 @@ client.on('interactionCreate', async (interaction) => {
     const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
     if (error) {
       console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
-      return interaction.reply({ content: error, ephemeral: true });
+      return interaction.reply({ content: error });
     }
     console.log(`[downtime DEBUG] resolveChar succeeded: charKey=${charKey}`);
     const c = charEntry.data;
