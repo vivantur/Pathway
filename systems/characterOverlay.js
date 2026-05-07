@@ -20,6 +20,16 @@
 //         "Oracle": { "1": 1, "2": 0, ... }
 //       },
 //       last_rest_at: "ISO timestamp"
+//     },
+//     cvars: {                              // /cvar — user-defined variables
+//       // name (lowercase) -> stringified value, used by {{name}} substitution
+//       "rage_bonus": "+2",
+//       "atk":        "1d20+8"
+//     },
+//     counters: {                           // /cc — user-defined custom counters
+//       // name (lowercase) -> { current, max, reset, label }
+//       // reset: 'daily' (cleared on /rest) | 'none' (manual only)
+//       "reagents": { current: 8, max: 8, reset: "daily", label: "Infused Reagents" }
 //     }
 //   }
 
@@ -36,6 +46,8 @@ function blankOverlay() {
       slots_used: {},
       last_rest_at: null,
     },
+    cvars: {},
+    counters: {},
   };
 }
 
@@ -51,6 +63,8 @@ function ensureOverlay(charEntry) {
   if (charEntry.overlay.daily.slots_used === undefined) charEntry.overlay.daily.slots_used = {};
   if (charEntry.overlay.daily.focus_spent === undefined) charEntry.overlay.daily.focus_spent = 0;
   if (charEntry.overlay.daily.hero_points === undefined) charEntry.overlay.daily.hero_points = 1;
+  if (!charEntry.overlay.cvars || typeof charEntry.overlay.cvars !== 'object') charEntry.overlay.cvars = {};
+  if (!charEntry.overlay.counters || typeof charEntry.overlay.counters !== 'object') charEntry.overlay.counters = {};
   return charEntry.overlay;
 }
 
@@ -322,7 +336,8 @@ function refundSlot(charEntry, casterName, rank) {
   }
 }
 
-// Long rest: resets slots, focus, hero points → 1, clears prepared_override.
+// Long rest: resets slots, focus, hero points → 1, clears prepared_override,
+// and resets every counter whose reset policy is 'daily' to its max.
 function longRest(charEntry) {
   const overlay = ensureOverlay(charEntry);
   overlay.daily.slots_used = {};
@@ -330,6 +345,186 @@ function longRest(charEntry) {
   overlay.daily.hero_points = 1;
   overlay.prepared_override = {};
   overlay.daily.last_rest_at = new Date().toISOString();
+  // Reset daily counters
+  for (const [name, ctr] of Object.entries(overlay.counters || {})) {
+    if (ctr && ctr.reset === 'daily') {
+      ctr.current = Number(ctr.max ?? 0);
+    }
+  }
+}
+
+// ─── Cvars (user-defined character variables) ────────────────────────────────
+// Stored at overlay.cvars[lowercase-name] = string. Values are returned as
+// strings; the resolver in index.js decides whether to use them directly
+// (if pure numeric) or splice them in literally (e.g. "1d20+8").
+//
+// Names: 1-32 chars, must start with a letter, then letters/digits/underscore.
+// We reject names that collide with built-in variable names so users can't
+// accidentally shadow them (the resolver puts cvars first, so a shadow would
+// silently change the meaning of {{level}} etc.).
+
+const CVAR_NAME_RE = /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/;
+const RESERVED_CVAR_NAMES = new Set([
+  // Core
+  'level', 'name', 'ac', 'hp', 'maxhp', 'speed', 'hero', 'classdc',
+  // Ability mods
+  'str', 'dex', 'con', 'int', 'wis', 'cha', 'key',
+  // Saves + perception
+  'fort', 'fortitude', 'ref', 'reflex', 'will', 'perception',
+  // Skill totals
+  'acrobatics', 'arcana', 'athletics', 'crafting', 'deception',
+  'diplomacy', 'intimidation', 'medicine', 'nature', 'occultism',
+  'performance', 'religion', 'society', 'stealth', 'survival', 'thievery',
+]);
+
+function validateCvarName(name) {
+  if (!name || typeof name !== 'string') return 'Name is required.';
+  if (!CVAR_NAME_RE.test(name)) return 'Name must start with a letter and contain only letters, numbers, and underscores (1-32 chars).';
+  if (RESERVED_CVAR_NAMES.has(name.toLowerCase())) return `\`${name}\` is a reserved built-in variable. Pick a different name.`;
+  return null;
+}
+
+function setCvar(charEntry, name, value) {
+  const overlay = ensureOverlay(charEntry);
+  const err = validateCvarName(name);
+  if (err) return { ok: false, error: err };
+  if (typeof value !== 'string') value = String(value);
+  if (value.length === 0) return { ok: false, error: 'Value cannot be empty.' };
+  if (value.length > 200) return { ok: false, error: 'Value must be 200 characters or fewer.' };
+  if (Object.keys(overlay.cvars).length >= 50 && !overlay.cvars[name.toLowerCase()]) {
+    return { ok: false, error: 'You have reached the 50-cvar limit on this character. Delete one with `/cvar delete` to make room.' };
+  }
+  overlay.cvars[name.toLowerCase()] = value;
+  return { ok: true };
+}
+
+function getCvar(charEntry, name) {
+  const overlay = ensureOverlay(charEntry);
+  return overlay.cvars[String(name || '').toLowerCase()];
+}
+
+function deleteCvar(charEntry, name) {
+  const overlay = ensureOverlay(charEntry);
+  const key = String(name || '').toLowerCase();
+  if (!(key in overlay.cvars)) return { ok: false, error: `No cvar named \`${key}\`.` };
+  delete overlay.cvars[key];
+  return { ok: true };
+}
+
+function listCvars(charEntry) {
+  const overlay = ensureOverlay(charEntry);
+  return { ...overlay.cvars };
+}
+
+// ─── Custom counters ─────────────────────────────────────────────────────────
+// Stored at overlay.counters[lowercase-name] = { current, max, reset, label }.
+// reset: 'daily' (cleared on /rest) | 'none' (manual only)
+
+const COUNTER_NAME_RE = /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/;
+const COUNTER_RESET_MODES = new Set(['daily', 'none']);
+
+function validateCounterName(name) {
+  if (!name || typeof name !== 'string') return 'Name is required.';
+  if (!COUNTER_NAME_RE.test(name)) return 'Name must start with a letter and contain only letters, numbers, and underscores (1-32 chars).';
+  return null;
+}
+
+function addCounter(charEntry, name, { max, reset = 'none', label = null, initial = null } = {}) {
+  const overlay = ensureOverlay(charEntry);
+  const err = validateCounterName(name);
+  if (err) return { ok: false, error: err };
+  if (!COUNTER_RESET_MODES.has(reset)) return { ok: false, error: 'reset must be one of: daily, none.' };
+  const maxN = Number(max);
+  if (!Number.isFinite(maxN) || maxN < 0 || maxN > 9999) {
+    return { ok: false, error: 'max must be a number between 0 and 9999.' };
+  }
+  const key = name.toLowerCase();
+  const existed = !!overlay.counters[key];
+  if (!existed && Object.keys(overlay.counters).length >= 30) {
+    return { ok: false, error: 'You have reached the 30-counter limit on this character. Remove one with `/cc remove` to make room.' };
+  }
+  const initN = initial == null ? maxN : Number(initial);
+  if (!Number.isFinite(initN) || initN < 0 || initN > maxN) {
+    return { ok: false, error: `initial must be a number between 0 and max (${maxN}).` };
+  }
+  overlay.counters[key] = {
+    current: initN,
+    max: maxN,
+    reset,
+    label: label ? String(label).slice(0, 60) : null,
+  };
+  return { ok: true, existed, counter: overlay.counters[key] };
+}
+
+function getCounter(charEntry, name) {
+  const overlay = ensureOverlay(charEntry);
+  return overlay.counters[String(name || '').toLowerCase()] ?? null;
+}
+
+function setCounter(charEntry, name, value) {
+  const overlay = ensureOverlay(charEntry);
+  const key = String(name || '').toLowerCase();
+  const ctr = overlay.counters[key];
+  if (!ctr) return { ok: false, error: `No counter named \`${key}\`. Create it with \`/cc add\`.` };
+  const v = Number(value);
+  if (!Number.isFinite(v) || v < 0 || v > ctr.max) {
+    return { ok: false, error: `Value must be between 0 and ${ctr.max}.` };
+  }
+  ctr.current = v;
+  return { ok: true, counter: ctr };
+}
+
+function useCounter(charEntry, name, amount = 1) {
+  const overlay = ensureOverlay(charEntry);
+  const key = String(name || '').toLowerCase();
+  const ctr = overlay.counters[key];
+  if (!ctr) return { ok: false, error: `No counter named \`${key}\`. Create it with \`/cc add\`.` };
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'amount must be a positive number.' };
+  if (ctr.current < n) return { ok: false, error: `Only ${ctr.current}/${ctr.max} remaining on \`${key}\`.`, counter: ctr };
+  ctr.current -= n;
+  return { ok: true, counter: ctr };
+}
+
+function restoreCounter(charEntry, name, amount = 1) {
+  const overlay = ensureOverlay(charEntry);
+  const key = String(name || '').toLowerCase();
+  const ctr = overlay.counters[key];
+  if (!ctr) return { ok: false, error: `No counter named \`${key}\`.` };
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'amount must be a positive number.' };
+  ctr.current = Math.min(ctr.max, ctr.current + n);
+  return { ok: true, counter: ctr };
+}
+
+function resetCounter(charEntry, name) {
+  const overlay = ensureOverlay(charEntry);
+  if (name === 'all' || name === '*') {
+    let count = 0;
+    for (const ctr of Object.values(overlay.counters)) {
+      ctr.current = Number(ctr.max ?? 0);
+      count++;
+    }
+    return { ok: true, all: true, count };
+  }
+  const key = String(name || '').toLowerCase();
+  const ctr = overlay.counters[key];
+  if (!ctr) return { ok: false, error: `No counter named \`${key}\`.` };
+  ctr.current = Number(ctr.max ?? 0);
+  return { ok: true, counter: ctr };
+}
+
+function removeCounter(charEntry, name) {
+  const overlay = ensureOverlay(charEntry);
+  const key = String(name || '').toLowerCase();
+  if (!(key in overlay.counters)) return { ok: false, error: `No counter named \`${key}\`.` };
+  delete overlay.counters[key];
+  return { ok: true };
+}
+
+function listCounters(charEntry) {
+  const overlay = ensureOverlay(charEntry);
+  return { ...overlay.counters };
 }
 
 module.exports = {
@@ -353,4 +548,22 @@ module.exports = {
   spendSlot,
   refundSlot,
   longRest,
+  // cvars
+  validateCvarName,
+  setCvar,
+  getCvar,
+  deleteCvar,
+  listCvars,
+  RESERVED_CVAR_NAMES,
+  // counters
+  validateCounterName,
+  addCounter,
+  getCounter,
+  setCounter,
+  useCounter,
+  restoreCounter,
+  resetCounter,
+  removeCounter,
+  listCounters,
+  COUNTER_RESET_MODES,
 };
