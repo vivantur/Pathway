@@ -5852,6 +5852,124 @@ function rollDiceExpression(raw) {
   return { total, breakdown: breakdownParts.join(' ') };
 }
 
+// ── Variable substitution (cvars + built-ins) ────────────────────────────────
+// Resolves {{name}} tokens against a character. Order of resolution:
+//   1. User cvars stored on charEntry.overlay.cvars
+//   2. Built-in keys (level, ability mods, saves, perception, AC, HP,
+//      classDC, hero, speed, every skill total by name, rank.<skill>,
+//      counter.<name>, counter.<name>.max)
+// Returns the original {{name}} unchanged when no match is found, so the
+// caller can detect it and warn the user.
+
+const _SKILL_ABILITIES_FULL = {
+  acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
+  deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
+  nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
+  society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
+};
+
+function _abilityMod(ab, key) {
+  const score = ab?.[key];
+  if (typeof score !== 'number') return 0;
+  return Math.floor((score - 10) / 2);
+}
+
+function resolveVariable(rawName, charEntry) {
+  if (!charEntry || !charEntry.data) return undefined;
+  const c = charEntry.data;
+  const name = String(rawName).trim().toLowerCase();
+  if (!name) return undefined;
+  const ab = c.abilities ?? {};
+  const prof = c.proficiencies ?? {};
+  const lvl = c.level ?? 1;
+
+  // 1. User cvars win.
+  const cvars = charEntry.overlay?.cvars ?? {};
+  if (Object.prototype.hasOwnProperty.call(cvars, name)) return cvars[name];
+
+  // 2. Counter sub-paths: counter.<name> (current) and counter.<name>.max
+  if (name.startsWith('counter.')) {
+    const counters = charEntry.overlay?.counters ?? {};
+    const rest = name.slice('counter.'.length);
+    const dotIdx = rest.indexOf('.');
+    const cname = dotIdx === -1 ? rest : rest.slice(0, dotIdx);
+    const field = dotIdx === -1 ? 'current' : rest.slice(dotIdx + 1);
+    const ctr = counters[cname];
+    if (!ctr) return undefined;
+    if (field === 'current' || field === '') return ctr.current;
+    if (field === 'max') return ctr.max;
+    return undefined;
+  }
+
+  // 3. Skill rank-only: rank.<skill>
+  if (name.startsWith('rank.')) {
+    const skill = name.slice('rank.'.length);
+    return Number(prof[skill] ?? 0);
+  }
+
+  // 4. Core built-ins.
+  switch (name) {
+    case 'name':       return charEntry.name || c.name || '';
+    case 'level':      return lvl;
+    case 'speed':      return c.attributes?.speed ?? 25;
+    case 'ac':         return c.acTotal?.acTotal ?? 10;
+    case 'hp':         return charEntry.hp ?? c.attributes?.ancestryhp ?? 0;
+    case 'maxhp':      return computeCharMaxHp(charEntry);
+    case 'hero':       return charOverlay.getHeroPoints(charEntry);
+    case 'classdc':    return _abilityMod(ab, c.keyability) + calcProfNum(prof.classDC ?? 0, lvl);
+    case 'str': case 'dex': case 'con':
+    case 'int': case 'wis': case 'cha':
+      return _abilityMod(ab, name);
+    case 'key':        return _abilityMod(ab, c.keyability);
+    case 'fort': case 'fortitude':
+      return _abilityMod(ab, 'con') + calcProfNum(prof.fortitude ?? 0, lvl);
+    case 'ref': case 'reflex':
+      return _abilityMod(ab, 'dex') + calcProfNum(prof.reflex ?? 0, lvl);
+    case 'will':
+      return _abilityMod(ab, 'wis') + calcProfNum(prof.will ?? 0, lvl);
+    case 'perception':
+      return computeCharPerception(charEntry);
+  }
+
+  // 5. Skill totals by name (athletics, stealth, deception, ...).
+  if (Object.prototype.hasOwnProperty.call(_SKILL_ABILITIES_FULL, name)) {
+    const abilKey = _SKILL_ABILITIES_FULL[name];
+    return _abilityMod(ab, abilKey) + calcProfNum(prof[name] ?? 0, lvl);
+  }
+
+  // 6. Lore subskills, e.g. "warfare-lore", "academia-lore". Pathbuilder
+  // stores these on prof keyed by their slug. Use Int as the ability.
+  if (name.endsWith('-lore') || name === 'lore') {
+    return _abilityMod(ab, 'int') + calcProfNum(prof[name] ?? 0, lvl);
+  }
+
+  return undefined;
+}
+
+// Render a single counter as a Discord-friendly line with a unicode bar.
+// Used by /cc list and /counters. Module-level so both handlers share output.
+function renderCounterLine(key, ctr) {
+  const label = ctr.label || key;
+  const max = ctr.max ?? 0;
+  const cur = ctr.current ?? 0;
+  const filled = max > 0 ? Math.round((cur / max) * 10) : 0;
+  const bar = '█'.repeat(Math.max(0, Math.min(10, filled))) + '░'.repeat(Math.max(0, 10 - filled));
+  const resetTag = ctr.reset === 'daily' ? ' · resets on rest' : '';
+  return `**${label}** \`${cur}/${max}\`  ${bar}${resetTag}\n  use as \`{{counter.${key}}}\` / \`{{counter.${key}.max}}\``;
+}
+
+// Replace every {{name}} in `text` with its resolved value. Unknown variables
+// are left intact so the caller can warn instead of silently inserting 0.
+function expandVariables(text, charEntry) {
+  if (!text || typeof text !== 'string') return text;
+  if (text.indexOf('{{') === -1) return text;
+  return text.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_.\-]*)\s*\}\}/g, (match, name) => {
+    const v = resolveVariable(name, charEntry);
+    if (v === undefined) return match;
+    return String(v);
+  });
+}
+
 // ── Advanced roll engine ──────────────────────────────────────────────────────
 // Supports modifiers beyond basic dice arithmetic:
 //   adv / dis        — roll everything twice, take higher / lower of each die
@@ -5862,12 +5980,14 @@ function rollDiceExpression(raw) {
 //   N#expr           — iteration prefix: roll the expression N times
 //   [label]          — after any dice term, annotates the result (e.g. +2d6[sneak])
 //   {snippet}        — user snippet reference, expanded before parsing
+//   {{name}}         — character variable (cvar or built-in like {{level}},
+//                      {{athletics}}, {{counter.reagents}})
 //
 // Returns { error } on failure, or { iterations: [{ total, breakdown }, ...],
 // grandTotal, summary, expanded } on success. `expanded` is the raw text
 // after snippet expansion, useful for showing in the embed.
 
-function rollAdvanced(raw, userSnippets = {}) {
+function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
   if (!raw || typeof raw !== 'string') return { error: 'Empty roll expression.' };
 
   // ── 1. Expand snippets with optional arguments ──────────────────────────
@@ -5950,7 +6070,11 @@ function rollAdvanced(raw, userSnippets = {}) {
   const expansionWarnings = [];
   let expanded;
   {
-    const allTokens = raw.trim().split(/\s+/).filter(Boolean);
+    // Pre-expand {{vars}} on the raw input so user-typed cvars/built-ins
+    // are visible to the snippet walker (and so a cvar value can itself be
+    // a snippet name in some future world). Safe no-op when charEntry is null.
+    const preExpanded = expandVariables(raw, charEntry);
+    const allTokens = preExpanded.trim().split(/\s+/).filter(Boolean);
     const outTokens = [];
     let i = 0;
     while (i < allTokens.length) {
@@ -5968,7 +6092,10 @@ function rollAdvanced(raw, userSnippets = {}) {
         }
         const { expansion, consumed, warnings } = applyArgs(snippetTable[low], collected);
         expansionWarnings.push(...warnings);
-        outTokens.push(expansion);
+        // Expand {{vars}} on the snippet expansion too, so a snippet author
+        // can write something like `+{{athletics}}[athletics]` and have it
+        // resolve to the caller's actual modifier.
+        outTokens.push(expandVariables(expansion, charEntry));
         i += 1 + consumed;
       } else {
         outTokens.push(tok);
@@ -5976,6 +6103,17 @@ function rollAdvanced(raw, userSnippets = {}) {
       }
     }
     expanded = outTokens.join(' ');
+    // If any {{name}} survives both passes, it's an unknown variable.
+    // Surface it as a warning before the validator says "Invalid characters",
+    // which is much harder to debug.
+    const unresolved = expanded.match(/\{\{[^{}]+\}\}/g);
+    if (unresolved) {
+      const uniq = [...new Set(unresolved)];
+      expansionWarnings.push(`Unknown variable(s): ${uniq.join(', ')}. Use \`/cvar list\` to see what's defined.`);
+      // Strip them so the validator gives a sensible error pointing at the
+      // remaining expression rather than choking on the braces.
+      expanded = expanded.replace(/\{\{[^{}]+\}\}/g, '0');
+    }
   }
 
   // ── 2. Extract iteration prefix (N#...) ────────────────────────────────
@@ -7251,16 +7389,23 @@ client.on('interactionCreate', async (interaction) => {
       if (!charEntry) {
         return interaction.update({ content: '❌ Could not find that character anymore.', embeds: [], components: [] });
       }
+      // Count daily-reset counters so we can mention them in the confirmation.
+      charOverlay.ensureOverlay(charEntry);
+      const dailyCounterCount = Object.values(charEntry.overlay.counters ?? {})
+        .filter(c => c && c.reset === 'daily').length;
       charOverlay.longRest(charEntry);
       // Restore HP to max as part of a full rest
       const maxHp = computeCharMaxHp(charEntry);
       charEntry.hp = maxHp;
       saveCharacters(characters);
       const focus = charOverlay.getCurrentFocus(charEntry);
+      const counterLine = dailyCounterCount > 0
+        ? ` ${dailyCounterCount} daily counter${dailyCounterCount === 1 ? '' : 's'} reset.`
+        : '';
       const doneEmbed = new EmbedBuilder()
         .setColor(0x2ecc71)
         .setTitle(`🌙 ${charEntry.data.name} rests and recovers`)
-        .setDescription(`HP restored to **${maxHp}/${maxHp}**. All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.`);
+        .setDescription(`HP restored to **${maxHp}/${maxHp}**. All spell slots refilled. Focus points: ${focus.current}/${focus.max}. Hero points reset to 1. Prepared spells cleared.${counterLine}`);
       return interaction.update({ embeds: [doneEmbed], components: [] });
     }
     if (interaction.customId.startsWith('rest_cancel_')) {
@@ -7952,6 +8097,35 @@ client.on('interactionCreate', async (interaction) => {
           const all = loadServerSnippets();
           const here = Object.keys(all[interaction.guildId] ?? {});
           suggestions = pick(here);
+        }
+        else if ((cmd === 'cvar' || cmd === 'cc' || cmd === 'counters') && focused.name === 'character') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+          suggestions = pick(own);
+        }
+        else if (cmd === 'cvar' && focused.name === 'name') {
+          // Suggest cvar names on the active (or specified) character.
+          const characters = loadCharacters();
+          const charNameArg = interaction.options.getString('character');
+          const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+          if (!resolved.error) {
+            charOverlay.ensureOverlay(resolved.char);
+            const names = Object.keys(resolved.char.overlay.cvars ?? {});
+            suggestions = pick(names);
+          }
+        }
+        else if (cmd === 'cc' && focused.name === 'name') {
+          const characters = loadCharacters();
+          const charNameArg = interaction.options.getString('character');
+          const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+          if (!resolved.error) {
+            charOverlay.ensureOverlay(resolved.char);
+            const names = Object.keys(resolved.char.overlay.counters ?? {});
+            // 'reset' subcommand also accepts "all"
+            const sub = interaction.options.getSubcommand(false);
+            if (sub === 'reset') suggestions = pick(['all', ...names]);
+            else suggestions = pick(names);
+          }
         }
         else if (cmd === 'initiative' && focused.name === 'skill') {
           // Suggest Perception + the 16 core skills for initiative overrides
@@ -9880,6 +10054,227 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
   }
 
+  // ─── /cvar ───────────────────────────────────────────────────────
+  // Per-character variables. Used by /roll to expand {{name}} into a value.
+  // Stored on charEntry.overlay.cvars (no separate Supabase column).
+  else if (commandName === 'cvar') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(
+      interaction.user.id,
+      interaction.options.getString('character'),
+      characters,
+    );
+    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
+    charOverlay.ensureOverlay(charEntry);
+
+    if (sub === 'set') {
+      const name = interaction.options.getString('name').trim();
+      const value = interaction.options.getString('value');
+      const existed = Object.prototype.hasOwnProperty.call(charEntry.overlay.cvars, name.toLowerCase());
+      const result = charOverlay.setCvar(charEntry, name, value);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      // Show what {{name}} resolves to right now so the user can sanity-check.
+      const resolved = resolveVariable(name, charEntry);
+      const resolvedLine = (resolved !== undefined && String(resolved) !== value)
+        ? `\nResolves to: \`${resolved}\``
+        : '';
+      return interaction.reply({
+        content: `${existed ? '✏️ Updated' : '✅ Created'} cvar **${name.toLowerCase()}** = \`${value}\` on **${charEntry.data.name}**.${resolvedLine}\nUse it in \`/roll\` like \`{{${name.toLowerCase()}}}\`.`,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'list') {
+      const cvars = charOverlay.listCvars(charEntry);
+      const entries = Object.entries(cvars).sort(([a], [b]) => a.localeCompare(b));
+      const userLines = entries.length === 0
+        ? ['*No cvars set on this character yet. Use `/cvar set` to create one.*']
+        : entries.map(([n, v]) => `• \`{{${n}}}\` → \`${v}\``);
+      const builtinGroups = [
+        '**Core:** `{{level}}` `{{name}}` `{{ac}}` `{{hp}}` `{{maxhp}}` `{{speed}}` `{{hero}}` `{{classdc}}`',
+        '**Ability mods:** `{{str}}` `{{dex}}` `{{con}}` `{{int}}` `{{wis}}` `{{cha}}` `{{key}}`',
+        '**Saves & Perception:** `{{fort}}` `{{ref}}` `{{will}}` `{{perception}}`',
+        '**Skill totals:** `{{athletics}}` `{{stealth}}` `{{deception}}` `{{arcana}}` … (any of the 16)',
+        '**Skill rank only:** `{{rank.athletics}}` etc.',
+        '**Counters:** `{{counter.<name>}}` (current) and `{{counter.<name>.max}}`',
+      ];
+      const embed = new EmbedBuilder()
+        .setColor(0x7289DA)
+        .setTitle(`🔧 ${charEntry.data.name} — cvars (${entries.length}/50)`)
+        .setDescription(userLines.join('\n'))
+        .addFields({ name: 'Built-in variables (always available)', value: builtinGroups.join('\n') })
+        .setFooter({ text: 'Use {{name}} inside any /roll expression. User cvars override built-ins.' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'show') {
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      const cvarValue = charOverlay.getCvar(charEntry, name);
+      const resolved = resolveVariable(name, charEntry);
+      if (cvarValue === undefined && resolved === undefined) {
+        return interaction.reply({ content: `❌ \`{{${name}}}\` is not a defined cvar or built-in on **${charEntry.data.name}**.`, ephemeral: true });
+      }
+      const lines = [];
+      if (cvarValue !== undefined) lines.push(`Cvar value: \`${cvarValue}\``);
+      else lines.push(`Built-in variable on **${charEntry.data.name}**.`);
+      if (resolved !== undefined) lines.push(`Resolves to: **${resolved}**`);
+      return interaction.reply({ content: `\`{{${name}}}\`\n${lines.join('\n')}`, ephemeral: true });
+    }
+
+    if (sub === 'delete') {
+      const name = interaction.options.getString('name').trim().toLowerCase();
+      const result = charOverlay.deleteCvar(charEntry, name);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({ content: `🗑️ Deleted cvar **${name}** on **${charEntry.data.name}**.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /cc ─────────────────────────────────────────────────────────
+  // Custom counters: arbitrary per-character resources (panache, reagents,
+  // stratagem charges, etc.). Stored at overlay.counters.
+  else if (commandName === 'cc') {
+    const sub = interaction.options.getSubcommand();
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(
+      interaction.user.id,
+      interaction.options.getString('character'),
+      characters,
+    );
+    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
+    charOverlay.ensureOverlay(charEntry);
+
+    const renderCounter = renderCounterLine;
+
+    if (sub === 'add') {
+      const name = interaction.options.getString('name').trim();
+      const max = interaction.options.getInteger('max');
+      const reset = interaction.options.getString('reset') ?? 'none';
+      const label = interaction.options.getString('label');
+      const initial = interaction.options.getInteger('initial');
+      const result = charOverlay.addCounter(charEntry, name, { max, reset, label, initial });
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({
+        content: `${result.existed ? '✏️ Updated' : '✅ Created'} counter on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'set') {
+      const name = interaction.options.getString('name').trim();
+      const value = interaction.options.getInteger('value');
+      const result = charOverlay.setCounter(charEntry, name, value);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({
+        content: `🔧 Set on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+      });
+    }
+
+    if (sub === 'use') {
+      const name = interaction.options.getString('name').trim();
+      const amount = interaction.options.getInteger('amount') ?? 1;
+      const result = charOverlay.useCounter(charEntry, name, amount);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({
+        content: `🔻 **${charEntry.data.name}** spends ${amount} from **${result.counter.label || name.toLowerCase()}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+      });
+    }
+
+    if (sub === 'restore') {
+      const name = interaction.options.getString('name').trim();
+      const amount = interaction.options.getInteger('amount') ?? 1;
+      const result = charOverlay.restoreCounter(charEntry, name, amount);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({
+        content: `🔺 **${charEntry.data.name}** restores ${amount} to **${result.counter.label || name.toLowerCase()}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+      });
+    }
+
+    if (sub === 'reset') {
+      const name = interaction.options.getString('name').trim();
+      const result = charOverlay.resetCounter(charEntry, name);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      if (result.all) {
+        return interaction.reply({
+          content: `♻️ Reset all ${result.count} counter(s) on **${charEntry.data.name}** to their max.`,
+          ephemeral: true,
+        });
+      }
+      return interaction.reply({
+        content: `♻️ Reset on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'list') {
+      const counters = charOverlay.listCounters(charEntry);
+      const entries = Object.entries(counters).sort(([a], [b]) => a.localeCompare(b));
+      if (entries.length === 0) {
+        return interaction.reply({
+          content: `📭 **${charEntry.data.name}** has no custom counters yet. Create one with \`/cc add\`.\n\nExamples:\n• \`/cc add name:reagents max:8 reset:daily label:"Infused Reagents"\`\n• \`/cc add name:panache max:1 reset:none label:"Swashbuckler Panache"\`\n• \`/cc add name:stratagem max:1 reset:daily label:"Devise a Stratagem"\``,
+          ephemeral: true,
+        });
+      }
+      const description = entries.map(([k, v]) => renderCounter(k, v)).join('\n\n');
+      const embed = new EmbedBuilder()
+        .setColor(0x7289DA)
+        .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
+        .setDescription(description.slice(0, 4000))
+        .setFooter({ text: 'Use /cc use, /cc restore, /cc set to manage. /rest auto-resets daily counters.' });
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (sub === 'remove') {
+      const name = interaction.options.getString('name').trim();
+      const result = charOverlay.removeCounter(charEntry, name);
+      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+      await saveCharacters(characters);
+      return interaction.reply({ content: `🗑️ Deleted counter **${name.toLowerCase()}** on **${charEntry.data.name}**.`, ephemeral: true });
+    }
+
+    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+  }
+
+  // ─── /counters ───────────────────────────────────────────────────
+  // Top-level shortcut for the same view as /cc list — keeps the counter
+  // block one slash command away.
+  else if (commandName === 'counters') {
+    const characters = loadCharacters();
+    const { error, char: charEntry } = resolveChar(
+      interaction.user.id,
+      interaction.options.getString('character'),
+      characters,
+    );
+    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
+    charOverlay.ensureOverlay(charEntry);
+
+    const counters = charOverlay.listCounters(charEntry);
+    const entries = Object.entries(counters).sort(([a], [b]) => a.localeCompare(b));
+    if (entries.length === 0) {
+      return interaction.reply({
+        content: `📭 **${charEntry.data.name}** has no custom counters yet. Create one with \`/cc add\`.`,
+        ephemeral: true,
+      });
+    }
+    const description = entries.map(([k, v]) => renderCounterLine(k, v)).join('\n\n');
+    const embed = new EmbedBuilder()
+      .setColor(0x7289DA)
+      .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
+      .setDescription(description.slice(0, 4000))
+      .setFooter({ text: '/cc add to create · /cc use|restore|set to manage · /rest auto-resets daily counters' });
+    if (charEntry.art) embed.setThumbnail(charEntry.art);
+    return interaction.reply({ embeds: [embed] });
+  }
+
   // ─── /spellbook ──────────────────────────────────────────────────
   else if (commandName === 'spellbook') {
     await interaction.deferReply();
@@ -11385,15 +11780,23 @@ client.on('interactionCreate', async (interaction) => {
   else if (commandName === 'roll' || commandName === 'r') {
     const raw = interaction.options.getString('dice');
     const snippets = mergedSnippetsFor(interaction.user.id, interaction.guildId);
-    const result = rollAdvanced(raw, snippets);
+
+    // Resolve a character context for {{cvar}}/{{level}}/{{athletics}}/etc.
+    // expansion. Uses the explicit character: option if given, otherwise the
+    // user's active character. Silently no-ops if the user has no characters
+    // — they can still /roll plain dice.
+    const charNameArg = interaction.options.getString('character');
+    const characters = loadCharacters();
+    let charEntry = null;
+    if (characters[interaction.user.id] && Object.keys(characters[interaction.user.id]).filter(k => !k.startsWith('_')).length > 0) {
+      const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+      if (!resolved.error) charEntry = resolved.char;
+    }
+
+    const result = rollAdvanced(raw, snippets, charEntry);
     if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
 
-    const charNameArg = interaction.options.getString('character');
-    let thumbnail = null;
-    if (charNameArg) {
-      const characters = loadCharacters();
-      thumbnail = characters[interaction.user.id]?.[charNameArg.toLowerCase().replace(/\s+/g, '-')]?.art ?? null;
-    }
+    const thumbnail = charEntry?.art ?? null;
 
     // Build description: one line per iteration, then summary if multi-iter
     const lines = result.iterations.map((iter, i) =>
@@ -11416,7 +11819,7 @@ client.on('interactionCreate', async (interaction) => {
       .setTitle(`🎲 ${raw}`)
       .setDescription(description);
     if (thumbnail) embed.setThumbnail(thumbnail);
-    const footerParts = [charNameArg ?? interaction.user.username];
+    const footerParts = [charEntry?.data?.name ?? charEntry?.name ?? charNameArg ?? interaction.user.username];
     if (expandedChanged) footerParts.push(`Expanded: ${result.expanded}`);
     embed.setFooter({ text: footerParts.join(' · ') });
     await interaction.reply({ embeds: [embed] });

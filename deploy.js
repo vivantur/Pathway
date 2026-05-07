@@ -237,6 +237,69 @@ const serversnippetCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('name').setDescription('Snippet name').setRequired(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
+// /cvar — per-character variables usable in /roll as {{name}}
+// ─────────────────────────────────────────────────────────────────────────────
+const cvarCommand = new SlashCommandBuilder()
+  .setName('cvar')
+  .setDescription('Manage per-character variables for use in /roll (e.g. {{atk}}).')
+  .addSubcommand(s => s.setName('set').setDescription('Create or overwrite a cvar.')
+    .addStringOption(o => o.setName('name').setDescription('Variable name (letters/numbers/underscore)').setRequired(true))
+    .addStringOption(o => o.setName('value').setDescription('Value (number, dice expr, or string)').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('list').setDescription('List all cvars on a character (and built-ins available).')
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('show').setDescription('Show one cvar with its resolved value.')
+    .addStringOption(o => o.setName('name').setDescription('Variable name').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('delete').setDescription('Delete a cvar.')
+    .addStringOption(o => o.setName('name').setDescription('Variable name').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// /cc — custom counters (rage uses, panache, reagents, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+const ccCommand = new SlashCommandBuilder()
+  .setName('cc')
+  .setDescription('Track arbitrary character resources (panache, reagents, focus charges, etc.).')
+  .addSubcommand(s => s.setName('add').setDescription('Create a counter.')
+    .addStringOption(o => o.setName('name').setDescription('Counter name (letters/numbers/underscore)').setRequired(true))
+    .addIntegerOption(o => o.setName('max').setDescription('Maximum value (0-9999)').setRequired(true).setMinValue(0).setMaxValue(9999))
+    .addStringOption(o => o.setName('reset').setDescription('When to auto-reset to max').setRequired(false).addChoices(
+      { name: 'On long rest (/rest)', value: 'daily' },
+      { name: 'Manual only', value: 'none' },
+    ))
+    .addStringOption(o => o.setName('label').setDescription('Display label (default: name)').setRequired(false))
+    .addIntegerOption(o => o.setName('initial').setDescription('Starting value (default: max)').setRequired(false).setMinValue(0))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('set').setDescription('Set a counter to a specific value.')
+    .addStringOption(o => o.setName('name').setDescription('Counter name').setRequired(true))
+    .addIntegerOption(o => o.setName('value').setDescription('New value').setRequired(true).setMinValue(0))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('use').setDescription('Spend from a counter.')
+    .addStringOption(o => o.setName('name').setDescription('Counter name').setRequired(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('How many (default 1)').setRequired(false).setMinValue(1))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('restore').setDescription('Refund into a counter (capped at max).')
+    .addStringOption(o => o.setName('name').setDescription('Counter name').setRequired(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('How many (default 1)').setRequired(false).setMinValue(1))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('reset').setDescription('Reset a counter (or all) to its max.')
+    .addStringOption(o => o.setName('name').setDescription('Counter name, or "all"').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('list').setDescription('List all counters on a character.')
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('remove').setDescription('Delete a counter.')
+    .addStringOption(o => o.setName('name').setDescription('Counter name').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)));
+
+// Shortcut: /counters — single-command view of the counter block (same render
+// as /cc list, just less typing).
+const countersCommand = new SlashCommandBuilder()
+  .setName('counters')
+  .setDescription('Show all custom counters on a character.')
+  .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
+
+// ─────────────────────────────────────────────────────────────────────────────
 // /spellbook  /prepared
 // ─────────────────────────────────────────────────────────────────────────────
 const spellbookCommand = new SlashCommandBuilder()
@@ -1513,6 +1576,9 @@ const commands = [
   portraitCommand,
   snippetCommand,
   serversnippetCommand,
+  cvarCommand,
+  ccCommand,
+  countersCommand,
   // Combat & rolls
   initCommand,
   iCommand,
