@@ -5946,16 +5946,38 @@ function resolveVariable(rawName, charEntry) {
   return undefined;
 }
 
-// Render a single counter as a Discord-friendly line with a unicode bar.
-// Used by /cc list and /counters. Module-level so both handlers share output.
-function renderCounterLine(key, ctr) {
+// Avrae-style pip glyphs for /cc display. The user picks one per counter
+// when they call /cc add. Default is diamond. Pip rows are only rendered
+// when max <= 25 (matches Avrae's threshold to keep displays readable).
+const COUNTER_PIPS = {
+  diamond: { filled: '◆', empty: '◇' },
+  circle:  { filled: '●', empty: '○' },
+  square:  { filled: '■', empty: '□' },
+  star:    { filled: '★', empty: '☆' },
+  hex:     { filled: '⬢', empty: '⬡' },
+};
+const COUNTER_PIP_MAX = 25;
+
+// Render a single counter Avrae-style:
+//   **Label**: 4/5 (resets on rest)
+//   ◆◆◆◆◇
+// `withHint` adds the {{counter.<name>}} usage hint on a third line — used by
+// /cc list and /counters but suppressed in /cc use|restore|set replies for a
+// cleaner look.
+function renderCounterLine(key, ctr, { withHint = false } = {}) {
   const label = ctr.label || key;
-  const max = ctr.max ?? 0;
-  const cur = ctr.current ?? 0;
-  const filled = max > 0 ? Math.round((cur / max) * 10) : 0;
-  const bar = '█'.repeat(Math.max(0, Math.min(10, filled))) + '░'.repeat(Math.max(0, 10 - filled));
-  const resetTag = ctr.reset === 'daily' ? ' · resets on rest' : '';
-  return `**${label}** \`${cur}/${max}\`  ${bar}${resetTag}\n  use as \`{{counter.${key}}}\` / \`{{counter.${key}.max}}\``;
+  const max = Number(ctr.max ?? 0);
+  const cur = Number(ctr.current ?? 0);
+  const resetTag = ctr.reset === 'daily' ? ' *(resets on rest)*' : '';
+  const style = COUNTER_PIPS[ctr.display] || COUNTER_PIPS.diamond;
+  let pipsLine = '';
+  if (max > 0 && max <= COUNTER_PIP_MAX) {
+    const filled = style.filled.repeat(Math.max(0, Math.min(max, cur)));
+    const empty  = style.empty.repeat(Math.max(0, max - Math.max(0, Math.min(max, cur))));
+    pipsLine = `\n${filled}${empty}`;
+  }
+  const hintLine = withHint ? `\n*\`{{counter.${key}}}\`*` : '';
+  return `**${label}**: ${cur}/${max}${resetTag}${pipsLine}${hintLine}`;
 }
 
 // Replace every {{name}} in `text` with its resolved value. Unknown variables
@@ -10154,13 +10176,14 @@ client.on('interactionCreate', async (interaction) => {
       const name = interaction.options.getString('name').trim();
       const max = interaction.options.getInteger('max');
       const reset = interaction.options.getString('reset') ?? 'none';
+      const display = interaction.options.getString('display') ?? 'diamond';
       const label = interaction.options.getString('label');
       const initial = interaction.options.getInteger('initial');
-      const result = charOverlay.addCounter(charEntry, name, { max, reset, label, initial });
+      const result = charOverlay.addCounter(charEntry, name, { max, reset, label, initial, display });
       if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
       await saveCharacters(characters);
       return interaction.reply({
-        content: `${result.existed ? '✏️ Updated' : '✅ Created'} counter on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
+        content: `${result.existed ? '✏️ Updated' : '✅ Created'} counter on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter, { withHint: true })}`,
         ephemeral: true,
       });
     }
@@ -10224,7 +10247,7 @@ client.on('interactionCreate', async (interaction) => {
           ephemeral: true,
         });
       }
-      const description = entries.map(([k, v]) => renderCounter(k, v)).join('\n\n');
+      const description = entries.map(([k, v]) => renderCounter(k, v, { withHint: true })).join('\n\n');
       const embed = new EmbedBuilder()
         .setColor(0x7289DA)
         .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
@@ -10265,7 +10288,7 @@ client.on('interactionCreate', async (interaction) => {
         ephemeral: true,
       });
     }
-    const description = entries.map(([k, v]) => renderCounterLine(k, v)).join('\n\n');
+    const description = entries.map(([k, v]) => renderCounterLine(k, v, { withHint: true })).join('\n\n');
     const embed = new EmbedBuilder()
       .setColor(0x7289DA)
       .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
