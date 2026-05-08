@@ -27,9 +27,11 @@
 //       "atk":        "1d20+8"
 //     },
 //     counters: {                           // /cc — user-defined custom counters
-//       // name (lowercase) -> { current, max, reset, label }
+//       // name (lowercase) -> { current, max, reset, label, display }
 //       // reset: 'daily' (cleared on /rest) | 'none' (manual only)
-//       "reagents": { current: 8, max: 8, reset: "daily", label: "Infused Reagents" }
+//       // display: 'diamond' | 'circle' | 'square' | 'star' | 'hex'
+//       //          (controls the pip glyphs Avrae-style; rendered only when max <= 25)
+//       "reagents": { current: 8, max: 8, reset: "daily", label: "Infused Reagents", display: "diamond" }
 //     }
 //   }
 
@@ -422,6 +424,7 @@ function listCvars(charEntry) {
 
 const COUNTER_NAME_RE = /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/;
 const COUNTER_RESET_MODES = new Set(['daily', 'none']);
+const COUNTER_DISPLAY_MODES = new Set(['diamond', 'circle', 'square', 'star', 'hex']);
 
 function validateCounterName(name) {
   if (!name || typeof name !== 'string') return 'Name is required.';
@@ -429,11 +432,12 @@ function validateCounterName(name) {
   return null;
 }
 
-function addCounter(charEntry, name, { max, reset = 'none', label = null, initial = null } = {}) {
+function addCounter(charEntry, name, { max, reset = 'none', label = null, initial = null, display = 'diamond' } = {}) {
   const overlay = ensureOverlay(charEntry);
   const err = validateCounterName(name);
   if (err) return { ok: false, error: err };
   if (!COUNTER_RESET_MODES.has(reset)) return { ok: false, error: 'reset must be one of: daily, none.' };
+  if (!COUNTER_DISPLAY_MODES.has(display)) return { ok: false, error: 'display must be one of: diamond, circle, square, star, hex.' };
   const maxN = Number(max);
   if (!Number.isFinite(maxN) || maxN < 0 || maxN > 9999) {
     return { ok: false, error: 'max must be a number between 0 and 9999.' };
@@ -443,7 +447,17 @@ function addCounter(charEntry, name, { max, reset = 'none', label = null, initia
   if (!existed && Object.keys(overlay.counters).length >= 30) {
     return { ok: false, error: 'You have reached the 30-counter limit on this character. Remove one with `/cc remove` to make room.' };
   }
-  const initN = initial == null ? maxN : Number(initial);
+  // When updating an existing counter, preserve `current` (clamped to new max)
+  // unless the caller explicitly passed `initial`. This lets users tweak max
+  // or display style mid-session without resetting their used charges.
+  let initN;
+  if (initial != null) {
+    initN = Number(initial);
+  } else if (existed) {
+    initN = Math.min(maxN, Number(overlay.counters[key].current ?? maxN));
+  } else {
+    initN = maxN;
+  }
   if (!Number.isFinite(initN) || initN < 0 || initN > maxN) {
     return { ok: false, error: `initial must be a number between 0 and max (${maxN}).` };
   }
@@ -451,7 +465,8 @@ function addCounter(charEntry, name, { max, reset = 'none', label = null, initia
     current: initN,
     max: maxN,
     reset,
-    label: label ? String(label).slice(0, 60) : null,
+    label: label ? String(label).slice(0, 60) : (existed ? overlay.counters[key].label : null),
+    display,
   };
   return { ok: true, existed, counter: overlay.counters[key] };
 }
@@ -566,4 +581,5 @@ module.exports = {
   removeCounter,
   listCounters,
   COUNTER_RESET_MODES,
+  COUNTER_DISPLAY_MODES,
 };

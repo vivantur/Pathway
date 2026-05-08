@@ -261,15 +261,22 @@ const cvarCommand = new SlashCommandBuilder()
 const ccCommand = new SlashCommandBuilder()
   .setName('cc')
   .setDescription('Track arbitrary character resources (panache, reagents, focus charges, etc.).')
-  .addSubcommand(s => s.setName('add').setDescription('Create a counter.')
+  .addSubcommand(s => s.setName('add').setDescription('Create or edit a counter.')
     .addStringOption(o => o.setName('name').setDescription('Counter name (letters/numbers/underscore)').setRequired(true))
     .addIntegerOption(o => o.setName('max').setDescription('Maximum value (0-9999)').setRequired(true).setMinValue(0).setMaxValue(9999))
     .addStringOption(o => o.setName('reset').setDescription('When to auto-reset to max').setRequired(false).addChoices(
       { name: 'On long rest (/rest)', value: 'daily' },
       { name: 'Manual only', value: 'none' },
     ))
+    .addStringOption(o => o.setName('display').setDescription('Pip style (default: diamond)').setRequired(false).addChoices(
+      { name: '◆ Diamond',  value: 'diamond' },
+      { name: '● Circle',   value: 'circle' },
+      { name: '■ Square',   value: 'square' },
+      { name: '★ Star',     value: 'star' },
+      { name: '⬢ Hex',      value: 'hex' },
+    ))
     .addStringOption(o => o.setName('label').setDescription('Display label (default: name)').setRequired(false))
-    .addIntegerOption(o => o.setName('initial').setDescription('Starting value (default: max)').setRequired(false).setMinValue(0))
+    .addIntegerOption(o => o.setName('initial').setDescription('Starting value (default: max, or current if editing)').setRequired(false).setMinValue(0))
     .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('set').setDescription('Set a counter to a specific value.')
     .addStringOption(o => o.setName('name').setDescription('Counter name').setRequired(true))
