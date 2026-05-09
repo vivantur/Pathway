@@ -36,6 +36,7 @@ let RULES = null;
 
 function setRules(data) {
   RULES = data ?? null;
+  module.exports.RULES = RULES;
 }
 
 const STATE_FILE = 'weather-state.json';

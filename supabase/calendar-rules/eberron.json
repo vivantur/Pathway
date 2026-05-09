@@ -1,0 +1,102 @@
+{
+  "_meta": {
+    "source": "Eberron Campaign Setting (3.5e), Eberron Campaign Guide (4e), Eberron: Rising from the Last War (5e), and the Sharn: City of Towers sourcebook for holidays. Additional canon from Eberron Wiki and Keith Baker's Eberronicon.",
+    "rules": "Galifar Calendar: 12 months × 28 days = 336 days, 7-day week (Sul–Sar), 4 weeks per month exactly. NO leap years. Each month is named after the moon whose ascendant phase falls in that month. Years counted as YK ('Years of the Kingdom').",
+    "version": 1,
+    "campaignDefault": "1 Zarantyr 998 YK is the canonical campaign start (per Rising from the Last War p. 6)."
+  },
+
+  "anchor": {
+    "_comment": "Canonical anchor: by 5e canon, the campaign begins on 1 Zarantyr 998 YK, a Sul (start of week). All other weekday math is derived from this. The Day of Mourning (20 Olarune 994 YK) was a Wir, which is consistent with this anchor.",
+    "year": 998,
+    "month": 1,
+    "day": 1,
+    "weekday": "Sul"
+  },
+
+  "months": [
+    { "key": "zarantyr",  "name": "Zarantyr",  "days": 28, "moon": "Zarantyr",  "color": "Pearly white",      "dragonmark": "Storm",      "season": "winter", "blurb": "The Storm Moon. Mid-winter. Zarantyr is closest to Eberron and exerts the strongest pull on its tides. Children of Zarantyr are said to be wild and tempestuous. Closest to Lamannia." },
+    { "key": "olarune",   "name": "Olarune",   "days": 28, "moon": "Olarune",   "color": "Pale orange",       "dragonmark": "Sentinel",   "season": "winter", "blurb": "The Sentinel Moon. Late winter. Olarune watches over communities and protectors. Many paladins are said to be born under it. Lycanthropes — especially weretigers — revere it." },
+    { "key": "therendor", "name": "Therendor", "days": 28, "moon": "Therendor", "color": "Pale gray",         "dragonmark": "Healing",    "season": "spring", "blurb": "The Healing Moon. Early spring. Brother to Barrakas. Medicines brewed when Therendor is full and Barrakas is new are said to be unusually potent." },
+    { "key": "eyre",      "name": "Eyre",      "days": 28, "moon": "Eyre",      "color": "Silver-gray",       "dragonmark": "Making",     "season": "spring", "blurb": "The Anvil Moon. Mid-spring. Patron of crafters and artisans. House Cannith holds many of its formal ceremonies in Eyre." },
+    { "key": "dravago",   "name": "Dravago",   "days": 28, "moon": "Dravago",   "color": "Pale lavender",     "dragonmark": "Handling",   "season": "spring", "blurb": "The Herder's Moon. Late spring. Druids say children of Dravago have a special gift for calming animals when this moon is full." },
+    { "key": "nymm",      "name": "Nymm",      "days": 28, "moon": "Nymm",      "color": "Pale yellow",       "dragonmark": "Hospitality","season": "summer", "blurb": "King Nymm, the Crown. Early summer. House Ghallanda's month. A time of feasts, generosity, and welcoming travelers." },
+    { "key": "lharvion",  "name": "Lharvion",  "days": 28, "moon": "Lharvion",  "color": "Dull white & black","dragonmark": "Detection",  "season": "summer", "blurb": "The Eye. Mid-summer. A 750-mile black chasm gives Lharvion its slitted-eye appearance. Strange occurrences increase when its eye is full." },
+    { "key": "barrakas",  "name": "Barrakas",  "days": 28, "moon": "Barrakas",  "color": "Pale gray",         "dragonmark": "Finding",    "season": "summer", "blurb": "The Lantern. Late summer. The brightest of Eberron's moons. Hunters and trackers value its light. Sister to Therendor." },
+    { "key": "rhaan",     "name": "Rhaan",     "days": 28, "moon": "Rhaan",     "color": "Pale blue",         "dragonmark": "Scribing",   "season": "autumn", "blurb": "The Book. Early autumn. Smallest of the moons, like a bright star. Inspires creative thought, dancers, musicians, poets, and scribes." },
+    { "key": "sypheros",  "name": "Sypheros",  "days": 28, "moon": "Sypheros",  "color": "Smoky gray",        "dragonmark": "Shadow",     "season": "autumn", "blurb": "The Shadow. Mid-autumn. Sypheros's surface is dark and difficult to see — the moon is barely visible during its dim phase." },
+    { "key": "aryth",     "name": "Aryth",     "days": 28, "moon": "Aryth",     "color": "Orange-red",        "dragonmark": "Passage",    "season": "autumn", "blurb": "The Traveler's Moon. Late autumn. House Orien's month. Sailors say maelstroms can pull ships into Lamannia or Risia when Zarantyr eclipses Aryth." },
+    { "key": "vult",      "name": "Vult",      "days": 28, "moon": "Vult",      "color": "Gray and pock-marked","dragonmark": "Warding",   "season": "winter", "blurb": "The Warder. Early winter. Vult is gray and heavily cratered. House Kundarak watches over hoards in its name. Long Shadows fall in late Vult." }
+  ],
+
+  "weekdays": [
+    { "key": "sul", "name": "Sul", "blurb": "First day of the week. Often a day of religious observance and rest, similar to Sunday. The Tain Gala is held on the first Far of every month, but Sul carries the spirit of communal worship in the Sovereign Host." },
+    { "key": "mol", "name": "Mol", "blurb": "A standard work day across Khorvaire." },
+    { "key": "zol", "name": "Zol", "blurb": "A standard work day. Many guilds hold their formal meetings on Zol." },
+    { "key": "wir", "name": "Wir", "blurb": "A standard work day. The Day of Mourning fell on Wir, 20 Olarune 994 YK." },
+    { "key": "zor", "name": "Zor", "blurb": "A standard work day. Tirasday, when celebrated, falls on the fifth Zor of Therendor in many Silver Flame parishes." },
+    { "key": "far", "name": "Far", "blurb": "Market day in most Khorvairan cities. The first Far of every month is the Tain Gala in Sharn — Sharn's most exclusive social event." },
+    { "key": "sar", "name": "Sar", "blurb": "Last day of the week. A day of leisure for many, though some shops remain open." }
+  ],
+
+  "seasons": {
+    "_comment": "Eberron seasons map cleanly to month groupings of three. Used by the weather system to pick climate tables.",
+    "spring": { "label": "Spring", "monthsByKey": ["therendor", "eyre", "dravago"] },
+    "summer": { "label": "Summer", "monthsByKey": ["nymm", "lharvion", "barrakas"] },
+    "autumn": { "label": "Autumn", "monthsByKey": ["rhaan", "sypheros", "aryth"] },
+    "winter": { "label": "Winter", "monthsByKey": ["vult", "zarantyr", "olarune"] }
+  },
+
+  "holidays": [
+    { "name": "The Tain Gala",         "month": null, "day": null, "weekday": "Far", "weekOf": "first", "kind": "civic",     "deity": null,        "blurb": "Sharn's most exclusive social event, hosted by the Tain family on the first Far of every month. The Sixty have permanent invitations; unusual guests are invited as entertainment.",                                  "emoji": "🎭" },
+    { "name": "Crystalfall",           "month": 2,  "day": 9,  "kind": "civic",     "deity": null,        "blurb": "Marks the destruction of Sharn's Glass Tower (9 Olarune 918 YK), a notable Last War attack. Sculptors carve ice towers of the Glass Tower and throw them into the Dagger River. Sharn-only.",                                       "emoji": "🧊" },
+    { "name": "The Day of Mourning",   "month": 2,  "day": 20, "kind": "civic",     "deity": null,        "blurb": "The destruction of Cyre on 20 Olarune 994 YK. Cyran survivors gather to mourn, sing traditional songs, and tell stories so their lost kingdom isn't forgotten. Often marked by violence as some refugees still seethe with anger.", "emoji": "🩶" },
+    { "name": "Sun's Blessing",        "month": 3,  "day": 15, "kind": "religious","deity": "Dol Arrah",   "blurb": "Honors Dol Arrah, Sovereign of Honor and Sacrifice. A day of peace; enemies traditionally set aside their differences. Even thieves often refrain from work. The Mockery's followers sometimes commit violence in mockery.",     "emoji": "☀️" },
+    { "name": "Aureon's Crown",        "month": 5,  "day": 26, "kind": "religious","deity": "Aureon",      "blurb": "Elders share knowledge with the young. Universities hold graduation ceremonies and day-long public lectures. Morgrave University holds its formal commencement on this day.",                                                "emoji": "📜" },
+    { "name": "Brightblade",           "month": 6,  "day": 12, "kind": "religious","deity": "Dol Dorn",    "blurb": "Honors Dol Dorn, Sovereign of Strength and Steel. Prize fights, wrestling matches, and tests of skill across Khorvaire. Sharn culminates with a grand contest of champions in Cornerstone.",                                "emoji": "⚔️" },
+    { "name": "Festival of Olladra",   "month": 7,  "day": 4,  "kind": "religious","deity": "Olladra",     "blurb": "Tribute to Olladra, mercurial Sovereign of Feast and Fortune. Merchant guilds hold celebrations filled with games of chance, prize giveaways, and lavish food.",                                                                "emoji": "🍻" },
+    { "name": "The Race of Eight Winds","month": 7, "day": 23, "kind": "civic",     "deity": null,        "blurb": "An aerial race that takes place around Sharn's Dura Quarter. Eight aerial mounts and riders compete in honor of the eight winds. Sharn-only spectacle.",                                                                              "emoji": "🦅" },
+    { "name": "The Hunt",              "month": 8,  "day": 4,  "kind": "religious","deity": "Balinor",     "blurb": "Honors Balinor, Sovereign of Horn and Hunt. A fierce beast is brought to Sharn's Old Sharn district and released. Anyone donating 5 gp may participate; the victor wins 500 gp and Balinor's blessing.",                          "emoji": "🐗" },
+    { "name": "Fathen's Fall",         "month": 8,  "day": 25, "kind": "religious","deity": null,         "blurb": "Silver Flame holiday commemorating Father Fathen, who unmasked a vampire infiltrating Aundair's nobility. Marked by services at all Silver Flame churches. The faithful are urged to find ways to help their communities.",   "emoji": "🔥" },
+    { "name": "Boldrei's Feast",       "month": 9,  "day": 9,  "kind": "religious","deity": "Boldrei",     "blurb": "Honors Boldrei, Sovereign of Hall and Hearth. A celebration of community featuring great feasts and extravagant parties. Also a day for secular elections in many villages and towns.",                                       "emoji": "🏠" },
+    { "name": "The Ascension",         "month": 10, "day": 1,  "kind": "religious","deity": "Silver Flame","blurb": "The Silver Flame's most important holiday, celebrating Tira Miron's sacrifice that founded the religion. Marked by blessing ceremonies and pilgrimages to Flamekeep.",                                                              "emoji": "🕊️" },
+    { "name": "Wildnight",             "month": 10, "day": 18, "kind": "religious","deity": "The Fury",    "blurb": "First night of Wildnight. The Fury, Dark Six Sovereign of Rage and Ruin, reaches the height of her power. Emotions run high and impulse control runs low. Shy folk stay indoors; revelry and riots fill the streets.",        "emoji": "🌪️" },
+    { "name": "Wildnight (Second Eve)","month": 10, "day": 19, "kind": "religious","deity": "The Fury",    "blurb": "Second night of Wildnight. The streets fill with revelry that lasts until dawn. Many crimes go unprosecuted on this night.",                                                                                                          "emoji": "🌪️" },
+    { "name": "Thronehold",            "month": 11, "day": 11, "kind": "civic",     "deity": null,        "blurb": "The Treaty of Thronehold was signed on 11 Aryth 996 YK, ending the Last War. Marked across Khorvaire with parades, speeches, and remembrances of the fallen. The current campaign year (998 YK) is only the second commemoration.","emoji": "🕊️" },
+    { "name": "Long Shadows",          "month": 12, "day": 26, "kind": "religious","deity": "The Shadow",  "blurb": "First of three nights when the Shadow, Dark Six Sovereign of Magic and Ambition, enhances dark magic. Common folk traditionally stay indoors with family. Worshipers of the Shadow rise to practice their craft.",                "emoji": "🌑" },
+    { "name": "Long Shadows (Second)", "month": 12, "day": 27, "kind": "religious","deity": "The Shadow",  "blurb": "Second night of Long Shadows. The Shadow's power continues to wax. Practitioners of dark magic find spells unusually potent.",                                                                                                       "emoji": "🌑" },
+    { "name": "Long Shadows (Final)",  "month": 12, "day": 28, "kind": "religious","deity": "The Shadow",  "blurb": "Third and final night of Long Shadows. Marked by Khybersef ('Khyber's Eve') — when worshipers of the Silver Flame believe the forces holding the Overlords trapped in Khyber are at their weakest. Vigils held nationwide.",        "emoji": "🌑" }
+  ],
+
+  "moon": {
+    "_comment": "PRIMARY MOON: Olarune is shown in /calendar moon by default — it's the most narratively important (lycanthropy, Day of Mourning) and has a clean 8-week (56-day) full-to-full cycle. All twelve moons are tracked; see moons[] below for their individual cycle lengths. Cycles are full-to-full per ENWorld canon (citing the Wizards-published Eberron World and Planar Calendar Utility).",
+    "cycleDays": 56,
+    "anchorPhase": 0,
+    "_anchorPhaseComment": "On 1 Zarantyr 998 YK, the calendar default, Olarune begins the year at phase 0 (new moon). Each individual moon has its own anchor phase listed in moons[].",
+    "phases": [
+      { "min": 0,  "max": 3,  "key": "new",            "name": "New",            "emoji": "🌑" },
+      { "min": 4,  "max": 13, "key": "waxing_crescent","name": "Waxing Crescent","emoji": "🌒" },
+      { "min": 14, "max": 17, "key": "first_quarter",  "name": "First Quarter",  "emoji": "🌓" },
+      { "min": 18, "max": 24, "key": "waxing_gibbous", "name": "Waxing Gibbous", "emoji": "🌔" },
+      { "min": 25, "max": 30, "key": "full",           "name": "Full",           "emoji": "🌕" },
+      { "min": 31, "max": 37, "key": "waning_gibbous", "name": "Waning Gibbous", "emoji": "🌖" },
+      { "min": 38, "max": 41, "key": "last_quarter",   "name": "Last Quarter",   "emoji": "🌗" },
+      { "min": 42, "max": 55, "key": "waning_crescent","name": "Waning Crescent","emoji": "🌘" }
+    ]
+  },
+
+  "moons": [
+    { "key": "zarantyr",  "name": "Zarantyr",  "cycleDays": 77,  "anchorPhase": 0,  "color": "Pearly white",       "dragonmark": "Storm",       "blurb": "Closest moon. Greatest tidal influence. Lightning is said to fall from clear skies when Zarantyr is full." },
+    { "key": "olarune",   "name": "Olarune",   "cycleDays": 56,  "anchorPhase": 7,  "color": "Pale orange",        "dragonmark": "Sentinel",    "blurb": "Slight shield-like fringe. Patron of community and order. Lycanthropes revere it — especially weretigers." },
+    { "key": "therendor", "name": "Therendor", "cycleDays": 42,  "anchorPhase": 14, "color": "Pale gray",          "dragonmark": "Healing",     "blurb": "Brother moon to Barrakas. Medicines brewed when Therendor is full and Barrakas is new are unusually potent." },
+    { "key": "eyre",      "name": "Eyre",      "cycleDays": 63,  "anchorPhase": 21, "color": "Silver-gray",        "dragonmark": "Making",      "blurb": "Patron of crafters and artisans. House Cannith times its formal ceremonies to Eyre's full phase." },
+    { "key": "dravago",   "name": "Dravago",   "cycleDays": 91,  "anchorPhase": 28, "color": "Pale lavender",      "dragonmark": "Handling",    "blurb": "Largest of the moons by visible disk. Druids say its full phase calms animals and aids beast-handling." },
+    { "key": "nymm",      "name": "Nymm",      "cycleDays": 28,  "anchorPhase": 14, "color": "Pale yellow",        "dragonmark": "Hospitality", "blurb": "King Nymm. Shortest cycle — full to full in just one month. Symbol of crowns, generosity, and rule." },
+    { "key": "lharvion",  "name": "Lharvion",  "cycleDays": 98,  "anchorPhase": 42, "color": "Dull white & black", "dragonmark": "Detection",   "blurb": "The Eye. A 750-mile black chasm makes its full disk resemble a slitted eye. Diviners and seers feel its influence." },
+    { "key": "barrakas",  "name": "Barrakas",  "cycleDays": 105, "anchorPhase": 49, "color": "Pale gray",          "dragonmark": "Finding",     "blurb": "Brightest moon. Hunters value its light. Sister to Therendor — when Therendor eclipses it, sailors fear getting lost." },
+    { "key": "rhaan",     "name": "Rhaan",     "cycleDays": 49,  "anchorPhase": 24, "color": "Pale blue",          "dragonmark": "Scribing",    "blurb": "Smallest moon — looks like a bright star. Inspires creative thought, dancers, musicians, and scribes." },
+    { "key": "sypheros",  "name": "Sypheros",  "cycleDays": 35,  "anchorPhase": 17, "color": "Smoky gray",         "dragonmark": "Shadow",      "blurb": "Hard to see except at full. Wildnight in mid-Sypheros marks the height of the Fury's power." },
+    { "key": "aryth",     "name": "Aryth",     "cycleDays": 84,  "anchorPhase": 56, "color": "Orange-red",         "dragonmark": "Passage",     "blurb": "Maelstroms can pull ships into Lamannia or Risia when Zarantyr eclipses Aryth. House Orien's moon." },
+    { "key": "vult",      "name": "Vult",      "cycleDays": 70,  "anchorPhase": 35, "color": "Gray, pock-marked",  "dragonmark": "Warding",     "blurb": "Heavily cratered surface. House Kundarak watches over vaults and hoards in Vult's name." }
+  ]
+}

@@ -1703,6 +1703,8 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
     }
 
     console.log(`[startup] gamedata: ${gdRows.length} entries → reference databases populated ✓`);
+    _fillRuleFallbacks(dbs.calendarData, 'calendar', ['golarion', 'eberron']);
+    _fillRuleFallbacks(dbs.weatherData, 'weather', ['golarion', 'eberron']);
   } catch (e) { console.error('[startup] gamedata load failed:', e.message); }
 }
 
@@ -1711,6 +1713,32 @@ function _mergeIntoObject(target, entries, label) {
   for (const k of Object.keys(target)) delete target[k];
   Object.assign(target, entries);
   console.log(`[startup] ${label}: ${Object.keys(target).length}`);
+}
+
+function _loadSupabaseRuleFallback(kind, slug) {
+  const file = path.join(__dirname, '..', 'supabase', `${kind}-rules`, `${slug}.json`);
+  try {
+    if (!fs.existsSync(file)) return null;
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!parsed || typeof parsed !== 'object') return null;
+    const { _meta: _ignored, ...runtimeRules } = parsed;
+    return runtimeRules;
+  } catch (e) {
+    console.warn(`[startup] ${kind}_rules fallback ${slug} failed:`, e.message);
+    return null;
+  }
+}
+
+function _fillRuleFallbacks(target, kind, slugs) {
+  if (!target) return;
+  for (const slug of slugs) {
+    if (target[slug]) continue;
+    const fallback = _loadSupabaseRuleFallback(kind, slug);
+    if (fallback) {
+      target[slug] = fallback;
+      console.warn(`[startup] ${kind}_rules.${slug}: using supabase directory fallback; seed Supabase to make it authoritative.`);
+    }
+  }
 }
 
 // ── Startup restore from Supabase ─────────────────────────────────────────────

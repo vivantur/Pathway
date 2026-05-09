@@ -61,6 +61,10 @@ function setRules(data) {
   // PRIMARY_MOON_OFFSET
   const primaryCycle = RULES.moon.cycleDays;
   PRIMARY_MOON_OFFSET = ((RULES.moon.anchorPhase - (anchorDays % primaryCycle)) % primaryCycle + primaryCycle) % primaryCycle;
+
+  module.exports.RULES = RULES;
+  module.exports.MONTH_NAMES = MONTH_NAMES;
+  module.exports.WEEKDAY_NAMES = WEEKDAY_NAMES;
 }
 
 // ── Pure math helpers ────────────────────────────────────────────────────────

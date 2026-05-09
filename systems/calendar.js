@@ -64,6 +64,10 @@ function setRules(data) {
   const cycle = RULES.moon.cycleDays;
   const anchorDays2 = daysSinceEpoch(a.year, a.month, a.day);
   MOON_OFFSET = ((RULES.moon.anchorPhase - (anchorDays2 % cycle)) % cycle + cycle) % cycle;
+
+  module.exports.RULES = RULES;
+  module.exports.MONTH_NAMES = MONTH_NAMES;
+  module.exports.WEEKDAY_NAMES = WEEKDAY_NAMES;
 }
 
 // ── Pure math helpers ────────────────────────────────────────────────────────
