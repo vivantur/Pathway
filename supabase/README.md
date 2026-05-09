@@ -32,3 +32,19 @@ Run this to upsert them into the Supabase `gamedata` table:
 ```powershell
 node supabase/import-calendar-weather-rules.js
 ```
+
+## AoN Bestiary
+
+Fetch fresh Archives of Nethys creature documents, then import transformed
+official monsters into the Supabase `monsters` table:
+
+```powershell
+node tools/aon-fetch.js creature --force
+node supabase/import-aon-bestiary.js --dry-run
+node supabase/import-aon-bestiary.js --replace-official
+```
+
+The importer replaces only official, non-companion monster rows. Homebrew
+monsters and companions are left alone. The full bot creature object is stored
+in `monster_metadata`, including AoN URL, art URL, description, attacks,
+abilities, spellcasting, defenses, skills, languages, and source.

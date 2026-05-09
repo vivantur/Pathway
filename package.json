@@ -7,7 +7,8 @@
     "start": "node index.js",
     "deploy": "node deploy.js",
     "deploy:guild": "node deploy.js --guild",
-    "import:homebrew-items": "node supabase/import-homebrew-items.js"
+    "import:homebrew-items": "node supabase/import-homebrew-items.js",
+    "import:aon-bestiary": "node supabase/import-aon-bestiary.js"
   },
   "keywords": [],
   "author": "",

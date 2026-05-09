@@ -178,6 +178,17 @@ function parseLanguages(rawLang) {
 }
 
 function parseSkills(raw) {
+  if (raw.skill_mod && typeof raw.skill_mod === 'object') {
+    const out = {};
+    for (const [key, value] of Object.entries(raw.skill_mod)) {
+      if (typeof value !== 'number') continue;
+      const name = Array.isArray(raw.skill)
+        ? raw.skill.find(s => String(s).toLowerCase() === String(key).toLowerCase()) || key
+        : key;
+      out[String(name).replace(/\b\w/g, c => c.toUpperCase())] = value;
+    }
+    if (Object.keys(out).length > 0) return out;
+  }
   const md = raw.skill_markdown || '';
   if (!md) return null;
   const cleaned = stripLinks(md);
@@ -193,6 +204,7 @@ function parseSkills(raw) {
 }
 
 function parseItems(raw) {
+  if (Array.isArray(raw.item)) return raw.item.map(s => String(s).trim()).filter(Boolean);
   const md = raw.markdown || '';
   const m = md.match(/\*\*Items\*\*\s*([^\n]+)/);
   if (!m) return [];
@@ -211,11 +223,125 @@ function parseDefenseList(obj) {
 }
 
 function parseImmunities(raw) {
+  if (Array.isArray(raw.immunity)) return raw.immunity.map(s => String(s).trim()).filter(Boolean);
   const md = raw.markdown || '';
   const m = md.match(/\*\*Immunities\*\*\s*([^\n]+)/);
   if (!m) return [];
   const cleaned = stripLinks(m[1]).trim();
   return cleaned.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function parseWeaknesses(raw) {
+  return parseDefenseList(raw.weakness);
+}
+
+function parseResistances(raw) {
+  return parseDefenseList(raw.resistance);
+}
+
+function normalizeImage(raw) {
+  const rawImage = Array.isArray(raw.image) ? raw.image[0] : raw.image;
+  const markdownImage = raw.markdown?.match(/<image\s+src="([^"]+)"/i)?.[1];
+  const image = rawImage || markdownImage || null;
+  if (!image || typeof image !== 'string') return null;
+  if (/^https?:\/\//i.test(image)) return image;
+  if (image.startsWith('/')) return `https://2e.aonprd.com${image}`;
+  return `https://2e.aonprd.com/${image.replace(/^\/+/, '')}`;
+}
+
+function actionStringToCost(value) {
+  const s = String(value || '').toLowerCase();
+  if (s.includes('single')) return '1 action';
+  if (s.includes('two')) return '2 actions';
+  if (s.includes('three')) return '3 actions';
+  if (s.includes('reaction')) return '1 reaction';
+  if (s.includes('free')) return '1 free';
+  return value || null;
+}
+
+function cleanMarkdownText(text) {
+  return stripLinks(String(text || ''))
+    .replace(/<actions\s+string="([^"]+)"\s*\/>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+>/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\r/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function extractAbilityBlocks(raw) {
+  const names = Array.isArray(raw.creature_ability) ? raw.creature_ability.filter(Boolean) : [];
+  if (!names.length || !raw.markdown) return { top: [], mid: [], bot: [] };
+
+  const md = raw.markdown;
+  const blocks = [];
+  const escapedNames = names
+    .map(name => String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .sort((a, b) => b.length - a.length);
+  const headerRe = new RegExp(`\\*\\*(${escapedNames.join('|')})\\*\\*`, 'g');
+  let match;
+  const headers = [];
+  while ((match = headerRe.exec(md)) !== null) {
+    headers.push({ name: match[1], index: match.index, end: headerRe.lastIndex });
+  }
+
+  for (let i = 0; i < headers.length; i++) {
+    const cur = headers[i];
+    const next = headers[i + 1]?.index ?? md.search(/<\/column>|<aside>|<document/i);
+    const end = next > cur.end ? next : Math.min(md.length, cur.end + 1200);
+    const rawBlock = md.slice(cur.end, end).trim();
+    const action = rawBlock.match(/<actions\s+string="([^"]+)"\s*\/>/i)?.[1] ?? null;
+    const traitText = rawBlock.match(/<actions[^/]*\/>\s*\(([^)]+)\)/i)?.[1] ?? null;
+    const traits = traitText ? traitText.split(',').map(t => stripLinks(t).trim()).filter(Boolean) : [];
+    const description = cleanMarkdownText(rawBlock);
+    if (!description && !action && traits.length === 0) continue;
+    blocks.push({
+      name: cur.name,
+      ...(action ? { action_cost: actionStringToCost(action) } : {}),
+      ...(traits.length ? { traits } : {}),
+      ...(description ? { description } : {}),
+    });
+  }
+
+  return { top: [], mid: [], bot: blocks };
+}
+
+function extractSpellcasting(raw) {
+  const md = raw.markdown || '';
+  const re = /\*\*(Arcane|Divine|Occult|Primal)\s+(Prepared|Innate|Spontaneous|Focus)\s+Spells\*\*\s*([^\n]*)\n([\s\S]*?)(?=\n\*\*[A-Z][^*\n]+\*\*|<\/column>|<aside>|$)/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(md)) !== null) {
+    const caster = {
+      tradition: m[1].toLowerCase(),
+      type: m[2],
+      DC: null,
+      attack_bonus: null,
+      spells_by_level: {},
+    };
+    const header = m[3] || '';
+    const dc = header.match(/DC\s+(\d+)/i);
+    const atk = header.match(/attack\s+([+\-]?\d+)/i);
+    if (dc) caster.DC = Number(dc[1]);
+    if (atk) caster.attack_bonus = Number(atk[1]);
+
+    const body = m[4] || '';
+    const rankRe = /-\s+\*\*(Cantrips?\s*\((\d+)(?:st|nd|rd|th)?\)|(\d+)(?:st|nd|rd|th))\*\*\s*\n([^\n]+)/gi;
+    let rm;
+    while ((rm = rankRe.exec(body)) !== null) {
+      const rank = rm[2] ? 0 : Number(rm[3]);
+      const spells = stripLinks(rm[4])
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(name => ({ name }));
+      caster.spells_by_level[String(rank)] = { spells };
+    }
+    out.push(caster);
+  }
+  return out;
 }
 
 // ── Main transformer ────────────────────────────────────────────────────────
@@ -260,12 +386,15 @@ function transformCreature(raw) {
     defenses: {
       ac,
       hp,
+      saves: core.saves,
       immunities: parseImmunities(raw),
-      weaknesses: parseDefenseList(raw.weakness),
-      resistances: parseDefenseList(raw.resistance),
+      weaknesses: parseWeaknesses(raw),
+      resistances: parseResistances(raw),
     },
     attacks,
     description: extractDescription(raw),
+    spellcasting: extractSpellcasting(raw),
+    abilities: extractAbilityBlocks(raw),
   };
 
   // Legacy compat: also write a `summary` block
@@ -293,7 +422,7 @@ function transformCreature(raw) {
     source: raw.primary_source_raw || raw.primary_source || (Array.isArray(raw.source) ? raw.source[0] : raw.source) || null,
     aon_url: raw.url ? `https://2e.aonprd.com${raw.url}` : null,
     aon_id: raw.id || null,
-    image: raw.image || null,
+    image: normalizeImage(raw),
     custom: false,
     _aon_imported: true,
     _aon_imported_at: new Date().toISOString(),
@@ -417,7 +546,14 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('Fatal:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('Fatal:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  creatureSlug,
+  transformCreature,
+};
