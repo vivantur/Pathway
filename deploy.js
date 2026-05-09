@@ -1519,7 +1519,12 @@ const calendarCommand = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('clear').setDescription('GM: reset calendar state for this server.'))
   .addSubcommand(s => s.setName('setting')
     .setDescription('Switch this server between Golarion and Eberron (or view current).')
-    .addStringOption(o => o.setName('choice').setDescription('Pick golarion or eberron (omit to view).').setRequired(false).setAutocomplete(true)));
+    .addStringOption(o => o.setName('choice').setDescription('Pick golarion or eberron (omit to view).').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('autotick')
+    .setDescription('GM: automatically advance this server calendar once per real day.')
+    .addBooleanOption(o => o.setName('enabled').setDescription('Turn daily auto-advance on or off.').setRequired(false))
+    .addStringOption(o => o.setName('time').setDescription('Local trigger time in 24-hour HH:MM format, e.g. 06:00.').setRequired(false))
+    .addStringOption(o => o.setName('timezone').setDescription('IANA timezone, e.g. America/Chicago.').setRequired(false)));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /weather

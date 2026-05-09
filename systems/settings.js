@@ -12,6 +12,9 @@
 //   setSetting(guildId, key, value)
 //   getCampaignSetting(guildId)        // shortcut: 'golarion' | 'eberron'
 //   setCampaignSetting(guildId, value) // validates value before writing
+//   getCalendarAutotick(guildId)       // server calendar auto-advance config
+//   setCalendarAutotick(guildId, patch)
+//   listCalendarAutotickGuilds()
 //
 // Defaults to 'golarion' for backward compatibility — every existing server
 // keeps its existing experience until someone explicitly switches.
@@ -22,6 +25,12 @@ const { loadJson, mutateJson } = require('../utils/storage');
 
 const STATE_FILE = 'bot-settings.json';
 const VALID_CAMPAIGN_SETTINGS = ['golarion', 'eberron'];
+const DEFAULT_CALENDAR_AUTOTICK = {
+  enabled: false,
+  time: '06:00',
+  timezone: 'America/Chicago',
+  lastRunLocalDate: null,
+};
 
 function loadAll() {
   return loadJson(STATE_FILE, { default: {}, quiet: true }) || {};
@@ -44,6 +53,32 @@ async function setSetting(guildId, key, value) {
   });
 }
 
+function getCalendarAutotick(guildId) {
+  const stored = getSetting(guildId, 'calendarAutotick', {}) || {};
+  return { ...DEFAULT_CALENDAR_AUTOTICK, ...stored };
+}
+
+async function setCalendarAutotick(guildId, patch) {
+  const id = String(guildId);
+  return mutateJson(STATE_FILE, { default: {} }, (state) => {
+    if (!state[id]) state[id] = {};
+    const current = { ...DEFAULT_CALENDAR_AUTOTICK, ...(state[id].calendarAutotick || {}) };
+    state[id].calendarAutotick = { ...current, ...patch };
+    state[id]._updatedAt = new Date().toISOString();
+    return state;
+  });
+}
+
+function listCalendarAutotickGuilds() {
+  const all = loadAll();
+  return Object.entries(all)
+    .map(([guildId, entry]) => ({
+      guildId,
+      config: { ...DEFAULT_CALENDAR_AUTOTICK, ...(entry?.calendarAutotick || {}) },
+    }))
+    .filter(row => row.config.enabled);
+}
+
 function getCampaignSetting(guildId) {
   return getSetting(guildId, 'campaignSetting', 'golarion');
 }
@@ -60,6 +95,9 @@ module.exports = {
   VALID_CAMPAIGN_SETTINGS,
   getSetting,
   setSetting,
+  getCalendarAutotick,
+  setCalendarAutotick,
+  listCalendarAutotickGuilds,
   getCampaignSetting,
   setCampaignSetting,
 };

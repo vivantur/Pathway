@@ -78,11 +78,63 @@ function settingLabel(name) {
 const GM_ONLY =
   process.env.CALENDAR_GM_ONLY === '1' || process.env.CALENDAR_GM_ONLY === 'true' ||
   process.env.WEATHER_GM_ONLY  === '1' || process.env.WEATHER_GM_ONLY  === 'true';
+const AUTO_TICK_INTERVAL_MS = 5 * 60 * 1000;
+
+let autoTickTimer = null;
+let autoTickRunning = false;
 
 function isGm(interaction) {
   if (!GM_ONLY) return true;
   if (process.env.BOT_OWNER_ID && String(interaction.user.id) === String(process.env.BOT_OWNER_ID)) return true;
   return interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels) || false;
+}
+
+function validateAutotickTime(value) {
+  const text = String(value || '').trim();
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(text);
+  if (!match) throw new Error('Time must use 24-hour HH:MM format, like 06:00 or 18:30.');
+  return text;
+}
+
+function validateTimezone(value) {
+  const zone = String(value || '').trim();
+  if (!zone) throw new Error('Timezone is required.');
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone }).format(new Date());
+    return zone;
+  } catch {
+    throw new Error(`"${zone}" is not a valid IANA timezone. Try America/Chicago.`);
+  }
+}
+
+function timeToMinutes(value) {
+  const [hh, mm] = validateAutotickTime(value).split(':').map(Number);
+  return hh * 60 + mm;
+}
+
+function getLocalClock(timeZone, now = new Date()) {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
+  const hour = Number(parts.hour === '24' ? '0' : parts.hour);
+  const minute = Number(parts.minute);
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    minutes: hour * 60 + minute,
+  };
+}
+
+function formatAutotickStatus(config) {
+  const state = config.enabled ? 'enabled' : 'disabled';
+  const last = config.lastRunLocalDate ? ` Last advanced on ${config.lastRunLocalDate}.` : '';
+  return `Calendar auto-advance is **${state}**. Trigger time: **${config.time}** (${config.timezone}).${last}`;
 }
 
 const SEASON_EMOJI = { spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️' };
@@ -229,6 +281,9 @@ async function handleCalendar(interaction, weatherModule = null) {
   if (sub === 'setting') {
     return cmdSetting(interaction, guildId);
   }
+  if (sub === 'autotick') {
+    return cmdAutotick(interaction, guildId);
+  }
 
   // Resolve which engine to use for everything else.
   const cal = getEngine(guildId);
@@ -285,7 +340,41 @@ async function cmdSetting(interaction, guildId) {
   });
 }
 
+// ── /calendar autotick ──────────────────────────────────────────────────────
+// Server-level real-time calendar advancement. Stored in bot settings, which
+// are restored from and synced back to Supabase.
+async function cmdAutotick(interaction, guildId) {
+  if (!isGm(interaction)) {
+    return interaction.reply({ content: 'Only GMs can change calendar auto-advance.', ephemeral: true });
+  }
+
+  const patch = {};
+  const enabled = interaction.options.getBoolean('enabled');
+  const time = interaction.options.getString('time');
+  const timezone = interaction.options.getString('timezone');
+
+  try {
+    if (enabled !== null) patch.enabled = enabled;
+    if (time) patch.time = validateAutotickTime(time);
+    if (timezone) patch.timezone = validateTimezone(timezone);
+  } catch (err) {
+    return interaction.reply({ content: err.message, ephemeral: true });
+  }
+
+  if (Object.keys(patch).length > 0) {
+    await settings.setCalendarAutotick(guildId, patch);
+  }
+
+  const config = settings.getCalendarAutotick(guildId);
+  const prefix = Object.keys(patch).length > 0 ? 'Saved.' : 'Status.';
+  return interaction.reply({
+    content: `${prefix} ${formatAutotickStatus(config)}\n\nUse \`/calendar autotick enabled:true time:06:00 timezone:America/Chicago\` to change it.`,
+    ephemeral: true,
+  });
+}
+
 // ── /calendar today ─────────────────────────────────────────────────────────
+
 async function cmdToday(interaction, guildId, cal) {
   let date = cal.getDate(guildId);
   if (!date) {
@@ -475,6 +564,56 @@ async function cmdClear(interaction, guildId, cal) {
 }
 
 // ── Autocomplete handler ────────────────────────────────────────────────────
+async function runCalendarAutotick(client, weatherModule = null) {
+  if (autoTickRunning) return;
+  autoTickRunning = true;
+  try {
+    const rows = settings.listCalendarAutotickGuilds();
+    const now = new Date();
+    for (const { guildId, config } of rows) {
+      try {
+        if (client?.guilds?.cache && !client.guilds.cache.has(guildId)) continue;
+        const timeZone = validateTimezone(config.timezone);
+        const triggerMinutes = timeToMinutes(config.time);
+        const local = getLocalClock(timeZone, now);
+        if (local.minutes < triggerMinutes) continue;
+        if (config.lastRunLocalDate === local.date) continue;
+
+        const cal = getEngine(guildId);
+        if (!cal.RULES) {
+          console.warn(`[calendar-autotick] skipped ${guildId}: calendar rules are not loaded`);
+          continue;
+        }
+
+        await cal.ensureDate(guildId);
+        await cal.advance(guildId, 1);
+        const date = cal.getDate(guildId);
+        await syncWeatherSeason(weatherModule, guildId, date, cal);
+        await syncGuildStateToSupabase(guildId, { calendar: buildCalendarSnapshot(guildId, date, cal) });
+        await settings.setCalendarAutotick(guildId, {
+          lastRunLocalDate: local.date,
+          lastRunAt: now.toISOString(),
+        });
+        console.log(`[calendar-autotick] advanced ${guildId} to ${cal.describeDate(date)} (${local.date} ${timeZone})`);
+      } catch (err) {
+        console.error(`[calendar-autotick] failed for guild ${guildId}:`, err.message);
+      }
+    }
+  } finally {
+    autoTickRunning = false;
+  }
+}
+
+function startCalendarAutotick(client, weatherModule = null) {
+  if (autoTickTimer) return;
+  const run = () => runCalendarAutotick(client, weatherModule).catch(err => {
+    console.error('[calendar-autotick] scheduler error:', err.message);
+  });
+  setTimeout(run, 15 * 1000);
+  autoTickTimer = setInterval(run, AUTO_TICK_INTERVAL_MS);
+  console.log('[calendar-autotick] scheduler started');
+}
+
 async function handleCalendarAutocomplete(interaction) {
   const guildId = interaction.guildId;
   const cal = guildId ? getEngine(guildId) : golarionCalendar;
@@ -502,4 +641,5 @@ async function handleCalendarAutocomplete(interaction) {
 module.exports = {
   handleCalendar,
   handleCalendarAutocomplete,
+  startCalendarAutotick,
 };

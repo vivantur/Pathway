@@ -7259,6 +7259,7 @@ client.once('clientReady', async () => {
   if (calendarData?.eberron)  require('./systems/eberronCalendar').setRules(calendarData.eberron);
   if (weatherData?.golarion)  weatherEngine.setRules(weatherData.golarion);
   if (weatherData?.eberron)   require('./systems/eberronWeather').setRules(weatherData.eberron);
+  calendarCmd.startCalendarAutotick(client, weatherEngine);
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
   setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
