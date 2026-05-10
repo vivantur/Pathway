@@ -26,7 +26,7 @@ function rollDamageExpression(expr) {
   const numDice = parseInt(match[1]) || 1;
   const numSides = parseInt(match[2]);
   const bonus = match[3] ? parseInt(match[3]) : 0;
-  if (numDice < 1 || numDice > 100 || numSides < 1) return null;
+  if (numDice < 1 || numDice > 100 || numSides < 1 || numSides > 10000) return null;
   const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
   const sum = rolls.reduce((a, b) => a + b, 0);
   const total = sum + bonus;
