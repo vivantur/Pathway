@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, PermissionFlagsBits } = require('discord.js');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
@@ -1105,6 +1105,8 @@ function getBlankCharacterTemplate() {
 `;
 }
 
+const MAX_CHARACTERS_PER_USER = 20;
+
 function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
   const char = rawChar?.build ?? rawChar;
   if (!char || !char.name) {
@@ -1115,6 +1117,14 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
   const key = char.name.toLowerCase().replace(/\s+/g, '-');
   const prev = characters[userId][key];
   const existed = !!prev;
+
+  // Enforce character limit for new characters only (updates are fine)
+  if (!existed) {
+    const count = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length;
+    if (count >= MAX_CHARACTERS_PER_USER) {
+      return { error: `You've reached the ${MAX_CHARACTERS_PER_USER}-character limit. Remove one with \`/char remove\` before adding another.` };
+    }
+  }
 
   // Always preserve art, senses, and user edits (background/deity/skill overrides).
   // These are user-set flavor and manual corrections that shouldn't be wiped on
@@ -1237,6 +1247,10 @@ function saveCreatedCharacter(userId, char) {
   if (!characters[userId]) characters[userId] = {};
   const key = char.name.toLowerCase().replace(/\s+/g, '-');
   if (characters[userId][key]) return { error: `You already have a character named **${char.name}**. Use a different name or remove the old one first.` };
+  const count = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length;
+  if (count >= MAX_CHARACTERS_PER_USER) {
+    return { error: `You've reached the ${MAX_CHARACTERS_PER_USER}-character limit. Remove one with \`/char remove\` before adding another.` };
+  }
   const entry = {
     name: char.name,
     data: char,
@@ -5684,8 +5698,13 @@ function getNotebook(notesData, ownerId, charKey) {
 }
 
 // Add a note. Returns the new note object.
+const MAX_NOTES_PER_CHARACTER = 100;
+
 function addNote(notesData, ownerId, charKey, { category, text, pinned, authorId, authorName }) {
   const book = getNotebook(notesData, ownerId, charKey);
+  if (book.notes.length >= MAX_NOTES_PER_CHARACTER) {
+    return { error: `This character has reached the ${MAX_NOTES_PER_CHARACTER}-note limit. Remove some old notes first.` };
+  }
   const note = {
     id: book.nextId++,
     category,
@@ -5813,7 +5832,7 @@ function rollDiceExpression(raw) {
       const [numDiceStr, numSidesStr] = token.split('d');
       const numDice = parseInt(numDiceStr) || 1;
       const numSides = parseInt(numSidesStr);
-      if (!numSides || numSides < 1 || numDice < 1 || numDice > 100) return { error: `Invalid dice: \`${token}\`.` };
+      if (!numSides || numSides < 1 || numSides > 10000 || numDice < 1 || numDice > 100) return { error: `Invalid dice: \`${token}\`.` };
       const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
       const rollTotal = rolls.reduce((a, b) => a + b, 0);
       breakdownParts.push(numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`);
@@ -6287,7 +6306,7 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
         const numDice = parseInt(diceMatch[1]) || 1;
         const numSides = parseInt(diceMatch[2]);
         const localKeep = diceMatch[3] ? parseKeep(diceMatch[3]) : null;
-        if (numSides < 2 || numDice < 1 || numDice > 100) {
+        if (numSides < 2 || numSides > 10000 || numDice < 1 || numDice > 100) {
           return { error: `Invalid dice \`${cleanTok}\`.` };
         }
         const { rolls, rollsShown, rerollInfo, advDisplay } = rollDiceGroup(numDice, numSides, mods);
@@ -8640,6 +8659,9 @@ client.on('interactionCreate', async (interaction) => {
       if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
         return interaction.editReply('Please attach a `.json` **or** `.txt` file. To make one on mobile:\n1. In Pathbuilder → Menu → **Export JSON** → **Copy JSON**\n2. Paste into Notes app / Google Keep / any text editor\n3. Save/share as a `.txt` file\n4. Attach it here and run `/char add` again.');
       }
+      if (attachment.size > 2 * 1024 * 1024) {
+        return interaction.editReply('❌ File too large (max 2 MB). Pathbuilder JSON exports are typically under 100 KB.');
+      }
       try {
         const response = await fetch(attachment.url);
         const rawText = await response.text();
@@ -8675,6 +8697,9 @@ client.on('interactionCreate', async (interaction) => {
       const nameLower = attachment.name.toLowerCase();
       if (!nameLower.endsWith('.json') && !nameLower.endsWith('.txt')) {
         return interaction.editReply('Please attach a `.json` or `.txt` file exported from Pathbuilder.');
+      }
+      if (attachment.size > 2 * 1024 * 1024) {
+        return interaction.editReply('❌ File too large (max 2 MB). Pathbuilder JSON exports are typically under 100 KB.');
       }
       try {
         const response = await fetch(attachment.url);
@@ -9986,7 +10011,6 @@ client.on('interactionCreate', async (interaction) => {
     const guildSnippets = all[interaction.guildId] ?? {};
 
     // Helper: can the user manage server snippets?
-    const { PermissionFlagsBits } = require('discord.js');
     function canManage() {
       return interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
     }
@@ -14271,7 +14295,16 @@ client.on('interactionCreate', async (interaction) => {
       const data = lookupItemData(itemInput);
       const displayName = data?.name ?? itemInput;
 
+      const MAX_BAG_CATEGORIES = 20;
+      const MAX_BAG_ITEMS_PER_CATEGORY = 50;
+      const isNewCategory = !userBag.categories[category];
+      if (isNewCategory && Object.keys(userBag.categories).length >= MAX_BAG_CATEGORIES) {
+        return interaction.reply({ content: `❌ You've reached the ${MAX_BAG_CATEGORIES}-category limit. Remove a category with \`/bag removecategory\` first.`, ephemeral: true });
+      }
       if (!userBag.categories[category]) userBag.categories[category] = [];
+      if (userBag.categories[category].length >= MAX_BAG_ITEMS_PER_CATEGORY) {
+        return interaction.reply({ content: `❌ **${category}** is full (max ${MAX_BAG_ITEMS_PER_CATEGORY} items). Remove something first.`, ephemeral: true });
+      }
 
       // Merge with an existing stack of the same name (case-insensitive), else push a new entry.
       const bucket = userBag.categories[category];
@@ -14637,6 +14670,9 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (sub === 'award') {
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        return interaction.reply({ content: '🔒 Only GMs (Manage Server permission) can award XP.', ephemeral: true });
+      }
       const amount = interaction.options.getInteger('amount');
       const reason = interaction.options.getString('reason');
       if (amount === 0) return interaction.reply({ content: '❌ Amount cannot be 0.', ephemeral: true });
@@ -14761,6 +14797,7 @@ client.on('interactionCreate', async (interaction) => {
         authorId: interaction.user.id,
         authorName: interaction.user.username,
       });
+      if (note.error) return interaction.reply({ content: `❌ ${note.error}`, ephemeral: true });
       await saveNotes(notesData);
       const cat = NOTE_CATEGORIES[category];
       return interaction.reply({
@@ -18257,9 +18294,10 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     // ─── /downtime award — GM grants days to a player's character ───
-    // Permission: anyone can use this. (We could restrict to GMs but downtime
-    // awards are usually announced openly anyway. Easy to add a check later.)
     if (sub === 'award') {
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        return interaction.reply({ content: '🔒 Only GMs (Manage Server permission) can award downtime days.', ephemeral: true });
+      }
       // The character we resolved above is the AWARDER's character.
       // The award target is a different player's character — read from options.
       const targetPlayer = interaction.options.getUser('player');
