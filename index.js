@@ -9426,6 +9426,48 @@ client.on('interactionCreate', async (interaction) => {
       const characters = loadCharacters();
       const userChars = characters[userId] ?? {};
       const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
+      {
+        const activeKey = userChars._activeChar;
+        if (charKeys.length === 0) {
+          const emptyEmbed = new EmbedBuilder()
+            .setColor(0x7c3aed)
+            .setTitle(`${interaction.user.displayName}'s Characters`)
+            .setDescription('No saved characters yet.')
+            .setFooter({ text: 'Use /char add, /char import, or /char create to add one.' });
+          return interaction.reply({ embeds: [emptyEmbed] });
+        }
+
+        const sortedKeys = [...charKeys].sort((a, b) => {
+          if (a === activeKey) return -1;
+          if (b === activeKey) return 1;
+          const aName = userChars[a]?.data?.name ?? userChars[a]?.name ?? a;
+          const bName = userChars[b]?.data?.name ?? userChars[b]?.name ?? b;
+          return String(aName).localeCompare(String(bName));
+        });
+
+        const list = sortedKeys.map((k, idx) => {
+          const c = userChars[k];
+          const name = c?.data?.name ?? c?.name ?? k;
+          const level = c?.data?.level ?? c?.level ?? c?.data?.details?.level ?? null;
+          const ancestry = c?.data?.ancestry ?? c?.ancestry ?? null;
+          const className = c?.data?.class ?? c?.class ?? c?.data?.className ?? null;
+          const activeTag = k === activeKey ? ' 📌' : '';
+          const artTag = c?.art ? ' 🖼️' : '';
+          const detailParts = [];
+          if (level !== null && level !== undefined && level !== '') detailParts.push(`Level ${level}`);
+          if (ancestry) detailParts.push(ancestry);
+          if (className) detailParts.push(className);
+          const details = detailParts.length ? `\n${detailParts.join(' • ')}` : '';
+          return `**${idx + 1}. ${name}**${activeTag}${artTag}${details}`;
+        }).join('\n\n');
+
+        const embed = new EmbedBuilder()
+          .setColor(0x7c3aed)
+          .setTitle(`${interaction.user.displayName}'s Characters`)
+          .setDescription(list.slice(0, 4096))
+          .setFooter({ text: `${charKeys.length} saved character${charKeys.length === 1 ? '' : 's'} • 📌 active • 🖼️ art set` });
+        return interaction.reply({ embeds: [embed] });
+      }
       if (charKeys.length === 0)
         return interaction.reply('You have no saved characters! Use `/char add` to add one.');
       const activeKey = userChars._activeChar;
