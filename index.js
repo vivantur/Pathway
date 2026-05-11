@@ -11554,30 +11554,102 @@ client.on('interactionCreate', async (interaction) => {
     const outOfCombatMap = interaction.options.getInteger('map');
     const outOfCombatAgile = interaction.options.getBoolean('agile') ?? false;
 
-    if (outOfCombatBonus == null || !outOfCombatDamage) {
+    let outOfCombatAttack = null;
+    let outOfCombatDisplayName = outOfCombatAttackerName;
+
+    if (outOfCombatBonus != null && outOfCombatDamage) {
+      outOfCombatAttack = {
+        name: outOfCombatAttackName,
+        bonus: outOfCombatBonus,
+        damage: outOfCombatDamage,
+        damageType: outOfCombatType,
+        traits: outOfCombatAgile ? ['agile'] : [],
+        source: 'manual',
+      };
+    } else {
+      const displayName = resolveMonsterDisplayName(outOfCombatAttackerName);
+      const { monster } = findMonster(displayName);
+      let bestiaryAttacks = [];
+      if (monster) {
+        outOfCombatDisplayName = monster.name;
+        const edits = getMonsterEdit(interaction.guildId, monster.name);
+        const edited = applyMonsterEdits(monster, edits);
+        const withLibrary = applyMonsterAttackLibrary(edited, interaction.guildId);
+        const rawAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+        bestiaryAttacks = rawAttacks.map(a => normalizeAttackForRolling(a));
+      }
+
+      const store = loadMonsterAttacks();
+      const guild = getGuildMonsters(store, interaction.guildId);
+      const libEntry = guild[monsterKey(outOfCombatDisplayName)] ?? guild[monsterKey(displayName)];
+      const libAttacks = libEntry?.attacks ?? [];
+      const allAttacks = bestiaryAttacks.length > 0 ? bestiaryAttacks : libAttacks;
+      const q = String(outOfCombatAttackName ?? '').toLowerCase().trim();
+      outOfCombatAttack = allAttacks.find(a => String(a.name ?? '').toLowerCase() === q) ?? null;
+      if (!outOfCombatAttack) {
+        const partial = allAttacks.filter(a => String(a.name ?? '').toLowerCase().includes(q));
+        if (partial.length === 1) outOfCombatAttack = partial[0];
+        else if (partial.length > 1) {
+          return interaction.reply({
+            content: `🔍 Multiple attacks match **"${outOfCombatAttackName}"** on **${outOfCombatDisplayName}**: ${partial.map(a => `\`${a.name}\``).join(', ')}. Be more specific.`,
+            ephemeral: true,
+          });
+        }
+      }
+      if (!outOfCombatAttack) {
+        const available = allAttacks.length ? allAttacks.map(a => `\`${a.name}\``).join(', ') : 'none';
+        return interaction.reply({
+          content: `❌ **${outOfCombatDisplayName}** has no attack matching **"${outOfCombatAttackName}"**.\nAvailable: ${available}\n\nYou can also roll manually with \`bonus:\` and \`damage:\`.`,
+          ephemeral: true,
+        });
+      }
+      outOfCombatAttack = {
+        ...outOfCombatAttack,
+        bonus: outOfCombatBonus ?? outOfCombatAttack.bonus ?? 0,
+        damage: outOfCombatDamage ?? outOfCombatAttack.damage,
+        damageType: outOfCombatType !== 'damage' ? outOfCombatType : (outOfCombatAttack.damageType ?? outOfCombatType),
+        traits: outOfCombatAgile && !(outOfCombatAttack.traits ?? []).some(t => String(t).toLowerCase() === 'agile')
+          ? [...(outOfCombatAttack.traits ?? []), 'agile']
+          : (outOfCombatAttack.traits ?? []),
+      };
+    }
+
+    if (outOfCombatAttack.kind === 'save') {
+      const damageResult = rollDamageExpression(outOfCombatAttack.damage);
+      if (!damageResult) return interaction.reply({ content: `❌ Couldn't parse damage expression **"${outOfCombatAttack.damage}"**.`, ephemeral: true });
+      const saveDisplay = String(outOfCombatAttack.saveType ?? 'save');
+      const embed = new EmbedBuilder()
+        .setColor(0xD35400)
+        .setTitle(`${outOfCombatDisplayName} uses ${outOfCombatAttack.name}${outOfCombatTargetName ? ` on ${outOfCombatTargetName}` : ''}!`)
+        .setDescription(
+          `**${saveDisplay.charAt(0).toUpperCase() + saveDisplay.slice(1)} Save DC ${outOfCombatAttack.saveDC}**\n\n` +
+          `**Damage Rolled:** ${damageResult.display} = **${damageResult.total} ${outOfCombatAttack.damageType ?? ''}**\n\n` +
+          `• Crit Success → **0** damage\n` +
+          `• Success → **${Math.floor(damageResult.total / 2)}** damage\n` +
+          `• Failure → **${damageResult.total}** damage\n` +
+          `• Crit Failure → **${damageResult.total * 2}** damage`
+        )
+        .setFooter({ text: `${outOfCombatDisplayName} · out of initiative` });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (!outOfCombatAttack.damage) {
       return interaction.reply({
-        content: 'Outside initiative, `/mattack` needs `bonus:` and `damage:`. Inside combat v2 those are optional when the attacker has saved attacks.',
+        content: `❌ **${outOfCombatAttack.name}** on **${outOfCombatDisplayName}** does not have rollable damage. Use manual \`damage:\` to override it.`,
         ephemeral: true,
       });
     }
 
-    const outOfCombatAttack = {
-      name: outOfCombatAttackName,
-      bonus: outOfCombatBonus,
-      damage: outOfCombatDamage,
-      damageType: outOfCombatType,
-      traits: outOfCombatAgile ? ['agile'] : [],
-      source: 'manual',
-    };
     const [outOfCombatResult] = combatV2Rolls.rollAttack({
-      attacker: { name: outOfCombatAttackerName, attacksThisTurn: 0, effects: [] },
+      attacker: { name: outOfCombatDisplayName, attacksThisTurn: 0, effects: [] },
       target: null,
       attack: outOfCombatAttack,
       map: outOfCombatMap,
       count: 1,
     });
     const outOfCombatEmbed = combatV2Render.renderAttackResult(outOfCombatResult)
-      .setTitle(`${outOfCombatAttackerName} attacks${outOfCombatTargetName ? ` ${outOfCombatTargetName}` : ''} with ${outOfCombatAttack.name}`);
+      .setTitle(`${outOfCombatDisplayName} attacks${outOfCombatTargetName ? ` ${outOfCombatTargetName}` : ''} with ${outOfCombatAttack.name}`)
+      .setFooter({ text: `${outOfCombatDisplayName} · out of initiative${outOfCombatAttack.traits?.length ? ` · ${outOfCombatAttack.traits.join(', ')}` : ''}` });
     return interaction.reply({ embeds: [outOfCombatEmbed] });
 
     const enc = getEncounter(channelId);
