@@ -8059,11 +8059,44 @@ client.on('interactionCreate', async (interaction) => {
         else if (cmd === 'mattack') {
           const v2 = combatV2State.getEncounter(interaction.channel.id);
           if (focused.name === 'attacker' || focused.name === 'target') {
-            suggestions = pick((v2?.combatants ?? []).map(c => c.name));
+            const names = new Set((v2?.combatants ?? []).map(c => c.name));
+            if (focused.name === 'attacker') {
+              for (const monster of Object.values(bestiaryDatabase)) {
+                if (monster?.name) names.add(monster.name);
+              }
+            } else {
+              const characters = loadCharacters();
+              for (const entry of Object.values(characters[interaction.user.id] ?? {})) {
+                const name = entry?.data?.name ?? entry?.name;
+                if (name) names.add(name);
+              }
+            }
+            suggestions = pick([...names]);
           } else if (focused.name === 'name') {
             const attackerName = interaction.options.getString('attacker');
             const attacker = v2 ? combatV2State.findCombatant(v2, attackerName) : null;
-            suggestions = pick((attacker?.attacks ?? []).map(a => a.name).filter(Boolean));
+            const names = new Set((attacker?.attacks ?? []).map(a => a.name).filter(Boolean));
+            if (attackerName) {
+              const displayName = attacker?.bestiaryKey ?? resolveMonsterDisplayName(attackerName);
+              const { monster } = findMonster(displayName);
+              if (monster) {
+                const edits = getMonsterEdit(interaction.guildId, monster.name);
+                const edited = applyMonsterEdits(monster, edits);
+                const withLibrary = applyMonsterAttackLibrary(edited, interaction.guildId);
+                const rawAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
+                for (const attack of rawAttacks) {
+                  const normalized = normalizeAttackForRolling(attack);
+                  if (normalized?.name) names.add(normalized.name);
+                }
+              }
+              const store = loadMonsterAttacks();
+              const guild = interaction.guildId ? getGuildMonsters(store, interaction.guildId) : {};
+              const libEntry = guild[monsterKey(displayName)] ?? guild[monsterKey(attackerName)];
+              for (const attack of (libEntry?.attacks ?? [])) {
+                if (attack?.name) names.add(attack.name);
+              }
+            }
+            suggestions = pick([...names]);
           }
         }
         else if (cmd === 'monsterroll') {
