@@ -2424,9 +2424,25 @@ function combatV2Initiative(modifier, resultOverride = null) {
   return { initiative: roll.total, text: `(rolled ${roll.roll} ${fmt(roll.mod)})` };
 }
 
-function combatV2CharacterAttacks(charEntry) {
+function getCharacterWeapons(charEntry) {
   const c = charEntry?.data ?? {};
-  return (c.weapons ?? []).map(w => {
+  const hiddenWeapons = new Set((charEntry?.edits?.hiddenWeapons ?? []).map(n => String(n).toLowerCase()));
+  const weapons = new Map();
+  for (const w of (c.weapons ?? [])) {
+    const key = String(w.display ?? w.name ?? '').toLowerCase();
+    if (!key || hiddenWeapons.has(key)) continue;
+    weapons.set(key, w);
+  }
+  for (const w of (charEntry?.edits?.weapons ?? [])) {
+    const key = String(w.display ?? w.name ?? '').toLowerCase();
+    if (!key || hiddenWeapons.has(key)) continue;
+    weapons.set(key, w);
+  }
+  return [...weapons.values()];
+}
+
+function combatV2CharacterAttacks(charEntry) {
+  return getCharacterWeapons(charEntry).map(w => {
     const damageType = w.damageType === 'P' ? 'piercing'
       : w.damageType === 'S' ? 'slashing'
       : w.damageType === 'B' ? 'bludgeoning'
@@ -8475,20 +8491,18 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick([...new Set([...jsonItems, ...editItems])]);
           }
         }
-        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'weapon') {
+        else if (cmd === 'char' && ['weapon', 'attack'].includes(interaction.options.getSubcommand(false))) {
           if (focused.name === 'character') {
             const characters = loadCharacters();
             const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           } else if (focused.name === 'name') {
-            // Autocomplete from existing weapons on the active character (for edit/remove)
+            // Autocomplete from existing weapons on the selected/active character.
             const characters = loadCharacters();
-            const { char: ce } = resolveChar(interaction.user.id, null, characters) || {};
+            const charArg = interaction.options.getString('character');
+            const { char: ce } = resolveChar(interaction.user.id, charArg, characters) || {};
             if (ce) {
-              const c = ce.data ?? {};
-              const jsonWeapons = (c.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
-              const editWeapons = (ce.edits?.weapons ?? []).map(w => w.display ?? w.name).filter(Boolean);
-              suggestions = pick([...new Set([...jsonWeapons, ...editWeapons])]);
+              suggestions = pick([...new Set(getCharacterWeapons(ce).map(w => w.display ?? w.name).filter(Boolean))]);
             }
           }
         }
@@ -9003,18 +9017,19 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: `✅ Set **${fieldLabel}** to **${value}** on **${charEntry.name}**. Use \`/sheet\` to see it.`, ephemeral: true });
     }
 
-    // /char weapon — add, edit, or remove weapons/attacks. Follows the same
+    // /char weapon and /char attack — add, edit, list, or remove weapons/attacks.
+    // Follows the same
     // layered pattern as /char lore: edits.weapons for user-added, edits.hiddenWeapons
     // for JSON-sourced ones to hide.
-    else if (sub === 'weapon') {
+    else if (sub === 'weapon' || sub === 'attack') {
       const charNameArg = interaction.options.getString('character');
       const action = interaction.options.getString('action');
       const name = interaction.options.getString('name')?.trim();
 
-      if (!['add', 'remove', 'edit'].includes(action)) {
-        return interaction.reply({ content: '❌ action must be `add`, `remove`, or `edit`.', ephemeral: true });
+      if (!['add', 'remove', 'edit', 'list'].includes(action)) {
+        return interaction.reply({ content: '❌ action must be `add`, `edit`, `list`, or `remove`.', ephemeral: true });
       }
-      if (!name) {
+      if (action !== 'list' && !name) {
         return interaction.reply({ content: '❌ Please provide a weapon name.', ephemeral: true });
       }
 
@@ -9026,6 +9041,26 @@ client.on('interactionCreate', async (interaction) => {
 
       if (!charEntry.edits) charEntry.edits = {};
       if (!charEntry.edits.weapons) charEntry.edits.weapons = [];
+
+      if (action === 'list') {
+        const weapons = getCharacterWeapons(charEntry);
+        const lines = weapons.map(w => {
+          const attackBonus = w.attack ?? 0;
+          const damageBonus = w.damageBonus ? (w.damageBonus > 0 ? `+${w.damageBonus}` : `${w.damageBonus}`) : '';
+          const damageType = w.damageType === 'P' ? 'piercing'
+            : w.damageType === 'S' ? 'slashing'
+            : w.damageType === 'B' ? 'bludgeoning'
+            : (w.damageType ?? '').toLowerCase();
+          const traits = (w.traits ?? []).length ? ` (${w.traits.join(', ')})` : '';
+          return `• **${w.display ?? w.name}** ${attackBonus >= 0 ? '+' : ''}${attackBonus} to hit · ${w.die ?? '1d4'}${damageBonus} ${damageType}${traits}`;
+        });
+        const embed = new EmbedBuilder()
+          .setColor(0x9B59B6)
+          .setTitle(`${charEntry.name}'s Attacks`)
+          .setDescription(lines.length ? lines.join('\n').slice(0, 4000) : '*No attacks are recorded on this character yet.*')
+          .setFooter({ text: 'Use /char attack action:add to add a new attack.' });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
 
       const nameLower = name.toLowerCase();
       const existingIdx = charEntry.edits.weapons.findIndex(w =>
@@ -9054,7 +9089,11 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       // add/edit: collect the weapon fields
-      const attack = interaction.options.getInteger('attack');
+      let attack = null;
+      try { attack = interaction.options.getInteger('attack'); } catch {}
+      if (attack === null) {
+        try { attack = interaction.options.getInteger('bonus'); } catch {}
+      }
       const damage = interaction.options.getString('damage');
       const damageType = interaction.options.getString('type'); // B/P/S or word
       const traitsRaw = interaction.options.getString('traits');
@@ -16402,19 +16441,11 @@ client.on('interactionCreate', async (interaction) => {
             title: `${comp.displayName} attacks with ${a.name}!`, footer: `${char.name}'s companion`, thumbnail: comp.art ?? charEntry.art ?? null,
           });
         } else {
-          for (const w of (char.weapons ?? [])) {
-            const damageType = w.damageType === 'P' ? 'piercing'
-              : w.damageType === 'S' ? 'slashing'
-              : w.damageType === 'B' ? 'bludgeoning'
-              : (w.damageType ?? '').toLowerCase();
+          for (const attack of combatV2CharacterAttacks(charEntry)) {
             attacks.push({
-              name: w.display ?? w.name,
-              bonus: w.attack ?? 0,
-              damage: `${w.die ?? '1d4'}${w.damageBonus ? (w.damageBonus > 0 ? '+' : '') + w.damageBonus : ''}`,
-              damageType,
-              traits: w.traits ?? [],
-              title: `${char.name} attacks with ${w.display ?? w.name}!`,
-              footer: `${char.name} · Attack ${fmt(w.attack ?? 0)} · ${w.die ?? ''}${w.damageBonus ? fmt(w.damageBonus) : ''} ${damageType}`,
+              ...attack,
+              title: `${char.name} attacks with ${attack.name}!`,
+              footer: `${char.name} · Attack ${fmt(attack.bonus ?? 0)} · ${attack.damage ?? ''} ${attack.damageType ?? ''}`,
               thumbnail: charEntry.art ?? null,
             });
           }
@@ -17233,7 +17264,7 @@ client.on('interactionCreate', async (interaction) => {
     if (error) return interaction.reply({ content: error, ephemeral: true });
 
     const c = charEntry.data;
-    const weapons = c.weapons ?? [];
+    const weapons = getCharacterWeapons(charEntry);
 
     const weapon = weapons.find(w => (w.display ?? w.name).toLowerCase() === weaponName.toLowerCase())
       ?? weapons.find(w => (w.display ?? w.name).toLowerCase().includes(weaponName.toLowerCase()));

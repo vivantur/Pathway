@@ -159,6 +159,18 @@ const charCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('type').setDescription('Damage type abbreviation: B, P, or S (or a word like slashing). Required when adding.').setRequired(false))
     .addStringOption(o => o.setName('traits').setDescription('Comma-separated traits (e.g. agile, reach, finesse)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('attack')
+    .setDescription('Add, edit, list, or remove attacks on your character sheet.')
+    .addStringOption(o => o.setName('action').setDescription('What to do').setRequired(true).addChoices(
+      { name: 'Add', value: 'add' }, { name: 'Edit', value: 'edit' },
+      { name: 'List', value: 'list' }, { name: 'Remove', value: 'remove' },
+    ))
+    .addStringOption(o => o.setName('name').setDescription('Attack name (e.g. Longsword, Jaws, Ray of Frost)').setRequired(false).setAutocomplete(true))
+    .addIntegerOption(o => o.setName('bonus').setDescription('Attack bonus (e.g. 8 for +8). Required when adding.').setRequired(false))
+    .addStringOption(o => o.setName('damage').setDescription('Damage expression (e.g. 1d8+4). Required when adding.').setRequired(false))
+    .addStringOption(o => o.setName('type').setDescription('Damage type abbreviation: B, P, or S (or a word like slashing). Required when adding.').setRequired(false))
+    .addStringOption(o => o.setName('traits').setDescription('Comma-separated traits (e.g. agile, reach, finesse)').setRequired(false))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('item')
     .setDescription('Add, edit, or remove an inventory item.')
     .addStringOption(o => o.setName('action').setDescription('What to do').setRequired(true).addChoices({ name: 'Add', value: 'add' }, { name: 'Edit', value: 'edit' }, { name: 'Remove', value: 'remove' }))
