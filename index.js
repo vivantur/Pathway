@@ -9428,6 +9428,40 @@ client.on('interactionCreate', async (interaction) => {
       const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
       {
         const activeKey = userChars._activeChar;
+        {
+        const displayName = interaction.member?.displayName ?? interaction.user.displayName ?? interaction.user.username;
+        const avatarUrl = interaction.user.displayAvatarURL({ extension: 'png', size: 64 });
+        const sortedKeys = [...charKeys].sort((a, b) => {
+          const aName = userChars[a]?.data?.name ?? userChars[a]?.name ?? a;
+          const bName = userChars[b]?.data?.name ?? userChars[b]?.name ?? b;
+          return String(aName).localeCompare(String(bName));
+        });
+        const activeChar = activeKey && userChars[activeKey]
+          ? (userChars[activeKey]?.data?.name ?? userChars[activeKey]?.name ?? activeKey)
+          : 'None set';
+        const names = sortedKeys.map(k => {
+          const c = userChars[k];
+          return c?.data?.name ?? c?.name ?? k;
+        });
+        const description = charKeys.length
+          ? [
+              '**Your characters**',
+              '',
+              `**Active Character:** ${activeChar}`,
+              '',
+              names.join(', '),
+            ].join('\n').slice(0, 4096)
+          : '**Your characters**\n\nNo saved characters yet.';
+        const charListEmbed = new EmbedBuilder()
+          .setColor(0xff9b45)
+          .setAuthor({ name: displayName, iconURL: avatarUrl })
+          .setDescription(description);
+        if (charKeys.length === 0) {
+          charListEmbed.setFooter({ text: 'Use /char add, /char import, or /char create to add one.' });
+        }
+        return interaction.reply({ embeds: [charListEmbed] });
+        }
+/*
         if (charKeys.length === 0) {
           const emptyEmbed = new EmbedBuilder()
             .setColor(0x7c3aed)
@@ -9478,6 +9512,8 @@ client.on('interactionCreate', async (interaction) => {
         return `• **${c.name}**${activeTag}${artTag}`;
       }).join('\n');
       await interaction.reply(`Your characters:\n${list}`);
+*/
+    }
     }
 
     // /char import — fetch from Pathbuilder's JSON ID endpoint.
