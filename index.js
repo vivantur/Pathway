@@ -8867,6 +8867,14 @@ client.on('interactionCreate', async (interaction) => {
             ?? Object.keys(skillLabels).find(key => key.startsWith(q) || skillLabels[key].toLowerCase().startsWith(q))
             ?? null;
         };
+        const normalizeLoreTopic = (value) => {
+          const raw = String(value ?? '').trim();
+          const topic = raw
+            .replace(/^lore\s*[:\-]?\s*/i, '')
+            .replace(/\s+lore$/i, '')
+            .trim();
+          return topic && topic.toLowerCase() !== raw.toLowerCase() ? topic : null;
+        };
         if (!['set', 'list', 'remove'].includes(action)) {
           return interaction.reply({ content: 'Action must be `set`, `list`, or `remove`.', ephemeral: true });
         }
@@ -8887,6 +8895,28 @@ client.on('interactionCreate', async (interaction) => {
             const mark = charEntry.edits.skillOverrides[key] ? ' *manual*' : '';
             return `• **${skillLabels[key]}** ${mod.modifier >= 0 ? '+' : ''}${mod.modifier} (${mod.profLabel})${mark}`;
           });
+          const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => String(s).toLowerCase()));
+          const loreMap = new Map();
+          for (const [name, profNum] of (charEntry.data?.lores ?? [])) {
+            if (!name || hiddenLores.has(String(name).toLowerCase())) continue;
+            loreMap.set(String(name).toLowerCase(), { name, rank: profNum, total: null, manual: false });
+          }
+          for (const lore of (charEntry.edits?.lores ?? [])) {
+            if (!lore?.name || hiddenLores.has(String(lore.name).toLowerCase())) continue;
+            loreMap.set(String(lore.name).toLowerCase(), {
+              name: lore.name,
+              rank: lore.rank ?? 0,
+              total: (typeof lore.total === 'number') ? lore.total : null,
+              manual: true,
+            });
+          }
+          for (const lore of loreMap.values()) {
+            const intMod = Math.floor((((charEntry.data?.abilities ?? {}).int ?? 10) - 10) / 2);
+            const computedTotal = intMod + calcProfNum(lore.rank, charEntry.data?.level ?? 1);
+            const totalValue = lore.total !== null ? lore.total : computedTotal;
+            const rankLabel = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[lore.rank] ?? 'Untrained';
+            lines.push(`• **Lore: ${lore.name}** ${totalValue >= 0 ? '+' : ''}${totalValue} (${rankLabel})${lore.manual ? ' *manual*' : ''}`);
+          }
           const embed = new EmbedBuilder()
             .setColor(0x2a8fbd)
             .setTitle(`${charEntry.name}'s Skills`)
@@ -8901,7 +8931,49 @@ client.on('interactionCreate', async (interaction) => {
 
         const skillKeyLower = normalizeSkill(skillName);
         if (!skillKeyLower) {
-          return interaction.reply({ content: `Unknown skill "${skillName}". Valid: ${Object.values(skillLabels).join(', ')}.`, ephemeral: true });
+          const loreTopic = normalizeLoreTopic(skillName);
+          if (!loreTopic) {
+            return interaction.reply({ content: `Unknown skill "${skillName}". For Lore, type it like \`Lore: Dragons\` or \`Dragons Lore\`.`, ephemeral: true });
+          }
+          if (!charEntry.edits.lores) charEntry.edits.lores = [];
+          const topicLower = loreTopic.toLowerCase();
+          const existingIdx = charEntry.edits.lores.findIndex(l => String(l.name ?? '').toLowerCase() === topicLower);
+          const inJson = (charEntry.data?.lores ?? []).some(([name]) => String(name ?? '').toLowerCase() === topicLower);
+
+          if (action === 'remove') {
+            const wasInEdits = existingIdx !== -1;
+            if (!wasInEdits && !inJson) {
+              return interaction.reply({ content: `No **Lore: ${loreTopic}** found on **${charEntry.name}**.`, ephemeral: true });
+            }
+            if (wasInEdits) charEntry.edits.lores.splice(existingIdx, 1);
+            if (inJson) {
+              if (!charEntry.edits.hiddenLores) charEntry.edits.hiddenLores = [];
+              if (!charEntry.edits.hiddenLores.some(h => String(h).toLowerCase() === topicLower)) charEntry.edits.hiddenLores.push(loreTopic);
+            }
+            saveCharacters(characters);
+            return interaction.reply({ content: `Removed **Lore: ${loreTopic}** from **${charEntry.name}**.`, ephemeral: true });
+          }
+
+          if (charEntry.edits.hiddenLores) {
+            charEntry.edits.hiddenLores = charEntry.edits.hiddenLores.filter(h => String(h).toLowerCase() !== topicLower);
+          }
+          const loreEntry = { name: loreTopic };
+          if (rankStr !== null) loreEntry.rank = rankMap[rankStr.toLowerCase()];
+          else if (total === null) loreEntry.rank = 2;
+          if (total !== null) loreEntry.total = total;
+          if (existingIdx >= 0) {
+            charEntry.edits.lores[existingIdx] = {
+              ...charEntry.edits.lores[existingIdx],
+              ...loreEntry,
+              name: loreTopic,
+            };
+          } else {
+            charEntry.edits.lores.push(loreEntry);
+          }
+          saveCharacters(characters);
+          const rankText = rankStr !== null ? rankStr.toLowerCase() : (total === null ? 'trained' : null);
+          const detail = [rankText ? `rank **${rankText}**` : null, total !== null ? `flat total **${total >= 0 ? '+' : ''}${total}**` : null].filter(Boolean).join(' and ');
+          return interaction.reply({ content: `Set **Lore: ${loreTopic}** on **${charEntry.name}** to ${detail}. Use \`/sheet\` to see it.`, ephemeral: true });
         }
 
         if (action === 'remove') {
