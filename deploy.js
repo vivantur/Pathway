@@ -138,8 +138,11 @@ const charCommand = new SlashCommandBuilder()
     .addIntegerOption(o => o.setName('value').setDescription('New value').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('skill')
-    .setDescription('Override a skill proficiency rank (or set a flat total).')
-    .addStringOption(o => o.setName('name').setDescription('Skill name (e.g. Stealth, Athletics)').setRequired(true))
+    .setDescription('Add, list, remove, or override a skill proficiency.')
+    .addStringOption(o => o.setName('name').setDescription('Skill name (e.g. Stealth, Athletics)').setRequired(false).setAutocomplete(true))
+    .addStringOption(o => o.setName('action').setDescription('What to do (default: set/add)').setRequired(false).addChoices(
+      { name: 'Set / Add', value: 'set' }, { name: 'List', value: 'list' }, { name: 'Remove override', value: 'remove' },
+    ))
     .addStringOption(o => rankChoices(o.setName('rank').setDescription('New proficiency rank').setRequired(false)))
     .addIntegerOption(o => o.setName('total').setDescription('Flat total bonus (overrides rank calculation if provided)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))

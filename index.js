@@ -4482,9 +4482,11 @@ function computeCharSkillModifier(charEntry, skillKey) {
   };
   const abilKey = skillAbilMap[skillKey];
   if (!abilKey) return null;
+  const override = charEntry.edits?.skillOverrides?.[skillKey] ?? null;
   const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
-  const profNum = prof[skillKey] ?? 0;
-  const modifier = abilMod + calcProfNum(profNum, lvl);
+  const profNum = override?.rank ?? prof[skillKey] ?? 0;
+  const computedModifier = abilMod + calcProfNum(profNum, lvl);
+  const modifier = (typeof override?.total === 'number') ? override.total : computedModifier;
   const profLabelMap = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
   const profLabel = profLabelMap[profNum] ?? 'Untrained';
   return { modifier, profLabel, profNum };
@@ -8506,6 +8508,15 @@ client.on('interactionCreate', async (interaction) => {
             }
           }
         }
+        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'skill') {
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          } else if (focused.name === 'name') {
+            suggestions = pick(Object.values(COMBAT_V2_SKILL_LABELS));
+          }
+        }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
           if (focused.name === 'character') {
             const characters = loadCharacters();
@@ -8836,11 +8847,94 @@ client.on('interactionCreate', async (interaction) => {
     // Use 'untrained' rank to clear an existing override.
     else if (sub === 'skill') {
       const charNameArg = interaction.options.getString('character');
-      const skillName = interaction.options.getString('name');
+      const action = interaction.options.getString('action') ?? 'set';
+      const skillName = interaction.options.getString('name')?.trim();
       const rankStr = interaction.options.getString('rank'); // optional
       const total = interaction.options.getInteger('total'); // optional
 
       const rankMap = { untrained: 0, trained: 2, expert: 4, master: 6, legendary: 8 };
+      {
+        const skillLabels = {
+          acrobatics: 'Acrobatics', arcana: 'Arcana', athletics: 'Athletics', crafting: 'Crafting',
+          deception: 'Deception', diplomacy: 'Diplomacy', intimidation: 'Intimidation', medicine: 'Medicine',
+          nature: 'Nature', occultism: 'Occultism', performance: 'Performance', religion: 'Religion',
+          society: 'Society', stealth: 'Stealth', survival: 'Survival', thievery: 'Thievery',
+        };
+        const normalizeSkill = (value) => {
+          const q = String(value ?? '').toLowerCase().trim();
+          const slug = q.replace(/[^a-z0-9]+/g, '');
+          return Object.keys(skillLabels).find(key => key === q || key.replace(/[^a-z0-9]+/g, '') === slug)
+            ?? Object.keys(skillLabels).find(key => key.startsWith(q) || skillLabels[key].toLowerCase().startsWith(q))
+            ?? null;
+        };
+        if (!['set', 'list', 'remove'].includes(action)) {
+          return interaction.reply({ content: 'Action must be `set`, `list`, or `remove`.', ephemeral: true });
+        }
+        if (rankStr !== null && !(rankStr.toLowerCase() in rankMap)) {
+          return interaction.reply({ content: `Invalid rank "${rankStr}". Use: untrained, trained, expert, master, or legendary.`, ephemeral: true });
+        }
+
+        const characters = loadCharacters();
+        const resolved = resolveChar(interaction.user.id, charNameArg, characters);
+        if (resolved.error) return interaction.reply({ content: resolved.error, ephemeral: true });
+        const { char: charEntry } = resolved;
+        if (!charEntry.edits) charEntry.edits = {};
+        if (!charEntry.edits.skillOverrides) charEntry.edits.skillOverrides = {};
+
+        if (action === 'list') {
+          const lines = Object.keys(skillLabels).map(key => {
+            const mod = computeCharSkillModifier(charEntry, key);
+            const mark = charEntry.edits.skillOverrides[key] ? ' *manual*' : '';
+            return `• **${skillLabels[key]}** ${mod.modifier >= 0 ? '+' : ''}${mod.modifier} (${mod.profLabel})${mark}`;
+          });
+          const embed = new EmbedBuilder()
+            .setColor(0x2a8fbd)
+            .setTitle(`${charEntry.name}'s Skills`)
+            .setDescription(lines.join('\n').slice(0, 4000))
+            .setFooter({ text: 'Use /char skill name:<skill> rank:trained to add a trained skill.' });
+          return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        if (!skillName) {
+          return interaction.reply({ content: 'Please provide a skill name, or use `action:list` to show all skills.', ephemeral: true });
+        }
+
+        const skillKeyLower = normalizeSkill(skillName);
+        if (!skillKeyLower) {
+          return interaction.reply({ content: `Unknown skill "${skillName}". Valid: ${Object.values(skillLabels).join(', ')}.`, ephemeral: true });
+        }
+
+        if (action === 'remove') {
+          const hadOverride = Object.prototype.hasOwnProperty.call(charEntry.edits.skillOverrides, skillKeyLower);
+          if (!hadOverride) {
+            return interaction.reply({ content: `**${skillLabels[skillKeyLower]}** does not have a manual override on **${charEntry.name}**.`, ephemeral: true });
+          }
+          delete charEntry.edits.skillOverrides[skillKeyLower];
+          saveCharacters(characters);
+          return interaction.reply({ content: `Removed manual override for **${skillLabels[skillKeyLower]}** on **${charEntry.name}**.`, ephemeral: true });
+        }
+
+        const override = {};
+        if (rankStr !== null) override.rank = rankMap[rankStr.toLowerCase()];
+        else if (total === null) override.rank = 2;
+        if (total !== null) override.total = total;
+
+        if (rankStr?.toLowerCase() === 'untrained' && total === null) {
+          delete charEntry.edits.skillOverrides[skillKeyLower];
+        } else {
+          charEntry.edits.skillOverrides[skillKeyLower] = override;
+        }
+        saveCharacters(characters);
+
+        const parts = [];
+        if (rankStr !== null) parts.push(`rank **${rankStr.toLowerCase()}**`);
+        else if (total === null) parts.push('rank **trained**');
+        if (total !== null) parts.push(`flat total **${total >= 0 ? '+' : ''}${total}**`);
+        const msg = (rankStr?.toLowerCase() === 'untrained' && total === null)
+          ? `Cleared override for **${skillLabels[skillKeyLower]}** on **${charEntry.name}**.`
+          : `Set **${skillLabels[skillKeyLower]}** on **${charEntry.name}** to ${parts.join(' and ')}. Use \`/sheet\` to see it.`;
+        return interaction.reply({ content: msg, ephemeral: true });
+      }
       const skillKeyLower = skillName.toLowerCase();
       const validSkills = new Set([
         'acrobatics','arcana','athletics','crafting','deception','diplomacy',
