@@ -1124,7 +1124,7 @@ function mergeCharacterOverlay(baseOverlay, incomingOverlay) {
   };
 }
 
-function saveImportedCharacter(userId, rawChar, { preserveOverlay = false, pathwayRow = null } = {}) {
+async function saveImportedCharacter(userId, rawChar, { preserveOverlay = false, pathwayRow = null } = {}) {
   const char = rawChar?.build ?? rawChar;
   if (!char || !char.name) {
     return { error: 'Pathbuilder data is missing a character name. Re-export and try again.' };
@@ -1190,7 +1190,7 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false, pathw
     characters[userId][key] = baseEntry;
   }
 
-  saveCharacters(characters);
+  await saveCharacters(characters);
   return { ok: true, key, name: char.name, level: char.level, replaced: existed };
 }
 
@@ -1261,7 +1261,7 @@ function createBlankCharacterData({ name, className, ancestry, heritage, level }
   };
 }
 
-function saveCreatedCharacter(userId, char) {
+async function saveCreatedCharacter(userId, char) {
   if (!char?.name) return { error: 'Character name is required.' };
   const characters = loadCharacters();
   if (!characters[userId]) characters[userId] = {};
@@ -1281,7 +1281,7 @@ function saveCreatedCharacter(userId, char) {
   };
   characters[userId][key] = entry;
   if (!characters[userId]._activeChar) characters[userId]._activeChar = key;
-  saveCharacters(characters);
+  await saveCharacters(characters);
   return { ok: true, key, name: char.name, level: char.level, maxHp: computeCharMaxHp(entry) };
 }
 
@@ -7874,7 +7874,7 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const char = createBlankCharacterData({ name, className, ancestry, heritage, level });
-          const saved = saveCreatedCharacter(interaction.user.id, char);
+          const saved = await saveCreatedCharacter(interaction.user.id, char);
           if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
           return interaction.editReply(
             `✅ **${saved.name}** created as a blank level ${saved.level} character.\n` +
@@ -8886,7 +8886,7 @@ client.on('interactionCreate', async (interaction) => {
         // isn't actually JSON (user uploaded the wrong file, etc.)
         const parsed = parsePastedPathbuilderJSON(rawText);
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
+        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         await interaction.editReply(`✅ **${saved.name}** saved! Use \`/sheet\` to view them.`);
       } catch (err) { console.error(err); await interaction.editReply('Something went wrong reading that file. Try again!'); }
@@ -8907,7 +8907,7 @@ client.on('interactionCreate', async (interaction) => {
             ? await fetchPathwayCharacter(parsedRef.id, interaction.user.id)
             : await fetchPathbuilderCharacter(parsedRef.id);
           if (fetched.error) return interaction.editReply(fetched.error);
-          const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true, pathwayRow: fetched.row });
+          const saved = await saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true, pathwayRow: fetched.row });
           if (saved.error) return interaction.editReply(`âŒ ${saved.error}`);
           if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
           if (parsedRef.type === 'pathway') {
@@ -8928,7 +8928,7 @@ client.on('interactionCreate', async (interaction) => {
         const rawText = await response.text();
         const parsed = parsePastedPathbuilderJSON(rawText);
         if (parsed.error) return interaction.editReply(`❌ ${parsed.error}`);
-        const saved = saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: true });
+        const saved = await saveImportedCharacter(interaction.user.id, parsed.char, { preserveOverlay: true });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
         await interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level}! *(hero points, XP, current HP, and bag preserved.)*`);
@@ -9983,7 +9983,7 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         // Import via the same path /char add uses
-        const saved = saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
+        const saved = await saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
         return interaction.editReply(
           `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +

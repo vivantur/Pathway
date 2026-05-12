@@ -413,7 +413,14 @@ function isSyncDegraded() { return _syncConsecutiveFailures >= SYNC_DEGRADED_THR
 // Called after saveCharacters to write character state to Supabase.
 // Accepts an optional usernamesByDiscordId Map so bot-only users (who have
 // never logged into the web app) get a users row auto-created on first save.
+//
+// Self-tracks via _trackSync so drainSupabaseSyncs() on SIGTERM always waits
+// for any in-flight character write before the process exits.
 async function syncAllCharactersToSupabase(characters, usernamesByDiscordId) {
+  return _trackSync(_doSyncAllCharacters(characters, usernamesByDiscordId));
+}
+
+async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
   try {
     const sb = getSupabase();
     if (!sb) return;
