@@ -1981,25 +1981,45 @@ function resolveChar(userId, nameArg, characters) {
 }
 
 function normalizeCharacterFeat(feat) {
+  const knownTypes = new Set([
+    'Heritage',
+    'Ancestry Feat',
+    'Class Feat',
+    'Archetype Feat',
+    'Skill Feat',
+    'General Feat',
+    'Awarded Feat',
+    'Other Feats',
+  ]);
+  const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+  const isKnownType = (value) => knownTypes.has(clean(value));
+  const isProbablyDescription = (value) => clean(value).length > 80 || /[.!?]\s/.test(clean(value));
   if (Array.isArray(feat)) {
-    const typeIndex = typeof feat[2] === 'string' ? 2 : 3;
-    const levelIndex = Number.isFinite(Number(feat[3])) ? 3 : 2;
+    const webType = isKnownType(feat[1]) ? clean(feat[1]) : '';
+    const pathbuilderType = isKnownType(feat[3]) ? clean(feat[3]) : '';
+    const type = webType || pathbuilderType || '';
+    const source = !isKnownType(feat[1]) && !isProbablyDescription(feat[1]) ? clean(feat[1])
+      : !isKnownType(feat[2]) && !isProbablyDescription(feat[2]) ? clean(feat[2])
+      : '';
+    const level = Number.isFinite(Number(feat[3])) ? feat[3]
+      : Number.isFinite(Number(feat[2])) ? feat[2]
+      : null;
     return {
-      name: String(feat[0] ?? '').trim(),
-      source: String(feat[1] ?? '').trim(),
-      level: feat[levelIndex] ?? null,
-      type: String(feat[typeIndex] ?? '').trim(),
+      name: clean(feat[0]),
+      source,
+      level,
+      type,
     };
   }
   if (feat && typeof feat === 'object') {
     return {
-      name: String(feat.name ?? feat.feat ?? '').trim(),
-      source: String(feat.source ?? feat.sourceText ?? '').trim(),
+      name: clean(feat.name ?? feat.feat),
+      source: isProbablyDescription(feat.source ?? feat.sourceText) ? '' : clean(feat.source ?? feat.sourceText),
       level: feat.level ?? feat.takenLevel ?? null,
-      type: String(feat.type ?? feat.category ?? '').trim(),
+      type: isKnownType(feat.type ?? feat.category) ? clean(feat.type ?? feat.category) : '',
     };
   }
-  return { name: String(feat ?? '').trim(), source: '', level: null, type: '' };
+  return { name: clean(feat), source: '', level: null, type: '' };
 }
 
 function buildCharacterFeatsFields(charEntry) {
@@ -2021,7 +2041,7 @@ function buildCharacterFeatsFields(charEntry) {
 
   const groups = new Map();
   for (const feat of feats) {
-    const group = feat.type || 'Other Feats';
+    const group = feat.type && feat.type.length <= 80 ? feat.type : 'Other Feats';
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(feat);
   }
