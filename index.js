@@ -1108,7 +1108,23 @@ function getBlankCharacterTemplate() {
 
 const MAX_CHARACTERS_PER_USER = 20;
 
-function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}) {
+function mergeCharacterOverlay(baseOverlay, incomingOverlay) {
+  if (!incomingOverlay || typeof incomingOverlay !== 'object' || Array.isArray(incomingOverlay)) {
+    return baseOverlay;
+  }
+  const base = (baseOverlay && typeof baseOverlay === 'object' && !Array.isArray(baseOverlay)) ? baseOverlay : {};
+  const incoming = incomingOverlay;
+  return {
+    ...base,
+    ...incoming,
+    daily: {
+      ...(base.daily ?? {}),
+      ...(incoming.daily ?? {}),
+    },
+  };
+}
+
+function saveImportedCharacter(userId, rawChar, { preserveOverlay = false, pathwayRow = null } = {}) {
   const char = rawChar?.build ?? rawChar;
   if (!char || !char.name) {
     return { error: 'Pathbuilder data is missing a character name. Re-export and try again.' };
@@ -1145,11 +1161,13 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
   if (preserveOverlay && prev) {
     // /char update / /char sync path: keep all bot-managed state.
     const preserved = {
-      heroPoints: prev.heroPoints,
-      xp: prev.xp,
+      heroPoints: Number.isFinite(Number(pathwayRow?.hero_points)) ? Number(pathwayRow.hero_points) : prev.heroPoints,
+      xp: Number.isFinite(Number(pathwayRow?.experience)) ? Number(pathwayRow.experience) : prev.xp,
       xpLog: prev.xpLog,
-      hp: prev.hp,
-      overlay: prev.overlay,
+      hp: Number.isFinite(Number(pathwayRow?.current_hp)) ? Number(pathwayRow.current_hp) : prev.hp,
+      dying: Number.isFinite(Number(pathwayRow?.dying)) ? Number(pathwayRow.dying) : prev.dying,
+      wounded: Number.isFinite(Number(pathwayRow?.wounded)) ? Number(pathwayRow.wounded) : prev.wounded,
+      overlay: mergeCharacterOverlay(prev.overlay, pathwayRow?.overlay),
       languages: prev.languages, // languages overlay, separate from `edits.languages`
       // Companions are bot-managed (added via /companion add, edited via
       // /companion edit) and have nothing to do with Pathbuilder data, so
@@ -1158,6 +1176,7 @@ function saveImportedCharacter(userId, rawChar, { preserveOverlay = false } = {}
       // wyvern silently vanished.
       companions: prev.companions,
       activeCompanion: prev.activeCompanion,
+      pathwayWebId: pathwayRow?.id ?? prev.pathwayWebId,
     };
     characters[userId][key] = { ...baseEntry, ...preserved };
     // Clamp current HP if max dropped.
@@ -1897,7 +1916,7 @@ async function fetchPathwayCharacter(pathwayId, discordId) {
 
   const { data: charRow, error: charErr } = await sb
     .from('characters')
-    .select('id, user_id, char_key, name, pathbuilder_data, updated_at')
+    .select('id, user_id, char_key, name, pathbuilder_data, current_hp, hero_points, dying, wounded, experience, overlay, updated_at')
     .eq('id', pathwayId)
     .maybeSingle();
   if (charErr) return { error: `❌ Could not read that Pathway character: ${charErr.message}` };
@@ -1930,7 +1949,7 @@ async function fetchPathwayCharacter(pathwayId, discordId) {
     };
   }
 
-  return { char, id: pathwayId, updatedAt: charRow.updated_at, charKey: charRow.char_key };
+  return { char, id: pathwayId, updatedAt: charRow.updated_at, charKey: charRow.char_key, row: charRow };
 }
 
 function resolveChar(userId, nameArg, characters) {
@@ -2060,6 +2079,22 @@ function buildCharacterFeatsFields(charEntry) {
     description: `${feats.length} feat${feats.length === 1 ? '' : 's'} recorded.${suffix}`,
     fields,
   };
+}
+
+function formatCharacterSpecials(charEntry) {
+  const specials = Array.isArray(charEntry?.data?.specials) ? charEntry.data.specials : [];
+  const lines = [];
+  for (const special of specials) {
+    const raw = typeof special === 'string'
+      ? special
+      : [special?.name, special?.details ?? special?.description].filter(Boolean).join(': ');
+    const cleaned = String(raw ?? '').replace(/\s+/g, ' ').trim();
+    if (!cleaned) continue;
+    const line = `• ${cleaned}`;
+    if ([...lines, line].join('\n').length > 1000) break;
+    lines.push(line);
+  }
+  return lines.join('\n');
 }
 
 function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
@@ -2503,12 +2538,46 @@ function getCharacterWeapons(charEntry) {
     if (!key || hiddenWeapons.has(key)) continue;
     weapons.set(key, w);
   }
+  for (const w of normalizePathwayCustomAttacks(c.custom_attacks)) {
+    const key = String(w.display ?? w.name ?? '').toLowerCase();
+    if (!key || hiddenWeapons.has(key)) continue;
+    weapons.set(key, w);
+  }
   for (const w of (charEntry?.edits?.weapons ?? [])) {
     const key = String(w.display ?? w.name ?? '').toLowerCase();
     if (!key || hiddenWeapons.has(key)) continue;
     weapons.set(key, w);
   }
   return [...weapons.values()];
+}
+
+function normalizePathwayCustomAttacks(customAttacks) {
+  if (!Array.isArray(customAttacks)) return [];
+  return customAttacks
+    .map((attack) => {
+      if (!attack || typeof attack !== 'object') return null;
+      const name = String(attack.name ?? '').trim();
+      if (!name) return null;
+      const bonusMatch = String(attack.bonus ?? '').match(/[+-]?\d+/);
+      const attackBonus = bonusMatch ? Number.parseInt(bonusMatch[0], 10) : 0;
+      const traits = Array.isArray(attack.traits)
+        ? attack.traits.map(t => String(t).trim()).filter(Boolean)
+        : String(attack.traits ?? '').split(',').map(t => t.trim()).filter(Boolean);
+      return {
+        name,
+        display: name,
+        attack: attackBonus,
+        die: String(attack.damage ?? '').trim() || '1d4',
+        damageBonus: 0,
+        damageType: String(attack.damage_type ?? attack.damageType ?? '').trim(),
+        traits,
+        action: String(attack.action ?? '').trim(),
+        range: String(attack.range ?? '').trim(),
+        notes: String(attack.notes ?? '').trim(),
+        source: 'pathway-web',
+      };
+    })
+    .filter(Boolean);
 }
 
 function combatV2CharacterAttacks(charEntry) {
@@ -8818,7 +8887,7 @@ client.on('interactionCreate', async (interaction) => {
             ? await fetchPathwayCharacter(parsedRef.id, interaction.user.id)
             : await fetchPathbuilderCharacter(parsedRef.id);
           if (fetched.error) return interaction.editReply(fetched.error);
-          const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true });
+          const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true, pathwayRow: fetched.row });
           if (saved.error) return interaction.editReply(`âŒ ${saved.error}`);
           if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
           if (parsedRef.type === 'pathway') {
@@ -9308,6 +9377,8 @@ client.on('interactionCreate', async (interaction) => {
         ((w.display ?? w.name) || '').toLowerCase() === nameLower
       );
       const inJson = (c.weapons ?? []).some(w =>
+        ((w.display ?? w.name) || '').toLowerCase() === nameLower
+      ) || normalizePathwayCustomAttacks(c.custom_attacks).some(w =>
         ((w.display ?? w.name) || '').toLowerCase() === nameLower
       );
 
@@ -10190,24 +10261,9 @@ client.on('interactionCreate', async (interaction) => {
       const col1 = allTrainedSkills.slice(0, half);
       const col2 = allTrainedSkills.slice(half);
       const skillCols = col1.map((s, i) => `${s.padEnd(24)}${col2[i] ?? ''}`).join('\n');
-      // Weapons: merge c.weapons (JSON-sourced) with edits.weapons (user-added
-      // via /char weapon add). Hide any in edits.hiddenWeapons. User-edited
-      // versions of the same-named weapon override the JSON version.
-      const jsonWeapons = c.weapons ?? [];
-      const editWeapons = charEntry.edits?.weapons ?? [];
-      const hiddenWeapons = new Set((charEntry.edits?.hiddenWeapons ?? []).map(n => n.toLowerCase()));
-      const weaponMap = new Map();
-      for (const w of jsonWeapons) {
-        const key = (w.display ?? w.name ?? '').toLowerCase();
-        if (!key || hiddenWeapons.has(key)) continue;
-        weaponMap.set(key, w);
-      }
-      for (const w of editWeapons) {
-        const key = (w.display ?? w.name ?? '').toLowerCase();
-        if (!key || hiddenWeapons.has(key)) continue;
-        weaponMap.set(key, w); // edits win over JSON at same name
-      }
-      const mergedWeapons = [...weaponMap.values()];
+      // Weapons: merge Pathbuilder weapons, Pathway web custom attacks, and
+      // bot-added attacks. User-edited versions of the same-named weapon win.
+      const mergedWeapons = getCharacterWeapons(charEntry);
       let attackLines = '';
       if (mergedWeapons.length > 0) {
         mergedWeapons.forEach(w => {
@@ -10248,6 +10304,8 @@ client.on('interactionCreate', async (interaction) => {
           ...(overriddenFields.length > 0 ? [{ name: '⚠️ Manual overrides', value: `The following values are manually set (ignoring JSON): ${overriddenFields.join(', ')}. Use \`/char stat field:<field> action:clear\` to revert.`, inline: false }] : []),
         )
         .setFooter({ text: `Pathfinder 2e · Saved ${charEntry.saved?.split('T')[0] ?? ''}` });
+      const specialLines = formatCharacterSpecials(charEntry);
+      if (specialLines) embed.addFields({ name: '✨ Special Abilities', value: specialLines, inline: false });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {
