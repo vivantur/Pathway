@@ -2117,9 +2117,33 @@ function formatCharacterSpecials(charEntry) {
   return lines.join('\n');
 }
 
+// Pathway brand colors used across roll embeds. Gold matches the d20 art.
+const PATHWAY_GOLD = 0xC9A24A;
+
+// Pathway dice fallback art shown when a character/companion has no portrait
+// set. Loaded once at startup; if the file is missing, embeds gracefully omit
+// the thumbnail. Attach via files:[...] using PATHWAY_DICE_NAME, then
+// reference in the embed as `attachment://${PATHWAY_DICE_NAME}`.
+const PATHWAY_DICE_NAME = 'pathway-dice.png';
+const PATHWAY_DICE_REF = `attachment://${PATHWAY_DICE_NAME}`;
+let PATHWAY_DICE_BUFFER = null;
+try {
+  PATHWAY_DICE_BUFFER = fs.readFileSync(path.join(__dirname, 'assets', PATHWAY_DICE_NAME));
+} catch {
+  // No fallback art on disk — embeds will render without a thumbnail.
+}
+
+// Files array to pass alongside any roll embed. Empty if the caller has a real
+// thumbnail URL or if the fallback asset isn't on disk.
+function rollFallbackFiles(thumbnail) {
+  if (thumbnail || !PATHWAY_DICE_BUFFER) return [];
+  return [new AttachmentBuilder(PATHWAY_DICE_BUFFER, { name: PATHWAY_DICE_NAME })];
+}
+
 function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
-  const embed = new EmbedBuilder().setColor(0x7289DA).setTitle(title).setDescription(breakdown);
+  const embed = new EmbedBuilder().setColor(PATHWAY_GOLD).setTitle(title).setDescription(breakdown);
   if (thumbnail) embed.setThumbnail(thumbnail);
+  else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
   if (charName) embed.setFooter({ text: charName });
   return embed;
 }
@@ -2129,7 +2153,7 @@ function formatRollBreakdown(dieRoll, modifier, extraBonus, total, sides) {
   const isFumble = sides === 20 && dieRoll === 1;
   const modPart = modifier !== 0 ? ` + ${modifier}` : '';
   const extraPart = extraBonus && extraBonus !== 0 ? ` + ${extraBonus}` : '';
-  let line = `1d20 (${dieRoll})${modPart}${extraPart} = **${total}**`;
+  let line = `1d20 (${dieRoll})${modPart}${extraPart} = \`${total}\``;
   if (isCrit) line += '\n⭐ Natural 20!';
   if (isFumble) line += '\n💀 Natural 1!';
   return line;
@@ -2701,22 +2725,29 @@ function combatV2FindSkill(actor, input) {
   return null;
 }
 
-function combatV2CheckEmbed(actor, result) {
+function combatV2CheckEmbed(actor, result, thumbnail = null) {
   const lines = [
     `1d20 (${result.die}) ${fmt(result.stat)}`,
   ];
   if (result.effectBonus) lines[0] += ` ${fmt(result.effectBonus)} effects`;
   if (result.bonus) lines[0] += ` ${fmt(result.bonus)} bonus`;
-  lines[0] += ` = **${result.total}**`;
+  lines[0] += ` = \`${result.total}\``;
   if (result.dc != null) lines.push(`DC ${result.dc}: **${combatV2Rolls.degreeLabel(result.degree)}**`);
-  return new EmbedBuilder()
+  // Normalize "Performance Check" / "Fortitude Save" / "Spell Attack" into
+  // natural-language titles: "Actor makes a Performance check!". The label
+  // suffix is lowercased so the title reads like prose, not a column header.
+  const prettyLabel = String(result.label ?? '').replace(/ (Check|Save|Attack)$/i, (_m, w) => ` ${w.toLowerCase()}`);
+  const embed = new EmbedBuilder()
     .setColor(result.degree === 'criticalSuccess' ? 0x2ecc71
       : result.degree === 'success' ? 0x27ae60
       : result.degree === 'criticalFailure' ? 0x992d22
       : result.degree === 'failure' ? 0xc0392b
-      : 0x5865f2)
-    .setTitle(`${actor.name}: ${result.label}`)
+      : PATHWAY_GOLD)
+    .setTitle(`${actor.name} makes a ${prettyLabel}!`)
     .setDescription(lines.join('\n'));
+  if (thumbnail) embed.setThumbnail(thumbnail);
+  else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
+  return embed;
 }
 
 function combatV2SaveKey(saveType) {
@@ -12440,7 +12471,11 @@ client.on('interactionCreate', async (interaction) => {
     const total    = dieRoll + modifier + extraBonus;
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const skillDisplay = skillName.charAt(0).toUpperCase() + skillName.slice(1);
-    await interaction.editReply({ embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: charEntry.art ?? null })] });
+    const skillThumb = charEntry.art ?? null;
+    await interaction.editReply({
+      embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: skillThumb })],
+      files: rollFallbackFiles(skillThumb),
+    });
   }
 
   // ─── /perception ─────────────────────────────────────────────────
@@ -12458,12 +12493,16 @@ client.on('interactionCreate', async (interaction) => {
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const total = dieRoll + modifier + extraBonus;
-    await interaction.editReply({ embeds: [buildRollEmbed({
-      title: `👁️ ${c.name} rolls Perception!`,
-      breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
-      charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} Perception (${fmt(modifier)})`,
-      thumbnail: charEntry.art ?? null,
-    })] });
+    const perceptionThumb = charEntry.art ?? null;
+    await interaction.editReply({
+      embeds: [buildRollEmbed({
+        title: `👁️ ${c.name} rolls Perception!`,
+        breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
+        charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} Perception (${fmt(modifier)})`,
+        thumbnail: perceptionThumb,
+      })],
+      files: rollFallbackFiles(perceptionThumb),
+    });
   }
 
   // ─── /initiative ─────────────────────────────────────────────────
@@ -12507,12 +12546,16 @@ client.on('interactionCreate', async (interaction) => {
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const total = dieRoll + modifier + extraBonus;
-    await interaction.editReply({ embeds: [buildRollEmbed({
-      title: `⚔️ ${c.name} rolls Initiative!`,
-      breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
-      charName: `${c.name} · ${sourceLabel} (${fmt(modifier)}) · ${profLabels[profNum] ?? 'Untrained'}`,
-      thumbnail: charEntry.art ?? null,
-    })] });
+    const initThumb = charEntry.art ?? null;
+    await interaction.editReply({
+      embeds: [buildRollEmbed({
+        title: `⚔️ ${c.name} rolls Initiative!`,
+        breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
+        charName: `${c.name} · ${sourceLabel} (${fmt(modifier)}) · ${profLabels[profNum] ?? 'Untrained'}`,
+        thumbnail: initThumb,
+      })],
+      files: rollFallbackFiles(initThumb),
+    });
   }
 
   // ─── /save ───────────────────────────────────────────────────────
@@ -12536,7 +12579,11 @@ client.on('interactionCreate', async (interaction) => {
     const total    = dieRoll + modifier + extraBonus;
     const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const saveDisplay = saveType.charAt(0).toUpperCase() + saveType.slice(1);
-    await interaction.editReply({ embeds: [buildRollEmbed({ title: `${c.name} makes a ${saveDisplay} save!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: charEntry.art ?? null })] });
+    const saveThumb = charEntry.art ?? null;
+    await interaction.editReply({
+      embeds: [buildRollEmbed({ title: `${c.name} makes a ${saveDisplay} save!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: saveThumb })],
+      files: rollFallbackFiles(saveThumb),
+    });
   }
 
   // ─── /ancestry ───────────────────────────────────────────────────
@@ -15657,6 +15704,7 @@ client.on('interactionCreate', async (interaction) => {
       const dc = interaction.options.getInteger('dc');
       const bonus = interaction.options.getInteger('bonus') ?? 0;
       let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+      let thumbnail = null;
 
       if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
         return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
@@ -15666,6 +15714,7 @@ client.on('interactionCreate', async (interaction) => {
         const characters = loadCharacters();
         const { error, char: charEntry } = resolveChar(userId, null, characters);
         if (error) return interaction.reply({ content: error, ephemeral: true });
+        thumbnail = charEntry.art ?? null;
         actor = {
           name: charEntry.data.name,
           ownerId: userId,
@@ -15682,7 +15731,7 @@ client.on('interactionCreate', async (interaction) => {
       const stat = combatV2SaveModifier(actor, saveKey, interaction.guildId);
       if (stat == null) return interaction.reply({ content: `**${actor.name}** does not have a ${saveLabels[saveKey] ?? saveKey} modifier recorded.`, ephemeral: true });
       const result = combatV2Rolls.rollCheck({ actor, stat: Number(stat), dc, bonus, label: saveLabels[saveKey] ?? 'Save', effectKind: 'save' });
-      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
+      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result, thumbnail)], files: rollFallbackFiles(thumbnail) });
     }
 
     if (sub === 'skill') {
@@ -15690,6 +15739,7 @@ client.on('interactionCreate', async (interaction) => {
       const dc = interaction.options.getInteger('dc');
       const bonus = interaction.options.getInteger('bonus') ?? 0;
       let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
+      let thumbnail = null;
 
       if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
         return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
@@ -15699,6 +15749,7 @@ client.on('interactionCreate', async (interaction) => {
         const characters = loadCharacters();
         const { error, char: charEntry } = resolveChar(userId, null, characters);
         if (error) return interaction.reply({ content: error, ephemeral: true });
+        thumbnail = charEntry.art ?? null;
         actor = {
           name: charEntry.data.name,
           ownerId: userId,
@@ -15713,7 +15764,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `No skill matching **"${skillName}"** found for **${actor.name}**. Available: ${available}.`, ephemeral: true });
       }
       const result = combatV2Rolls.rollCheck({ actor, stat: skill.modifier, dc, bonus, label: `${skill.label} Check`, effectKind: 'skill' });
-      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result)] });
+      return interaction.reply({ embeds: [combatV2CheckEmbed(actor, result, thumbnail)], files: rollFallbackFiles(thumbnail) });
     }
 
     if (sub === 'cast') {
