@@ -79,12 +79,13 @@ function renderAttackResult(result) {
   ].filter(Boolean);
   const lines = [
     `**Attack Roll**`,
-    `${attackParts.join(' ')} = **${result.total}**`,
+    `${attackParts.join(' ')} = \`${result.total}\``,
   ];
   if (target && result.ac != null) lines.push(`vs **${target.name}** AC ${result.ac}: **${degreeLabel(result.degree)}**`);
   if (result.damageRoll && ['success', 'criticalSuccess'].includes(result.degree ?? 'success')) {
     const crit = result.degree === 'criticalSuccess' ? ' (crit x2)' : '';
-    lines.push('', `**Damage${crit}**`, `${result.damageRoll.display} = **${result.finalDamage} ${attack.damageType ?? ''}**`);
+    const damageTypeStr = attack.damageType ? ` ${attack.damageType}` : '';
+    lines.push('', `**Damage${crit}**`, `${result.damageRoll.display} = \`${result.finalDamage}${damageTypeStr}\``);
     if (result.defenseNotes.length) lines.push(`*${result.defenseNotes.join(' · ')}*`);
   }
   return new EmbedBuilder()

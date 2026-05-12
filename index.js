@@ -11955,6 +11955,10 @@ client.on('interactionCreate', async (interaction) => {
 
       const [result] = combatV2Rolls.rollAttack({ attacker, target, attack, map: mapOverride, count: 1 });
       const embed = combatV2Render.renderAttackResult(result).setTitle(`${attacker.name} attacks with ${attack.name}`);
+      // Monster art lookup — guild-specific override first, then bestiary fallback.
+      const thumbnail = lookupMonsterArt(interaction.guildId, attacker.name);
+      if (thumbnail) embed.setThumbnail(thumbnail);
+      else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
       let content;
       if (['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
         const beforeHp = target.hp;
@@ -11962,7 +11966,7 @@ client.on('interactionCreate', async (interaction) => {
         content = `**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
       }
       if (mapOverride === null) attacker.attacksThisTurn = (attacker.attacksThisTurn ?? 0) + 1;
-      await interaction.reply({ content, embeds: [embed] });
+      await interaction.reply({ content, embeds: [embed], files: rollFallbackFiles(thumbnail) });
       await updateCombatV2Summary(interaction.channel, v2Encounter);
       return;
     }
@@ -12072,7 +12076,10 @@ client.on('interactionCreate', async (interaction) => {
     const outOfCombatEmbed = combatV2Render.renderAttackResult(outOfCombatResult)
       .setTitle(`${outOfCombatDisplayName} attacks${outOfCombatTargetName ? ` ${outOfCombatTargetName}` : ''} with ${outOfCombatAttack.name}`)
       .setFooter({ text: `${outOfCombatDisplayName} · out of initiative${outOfCombatAttack.traits?.length ? ` · ${outOfCombatAttack.traits.join(', ')}` : ''}` });
-    return interaction.reply({ embeds: [outOfCombatEmbed] });
+    const outOfCombatThumb = lookupMonsterArt(interaction.guildId, outOfCombatDisplayName);
+    if (outOfCombatThumb) outOfCombatEmbed.setThumbnail(outOfCombatThumb);
+    else if (PATHWAY_DICE_BUFFER) outOfCombatEmbed.setThumbnail(PATHWAY_DICE_REF);
+    return interaction.reply({ embeds: [outOfCombatEmbed], files: rollFallbackFiles(outOfCombatThumb) });
 
     const enc = getEncounter(channelId);
     if (userId !== enc.gmId) return interaction.reply({ content: '❌ Only the GM can use `/mattack`.', ephemeral: true });
@@ -15649,15 +15656,27 @@ client.on('interactionCreate', async (interaction) => {
       let actor = encounter ? combatV2PickActor(encounter, userId, null) : null;
       let target = encounter ? combatV2PickTarget(encounter, actor, targetName) : null;
       const inCombat = !!actor;
+      let thumbnail = null;
 
       if (actor && userId !== encounter.gmId && actor.ownerId !== userId) {
         return interaction.reply({ content: 'It is not your combatant. Use `/init view` to check the tracker.', ephemeral: true });
+      }
+
+      // Resolve the attacker's portrait. For an in-encounter combatant, walk
+      // the owner's characters/companions to find the matching entry. For an
+      // ad-hoc actor (no active encounter), the charEntry we just loaded has
+      // it directly.
+      if (actor) {
+        const characters = loadCharacters();
+        const match = findCharacterEntryForCombatant(characters, actor);
+        thumbnail = match?.companion?.art ?? match?.char?.art ?? null;
       }
 
       if (!actor) {
         const characters = loadCharacters();
         const { error, char: charEntry } = resolveChar(userId, null, characters);
         if (error) return interaction.reply({ content: error, ephemeral: true });
+        thumbnail = charEntry.art ?? null;
         actor = {
           id: `char-${userId}`,
           name: charEntry.data.name,
@@ -15687,7 +15706,10 @@ client.on('interactionCreate', async (interaction) => {
       const embeds = [];
       const hpLines = [];
       for (const result of results) {
-        embeds.push(combatV2Render.renderAttackResult(result).setTitle(`${actor.name} attacks with ${attack.name}`));
+        const embed = combatV2Render.renderAttackResult(result).setTitle(`${actor.name} attacks with ${attack.name}`);
+        if (thumbnail) embed.setThumbnail(thumbnail);
+        else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
+        embeds.push(embed);
         if (inCombat && target && ['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
           const beforeHp = target.hp;
           const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
@@ -15696,7 +15718,11 @@ client.on('interactionCreate', async (interaction) => {
       }
       if (inCombat && mapOverride === null) actor.attacksThisTurn = (actor.attacksThisTurn ?? 0) + count;
       if (inCombat) await updateCombatV2Summary(interaction.channel, encounter);
-      return interaction.reply({ content: hpLines.length ? hpLines.join('\n') : undefined, embeds: embeds.slice(0, 10) });
+      return interaction.reply({
+        content: hpLines.length ? hpLines.join('\n') : undefined,
+        embeds: embeds.slice(0, 10),
+        files: rollFallbackFiles(thumbnail),
+      });
     }
 
     if (sub === 'save') {
