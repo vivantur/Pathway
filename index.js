@@ -32,6 +32,7 @@ const {
   syncAllMonsterAttacksToSupabase,
   seedJsonCache,
 } = require('./utils/storage');
+const { getSupabase } = require('./utils/supabase');
 
 // Fuzzy matching for autocomplete dropdowns and "Did you mean?" fallback
 // messages on lookup commands. fuzzyPick is a drop-in replacement for the
@@ -1814,6 +1815,28 @@ function parsePathbuilderRef(raw) {
   };
 }
 
+const PATHWAY_CHARACTER_ID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+function parseCharacterUpdateRef(raw) {
+  if (!raw || typeof raw !== 'string') {
+    return { error: 'Please provide a Pathbuilder ID/export URL or Pathway JSON ID.' };
+  }
+  const trimmed = raw.trim();
+  const pathwayMatch = trimmed.match(PATHWAY_CHARACTER_ID_RE);
+  if (pathwayMatch) return { type: 'pathway', id: pathwayMatch[0].toLowerCase() };
+
+  const pathbuilderRef = parsePathbuilderRef(trimmed);
+  if (pathbuilderRef.error) {
+    return {
+      error:
+        'Could not find a valid character ID in that input. Paste a Pathway JSON ID ' +
+        '(e.g. `e33b3c85-03d5-44f0-9cc1-40a139a0a7db`), a Pathbuilder code ' +
+        '(e.g. `122550`), or a Pathbuilder Export JSON URL.',
+    };
+  }
+  return { type: 'pathbuilder', id: pathbuilderRef.id };
+}
+
 // Fetch a character by Pathbuilder ID. Returns { char, id } or { error }.
 // Centralizes the fetch/parse/error-handling so /char import and /char sync
 // don't drift apart.
@@ -1861,6 +1884,53 @@ async function fetchPathbuilderCharacter(id) {
     return { error: '❌ Got a response, but no character data in it. Try again with a fresh ID.' };
   }
   return { char, id };
+}
+
+async function fetchPathwayCharacter(pathwayId, discordId) {
+  const sb = getSupabase();
+  if (!sb) {
+    return {
+      error:
+        '❌ Supabase is not configured for this bot process, so I cannot read Pathway web JSON IDs here yet.',
+    };
+  }
+
+  const { data: charRow, error: charErr } = await sb
+    .from('characters')
+    .select('id, user_id, char_key, name, pathbuilder_data, updated_at')
+    .eq('id', pathwayId)
+    .maybeSingle();
+  if (charErr) return { error: `❌ Could not read that Pathway character: ${charErr.message}` };
+  if (!charRow) return { error: `❌ No Pathway web character found for JSON ID \`${pathwayId}\`.` };
+
+  if (charRow.user_id) {
+    const { data: userRow, error: userErr } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', String(discordId))
+      .maybeSingle();
+    if (userErr) return { error: `❌ Could not verify the Pathway character owner: ${userErr.message}` };
+    if (!userRow?.id) {
+      return {
+        error:
+          '❌ I found that Pathway character, but your Discord account is not linked to a Pathway web account in Supabase.',
+      };
+    }
+    if (userRow.id !== charRow.user_id) {
+      return { error: '❌ That Pathway JSON ID belongs to a different Pathway web account.' };
+    }
+  }
+
+  const stored = charRow.pathbuilder_data;
+  const char = stored?.build ?? stored;
+  if (!char || typeof char !== 'object' || !char.name) {
+    return {
+      error:
+        `❌ Pathway web character \`${pathwayId}\` does not have usable Pathbuilder sheet data saved yet.`,
+    };
+  }
+
+  return { char, id: pathwayId, updatedAt: charRow.updated_at, charKey: charRow.char_key };
 }
 
 function resolveChar(userId, nameArg, characters) {
@@ -8738,17 +8808,22 @@ client.on('interactionCreate', async (interaction) => {
       const attachment = interaction.options.getAttachment('file');
       const idInput = interaction.options.getString('id');
       if (!attachment && !idInput) {
-        return interaction.editReply('Please attach a `.json`/`.txt` file or provide a Pathbuilder JSON ID.');
+        return interaction.editReply('Please attach a `.json`/`.txt` file, provide a Pathbuilder JSON ID, or provide a Pathway web JSON ID.');
       }
       if (!attachment) {
         try {
-          const parsedRef = parsePathbuilderRef(idInput);
+          const parsedRef = parseCharacterUpdateRef(idInput);
           if (parsedRef.error) return interaction.editReply(`âŒ ${parsedRef.error}`);
-          const fetched = await fetchPathbuilderCharacter(parsedRef.id);
+          const fetched = parsedRef.type === 'pathway'
+            ? await fetchPathwayCharacter(parsedRef.id, interaction.user.id)
+            : await fetchPathbuilderCharacter(parsedRef.id);
           if (fetched.error) return interaction.editReply(fetched.error);
           const saved = saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: true });
           if (saved.error) return interaction.editReply(`âŒ ${saved.error}`);
           if (!saved.replaced) return interaction.editReply(`Couldn't find **${saved.name}**. Use \`/char add\` first.`);
+          if (parsedRef.type === 'pathway') {
+            return interaction.editReply(`✅ **${saved.name}** updated to level ${saved.level} from Pathway web JSON ID \`${fetched.id}\`! *(hero points, XP, current HP, and bag preserved.)*`);
+          }
           return interaction.editReply(`âœ… **${saved.name}** updated to level ${saved.level} from Pathbuilder ID \`${fetched.id}\`! *(hero points, XP, current HP, and bag preserved.)*`);
         } catch (err) { console.error(err); return interaction.editReply('Something went wrong. Try again!'); }
       }
