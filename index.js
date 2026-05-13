@@ -87,6 +87,7 @@ const downtime = require('./commands/downtime');
 const { parseStatBlock: parseBestiaryStatBlock, toSlug: bestiarySlug } = require('./parsers/bestiaryParser');
 const { parseSpellStatBlock, toSlug: spellSlug } = require('./parsers/spellParser');
 const { parseItemStatBlock,  toSlug: itemSlug  } = require('./parsers/itemParser');
+const { extractPdfText: extractCompanionPdfText, parseCompanionStatblockText, titleCaseFromFilename: titleCaseCompanionFilename } = require('./parsers/companionPdfParser');
 const charOverlay = require('./systems/characterOverlay');
 const ca = require('./systems/combatAutomation');
 const combatV2State = require('./systems/combatV2/state');
@@ -4474,6 +4475,92 @@ function buildCompanionListEmbed(category, page = 0) {
   return embed;
 }
 
+function parseImportedCompanionDamage(damage) {
+  const match = String(damage ?? '').trim().match(/^(\d+d\d+)([+-]\d+)?$/i);
+  return {
+    dice: (match?.[1] ?? String(damage ?? '').trim()) || '1d4',
+    bonus: match?.[2] ? Number.parseInt(match[2], 10) : 0,
+  };
+}
+
+function importedCompanionToTrackedCompanion(parsed, { displayName, form } = {}) {
+  const attacks = Array.isArray(parsed.attacks) ? parsed.attacks : [];
+  const primary = attacks[0] ?? null;
+  const primaryDamage = parseImportedCompanionDamage(primary?.damage);
+  const sourceLevel = Math.max(1, Number(parsed.sourceLevel ?? 1));
+  const hp = Number(parsed.hp ?? 10);
+  const hpPerLevel = Math.max(1, Math.round(hp / sourceLevel));
+  const customAbilities = [];
+
+  if (parsed.support) {
+    customAbilities.push({ name: 'Support Benefit', description: parsed.support });
+  }
+  if (parsed.additional) {
+    customAbilities.push({ name: 'Additional Specials', description: parsed.additional });
+  }
+  if (parsed.unsteady) {
+    customAbilities.push({ name: 'Unsteady Mount', description: parsed.unsteady });
+  }
+
+  const noteParts = [`Imported from companion PDF: ${parsed.sourceName ?? 'unknown statblock'}.`];
+  if (parsed.traits?.length) noteParts.push(`Traits: ${parsed.traits.join(', ')}.`);
+  if (parsed.senses) noteParts.push(`Senses: ${parsed.senses}.`);
+  if (parsed.languages?.length) noteParts.push(`Languages: ${parsed.languages.join(', ')}.`);
+  if (parsed.items?.length) noteParts.push(`Items: ${parsed.items.join(', ')}.`);
+
+  return {
+    displayName: displayName || parsed.displayName || parsed.baseName || 'Imported Companion',
+    baseType: 'custom',
+    form: form || parsed.form || 'young',
+    notes: noteParts.join(' '),
+    customStats: {
+      fromPdf: true,
+      sourceName: parsed.sourceName,
+      sourceLevel: parsed.sourceLevel,
+      size: parsed.size ?? 'Medium',
+      speed: parsed.speed ?? '25 feet',
+      hp,
+      hpPerLevel,
+      ac: parsed.ac ?? 10,
+      abilities: parsed.abilities ?? {},
+      attacks: primary ? [{
+        name: primary.name,
+        damage: `${primaryDamage.dice} ${primary.damageType ?? ''}`.trim(),
+        traits: primary.traits ?? [],
+      }] : [],
+      traits: parsed.traits ?? [],
+      senses: parsed.senses ?? '',
+      languages: parsed.languages ?? [],
+      items: parsed.items ?? [],
+    },
+    overrides: {
+      hp,
+      ac: parsed.ac ?? 10,
+      perception: parsed.perception ?? 0,
+      speed: parsed.speed ?? '25 feet',
+      size: parsed.size ?? 'Medium',
+      abilities: parsed.abilities ?? {},
+      saves: parsed.saves ?? {},
+      ...(primary ? {
+        attackBonus: primary.bonus,
+        damageDice: primaryDamage.dice,
+        damageBonus: primaryDamage.bonus,
+      } : {}),
+    },
+    skills: parsed.skills ?? {},
+    customAttacks: attacks.slice(1).map(atk => ({
+      name: atk.name,
+      bonus: atk.bonus,
+      damage: atk.damage,
+      damageType: atk.damageType,
+      traits: atk.traits ?? [],
+    })),
+    customAbilities,
+    currentHp: hp,
+    importedFromPdf: true,
+  };
+}
+
 
 // Scale a companion's combat stats by character level + form.
 function scaleCompanion(comp, char) {
@@ -4584,10 +4671,11 @@ function scaleCompanion(comp, char) {
 }
 
 function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
+  const customLabel = comp.customStats?.fromBestiary ?? comp.customStats?.sourceName ?? 'custom';
   const embed = new EmbedBuilder()
     .setColor(isActive ? 0xf39c12 : 0x7289DA)
     .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
-    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? (comp.customStats?.fromBestiary ?? 'custom') : comp.baseType} companion*`);
+    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? customLabel : comp.baseType} companion*`);
 
   // Show portrait if set. Prefer companion.art, fall back to character art.
   if (comp.art) embed.setThumbnail(comp.art);
@@ -7301,6 +7389,7 @@ const HELP_CATEGORIES = {
       { name: '/skillinfo', summary: 'Learn how a skill works: uses, actions by proficiency, DC examples. Shows your modifier if you have a character loaded.', options: 'skill, character', example: '/skillinfo skill:Athletics' },
       { name: '/class', summary: 'Look up a PF2e class with 5-page navigation: overview, proficiencies, features, class feats, subclass.', options: 'class, character', example: '/class class:Fighter' },
       { name: '/companion', summary: 'Look up animal/plant/undead companions. Shows stats, support benefit, and advanced maneuver.', options: '(subcommands: info, list)', example: '/companion info name:Wolf' },
+      { name: '/companion import', summary: 'Import a Pathbuilder companion statblock PDF into your character companions.', options: 'file, name, form, character', example: '/companion import file:Abysspdf.pdf name:Abyss' },
       { name: '/companion art', summary: 'Set a portrait image URL for one of your companions. Shows on the sheet.', options: 'url, companion, character', example: '/companion art url:https://... companion:Fluffy' },
       { name: '/companion set', summary: 'Override any companion stat (ability scores, AC, HP, saves, attack, damage, speed, size).', options: 'stat, value, companion, character', example: '/companion set stat:ac value:22 companion:Fluffy' },
       { name: '/companion reset', summary: 'Clear one override so the stat auto-scales again.', options: 'stat, companion, character', example: '/companion reset stat:ac companion:Fluffy' },
@@ -13082,6 +13171,60 @@ client.on('interactionCreate', async (interaction) => {
       await saveCharacters(characters);
       await syncCompanionToSupabase(interaction.user.id, charKey, compKey, charEntry.companions[compKey], charEntry.activeCompanion === compKey);
       return interaction.reply({ content: `🐾 **${displayName}** (${custom ? 'custom: ' + baseInput : baseInput}, ${form}) added to **${char.name}**'s companions!${charEntry.activeCompanion === compKey ? ' *(active)*' : ''}\nUse \`/companion sheet\` to view.` });
+    }
+
+    if (sub === 'import') {
+      const file = interaction.options.getAttachment('file');
+      const displayName = interaction.options.getString('name') || titleCaseCompanionFilename(file?.name ?? '');
+      const form = interaction.options.getString('form');
+
+      if (!file) {
+        return interaction.reply({ content: 'Please attach a companion statblock PDF.', ephemeral: true });
+      }
+      const isPdf = /\.pdf$/i.test(file.name ?? '') || /pdf/i.test(file.contentType ?? '');
+      if (!isPdf) {
+        return interaction.reply({ content: 'Please upload a PDF file from the companion statblock export.', ephemeral: true });
+      }
+      if ((file.size ?? 0) > 8 * 1024 * 1024) {
+        return interaction.reply({ content: 'That PDF is too large for import. Please upload a file under 8 MB.', ephemeral: true });
+      }
+
+      const compKey = companionSlug(displayName);
+      if (!compKey) {
+        return interaction.reply({ content: 'Please give the imported companion a usable name.', ephemeral: true });
+      }
+      if (charEntry.companions[compKey]) {
+        return interaction.reply({ content: `**${char.name}** already has a companion named **${displayName}**. Remove it first or import with a different name.`, ephemeral: true });
+      }
+
+      await interaction.deferReply();
+      try {
+        const response = await fetch(file.url);
+        if (!response.ok) throw new Error(`Discord attachment download failed with ${response.status}`);
+        const buffer = await response.buffer();
+        const rawText = await extractCompanionPdfText(buffer);
+        const parsed = parseCompanionStatblockText(rawText, { fallbackName: displayName });
+        if (!parsed.ok) {
+          return interaction.editReply(`Could not parse that companion PDF. ${parsed.error ?? 'Try a Pathbuilder-style statblock PDF.'}`);
+        }
+
+        const companion = importedCompanionToTrackedCompanion(parsed.companion, { displayName, form });
+        charEntry.companions[compKey] = companion;
+        if (!charEntry.activeCompanion) charEntry.activeCompanion = compKey;
+        characters[interaction.user.id][charKey] = charEntry;
+        await saveCharacters(characters);
+        await syncCompanionToSupabase(interaction.user.id, charKey, compKey, companion, charEntry.activeCompanion === compKey);
+
+        const scaled = scaleCompanion(companion, char);
+        const warningText = parsed.warnings?.length ? `\n\nImport notes: ${parsed.warnings.join(' ')}` : '';
+        return interaction.editReply({
+          content: `Imported **${companion.displayName}** from **${parsed.companion.sourceName}** for **${char.name}**.${charEntry.activeCompanion === compKey ? ' It is now active.' : ''}${warningText}`,
+          embeds: [buildCompanionSheetEmbed(companion, scaled, char, charEntry, charEntry.activeCompanion === compKey)],
+        });
+      } catch (err) {
+        console.error('/companion import error:', err);
+        return interaction.editReply('Something went wrong importing that companion PDF. Check the deploy logs for the exact error.');
+      }
     }
 
     if (sub === 'mine') {
