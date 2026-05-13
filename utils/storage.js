@@ -479,6 +479,7 @@ async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
           hero_points:      charEntry.heroPoints ?? charEntry.overlay?.daily?.hero_points ?? 1,
           dying:            charEntry.dying ?? 0,
           wounded:          charEntry.wounded ?? 0,
+          art:              charEntry.art ?? null,
           status:           'active',
         });
       }
@@ -1784,7 +1785,7 @@ async function restoreAllFromSupabase() {
     // loadCharacters() returns Supabase data without touching disk.
     const { data: charRows, error: charErr } = await sb
       .from('characters')
-      .select('user_id, char_key, name, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id')
+      .select('user_id, char_key, name, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art')
       .eq('status', 'active');
     if (charErr) throw charErr;
 
@@ -1804,6 +1805,7 @@ async function restoreAllFromSupabase() {
         wounded:    row.wounded ?? 0,
         heroPoints: row.hero_points ?? 1,
         guildId:    row.discord_guild_id ?? null,
+        art:        row.art ?? null,
         saved:      new Date().toISOString(),
       };
     }
