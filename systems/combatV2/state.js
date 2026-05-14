@@ -80,6 +80,10 @@ function makeCombatant(input) {
     hp,
     maxHp,
     tempHp: input.tempHp ?? 0,
+    dying: input.dying ?? 0,
+    wounded: input.wounded ?? 0,
+    doomed: input.doomed ?? 0,
+    unconscious: input.unconscious ?? false,
     ac: input.ac ?? null,
     saves: { fort: null, ref: null, will: null, ...(input.saves ?? {}) },
     skills: { ...(input.skills ?? {}) },
@@ -205,21 +209,93 @@ function applyHp(channelId, query, amount, { mode = 'delta' } = {}) {
   if (!encounter) throw new Error('No active encounter.');
   const combatant = findCombatant(encounter, query);
   if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const before = { hp: combatant.hp, tempHp: combatant.tempHp };
+  const before = {
+    hp: combatant.hp,
+    tempHp: combatant.tempHp,
+    dying: combatant.dying ?? 0,
+    wounded: combatant.wounded ?? 0,
+  };
+  if (typeof combatant.dying !== 'number') combatant.dying = 0;
+  if (typeof combatant.wounded !== 'number') combatant.wounded = 0;
+  if (typeof combatant.doomed !== 'number') combatant.doomed = 0;
+
+  const hpBefore = combatant.hp;
+  const wasDying = combatant.dying > 0;
+  let effectiveDamage = 0;
   if (mode === 'set') {
     combatant.hp = Math.max(0, Math.min(combatant.maxHp, amount));
+    if (combatant.hp < hpBefore) effectiveDamage = hpBefore - combatant.hp;
   } else if (amount < 0) {
     let damage = Math.abs(amount);
     const absorbed = Math.min(combatant.tempHp ?? 0, damage);
     combatant.tempHp = Math.max(0, (combatant.tempHp ?? 0) - absorbed);
     damage -= absorbed;
+    effectiveDamage = damage;
     combatant.hp = Math.max(0, combatant.hp - damage);
   } else {
     combatant.hp = Math.min(combatant.maxHp, combatant.hp + amount);
   }
+
+  const maxDying = Math.max(1, 4 - (combatant.doomed ?? 0));
+  let wentDown = false;
+  let dyingIncreased = false;
+  let wokeUp = false;
+  let died = false;
+
+  if (amount > 0 && wasDying && combatant.hp > 0) {
+    combatant.dying = 0;
+    combatant.wounded = (combatant.wounded ?? 0) + 1;
+    combatant.unconscious = false;
+    wokeUp = true;
+  } else if (amount > 0 && combatant.unconscious && combatant.hp > 0) {
+    combatant.unconscious = false;
+    wokeUp = true;
+  }
+
+  if ((mode === 'set' || amount < 0) && effectiveDamage > 0 && combatant.hp === 0) {
+    if (hpBefore > 0) {
+      wentDown = true;
+      combatant.dying = 1 + (combatant.wounded ?? 0);
+    } else if (wasDying) {
+      dyingIncreased = true;
+      combatant.dying += 1;
+    }
+    combatant.unconscious = true;
+    if (combatant.dying >= maxDying) {
+      combatant.dying = maxDying;
+      died = true;
+    }
+  }
+
   encounter.updatedAt = nowIso();
-  encounter.log.push({ at: nowIso(), kind: 'hp', name: combatant.name, amount, mode, before, after: { hp: combatant.hp, tempHp: combatant.tempHp } });
-  return { encounter, combatant, before };
+  encounter.log.push({
+    at: nowIso(),
+    kind: died ? 'death' : 'hp',
+    name: combatant.name,
+    amount,
+    mode,
+    before,
+    after: { hp: combatant.hp, tempHp: combatant.tempHp, dying: combatant.dying, wounded: combatant.wounded },
+  });
+
+  let removed = null;
+  if (died) {
+    removed = removeCombatant(channelId, combatant.name).combatant;
+  }
+
+  return {
+    encounter,
+    combatant,
+    before,
+    wentDown,
+    dyingIncreased,
+    wokeUp,
+    died,
+    removed,
+    dying: combatant.dying,
+    wounded: combatant.wounded,
+    maxDying,
+  };
 }
 
 function setTempHp(channelId, query, amount) {

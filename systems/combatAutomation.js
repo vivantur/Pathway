@@ -117,6 +117,11 @@ function applyDamage(channelId, combatantName, damage, opts = {}) {
   }
 
   const suffix = buildDamageSuffix({ wentDown, dyingIncreased, died, dying: c.dying, newHp, isCrit });
+  let removed = false;
+  if (died) {
+    enc.removeCombatant(channelId, combatantName);
+    removed = true;
+  }
   return {
     newHp,
     maxHp: c.maxHp,
@@ -127,6 +132,8 @@ function applyDamage(channelId, combatantName, damage, opts = {}) {
     dying: c.dying,
     wounded: c.wounded,
     doomed: c.doomed,
+    name: c.name,
+    removed,
     displaySuffix: suffix,
   };
 }
@@ -260,7 +267,7 @@ function rollRecoveryCheck(channelId, combatantName) {
     died = true;
     dyingAfter = maxDying;
     c.dying = maxDying;
-    // Dead means HP stays 0 and dying is locked; let the GM decide to remove
+    enc.removeCombatant(channelId, combatantName);
   } else if (dyingAfter <= 0) {
     // Crit success that takes dying to 0 (or below) clears the dying condition.
     // PF2e RAW: "If you lose the dying condition by succeeding at a recovery
@@ -300,6 +307,8 @@ function rollRecoveryCheck(channelId, combatantName) {
     roll, dc, outcome, delta, baseDelta,
     dyingBefore, dyingAfter,
     died, awoke,
+    name: combatantName,
+    removed: died,
     woundedAdded, wounded, doomed, maxDying,
     narration,
   };

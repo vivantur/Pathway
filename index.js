@@ -2283,6 +2283,27 @@ function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
   return embed;
 }
 
+function buildCombatDeathEmbed(name) {
+  return new EmbedBuilder()
+    .setColor(0x8b0000)
+    .setTitle(`${name} has Died!`)
+    .setDescription(`**${name}** reached Dying 4 and has been removed from initiative.`);
+}
+
+function combatDeathPayload(result) {
+  const name = result?.removed?.name ?? result?.name ?? result?.combatant?.name;
+  return result?.died && name ? { embeds: [buildCombatDeathEmbed(name)] } : null;
+}
+
+function combatDyingSuffix(result) {
+  if (!result) return '';
+  if (result.died) return `\n☠️ **${result.removed?.name ?? result.combatant?.name ?? result.name} has Died!** Removed from initiative.`;
+  if (result.wentDown && result.dying > 0) return `\n💀 **Down!** (Dying ${result.dying})`;
+  if (result.dyingIncreased && result.dying > 0) return `\n💀 **Dying increased to ${result.dying}**`;
+  if (result.wokeUp) return `\n✨ **Recovered from dying!** (now Wounded ${result.wounded})`;
+  return '';
+}
+
 function formatRollBreakdown(dieRoll, modifier, extraBonus, total, sides) {
   const isCrit = sides === 20 && dieRoll === 20;
   const isFumble = sides === 20 && dieRoll === 1;
@@ -11553,6 +11574,7 @@ client.on('interactionCreate', async (interaction) => {
     // Two paths lead here:
     //   1. Attack spell hit: attackDegree is success or crit-success
     //   2. Basic-save spell: saveDegreeApplied exists and finalDamage > 0
+    const deathEmbeds = [];
     const attackHit = target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success');
     const basicSaveDealsDamage = target && !isAttackSpell && spell.saveIsBasic && saveDegreeApplied && finalDamage > 0;
     if ((attackHit || basicSaveDealsDamage) && finalDamage > 0) {
@@ -11561,6 +11583,8 @@ client.on('interactionCreate', async (interaction) => {
       description += target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+      const deathPayload = combatDeathPayload(dmgResult);
+      if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
     }
 
     // ── Multi-target processing & auto-effect application ──────────────
@@ -11626,8 +11650,11 @@ client.on('interactionCreate', async (interaction) => {
               if (spell.saveIsBasic && damageResult) {
                 const dmgForTarget = basicSaveDamage(damageResult.total, sr.degree);
                 if (dmgForTarget > 0) {
-                  ca.applyDamage(channelId, t.name, dmgForTarget);
-                  line += ` — ${dmgForTarget} dmg`;
+                  const dmgResult = ca.applyDamage(channelId, t.name, dmgForTarget);
+                  const dyingNote = dmgResult?.displaySuffix ?? '';
+                  line += ` — ${dmgForTarget} dmg${dyingNote}`;
+                  const deathPayload = combatDeathPayload(dmgResult);
+                  if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
                 }
               }
             } else {
@@ -11647,8 +11674,11 @@ client.on('interactionCreate', async (interaction) => {
             line += `Atk ${total} (${die}${fmt(spellAttackBonus + casterMods.attackBonus)}) vs AC ${effAc} ${degreeEmoji[deg] || ''} ${degreeLabel[deg] || ''}`;
             if ((deg === 'success' || deg === 'crit-success') && damageResult) {
               const dmg = deg === 'crit-success' ? damageResult.total * 2 : damageResult.total;
-              ca.applyDamage(channelId, t.name, dmg);
-              line += ` — ${dmg} dmg`;
+              const dmgResult = ca.applyDamage(channelId, t.name, dmg);
+              const dyingNote = dmgResult?.displaySuffix ?? '';
+              line += ` — ${dmg} dmg${dyingNote}`;
+              const deathPayload = combatDeathPayload(dmgResult);
+              if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
             }
           }
 
@@ -11690,7 +11720,7 @@ client.on('interactionCreate', async (interaction) => {
     }
     embed.setFooter({ text: footer });
 
-    const payload = { embeds: [embed] };
+    const payload = { embeds: [embed, ...deathEmbeds].slice(0, 10) };
     if (warnings.length) payload.content = warnings.join('\n');
     if (target && !target.isNpc && target.ownerId) payload.content = [payload.content, `<@${target.ownerId}>`].filter(Boolean).join('\n');
     await interaction.editReply(payload);
@@ -12244,13 +12274,16 @@ client.on('interactionCreate', async (interaction) => {
       if (thumbnail) embed.setThumbnail(thumbnail);
       else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
       let content;
+      let embedDeath = [];
       if (['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
         const beforeHp = target.hp;
         const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
-        content = `**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
+        content = `**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP${combatDyingSuffix(applied)}`;
+        const deathPayload = combatDeathPayload(applied);
+        if (deathPayload?.embeds?.length) embedDeath = deathPayload.embeds;
       }
       if (mapOverride === null) attacker.attacksThisTurn = (attacker.attacksThisTurn ?? 0) + 1;
-      await interaction.reply({ content, embeds: [embed], files: rollFallbackFiles(thumbnail) });
+      await interaction.reply({ content, embeds: [embed, ...(embedDeath ?? [])].slice(0, 10), files: rollFallbackFiles(thumbnail) });
       await updateCombatV2Summary(interaction.channel, v2Encounter);
       return;
     }
@@ -12445,6 +12478,7 @@ client.on('interactionCreate', async (interaction) => {
     else                                outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
 
     let hpLine = '';
+    let deathPayload = null;
     let mentionLine = '';
     if (degree === 'success' || degree === 'crit-success') {
       const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
@@ -12452,6 +12486,7 @@ client.on('interactionCreate', async (interaction) => {
       hpLine = target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+      deathPayload = combatDeathPayload(dmgResult);
     }
     if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -12470,7 +12505,7 @@ client.on('interactionCreate', async (interaction) => {
       .setDescription(description)
       .setFooter({ text: `GM attack · Attack ${fmt(attackBonus)} · ${damageExpr} ${damageType}` });
 
-    const replyPayload = { embeds: [embed] };
+    const replyPayload = { embeds: [embed, ...(deathPayload?.embeds ?? [])].slice(0, 10) };
     if (mentionLine) replyPayload.content = mentionLine;
     await interaction.reply(replyPayload);
     // Record attack for MAP tracking (only if MAP wasn't manually overridden)
@@ -15923,7 +15958,10 @@ client.on('interactionCreate', async (interaction) => {
           ? combatV2State.applyHp(channelId, actor.name, setValue, { mode: 'set' })
           : combatV2State.applyHp(channelId, actor.name, change);
         await updateCombatV2Summary(interaction.channel, result.encounter);
-        return interaction.reply(`**${result.combatant.name}** HP: ${result.before.hp}/${result.combatant.maxHp} -> **${result.combatant.hp}/${result.combatant.maxHp}**${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp)` : ''}`);
+        return interaction.reply({
+          content: `**${result.combatant.name}** HP: ${result.before.hp}/${result.combatant.maxHp} -> **${result.combatant.hp}/${result.combatant.maxHp}**${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp)` : ''}${combatDyingSuffix(result)}`,
+          ...(combatDeathPayload(result) ?? {}),
+        });
       }
 
       const characters = loadCharacters();
@@ -16043,6 +16081,7 @@ client.on('interactionCreate', async (interaction) => {
       const results = combatV2Rolls.rollAttack({ attacker: actor, target, attack, bonus, map: mapOverride, count });
       const embeds = [];
       const hpLines = [];
+      const deathEmbeds = [];
       for (const result of results) {
         const embed = combatV2Render.renderAttackResult(result).setTitle(`${actor.name} attacks with ${attack.name}`);
         if (thumbnail) embed.setThumbnail(thumbnail);
@@ -16051,14 +16090,17 @@ client.on('interactionCreate', async (interaction) => {
         if (inCombat && target && ['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
           const beforeHp = target.hp;
           const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
-          hpLines.push(`**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`);
+          hpLines.push(`**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP${combatDyingSuffix(applied)}`);
+          const deathPayload = combatDeathPayload(applied);
+          if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
+          if (applied.died) break;
         }
       }
       if (inCombat && mapOverride === null) actor.attacksThisTurn = (actor.attacksThisTurn ?? 0) + count;
       if (inCombat) await updateCombatV2Summary(interaction.channel, encounter);
       return interaction.reply({
         content: hpLines.length ? hpLines.join('\n') : undefined,
-        embeds: embeds.slice(0, 10),
+        embeds: embeds.concat(deathEmbeds).slice(0, 10),
         files: rollFallbackFiles(thumbnail),
       });
     }
@@ -16348,8 +16390,11 @@ client.on('interactionCreate', async (interaction) => {
       }
       const result = combatV2State.applyHp(channelId, combatant.name, change);
       const verb = change >= 0 ? 'healed' : 'took';
-      await interaction.reply(`**${result.combatant.name}** ${verb} **${Math.abs(change)}**: ${result.before.hp}/${result.combatant.maxHp} -> ${result.combatant.hp}/${result.combatant.maxHp} HP${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp HP)` : ''}`);
-      await updateCombatV2Summary(interaction.channel, v2Encounter);
+      await interaction.reply({
+        content: `**${result.combatant.name}** ${verb} **${Math.abs(change)}**: ${result.before.hp}/${result.combatant.maxHp} -> ${result.combatant.hp}/${result.combatant.maxHp} HP${result.combatant.tempHp ? ` (${result.combatant.tempHp} temp HP)` : ''}${combatDyingSuffix(result)}`,
+        ...(combatDeathPayload(result) ?? {}),
+      });
+      await updateCombatV2Summary(interaction.channel, result.encounter);
       return;
     }
 
@@ -17228,11 +17273,13 @@ client.on('interactionCreate', async (interaction) => {
             : `**Damage**\n${dmg.display}${attackerMods.damageBonus ? ` ${fmt(attackerMods.damageBonus)}` : ''} = **${finalDamage} ${chosen.damageType}**`;
         }
         let hpLine = '';
+        let deathPayload = null;
         if (target && finalDamage > 0 && (degree === 'success' || degree === 'crit-success')) {
           const dmgResult = ca.applyDamage(channelId, target.name, finalDamage, { isCrit: degree === 'crit-success' });
           hpLine = target.isNpc
             ? `\n❤️ **${target.name}** took ${finalDamage} damage${dmgResult?.displaySuffix ?? ''}`
             : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dmgResult?.displaySuffix ?? ''}`;
+          deathPayload = combatDeathPayload(dmgResult);
         }
         if (explicitMap === null) ca.recordAttack(channelId, attacker.name);
         const embed = new EmbedBuilder()
@@ -17241,7 +17288,7 @@ client.on('interactionCreate', async (interaction) => {
           .setDescription([attackLine, '', damageLine || null, outcomeLine, hpLine || null].filter(Boolean).join('\n'))
           .setFooter({ text: chosen.footer });
         if (chosen.thumbnail) embed.setThumbnail(chosen.thumbnail);
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed, ...(deathPayload?.embeds ?? [])].slice(0, 10) });
         await updateSummary(interaction.channel, enc);
         return;
       }
@@ -17362,6 +17409,7 @@ client.on('interactionCreate', async (interaction) => {
 
       // 8. Apply damage on hit
       let hpLine = '';
+      let deathPayload = null;
       let mentionLine = '';
       if (degree === 'success' || degree === 'crit-success') {
         const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
@@ -17369,6 +17417,7 @@ client.on('interactionCreate', async (interaction) => {
         hpLine = target.isNpc
           ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
           : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+        deathPayload = combatDeathPayload(dmgResult);
       }
       if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -17413,7 +17462,7 @@ client.on('interactionCreate', async (interaction) => {
         .setDescription(description)
         .setFooter({ text: `${atk.name} ${fmt(baseAttackBonus)} · ${atk.damage}` });
 
-      const replyPayload = { embeds: [embed] };
+      const replyPayload = { embeds: [embed, ...(deathPayload?.embeds ?? [])].slice(0, 10) };
       let content = (mentionLine || '').trim();
       if (reactionPromptContent) content = (content + reactionPromptContent).trim();
       if (content) replyPayload.content = content;
@@ -17508,12 +17557,20 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
 
+      const deathEmbeds = [];
+      for (const pr of result.persistentResults ?? []) {
+        const deathPayload = combatDeathPayload(pr);
+        if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
+      }
       const replyPayload = { content: lines.join('\n') };
       if (result.recoveryCheck) {
         const payload = buildRecoveryCheckPayload(result.recoveryCheck, current);
         replyPayload.embeds = payload.embeds;
         if (payload.components.length) replyPayload.components = payload.components;
+        const deathPayload = combatDeathPayload(result.recoveryCheck);
+        if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
       }
+      if (deathEmbeds.length) replyPayload.embeds = [...(replyPayload.embeds ?? []), ...deathEmbeds].slice(0, 10);
 
       await interaction.reply(replyPayload);
       await updateSummary(interaction.channel, enc);
@@ -17580,7 +17637,10 @@ client.on('interactionCreate', async (interaction) => {
       const verb = change >= 0 ? 'healed' : 'took';
       const amount = Math.abs(change);
       const dyingNote = result?.displaySuffix ?? '';
-      await interaction.reply(`❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${dyingNote}`);
+      await interaction.reply({
+        content: `❤️ **${combatant.name}** ${verb} ${amount} → ${combatant.hp}/${combatant.maxHp} HP${dyingNote}`,
+        ...(combatDeathPayload(result) ?? {}),
+      });
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -17821,14 +17881,19 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `**${target.name}** has no persistent damage to roll.`, ephemeral: true });
       }
       const lines = [`🩸 Manually rolling persistent damage on **${target.name}**:`];
+      const deathEmbeds = [];
       for (const pr of persistentResults) {
         const flatStatus = pr.ended
           ? `🩹 *Flat check ${pr.flatRoll} ≥ ${pr.flatDc} — condition ends.*`
           : `🔁 *Flat check ${pr.flatRoll} < ${pr.flatDc} — persists.*`;
         const dyingTag = pr.died ? ' ☠️ **Dead!**' : pr.wentDown ? ` 💀 (Dying ${pr.dying})` : '';
         lines.push(`**${pr.name}**: ${pr.damageDice}[${pr.damageRolls.join(',')}] = ${pr.damage} ${pr.damageType}${dyingTag}\n${flatStatus}`);
+        const deathPayload = combatDeathPayload(pr);
+        if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
       }
-      await interaction.reply(lines.join('\n'));
+      const replyPayload = { content: lines.join('\n') };
+      if (deathEmbeds.length) replyPayload.embeds = deathEmbeds.slice(0, 10);
+      await interaction.reply(replyPayload);
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -17869,7 +17934,12 @@ client.on('interactionCreate', async (interaction) => {
           ? ` ☠️ **Dead!** (Doomed ${target.doomed} → death at Dying ${maxDying})`
           : ' ☠️ **Dead!**';
       }
-      await interaction.reply(`💀 **${target.name}** dying set to ${value} (was ${before}).${extra}`);
+      const deathPayload = value >= maxDying ? combatDeathPayload({ died: true, name: target.name }) : null;
+      if (value >= maxDying) removeCombatant(channelId, target.name);
+      await interaction.reply({
+        content: `💀 **${target.name}** dying set to ${value} (was ${before}).${extra}`,
+        ...(deathPayload ?? {}),
+      });
       await updateSummary(interaction.channel, enc);
       return;
     }
@@ -17905,6 +17975,8 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       const payload = buildRecoveryCheckPayload(rc, target);
+      const deathPayload = combatDeathPayload(rc);
+      if (deathPayload?.embeds?.length) payload.embeds = [...(payload.embeds ?? []), ...deathPayload.embeds].slice(0, 10);
       await interaction.reply(payload);
       await updateSummary(interaction.channel, enc);
       return;
@@ -18110,6 +18182,7 @@ client.on('interactionCreate', async (interaction) => {
     else if (target)                          outcomeLine = `🎯 Attack against **${target.name}** (AC unknown — GM decides)`;
 
     let hpLine = '';
+    let deathPayload = null;
     let mentionLine = '';
     if (target && (targetDegree === 'success' || targetDegree === 'crit-success')) {
       const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
@@ -18117,6 +18190,7 @@ client.on('interactionCreate', async (interaction) => {
       hpLine = target.isNpc
         ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
         : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+      deathPayload = combatDeathPayload(dmgResult);
       if (!target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}> `;
     } else if (target && !target.isNpc && target.ownerId) {
       mentionLine = `<@${target.ownerId}> `;
@@ -18167,7 +18241,7 @@ client.on('interactionCreate', async (interaction) => {
       .setFooter({ text: `${c.name} · Attack ${fmt(baseAttackBonus)} · ${weapon.die ?? ''}${damageBonusBase ? fmt(damageBonusBase) : ''} ${damageType}` });
     if (charEntry.art) embed.setThumbnail(charEntry.art);
 
-    const replyPayload = { embeds: [embed] };
+    const replyPayload = { embeds: [embed, ...(deathPayload?.embeds ?? [])].slice(0, 10) };
     let content = (mentionLine || '').trim();
     if (reactionPromptContent) content = (content + reactionPromptContent).trim();
     if (content) replyPayload.content = content;
@@ -18534,6 +18608,7 @@ client.on('interactionCreate', async (interaction) => {
 
         // HP application + mention only happens in init mode with a real target
         let hpLine = '';
+        let deathPayload = null;
         let mentionLine = '';
         if (inInit && target && (degree === 'success' || degree === 'crit-success')) {
           const dmgResult = ca.applyDamage(channelId, target.name, totalDealt);
@@ -18541,6 +18616,7 @@ client.on('interactionCreate', async (interaction) => {
           hpLine = target.isNpc
             ? `\n**${target.name}** took ${totalDealt} damage${dyingNote}`
             : `\n**${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
+          deathPayload = combatDeathPayload(dmgResult);
         }
         if (inInit && target && !target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -18555,7 +18631,7 @@ client.on('interactionCreate', async (interaction) => {
           .setDescription(description)
           .setFooter({ text: `${displayName}${traitFooter} · ${fmt(attack.bonus)} · ${attack.damage} ${attack.damageType ?? ''}`.trim() });
 
-        const replyPayload = { embeds: [embed] };
+        const replyPayload = { embeds: [embed, ...(deathPayload?.embeds ?? [])].slice(0, 10) };
         if (mentionLine) replyPayload.content = mentionLine;
         await interaction.reply(replyPayload);
         // Record attack for MAP tracking (only in init, only if MAP wasn't manual)
