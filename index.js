@@ -2118,6 +2118,51 @@ function formatCharacterSpecials(charEntry) {
   return lines.join('\n');
 }
 
+function buildCharacterAbilitiesFields(charEntry) {
+  const specials = Array.isArray(charEntry?.data?.specials) ? charEntry.data.specials : [];
+  const lines = [];
+  let hidden = 0;
+
+  for (const special of specials) {
+    const raw = typeof special === 'string'
+      ? special
+      : [special?.name, special?.details ?? special?.description].filter(Boolean).join(': ');
+    const cleaned = String(raw ?? '').replace(/\s+/g, ' ').trim();
+    if (!cleaned) continue;
+    const line = `• ${cleaned}`;
+    if (line.length > 1000) {
+      lines.push(`${line.slice(0, 997)}...`);
+      continue;
+    }
+    lines.push(line);
+  }
+
+  const fields = [];
+  let chunk = [];
+  for (const line of lines) {
+    const next = [...chunk, line].join('\n');
+    if (next.length > 1000 && chunk.length) {
+      fields.push({ name: fields.length ? 'More Abilities' : 'Special Abilities', value: chunk.join('\n'), inline: false });
+      chunk = [line];
+      if (fields.length >= 25) {
+        hidden += 1;
+        chunk = [];
+      }
+    } else {
+      chunk.push(line);
+    }
+  }
+  if (chunk.length && fields.length < 25) {
+    fields.push({ name: fields.length ? 'More Abilities' : 'Special Abilities', value: chunk.join('\n'), inline: false });
+  }
+
+  const suffix = hidden > 0 ? ` ${hidden} additional ability entr${hidden === 1 ? 'y was' : 'ies were'} hidden by Discord's field limit.` : '';
+  return {
+    description: `${lines.length} special abilit${lines.length === 1 ? 'y' : 'ies'} recorded.${suffix}`,
+    fields,
+  };
+}
+
 // Pathway brand colors used across roll embeds. Gold matches the d20 art.
 const PATHWAY_GOLD = 0xC9A24A;
 
@@ -10226,6 +10271,28 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ embeds: [embed] });
   }
 
+  else if (commandName === 'abilities') {
+    const characters = loadCharacters();
+    const nameArg = interaction.options.getString('character');
+    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+
+    const c = charEntry.data ?? {};
+    const abilitiesView = buildCharacterAbilitiesFields(charEntry);
+    const embed = new EmbedBuilder()
+      .setColor(0x9b59b6)
+      .setTitle(`${c.name ?? charEntry.name}'s Abilities`)
+      .setDescription(abilitiesView.description)
+      .setFooter({ text: 'Pathway character abilities' });
+    if (abilitiesView.fields.length > 0) {
+      embed.addFields(abilitiesView.fields);
+    } else {
+      embed.addFields({ name: 'Special Abilities', value: 'No special abilities saved yet.', inline: false });
+    }
+    if (charEntry.art) embed.setThumbnail(charEntry.art);
+    return interaction.reply({ embeds: [embed] });
+  }
+
   // ─── /sheet ──────────────────────────────────────────────────────
   else if (commandName === 'sheet') {
     await interaction.deferReply();
@@ -10444,8 +10511,6 @@ client.on('interactionCreate', async (interaction) => {
           ...(overriddenFields.length > 0 ? [{ name: '⚠️ Manual overrides', value: `The following values are manually set (ignoring JSON): ${overriddenFields.join(', ')}. Use \`/char stat field:<field> action:clear\` to revert.`, inline: false }] : []),
         )
         .setFooter({ text: `Pathfinder 2e · Saved ${charEntry.saved?.split('T')[0] ?? ''}` });
-      const specialLines = formatCharacterSpecials(charEntry);
-      if (specialLines) embed.addFields({ name: '✨ Special Abilities', value: specialLines, inline: false });
       if (charEntry.art) embed.setThumbnail(charEntry.art);
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {

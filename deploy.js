@@ -216,6 +216,11 @@ const featsCommand = new SlashCommandBuilder()
   .setDescription("Display your character's feats in a compact block.")
   .addStringOption(o => o.setName('character').setDescription('Character name (leave blank for active)').setRequired(false).setAutocomplete(true));
 
+const abilitiesCommand = new SlashCommandBuilder()
+  .setName('abilities')
+  .setDescription("Display your character's special abilities and features.")
+  .addStringOption(o => o.setName('character').setDescription('Character name (leave blank for active)').setRequired(false).setAutocomplete(true));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // /portrait
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1605,6 +1610,7 @@ const commands = [
   charCommand,
   sheetCommand,
   featsCommand,
+  abilitiesCommand,
   portraitCommand,
   snippetCommand,
   serversnippetCommand,
