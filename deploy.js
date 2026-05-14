@@ -430,11 +430,6 @@ const resourceCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 // /diagnose
 // ─────────────────────────────────────────────────────────────────────────────
-const diagnoseCommand = new SlashCommandBuilder()
-  .setName('diagnose')
-  .setDescription('Show a diagnostic dump of your saved character data.')
-  .addBooleanOption(o => o.setName('download').setDescription('(Bot owner only) Download the full characters.json as an attachment.').setRequired(false));
-
 // ─────────────────────────────────────────────────────────────────────────────
 // /mattack
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1605,7 +1600,6 @@ const commands = [
   brCommand,
   breakCommand,
   helpCommand,
-  diagnoseCommand,
   // Character management
   charCommand,
   sheetCommand,
@@ -1711,6 +1705,7 @@ const commands = [
 
 const retiredCombatCommandNames = new Set([
   'attack',
+  'diagnose',
   'initiative',
   'monsterattack',
   'monsterroll',

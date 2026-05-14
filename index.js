@@ -11867,6 +11867,7 @@ client.on('interactionCreate', async (interaction) => {
   //
   // Output is ephemeral (only you see it) and shows ONLY your own data.
   else if (commandName === 'diagnose') {
+    return interaction.reply({ content: '`/diagnose` has been removed from Pathway.', ephemeral: true });
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const userChars = characters[userId] ?? {};
