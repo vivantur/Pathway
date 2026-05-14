@@ -1156,6 +1156,7 @@ async function saveImportedCharacter(userId, rawChar, { preserveOverlay = false,
     art: existingArt,
     senses: existingSenses,
     edits: existingEdits,
+    pathwayWebId: pathwayRow?.id ?? prev?.pathwayWebId,
     saved: new Date().toISOString(),
   };
 
@@ -7339,8 +7340,8 @@ const HELP_CATEGORIES = {
     blurb: 'Import, display, and manage your saved characters. For editing fields, see the Edit category.',
     commands: [
       { name: '/char add', summary: 'Add a character by uploading a Pathbuilder `.json` or `.txt` file.', options: 'file', example: '/char add file:[attach file]' },
-      { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file or Pathbuilder ID. Keeps your overlay additions.', options: 'file or id', example: '/char update id:122550' },
-      { name: '/char import', summary: 'Import directly from Pathbuilder by 6-digit ID.', options: 'id', example: '/char import id:122550' },
+      { name: '/char update', summary: 'Refresh an existing character from an uploaded JSON file, Pathbuilder ID, or Pathway web JSON ID. Keeps your overlay additions.', options: 'file or id', example: '/char update id:122550' },
+      { name: '/char import', summary: 'Import directly from a Pathbuilder ID/URL or Pathway web JSON ID.', options: 'id', example: '/char import id:1a501305-de50-4391-a0cf-44f4c5869d3d' },
       { name: '/char create', summary: 'Create a blank character sheet through a popup, then fill in the rest with edit commands.', options: '', example: '/char create' },
       { name: '/char template', summary: 'Get a blank fill-in-the-blanks character template (.txt). Build NPCs or homebrew characters from scratch.', options: '', example: '/char template' },
       { name: '/char dump', summary: 'Export a character as an editable .txt file. For heavy modifications or sharing.', options: 'character', example: '/char dump character:Khyber' },
@@ -10115,81 +10116,26 @@ client.on('interactionCreate', async (interaction) => {
     }
     }
 
-    // /char import — fetch from Pathbuilder's JSON ID endpoint.
-    // EXPERIMENTAL: Pathbuilder maintains a host allowlist. From Foundry VTT and
-    // browser contexts this works, but from a Railway/Heroku/other hosting provider
-    // it typically returns 403 "Host not in allowlist" — see the catch branch for
-    // guidance shown to the user in that case.
+    // /char import — fetch from Pathbuilder's JSON endpoint or Pathway web.
     else if (sub === 'import') {
       await interaction.deferReply({ ephemeral: true });
-      const id = interaction.options.getInteger('id');
-      // Pathbuilder IDs are 6 digits (e.g. 122550). Allow a broader range in case
-      // of older or future formats, but warn on obviously wrong shapes.
-      if (id < 1 || id > 99999999) {
-        return interaction.editReply(`❌ That doesn't look like a valid Pathbuilder ID. Expected a 6-digit number like \`122550\`.`);
-      }
-
-      const url = `https://pathbuilder2e.com/json.php?id=${id}`;
+      const idInput = interaction.options.getString('id', true);
       try {
-        // Use an honest User-Agent that identifies us as a bot. Some
-        // services (per Pathmuncher creator David Wilson, 2026-04-25) block
-        // blank or suspicious UAs but allow honest ones. Even if Pathbuilder's
-        // allowlist is host-based (which we believe it is), being a good
-        // network citizen — announcing what we are — is the right default.
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Pathway-Bot/1.0 (+https://github.com/vivantur/Pathway; PF2e Discord bot)',
-          },
-        });
-        const rawText = await response.text();
-
-        // Pathbuilder returns 403 "Host not in allowlist" when the server isn't
-        // whitelisted. Detect that specifically so we can give useful guidance.
-        if (response.status === 403 || /host not in allowlist/i.test(rawText)) {
-          return interaction.editReply(
-            `❌ **Pathbuilder blocked the request — its allowlist doesn't include this bot's server.**\n\n` +
-            `**Easy fix:** import via copy-paste instead. Takes 30 seconds:\n` +
-            `1. In Pathbuilder, click **Menu** → **Export & Import** → **Export JSON**\n` +
-            `2. Click **Copy to Clipboard**\n` +
-            `3. Paste the JSON into Discord chat as a message\n` +
-            `4. Right-click your pasted message → **Apps** → **Import as Character**\n` +
-              `**Why this happens:** Pathbuilder's creator (Roland) maintains an allowlist of approved hosts. Cloud-hosted bots like this one aren't on it. The User-Agent isn't the issue — the source IP is.`
-          );
-        }
-        if (!response.ok) {
-          return interaction.editReply(`❌ Pathbuilder returned HTTP ${response.status}. Try again in a moment, or use the copy-paste flow described in \`/char help\`.`);
-        }
-
-        // Parse what we got. Pathbuilder returns { success: true, build: {...} } on
-        // valid IDs, or { success: false, error: ... } on lookup failures.
-        let parsed;
-        try {
-          parsed = JSON.parse(rawText);
-        } catch {
-          return interaction.editReply(`❌ Pathbuilder's response wasn't valid JSON. Try again, or use \`/char add\` with the exported JSON file.`);
-        }
-
-        if (parsed.success === false) {
-          return interaction.editReply(`❌ Pathbuilder couldn't find ID \`${id}\`. Double-check the number (it's the 6-digit code shown after you export JSON in Pathbuilder).`);
-        }
-        const rawChar = parsed.build ?? parsed;
-        if (!rawChar || !rawChar.name) {
-          return interaction.editReply(`❌ Got a response from Pathbuilder but no character data. The ID may be invalid or expired.`);
-        }
-
-        // Import via the same path /char add uses
-        const saved = await saveImportedCharacter(interaction.user.id, rawChar, { preserveOverlay: false });
+        const parsedRef = parseCharacterUpdateRef(idInput);
+        if (parsedRef.error) return interaction.editReply(`❌ ${parsedRef.error}`);
+        const fetched = parsedRef.type === 'pathway'
+          ? await fetchPathwayCharacter(parsedRef.id, interaction.user.id)
+          : await fetchPathbuilderCharacter(parsedRef.id);
+        if (fetched.error) return interaction.editReply(fetched.error);
+        const saved = await saveImportedCharacter(interaction.user.id, fetched.char, { preserveOverlay: false, pathwayRow: fetched.row });
         if (saved.error) return interaction.editReply(`❌ ${saved.error}`);
-        return interaction.editReply(
-          `✅ **${saved.name}** imported from Pathbuilder ID \`${id}\`! Use \`/sheet\` to view them.\n` +
-          `*Tip: Pathbuilder's IDs expire after a while. If you re-export, use \`/char import id:<new-id>\` or \`/char update\` with the exported JSON file to refresh.*`
-        );
+        if (parsedRef.type === 'pathway') {
+          return interaction.editReply(`✅ **${saved.name}** imported from Pathway web JSON ID \`${fetched.id}\`! Use \`/sheet\` to view them.`);
+        }
+        return interaction.editReply(`✅ **${saved.name}** imported from Pathbuilder ID \`${fetched.id}\`! Use \`/sheet\` to view them.`);
       } catch (err) {
         console.error('/char import fetch error:', err);
-        return interaction.editReply(
-          `❌ Couldn\'t reach Pathbuilder: \`${err.message}\`\n\n` +
-          `Try \`/char add\` instead — export the JSON from Pathbuilder and upload it as a file.`
-        );
+        return interaction.editReply(`❌ Something went wrong importing that character: \`${err.message}\``);
       }
     }
 
