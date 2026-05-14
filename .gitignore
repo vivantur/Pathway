@@ -19,3 +19,4 @@ saves/*.json
 # The usual suspects
 node_modules/
 .env
+.claude/
