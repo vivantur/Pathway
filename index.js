@@ -2164,6 +2164,94 @@ function buildCharacterAbilitiesFields(charEntry) {
   };
 }
 
+function cleanDescriptionText(value) {
+  return String(value ?? '').replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').trim();
+}
+
+function firstDescriptionValue(...values) {
+  for (const value of values) {
+    const cleaned = cleanDescriptionText(value);
+    if (cleaned) return cleaned;
+  }
+  return '';
+}
+
+function getCharacterDescriptionParts(charEntry) {
+  const c = charEntry?.data ?? {};
+  const edits = charEntry?.edits?.description ?? {};
+  const personality = c.personality && typeof c.personality === 'object' ? c.personality : {};
+  const details = c.details && typeof c.details === 'object' ? c.details : {};
+
+  return {
+    description: firstDescriptionValue(
+      edits.description,
+      c.description,
+      c.physicalDescription,
+      c.appearance,
+      details.description,
+      details.appearance,
+      c.bio,
+    ),
+    personalityTraits: firstDescriptionValue(
+      edits.personalityTraits,
+      c.personalityTraits,
+      personality.traits,
+      personality.personalityTraits,
+      c.traitsText,
+    ),
+    ideals: firstDescriptionValue(edits.ideals, c.ideals, personality.ideals),
+    bonds: firstDescriptionValue(edits.bonds, c.bonds, personality.bonds),
+    flaws: firstDescriptionValue(edits.flaws, c.flaws, personality.flaws),
+    backstory: firstDescriptionValue(edits.backstory, c.backstory, details.backstory, personality.backstory),
+  };
+}
+
+function buildCharacterDescriptionEmbed(charEntry) {
+  const c = charEntry?.data ?? {};
+  const charName = c.name ?? charEntry?.name ?? 'Character';
+  const parts = getCharacterDescriptionParts(charEntry);
+  const subtitle = [
+    c.ancestry,
+    c.heritage,
+    c.class ? `Level ${c.level ?? '?'} ${c.class}` : null,
+  ].filter(Boolean).join(' - ');
+
+  const embed = new EmbedBuilder()
+    .setColor(0x9b59b6)
+    .setTitle(`${charName}'s Description`)
+    .setFooter({ text: 'Pathway character description' });
+
+  if (subtitle) embed.setDescription(`*${subtitle}*`);
+  if (charEntry?.art) embed.setThumbnail(charEntry.art);
+
+  const fields = [
+    ['Description', parts.description],
+    ['Personality Traits', parts.personalityTraits],
+    ['Ideals', parts.ideals],
+    ['Bonds', parts.bonds],
+    ['Flaws', parts.flaws],
+    ['Backstory', parts.backstory],
+  ]
+    .filter(([, value]) => value)
+    .map(([name, value]) => ({
+      name,
+      value: value.length > 1024 ? `${value.slice(0, 1021)}...` : value,
+      inline: false,
+    }));
+
+  if (fields.length) {
+    embed.addFields(fields.slice(0, 25));
+  } else {
+    embed.addFields({
+      name: 'No description saved',
+      value: 'Use `/description action:edit` to add appearance and personality notes.',
+      inline: false,
+    });
+  }
+
+  return embed;
+}
+
 // Pathway brand colors used across roll embeds. Gold matches the d20 art.
 const PATHWAY_GOLD = 0xC9A24A;
 
@@ -7352,6 +7440,7 @@ const HELP_CATEGORIES = {
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/feats', summary: 'Show your character\'s feats in a compact block.', options: 'character', example: '/feats' },
+      { name: '/description', summary: 'View or edit your character description, appearance, and personality notes.', options: 'action, character', example: '/description action:edit' },
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset, max)', example: '/hp max value:52' },
       { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80' },
@@ -8078,6 +8167,34 @@ client.on('interactionCreate', async (interaction) => {
           );
         }
 
+        if (interaction.customId.startsWith('description_modal:')) {
+          await interaction.deferReply({ ephemeral: true });
+          const charKey = interaction.customId.slice('description_modal:'.length);
+
+          const characters = loadCharacters();
+          const userChars = characters[interaction.user.id] ?? {};
+          const charEntry = userChars[charKey];
+          if (!charEntry) {
+            return interaction.editReply('❌ Character not found. Did you delete them while the popup was open?');
+          }
+
+          const nextDescription = {
+            description: cleanDescriptionText(interaction.fields.getTextInputValue('description')),
+            personalityTraits: cleanDescriptionText(interaction.fields.getTextInputValue('personalityTraits')),
+            ideals: cleanDescriptionText(interaction.fields.getTextInputValue('ideals')),
+            bonds: cleanDescriptionText(interaction.fields.getTextInputValue('bonds')),
+            flaws: cleanDescriptionText(interaction.fields.getTextInputValue('flaws')),
+          };
+
+          if (!charEntry.edits) charEntry.edits = {};
+          const hasAny = Object.values(nextDescription).some(Boolean);
+          if (hasAny) charEntry.edits.description = nextDescription;
+          else delete charEntry.edits.description;
+
+          await saveCharacters(characters);
+          return interaction.editReply(`✅ Updated **${charEntry.name ?? charEntry.data?.name ?? 'character'}**. Use \`/description\` to view it.`);
+        }
+
         if (interaction.customId.startsWith('char_edit_modal:')) {
           await interaction.deferReply({ ephemeral: true });
           const charKey = interaction.customId.slice('char_edit_modal:'.length);
@@ -8529,7 +8646,7 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
-        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats') && focused.name === 'character') {
+        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats' || cmd === 'abilities' || cmd === 'description') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -10270,6 +10387,42 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /sheet ──────────────────────────────────────────────────────
+  else if (commandName === 'description') {
+    const characters = loadCharacters();
+    const nameArg = interaction.options.getString('character');
+    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
+    if (error) return interaction.reply({ content: error, ephemeral: true });
+
+    const action = interaction.options.getString('action') ?? 'view';
+    if (action === 'edit') {
+      const c = charEntry.data ?? {};
+      const parts = getCharacterDescriptionParts(charEntry);
+      const modal = new ModalBuilder()
+        .setCustomId(`description_modal:${charKey}`)
+        .setTitle(`Description: ${c.name ?? charEntry.name ?? 'Character'}`.slice(0, 45));
+
+      const makeInput = (customId, label, value, placeholder) => new TextInputBuilder()
+        .setCustomId(customId)
+        .setLabel(label)
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(false)
+        .setMaxLength(1000)
+        .setPlaceholder(placeholder)
+        .setValue(String(value ?? '').slice(0, 1000));
+
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(makeInput('description', 'Description / Appearance', parts.description, 'What do they look like? Any notable details?')),
+        new ActionRowBuilder().addComponents(makeInput('personalityTraits', 'Personality Traits', parts.personalityTraits, 'How do they act, speak, or carry themself?')),
+        new ActionRowBuilder().addComponents(makeInput('ideals', 'Ideals', parts.ideals, 'What beliefs or goals drive them?')),
+        new ActionRowBuilder().addComponents(makeInput('bonds', 'Bonds', parts.bonds, 'People, places, promises, or causes they are tied to.')),
+        new ActionRowBuilder().addComponents(makeInput('flaws', 'Flaws', parts.flaws, 'Weaknesses, fears, habits, or complications.')),
+      );
+      return interaction.showModal(modal);
+    }
+
+    return interaction.reply({ embeds: [buildCharacterDescriptionEmbed(charEntry)] });
+  }
+
   else if (commandName === 'sheet') {
     await interaction.deferReply();
     const userId = interaction.user.id;

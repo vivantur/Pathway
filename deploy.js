@@ -224,6 +224,15 @@ const abilitiesCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 // /portrait
 // ─────────────────────────────────────────────────────────────────────────────
+const descriptionCommand = new SlashCommandBuilder()
+  .setName('description')
+  .setDescription("View or edit your character's description and personality.")
+  .addStringOption(o => o.setName('action').setDescription('View or edit the description').setRequired(false).addChoices(
+    { name: 'View', value: 'view' },
+    { name: 'Edit', value: 'edit' },
+  ))
+  .addStringOption(o => o.setName('character').setDescription('Character name (leave blank for active)').setRequired(false).setAutocomplete(true));
+
 const portraitCommand = new SlashCommandBuilder()
   .setName('portrait')
   .setDescription('Show the current portrait art for a character.')
@@ -1605,6 +1614,7 @@ const commands = [
   sheetCommand,
   featsCommand,
   abilitiesCommand,
+  descriptionCommand,
   portraitCommand,
   snippetCommand,
   serversnippetCommand,
