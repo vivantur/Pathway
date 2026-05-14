@@ -6839,6 +6839,48 @@ function normalizeSpell(spell) {
   };
 }
 
+function formatSpellHeightened(heightened, baseLevel = null) {
+  if (!heightened) return '';
+  if (typeof heightened === 'string') return heightened.trim();
+  if (Array.isArray(heightened)) {
+    return heightened.map(entry => formatSpellHeightened(entry, baseLevel)).filter(Boolean).join('\n');
+  }
+  if (typeof heightened !== 'object') return String(heightened).trim();
+
+  const lines = [];
+  const type = String(heightened.type || '').toLowerCase();
+  const step = heightened.step ?? heightened.interval ?? null;
+
+  if (heightened.damage_bonus) {
+    if (type === 'per_rank') {
+      const prefix = step ? `Every +${step} ranks` : `Each rank above ${baseLevel ?? 'base rank'}`;
+      lines.push(`${prefix}: +${heightened.damage_bonus} damage`);
+    } else {
+      lines.push(`+${heightened.damage_bonus} damage`);
+    }
+  }
+
+  if (heightened.extra_text) {
+    const text = String(heightened.extra_text).trim();
+    if (text) {
+      if (type === 'per_rank' && step && !lines.length) lines.push(`Every +${step} ranks: ${text}`);
+      else lines.push(text);
+    }
+  }
+
+  if (heightened.levels && typeof heightened.levels === 'object') {
+    for (const [rank, value] of Object.entries(heightened.levels)) {
+      const text = formatSpellHeightened(value, baseLevel);
+      if (text) lines.push(`**${rank}:** ${text}`);
+    }
+  }
+
+  if (heightened.text) lines.push(String(heightened.text).trim());
+  if (heightened.note) lines.push(String(heightened.note).trim());
+
+  return lines.filter(Boolean).join('\n').trim();
+}
+
 function buildSpellEmbed(rawSpell) {
   const spell = normalizeSpell(rawSpell);
   const isCantrip = spell.type === 'Cantrip';
@@ -6871,20 +6913,8 @@ function buildSpellEmbed(rawSpell) {
   }
   if (spell.damage)      embed.addFields({ name: 'Damage', value: spell.damage, inline: false });
   const descriptionHasHeightened = /\bheightened\b/i.test(description);
-  if (spell.heightening && typeof spell.heightening === 'object') {
-    let htText = '';
-    if (spell.heightening.type === 'per_rank' && spell.heightening.damage_bonus)
-      htText = `Each rank above ${spell.level}: +${spell.heightening.damage_bonus} damage`;
-    else if (spell.heightening.type === 'fixed' && spell.heightening.levels)
-      htText = Object.entries(spell.heightening.levels).map(([k, v]) => `**${k}:** ${v}`).join('\n');
-    else if (spell.heightening.extra_text)
-      htText = spell.heightening.type === 'per_rank' && spell.heightening.step
-        ? `Every +${spell.heightening.step} ranks: ${spell.heightening.extra_text}`
-        : String(spell.heightening.extra_text);
-    if (htText && !descriptionHasHeightened) embed.addFields({ name: '⬆️ Heightened', value: htText, inline: false });
-  } else if (spell.heightened?.trim() && !descriptionHasHeightened) {
-    embed.addFields({ name: '⬆️ Heightened', value: spell.heightened, inline: false });
-  }
+  const heightenedText = formatSpellHeightened(spell.heightening ?? spell.heightened, spell.level);
+  if (heightenedText && !descriptionHasHeightened) embed.addFields({ name: '⬆️ Heightened', value: heightenedText, inline: false });
   embed.setFooter({ text: `Pathfinder 2e · ${spell.source ?? 'Unknown source'}` });
   return embed;
 }
