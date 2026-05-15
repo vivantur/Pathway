@@ -409,6 +409,43 @@ function _recordSyncFailure() { _syncConsecutiveFailures++; }
 // Call this at the start/end of an encounter to warn the GM.
 function isSyncDegraded() { return _syncConsecutiveFailures >= SYNC_DEGRADED_THRESHOLD; }
 
+const CHARACTER_BOT_STATE_OVERLAY_KEY = 'pathway_bot_state';
+
+function buildCharacterOverlayForSupabase(charEntry) {
+  const overlay = {
+    ...((charEntry?.overlay && typeof charEntry.overlay === 'object' && !Array.isArray(charEntry.overlay))
+      ? charEntry.overlay
+      : {}),
+  };
+  const botState = {};
+
+  if (charEntry?.edits && typeof charEntry.edits === 'object' && !Array.isArray(charEntry.edits)) botState.edits = charEntry.edits;
+  if (charEntry?.senses !== undefined) botState.senses = charEntry.senses;
+  if (charEntry?.languages !== undefined) botState.languages = charEntry.languages;
+  if (charEntry?.wallet !== undefined) botState.wallet = charEntry.wallet;
+  if (charEntry?._hpMaxOverride !== undefined) botState.hpMaxOverride = charEntry._hpMaxOverride;
+  if (charEntry?.xpLog !== undefined) botState.xpLog = charEntry.xpLog;
+  if (charEntry?.pathwayWebId !== undefined) botState.pathwayWebId = charEntry.pathwayWebId;
+
+  overlay[CHARACTER_BOT_STATE_OVERLAY_KEY] = botState;
+  return overlay;
+}
+
+function applyCharacterBotState(charEntry, overlay) {
+  const botState = overlay?.[CHARACTER_BOT_STATE_OVERLAY_KEY];
+  if (!botState || typeof botState !== 'object' || Array.isArray(botState)) return charEntry;
+
+  if (botState.edits && typeof botState.edits === 'object' && !Array.isArray(botState.edits)) charEntry.edits = botState.edits;
+  if (botState.senses !== undefined) charEntry.senses = botState.senses;
+  if (botState.languages !== undefined) charEntry.languages = botState.languages;
+  if (botState.wallet !== undefined) charEntry.wallet = botState.wallet;
+  if (botState.hpMaxOverride !== undefined) charEntry._hpMaxOverride = botState.hpMaxOverride;
+  if (botState.xpLog !== undefined) charEntry.xpLog = botState.xpLog;
+  if (botState.pathwayWebId !== undefined) charEntry.pathwayWebId = botState.pathwayWebId;
+
+  return charEntry;
+}
+
 // Sync all characters from the in-memory map to Supabase.
 // Called after saveCharacters to write character state to Supabase.
 // Accepts an optional usernamesByDiscordId Map so bot-only users (who have
@@ -475,7 +512,7 @@ async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
           current_hp:       charEntry.hp ?? null,
           // companions are NOT stored in overlay — they live in the dedicated
           // companions table and are synced via syncCompanionToSupabase().
-          overlay:          { ...(charEntry.overlay ?? {}) },
+          overlay:          buildCharacterOverlayForSupabase(charEntry),
           hero_points:      charEntry.heroPoints ?? charEntry.overlay?.daily?.hero_points ?? 1,
           dying:            charEntry.dying ?? 0,
           wounded:          charEntry.wounded ?? 0,
@@ -1351,7 +1388,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
 
     const { data: rows } = await sb
       .from('characters')
-      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, updated_at')
+      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, updated_at')
       .eq('user_id', userRow.id)
       .eq('status', 'active');
     if (!rows || rows.length === 0) return 0;
@@ -1368,7 +1405,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
       if (local?.saved && row.updated_at && local.saved >= row.updated_at) continue;
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
-      charactersMap[discordId][key] = {
+      charactersMap[discordId][key] = applyCharacterBotState({
         name:       build.name,
         data:       build,
         hp:         row.current_hp ?? null,
@@ -1377,8 +1414,9 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
         wounded:    row.wounded ?? 0,
         heroPoints: row.hero_points ?? 1,
         guildId:    row.discord_guild_id ?? null,
+        art:        row.art ?? null,
         saved:      new Date().toISOString(),
-      };
+      }, row.overlay ?? {});
       added++;
     }
     if (userRow.active_char_key && charactersMap[discordId]?.[userRow.active_char_key]) {
@@ -1796,7 +1834,7 @@ async function restoreAllFromSupabase() {
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
       if (!characters[discordId]) characters[discordId] = {};
-      characters[discordId][row.char_key] = {
+      characters[discordId][row.char_key] = applyCharacterBotState({
         name:       build.name,
         data:       build,
         hp:         row.current_hp ?? null,
@@ -1807,7 +1845,7 @@ async function restoreAllFromSupabase() {
         guildId:    row.discord_guild_id ?? null,
         art:        row.art ?? null,
         saved:      new Date().toISOString(),
-      };
+      }, row.overlay ?? {});
     }
     console.log(`[Supabase] restore: loaded ${charRows?.length ?? 0} characters`);
 
