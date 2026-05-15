@@ -5295,13 +5295,14 @@ function findCombatantAttack(combatant, attackName, guildId) {
 // already library-shaped). Idempotent.
 function normalizeAttackForRolling(attack) {
   if (!attack || typeof attack !== 'object') return attack;
-  // Already normalized? Library entries always have `kind` set explicitly.
-  if (attack.kind) return attack;
 
-  // Bestiary entries always have `to_hit` (the attack bonus). Use that as
-  // the discriminator. Without it we can't roll, so return as-is and let
-  // the rolling code surface the error.
-  if (attack.to_hit == null) return attack;
+  const bonusRaw = attack.bonus
+    ?? attack.to_hit
+    ?? attack.toHit
+    ?? attack.attack_bonus
+    ?? attack.attackBonus
+    ?? attack.attack;
+  const bonus = Number.isFinite(Number(bonusRaw)) ? Number(bonusRaw) : 0;
 
   // Parse the damage string. Examples we need to handle:
   //   "1d8+7 slashing"
@@ -5309,22 +5310,30 @@ function normalizeAttackForRolling(attack) {
   //   "1d8+3 piercing plus Knockdown"          ← extra is non-dice text
   //   "1d6+3 bludgeoning plus 1d6 fire"        ← extra is dice + type
   //   "4d12+16 slashing plus 1d6 cold and Grotesque Gift"
-  const dmgRaw = String(attack.damage ?? '').trim();
+  const dmgRaw = String(
+    attack.damage
+      ?? attack.damageDice
+      ?? attack.damage_dice
+      ?? attack.die
+      ?? ''
+  ).trim();
   // Match the leading dice expression + one word (the damage type).
   // Pattern: digits + 'd' + digits + optional +/-N, then a single word.
   const mainMatch = dmgRaw.match(/^(\d+d\d+(?:[+-]\d+)?)\s+([a-z]+)/i);
-  let mainDamage = null;
-  let mainType = null;
+  let mainDamage = attack.damageDice ?? attack.damage_dice ?? attack.die ?? null;
+  let mainType = attack.damageType ?? attack.damage_type ?? null;
   let trailing = '';
   if (mainMatch) {
     mainDamage = mainMatch[1];
     mainType = mainMatch[2].toLowerCase();
     trailing = dmgRaw.slice(mainMatch[0].length).trim();
+  } else if (/^\d+d\d+(?:[+-]\d+)?$/i.test(dmgRaw)) {
+    mainDamage = dmgRaw;
   } else {
     // Couldn't parse — best effort: pass the whole string as damage and
     // leave damageType unset. Rolling will still attempt to roll.
     mainDamage = dmgRaw || '0';
-    mainType = '';
+    mainType = mainType ?? '';
   }
 
   // Look for "plus <dice> <type>" trailing fragment for extra damage.
@@ -5341,16 +5350,19 @@ function normalizeAttackForRolling(attack) {
     }
   }
 
-  // Bestiary attacks from the parser are always melee/ranged Strikes.
-  // (Save-based effects like dragon breath are stored separately as
-  // "abilities" in the parser, not under `attacks`.)
+  const rawTraits = attack.traits ?? [];
+  const traits = Array.isArray(rawTraits)
+    ? rawTraits
+    : String(rawTraits).split(',').map(t => t.trim()).filter(Boolean);
+
   return {
-    kind: 'strike',
+    ...attack,
+    kind: attack.kind ?? 'strike',
     name: attack.name,
-    bonus: attack.to_hit,
+    bonus,
     damage: mainDamage,
     damageType: mainType,
-    traits: Array.isArray(attack.traits) ? attack.traits : [],
+    traits,
     extraDamage,
     extraType,
     // Carry through some metadata in case display code wants it
