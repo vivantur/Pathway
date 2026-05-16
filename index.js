@@ -8256,7 +8256,7 @@ client.on('interactionCreate', async (interaction) => {
           if (sensesRaw) charEntry.edits.senses = sensesRaw.split(/,\s*/).map(s => s.trim()).filter(Boolean);
           else delete charEntry.edits.senses;
 
-          saveCharacters(characters);
+          await saveCharacters(characters);
           return interaction.editReply(`✅ Updated **${charEntry.name}**. Use \`/sheet\` to see the changes.`);
         }
 
@@ -8291,7 +8291,7 @@ client.on('interactionCreate', async (interaction) => {
             delete id.level;
           }
 
-          saveCharacters(characters);
+          await saveCharacters(characters);
           return interaction.editReply(`✅ Updated identity for **${charEntry.name}**. Use \`/sheet\` to see it.`);
         }
 
@@ -8331,7 +8331,7 @@ client.on('interactionCreate', async (interaction) => {
             delete m.size;
           }
 
-          saveCharacters(characters);
+          await saveCharacters(characters);
           return interaction.editReply(`✅ Updated misc details for **${charEntry.name}**. Use \`/sheet\` to see it.`);
         }
       } catch (err) {
