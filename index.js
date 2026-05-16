@@ -8674,6 +8674,13 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(names);
           }
         }
+        else if (cmd === 'sheet' && focused.name === 'name') {
+          const characters = loadCharacters();
+          const own = Object.values(characters[interaction.user.id] ?? {})
+            .filter(v => v && v.name)
+            .map(e => e.name);
+          suggestions = pick(own);
+        }
         else if (cmd === 'xp' && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
