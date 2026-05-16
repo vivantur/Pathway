@@ -2751,6 +2751,26 @@ function getCharacterWeapons(charEntry) {
   return [...weapons.values()];
 }
 
+function normalizeCharacterDamageType(type) {
+  const cleaned = String(type ?? '').trim();
+  if (cleaned === 'P') return 'piercing';
+  if (cleaned === 'S') return 'slashing';
+  if (cleaned === 'B') return 'bludgeoning';
+  return cleaned.toLowerCase();
+}
+
+function splitCharacterDamage(damage, fallbackType = '') {
+  const raw = String(damage ?? '').trim();
+  const fallbackDamageType = normalizeCharacterDamageType(fallbackType);
+  if (!raw) return { die: '1d4', damageType: fallbackDamageType };
+  const match = raw.match(/^(\d*d\d+(?:\s*[+-]\s*\d+)?)(?:\s+(.+))?$/i);
+  if (!match) return { die: raw, damageType: fallbackDamageType };
+  return {
+    die: match[1].replace(/\s+/g, ''),
+    damageType: normalizeCharacterDamageType(match[2] ?? fallbackDamageType),
+  };
+}
+
 function normalizePathwayCustomAttacks(customAttacks) {
   if (!Array.isArray(customAttacks)) return [];
   return customAttacks
@@ -2763,13 +2783,14 @@ function normalizePathwayCustomAttacks(customAttacks) {
       const traits = Array.isArray(attack.traits)
         ? attack.traits.map(t => String(t).trim()).filter(Boolean)
         : String(attack.traits ?? '').split(',').map(t => t.trim()).filter(Boolean);
+      const damage = splitCharacterDamage(attack.damage, attack.damage_type ?? attack.damageType);
       return {
         name,
         display: name,
         attack: attackBonus,
-        die: String(attack.damage ?? '').trim() || '1d4',
+        die: damage.die,
         damageBonus: 0,
-        damageType: String(attack.damage_type ?? attack.damageType ?? '').trim(),
+        damageType: damage.damageType,
         traits,
         action: String(attack.action ?? '').trim(),
         range: String(attack.range ?? '').trim(),
@@ -2782,15 +2803,12 @@ function normalizePathwayCustomAttacks(customAttacks) {
 
 function combatV2CharacterAttacks(charEntry) {
   return getCharacterWeapons(charEntry).map(w => {
-    const damageType = w.damageType === 'P' ? 'piercing'
-      : w.damageType === 'S' ? 'slashing'
-      : w.damageType === 'B' ? 'bludgeoning'
-      : (w.damageType ?? '').toLowerCase();
+    const damage = splitCharacterDamage(w.die ?? '1d4', w.damageType);
     return {
       name: w.display ?? w.name,
       bonus: w.attack ?? 0,
-      damage: `${w.die ?? '1d4'}${w.damageBonus ? (w.damageBonus > 0 ? '+' : '') + w.damageBonus : ''}`,
-      damageType,
+      damage: `${damage.die}${w.damageBonus ? (w.damageBonus > 0 ? '+' : '') + w.damageBonus : ''}`,
+      damageType: damage.damageType,
       traits: w.traits ?? [],
       source: 'character',
     };
