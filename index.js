@@ -8396,7 +8396,24 @@ client.on('interactionCreate', async (interaction) => {
           if (focused.name === 'target' || focused.name === 'actor') {
             suggestions = pick((v2?.combatants ?? []).map(c => c.name));
           } else if (focused.name === 'name' && sub === 'attack') {
-            suggestions = pick((actor?.attacks ?? []).map(a => a.name).filter(Boolean));
+            const names = new Set((actor?.attacks ?? []).map(a => a?.name).filter(Boolean));
+            try {
+              const characters = loadCharacters();
+              let charEntry = null;
+              if (actor) {
+                const match = findCharacterEntryForCombatant(characters, actor);
+                if (match?.char && !match.companion) charEntry = match.char;
+              } else {
+                const resolved = resolveChar(interaction.user.id, null, characters);
+                if (!resolved?.error) charEntry = resolved.char;
+              }
+              if (charEntry) {
+                for (const attack of combatV2CharacterAttacks(charEntry)) {
+                  if (attack?.name) names.add(attack.name);
+                }
+              }
+            } catch {}
+            suggestions = pick([...names]);
           } else if (focused.name === 'name' && sub === 'skill') {
             const names = new Set(Object.values(COMBAT_V2_SKILL_LABELS));
             for (const [key, raw] of Object.entries(actor?.skills ?? {})) names.add(raw?.label ?? key);
