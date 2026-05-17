@@ -3222,7 +3222,7 @@ function combatV2AttackListText(actor) {
 //     stabilize at 0 HP without gaining wounded
 //
 // Pass in the recovery check result from ca.rollRecoveryCheck and the combatant.
-function buildRecoveryCheckPayload(rc, combatant) {
+function buildRecoveryCheckPayload(rc, combatant, { heroButtons = true } = {}) {
   const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
     : rc.outcome === 'success' ? '✅'
     : rc.outcome === 'failure' ? '❌'
@@ -3244,7 +3244,7 @@ function buildRecoveryCheckPayload(rc, combatant) {
     .setDescription(lines.join('\n'));
 
   const components = [];
-  if (combatant.isNpc || !combatant.ownerId) return { embeds: [embed], components };
+  if (!heroButtons || combatant.isNpc || !combatant.ownerId) return { embeds: [embed], components };
 
   // Look up hero points (PCs only)
   let heroPoints = 0;
@@ -16198,8 +16198,20 @@ client.on('interactionCreate', async (interaction) => {
       if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can advance turns.', ephemeral: true });
       if (v2Encounter.combatants.length === 0) return interaction.reply({ content: 'No combatants in the encounter yet.', ephemeral: true });
       const { current, encounter } = combatV2State.advanceTurn(channelId, 1);
+      const recoveryCheck = (current?.dying ?? 0) > 0
+        ? combatV2State.rollRecoveryCheck(channelId, current.name)
+        : null;
       await updateCombatV2Summary(interaction.channel, encounter);
-      return interaction.reply(`Next turn: **${current.name}**. Round **${encounter.round}**.`);
+      const replyPayload = {
+        content: `Next turn: **${current.name}**. Round **${encounter.round}**.`,
+      };
+      if (recoveryCheck) {
+        const recoveryPayload = buildRecoveryCheckPayload(recoveryCheck, current, { heroButtons: false });
+        replyPayload.embeds = recoveryPayload.embeds;
+        const deathPayload = combatDeathPayload(recoveryCheck);
+        if (deathPayload?.embeds?.length) replyPayload.embeds = [...replyPayload.embeds, ...deathPayload.embeds].slice(0, 10);
+      }
+      return interaction.reply(replyPayload);
     }
 
     if (v2Encounter && sub === 'prev') {
@@ -16232,6 +16244,25 @@ client.on('interactionCreate', async (interaction) => {
         ...(combatDeathPayload(result) ?? {}),
       });
       await updateCombatV2Summary(interaction.channel, result.encounter);
+      return;
+    }
+
+    if (v2Encounter && sub === 'recovery') {
+      const name = interaction.options.getString('name');
+      const target = combatV2State.findCombatant(v2Encounter, name);
+      if (!target) return interaction.reply({ content: `No combatant named **"${name}"** in combat.`, ephemeral: true });
+      if (target.ownerId !== userId && v2Encounter.gmId !== userId) {
+        return interaction.reply({ content: 'Only the combatant owner or GM can roll that recovery check.', ephemeral: true });
+      }
+      if ((target.dying ?? 0) <= 0) {
+        return interaction.reply({ content: `**${target.name}** is not dying.`, ephemeral: true });
+      }
+      const recoveryCheck = combatV2State.rollRecoveryCheck(channelId, target.name);
+      const payload = buildRecoveryCheckPayload(recoveryCheck, target, { heroButtons: false });
+      const deathPayload = combatDeathPayload(recoveryCheck);
+      if (deathPayload?.embeds?.length) payload.embeds = [...(payload.embeds ?? []), ...deathPayload.embeds].slice(0, 10);
+      await interaction.reply(payload);
+      await updateCombatV2Summary(interaction.channel, recoveryCheck.encounter);
       return;
     }
 

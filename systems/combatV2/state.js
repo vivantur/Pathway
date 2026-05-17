@@ -147,6 +147,122 @@ function resetTurnState(combatant) {
   combatant.reactionUsed = false;
 }
 
+function rollRecoveryCheck(channelId, query) {
+  const encounter = getEncounter(channelId);
+  if (!encounter) throw new Error('No active encounter.');
+  const combatant = findCombatant(encounter, query);
+  if (!combatant) throw new Error(`No combatant matching "${query}".`);
+  if ((combatant.dying ?? 0) <= 0) return null;
+
+  if (typeof combatant.dying !== 'number') combatant.dying = 0;
+  if (typeof combatant.wounded !== 'number') combatant.wounded = 0;
+  if (typeof combatant.doomed !== 'number') combatant.doomed = 0;
+
+  const dyingBefore = combatant.dying;
+  const wounded = combatant.wounded ?? 0;
+  const doomed = combatant.doomed ?? 0;
+  const maxDying = Math.max(1, 4 - doomed);
+  const dc = 10 + dyingBefore;
+  const roll = Math.floor(Math.random() * 20) + 1;
+
+  let outcome;
+  let baseDelta;
+  if (roll === 20) {
+    outcome = 'crit-success';
+    baseDelta = -2;
+  } else if (roll === 1) {
+    outcome = 'crit-failure';
+    baseDelta = 2;
+  } else if (roll >= dc + 10) {
+    outcome = 'crit-success';
+    baseDelta = -2;
+  } else if (roll >= dc) {
+    outcome = 'success';
+    baseDelta = -1;
+  } else if (roll <= dc - 10) {
+    outcome = 'crit-failure';
+    baseDelta = 2;
+  } else {
+    outcome = 'failure';
+    baseDelta = 1;
+  }
+
+  const woundedAdded = baseDelta > 0 ? wounded : 0;
+  const delta = baseDelta + woundedAdded;
+  let dyingAfter = dyingBefore + delta;
+  let died = false;
+  let awoke = false;
+  let removed = null;
+
+  if (dyingAfter >= maxDying) {
+    died = true;
+    dyingAfter = maxDying;
+    combatant.dying = maxDying;
+    removed = { ...combatant };
+    removeCombatant(channelId, combatant.name);
+  } else if (dyingAfter <= 0) {
+    awoke = true;
+    dyingAfter = 0;
+    combatant.dying = 0;
+    combatant.wounded = (combatant.wounded ?? 0) + 1;
+    combatant.unconscious = (combatant.hp ?? 0) <= 0;
+  } else {
+    combatant.dying = dyingAfter;
+    combatant.unconscious = true;
+  }
+
+  encounter.updatedAt = nowIso();
+  encounter.log.push({
+    at: nowIso(),
+    kind: died ? 'recovery-death' : 'recovery',
+    name: removed?.name ?? combatant.name,
+    roll,
+    dc,
+    outcome,
+    dyingBefore,
+    dyingAfter,
+  });
+
+  const name = removed?.name ?? combatant.name;
+  let narration;
+  if (died) {
+    narration = doomed > 0
+      ? `${name} has died. (Doomed ${doomed} means death at Dying ${maxDying}.)`
+      : `${name} has died.`;
+  } else if (awoke) {
+    narration = `${name} stabilizes at 0 HP. (Now Wounded ${combatant.wounded}, still unconscious until healed.)`;
+  } else if (delta < 0) {
+    narration = `Dying reduced: ${dyingBefore} -> ${dyingAfter}`;
+  } else if (delta > 0) {
+    const woundedNote = woundedAdded > 0 ? ` (+${baseDelta} base, +${woundedAdded} from Wounded ${wounded})` : '';
+    narration = `Dying increased: ${dyingBefore} -> ${dyingAfter}${woundedNote}`;
+  } else {
+    narration = `Dying unchanged at ${dyingAfter}`;
+  }
+
+  return {
+    encounter,
+    combatant,
+    removed,
+    name,
+    roll,
+    dc,
+    outcome,
+    delta,
+    baseDelta,
+    dyingBefore,
+    dyingAfter,
+    dying: dyingAfter,
+    wounded: combatant.wounded ?? wounded,
+    woundedAdded,
+    doomed,
+    maxDying,
+    died,
+    awoke,
+    narration,
+  };
+}
+
 function advanceTurn(channelId, direction = 1) {
   const encounter = getEncounter(channelId);
   if (!encounter || encounter.combatants.length === 0) return null;
@@ -368,6 +484,7 @@ module.exports = {
   findCombatant,
   currentCombatant,
   advanceTurn,
+  rollRecoveryCheck,
   delayCombatant,
   rejoinCombatant,
   applyHp,
