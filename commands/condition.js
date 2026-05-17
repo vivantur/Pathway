@@ -1,12 +1,10 @@
 // commands/condition.js
 // /condition slash command for Pathway — looks up PF2e conditions.
-// Data source: ../gamedata/conditions.json
+// Primary data source: Supabase reference data loaded at runtime.
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-// Load the conditions database once at startup.
-// Graceful fallback: if the gamedata file is absent (data now lives in Supabase),
-// conditions will be an empty object and the command will use runtime data instead.
+// Legacy local fallback only; the bot should use Supabase runtime data when available.
 let conditions = {};
 try {
   conditions = JSON.parse(require('fs').readFileSync(

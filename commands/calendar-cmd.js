@@ -288,12 +288,12 @@ async function handleCalendar(interaction, weatherModule = null) {
   // Resolve which engine to use for everything else.
   const cal = getEngine(guildId);
 
-  // Defensive check: if the engine's data file failed to load at startup,
+  // Defensive check: if the calendar rules failed to load at startup,
   // RULES will be null and every command will crash on a property access.
   if (!cal.RULES) {
-    const file = cal === eberronCalendar ? 'eberron-calendar.json' : 'calendar.json';
+    const setting = cal === eberronCalendar ? 'Eberron' : 'Golarion';
     return interaction.reply({
-      content: `❌ Calendar data file is missing. The bot couldn't load \`gamedata/${file}\`. Check the deploy logs for the exact error and confirm the file exists in your repo.`,
+      content: `Calendar rules for ${setting} could not be loaded from Supabase. Check the deploy logs and confirm the calendar rules were imported.`,
       ephemeral: true,
     });
   }

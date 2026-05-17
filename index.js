@@ -10503,19 +10503,10 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('name');
-    // ── DIAGNOSTIC ── temporary logging to track down /sheet failures.
-    // Remove these console.logs after the bug is fixed.
-    console.log(`[sheet DEBUG] userId=${userId}, nameArg=${JSON.stringify(nameArg)}`);
-    console.log(`[sheet DEBUG] characters[userId] exists: ${!!characters[userId]}`);
-    console.log(`[sheet DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
-    console.log(`[sheet DEBUG] total userIds in file: ${Object.keys(characters).length}`);
-    console.log(`[sheet DEBUG] file size: ${(() => { try { return fs.statSync(dataPath('characters.json')).size + ' bytes'; } catch (e) { return 'ERROR: ' + e.message; } })()}`);
     const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
     if (error) {
-      console.log(`[sheet DEBUG] resolveChar returned error: ${error}`);
       return interaction.editReply(error);
     }
-    console.log(`[sheet DEBUG] resolveChar succeeded: charKey=${charKey}`);
     try {
       // Merge overrides from charEntry.edits into a display-only view of c.
       // Original c.data is untouched so JSON re-imports don't lose user edits
@@ -12068,214 +12059,6 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // ─── /mattack ────────────────────────────────────────────────────
-  // ─── /diagnose — diagnostic dump of the user's character data ────
-  // Shows exactly what the bot has stored under your user ID: the keys
-  // it uses for each character, what entry.name vs entry.data.name say,
-  // active char setting, and any inconsistencies. Use this when /sheet,
-  // /init add, and /char list disagree about which character is which.
-  //
-  // Was originally going to be /char debug but /char already has Discord's
-  // max of 25 subcommands. So /diagnose is a top-level command that does
-  // the same thing.
-  //
-  // Output is ephemeral (only you see it) and shows ONLY your own data.
-  else if (commandName === 'diagnose') {
-    return interaction.reply({ content: '`/diagnose` has been removed from Pathway.', ephemeral: true });
-    const userId = interaction.user.id;
-    const characters = loadCharacters();
-    const userChars = characters[userId] ?? {};
-    const charKeys = Object.keys(userChars).filter(k => !k.startsWith('_'));
-    const activeKey = userChars._activeChar ?? null;
-
-    // ── DOWNLOAD FILE OPTION ──
-    // /diagnose download:true returns the full characters.json as an attachment
-    // so the operator can inspect what's actually on Railway's volume.
-    // Bot-owner only — characters.json contains everyone's data and shouldn't
-    // be downloadable by random users.
-    if (interaction.options.getBoolean('download') === true) {
-      if (!isBotOwner(userId)) {
-        return interaction.reply({
-          content: '🔒 Only the bot owner can download the full characters.json (it contains every player\'s data). Set BOT_OWNER_ID in your .env to your Discord user ID first.',
-          ephemeral: true,
-        });
-      }
-      try {
-        const filePath = dataPath('characters.json');
-        const stat = fs.statSync(filePath);
-        if (stat.size > 24 * 1024 * 1024) {
-          return interaction.reply({
-            content: `❌ File is too big to attach (${(stat.size / (1024*1024)).toFixed(1)} MB). Discord caps attachments at 25 MB.`,
-            ephemeral: true,
-          });
-        }
-        const content = fs.readFileSync(filePath, 'utf8');
-        const buf = Buffer.from(content, 'utf8');
-        return interaction.reply({
-          content: `📦 Full \`characters.json\` from \`${filePath}\` (${stat.size} bytes, modified ${stat.mtime.toISOString()}).`,
-          files: [new AttachmentBuilder(buf, { name: 'characters-snapshot.json' })],
-          ephemeral: true,
-        });
-      } catch (err) {
-        return interaction.reply({ content: `❌ Couldn't read characters.json: ${err.message}`, ephemeral: true });
-      }
-    }
-
-    // ── DEEP STORAGE DIAGNOSTICS ──
-    // Show exactly which file is being read so we can detect cases where
-    // /sheet and /diagnose end up hitting DIFFERENT files (which is what's
-    // happening when /sheet shows a character that doesn't exist in the
-    // file /diagnose reads). This block lists candidate paths and reports
-    // which ones exist + their sizes + last modified times.
-    const path = require('path');
-    const candidatePaths = {
-      'dataPath()':                 dataPath('characters.json'),
-      'DATA_DIR/characters.json':   path.join(DATA_DIR ?? process.cwd(), 'characters.json'),
-      'cwd()/characters.json':      path.join(process.cwd(), 'characters.json'),
-      'cwd()/saves/characters.json': path.join(process.cwd(), 'saves', 'characters.json'),
-      'cwd()/data/characters.json':  path.join(process.cwd(), 'data', 'characters.json'),
-      '/app/data/characters.json':   '/app/data/characters.json',
-      '/app/characters.json':        '/app/characters.json',
-      '/app/saves/characters.json':  '/app/saves/characters.json',
-    };
-    const fileInfo = [];
-    const seenPaths = new Set();
-    for (const [label, p] of Object.entries(candidatePaths)) {
-      if (seenPaths.has(p)) continue;
-      seenPaths.add(p);
-      try {
-        const stat = fs.statSync(p);
-        // Try to read top-level keys + your user's keys for comparison
-        let topKeyCount = '?';
-        let yourKeyList = '?';
-        try {
-          const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-          topKeyCount = Object.keys(data).length;
-          const userBlock = data[userId] ?? {};
-          const userBlockKeys = Object.keys(userBlock).filter(k => !k.startsWith('_'));
-          yourKeyList = userBlockKeys.length > 0 ? userBlockKeys.join(', ') : '(none under your ID)';
-        } catch {
-          yourKeyList = '(unparseable)';
-        }
-        fileInfo.push({
-          label,
-          path: p,
-          size: stat.size,
-          modified: stat.mtime.toISOString(),
-          topKeyCount,
-          yourKeyList,
-        });
-      } catch {
-        // File doesn't exist — skip silently, we only care about ones that do
-      }
-    }
-
-    const lines = [];
-    lines.push(`**Your user ID:** \`${userId}\``);
-    lines.push(`**Bot's resolved file path:** \`${dataPath('characters.json')}\``);
-    lines.push(`**process.cwd():** \`${process.cwd()}\``);
-    lines.push(`**DATA_DIR env:** \`${process.env.DATA_DIR ?? '(unset)'}\``);
-    lines.push('');
-
-    // List every characters.json file we could find on disk
-    lines.push(`**📁 characters.json files found on disk: ${fileInfo.length}**`);
-    if (fileInfo.length > 1) {
-      lines.push(`🚨 **MULTIPLE FILES DETECTED — this is your bug.**`);
-    } else if (fileInfo.length === 0) {
-      lines.push(`🚨 **NO FILES FOUND — bot is running on empty data.**`);
-    }
-    for (const f of fileInfo) {
-      lines.push(`• \`${f.path}\``);
-      lines.push(`  • size: **${f.size} bytes**, modified: ${f.modified}`);
-      lines.push(`  • top-level userIds: ${f.topKeyCount}`);
-      lines.push(`  • YOUR keys here: ${f.yourKeyList}`);
-    }
-    lines.push('');
-
-    if (charKeys.length === 0) {
-      lines.push(`📭 **The file the bot is currently reading has NO characters under your ID.**`);
-      const text = lines.join('\n');
-      if (text.length > 1900) {
-        const buf = Buffer.from(text, 'utf8');
-        return interaction.reply({
-          content: '📋 Diagnostic too long for one message — see attached file:',
-          files: [new AttachmentBuilder(buf, { name: 'diagnose.txt' })],
-          ephemeral: true,
-        });
-      }
-      return interaction.reply({ content: text, ephemeral: true });
-    }
-
-    lines.push(`**Total characters under your ID (in active file):** ${charKeys.length}`);
-    lines.push(`**Active character key:** \`${activeKey ?? '(none set)'}\``);
-    if (activeKey && !userChars[activeKey]) {
-      lines.push(`⚠️ **WARNING:** activeKey \`${activeKey}\` doesn't exist in your character list! This will cause "no active character" errors.`);
-    }
-    lines.push('');
-    lines.push('**Character Entries:**');
-
-    let anyMismatch = false;
-    for (const key of charKeys) {
-      const entry = userChars[key];
-      const topName = entry?.name ?? '(missing)';
-      const dataName = entry?.data?.name ?? '(missing)';
-      const isActive = key === activeKey ? ' 📌' : '';
-      const mismatch = topName !== dataName ? ' ⚠️ **NAME MISMATCH!**' : '';
-      if (mismatch) anyMismatch = true;
-      const expectedKey = String(topName).toLowerCase().replace(/\s+/g, '-');
-      const keyMismatch = key !== expectedKey
-        ? ` ⚠️ key "\`${key}\`" doesn't match name "${topName}" (expected "\`${expectedKey}\`")`
-        : '';
-      lines.push(`• **Key:** \`${key}\`${isActive}`);
-      lines.push(`  • \`entry.name\`: **${topName}**`);
-      lines.push(`  • \`entry.data.name\`: **${dataName}**${mismatch}`);
-      if (keyMismatch) lines.push(`  •${keyMismatch}`);
-    }
-
-    if (anyMismatch) {
-      lines.push('');
-      lines.push('🚨 **A name mismatch means \`/sheet\` and \`/init add\` will show different characters!**');
-      lines.push('Use `/diagnose fix:true` to repair (it will sync top-level name to match data.name).');
-    }
-
-    // Optional: try to auto-fix if user passed fix:true
-    const wantFix = interaction.options.getBoolean('fix') === true;
-    if (wantFix && anyMismatch) {
-      const fixedNames = [];
-      for (const key of charKeys) {
-        const entry = userChars[key];
-        if (!entry) continue;
-        const topName = entry.name;
-        const dataName = entry.data?.name;
-        if (topName !== dataName && dataName) {
-          fixedNames.push(`${topName} → ${dataName}`);
-          entry.name = dataName;
-        }
-      }
-      if (fixedNames.length > 0) {
-        saveCharacters(characters);
-        lines.push('');
-        lines.push(`✅ **Fixed ${fixedNames.length} mismatch(es):**`);
-        for (const f of fixedNames) lines.push(`  • ${f}`);
-        lines.push('Run `/sheet` and `/init add` again to verify.');
-      }
-    } else if (wantFix && !anyMismatch) {
-      lines.push('');
-      lines.push('✅ Nothing to fix — all entries are consistent.');
-    }
-
-    // Discord cap: 2000 chars per message. If we somehow exceed that, send as file.
-    const text = lines.join('\n');
-    if (text.length > 1900) {
-      const buf = Buffer.from(text, 'utf8');
-      return interaction.reply({
-        content: '📋 Diagnostic too long for one message — see attached file:',
-        files: [new AttachmentBuilder(buf, { name: 'diagnose.txt' })],
-        ephemeral: true,
-      });
-    }
-    return interaction.reply({ content: text, ephemeral: true });
-  }
-
   else if (commandName === 'mattack') {
     const channelId = interaction.channel.id;
     const userId = interaction.user.id;
@@ -16918,18 +16701,6 @@ client.on('interactionCreate', async (interaction) => {
 
     if (sub === 'add') {
       const characters = loadCharacters();
-      // ── DIAGNOSTIC: log what we loaded and who's calling ───────────
-      // Remove this block once the companion-bug debugging is done.
-      console.log(`[init add DEBUG] userId=${userId}, compArg=${interaction.options.getString('companion')}, charArg=${interaction.options.getString('character')}`);
-      console.log(`[init add DEBUG] characters.json keys for user: ${Object.keys(characters[userId] ?? {}).join(', ') || '(none)'}`);
-      console.log(`[init add DEBUG] total users in characters.json: ${Object.keys(characters).length}`);
-      console.log(`[init add DEBUG] dataPath says: ${dataPath('characters.json')}`);
-      try {
-        const stats = fs.statSync(dataPath('characters.json'));
-        console.log(`[init add DEBUG] file size: ${stats.size} bytes, modified: ${stats.mtime.toISOString()}`);
-      } catch (e) {
-        console.log(`[init add DEBUG] file stat failed: ${e.message}`);
-      }
 
       // ── Companion path ─────────────────────────────────────────────
       // If `companion:` is specified, add the user's companion to init as
@@ -16939,7 +16710,6 @@ client.on('interactionCreate', async (interaction) => {
       if (compArg) {
         const { error: cerr, char: ce } = resolveChar(userId, interaction.options.getString('character'), characters);
         if (cerr) {
-          console.log(`[init add DEBUG] resolveChar returned error: ${cerr}`);
           return interaction.reply({ content: cerr, ephemeral: true });
         }
         if (!ce.companions || Object.keys(ce.companions).length === 0) {
@@ -19108,18 +18878,10 @@ client.on('interactionCreate', async (interaction) => {
 
     // For all other subcommands, we need the player's character.
     const charNameArg = interaction.options.getString('character');
-    // ── DIAGNOSTIC ──
-    console.log(`[downtime DEBUG] sub=${sub}, userId=${userId}, charNameArg=${JSON.stringify(charNameArg)}`);
-    console.log(`[downtime DEBUG] characters[userId] exists: ${!!characters[userId]}`);
-    console.log(`[downtime DEBUG] characters[userId] keys: ${Object.keys(characters[userId] ?? {}).join(', ') || '(NONE)'}`);
-    console.log(`[downtime DEBUG] all userIds in file: ${Object.keys(characters).join(', ')}`);
-    console.log(`[downtime DEBUG] all options: ${JSON.stringify(interaction.options.data)}`);
     const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
     if (error) {
-      console.log(`[downtime DEBUG] resolveChar returned error: ${error}`);
       return interaction.reply({ content: error });
     }
-    console.log(`[downtime DEBUG] resolveChar succeeded: charKey=${charKey}`);
     const c = charEntry.data;
 
     // ─── /downtime start ──────────────────────────────

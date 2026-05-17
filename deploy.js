@@ -437,7 +437,6 @@ const resourceCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// /diagnose
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
 // /mattack

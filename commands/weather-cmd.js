@@ -145,12 +145,12 @@ async function handleWeather(interaction, encountersModule = null) {
   // Resolve which engine to use for everything else.
   const wx = getEngine(guildId);
 
-  // Defensive check: if the engine's data file failed to load at startup,
+  // Defensive check: if the weather rules failed to load at startup,
   // RULES will be null and every command will crash on a property access.
   if (!wx.RULES) {
-    const file = wx === eberronWeather ? 'eberron-weather.json' : 'weather.json';
+    const setting = wx === eberronWeather ? 'Eberron' : 'Golarion';
     return interaction.reply({
-      content: `❌ Weather data file is missing. The bot couldn't load \`gamedata/${file}\`. Check the deploy logs for the exact error and confirm the file exists in your repo.`,
+      content: `Weather rules for ${setting} could not be loaded from Supabase. Check the deploy logs and confirm the weather rules were imported.`,
       ephemeral: true,
     });
   }
