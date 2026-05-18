@@ -10726,6 +10726,7 @@ client.on('interactionCreate', async (interaction) => {
       const classDisplay = c.class ?? 'Unknown';
       const dualClass = c.dualClass ? ` / ${c.dualClass}` : '';
       const speedValue = statOverrides.speed ?? c.stats?.speed ?? ((c.attributes?.speed ?? 30) + (c.attributes?.speedBonus ?? 0));
+      const sizeDisplay = c.size ?? c.stats?.size ?? '';
       const spellStatsLine = spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : '';
       const embed = new EmbedBuilder()
         .setColor(0x7289DA)
@@ -10736,7 +10737,7 @@ client.on('interactionCreate', async (interaction) => {
           `**XP:** ${xpDisplay}`
         )
         .addFields(
-          { name: '⚔️ Combat Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft · **Perception** ${fmt(percMod)}${spellStatsLine}`, inline: false },
+          { name: '⚔️ Combat Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft${sizeDisplay ? ` (${sizeDisplay})` : ''} · **Perception** ${fmt(percMod)}${spellStatsLine}`, inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
