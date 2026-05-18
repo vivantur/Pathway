@@ -904,6 +904,23 @@ function calcProfNum(profNum, level) {
   if (!profNum || profNum === 0) return 0;
   return profNum + level;
 }
+function canonicalProfValue(prof, ...keys) {
+  for (const key of keys) {
+    if (prof?.[key] !== undefined) return prof[key];
+  }
+  return 0;
+}
+function usesRankProficiencies(charData) {
+  return charData?._pathwaySource === 'native';
+}
+function calcCharacterProfNum(charData, profNum, level) {
+  if (!profNum || profNum === 0) return 0;
+  return level + (usesRankProficiencies(charData) ? profNum * 2 : profNum);
+}
+function characterProfLabel(charData, profNum) {
+  const value = usesRankProficiencies(charData) ? profNum * 2 : profNum;
+  return { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[value] ?? 'Untrained';
+}
 function fmt(n) { return n >= 0 ? `+${n}` : `${n}`; }
 function xpToNextLevel() { return 1000; }
 
@@ -1132,9 +1149,16 @@ async function saveImportedCharacter(userId, rawChar, { preserveOverlay = false,
   }
   const characters = loadCharacters();
   if (!characters[userId]) characters[userId] = {};
-  const key = char.name.toLowerCase().replace(/\s+/g, '-');
+  const nameKey = char.name.toLowerCase().replace(/\s+/g, '-');
+  const rowKey = pathwayRow?.char_key || null;
+  const existingWebKey = pathwayRow?.id
+    ? Object.entries(characters[userId]).find(([k, entry]) =>
+        !k.startsWith('_') && entry?.pathwayWebId === pathwayRow.id
+      )?.[0]
+    : null;
+  const key = existingWebKey || (rowKey && characters[userId][rowKey] ? rowKey : rowKey || nameKey);
   const prev = characters[userId][key];
-  const existed = !!prev;
+  const existed = !!prev || !!pathwayRow;
 
   // Enforce character limit for new characters only (updates are fine)
   if (!existed) {
@@ -1918,7 +1942,7 @@ async function fetchPathwayCharacter(pathwayId, discordId) {
 
   const { data: charRow, error: charErr } = await sb
     .from('characters')
-    .select('id, user_id, char_key, name, pathbuilder_data, current_hp, hero_points, dying, wounded, experience, overlay, updated_at')
+    .select('id, user_id, char_key, name, source, pathbuilder_data, current_hp, hero_points, dying, wounded, experience, overlay, updated_at')
     .eq('id', pathwayId)
     .maybeSingle();
   if (charErr) return { error: `❌ Could not read that Pathway character: ${charErr.message}` };
@@ -1951,6 +1975,7 @@ async function fetchPathwayCharacter(pathwayId, discordId) {
     };
   }
 
+  if (charRow.source) char._pathwaySource = charRow.source;
   return { char, id: pathwayId, updatedAt: charRow.updated_at, charKey: charRow.char_key, row: charRow };
 }
 
@@ -1973,7 +1998,15 @@ function resolveChar(userId, nameArg, characters) {
       }
     }
   } else {
-    charKey = nameArg.toLowerCase().replace(/\s+/g, '-');
+    const requested = nameArg.toLowerCase().replace(/\s+/g, '-');
+    charKey = requested;
+    if (!characters[userId][charKey]) {
+      const lowered = nameArg.toLowerCase().trim();
+      const match = Object.keys(characters[userId])
+        .filter(k => !k.startsWith('_'))
+        .find(k => characters[userId][k]?.name?.toLowerCase?.().trim() === lowered);
+      if (match) charKey = match;
+    }
   }
   if (!characters[userId][charKey]) {
     const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
@@ -2321,7 +2354,7 @@ function computeCharPerception(charEntry) {
   const lvl = c.level ?? 1;
   const wisMod = Math.floor(((c.abilities?.wis ?? 10) - 10) / 2);
   const profNum = c.proficiencies?.perception ?? 0;
-  return wisMod + calcProfNum(profNum, lvl);
+  return wisMod + calcCharacterProfNum(c, profNum, lvl);
 }
 
 function computeCharMaxHp(charEntry) {
@@ -2824,7 +2857,7 @@ function combatV2CharacterSave(c, saveType) {
     : key === 'reflex' ? 'dex'
     : 'wis';
   const abilityMod = Math.floor(((c.abilities?.[abilityKey] ?? 10) - 10) / 2);
-  return abilityMod + calcProfNum(c.proficiencies?.[key] ?? 0, c.level ?? 1);
+  return abilityMod + calcCharacterProfNum(c, c.proficiencies?.[key] ?? 0, c.level ?? 1);
 }
 
 const COMBAT_V2_SKILL_LABELS = {
@@ -3434,7 +3467,7 @@ function getTargetSaveBonus(target, saveType, loadedCharacters) {
         const abilMod = Math.floor(((ab[abilityFor[normalized]] ?? 10) - 10) / 2);
         const profNum = prof[profKey[normalized]] ?? 0;
         const itemBonus = (c.overlay?.saveItemBonuses?.[normalized]) ?? 0;
-        return { bonus: abilMod + calcProfNum(profNum, lvl) + itemBonus, source: 'character' };
+        return { bonus: abilMod + calcCharacterProfNum(c, profNum, lvl) + itemBonus, source: 'character' };
       }
     }
   }
@@ -10545,23 +10578,29 @@ client.on('interactionCreate', async (interaction) => {
       // If the bot has been tracking HP (via /hp), show current/max; otherwise just max.
       const currentHP = getCharacterHp(charEntry);
       const hpDisplay = (currentHP < totalHP) ? `${currentHP}/${totalHP}` : `${totalHP}`;
-      const profBonus = Math.floor(lvl / 4) + 2;
       const wisMod = Math.floor(((ab.wis ?? 10) - 10) / 2);
-      const percComputed = wisMod + calcProfNum(prof.perception ?? 0, lvl);
+      const percComputed = wisMod + calcCharacterProfNum(c, prof.perception ?? 0, lvl);
       const percMod = statOverridesPre.perception ?? percComputed;
+      const overriddenFields = [];
       let spellAttackBonus = null, spellDC = null;
       if (c.spellCasters?.length > 0) {
         const caster = c.spellCasters[0];
         const tradAbilMap = { arcane: 'int', divine: 'wis', occult: 'cha', primal: 'wis' };
-        const traditionProfMap = { arcane: 'castingArcane', divine: 'castingDivine', occult: 'castingOccult', primal: 'castingPrimal' };
+        const traditionProfMap = {
+          arcane: ['castingArcane', 'casting_arcane'],
+          divine: ['castingDivine', 'casting_divine'],
+          occult: ['castingOccult', 'casting_occult'],
+          primal: ['castingPrimal', 'casting_primal'],
+        };
         const spellOv = charEntry.edits?.spellcasting ?? {};
         const effectiveTradition = spellOv.tradition ?? caster.magicTradition?.toLowerCase();
-        const tradKey = traditionProfMap[effectiveTradition] ?? 'castingArcane';
+        const tradKeys = traditionProfMap[effectiveTradition] ?? traditionProfMap.arcane;
         const keyAbility = (spellOv.keyAbility ?? caster.ability?.toLowerCase()) ?? tradAbilMap[effectiveTradition] ?? 'int';
         const keyMod = Math.floor(((ab[keyAbility] ?? 10) - 10) / 2);
-        const spellProfMod = calcProfNum(prof[tradKey] ?? 0, lvl);
-        spellAttackBonus = spellOv.attack ?? (keyMod + spellProfMod);
-        spellDC = spellOv.dc ?? (10 + keyMod + spellProfMod);
+        const spellProf = canonicalProfValue(prof, ...tradKeys, 'spell_dc', 'spellDC');
+        const spellProfMod = calcCharacterProfNum(c, spellProf, lvl);
+        spellAttackBonus = spellOv.attack ?? caster.attack ?? c.stats?.spell_attack ?? (keyMod + spellProfMod);
+        spellDC = spellOv.dc ?? caster.dc ?? c.spell_dc ?? c.stats?.spell_dc ?? (10 + keyMod + spellProfMod);
         if (spellOv.attack !== undefined)   overriddenFields.push('Spell atk');
         if (spellOv.dc !== undefined)       overriddenFields.push('Spell DC');
         if (spellOv.tradition !== undefined)  overriddenFields.push('Tradition');
@@ -10571,10 +10610,9 @@ client.on('interactionCreate', async (interaction) => {
       // computed values from c.data. Track which ones are overridden so we
       // can mark them in the display with a warning.
       const statOverrides = charEntry.edits?.stats ?? {};
-      const overriddenFields = [];
-      const fortModComputed   = Math.floor(((ab.con ?? 10) - 10) / 2) + calcProfNum(prof.fortitude ?? 0, lvl);
-      const reflexModComputed = Math.floor(((ab.dex ?? 10) - 10) / 2) + calcProfNum(prof.reflex ?? 0, lvl);
-      const willModComputed   = Math.floor(((ab.wis ?? 10) - 10) / 2) + calcProfNum(prof.will ?? 0, lvl);
+      const fortModComputed   = Math.floor(((ab.con ?? 10) - 10) / 2) + calcCharacterProfNum(c, prof.fortitude ?? 0, lvl);
+      const reflexModComputed = Math.floor(((ab.dex ?? 10) - 10) / 2) + calcCharacterProfNum(c, prof.reflex ?? 0, lvl);
+      const willModComputed   = Math.floor(((ab.wis ?? 10) - 10) / 2) + calcCharacterProfNum(c, prof.will ?? 0, lvl);
       const fortMod   = statOverrides.fortitude ?? fortModComputed;
       const reflexMod = statOverrides.reflex ?? reflexModComputed;
       const willMod   = statOverrides.will ?? willModComputed;
@@ -10623,7 +10661,7 @@ client.on('interactionCreate', async (interaction) => {
         const jsonRank = prof[skill] ?? 0;
         const effectiveRank = override?.rank ?? jsonRank;
         const abilMod = Math.floor(((ab[skillMap[skill]] ?? 10) - 10) / 2);
-        const computedTotal = abilMod + calcProfNum(effectiveRank, lvl);
+        const computedTotal = abilMod + calcCharacterProfNum(c, effectiveRank, lvl);
         const total = (typeof override?.total === 'number') ? override.total : computedTotal;
         // Only include if trained (rank > 0) or explicitly overridden
         if (effectiveRank > 0 || override) {
@@ -10653,7 +10691,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       const loreSkills = [...loreMap.values()].map(lore => {
         const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
-        const computedTotal = intMod + calcProfNum(lore.rank, lvl);
+        const computedTotal = intMod + calcCharacterProfNum(c, lore.rank, lvl);
         const total = (lore.total !== null) ? lore.total : computedTotal;
         const icon = profIcons[lore.rank] || (lore.total !== null ? '◔' : '◑');
         return `${icon} Lore: ${lore.name} ${fmt(total)}`;
@@ -10687,6 +10725,8 @@ client.on('interactionCreate', async (interaction) => {
       const ancestryDisplay = `${c.ancestry ?? ''} ${c.heritage ?? ''}`.trim();
       const classDisplay = c.class ?? 'Unknown';
       const dualClass = c.dualClass ? ` / ${c.dualClass}` : '';
+      const speedValue = statOverrides.speed ?? c.stats?.speed ?? ((c.attributes?.speed ?? 30) + (c.attributes?.speedBonus ?? 0));
+      const spellStatsLine = spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : '';
       const embed = new EmbedBuilder()
         .setColor(0x7289DA)
         .setTitle(c.name)
@@ -10696,7 +10736,7 @@ client.on('interactionCreate', async (interaction) => {
           `**XP:** ${xpDisplay}`
         )
         .addFields(
-          { name: '⚔️ Combat Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${statOverrides.speed ?? c.attributes?.speed ?? 30} ft · **Perception** ${fmt(percMod)}\n**Prof Bonus** +${profBonus}` + (spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : ''), inline: false },
+          { name: '⚔️ Combat Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft · **Perception** ${fmt(percMod)}${spellStatsLine}`, inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
@@ -11377,19 +11417,24 @@ client.on('interactionCreate', async (interaction) => {
     const ab = c.abilities ?? {};
     const prof = c.proficiencies ?? {};
     const lvl = c.level ?? 1;
-    const traditionProfMap = { arcane: 'castingArcane', divine: 'castingDivine', occult: 'castingOccult', primal: 'castingPrimal' };
+    const traditionProfMap = {
+      arcane: ['castingArcane', 'casting_arcane'],
+      divine: ['castingDivine', 'casting_divine'],
+      occult: ['castingOccult', 'casting_occult'],
+      primal: ['castingPrimal', 'casting_primal'],
+    };
     const tradAbilMap = { arcane: 'int', divine: 'wis', occult: 'cha', primal: 'wis' };
-    let keyAbility = 'int', spellProfNum = 2;
+    let keyAbility = 'int', spellProfNum = usesRankProficiencies(c) ? 1 : 2;
     if (c.spellCasters?.length > 0) {
       const spellTraditions = spell.traditions.map(t => t.toLowerCase());
       const caster = c.spellCasters.find(sc => spellTraditions.includes(sc.magicTradition?.toLowerCase())) ?? c.spellCasters[0];
-      const tradKey = traditionProfMap[caster.magicTradition?.toLowerCase()] ?? 'castingArcane';
-      spellProfNum = prof[tradKey] ?? 2;
+      const tradKeys = traditionProfMap[caster.magicTradition?.toLowerCase()] ?? traditionProfMap.arcane;
+      spellProfNum = canonicalProfValue(prof, ...tradKeys, 'spell_dc', 'spellDC') || spellProfNum;
       keyAbility = caster.ability?.toLowerCase() ?? tradAbilMap[caster.magicTradition?.toLowerCase()] ?? 'int';
     }
     const keyMod = Math.floor(((ab[keyAbility] ?? 10) - 10) / 2);
-    const spellAttackBonus = keyMod + calcProfNum(spellProfNum, lvl);
-    const spellDC = 10 + keyMod + calcProfNum(spellProfNum, lvl);
+    const spellAttackBonus = keyMod + calcCharacterProfNum(c, spellProfNum, lvl);
+    const spellDC = 10 + keyMod + calcCharacterProfNum(c, spellProfNum, lvl);
     const isAttackSpell = spell.isAttackSpell === true;
     const saveType = spell.savingThrow ?? null;
     const effectiveLevel = castLevel ?? spell.level ?? 1;
@@ -12629,14 +12674,13 @@ client.on('interactionCreate', async (interaction) => {
     const abilKey  = skillMap[skillName];
     const abilMod  = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
     const profNum  = prof[skillName] ?? 0;
-    const modifier = abilMod + calcProfNum(profNum, lvl);
+    const modifier = abilMod + calcCharacterProfNum(c, profNum, lvl);
     const dieRoll  = Math.floor(Math.random() * 20) + 1;
     const total    = dieRoll + modifier + extraBonus;
-    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const skillDisplay = skillName.charAt(0).toUpperCase() + skillName.slice(1);
     const skillThumb = charEntry.art ?? null;
     await interaction.editReply({
-      embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: skillThumb })],
+      embeds: [buildRollEmbed({ title: `${c.name} makes a ${skillDisplay} check!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${characterProfLabel(c, profNum)} (${fmt(modifier)})`, thumbnail: skillThumb })],
       files: rollFallbackFiles(skillThumb),
     });
   }
@@ -12653,7 +12697,6 @@ client.on('interactionCreate', async (interaction) => {
     const c = charEntry.data;
     const modifier = computeCharPerception(charEntry);
     const profNum = c.proficiencies?.perception ?? 0;
-    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const total = dieRoll + modifier + extraBonus;
     const perceptionThumb = charEntry.art ?? null;
@@ -12661,7 +12704,7 @@ client.on('interactionCreate', async (interaction) => {
       embeds: [buildRollEmbed({
         title: `👁️ ${c.name} rolls Perception!`,
         breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
-        charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} Perception (${fmt(modifier)})`,
+        charName: `${c.name} · ${characterProfLabel(c, profNum)} Perception (${fmt(modifier)})`,
         thumbnail: perceptionThumb,
       })],
       files: rollFallbackFiles(perceptionThumb),
@@ -12699,14 +12742,13 @@ client.on('interactionCreate', async (interaction) => {
       const abilKey = skillMap[key];
       const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
       profNum = prof[key] ?? 0;
-      modifier = abilMod + calcProfNum(profNum, lvl);
+      modifier = abilMod + calcCharacterProfNum(c, profNum, lvl);
       sourceLabel = skillOverride.charAt(0).toUpperCase() + skillOverride.slice(1);
     } else {
       modifier = computeCharPerception(charEntry);
       profNum = prof.perception ?? 0;
       sourceLabel = 'Perception';
     }
-    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const total = dieRoll + modifier + extraBonus;
     const initThumb = charEntry.art ?? null;
@@ -12714,7 +12756,7 @@ client.on('interactionCreate', async (interaction) => {
       embeds: [buildRollEmbed({
         title: `⚔️ ${c.name} rolls Initiative!`,
         breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20),
-        charName: `${c.name} · ${sourceLabel} (${fmt(modifier)}) · ${profLabels[profNum] ?? 'Untrained'}`,
+        charName: `${c.name} · ${sourceLabel} (${fmt(modifier)}) · ${characterProfLabel(c, profNum)}`,
         thumbnail: initThumb,
       })],
       files: rollFallbackFiles(initThumb),
@@ -12737,14 +12779,13 @@ client.on('interactionCreate', async (interaction) => {
     const abilKey  = saveAbilMap[saveType];
     const abilMod  = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
     const profNum  = prof[saveType] ?? 0;
-    const modifier = abilMod + calcProfNum(profNum, lvl);
+    const modifier = abilMod + calcCharacterProfNum(c, profNum, lvl);
     const dieRoll  = Math.floor(Math.random() * 20) + 1;
     const total    = dieRoll + modifier + extraBonus;
-    const profLabels = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
     const saveDisplay = saveType.charAt(0).toUpperCase() + saveType.slice(1);
     const saveThumb = charEntry.art ?? null;
     await interaction.editReply({
-      embeds: [buildRollEmbed({ title: `${c.name} makes a ${saveDisplay} save!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${profLabels[profNum] ?? 'Untrained'} (${fmt(modifier)})`, thumbnail: saveThumb })],
+      embeds: [buildRollEmbed({ title: `${c.name} makes a ${saveDisplay} save!`, breakdown: formatRollBreakdown(dieRoll, modifier, extraBonus, total, 20), charName: `${c.name} · ${characterProfLabel(c, profNum)} (${fmt(modifier)})`, thumbnail: saveThumb })],
       files: rollFallbackFiles(saveThumb),
     });
   }

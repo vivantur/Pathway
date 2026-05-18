@@ -1388,7 +1388,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
 
     const { data: rows } = await sb
       .from('characters')
-      .select('char_key, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, updated_at')
+      .select('char_key, name, source, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, updated_at')
       .eq('user_id', userRow.id)
       .eq('status', 'active');
     if (!rows || rows.length === 0) return 0;
@@ -1405,8 +1405,9 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
       if (local?.saved && row.updated_at && local.saved >= row.updated_at) continue;
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
+      if (row.source) build._pathwaySource = row.source;
       charactersMap[discordId][key] = applyCharacterBotState({
-        name:       build.name,
+        name:       row.name ?? build.name,
         data:       build,
         hp:         row.current_hp ?? null,
         overlay:    row.overlay ?? {},
@@ -1823,7 +1824,7 @@ async function restoreAllFromSupabase() {
     // loadCharacters() returns Supabase data without touching disk.
     const { data: charRows, error: charErr } = await sb
       .from('characters')
-      .select('user_id, char_key, name, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art')
+      .select('user_id, char_key, name, source, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art')
       .eq('status', 'active');
     if (charErr) throw charErr;
 
@@ -1833,9 +1834,10 @@ async function restoreAllFromSupabase() {
       if (!discordId || !row.char_key) continue;
       const build = row.pathbuilder_data?.build ?? row.pathbuilder_data;
       if (!build?.name) continue;
+      if (row.source) build._pathwaySource = row.source;
       if (!characters[discordId]) characters[discordId] = {};
       characters[discordId][row.char_key] = applyCharacterBotState({
-        name:       build.name,
+        name:       row.name ?? build.name,
         data:       build,
         hp:         row.current_hp ?? null,
         overlay:    row.overlay ?? {},
