@@ -355,6 +355,39 @@ async function saveDowntime(data) {
   await syncAllDowntimeToSupabase(data);
 }
 
+const DOWNTIME_AUTO_ACCRUAL_INTERVAL_MS = 60 * 60 * 1000;
+let downtimeAutoAccrualTimer = null;
+let downtimeAutoAccrualRunning = false;
+
+async function runDowntimeAutoAccrual(reason = 'scheduled') {
+  if (downtimeAutoAccrualRunning) return;
+  downtimeAutoAccrualRunning = true;
+  try {
+    const store = loadDowntime();
+    const result = downtime.accrueAutoEnabled(store);
+    if (result.changed) {
+      await saveDowntime(store);
+      console.log(
+        `[downtime:auto] ${reason}: credited ${result.totalAdded} day(s) across ${result.records.length} character(s)` +
+        (result.totalCapped ? `; ${result.totalCapped} day(s) capped` : '')
+      );
+    }
+  } catch (err) {
+    console.error('[downtime:auto] accrual failed:', err.message);
+  } finally {
+    downtimeAutoAccrualRunning = false;
+  }
+}
+
+function startDowntimeAutoAccrual() {
+  if (downtimeAutoAccrualTimer) return;
+  runDowntimeAutoAccrual('startup');
+  downtimeAutoAccrualTimer = setInterval(
+    () => runDowntimeAutoAccrual('interval'),
+    DOWNTIME_AUTO_ACCRUAL_INTERVAL_MS
+  );
+}
+
 const DOWNTIME_SKILL_ABILITIES = {
   acrobatics: 'dex',
   arcana: 'int',
@@ -7780,6 +7813,8 @@ client.once('clientReady', async () => {
   if (restored?.monsterArt)     monsterArtCache     = restored.monsterArt;
   if (restored?.monsterEdits)   monsterEditsCache   = restored.monsterEdits;
   if (restored?.monsterAttacks) monsterAttacksCache = restored.monsterAttacks;
+  await encounters.restoreEncountersFromSupabase?.();
+  await combatV2State.restoreEncountersFromSupabase?.();
   // Guild state: seed the JSON cache so loadJson/mutateJson for these files
   // use in-memory state instead of reading from disk.
   seedJsonCache('calendar-state.json', restored?.calendarState ?? {});
@@ -7825,6 +7860,7 @@ client.once('clientReady', async () => {
   if (weatherData?.golarion)  weatherEngine.setRules(weatherData.golarion);
   if (weatherData?.eberron)   require('./systems/eberronWeather').setRules(weatherData.eberron);
   calendarCmd.startCalendarAutotick(client, weatherEngine);
+  startDowntimeAutoAccrual();
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
   setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
@@ -16239,19 +16275,40 @@ client.on('interactionCreate', async (interaction) => {
     if (v2Encounter && sub === 'next') {
       if (userId !== v2Encounter.gmId) return interaction.reply({ content: 'Only the GM can advance turns.', ephemeral: true });
       if (v2Encounter.combatants.length === 0) return interaction.reply({ content: 'No combatants in the encounter yet.', ephemeral: true });
-      const { current, encounter } = combatV2State.advanceTurn(channelId, 1);
-      const recoveryCheck = (current?.dying ?? 0) > 0
-        ? combatV2State.rollRecoveryCheck(channelId, current.name)
-        : null;
+      const result = combatV2State.processTurnTransition(channelId, 1);
+      const { current, encounter, recoveryCheck } = result;
       await updateCombatV2Summary(interaction.channel, encounter);
+      const lines = [current
+        ? `Next turn: **${current.name}**. Round **${encounter.round}**.`
+        : `No combatants remain. Round **${encounter.round}**.`];
+      for (const pr of result.persistentResults ?? []) {
+        const flatStatus = pr.ended
+          ? `flat check ${pr.flatRoll} vs DC ${pr.flatDc}: persistent damage ends`
+          : `flat check ${pr.flatRoll} vs DC ${pr.flatDc}: persistent damage continues`;
+        const defenseNote = pr.defenseNotes?.length ? ` (${pr.defenseNotes.join(', ')})` : '';
+        const dyingTag = pr.died ? ' and died' : pr.wentDown ? ` and is Dying ${pr.dying}` : '';
+        lines.push(`**${pr.name}** persistent ${pr.damageType}: ${pr.damageDice}[${pr.damageRolls.join(', ')}] = ${pr.finalDamage} damage${defenseNote}${dyingTag}; ${flatStatus}.`);
+      }
+      for (const expired of result.expiredEffects ?? []) {
+        lines.push(`**${expired.effect.name}** expired on **${expired.combatantName}**.`);
+      }
+      if (result.actionEconomy?.text) {
+        lines.push(result.actionEconomy.text);
+      }
       const replyPayload = {
-        content: `Next turn: **${current.name}**. Round **${encounter.round}**.`,
+        content: lines.join('\n'),
       };
       if (recoveryCheck) {
-        const recoveryPayload = buildRecoveryCheckPayload(recoveryCheck, current, { heroButtons: false });
+        const recoveryPayload = buildRecoveryCheckPayload(recoveryCheck, recoveryCheck.combatant ?? current, { heroButtons: false });
         replyPayload.embeds = recoveryPayload.embeds;
         const deathPayload = combatDeathPayload(recoveryCheck);
         if (deathPayload?.embeds?.length) replyPayload.embeds = [...replyPayload.embeds, ...deathPayload.embeds].slice(0, 10);
+      }
+      for (const pr of result.persistentResults ?? []) {
+        const deathPayload = combatDeathPayload(pr);
+        if (deathPayload?.embeds?.length) {
+          replyPayload.embeds = [...(replyPayload.embeds ?? []), ...deathPayload.embeds].slice(0, 10);
+        }
       }
       return interaction.reply(replyPayload);
     }
@@ -18840,7 +18897,7 @@ client.on('interactionCreate', async (interaction) => {
     // Current downtime engine: a per-character bank of downtime days. The old
     // activity tracker code below is kept only as historical scaffolding, but
     // every registered downtime command is handled here and returns before it.
-    if (['check', 'spend', 'grant', 'log', 'reset'].includes(sub)) {
+    if (['check', 'spend', 'grant', 'log', 'reset', 'on', 'off'].includes(sub)) {
       const charNameArg = interaction.options.getString('character');
       const { error, charKey, char: charEntry } = resolveChar(userId, charNameArg, characters);
       if (error) return interaction.reply({ content: error });
@@ -18872,12 +18929,28 @@ client.on('interactionCreate', async (interaction) => {
           .setTitle(`🛠️ ${charName}'s Downtime`)
           .setDescription(
             `**Banked days:** ${status.bank}/${status.capacity}\n` +
+            `**Automatic accrual:** ${status.autoAccrue ? 'On' : 'Off'}\n` +
             `${accrualLine}${capLine}\n\n` +
             `**Recent activity:**\n${logLines}`
           )
           .setFooter({ text: `Last accrual date: ${status.lastAccrualDate}` });
         if (charEntry.art) embed.setThumbnail(charEntry.art);
         return interaction.reply({ embeds: [embed] });
+      }
+
+      if (sub === 'on' || sub === 'off') {
+        const enabled = sub === 'on';
+        const result = downtime.setAutoAccrue(store, userId, charKey, enabled, userId);
+        await saveDowntime(store);
+        const accrualLine = result.accrual?.added > 0
+          ? `\nCredited **${result.accrual.added}** pending day${result.accrual.added === 1 ? '' : 's'} while updating.`
+          : '';
+        const statusLine = result.changed
+          ? `Automatic downtime accrual is now **${enabled ? 'ON' : 'OFF'}** for **${charName}**.`
+          : `Automatic downtime accrual was already **${enabled ? 'ON' : 'OFF'}** for **${charName}**.`;
+        return interaction.reply({
+          content: `${statusLine}\nBank balance: **${result.balance}**/${downtime.MAX_BANK}.${accrualLine}`,
+        });
       }
 
       if (sub === 'spend') {

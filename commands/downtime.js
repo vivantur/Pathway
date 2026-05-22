@@ -137,6 +137,7 @@ function getCharRecord(store, userId, charKey) {
     store[userId][charKey] = {
       bank: 0,
       lastAccrualDate: isoDate(),
+      autoAccrue: false,
       log: [],
     };
     return store[userId][charKey];
@@ -146,6 +147,7 @@ function getCharRecord(store, userId, charKey) {
   if (typeof rec.bank !== 'number') rec.bank = 0;
   if (typeof rec.lastAccrualDate !== 'string') rec.lastAccrualDate = isoDate();
   if (!Array.isArray(rec.log)) rec.log = [];
+  if (typeof rec.autoAccrue !== 'boolean') rec.autoAccrue = inferAutoAccrueFromLog(rec.log);
   return rec;
 }
 
@@ -153,8 +155,27 @@ function getCharRecord(store, userId, charKey) {
 function appendLog(rec, entry) {
   rec.log.push(entry);
   if (rec.log.length > MAX_LOG_ENTRIES) {
-    rec.log = rec.log.slice(-MAX_LOG_ENTRIES);
+    const latestAutoToggle = rec.log
+      .slice()
+      .reverse()
+      .find(e => e?.kind === 'auto-on' || e?.kind === 'auto-off');
+    const sliced = rec.log.slice(-MAX_LOG_ENTRIES);
+    if (latestAutoToggle && !sliced.includes(latestAutoToggle)) {
+      sliced.shift();
+      sliced.unshift(latestAutoToggle);
+    }
+    rec.log = sliced;
   }
+}
+
+function inferAutoAccrueFromLog(log) {
+  if (!Array.isArray(log)) return false;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const kind = log[i]?.kind;
+    if (kind === 'auto-on') return true;
+    if (kind === 'auto-off') return false;
+  }
+  return false;
 }
 
 // ── Auto-accrual ────────────────────────────────────────────────────────────
@@ -192,6 +213,49 @@ function accrue(store, userId, charKey) {
   }
 
   return { added, capped, balance: newBank };
+}
+
+function setAutoAccrue(store, userId, charKey, enabled, byUserId) {
+  const rec = getCharRecord(store, userId, charKey);
+  const accrual = accrue(store, userId, charKey);
+  const changed = rec.autoAccrue !== enabled;
+  rec.autoAccrue = enabled;
+
+  if (changed) {
+    appendLog(rec, {
+      ts: new Date().toISOString(),
+      kind: enabled ? 'auto-on' : 'auto-off',
+      delta: 0,
+      balance: rec.bank,
+      by: byUserId,
+      reason: enabled ? 'automatic downtime accrual enabled' : 'automatic downtime accrual disabled',
+    });
+  }
+
+  return { ok: true, changed, enabled, balance: rec.bank, accrual };
+}
+
+function accrueAutoEnabled(store) {
+  const records = [];
+  let totalAdded = 0;
+  let totalCapped = 0;
+
+  for (const [userId, chars] of Object.entries(store ?? {})) {
+    if (!chars || typeof chars !== 'object' || userId.startsWith('_')) continue;
+    for (const [charKey, rec] of Object.entries(chars)) {
+      if (!rec || typeof rec !== 'object' || charKey.startsWith('_')) continue;
+      const healed = getCharRecord(store, userId, charKey);
+      if (!healed.autoAccrue) continue;
+      const result = accrue(store, userId, charKey);
+      if (result.added > 0 || result.capped > 0) {
+        totalAdded += result.added;
+        totalCapped += result.capped;
+        records.push({ userId, charKey, ...result });
+      }
+    }
+  }
+
+  return { changed: records.length > 0, totalAdded, totalCapped, records };
 }
 
 // ── Grant ──────────────────────────────────────────────────────────────────
@@ -283,6 +347,7 @@ function getStatus(store, userId, charKey) {
   return {
     bank: rec.bank,
     lastAccrualDate: rec.lastAccrualDate,
+    autoAccrue: !!rec.autoAccrue,
     isFull: rec.bank >= MAX_BANK,
     capacity: MAX_BANK,
   };
@@ -300,6 +365,8 @@ module.exports = {
   MAX_LOG_ENTRIES,
   // Operations
   accrue,
+  accrueAutoEnabled,
+  setAutoAccrue,
   grant,
   spend,
   reset,

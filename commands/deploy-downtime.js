@@ -17,6 +17,18 @@ const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 const downtimeCommand = new SlashCommandBuilder()
   .setName('downtime')
   .setDescription('Manage PF2e downtime activities — Earn Income, Long-Term Rest, Crafting, etc.')
+  .addSubcommand(sub => sub
+    .setName('on')
+    .setDescription('Turn on true automatic downtime accrual for your character')
+    .addStringOption(opt => opt
+      .setName('character')
+      .setDescription('Which character (if you have multiple)')))
+  .addSubcommand(sub => sub
+    .setName('off')
+    .setDescription('Turn off true automatic downtime accrual for your character')
+    .addStringOption(opt => opt
+      .setName('character')
+      .setDescription('Which character (if you have multiple)')))
   // ── /downtime list ──
   .addSubcommand(sub => sub
     .setName('list')

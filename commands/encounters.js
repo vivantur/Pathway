@@ -9,6 +9,20 @@ const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require
 
 const encounters = new Map();
 
+function isCombatV2Snapshot(combatants) {
+  if (!Array.isArray(combatants) || combatants.length === 0) return true;
+  return combatants.some(c => c && (
+    c.type != null
+    || c.sourceKey != null
+    || c.attacksThisTurn != null
+    || c.reactionUsed != null
+    || Array.isArray(c.attacks)
+    || Array.isArray(c.spells)
+    || c.resistances != null
+    || c.weaknesses != null
+  ));
+}
+
 function getEncounter(channelId) {
   return encounters.get(channelId) || null;
 }
@@ -285,6 +299,7 @@ async function restoreEncountersFromSupabase() {
     if (!rows || rows.length === 0) return;
     let count = 0;
     for (const row of rows) {
+      if (isCombatV2Snapshot(row.combatants)) continue;
       if (encounters.has(row.channel_id)) continue; // already in memory
       encounters.set(row.channel_id, {
         combatants:       row.combatants ?? [],
