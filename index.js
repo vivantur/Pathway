@@ -2060,6 +2060,43 @@ async function fetchPathwayCharacter(pathwayId, discordId) {
   return { char, id: pathwayId, updatedAt: charRow.updated_at, charKey: charRow.char_key, row: charRow };
 }
 
+async function fetchLinkedPathwayCharacter(discordId, localKey, localEntry) {
+  const sb = getSupabase();
+  if (!sb) return { error: 'Supabase is not configured.' };
+
+  const { data: userRow, error: userErr } = await sb
+    .from('users')
+    .select('id')
+    .eq('discord_id', String(discordId))
+    .maybeSingle();
+  if (userErr) return { error: userErr.message };
+  if (!userRow?.id) return { error: 'No linked Pathway web user found.' };
+
+  const { data: rows, error: charErr } = await sb
+    .from('characters')
+    .select('id, user_id, char_key, name, source, pathbuilder_data, current_hp, hero_points, dying, wounded, experience, overlay, updated_at')
+    .eq('user_id', userRow.id);
+  if (charErr) return { error: charErr.message };
+
+  const normalize = (value) => String(value ?? '').trim().toLowerCase().replace(/\s+/g, '-');
+  const localName = localEntry?.name ?? localEntry?.data?.name ?? '';
+  const candidates = rows ?? [];
+  const row = candidates.find((candidate) =>
+    normalize(candidate.char_key) === normalize(localKey) ||
+    normalize(candidate.name) === normalize(localName) ||
+    normalize(candidate.name) === normalize(localKey)
+  );
+  if (!row) return { error: 'No matching Pathway web character found.' };
+
+  const stored = row.pathbuilder_data;
+  const char = stored?.build ?? stored;
+  if (!char || typeof char !== 'object' || !char.name) {
+    return { error: `Pathway web character \`${row.id}\` does not have usable sheet data saved yet.` };
+  }
+  if (row.source) char._pathwaySource = row.source;
+  return { char, id: row.id, updatedAt: row.updated_at, charKey: row.char_key, row };
+}
+
 function resolveChar(userId, nameArg, characters) {
   if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
@@ -10657,8 +10694,10 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.editReply(error);
     }
     try {
-      if (charEntry.pathwayWebId) {
-        const refreshed = await fetchPathwayCharacter(charEntry.pathwayWebId, userId);
+      if (charEntry.pathwayWebId || charEntry.data?._pathwaySource === 'native') {
+        const refreshed = charEntry.pathwayWebId
+          ? await fetchPathwayCharacter(charEntry.pathwayWebId, userId)
+          : await fetchLinkedPathwayCharacter(userId, charKey, charEntry);
         if (!refreshed.error) {
           const savedRefresh = await saveImportedCharacter(userId, refreshed.char, {
             preserveOverlay: true,
