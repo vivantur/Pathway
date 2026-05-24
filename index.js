@@ -950,9 +950,57 @@ function calcCharacterProfNum(charData, profNum, level) {
   if (!profNum || profNum === 0) return 0;
   return level + (usesRankProficiencies(charData) ? profNum * 2 : profNum);
 }
+function calcEditableProfNum(profNum, level) {
+  if (!profNum || profNum === 0) return 0;
+  return level + (profNum > 4 ? profNum : profNum * 2);
+}
+function editableProfValue(profNum) {
+  if (!profNum || profNum === 0) return 0;
+  return profNum > 4 ? profNum : profNum * 2;
+}
+function characterProfValue(charData, profNum) {
+  if (!profNum || profNum === 0) return 0;
+  return usesRankProficiencies(charData) ? profNum * 2 : profNum;
+}
 function characterProfLabel(charData, profNum) {
-  const value = usesRankProficiencies(charData) ? profNum * 2 : profNum;
+  const value = characterProfValue(charData, profNum);
   return { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[value] ?? 'Untrained';
+}
+function profIconForValue(value, { override = false } = {}) {
+  const icons = { 2: '◐', 4: '●', 6: '★', 8: '⭐' };
+  return icons[value] || (override ? '◒' : '◐');
+}
+function customKey(name) {
+  return String(name ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+function loreKey(name) {
+  const cleaned = String(name ?? '')
+    .trim()
+    .replace(/^lore\s*[:\-]?\s*/i, '')
+    .replace(/\s+lore$/i, '')
+    .trim();
+  return customKey(`${cleaned} Lore`);
+}
+function loreTopicLabel(name) {
+  const cleaned = String(name ?? '')
+    .trim()
+    .replace(/^lore\s*[:\-]?\s*/i, '')
+    .replace(/\s+lore$/i, '')
+    .trim();
+  return cleaned.replace(/\b\w/g, c => c.toUpperCase());
+}
+function isLoreProficiencyKey(name) {
+  const normalized = customKey(name);
+  return (
+    normalized === 'lore' ||
+    normalized.startsWith('lore_') ||
+    normalized.endsWith('_lore') ||
+    normalized.includes('_lore_')
+  );
 }
 function fmt(n) { return n >= 0 ? `+${n}` : `${n}`; }
 function xpToNextLevel() { return 1000; }
@@ -5001,11 +5049,18 @@ function computeCharSkillModifier(charEntry, skillKey) {
   if (!abilKey) return null;
   const override = charEntry.edits?.skillOverrides?.[skillKey] ?? null;
   const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
-  const profNum = override?.rank ?? prof[skillKey] ?? 0;
-  const computedModifier = abilMod + calcProfNum(profNum, lvl);
+  const jsonProfNum = prof[skillKey] ?? 0;
+  const profNum = override?.rank ?? jsonProfNum;
+  const computedModifier = abilMod + (
+    override?.rank !== undefined
+      ? calcProfNum(override.rank, lvl)
+      : calcCharacterProfNum(c, jsonProfNum, lvl)
+  );
   const modifier = (typeof override?.total === 'number') ? override.total : computedModifier;
   const profLabelMap = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' };
-  const profLabel = profLabelMap[profNum] ?? 'Untrained';
+  const profLabel = override?.rank !== undefined
+    ? (profLabelMap[override.rank] ?? 'Untrained')
+    : characterProfLabel(c, jsonProfNum);
   return { modifier, profLabel, profNum };
 }
 
@@ -6477,22 +6532,22 @@ function resolveVariable(rawName, charEntry) {
   switch (name) {
     case 'name':       return charEntry.name || c.name || '';
     case 'level':      return lvl;
-    case 'speed':      return c.attributes?.speed ?? 25;
+    case 'speed':      return c.stats?.speed ?? ((c.attributes?.speed ?? 25) + (c.attributes?.speedBonus ?? 0));
     case 'ac':         return c.acTotal?.acTotal ?? 10;
     case 'hp':         return charEntry.hp ?? c.attributes?.ancestryhp ?? 0;
     case 'maxhp':      return computeCharMaxHp(charEntry);
     case 'hero':       return charOverlay.getHeroPoints(charEntry);
-    case 'classdc':    return _abilityMod(ab, c.keyability) + calcProfNum(prof.classDC ?? 0, lvl);
+    case 'classdc':    return 10 + _abilityMod(ab, c.keyability) + calcCharacterProfNum(c, canonicalProfValue(prof, 'class_dc', 'classDC'), lvl);
     case 'str': case 'dex': case 'con':
     case 'int': case 'wis': case 'cha':
       return _abilityMod(ab, name);
     case 'key':        return _abilityMod(ab, c.keyability);
     case 'fort': case 'fortitude':
-      return _abilityMod(ab, 'con') + calcProfNum(prof.fortitude ?? 0, lvl);
+      return _abilityMod(ab, 'con') + calcCharacterProfNum(c, prof.fortitude ?? 0, lvl);
     case 'ref': case 'reflex':
-      return _abilityMod(ab, 'dex') + calcProfNum(prof.reflex ?? 0, lvl);
+      return _abilityMod(ab, 'dex') + calcCharacterProfNum(c, prof.reflex ?? 0, lvl);
     case 'will':
-      return _abilityMod(ab, 'wis') + calcProfNum(prof.will ?? 0, lvl);
+      return _abilityMod(ab, 'wis') + calcCharacterProfNum(c, prof.will ?? 0, lvl);
     case 'perception':
       return computeCharPerception(charEntry);
   }
@@ -6500,13 +6555,15 @@ function resolveVariable(rawName, charEntry) {
   // 5. Skill totals by name (athletics, stealth, deception, ...).
   if (Object.prototype.hasOwnProperty.call(_SKILL_ABILITIES_FULL, name)) {
     const abilKey = _SKILL_ABILITIES_FULL[name];
-    return _abilityMod(ab, abilKey) + calcProfNum(prof[name] ?? 0, lvl);
+    return _abilityMod(ab, abilKey) + calcCharacterProfNum(c, prof[name] ?? 0, lvl);
   }
 
   // 6. Lore subskills, e.g. "warfare-lore", "academia-lore". Pathbuilder
   // stores these on prof keyed by their slug. Use Int as the ability.
-  if (name.endsWith('-lore') || name === 'lore') {
-    return _abilityMod(ab, 'int') + calcProfNum(prof[name] ?? 0, lvl);
+  if (name.endsWith('-lore') || name.endsWith('_lore') || name === 'lore') {
+    const normalized = loreKey(name);
+    const profEntry = Object.entries(prof).find(([key]) => loreKey(key) === normalized);
+    return _abilityMod(ab, 'int') + calcEditableProfNum(profEntry?.[1] ?? 0, lvl);
   }
 
   return undefined;
@@ -9516,26 +9573,49 @@ client.on('interactionCreate', async (interaction) => {
             const mark = charEntry.edits.skillOverrides[key] ? ' *manual*' : '';
             return `• **${skillLabels[key]}** ${mod.modifier >= 0 ? '+' : ''}${mod.modifier} (${mod.profLabel})${mark}`;
           });
-          const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => String(s).toLowerCase()));
+          const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => loreKey(s)));
           const loreMap = new Map();
-          for (const [name, profNum] of (charEntry.data?.lores ?? [])) {
-            if (!name || hiddenLores.has(String(name).toLowerCase())) continue;
-            loreMap.set(String(name).toLowerCase(), { name, rank: profNum, total: null, manual: false });
+          for (const lore of (charEntry.data?.lores ?? [])) {
+            const name = Array.isArray(lore) ? lore[0] : (lore?.name ?? lore?.skill ?? lore?.topic);
+            const profNum = Array.isArray(lore)
+              ? (typeof lore[1] === 'number' ? lore[1] : 0)
+              : (typeof lore?.rank === 'number' ? lore.rank : typeof lore?.proficiency === 'number' ? lore.proficiency : 0);
+            const totalOverride = Array.isArray(lore)
+              ? (typeof lore[2] === 'number' ? lore[2] : null)
+              : (typeof lore?.total === 'number' ? lore.total : null);
+            if (!name || hiddenLores.has(loreKey(name))) continue;
+            loreMap.set(loreKey(name), { name: loreTopicLabel(name), rank: profNum, total: totalOverride, source: 'json', manual: false });
+          }
+          for (const [key, rank] of Object.entries(charEntry.data?.proficiencies ?? {})) {
+            if (rank <= 0 || !isLoreProficiencyKey(key) || hiddenLores.has(loreKey(key))) continue;
+            loreMap.set(loreKey(key), { name: loreTopicLabel(key), rank, total: null, source: 'proficiency', manual: true });
           }
           for (const lore of (charEntry.edits?.lores ?? [])) {
-            if (!lore?.name || hiddenLores.has(String(lore.name).toLowerCase())) continue;
-            loreMap.set(String(lore.name).toLowerCase(), {
-              name: lore.name,
+            if (!lore?.name || hiddenLores.has(loreKey(lore.name))) continue;
+            loreMap.set(loreKey(lore.name), {
+              name: loreTopicLabel(lore.name),
               rank: lore.rank ?? 0,
               total: (typeof lore.total === 'number') ? lore.total : null,
+              source: 'edit',
               manual: true,
             });
           }
           for (const lore of loreMap.values()) {
             const intMod = Math.floor((((charEntry.data?.abilities ?? {}).int ?? 10) - 10) / 2);
-            const computedTotal = intMod + calcProfNum(lore.rank, charEntry.data?.level ?? 1);
+            const lvlForLore = charEntry.data?.level ?? 1;
+            const profBonus = lore.source === 'proficiency'
+              ? calcEditableProfNum(lore.rank, lvlForLore)
+              : lore.source === 'edit'
+                ? calcProfNum(lore.rank, lvlForLore)
+                : calcCharacterProfNum(charEntry.data, lore.rank, lvlForLore);
+            const displayProfValue = lore.source === 'proficiency'
+              ? editableProfValue(lore.rank)
+              : lore.source === 'edit'
+                ? lore.rank
+                : characterProfValue(charEntry.data, lore.rank);
+            const computedTotal = intMod + profBonus;
             const totalValue = lore.total !== null ? lore.total : computedTotal;
-            const rankLabel = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[lore.rank] ?? 'Untrained';
+            const rankLabel = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[displayProfValue] ?? 'Untrained';
             lines.push(`• **Lore: ${lore.name}** ${totalValue >= 0 ? '+' : ''}${totalValue} (${rankLabel})${lore.manual ? ' *manual*' : ''}`);
           }
           const embed = new EmbedBuilder()
@@ -10572,11 +10652,25 @@ client.on('interactionCreate', async (interaction) => {
     const userId = interaction.user.id;
     const characters = loadCharacters();
     const nameArg = interaction.options.getString('name');
-    const { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
+    let { error, charKey, char: charEntry } = resolveChar(userId, nameArg, characters);
     if (error) {
       return interaction.editReply(error);
     }
     try {
+      if (charEntry.pathwayWebId) {
+        const refreshed = await fetchPathwayCharacter(charEntry.pathwayWebId, userId);
+        if (!refreshed.error) {
+          const savedRefresh = await saveImportedCharacter(userId, refreshed.char, {
+            preserveOverlay: true,
+            pathwayRow: refreshed.row,
+          });
+          const updatedCharacters = loadCharacters();
+          if (savedRefresh.ok && updatedCharacters[userId]?.[savedRefresh.key]) {
+            charKey = savedRefresh.key;
+            charEntry = updatedCharacters[userId][savedRefresh.key];
+          }
+        }
+      }
       // Merge overrides from charEntry.edits into a display-only view of c.
       // Original c.data is untouched so JSON re-imports don't lose user edits
       // (preserved via `edits` overlay which saveImportedCharacter keeps).
@@ -10635,8 +10729,8 @@ client.on('interactionCreate', async (interaction) => {
         const keyMod = Math.floor(((ab[keyAbility] ?? 10) - 10) / 2);
         const spellProf = canonicalProfValue(prof, ...tradKeys, 'spell_dc', 'spellDC');
         const spellProfMod = calcCharacterProfNum(c, spellProf, lvl);
-        spellAttackBonus = spellOv.attack ?? caster.attack ?? c.stats?.spell_attack ?? (keyMod + spellProfMod);
-        spellDC = spellOv.dc ?? caster.dc ?? c.spell_dc ?? c.stats?.spell_dc ?? (10 + keyMod + spellProfMod);
+        spellAttackBonus = spellOv.attack ?? (keyMod + spellProfMod);
+        spellDC = spellOv.dc ?? (10 + keyMod + spellProfMod);
         if (spellOv.attack !== undefined)   overriddenFields.push('Spell atk');
         if (spellOv.dc !== undefined)       overriddenFields.push('Spell DC');
         if (spellOv.tradition !== undefined)  overriddenFields.push('Tradition');
@@ -10696,12 +10790,15 @@ client.on('interactionCreate', async (interaction) => {
         const override = skillOverrides[skill] ?? null;
         const jsonRank = prof[skill] ?? 0;
         const effectiveRank = override?.rank ?? jsonRank;
+        const displayProfValue = override?.rank !== undefined ? override.rank : characterProfValue(c, jsonRank);
         const abilMod = Math.floor(((ab[skillMap[skill]] ?? 10) - 10) / 2);
-        const computedTotal = abilMod + calcCharacterProfNum(c, effectiveRank, lvl);
+        const computedTotal = abilMod + (
+          override?.rank !== undefined ? calcProfNum(override.rank, lvl) : calcCharacterProfNum(c, jsonRank, lvl)
+        );
         const total = (typeof override?.total === 'number') ? override.total : computedTotal;
         // Only include if trained (rank > 0) or explicitly overridden
-        if (effectiveRank > 0 || override) {
-          const icon = profIcons[effectiveRank] || (override ? '◔' : '◑'); // ◔ for override-only
+        if (displayProfValue > 0 || override) {
+          const icon = profIconForValue(displayProfValue, { override: !!override });
           trainedSkills.push(`${icon} ${skill.charAt(0).toUpperCase() + skill.slice(1)} ${fmt(total)}`);
         }
       }
@@ -10711,25 +10808,47 @@ client.on('interactionCreate', async (interaction) => {
       // that the user wants gone, since we don't mutate c.lores directly).
       const jsonLores = c.lores ?? [];
       const editLores = (charEntry.edits?.lores) ?? [];
-      const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => s.toLowerCase()));
+      const hiddenLores = new Set((charEntry.edits?.hiddenLores ?? []).map(s => loreKey(s)));
       const loreMap = new Map();
-      for (const [name, profNum] of jsonLores) {
-        if (hiddenLores.has(name.toLowerCase())) continue;
-        loreMap.set(name.toLowerCase(), { name, rank: profNum, total: null });
+      for (const lore of jsonLores) {
+        const name = Array.isArray(lore) ? lore[0] : (lore?.name ?? lore?.skill ?? lore?.topic);
+        const profNum = Array.isArray(lore)
+          ? (typeof lore[1] === 'number' ? lore[1] : 0)
+          : (typeof lore?.rank === 'number' ? lore.rank : typeof lore?.proficiency === 'number' ? lore.proficiency : 0);
+        const totalOverride = Array.isArray(lore)
+          ? (typeof lore[2] === 'number' ? lore[2] : null)
+          : (typeof lore?.total === 'number' ? lore.total : null);
+        if (!name || hiddenLores.has(loreKey(name))) continue;
+        loreMap.set(loreKey(name), { name: loreTopicLabel(name), rank: profNum, total: totalOverride, source: 'json' });
+      }
+      for (const [key, rank] of Object.entries(prof)) {
+        if (rank <= 0 || !isLoreProficiencyKey(key) || hiddenLores.has(loreKey(key))) continue;
+        loreMap.set(loreKey(key), { name: loreTopicLabel(key), rank, total: null, source: 'proficiency' });
       }
       for (const lore of editLores) {
-        if (hiddenLores.has(lore.name.toLowerCase())) continue;
-        loreMap.set(lore.name.toLowerCase(), {
-          name: lore.name,
+        if (!lore?.name || hiddenLores.has(loreKey(lore.name))) continue;
+        loreMap.set(loreKey(lore.name), {
+          name: loreTopicLabel(lore.name),
           rank: lore.rank ?? 0,
           total: (typeof lore.total === 'number') ? lore.total : null,
+          source: 'edit',
         });
       }
       const loreSkills = [...loreMap.values()].map(lore => {
         const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
-        const computedTotal = intMod + calcCharacterProfNum(c, lore.rank, lvl);
+        const profBonus = lore.source === 'proficiency'
+          ? calcEditableProfNum(lore.rank, lvl)
+          : lore.source === 'edit'
+            ? calcProfNum(lore.rank, lvl)
+            : calcCharacterProfNum(c, lore.rank, lvl);
+        const displayProfValue = lore.source === 'proficiency'
+          ? editableProfValue(lore.rank)
+          : lore.source === 'edit'
+            ? lore.rank
+            : characterProfValue(c, lore.rank);
+        const computedTotal = intMod + profBonus;
         const total = (lore.total !== null) ? lore.total : computedTotal;
-        const icon = profIcons[lore.rank] || (lore.total !== null ? '◔' : '◑');
+        const icon = profIconForValue(displayProfValue, { override: lore.total !== null });
         return `${icon} Lore: ${lore.name} ${fmt(total)}`;
       });
       const allTrainedSkills = [...trainedSkills, ...loreSkills];
