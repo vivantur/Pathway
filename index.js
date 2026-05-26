@@ -1439,6 +1439,80 @@ function parsePastedPathbuilderJSON(rawText) {
   return { char };
 }
 
+function formatCharacterDefenseEntry(entry) {
+  if (entry == null || entry === '') return null;
+  if (typeof entry === 'string') return entry.trim() || null;
+  if (Array.isArray(entry)) {
+    const [type, value, notes] = entry;
+    if (type == null || type === '') return null;
+    const valueText = value != null && value !== '' ? ` ${value}` : '';
+    const notesText = notes ? ` (${notes})` : '';
+    return `${type}${valueText}${notesText}`.trim();
+  }
+  if (typeof entry === 'object') {
+    const type = entry.type ?? entry.name ?? entry.label ?? entry.damageType;
+    const value = entry.value ?? entry.amount ?? entry.resistance ?? entry.weakness;
+    const notes = entry.notes ?? entry.note;
+    if (type != null && type !== '') {
+      const valueText = value != null && value !== '' ? ` ${value}` : '';
+      const notesText = notes ? ` (${notes})` : '';
+      return `${type}${valueText}${notesText}`.trim();
+    }
+    return Object.entries(entry)
+      .map(([key, val]) => formatCharacterDefenseEntry(
+        val && typeof val === 'object' ? { type: key, ...val } : [key, val]
+      ))
+      .filter(Boolean)
+      .join(', ') || null;
+  }
+  return String(entry).trim() || null;
+}
+
+function collectCharacterDefenseEntries(...sources) {
+  const seen = new Set();
+  const entries = [];
+  const add = (source) => {
+    if (source == null || source === '') return;
+    if (typeof source === 'string') {
+      const parts = source.includes(',') ? source.split(',') : [source];
+      for (const part of parts) {
+        const text = part.trim();
+        const key = text.toLowerCase();
+        if (text && !seen.has(key)) {
+          seen.add(key);
+          entries.push(text);
+        }
+      }
+      return;
+    }
+    if (Array.isArray(source)) {
+      if (
+        source.length > 1
+        && source.length <= 3
+        && (typeof source[0] === 'string' || typeof source[0] === 'number')
+        && (typeof source[1] === 'number' || (typeof source[1] === 'string' && /^-?\d+$/.test(source[1].trim())))
+      ) {
+        add(formatCharacterDefenseEntry(source));
+        return;
+      }
+      for (const item of source) add(item);
+      return;
+    }
+    const formatted = formatCharacterDefenseEntry(source);
+    if (!formatted) return;
+    for (const part of formatted.split(',')) {
+      const text = part.trim();
+      const key = text.toLowerCase();
+      if (text && !seen.has(key)) {
+        seen.add(key);
+        entries.push(text);
+      }
+    }
+  };
+  for (const source of sources) add(source);
+  return entries;
+}
+
 
 // ─── PDF STATBLOCK PARSER ─────────────────────────────────────────────
 function pdfDeduplicateBoldLetters(text) {
@@ -10914,6 +10988,24 @@ client.on('interactionCreate', async (interaction) => {
       const edits = charEntry.edits ?? {};
       const languages = (edits.languages && edits.languages.length) ? edits.languages : (charEntry.languages ?? c.languages ?? []);
       const senses    = (edits.senses && edits.senses.length)       ? edits.senses    : (charEntry.senses ?? []);
+      const resistances = collectCharacterDefenseEntries(
+        edits.resistances,
+        charEntry.resistances,
+        c.resistances,
+        c.defenses?.resistances,
+        c._resistances,
+      );
+      const immunities = collectCharacterDefenseEntries(
+        edits.immunities,
+        charEntry.immunities,
+        c.immunities,
+        c.defenses?.immunities,
+        c._immunities,
+      );
+      const defenseTraitLines = [
+        ...(resistances.length ? [`**Resistances:** ${resistances.join(', ')}`] : []),
+        ...(immunities.length ? [`**Immunities:** ${immunities.join(', ')}`] : []),
+      ];
       const background = edits.background ?? c.background ?? 'Unknown';
       const deity      = edits.deity ?? c.deity ?? 'None';
       const ancestryDisplay = `${c.ancestry ?? ''} ${c.heritage ?? ''}`.trim();
@@ -10934,6 +11026,7 @@ client.on('interactionCreate', async (interaction) => {
           { name: '⚔️ Core Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft${sizeDisplay ? ` (${sizeDisplay})` : ''} · **Perception** ${fmt(percMod)}${spellStatsLine}`, inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `**Fort** ${fmt(fortMod)} · **Reflex** ${fmt(reflexMod)} · **Will** ${fmt(willMod)}`, inline: false },
+          ...(defenseTraitLines.length ? [{ name: '\u200B', value: defenseTraitLines.join('\n'), inline: false }] : []),
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
           ...(attackLines ? [{ name: '⚔️ Attacks', value: attackLines.trim(), inline: false }] : []),
           { name: '🌐 Languages', value: languages.length > 0 ? languages.join(', ') : 'None set — use `/char edit`', inline: true },
