@@ -10824,6 +10824,9 @@ client.on('interactionCreate', async (interaction) => {
       const wisMod = Math.floor(((ab.wis ?? 10) - 10) / 2);
       const percComputed = wisMod + calcCharacterProfNum(c, prof.perception ?? 0, lvl);
       const percMod = statOverridesPre.perception ?? percComputed;
+      const classDc = 10
+        + Math.floor(((ab[c.keyability] ?? 10) - 10) / 2)
+        + calcCharacterProfNum(c, canonicalProfValue(prof, 'class_dc', 'classDC'), lvl);
       const overriddenFields = [];
       let spellAttackBonus = null, spellDC = null;
       if (c.spellCasters?.length > 0) {
@@ -11023,7 +11026,7 @@ client.on('interactionCreate', async (interaction) => {
           `**XP:** ${xpDisplay}`
         )
         .addFields(
-          { name: '⚔️ Core Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft${sizeDisplay ? ` (${sizeDisplay})` : ''} · **Perception** ${fmt(percMod)}${spellStatsLine}`, inline: false },
+          { name: '⚔️ Core Stats', value: `**AC** ${statOverrides.ac ?? c.acTotal?.acTotal ?? '?'} · **HP** ${hpDisplay} · **Speed** ${speedValue} ft${sizeDisplay ? ` (${sizeDisplay})` : ''} · **Perception** ${fmt(percMod)} · **Class DC** ${classDc}${spellStatsLine}`, inline: false },
           { name: '💪 Ability Scores', value: `**STR** ${ab.str ?? '?'} (${getMod(ab.str ?? 10)}) · **DEX** ${ab.dex ?? '?'} (${getMod(ab.dex ?? 10)}) · **CON** ${ab.con ?? '?'} (${getMod(ab.con ?? 10)})\n**INT** ${ab.int ?? '?'} (${getMod(ab.int ?? 10)}) · **WIS** ${ab.wis ?? '?'} (${getMod(ab.wis ?? 10)}) · **CHA** ${ab.cha ?? '?'} (${getMod(ab.cha ?? 10)})`, inline: false },
           { name: '🛡️ Saving Throws', value: `${savingThrowsLine}\n${defenseTraitsLine}`, inline: false },
           { name: '🎯 Trained Skills', value: allTrainedSkills.length > 0 ? `\`\`\`${skillCols}\`\`\`` : 'No trained skills', inline: false },
