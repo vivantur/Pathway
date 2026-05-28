@@ -1,0 +1,22 @@
+﻿# Raw AoN dumps — regenerate with `node tools/aon-fetch.js`
+gamedata/aon-raw/*.json
+!gamedata/aon-raw/README.md
+!gamedata/aon-raw/.gitkeep
+
+# Reference JSON files — archived in git tag `gamedata-archive-20260506`.
+# All reference data now lives in the Supabase `gamedata` / `monsters` / `spells`
+# / `items` tables and is loaded at startup by loadReferenceDatabasesFromSupabase().
+# These files are kept on disk for the AoN transformer tools (tools/aon-*.js) but
+# must never be committed — the bot no longer reads them at runtime.
+gamedata/*.json
+
+# Local backups — don't push these
+gamedata/*.backup
+*.backup
+characters.json
+saves/*.json
+
+# The usual suspects
+node_modules/
+.env
+.claude/
