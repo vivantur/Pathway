@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 46 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 47 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 46 slash command entries)
+### Phase 3 — Command extraction (in progress: 47 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -125,8 +125,9 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/cvar` | 3.44 | command | Per-character custom variables |
 | `/spells` | 3.45 | command | Character spellbook/repertoire/prepared overlay management |
 | `/spellbook`, `/prepared` | 3.46 | command | Spellbook and prepared-spells display |
+| `/cast` | 3.47 | command | Spell casting, slot spend, encounter targeting, damage/effects |
 
-**Cumulative index.js shrinkage**: 19,500 → **12,048** lines (−7,452 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **11,635** lines (−7,865 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -325,8 +326,8 @@ In order:
 
 ### Immediate (one-batch each)
 1. **`/monster`** — pairs with `state/monster.js` (already in place). Integration with bestiary attacks + GM edits + monster_attacks library.
-2. **Spellbook surface** — `/spellbook`, `/prepared`, `/spells`, `/cast` are still inline and share spell overlay helpers.
-3. **Monster management cluster** — `/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack` are still inline.
+2. **Monster management cluster** — `/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack` are still inline.
+3. **Combat spell/attack helpers** — after `/cast`, the remaining inline combat commands still share damage, DoS, and effect helper code.
 
 ### Medium-term
 4. **`/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack`** — monster management cluster.
