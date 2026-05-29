@@ -2,13 +2,13 @@
   "name": "pathway-pf2e-bot",
   "version": "1.0.0",
   "description": "A Pathfinder 2e companion bot for Discord with combat tracking, character sheets, spells, and more.",
-  "main": "index.js",
+  "main": "Pathwayv2/src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "deploy": "node deploy.js",
-    "deploy:guild": "node deploy.js --guild",
-    "import:homebrew-items": "node supabase/import-homebrew-items.js",
-    "import:aon-bestiary": "node supabase/import-aon-bestiary.js"
+    "start": "node Pathwayv2/src/index.js",
+    "deploy": "node Pathwayv2/src/deploy.js",
+    "deploy:guild": "node Pathwayv2/src/deploy.js --guild",
+    "import:homebrew-items": "node Pathwayv2/supabase/import-homebrew-items.js",
+    "import:aon-bestiary": "node Pathwayv2/supabase/import-aon-bestiary.js"
   },
   "keywords": [],
   "author": "",
