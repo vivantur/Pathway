@@ -116,6 +116,8 @@ const ancestryButtons  = require('./commands/ancestry/buttons');
 const archetypeCmd     = require('./commands/archetype/command');
 const itemCmd          = require('./commands/item/command');
 const itemaddCmd       = require('./commands/itemadd/command');
+const monsterCmd       = require('./commands/monster/command');
+const monsterartCmd    = require('./commands/monsterart/command');
 const ruleCmd          = require('./commands/rule/command');
 const deityCmd         = require('./commands/deity/command');
 const goldCmd          = require('./commands/gold/command');
@@ -6870,44 +6872,10 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   else if (commandName === 'monster') {
-    const input = interaction.options.getString('name');
-    const { monster, matches, total } = findMonster(input);
-
-    if (monster) {
-      // Layer the GM's edits (if any) on top of the bestiary data, then
-      // layer the server's saved /monsterattack library on top of that
-      // so strike/spell/save attacks all appear on the stat block.
-      const edits = getMonsterEdit(interaction.guildId, monster.name);
-      const edited = applyMonsterEdits(monster, edits);
-      const withLibrary = applyMonsterAttackLibrary(edited, interaction.guildId);
-      const artUrl = lookupMonsterArt(interaction.guildId, monster);
-      return interaction.reply({ embeds: [buildMonsterEmbed(withLibrary, artUrl)] });
-    }
-
-    if (matches && matches.length > 1) {
-      const sorted = [...matches].sort((a, b) => a.localeCompare(b));
-      const preview = sorted.slice(0, 20).map(n => `• **${n}**`).join('\n');
-      const totalCount = total ?? matches.length;
-      const extra = totalCount > 20 ? `\n*…and ${totalCount - 20} more. Try narrowing your search.*` : '';
-      return interaction.reply({
-        content: `🔍 Multiple creatures match **"${input}"**. Did you mean one of these?\n${preview}${extra}`,
-        ephemeral: true,
-      });
-    }
-
-    return interaction.reply({
-      content: (() => {
-        const _names = Object.values(bestiaryDatabase).map(c => c?.name).filter(Boolean);
-        const _hint = didYouMeanLine(input, _names);
-        return `❌ No creature found for **"${input}"**.${_hint || ' Check your spelling or try another name.'}`;
-      })(),
-      ephemeral: true,
-    });
+    await monsterCmd.execute(interaction);
   }
 
-  // ─── /monsteradd ─────────────────────────────────────────────────
-  // Owner-only. Parses a pasted Archives-of-Nethys stat block (or one attached
-  // as a .txt file) and inserts it into the global bestiary.json so it shows
+
   // up in /monster for everyone. Also supports `remove` to roll back mistakes.
   else if (commandName === 'monsteradd') {
     await monsteraddCmd.execute(interaction);
@@ -6931,115 +6899,10 @@ client.on('interactionCreate', async (interaction) => {
   // bottom image on any /monster lookup. Storing per-guild means different
   // tables can have different art without stepping on each other.
   else if (commandName === 'monsterart') {
-    const sub = interaction.options.getSubcommand();
-    const guildId = interaction.guildId;
-    if (!guildId) return interaction.reply({ content: '❌ `/monsterart` only works in a server, not in DMs.', ephemeral: true });
-
-    if (sub === 'set') {
-      const monsterInput = interaction.options.getString('monster');
-      const url = interaction.options.getString('url').trim();
-      if (!/^https?:\/\//i.test(url)) {
-        return interaction.reply({ content: '❌ That doesn\'t look like a valid image URL. Make sure it starts with `http://` or `https://`.', ephemeral: true });
-      }
-      // Soft check for common image extensions. Discord will render any
-      // URL it can fetch as an image, but warn the user if they pass a
-      // webpage URL (e.g., a reddit thread instead of the i.redd.it link).
-      const looksLikeImage = /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
-
-      // Resolve the canonical bestiary name so "goblin warrior" and
-      // "Goblin Warrior" both key to the same entry.
-      const found = findMonster(monsterInput);
-      const displayName = found.monster?.name ?? monsterInput;
-      const key = monsterKey(displayName);
-
-      const store = loadMonsterArt();
-      const guild = getGuildArt(store, guildId);
-      guild[key] = {
-        displayName,
-        url,
-        setBy: interaction.user.id,
-        setAt: new Date().toISOString(),
-      };
-      await saveMonsterArt(store);
-
-      const embed = new EmbedBuilder()
-        .setColor(0x2ecc71)
-        .setTitle(`🖼️ Art set for ${displayName}`)
-        .setDescription(`Future \`/monster\` lookups for **${displayName}** on this server will display this image.${looksLikeImage ? '' : '\n\n⚠️ *This URL doesn\'t end in a typical image extension — if it doesn\'t render, try a direct image link (right-click → Copy Image Address).*'}`)
-        .setImage(url)
-        .setFooter({ text: `Set by ${interaction.user.username} • /monsterart remove to undo` });
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    if (sub === 'remove') {
-      const monsterInput = interaction.options.getString('monster');
-      const found = findMonster(monsterInput);
-      const displayName = found.monster?.name ?? monsterInput;
-      const key = monsterKey(displayName);
-
-      const store = loadMonsterArt();
-      const guild = store[guildId] ?? {};
-      if (!guild[key]) {
-        return interaction.reply({ content: `❌ No saved art for **${displayName}** on this server.`, ephemeral: true });
-      }
-      delete guild[key];
-      // Prune empty guild bucket so the file stays tidy.
-      if (Object.keys(guild).length === 0) delete store[guildId];
-      else store[guildId] = guild;
-      await saveMonsterArt(store);
-      return interaction.reply({ content: `🗑️ Removed art for **${displayName}**.`, ephemeral: true });
-    }
-
-    if (sub === 'view') {
-      const monsterInput = interaction.options.getString('monster');
-      if (monsterInput) {
-        // Show art for one specific monster
-        const found = findMonster(monsterInput);
-        const displayName = found.monster?.name ?? monsterInput;
-        const key = monsterKey(displayName);
-        const store = loadMonsterArt();
-        const entry = store[guildId]?.[key];
-        if (!entry) return interaction.reply({ content: `❌ No saved art for **${displayName}** on this server.`, ephemeral: true });
-        const embed = new EmbedBuilder()
-          .setColor(0x9B59B6)
-          .setTitle(`🖼️ ${entry.displayName}`)
-          .setImage(entry.url)
-          .setFooter({ text: `Set by user ${entry.setBy} • /monsterart remove to delete` });
-        return interaction.reply({ embeds: [embed] });
-      }
-      // List all monsters with saved art for this server
-      const store = loadMonsterArt();
-      const guild = store[guildId] ?? {};
-      const entries = Object.values(guild);
-      if (entries.length === 0) {
-        return interaction.reply({ content: '📖 No monster art saved for this server yet. Use `/monsterart set` to add some.', ephemeral: true });
-      }
-      entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
-      const lines = entries.map(e => `• **${e.displayName}**`);
-      const embed = new EmbedBuilder()
-        .setColor(0x9B59B6)
-        .setTitle(`🖼️ Saved Monster Art (${entries.length})`)
-        .setDescription(lines.join('\n').slice(0, 4000))
-        .setFooter({ text: '/monsterart view monster:<name> to see the image • /monsterart remove to delete' });
-      return interaction.reply({ embeds: [embed] });
-    }
+    await monsterartCmd.execute(interaction);
   }
 
-  // ─── /monsterroll ────────────────────────────────────────────────
-  // Roll saves and skills for a monster — works whether they're in an active
-  // encounter or not. GM-only (in DMs anywhere; in a server only the encounter
-  // GM if there's an active encounter, else any GM-permission user).
-  //
-  // Subcommands:
-  //   /monsterroll save monster:<name> save:<fort/ref/will> [dc:<n>]
-  //   /monsterroll skill monster:<name> skill:<name> [dc:<n>]
-  //
-  // Resolution priority for finding the monster's modifier:
-  //   1. If `monster` matches an active combatant → use the combatant's
-  //      bestiaryKey (so init effects/edits flow through).
-  //   2. Else look up directly in the bestiary by name.
-  //
-  // Replies are EPHEMERAL by default (only the GM sees the roll) so monster
+
   // mod values don't leak. Use the `public:true` flag to broadcast results.
   else if (commandName === 'monsterroll') {
     const sub = interaction.options.getSubcommand();
