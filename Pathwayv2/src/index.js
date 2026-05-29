@@ -51,6 +51,7 @@ const {
   fetchLinkedPathwayCharacter,
   saveImportedCharacter,
 } = require('./lib/pathwayWebClient');
+const { isDeadInteractionError } = require('./lib/discordErrors');
 const guildStateModule = require('./state/guild');
 
 // ── Shared helpers (extracted from index.js in Phase 3) ────────────────────
@@ -80,6 +81,7 @@ const notesCmd         = require('./commands/notes/command');
 const featsCmd         = require('./commands/feats/command');
 const abilitiesCmd     = require('./commands/abilities/command');
 const descriptionCmd   = require('./commands/description/command');
+const brCmd            = require('./commands/br/command');
 const snippetCmd       = require('./commands/snippet/command');
 const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
@@ -210,13 +212,6 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ]
 });
-
-// Helper: is this a "dead interaction" error? These happen when Discord's 3-second
-// window expires before we replied, which we can't recover from. No need to spam
-// the logs — just move on.
-function isDeadInteractionError(err) {
-  return err?.code === 10062 || err?.rawError?.code === 10062;
-}
 
 process.on('unhandledRejection', error => {
   if (isDeadInteractionError(error)) return; // silently ignore
@@ -5368,36 +5363,8 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply('Pong! 🏓 Bot is alive and running.');
   }
 
-  // ─── /br — scene break ─────────────────────────────────────────────
-  // Avrae-style visual divider for play-by-post games. With no args, it
-  // prints a plain separator bar. With a title, it embeds the title
-  // between two dividers for labeled scene transitions.
-  //
-  // Deferred immediately because Railway cold starts can otherwise push
-  // past Discord's 3-second reply window and cause 10062 errors.
   else if (commandName === 'br' || commandName === 'break') {
-    try {
-      await interaction.deferReply();
-      const title = interaction.options.getString('title');
-      if (!title) {
-        return await interaction.editReply('```\n\u200b\n```');
-      }
-      const pageHolder = new EmbedBuilder()
-        .setColor(0x1f1d36)
-        .setDescription(`**${title}**`);
-      return await interaction.editReply({ embeds: [pageHolder] });
-    } catch (err) {
-      if (!isDeadInteractionError(err)) {
-        console.error('/br error:', err);
-      }
-      // Try to tell the user something went wrong, but only if the
-      // interaction is still alive. If it's already dead, nothing we can do.
-      try {
-        if (interaction.deferred || interaction.replied) {
-          await interaction.editReply('❌ Something went wrong with /br. Try again.');
-        }
-      } catch {}
-    }
+    await brCmd.execute(interaction);
   }
 
   // ─── /char ───────────────────────────────────────────────────────

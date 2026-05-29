@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 40 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 41 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 40 / ~40)
+### Phase 3 — Command extraction (in progress: 41 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -120,8 +120,9 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/feats` | 3.40 | command, fields | Character feats display |
 | `/abilities` | 3.40 | command | Character special abilities display |
 | `/description` | 3.41 | command, embed | Character description view/edit modal |
+| `/br`, `/break` | 3.42 | command | Scene-break divider aliases |
 
-**Cumulative index.js shrinkage**: 19,500 → **12,593** lines (−6,907 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **12,560** lines (−6,940 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -135,6 +136,7 @@ These weren't extractions but architectural cleanups along the way. They unblock
 - `_trackSync`, `drainSupabaseSyncs` → `lib/syncTracker.js`
 - `buildDiscordToUserMap` → `lib/userMap.js`
 - `MAX_CHARACTERS_PER_USER`, `_usernameCache` → `state/characters.js`
+- `isDeadInteractionError` → `lib/discordErrors.js`
 
 ---
 
