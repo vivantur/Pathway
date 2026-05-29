@@ -90,6 +90,7 @@ const heroCmd          = require('./commands/hero/command');
 const ccCmd            = require('./commands/cc/command');
 const cvarCmd          = require('./commands/cvar/command');
 const spellsCmd        = require('./commands/spells/command');
+const spellbookCmd     = require('./commands/spellbook/command');
 const spellCmd         = require('./commands/spell/command');
 const spelladdCmd      = require('./commands/spelladd/command');
 const monsteraddCmd    = require('./commands/monsteradd/command');
@@ -2682,19 +2683,6 @@ function damageTypeEmoji(type) {
     if (key.includes(k)) return emoji;
   }
   return '⚔️';
-}
-
-// Shared slot-pip renderer for /spellbook and /prepared. Pure circles —
-// filled for available slots, empty for spent ones, per user preference.
-// Caps at 15 pips; beyond that the pip row would wrap awkwardly in an embed,
-// so we fall back to the numeric display for absurdly large slot pools.
-function formatSlotPips(current, max) {
-  if (max <= 0) return '';
-  const cap = 15;
-  const filled = Math.max(0, Math.min(current, max));
-  const empty = max - filled;
-  if (max > cap) return `**(${current}/${max})**`;
-  return `${'●'.repeat(filled)}${'○'.repeat(empty)}`;
 }
 
 // Find a save bonus for a combatant. Checks in order:
@@ -6536,181 +6524,13 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /spellbook ──────────────────────────────────────────────────
   else if (commandName === 'spellbook') {
-    await interaction.deferReply();
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
-    if (error) return interaction.editReply(error);
-    const c = charEntry.data;
-    if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
-
-    charOverlay.ensureOverlay(charEntry);
-    const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`🔮 ${c.name}'s Spellbook`);
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
-
-    for (const caster of c.spellCasters) {
-      const merged = charOverlay.getMergedSpellbook(charEntry, caster.name);
-      if (!merged) continue;
-
-      // Mark overlay-added spells with ✨
-      const fmtList = (names) =>
-        names.map(n => merged.overlayNames.has(n) ? `${n} ✨` : n).join(', ');
-
-      // Visual slot pips. Uses filled/empty circles plus the numeric count for
-      // clarity. Caps at 10 pips so high-slot-count ranks don't blow out a line.
-      // Visual slot pips. Uses the shared formatSlotPips helper so the
-      // display stays consistent between /spellbook and /prepared.
-      const slotPips = formatSlotPips;
-
-      const sections = [];
-      if (merged.cantrips.length) {
-        // Cantrips have no slot tracking — just name and list
-        sections.push(`**__Cantrips__**\n${fmtList(merged.cantrips)}`);
-      }
-      const ranks = Object.keys(merged.ranks).map(Number).sort((a, b) => a - b);
-      for (const rank of ranks) {
-        const spellList = merged.ranks[rank];
-        if (!spellList.length) continue;
-        const max = Number(caster.perDay?.[rank] ?? 0);
-        let header = `**__Rank ${rank}__**`;
-        if (max > 0) {
-          const { current } = charOverlay.getSlotsRemaining(charEntry, caster.name, rank);
-          header += ` ${slotPips(current, max)}`;
-        }
-        // Section title on its own line, spell list on the next line
-        sections.push(`${header}\n${fmtList(spellList)}`);
-      }
-
-      // Prepared override — display today's prepared list separately for prepared casters
-      const overlay = charEntry.overlay;
-      const prepList = overlay.prepared_override?.[caster.name] ?? [];
-      if (caster.spellcastingType === 'prepared' && prepList.length) {
-        const byRank = {};
-        for (const p of prepList) {
-          (byRank[p.rank] = byRank[p.rank] ?? []).push(p.spell);
-        }
-        const lines = Object.keys(byRank).map(Number).sort((a, b) => a - b)
-          .map(r => `**__Rank ${r}__:** ${byRank[r].join(', ')}`);
-        sections.push(`**📋 Prepared today:**\n${lines.join('\n')}`);
-      }
-
-      const body = sections.join('\n\n') || '*No spells known.*';
-      const casterType = caster.spellcastingType || 'unknown';
-      const innateTag = caster.innate ? ' · innate' : '';
-      const header = `${caster.name} (${caster.magicTradition} · ${casterType}${innateTag})`;
-      embed.addFields({ name: header, value: body.slice(0, 1024), inline: false });
-    }
-
-    // Focus spells at the bottom (separate system in Pathbuilder)
-    const focus = c.focus ?? {};
-    const focusLines = [];
-    for (const [tradition, byAbility] of Object.entries(focus)) {
-      for (const [ability, fdata] of Object.entries(byAbility)) {
-        const spells = [...(fdata.focusCantrips ?? []), ...(fdata.focusSpells ?? [])];
-        if (spells.length) {
-          focusLines.push(`**${tradition.charAt(0).toUpperCase() + tradition.slice(1)} (${ability.toUpperCase()}):** ${spells.join(', ')}`);
-        }
-      }
-    }
-    if (focusLines.length) {
-      const { current, max } = charOverlay.getCurrentFocus(charEntry);
-      embed.addFields({
-        name: `🌟 Focus Spells (${current}/${max} points)`,
-        value: focusLines.join('\n').slice(0, 1024),
-        inline: false,
-      });
-    }
-
-    embed.setFooter({ text: '✨ = added via /spells · /cast <spell> to cast · /rest to refresh' });
-    saveCharacters(characters);
-    await interaction.editReply({ embeds: [embed] });
+    await spellbookCmd.execute(interaction);
   }
 
-  // ─── /prepared ────────────────────────────────────────────────────
-  // Shows only today's prepared spells (for prepared casters) — a focused
-  // "what can I cast today" view without the full spellbook/repertoire. For
-  // characters with multiple prepared casters, each gets its own section.
-  // If a caster is spontaneous (no daily prep), the command notes that and
-  // directs the user to /spellbook instead.
   else if (commandName === 'prepared') {
-    await interaction.deferReply({ ephemeral: false });
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('name'), characters);
-    if (error) return interaction.editReply(error);
-    const c = charEntry.data;
-    if (!c.spellCasters?.length) return interaction.editReply(`**${c.name}** has no spellcasting!`);
-
-    charOverlay.ensureOverlay(charEntry);
-    const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(`📋 ${c.name}'s Prepared Spells`);
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
-
-    // Same pip helper as /spellbook — shared via the top-level formatSlotPips
-    // function to keep the display consistent across both views.
-    const slotPips = formatSlotPips;
-
-    const overlay = charEntry.overlay ?? {};
-    let anyPreparedCaster = false;
-    let anyPreparedSpells = false;
-
-    for (const caster of c.spellCasters) {
-      if (caster.spellcastingType !== 'prepared') continue;
-      anyPreparedCaster = true;
-
-      const prepList = overlay.prepared_override?.[caster.name] ?? [];
-
-      // Always show cantrips — they're "at-will" on prep casters and count as
-      // part of what's ready to cast today.
-      const merged = charOverlay.getMergedSpellbook(charEntry, caster.name);
-      const cantrips = merged?.cantrips ?? [];
-
-      const sections = [];
-      if (cantrips.length) {
-        sections.push(`**__Cantrips__** *(at-will)*\n${cantrips.join(', ')}`);
-      }
-
-      if (prepList.length === 0) {
-        sections.push(`*Nothing prepared yet today. Use \`/spells prepare\` to fill slots.*`);
-      } else {
-        anyPreparedSpells = true;
-        const byRank = {};
-        for (const p of prepList) {
-          (byRank[p.rank] = byRank[p.rank] ?? []).push(p.spell);
-        }
-        const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
-        for (const rank of ranks) {
-          const max = Number(caster.perDay?.[rank] ?? 0);
-          let header = `**__Rank ${rank}__**`;
-          if (max > 0) {
-            const { current } = charOverlay.getSlotsRemaining(charEntry, caster.name, rank);
-            header += ` ${slotPips(current, max)}`;
-          }
-          sections.push(`${header}\n${byRank[rank].join(', ')}`);
-        }
-      }
-
-      const innateTag = caster.innate ? ' · innate' : '';
-      const casterHeader = `${caster.name} (${caster.magicTradition} · prepared${innateTag})`;
-      embed.addFields({ name: casterHeader, value: sections.join('\n\n').slice(0, 1024), inline: false });
-    }
-
-    // Note any spontaneous casters the user might be wondering about
-    const spontCasters = c.spellCasters.filter(sc => sc.spellcastingType === 'spontaneous');
-    if (spontCasters.length) {
-      const names = spontCasters.map(sc => sc.name).join(', ');
-      embed.addFields({ name: '🎵 Spontaneous casters (no daily prep)', value: `${names} — use \`/spellbook\` to see their repertoire.`, inline: false });
-    }
-
-    if (!anyPreparedCaster && !spontCasters.length) {
-      embed.setDescription('This character has no prepared or spontaneous casters configured.');
-    } else if (!anyPreparedCaster) {
-      embed.setDescription(`**${c.name}** has no prepared casters. Use \`/spellbook\` to see the repertoire.`);
-    } else if (!anyPreparedSpells) {
-      embed.setFooter({ text: 'Nothing is prepared yet — use /spells prepare to fill slots before combat.' });
-    } else {
-      embed.setFooter({ text: '/cast <spell> to cast · /rest to refresh slots' });
-    }
-
-    await interaction.editReply({ embeds: [embed] });
+    await spellbookCmd.executePrepared(interaction);
   }
+
 
   // ─── /spell ──────────────────────────────────────────────────────
   else if (commandName === 'spell') {
