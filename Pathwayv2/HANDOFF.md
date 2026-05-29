@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 35 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 39 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 35 / ~40)
+### Phase 3 — Command extraction (in progress: 39 / ~40)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -115,8 +115,12 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/hero` | 3.36 | command, embed | Hero point tracking + reroll |
 | `/gold` | 3.37 | command, wallet | Character wallet management |
 | `/bag` | 3.38 | command, helpers | Character inventory bag + autocomplete helper |
+| `/cc` | 3.39 | command, counterView | Custom character counters |
+| `/counters` | 3.39 | command, counterView | Shortcut view for custom counters |
+| `/feats` | 3.40 | command, fields | Character feats display |
+| `/abilities` | 3.40 | command | Character special abilities display |
 
-**Cumulative index.js shrinkage**: 19,500 → **13,109** lines (−6,391 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **12,736** lines (−6,764 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 

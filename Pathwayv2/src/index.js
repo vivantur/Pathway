@@ -77,16 +77,20 @@ const {
 const sheetCmd         = require('./commands/sheet/command');
 const hpCmd            = require('./commands/hp/command');
 const notesCmd         = require('./commands/notes/command');
+const featsCmd         = require('./commands/feats/command');
+const abilitiesCmd     = require('./commands/abilities/command');
 const snippetCmd       = require('./commands/snippet/command');
 const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
 const heroCmd          = require('./commands/hero/command');
+const ccCmd            = require('./commands/cc/command');
 const spellCmd         = require('./commands/spell/command');
 const spelladdCmd      = require('./commands/spelladd/command');
 const monsteraddCmd    = require('./commands/monsteradd/command');
 const helpCmd          = require('./commands/help/command');
 const bagCmd           = require('./commands/bag/command');
 const { normalizeBagEntry } = require('./commands/bag/helpers');
+const { normalizeCharacterFeat } = require('./commands/feats/fields');
 const { findSpell, spellAmbiguityMessage } = require('./commands/spell/lookup');
 const { normalizeSpell } = require('./commands/spell/embed');
 const xpCmd            = require('./commands/xp/command');
@@ -1666,188 +1670,6 @@ async function fetchPathbuilderCharacter(id) {
 // resolveChar moved to state/characters.js in Phase 3.3.
 // Imported via the destructure at the top of this file so all 87 call
 // sites continue to resolve to the same function.
-
-function normalizeCharacterFeat(feat) {
-  const knownTypes = new Set([
-    'Heritage',
-    'Ancestry Feat',
-    'Class Feat',
-    'Archetype Feat',
-    'Skill Feat',
-    'General Feat',
-    'Awarded Feat',
-    'Other Feats',
-  ]);
-  const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
-  const isKnownType = (value) => knownTypes.has(clean(value));
-  const isProbablyDescription = (value) => clean(value).length > 80 || /[.!?]\s/.test(clean(value));
-  if (Array.isArray(feat)) {
-    const webType = isKnownType(feat[1]) ? clean(feat[1]) : '';
-    const pathbuilderType = isKnownType(feat[3]) ? clean(feat[3]) : '';
-    const type = webType || pathbuilderType || '';
-    const source = !isKnownType(feat[1]) && !isProbablyDescription(feat[1]) ? clean(feat[1])
-      : !isKnownType(feat[2]) && !isProbablyDescription(feat[2]) ? clean(feat[2])
-      : '';
-    const level = Number.isFinite(Number(feat[3])) ? feat[3]
-      : Number.isFinite(Number(feat[2])) ? feat[2]
-      : null;
-    return {
-      name: clean(feat[0]),
-      source,
-      level,
-      type,
-    };
-  }
-  if (feat && typeof feat === 'object') {
-    return {
-      name: clean(feat.name ?? feat.feat),
-      source: isProbablyDescription(feat.source ?? feat.sourceText) ? '' : clean(feat.source ?? feat.sourceText),
-      level: feat.level ?? feat.takenLevel ?? null,
-      type: isKnownType(feat.type ?? feat.category) ? clean(feat.type ?? feat.category) : '',
-    };
-  }
-  return { name: clean(feat), source: '', level: null, type: '' };
-}
-
-function buildCharacterFeatsFields(charEntry) {
-  const feats = (charEntry.data?.feats ?? [])
-    .map(normalizeCharacterFeat)
-    .filter(f => f.name)
-    .sort((a, b) => {
-      const al = Number.isFinite(Number(a.level)) ? Number(a.level) : 999;
-      const bl = Number.isFinite(Number(b.level)) ? Number(b.level) : 999;
-      return al - bl || a.name.localeCompare(b.name);
-    });
-
-  if (feats.length === 0) {
-    return {
-      description: 'No feats recorded.',
-      fields: [],
-    };
-  }
-
-  const groups = new Map();
-  for (const feat of feats) {
-    const group = feat.type && feat.type.length <= 80 ? feat.type : 'Other Feats';
-    if (!groups.has(group)) groups.set(group, []);
-    groups.get(group).push(feat);
-  }
-
-  const preferredOrder = [
-    'Heritage',
-    'Ancestry Feat',
-    'Class Feat',
-    'Archetype Feat',
-    'Skill Feat',
-    'General Feat',
-    'Awarded Feat',
-    'Other Feats',
-  ];
-  const groupNames = [...groups.keys()].sort((a, b) => {
-    const ai = preferredOrder.indexOf(a);
-    const bi = preferredOrder.indexOf(b);
-    if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    return a.localeCompare(b);
-  });
-  const fieldLabel = {
-    Heritage: 'Heritage',
-    'Ancestry Feat': 'Ancestry Feats',
-    'Class Feat': 'Class Feats',
-    'Archetype Feat': 'Archetype Feats',
-    'Skill Feat': 'Skill Feats',
-    'General Feat': 'General Feats',
-    'Awarded Feat': 'Awarded Feats',
-  };
-
-  let hidden = 0;
-  const fields = groupNames.map(groupName => {
-    const lines = [];
-    for (const feat of groups.get(groupName)) {
-      const level = feat.level !== null && feat.level !== undefined && feat.level !== ''
-        ? `**${feat.level}** `
-        : '';
-      const source = feat.source ? ` (${feat.source})` : '';
-      const line = `• ${level}${feat.name}${source}`;
-      if ([...lines, line].join('\n').length > 1000) {
-        hidden += 1;
-      } else {
-        lines.push(line);
-      }
-    }
-    return {
-      name: fieldLabel[groupName] ?? (groupName.endsWith('s') ? groupName : `${groupName}s`),
-      value: lines.join('\n') || 'No visible feats.',
-      inline: false,
-    };
-  });
-
-  const suffix = hidden > 0 ? ` ${hidden} additional feat${hidden === 1 ? '' : 's'} hidden by Discord's field limit.` : '';
-  return {
-    description: `${feats.length} feat${feats.length === 1 ? '' : 's'} recorded.${suffix}`,
-    fields,
-  };
-}
-
-function formatCharacterSpecials(charEntry) {
-  const specials = Array.isArray(charEntry?.data?.specials) ? charEntry.data.specials : [];
-  const lines = [];
-  for (const special of specials) {
-    const raw = typeof special === 'string'
-      ? special
-      : [special?.name, special?.details ?? special?.description].filter(Boolean).join(': ');
-    const cleaned = String(raw ?? '').replace(/\s+/g, ' ').trim();
-    if (!cleaned) continue;
-    const line = `• ${cleaned}`;
-    if ([...lines, line].join('\n').length > 1000) break;
-    lines.push(line);
-  }
-  return lines.join('\n');
-}
-
-function buildCharacterAbilitiesFields(charEntry) {
-  const specials = Array.isArray(charEntry?.data?.specials) ? charEntry.data.specials : [];
-  const lines = [];
-  let hidden = 0;
-
-  for (const special of specials) {
-    const raw = typeof special === 'string'
-      ? special
-      : [special?.name, special?.details ?? special?.description].filter(Boolean).join(': ');
-    const cleaned = String(raw ?? '').replace(/\s+/g, ' ').trim();
-    if (!cleaned) continue;
-    const line = `• ${cleaned}`;
-    if (line.length > 1000) {
-      lines.push(`${line.slice(0, 997)}...`);
-      continue;
-    }
-    lines.push(line);
-  }
-
-  const fields = [];
-  let chunk = [];
-  for (const line of lines) {
-    const next = [...chunk, line].join('\n');
-    if (next.length > 1000 && chunk.length) {
-      fields.push({ name: fields.length ? 'More Abilities' : 'Special Abilities', value: chunk.join('\n'), inline: false });
-      chunk = [line];
-      if (fields.length >= 25) {
-        hidden += 1;
-        chunk = [];
-      }
-    } else {
-      chunk.push(line);
-    }
-  }
-  if (chunk.length && fields.length < 25) {
-    fields.push({ name: fields.length ? 'More Abilities' : 'Special Abilities', value: chunk.join('\n'), inline: false });
-  }
-
-  const suffix = hidden > 0 ? ` ${hidden} additional ability entr${hidden === 1 ? 'y was' : 'ies were'} hidden by Discord's field limit.` : '';
-  return {
-    description: `${lines.length} special abilit${lines.length === 1 ? 'y' : 'ies'} recorded.${suffix}`,
-    fields,
-  };
-}
 
 function cleanDescriptionText(value) {
   return String(value ?? '').replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').trim();
@@ -3805,40 +3627,6 @@ function resolveVariable(rawName, charEntry) {
   }
 
   return undefined;
-}
-
-// Avrae-style pip glyphs for /cc display. The user picks one per counter
-// when they call /cc add. Default is diamond. Pip rows are only rendered
-// when max <= 25 (matches Avrae's threshold to keep displays readable).
-const COUNTER_PIPS = {
-  diamond: { filled: '◆', empty: '◇' },
-  circle:  { filled: '●', empty: '○' },
-  square:  { filled: '■', empty: '□' },
-  star:    { filled: '★', empty: '☆' },
-  hex:     { filled: '⬢', empty: '⬡' },
-};
-const COUNTER_PIP_MAX = 25;
-
-// Render a single counter Avrae-style:
-//   **Label**: 4/5 (resets on rest)
-//   ◆◆◆◆◇
-// `withHint` adds the {{counter.<name>}} usage hint on a third line — used by
-// /cc list and /counters but suppressed in /cc use|restore|set replies for a
-// cleaner look.
-function renderCounterLine(key, ctr, { withHint = false } = {}) {
-  const label = ctr.label || key;
-  const max = Number(ctr.max ?? 0);
-  const cur = Number(ctr.current ?? 0);
-  const resetTag = ctr.reset === 'daily' ? ' *(resets on rest)*' : '';
-  const style = COUNTER_PIPS[ctr.display] || COUNTER_PIPS.diamond;
-  let pipsLine = '';
-  if (max > 0 && max <= COUNTER_PIP_MAX) {
-    const filled = style.filled.repeat(Math.max(0, Math.min(max, cur)));
-    const empty  = style.empty.repeat(Math.max(0, max - Math.max(0, Math.min(max, cur))));
-    pipsLine = `\n${filled}${empty}`;
-  }
-  const hintLine = withHint ? `\n*\`{{counter.${key}}}\`*` : '';
-  return `**${label}**: ${cur}/${max}${resetTag}${pipsLine}${hintLine}`;
 }
 
 // Replace every {{name}} in `text` with its resolved value. Unknown variables
@@ -6937,44 +6725,11 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /feats ──────────────────────────────────────────────────────
   else if (commandName === 'feats') {
-    const characters = loadCharacters();
-    const nameArg = interaction.options.getString('character');
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-
-    const c = charEntry.data ?? {};
-    const featsView = buildCharacterFeatsFields(charEntry);
-    const embed = new EmbedBuilder()
-      .setColor(0x9b59b6)
-      .setTitle(`${c.name ?? charEntry.name}'s Feats`)
-      .setDescription(featsView.description)
-      .addFields(featsView.fields)
-      .setFooter({ text: 'Pathway character feats' });
-
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
-    return interaction.reply({ embeds: [embed] });
+    await featsCmd.execute(interaction);
   }
 
   else if (commandName === 'abilities') {
-    const characters = loadCharacters();
-    const nameArg = interaction.options.getString('character');
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-
-    const c = charEntry.data ?? {};
-    const abilitiesView = buildCharacterAbilitiesFields(charEntry);
-    const embed = new EmbedBuilder()
-      .setColor(0x9b59b6)
-      .setTitle(`${c.name ?? charEntry.name}'s Abilities`)
-      .setDescription(abilitiesView.description)
-      .setFooter({ text: 'Pathway character abilities' });
-    if (abilitiesView.fields.length > 0) {
-      embed.addFields(abilitiesView.fields);
-    } else {
-      embed.addFields({ name: 'Special Abilities', value: 'No special abilities saved yet.', inline: false });
-    }
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
-    return interaction.reply({ embeds: [embed] });
+    await abilitiesCmd.execute(interaction);
   }
 
   // ─── /sheet ──────────────────────────────────────────────────────
@@ -7126,142 +6881,14 @@ client.on('interactionCreate', async (interaction) => {
   // Custom counters: arbitrary per-character resources (panache, reagents,
   // stratagem charges, etc.). Stored at overlay.counters.
   else if (commandName === 'cc') {
-    const sub = interaction.options.getSubcommand();
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(
-      interaction.user.id,
-      interaction.options.getString('character'),
-      characters,
-    );
-    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
-    charOverlay.ensureOverlay(charEntry);
-
-    const renderCounter = renderCounterLine;
-
-    if (sub === 'add') {
-      const name = interaction.options.getString('name').trim();
-      const max = interaction.options.getInteger('max');
-      const reset = interaction.options.getString('reset') ?? 'none';
-      const display = interaction.options.getString('display') ?? 'diamond';
-      const label = interaction.options.getString('label');
-      const initial = interaction.options.getInteger('initial');
-      const result = charOverlay.addCounter(charEntry, name, { max, reset, label, initial, display });
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({
-        content: `${result.existed ? '✏️ Updated' : '✅ Created'} counter on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter, { withHint: true })}`,
-        ephemeral: true,
-      });
-    }
-
-    if (sub === 'set') {
-      const name = interaction.options.getString('name').trim();
-      const value = interaction.options.getInteger('value');
-      const result = charOverlay.setCounter(charEntry, name, value);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({
-        content: `🔧 Set on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
-      });
-    }
-
-    if (sub === 'use') {
-      const name = interaction.options.getString('name').trim();
-      const amount = interaction.options.getInteger('amount') ?? 1;
-      const result = charOverlay.useCounter(charEntry, name, amount);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({
-        content: `🔻 **${charEntry.data.name}** spends ${amount} from **${result.counter.label || name.toLowerCase()}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
-      });
-    }
-
-    if (sub === 'restore') {
-      const name = interaction.options.getString('name').trim();
-      const amount = interaction.options.getInteger('amount') ?? 1;
-      const result = charOverlay.restoreCounter(charEntry, name, amount);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({
-        content: `🔺 **${charEntry.data.name}** restores ${amount} to **${result.counter.label || name.toLowerCase()}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
-      });
-    }
-
-    if (sub === 'reset') {
-      const name = interaction.options.getString('name').trim();
-      const result = charOverlay.resetCounter(charEntry, name);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      if (result.all) {
-        return interaction.reply({
-          content: `♻️ Reset all ${result.count} counter(s) on **${charEntry.data.name}** to their max.`,
-          ephemeral: true,
-        });
-      }
-      return interaction.reply({
-        content: `♻️ Reset on **${charEntry.data.name}**:\n${renderCounter(name.toLowerCase(), result.counter)}`,
-        ephemeral: true,
-      });
-    }
-
-    if (sub === 'list') {
-      const counters = charOverlay.listCounters(charEntry);
-      const entries = Object.entries(counters).sort(([a], [b]) => a.localeCompare(b));
-      if (entries.length === 0) {
-        return interaction.reply({
-          content: `📭 **${charEntry.data.name}** has no custom counters yet. Create one with \`/cc add\`.\n\nExamples:\n• \`/cc add name:reagents max:8 reset:daily label:"Infused Reagents"\`\n• \`/cc add name:panache max:1 reset:none label:"Swashbuckler Panache"\`\n• \`/cc add name:stratagem max:1 reset:daily label:"Devise a Stratagem"\``,
-          ephemeral: true,
-        });
-      }
-      const description = entries.map(([k, v]) => renderCounter(k, v, { withHint: true })).join('\n\n');
-      const embed = new EmbedBuilder()
-        .setColor(0x7289DA)
-        .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
-        .setDescription(description.slice(0, 4000))
-        .setFooter({ text: 'Use /cc use, /cc restore, /cc set to manage. /rest auto-resets daily counters.' });
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    if (sub === 'remove') {
-      const name = interaction.options.getString('name').trim();
-      const result = charOverlay.removeCounter(charEntry, name);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({ content: `🗑️ Deleted counter **${name.toLowerCase()}** on **${charEntry.data.name}**.`, ephemeral: true });
-    }
-
-    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+    await ccCmd.execute(interaction);
   }
 
   // ─── /counters ───────────────────────────────────────────────────
   // Top-level shortcut for the same view as /cc list — keeps the counter
   // block one slash command away.
   else if (commandName === 'counters') {
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(
-      interaction.user.id,
-      interaction.options.getString('character'),
-      characters,
-    );
-    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
-    charOverlay.ensureOverlay(charEntry);
-
-    const counters = charOverlay.listCounters(charEntry);
-    const entries = Object.entries(counters).sort(([a], [b]) => a.localeCompare(b));
-    if (entries.length === 0) {
-      return interaction.reply({
-        content: `📭 **${charEntry.data.name}** has no custom counters yet. Create one with \`/cc add\`.`,
-        ephemeral: true,
-      });
-    }
-    const description = entries.map(([k, v]) => renderCounterLine(k, v, { withHint: true })).join('\n\n');
-    const embed = new EmbedBuilder()
-      .setColor(0x7289DA)
-      .setTitle(`📊 ${charEntry.data.name} — counters (${entries.length}/30)`)
-      .setDescription(description.slice(0, 4000))
-      .setFooter({ text: '/cc add to create · /cc use|restore|set to manage · /rest auto-resets daily counters' });
-    if (charEntry.art) embed.setThumbnail(charEntry.art);
-    return interaction.reply({ embeds: [embed] });
+    await ccCmd.executeCounters(interaction);
   }
 
   // ─── /spellbook ──────────────────────────────────────────────────
