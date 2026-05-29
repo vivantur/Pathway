@@ -12,8 +12,8 @@ If you're a Claude Code session that just opened this folder, here's what you ne
 
 1. **You're in `Pathway/Pathwayv2/`**, a parallel rewrite of the v1 bot at `Pathway/` (the legacy 19,500-line `index.js` sits at the repo root). v2 organizes the same logic into feature folders.
 2. **The pattern is mechanical at this point**. Look at `src/commands/class/` or `src/commands/skillinfo/` for the gold-standard shape: `command.js` (zero-ctx orchestrator), `lookup.js` (pure data resolution), `embed.js` (renderers), optional `buttons.js` (when the command has buttons).
-3. **Don't redesign anything**. The architecture is settled. Your job is execution: keep extracting commands from `src/index.js` into feature folders following the existing pattern.
-4. **Validate every extraction** with `node --check src/index.js && node --check src/commands/<name>/*.js`. A module-load smoke test (`node -e "require('./src/commands/<name>/command')"`) catches missing exports that `--check` won't.
+3. **Don't redesign anything**. The architecture is settled. Phase 3 command extraction is complete; remaining work is audit/final hardening before any runtime cutover.
+4. **Validate every cleanup** with `node --check src/index.js`, `node --check` across `src/**/*.js`, and a command module-load smoke test confirming `execute.length === 1`.
 5. **Don't commit `.env`** or `gamedata/*.json` — both are in `Pathway/.gitignore` for good reason.
 
 ---
@@ -148,7 +148,7 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/init` | 3.62 | command | Combat tracker start/view/turn/add/remove/effect/end/recovery/delay flows |
 | `/char` | 3.63 | command, modals | Character import/update/edit/create/delete/list/active/art and modal handlers |
 
-**Cumulative index.js shrinkage**: 19,500 → **4,244** lines (−15,256 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **2,731** lines (−16,769 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -335,26 +335,13 @@ But this branch hasn't been deployed at all — Railway is still serving from `P
 
 ## Suggested Next Steps for Viv's Session
 
-In order:
+Phase 3 command extraction is complete. Suggested next steps, in order:
 
-### Immediate (one-batch each)
-1. **`/monster`** — pairs with `state/monster.js` (already in place). Integration with bestiary attacks + GM edits + monster_attacks library.
-2. **Monster management cluster** — `/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack` are still inline.
-3. **Combat spell/attack helpers** — after `/cast`, the remaining inline combat commands still share damage, DoS, and effect helper code.
-
-### Medium-term
-4. **`/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack`** — monster management cluster.
-5. **`/weather`, `/calendar`, `/downtime`** — old top-level command modules should be folded into feature folders only when extracting the slash command.
-6. Helper mining: extract `tryResolveLoadedCharacter(interaction)` into `state/characters.js` — used by remaining character-aware commands.
-
-### Big single PRs (save for last)
-7. **`/char` family** — entire character management. Many subcommands, modals, buttons. Likely needs its own multi-week effort.
-8. **`/init` + `/i`** — combat tracker. Significant state interactions.
-
-### When everything's extracted
-9. Audit `src/index.js` for residual helpers/constants that should move. By the end it should be just: imports, env loading, Discord client, interaction dispatcher (one-line per command), autocomplete dispatcher, startup orchestration (`clientReady`).
-10. Cut over Railway from `Pathway/index.js` to `Pathway/Pathwayv2/src/index.js`. This is a separate PR.
-11. Eventually: delete `Pathway/index.js` (the 19,500-line legacy) and promote `Pathway/Pathwayv2/` to be the repo's primary source tree.
+1. **Final dispatcher audit** — `src/index.js` is now mostly imports, startup, buttons, modals, autocomplete, and one-line command dispatch. Review the remaining autocomplete and button handlers for any obvious feature-folder moves.
+2. **Fold old top-level command modules only when useful** — `commands/weather-cmd.js`, `commands/calendar-cmd.js`, `commands/downtime.js`, `commands/encounters.js`, and similar scaffolds still exist because feature wrappers depend on them. Don't churn these unless a focused cleanup needs it.
+3. **Runtime smoke test in a dev guild** — set `.env`, run `npm run deploy:guild`, start `Pathwayv2/src/index.js`, and test representative commands: `/sheet`, `/char list`, `/init start`, `/i join`, `/monster`, `/spell`, `/bag`, `/weather`, `/calendar`.
+4. **Cutover PR when ready** — Railway still serves `Pathway/index.js` (v1). Switching production to `Pathway/Pathwayv2/src/index.js` should be its own PR after the dev-guild smoke test.
+5. **Post-cutover cleanup** — after v2 has soaked safely, delete the old root `Pathway/index.js` and promote `Pathwayv2/` to the primary source tree in a separate cleanup.
 
 ---
 
@@ -371,8 +358,4 @@ In order:
 
 ## Last commit before handoff
 
-Phase 3.23 extracted `/class` to feature folder. Index.js shrunk to 16,210 lines.
-
-20 commands extracted: `/sheet`, `/hp`, `/notes`, `/snippet`, `/serversnippet`, `/portrait`, `/xp`, `/rest`, `/refocus`, `/condition`, `/background`, `/heritage`, `/feat`, `/ancestry`, `/archetype`, `/item`, `/deity`, `/eberron`, `/skillinfo`, `/class`.
-
-Good luck. The pattern is mechanical at this point — execution, not design. 🚀
+Phase 3 is complete: 85 slash command entries extracted, `src/index.js` shrunk to 2,731 lines, and the remaining work is dev-guild smoke testing plus a separate production cutover PR.

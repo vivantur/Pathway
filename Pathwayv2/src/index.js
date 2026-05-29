@@ -1,8 +1,5 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, PermissionFlagsBits } = require('discord.js');
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
 
 // ── Persistent-data directory + JSON loader ─────────────────────────────────
 // Moved to utils/storage.js. See that file for the full force-reseed and
@@ -10,7 +7,6 @@ const path = require('path');
 // volume path (e.g. /app/data) so user state survives redeploys.
 const {
   DATA_DIR,
-  dataPath,
   loadJson,
   mutateJson,
   restoreAllFromSupabase,
@@ -68,7 +64,6 @@ const {
   characterProfValue,
   characterProfLabel,
   profIconForValue,
-  computeCharSkillModifier,
 } = require('./rules/pf2eMath');
 
 // ── Extracted command handlers (Phase 3) ───────────────────────────────────
@@ -101,8 +96,6 @@ const helpCmd          = require('./commands/help/command');
 const bagCmd           = require('./commands/bag/command');
 const { normalizeBagEntry } = require('./commands/bag/helpers');
 const { normalizeCharacterFeat } = require('./commands/feats/fields');
-const { findSpell, spellAmbiguityMessage } = require('./commands/spell/lookup');
-const { normalizeSpell } = require('./commands/spell/embed');
 const xpCmd            = require('./commands/xp/command');
 const restCmd          = require('./commands/rest/command');
 const restButtonsCmd   = require('./commands/rest/buttons');
@@ -154,7 +147,6 @@ const initCmd          = require('./commands/init/command');
 const charCmd          = require('./commands/char/command');
 const charModals       = require('./commands/char/modals');
 const { routeMonsterAlias } = require('./commands/m/router');
-const { scaleCompanion } = require('./commands/companion/helpers');
 const { buildCharHpEmbed } = require('./commands/hp/embed');
 // Notes autocomplete (still inline in index.js) reaches into note helpers.
 const { noteKey, sortNotes } = require('./commands/notes/notebook');
@@ -165,24 +157,7 @@ const { buildMonsterEmbed } = require('./commands/monster/embed');
 // messages on lookup commands. fuzzyPick is a drop-in replacement for the
 // old inline pick() helper that powered all autocomplete; didYouMeanLine
 // is appended to "❌ No X found" messages on lookup commands.
-const { fuzzyPick, didYouMeanLine, score: fuzzyScore } = require('./lib/fuzzyMatch');
-
-// Ancestry description parser — splits the messy AoN-imported description
-// field into labeled sections (Edicts, Anathema, Society, etc.) and
-// normalizes the hp/hit_points field-name discrepancy between schemas.
-const {
-  parseDescription: parseAncestryDescription,
-  getAncestryHp,
-  hasHeritages,
-  hasAncestryFeats,
-} = require('./lib/ancestryParser');
-
-// Spell damage resolver — figures out the right dice expression for a spell at
-// any cast rank, handling all four heightening shapes that appear in spells.json
-// (per_rank with/without damage_bonus, fixed with/without dice in level text).
-// rollCompoundExpression handles compound expressions like "6d6 + 4d6" that
-// the original rollDamageExpression couldn't parse.
-const { resolveSpellDamage, rollCompoundExpression } = require('./lib/spellDamage');
+const { fuzzyPick, didYouMeanLine } = require('./lib/fuzzyMatch');
 
 console.log(`DATA_DIR: ${DATA_DIR}`);
 
@@ -195,28 +170,15 @@ if (!TOKEN) {
 const encounters = require('./commands/encounters');
 const {
   getEncounter,
-  createEncounter,
-  deleteEncounter,
-  addCombatant,
-  removeCombatant,
-  advanceTurn,
-  modifyHp,
   setSummaryMessageId,
   findCombatant,
-  addEffect,
-  removeEffect,
-  clearEffects,
-  delayCombatant,
-  rejoinFromDelay,
 } = encounters;
-const { getPreset, listPresets } = require('./rules/effects');
+const { listPresets } = require('./rules/effects');
 const downtime = require('./commands/downtime');
 const charOverlay = require('./rules/characterOverlay');
 const ca = require('./rules/combatAutomation');
 const combatV2State = require('./rules/combatV2/state');
 const combatV2Render = require('./rules/combatV2/render');
-const combatV2Rolls = require('./rules/combatV2/rolls');
-const { computeCharPerception } = require('./rules/characterChecks');
 // Spell effects auto-application: maps spell names to mechanical effects
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
 // their save degree of success. Used by /cast.
@@ -388,10 +350,6 @@ function startDowntimeAutoAccrual() {
 function loadBags() {
   return bagState.getAll();
 }
-async function saveBags(data) {
-  await bagState.saveAll(data);
-}
-
 // ── Snippet helpers ──────────────────────────────────────────────────────────
 // File shape: { [userId]: { [snippetName]: "expansion string" } }
 // Snippets are per-user text substitutions applied to /roll expressions.
@@ -402,9 +360,6 @@ async function saveBags(data) {
 // keep working unchanged.
 function loadSnippets() {
   return snippetState.getAllUser();
-}
-async function saveSnippets(data) {
-  await snippetState.saveAllUser(data);
 }
 // Validate a snippet name: letters/numbers/underscore only, 1-24 chars, not
 // colliding with reserved roll modifiers.
@@ -421,26 +376,13 @@ async function saveSnippets(data) {
 function loadServerSnippets() {
   return snippetState.getAllGuild();
 }
-async function saveServerSnippets(data) {
-  await snippetState.saveAllGuild(data);
-}
 // Merge personal + server snippets for a given user+guild. Personal wins
 // on name collision. Returns { [name]: expansion }.
-function mergedSnippetsFor(userId, guildId) {
-  const personal = (loadSnippets()[userId] ?? {});
-  const server = guildId ? (loadServerSnippets()[guildId] ?? {}) : {};
-  // Server first, personal override
-  return { ...server, ...personal };
-}
-
 // ── Monster attack library helpers ────────────────────────────────────────────
 // Shape: { [guildId]: { [monsterKey]: { displayName, attacks: [ {...} ] } } }
 // Phase 2: state/monster owns the attacks cache + Realtime.
 function loadMonsterAttacks() {
   return monsterState.getAllAttacks();
-}
-async function saveMonsterAttacks(data) {
-  await monsterState.saveAllAttacks(data);
 }
 function monsterKey(name) {
   return String(name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -458,15 +400,6 @@ function resolveMonsterDisplayName(inputName) {
   return inputName;
 }
 // Find a saved attack on a monster by name (case-insensitive, partial).
-function findSavedAttack(monsterEntry, attackName) {
-  const q = String(attackName ?? '').toLowerCase().trim();
-  const atks = monsterEntry?.attacks ?? [];
-  return atks.find(a => a.name.toLowerCase() === q)
-      || atks.find(a => a.name.toLowerCase().startsWith(q))
-      || atks.find(a => a.name.toLowerCase().includes(q))
-      || null;
-}
-
 // ── Monster art library helpers ───────────────────────────────────────────────
 // Shape: { [guildId]: { [monsterKey]: { displayName, url, setBy, setAt } } }
 // Per-guild so a GM on one server can't affect another's art.
@@ -474,35 +407,8 @@ function findSavedAttack(monsterEntry, attackName) {
 function loadMonsterArt() {
   return monsterState.getAllArt();
 }
-async function saveMonsterArt(data) {
-  await monsterState.saveAllArt(data);
-}
-function getGuildArt(store, guildId) {
-  if (!store[guildId]) store[guildId] = {};
-  return store[guildId];
-}
-function monsterBuiltinArtUrl(monsterOrName) {
-  if (!monsterOrName || typeof monsterOrName === 'string') return null;
-  const raw = Array.isArray(monsterOrName.image) ? monsterOrName.image[0] : monsterOrName.image;
-  if (!raw || typeof raw !== 'string') return null;
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith('/')) return `https://2e.aonprd.com${raw}`;
-  return `https://2e.aonprd.com/${raw.replace(/^\/+/, '')}`;
-}
 // Look up a saved art URL for a monster in a given guild. Returns null if none.
 // The monster arg can be either a bestiary creature object (preferred) or a raw string name.
-function lookupMonsterArt(guildId, monsterOrName) {
-  let saved = null;
-  const name = typeof monsterOrName === 'string' ? monsterOrName : monsterOrName?.name;
-  if (guildId && name) {
-    const store = loadMonsterArt();
-    const guild = store[guildId];
-    const key = monsterKey(name);
-    saved = guild?.[key]?.url ?? null;
-  }
-  return saved ?? monsterBuiltinArtUrl(monsterOrName);
-}
-
 // ── Monster edits store helpers ───────────────────────────────────────────────
 // Per-guild per-field overrides for bestiary creatures. Anything a GM sets here
 // replaces the corresponding field in the bestiary entry when /monster is shown.
@@ -528,10 +434,6 @@ function loadMonsterEdits() {
 async function saveMonsterEdits(data) {
   await monsterState.saveAllEdits(data);
 }
-function getGuildEdits(store, guildId) {
-  if (!store[guildId]) store[guildId] = {};
-  return store[guildId];
-}
 function getMonsterEdit(guildId, displayName) {
   if (!guildId || !displayName) return null;
   const store = loadMonsterEdits();
@@ -542,22 +444,6 @@ function getMonsterEdit(guildId, displayName) {
 // Create or fetch an edit entry for the given monster, auto-stamping the
 // audit fields. Caller is expected to mutate fields on the returned object
 // and then call saveMonsterEdits(store). Returns { store, guild, entry }.
-function ensureMonsterEdit(guildId, displayName, userId) {
-  const store = loadMonsterEdits();
-  const guild = getGuildEdits(store, guildId);
-  const key = monsterKey(displayName);
-  if (!guild[key]) {
-    guild[key] = { displayName, setBy: userId, setAt: new Date().toISOString() };
-  } else {
-    // Touch the audit timestamp on every edit
-    guild[key].setAt = new Date().toISOString();
-    guild[key].setBy = userId;
-    // If the canonical name changed (e.g. bestiary rename), update it
-    guild[key].displayName = displayName;
-  }
-  return { store, guild, entry: guild[key] };
-}
-
 // Merge a guild's monster edits onto a bestiary creature. Edits override
 // bestiary fields one-at-a-time; unset fields fall through. Returns a NEW
 // object — does not mutate the bestiary in memory. Passing a null edit or
@@ -673,197 +559,6 @@ function applyMonsterAttackLibrary(monster, guildId) {
 // or updates. Returns { ok, key, replaced } or { error }.
 // sourceInfo is a human-readable string like "from file upload" or
 // "pasted" that gets shown in the reply.
-function getBlankCharacterTemplate() {
-  return `// Pathway Character Template
-// =====================================================================
-// This is a fill-in-the-blanks character template.
-//
-// HOW TO USE:
-//   1. Open this file in Notepad (Windows) / TextEdit (Mac) / any text editor
-//   2. Replace the placeholder values with your character's data
-//   3. Leave fields you don't need as their defaults — the bot ignores empty
-//      or zero fields gracefully
-//   4. Save the file (keep the .txt extension)
-//   5. In Discord, run:  /char add file:<this-edited-file>
-//      (or /char update  to refresh an existing character with the same name)
-//
-// EDITING TIPS:
-//   - Lines that start with // are comments. You can leave them or delete them.
-//   - Fields starting with _comment are explanation hints. Leave them; they're
-//     ignored by the bot.
-//   - All numbers must stay as numbers (no quotes around them).
-//   - All text must stay wrapped in "quotes".
-//   - Lists use square brackets: ["item1", "item2", "item3"].
-//   - Tradition options: "arcane", "divine", "occult", "primal".
-//   - Spellcasting type: "prepared" (wizard/cleric) or "spontaneous" (sorcerer/bard).
-//   - Proficiency ranks: 0 = untrained, 2 = trained, 4 = expert, 6 = master, 8 = legendary.
-//   - Ability scores use the actual SCORE (18 = +4 mod). To convert a mod to a
-//     score: score = (mod * 2) + 10.  +4 mod → 18, +3 mod → 16, etc.
-//
-// If you only need to make quick edits to an existing character, skip this
-// template and use /char edit, /char skill, or /char lore instead.
-// =====================================================================
-
-{
-  "_comment_IDENTITY": "== CHARACTER IDENTITY ==",
-  "name": "Your Character Name",
-  "class": "Fighter",
-  "dualClass": null,
-  "level": 1,
-  "ancestry": "Human",
-  "heritage": "Versatile Human",
-  "background": "Warrior",
-  "alignment": "N",
-  "gender": "",
-  "age": "",
-  "deity": "",
-  "_comment_size": "size: -2=Tiny, -1=Small, 0=Medium, 1=Large, 2=Huge, 3=Gargantuan",
-  "size": 0,
-  "keyability": "str",
-  "languages": ["Common"],
-
-  "_comment_ATTRIBUTES": "== HP + SPEED ==",
-  "_comment_hp": "HP is computed as ancestryhp + bonushp + ((classhp + bonushpPerLevel + conMod) * level). For a level 1 Fighter with Con +2: 8 + 0 + ((10 + 0 + 2) * 1) = 20 HP. ancestryhp/bonushp are FLAT one-time values; classhp/bonushpPerLevel are PER-LEVEL.",
-  "attributes": {
-    "ancestryhp": 8,
-    "classhp": 10,
-    "bonushp": 0,
-    "bonushpPerLevel": 0,
-    "speed": 25,
-    "speedBonus": 0
-  },
-
-  "_comment_ABILITIES": "== ABILITY SCORES (use score not mod; +4 mod = 18 score) ==",
-  "abilities": {
-    "str": 18,
-    "dex": 14,
-    "con": 14,
-    "int": 10,
-    "wis": 12,
-    "cha": 10,
-    "breakdown": { "ancestryFree": [], "ancestryBoosts": [], "ancestryFlaws": [], "backgroundBoosts": [], "classBoosts": [], "mapLevelledBoosts": {} }
-  },
-
-  "_comment_PROFICIENCIES": "== PROFICIENCIES (0=untrained, 2=trained, 4=expert, 6=master, 8=legendary) ==",
-  "_comment_spellcasting_profs": "castingArcane/Divine/Occult/Primal are spell attack/DC proficiency. Leave at 0 for non-casters.",
-  "proficiencies": {
-    "classDC": 2,
-    "perception": 2,
-    "fortitude": 4,
-    "reflex": 2,
-    "will": 2,
-    "heavy": 2, "medium": 2, "light": 2, "unarmored": 2,
-    "advanced": 0, "martial": 2, "simple": 2, "unarmed": 2,
-    "castingArcane": 0, "castingDivine": 0, "castingOccult": 0, "castingPrimal": 0,
-    "acrobatics": 0, "arcana": 0, "athletics": 2, "crafting": 0,
-    "deception": 0, "diplomacy": 0, "intimidation": 2, "medicine": 0,
-    "nature": 0, "occultism": 0, "performance": 0, "religion": 0,
-    "society": 0, "stealth": 0, "survival": 0, "thievery": 0
-  },
-
-  "_comment_AC": "== ARMOR CLASS (acTotal is what /sheet shows; value should match acTotal) ==",
-  "acTotal": { "acTotal": 18, "acProfBonus": 3, "acAbilityBonus": 2, "acItemBonus": 3, "acValue": 18 },
-
-  "_comment_LORES": "== LORE SKILLS as [name, rank] pairs. rank: 2=trained, 4=expert, 6=master, 8=legendary ==",
-  "lores": [],
-
-  "_comment_WEAPONS": "== WEAPONS ==",
-  "_comment_weapon_fields": "attack is the full to-hit bonus including str/dex + prof + item. die is damage dice like '1d8+4' or '2d6'. damageType: B=Bludgeoning, P=Piercing, S=Slashing.",
-  "weapons": [
-    {
-      "name": "Longsword",
-      "display": "Longsword",
-      "attack": 7,
-      "damageBonus": 0,
-      "die": "1d8+4",
-      "damageType": "S",
-      "traits": ["Versatile P"],
-      "strikingRune": "",
-      "potencyRune": 0,
-      "runes": []
-    }
-  ],
-
-  "_comment_FEATS": "== FEATS as [name, null, null, null]. Only the first element (name) matters. ==",
-  "feats": [
-    ["Power Attack", null, null, null]
-  ],
-
-  "_comment_SPECIALS": "== CLASS FEATURES / ANCESTRY FEATURES by name ==",
-  "specials": [
-    "Attack of Opportunity",
-    "Shield Block"
-  ],
-
-  "_comment_EQUIPMENT": "== INVENTORY as [name, quantity] pairs ==",
-  "equipment": [
-    ["Longsword", 1],
-    ["Chain Mail", 1],
-    ["Shield", 1],
-    ["Backpack", 1],
-    ["Bedroll", 1],
-    ["Rations (1 week)", 1]
-  ],
-
-  "_comment_MONEY": "== COINS ==",
-  "money": { "cp": 0, "sp": 0, "gp": 15, "pp": 0 },
-
-  "_comment_SPELLCASTING": "== SPELLCASTING (leave spellCasters empty [] for non-casters) ==",
-  "_comment_spellcaster_fields": "magicTradition: arcane/divine/occult/primal. spellcastingType: prepared or spontaneous. attack = spell attack bonus. dc = spell DC. cantrips is the list of known/prepared cantrips. spells is list of {spellLevel, list} per rank. perDay is {rankNumber: slotCount}.",
-  "spellCasters": [],
-
-  "_comment_FOCUS": "== FOCUS SPELLS. Leave as {} if no focus pool. Example: { \\"focusPoints\\": 2, \\"spells\\": [\\"Lay on Hands\\"] } ==",
-  "focus": {},
-
-  "_comment_UNUSED": "These fields exist for Pathbuilder compatibility but the bot doesn't use them heavily:",
-  "specificProficiencies": {},
-  "armor": [],
-  "formula": [],
-  "pets": [],
-  "senses": ""
-}
-
-// =====================================================================
-// EXAMPLE: WIZARD SPELLCASTER
-// =====================================================================
-// To turn this into a wizard, you'd change these fields:
-//
-//   "class": "Wizard",
-//   "keyability": "int",
-//   "attributes": { "ancestryhp": 8, "classhp": 6, ... },     // wizards have classhp 6
-//   "abilities": { "str": 10, "dex": 14, ..., "int": 18, ...},
-//   "proficiencies": {
-//     ...
-//     "castingArcane": 2,            // trained in arcane spell attack/DC
-//     "arcana": 2,                   // trained in Arcana skill
-//     "light": 0, "medium": 0, "heavy": 0,
-//     "simple": 2, "martial": 0,
-//     ...
-//   },
-//   "spellCasters": [
-//     {
-//       "name": "Arcane Prepared",
-//       "magicTradition": "arcane",
-//       "spellcastingType": "prepared",
-//       "innate": false,
-//       "attack": 7,
-//       "dc": 17,
-//       "keyAbility": "int",
-//       "cantrips": ["Electric Arc", "Detect Magic", "Light", "Read Aura", "Shield"],
-//       "spells": [
-//         { "spellLevel": 1, "list": ["Magic Missile", "Mystic Armor"] }
-//       ],
-//       "prepared": [
-//         { "spellLevel": 1, "list": ["Magic Missile", "Mystic Armor"] }
-//       ],
-//       "blendedSpells": [],
-//       "perDay": { "1": 2 }
-//     }
-//   ]
-// =====================================================================
-`;
-}
-
 // MAX_CHARACTERS_PER_USER moved to state/characters.js in Phase 3.7.
 
 // mergeCharacterOverlay moved to lib/pathwayWebClient.js in Phase 3.7.
@@ -881,493 +576,8 @@ function getBlankCharacterTemplate() {
 
 
 // ─── PDF STATBLOCK PARSER ─────────────────────────────────────────────
-function pdfDeduplicateBoldLetters(text) {
-  // Pathbuilder statblocks render bold LETTERS with each character doubled by
-  // pdf-parse. Observed patterns:
-  //   - Capitals: "G\tGuardian" (capital, tab, same capital, rest of word)
-  //   - Lowercase: "Guuaarrddiiaann" (each char doubled)
-  //   - Punctuation inside bold: "((Runelord))", ",," — these DO double
-  //   - Digits in header: "33" for level 3 in "Guardian 33\tKhyber" (larger font)
-  //   - Digits in ordinals: "11sstt" for bold "1st" in "Arcane Prepared Spells ... 1st"
-  //   - Digits in bare values: "HP 22" stays as "HP 22" (NOT bold-doubled)
-  //
-  // Strategy: dedupe all letters and punctuation always. Dedupe digits only
-  // when they're part of a header (first non-empty line) or ordinal suffix.
-  //
-  // Different pdf-parse versions produce different leading whitespace:
-  //   - pdf-parse v1.1.1 (classic): prepends two empty lines before the real header
-  //   - pdf-parse v2.x: no leading blanks
-  // We find the first non-empty line and treat that as the header, preserving
-  // any leading blank content as-is.
-  const lines = text.split('\n');
-  let headerIdx = 0;
-  while (headerIdx < lines.length && lines[headerIdx].trim() === '') headerIdx++;
-  // Rebuild with splits
-  const leading = lines.slice(0, headerIdx).join('\n') + (headerIdx > 0 ? '\n' : '');
-  const header = lines[headerIdx] ?? '';
-  const rest = lines.slice(headerIdx + 1).join('\n');
-
-  const dedupePass = (str, dedupeDigitsGlobally) => {
-    let out = '';
-    for (let i = 0; i < str.length; i++) {
-      const ch = str[i], next = str[i + 1], after = str[i + 2];
-      if (/[A-Z]/.test(ch) && next === '\t' && after === ch) {
-        out += ch; i += 2; continue;
-      }
-      // Letters and bold-rendered punctuation always dedupe
-      if (/[a-zA-Z()[\]+\-]/.test(ch) && next === ch) {
-        out += ch; i += 1; continue;
-      }
-      // Digits: dedupe in header, OR when this digit is part of an ordinal
-      // (followed by sstt/nndd/rrdd/tthh double-suffix pattern).
-      if (/\d/.test(ch) && next === ch) {
-        const ordinalCheck = str.slice(i + 2, i + 6);
-        const isBoldOrdinal = /^(ssttt?t?|nnddd?d?|rrddd?d?|tthhh?h?)/.test(ordinalCheck) ||
-                              /^(st|nd|rd|th)/.test(str.slice(i + 2, i + 4));
-        if (dedupeDigitsGlobally || isBoldOrdinal) {
-          out += ch; i += 1; continue;
-        }
-      }
-      out += ch;
-    }
-    return out;
-  };
-
-  return leading + dedupePass(header, true) + (rest ? '\n' + dedupePass(rest, false) : '');
-}
-
-function pdfRestoreDoubledWords(text) {
-  // Our simple deduplication collapses legitimate double letters in words
-  // like "Additional", "Occultism", "Common". Restore known Pathbuilder
-  // statblock vocabulary that has doubled letters in it.
-  //
-  // All patterns use word boundaries to prevent cascading matches. Without
-  // \b, a rule like "cal → call" would incorrectly match the "cal" inside
-  // "Magical" and produce "Magicall". Rules are applied simultaneously via
-  // a single regex so order doesn't create cascades.
-  const map = {
-    // Languages / common short words (all word-boundary-safe)
-    'Comon': 'Common',
-    'comon': 'common',
-    'Aditional': 'Additional',
-    'aditional': 'additional',
-    'Ocultism': 'Occultism',
-    'ocultism': 'occultism',
-    'Dragonblod': 'Dragonblood',
-    'Resurection': 'Resurrection',
-    'resurection': 'resurrection',
-    'Spelcasting': 'Spellcasting',
-    'spelcasting': 'spellcasting',
-    'Spelbok': 'Spellbook',
-    'spelbok': 'spellbook',
-    'Schol': 'School',
-    'schol': 'school',
-    'Tolkit': 'Toolkit',
-    'tolkit': 'toolkit',
-    'Barage': 'Barrage',
-    'barage': 'barrage',
-    'Magicall': 'Magical',
-    'magicall': 'magical',
-    'Physicall': 'Physical',
-    'physicall': 'physical',
-    'Batle': 'Battle',
-    'batle': 'battle',
-    'Sadle': 'Saddle',
-    'sadle': 'saddle',
-    'Uncomon': 'Uncommon',
-    'uncomon': 'uncommon',
-    'Finese': 'Finesse',
-    'finese': 'finesse',
-    'Pary': 'Parry',
-    'pary': 'parry',
-    'Swep': 'Sweep',
-    'swep': 'sweep',
-    'Kil': 'Kill',
-    'kil': 'kill',
-    'Skil': 'Skill',
-    'skil': 'skill',
-    'Skillls': 'Skills', // triple-L artifact of bold Skills label
-    'Spels': 'Spells',
-    'spels': 'spells',
-    'Spel': 'Spell',
-    'spel': 'spell',
-    // Body/description text
-    'atack': 'attack',
-    'Atack': 'Attack',
-    'sucess': 'success',
-    'Sucess': 'Success',
-    'efect': 'effect',
-    'Efect': 'Effect',
-    'Bedrol': 'Bedroll',
-    'bedrol': 'bedroll',
-    'Stel': 'Steel',
-    'Hardnes': 'Hardness',
-    'aly': 'ally',
-    'Aly': 'Ally',
-    'trigering': 'triggering',
-    'Trigering': 'Triggering',
-    'fet': 'feet',
-    'roled': 'rolled',
-    'Roled': 'Rolled',
-    'cal': 'call',
-    'Cal': 'Call',
-    'posibly': 'possibly',
-    'Posibly': 'Possibly',
-    'Steping': 'Stepping',
-    'steping': 'stepping',
-    'stil': 'still',
-    'Stil': 'Still',
-    'imunities': 'immunities',
-    'Imunities': 'Immunities',
-    'weakneses': 'weaknesses',
-    'Weakneses': 'Weaknesses',
-    'Aply': 'Apply',
-    'aply': 'apply',
-    'atempt': 'attempt',
-    'Atempt': 'Attempt',
-    'Spelshape': 'Spellshape',
-    'spelshape': 'spellshape',
-    'Rot': 'Root',
-  };
-
-  // Build a single alternation regex so replacements happen simultaneously,
-  // preventing cascading (e.g. "cal"→"call" then another rule matching "call").
-  // \b ensures we only match whole words, so "cal" inside "Magical" won't match.
-  const keys = Object.keys(map).sort((a, b) => b.length - a.length); // longest-first
-  const pattern = new RegExp('\\b(' + keys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
-  let out = text.replace(pattern, (m) => map[m] ?? m);
-
-  // Handle special cases that don't fit \b-word-boundary:
-  // "Dam\tmage" → "Damage" (tab in middle of word)
-  out = out.replace(/Dam\tmage/g, 'Damage');
-  out = out.replace(/Item\tms/g, 'Items');
-  // "Rot Reading" → "Root Reading" (Rot on its own isn't uniquely restorable)
-  out = out.replace(/\bRot\s+Reading\b/g, 'Root Reading');
-
-  return out;
-}
-
-function pdfParseMod(s) {
-  const m = String(s).trim().match(/^([+-]?\d+)$/);
-  return m ? parseInt(m[1], 10) : 0;
-}
-function pdfModToScore(mod) { return mod * 2 + 10; }
-
 // Split on commas, keeping parenthesized groups together. Used for items
 // and similar lists where entries contain internal commas inside parens.
-function splitOnCommasRespectingParens(text) {
-  const parts = [];
-  let depth = 0, buf = '';
-  for (const ch of text) {
-    if (ch === '(' || ch === '[') { depth++; buf += ch; continue; }
-    if (ch === ')' || ch === ']') { depth--; buf += ch; continue; }
-    if (ch === ',' && depth === 0) {
-      const t = buf.trim();
-      if (t) parts.push(t);
-      buf = '';
-      continue;
-    }
-    buf += ch;
-  }
-  const tail = buf.trim();
-  if (tail) parts.push(tail);
-  return parts;
-}
-
-function parsePathbuilderStatblockPDF(rawText) {
-  if (!rawText || typeof rawText !== 'string' || rawText.length < 100) {
-    return { error: 'That PDF doesn\'t look like a Pathbuilder statblock. Make sure you used Pathbuilder\'s Menu → Export → View Statblock → Save as PDF (not the character sheet PDF).' };
-  }
-
-  const warnings = [];
-  const cleaned = pdfRestoreDoubledWords(pdfDeduplicateBoldLetters(rawText));
-  const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-  // 1) Header
-  const headerLine = lines[0] ?? '';
-  const headerMatch = headerLine.match(/^([A-Za-z][A-Za-z ]*?)(?:\s*\(([^)]+)\))?\s+(\d+)\s*\t?\s*(.+)$/);
-  if (!headerMatch) {
-    return { error: `Couldn't read the statblock header. First line was: "${headerLine}". Expected format like "Wizard (Runelord) 2\\tAurelius".` };
-  }
-  const charClass = headerMatch[1].trim();
-  const subclass = headerMatch[2]?.trim() ?? null;
-  const level = parseInt(headerMatch[3], 10);
-  const name = headerMatch[4].trim();
-
-  // 2) Creature type line (line 2)
-  const typeLine = lines[1] ?? '';
-  const typeParts = typeLine.split(/\s+/).filter(Boolean);
-  const sizes = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
-  let size = 'Medium', ancestry = '', heritage = '', creatureType = 'Humanoid';
-  if (sizes.includes(typeParts[0])) {
-    size = typeParts[0];
-    const rest = typeParts.slice(1);
-    if (rest.length >= 1) creatureType = rest[rest.length - 1];
-    if (rest.length >= 2) ancestry = rest[0];
-    if (rest.length >= 3) heritage = rest.slice(1, -1).join(' ');
-  } else {
-    warnings.push(`Couldn't parse size/ancestry from: "${typeLine}"`);
-  }
-
-  // 3) Field-based extraction. Use the single-line joined form for easier regex.
-  const joined = lines.join(' ');
-
-  // Perception
-  let perception = 0, senses = '';
-  const percM = joined.match(/Perception\s+([+-]?\d+)(?:\s*;\s*(.+?))?\s+(?:Languages|Skills|Str\s+[+-])/);
-  if (percM) {
-    perception = pdfParseMod(percM[1]);
-    senses = (percM[2] ?? '').trim();
-  } else warnings.push('Perception line not found');
-
-  // Languages (may be "None selected" or "None")
-  let languages = [];
-  const langM = joined.match(/Languages\s+(.+?)\s+(?:Skills|Str\s+[+-]|Items)/);
-  if (langM) {
-    const raw = langM[1].trim();
-    if (!/^(None|None selected)$/i.test(raw)) {
-      languages = raw.split(/,\s*/).map(s => s.trim()).filter(Boolean);
-    }
-  }
-
-  // Skills
-  const skills = {};
-  const skillM = joined.match(/Skills\s+(.+?)\s+Str\s+[+-]/);
-  if (skillM) {
-    const skillRe = /(Lore:\s*[A-Z][A-Za-z' ]*|[A-Z][A-Za-z]*)\s+([+-]\d+)/g;
-    let m;
-    while ((m = skillRe.exec(skillM[1])) !== null) {
-      skills[m[1].replace(/\s+/g, ' ').trim()] = pdfParseMod(m[2]);
-    }
-  }
-
-  // Abilities
-  const abilities = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
-  const abilRe = /(Str|Dex|Con|Int|Wis|Cha)\s+([+-]?\d+)(?=[,\s])/g;
-  let am;
-  while ((am = abilRe.exec(joined)) !== null) {
-    abilities[am[1].toLowerCase()] = pdfParseMod(am[2]);
-  }
-
-  // Items — split on commas but keep parenthesized groups together
-  let items = [];
-  const itemsM = joined.match(/Items\s+(.+?)\s+AC\s+\d/);
-  if (itemsM) {
-    items = splitOnCommasRespectingParens(itemsM[1]);
-  }
-
-  // AC
-  let ac = 10;
-  const acM = joined.match(/AC\s+(\d+)(?:\s*\([^)]+\))?;\s*Fort/);
-  if (acM) ac = parseInt(acM[1], 10);
-
-  // Saves
-  let fort = 0, ref = 0, will = 0;
-  const savM = joined.match(/Fort\s+([+-]?\d+),?\s+Ref\s+([+-]?\d+),?\s+Will\s+([+-]?\d+)/);
-  if (savM) {
-    fort = pdfParseMod(savM[1]);
-    ref = pdfParseMod(savM[2]);
-    will = pdfParseMod(savM[3]);
-  }
-
-  // HP (match "HP NN" where the NN comes AFTER Will save to avoid matching
-  // the shield's "HP 6" in the Items line)
-  let hp = 0;
-  let resistances = [], weaknesses = [], immunities = [];
-  const hpM = joined.match(/Will\s+[+-]?\d+\s+HP\s+(\d+)(?:\s*;\s*(.+?))?(?=\s+(?:Speed|Shield|Intercept|Warding|Melee|Ranged|Reach|Drain|Recognize|Breath|Taunt|Arcane|Divine|Occult|Primal|Focus|Additional|$))/);
-  if (hpM) {
-    hp = parseInt(hpM[1], 10);
-    const extras = (hpM[2] ?? '').trim();
-    const rM = extras.match(/Resistances?:?\s+([^;]+?)(?=\s*(?:Weaknesses|Immunities|$))/i);
-    if (rM) resistances = rM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-    const wM = extras.match(/Weaknesses?:?\s+([^;]+?)(?=\s*(?:Resistances|Immunities|$))/i);
-    if (wM) weaknesses = wM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-    const iM = extras.match(/Immunities?:?\s+([^;]+?)(?=\s*(?:Resistances|Weaknesses|$))/i);
-    if (iM) immunities = iM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-  }
-
-  // Speed
-  let speed = 25;
-  const spdM = joined.match(/Speed\s+(\d+)\s*feet/);
-  if (spdM) speed = parseInt(spdM[1], 10);
-
-  // Weapons. Line format: "Melee|Ranged <name> +N (<traits>), Damage <dice+N> <type>"
-  // <type> is 1-3 uppercase letters (B, P, S, B/P, B/P/S, fire, etc.)
-  const weapons = [];
-  const wRe = /(Melee|Ranged)\s+(.+?)\s+([+-]\d+)\s*\(([^)]*)\),?\s*Damage\s+(\S+)\s+([A-Za-z/]+)/g;
-  let wm;
-  while ((wm = wRe.exec(joined)) !== null) {
-    weapons.push({
-      type: wm[1].toLowerCase(),
-      name: wm[2].trim(),
-      attackBonus: pdfParseMod(wm[3]),
-      traits: wm[4].split(/,\s*/).map(s => s.trim()).filter(Boolean),
-      damage: wm[5].trim(),
-      damageType: wm[6].trim(),
-    });
-  }
-
-  // Spellcasting
-  const spellcasters = [];
-  const traditions = ['Arcane', 'Divine', 'Occult', 'Primal'];
-  const kinds = ['Prepared', 'Spontaneous', 'Innate', 'Focus'];
-  for (const tradition of traditions) {
-    for (const kind of kinds) {
-      if (kind === 'Focus') continue;
-      const kindRe = new RegExp(
-        `${tradition}\\s+${kind}\\s+Spells\\s+DC\\s+(\\d+),?\\s*attack\\s+([+-]?\\d+);?\\s*(.+?)(?=\\s+(?:Arcane|Divine|Occult|Primal)\\s+(?:Prepared|Spontaneous|Innate)\\s+Spells\\s+DC|\\s+Focus Spells|\\s+Additional (?:Feats|Specials)|\\s+Rituals|$)`,
-        'i'
-      );
-      const scM = joined.match(kindRe);
-      if (scM) {
-        const dc = parseInt(scM[1], 10);
-        const attackBonus = pdfParseMod(scM[2]);
-        const block = scM[3];
-
-        // Spell slots by rank
-        const spellsByRank = {};
-        const rankRe = /(\d+)(?:st|nd|rd|th)\s+((?:[^,;]+,\s*)*[^,;]+?)(?=\s*;|\s+Cantrips|\s+\d+(?:st|nd|rd|th)|$)/g;
-        let rm;
-        while ((rm = rankRe.exec(block)) !== null) {
-          const rank = parseInt(rm[1], 10);
-          const spells = rm[2].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-          spellsByRank[rank] = spells;
-        }
-
-        // Cantrips
-        let cantrips = [];
-        const ctM = block.match(/Cantrips\s+(.+?)(?:;|$)/i);
-        if (ctM) cantrips = ctM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-
-        spellcasters.push({
-          tradition: tradition.toLowerCase(),
-          kind: kind.toLowerCase(),
-          dc,
-          attackBonus,
-          cantrips,
-          spellsByRank,
-        });
-      }
-    }
-  }
-
-  // Focus spells (one line: "Focus Spells (N points) Spell1, Spell2")
-  let focusPoints = 0;
-  let focusSpells = [];
-  const fM = joined.match(/Focus Spells\s*\((\d+)\s+points?\)\s+(.+?)(?=\s+Additional\s+(?:Feats|Specials)|$)/);
-  if (fM) {
-    focusPoints = parseInt(fM[1], 10);
-    focusSpells = fM[2].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-  }
-
-  // Additional Feats
-  let feats = [];
-  const featsM = joined.match(/Additional Feats\s+(.+?)(?=\s+Additional Specials|\s+Pathbuilder 2e|$)/);
-  if (featsM) {
-    feats = featsM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-  }
-
-  // Additional Specials
-  let specials = [];
-  const spM = joined.match(/Additional Specials\s+(.+?)(?=\s+Pathbuilder 2e|$)/);
-  if (spM) {
-    specials = spM[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
-  }
-
-  // Build a Pathbuilder-JSON-shaped output.
-  const char = {
-    name, class: charClass, dualClass: null, level,
-    ancestry, heritage, background: '', alignment: 'N',
-    gender: '', age: '', deity: '', size: 0,
-    keyability: '', languages,
-    attributes: { ancestryhp: 0, classhp: 0, bonushp: 0, bonushpPerLevel: 0, speed, speedBonus: 0 },
-    abilities: {
-      str: pdfModToScore(abilities.str),
-      dex: pdfModToScore(abilities.dex),
-      con: pdfModToScore(abilities.con),
-      int: pdfModToScore(abilities.int),
-      wis: pdfModToScore(abilities.wis),
-      cha: pdfModToScore(abilities.cha),
-      breakdown: { ancestryFree: [], ancestryBoosts: [], ancestryFlaws: [], backgroundBoosts: [], classBoosts: [], mapLevelledBoosts: {} },
-    },
-    proficiencies: {
-      classDC: 0, perception, fortitude: fort, reflex: ref, will,
-      heavy: 0, medium: 0, light: 0, unarmored: 0,
-      advanced: 0, martial: 0, simple: 0, unarmed: 0,
-      castingArcane: spellcasters.find(c => c.tradition === 'arcane')?.attackBonus ?? 0,
-      castingDivine: spellcasters.find(c => c.tradition === 'divine')?.attackBonus ?? 0,
-      castingOccult: spellcasters.find(c => c.tradition === 'occult')?.attackBonus ?? 0,
-      castingPrimal: spellcasters.find(c => c.tradition === 'primal')?.attackBonus ?? 0,
-    },
-    acTotal: { acTotal: ac, acProfBonus: 0, acAbilityBonus: 0, acItemBonus: 0, acValue: ac },
-    feats: feats.map(f => [f, null, null, null]),
-    specificProficiencies: {},
-    money: { cp: 0, sp: 0, gp: 0, pp: 0 },
-    armor: [],
-    weapons: weapons.map(w => ({
-      name: w.name, display: w.name, attack: w.attackBonus, damageBonus: 0,
-      die: w.damage, damageType: w.damageType, traits: w.traits,
-      strikingRune: '', potencyRune: 0, runes: [],
-    })),
-    equipment: items.map(i => [i, 1]),
-    specials,
-    // Extract Lore entries from the skill totals. Format from statblock is
-    // "Lore: Dragon +9" — we convert to [topic, profRank] tuples matching
-    // Pathbuilder JSON shape. Rank is inferred: total - intMod - level gives
-    // the bare proficiency bonus, which maps to rank (2/4/6/8).
-    lores: (() => {
-      const intMod = abilities.int ?? 0;
-      const out = [];
-      for (const [skillName, skillTotal] of Object.entries(skills)) {
-        if (!skillName.startsWith('Lore:')) continue;
-        const topic = skillName.replace(/^Lore:\s*/, '').trim();
-        // Back out rank from: total = intMod + level + rank
-        const rankBonus = skillTotal - intMod - level;
-        // Map to standard ranks; anything non-matching stored as 2 (trained) as fallback
-        let rank = 2;
-        if (rankBonus >= 8) rank = 8;
-        else if (rankBonus >= 6) rank = 6;
-        else if (rankBonus >= 4) rank = 4;
-        else if (rankBonus >= 2) rank = 2;
-        else continue; // skip untrained/negative (shouldn't show up in statblock anyway)
-        out.push([topic, rank]);
-      }
-      return out;
-    })(),
-    formula: [],
-    pets: [],
-    spellCasters: spellcasters.map(sc => ({
-      name: `${sc.tradition.charAt(0).toUpperCase() + sc.tradition.slice(1)} ${sc.kind.charAt(0).toUpperCase() + sc.kind.slice(1)}`,
-      magicTradition: sc.tradition,
-      spellcastingType: sc.kind,
-      innate: sc.kind === 'innate',
-      attack: sc.attackBonus, dc: sc.dc, keyAbility: '',
-      spells: Object.entries(sc.spellsByRank).map(([r, l]) => ({ spellLevel: parseInt(r, 10), list: l })),
-      prepared: sc.kind === 'prepared' ? Object.entries(sc.spellsByRank).map(([r, l]) => ({ spellLevel: parseInt(r, 10), list: l })) : [],
-      blendedSpells: [],
-      perDay: Object.fromEntries(Object.keys(sc.spellsByRank).map(r => [r, sc.spellsByRank[r].length])),
-      cantrips: sc.cantrips,
-    })),
-    focus: focusPoints > 0 ? { focusPoints, spells: focusSpells } : {},
-    senses,
-    // PDF-specific metadata so the bot knows this is a partial import
-    _source: 'pdf',
-    _pdfWarnings: warnings,
-    _displayMods: abilities,
-    _skillTotals: skills,
-    _hpMaxOverride: hp,
-    _resistances: resistances,
-    _weaknesses: weaknesses,
-    _immunities: immunities,
-    _subclass: subclass,
-  };
-
-  return { char, warnings };
-}
-
-
-
-const PATHWAY_CHARACTER_ID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 
 
@@ -1383,69 +593,6 @@ const PATHWAY_CHARACTER_ID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 // resolveChar moved to state/characters.js in Phase 3.3.
 // Imported via the destructure at the top of this file so all 87 call
 // sites continue to resolve to the same function.
-
-// Pathway brand colors used across roll embeds. Gold matches the d20 art.
-const PATHWAY_GOLD = 0xC9A24A;
-
-// Pathway dice fallback art shown when a character/companion has no portrait
-// set. Loaded once at startup; if the file is missing, embeds gracefully omit
-// the thumbnail. Attach via files:[...] using PATHWAY_DICE_NAME, then
-// reference in the embed as `attachment://${PATHWAY_DICE_NAME}`.
-const PATHWAY_DICE_NAME = 'pathway-dice.png';
-const PATHWAY_DICE_REF = `attachment://${PATHWAY_DICE_NAME}`;
-let PATHWAY_DICE_BUFFER = null;
-try {
-  PATHWAY_DICE_BUFFER = fs.readFileSync(path.join(__dirname, '..', 'assets', PATHWAY_DICE_NAME));
-} catch {
-  // No fallback art on disk — embeds will render without a thumbnail.
-}
-
-// Files array to pass alongside any roll embed. Empty if the caller has a real
-// thumbnail URL or if the fallback asset isn't on disk.
-function rollFallbackFiles(thumbnail) {
-  if (thumbnail || !PATHWAY_DICE_BUFFER) return [];
-  return [new AttachmentBuilder(PATHWAY_DICE_BUFFER, { name: PATHWAY_DICE_NAME })];
-}
-
-function buildRollEmbed({ title, breakdown, charName, thumbnail }) {
-  const embed = new EmbedBuilder().setColor(PATHWAY_GOLD).setTitle(title).setDescription(breakdown);
-  if (thumbnail) embed.setThumbnail(thumbnail);
-  else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
-  if (charName) embed.setFooter({ text: charName });
-  return embed;
-}
-
-function buildCombatDeathEmbed(name) {
-  return new EmbedBuilder()
-    .setColor(0x8b0000)
-    .setTitle(`${name} has Died!`)
-    .setDescription(`**${name}** reached Dying 4 and has been removed from initiative.`);
-}
-
-function combatDeathPayload(result) {
-  const name = result?.removed?.name ?? result?.name ?? result?.combatant?.name;
-  return result?.died && name ? { embeds: [buildCombatDeathEmbed(name)] } : null;
-}
-
-function combatDyingSuffix(result) {
-  if (!result) return '';
-  if (result.died) return `\n☠️ **${result.removed?.name ?? result.combatant?.name ?? result.name} has Died!** Removed from initiative.`;
-  if (result.wentDown && result.dying > 0) return `\n💀 **Down!** (Dying ${result.dying})`;
-  if (result.dyingIncreased && result.dying > 0) return `\n💀 **Dying increased to ${result.dying}**`;
-  if (result.wokeUp) return `\n✨ **Recovered from dying!** (now Wounded ${result.wounded})`;
-  return '';
-}
-
-function formatRollBreakdown(dieRoll, modifier, extraBonus, total, sides) {
-  const isCrit = sides === 20 && dieRoll === 20;
-  const isFumble = sides === 20 && dieRoll === 1;
-  const modPart = modifier !== 0 ? ` + ${modifier}` : '';
-  const extraPart = extraBonus && extraBonus !== 0 ? ` + ${extraBonus}` : '';
-  let line = `1d20 (${dieRoll})${modPart}${extraPart} = \`${total}\``;
-  if (isCrit) line += '\n⭐ Natural 20!';
-  if (isFumble) line += '\n💀 Natural 1!';
-  return line;
-}
 
 // ── Initiative helpers ────────────────────────────────────────────────────────
 // HP overlay helpers (computeCharMaxHp, getCharacterHp, setCharacterHp)
@@ -1754,54 +901,6 @@ async function updateSummary(channel, enc) {
   }
 }
 
-async function clearSummary(channel, enc) {
-  if (!enc?.summaryMessageId) return;
-  try {
-    const msg = await channel.messages.fetch(enc.summaryMessageId);
-    try { await msg.unpin(); } catch {}
-  } catch {}
-}
-
-async function updateCombatV2Summary(channel, encounter, { gmView = false } = {}) {
-  if (!encounter) return null;
-  const { embed, page, totalPages } = combatV2Render.renderEncounter(encounter, { gmView });
-  const components = combatV2Render.pageButtons(channel.id, page, totalPages);
-  const payload = { embeds: [embed], components };
-
-  if (encounter.summaryMessageId) {
-    try {
-      const existing = await channel.messages.fetch(encounter.summaryMessageId);
-      await existing.edit(payload);
-      return existing;
-    } catch {}
-  }
-
-  const msg = await channel.send(payload);
-  encounter.summaryMessageId = msg.id;
-  try {
-    await msg.pin();
-  } catch (err) {
-    console.warn('Could not pin combat v2 summary message:', err.message);
-  }
-  return msg;
-}
-
-async function clearCombatV2Summary(channel, encounter) {
-  if (!encounter?.summaryMessageId) return;
-  try {
-    const msg = await channel.messages.fetch(encounter.summaryMessageId);
-    try { await msg.unpin(); } catch {}
-  } catch {}
-}
-
-function combatV2Initiative(modifier, resultOverride = null) {
-  if (resultOverride !== null && resultOverride !== undefined) {
-    return { initiative: resultOverride, text: `(set to ${resultOverride})` };
-  }
-  const roll = rollD20Plus(modifier ?? 0);
-  return { initiative: roll.total, text: `(rolled ${roll.roll} ${fmt(roll.mod)})` };
-}
-
 // getCharacterWeapons moved out of index.js in Phase 3.5 — see rules/lore.js or state/characters.js.
 
 // normalizeCharacterDamageType moved out of index.js in Phase 3.5 — see rules/lore.js or state/characters.js.
@@ -1824,18 +923,6 @@ function combatV2CharacterAttacks(charEntry) {
   });
 }
 
-function combatV2CharacterSave(c, saveType) {
-  const key = saveType === 'fortitude' ? 'fortitude'
-    : saveType === 'reflex' ? 'reflex'
-    : saveType === 'will' ? 'will'
-    : saveType;
-  const abilityKey = key === 'fortitude' ? 'con'
-    : key === 'reflex' ? 'dex'
-    : 'wis';
-  const abilityMod = Math.floor(((c.abilities?.[abilityKey] ?? 10) - 10) / 2);
-  return abilityMod + calcCharacterProfNum(c, c.proficiencies?.[key] ?? 0, c.level ?? 1);
-}
-
 const COMBAT_V2_SKILL_LABELS = {
   acrobatics: 'Acrobatics',
   arcana: 'Arcana',
@@ -1855,331 +942,6 @@ const COMBAT_V2_SKILL_LABELS = {
   thievery: 'Thievery',
 };
 
-function combatV2NormalizeSkillName(input) {
-  const q = String(input ?? '').toLowerCase().trim();
-  if (!q) return null;
-  const slug = q.replace(/[^a-z0-9]+/g, '');
-  return Object.keys(COMBAT_V2_SKILL_LABELS).find(key => key === q || key.replace(/[^a-z0-9]+/g, '') === slug)
-    ?? Object.keys(COMBAT_V2_SKILL_LABELS).find(key => key.startsWith(q) || COMBAT_V2_SKILL_LABELS[key].toLowerCase().startsWith(q))
-    ?? null;
-}
-
-function combatV2CharacterSkills(charEntry) {
-  const skills = {};
-  for (const [key, label] of Object.entries(COMBAT_V2_SKILL_LABELS)) {
-    const mod = computeCharSkillModifier(charEntry, key);
-    if (mod) skills[key] = { label, modifier: mod.modifier, profLabel: mod.profLabel };
-  }
-  return skills;
-}
-
-function combatV2FindSkill(actor, input) {
-  const requested = String(input ?? '').toLowerCase().trim();
-  if (requested === 'perception' || requested === 'initiative' || requested === 'init') {
-    const perception = actor?.perception ?? actor?.stats?.perception ?? actor?.core?.perception ?? null;
-    if (perception != null) {
-      return {
-        key: requested === 'perception' ? 'perception' : 'initiative',
-        label: requested === 'perception' ? 'Perception' : 'Initiative',
-        modifier: Number(perception),
-        usesPerception: true,
-      };
-    }
-  }
-
-  const skills = actor?.skills ?? {};
-  const normalized = combatV2NormalizeSkillName(input);
-  if (normalized && skills[normalized] != null) {
-    const raw = skills[normalized];
-    return typeof raw === 'number'
-      ? { key: normalized, label: COMBAT_V2_SKILL_LABELS[normalized], modifier: raw }
-      : { key: normalized, label: raw.label ?? COMBAT_V2_SKILL_LABELS[normalized], modifier: Number(raw.modifier ?? raw.total ?? 0) };
-  }
-
-  const q = requested;
-  for (const [key, raw] of Object.entries(skills)) {
-    const label = raw?.label ?? key;
-    if (key.toLowerCase() === q || label.toLowerCase() === q || label.toLowerCase().includes(q)) {
-      return typeof raw === 'number'
-        ? { key, label, modifier: raw }
-        : { key, label, modifier: Number(raw.modifier ?? raw.total ?? raw ?? 0) };
-    }
-  }
-  return null;
-}
-
-function combatV2CheckEmbed(actor, result, thumbnail = null) {
-  const lines = [
-    `1d20 (${result.die}) ${fmt(result.stat)}`,
-  ];
-  if (result.effectBonus) lines[0] += ` ${fmt(result.effectBonus)} effects`;
-  if (result.bonus) lines[0] += ` ${fmt(result.bonus)} bonus`;
-  lines[0] += ` = \`${result.total}\``;
-  if (result.dc != null) lines.push(`DC ${result.dc}: **${combatV2Rolls.degreeLabel(result.degree)}**`);
-  // Normalize "Performance Check" / "Fortitude Save" / "Spell Attack" into
-  // natural-language titles: "Actor makes a Performance check!". The label
-  // suffix is lowercased so the title reads like prose, not a column header.
-  const prettyLabel = String(result.label ?? '').replace(/ (Check|Save|Attack)$/i, (_m, w) => ` ${w.toLowerCase()}`);
-  const embed = new EmbedBuilder()
-    .setColor(result.degree === 'criticalSuccess' ? 0x2ecc71
-      : result.degree === 'success' ? 0x27ae60
-      : result.degree === 'criticalFailure' ? 0x992d22
-      : result.degree === 'failure' ? 0xc0392b
-      : PATHWAY_GOLD)
-    .setTitle(`${actor.name} makes a ${prettyLabel}!`)
-    .setDescription(lines.join('\n'));
-  if (thumbnail) embed.setThumbnail(thumbnail);
-  else if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
-  return embed;
-}
-
-function combatV2SaveKey(saveType) {
-  const key = String(saveType ?? '').toLowerCase();
-  if (key.startsWith('fort')) return 'fort';
-  if (key.startsWith('ref')) return 'ref';
-  if (key.startsWith('will')) return 'will';
-  return null;
-}
-
-function firstNumber(...values) {
-  for (const value of values) {
-    if (value == null || value === '') continue;
-    const number = Number(value);
-    if (Number.isFinite(number)) return number;
-  }
-  return null;
-}
-
-function combatV2NormalizeMonsterSaves(core = {}, summary = {}, rich = null) {
-  const summaryObj = summary.summary ?? summary ?? {};
-  const richSaves = rich?.saves ?? rich?.defenses?.saves ?? {};
-  const coreSaves = core.saves ?? {};
-  return {
-    fort: firstNumber(
-      richSaves.fort,
-      richSaves.fortitude,
-      richSaves.Fortitude,
-      coreSaves.fort,
-      coreSaves.fortitude,
-      core.fort,
-      core.fortitude,
-      summaryObj.fort,
-      summaryObj.fortitude,
-      summaryObj.Fortitude,
-    ),
-    ref: firstNumber(
-      richSaves.ref,
-      richSaves.reflex,
-      richSaves.Reflex,
-      coreSaves.ref,
-      coreSaves.reflex,
-      core.ref,
-      core.reflex,
-      summaryObj.ref,
-      summaryObj.reflex,
-      summaryObj.Reflex,
-    ),
-    will: firstNumber(
-      richSaves.will,
-      richSaves.Will,
-      coreSaves.will,
-      core.will,
-      summaryObj.will,
-      summaryObj.Will,
-    ),
-  };
-}
-
-function combatV2SaveModifier(combatant, saveKey, guildId = null) {
-  const direct = combatant?.saves?.[saveKey];
-  if (direct != null) {
-    const number = Number(direct);
-    if (Number.isFinite(number)) return number;
-  }
-  const lookupName = combatant?.sourceKey ?? combatant?.bestiaryKey ?? combatant?.name;
-  if (!lookupName) return null;
-  try {
-    const { monster } = findMonster(lookupName);
-    if (!monster) return null;
-    return combatV2MonsterStats(monster, guildId).saves?.[saveKey] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function combatV2DegreeLabel(degree) {
-  return {
-    criticalSuccess: 'Critical Success',
-    success: 'Success',
-    failure: 'Failure',
-    criticalFailure: 'Critical Failure',
-  }[degree] ?? 'Result';
-}
-
-function combatV2LegacyDegree(degree) {
-  return {
-    criticalSuccess: 'crit-success',
-    success: 'success',
-    failure: 'failure',
-    criticalFailure: 'crit-failure',
-  }[degree] ?? degree;
-}
-
-function combatV2PickCaster(charEntry, spell, casterName = null) {
-  const c = charEntry?.data ?? {};
-  const casters = charOverlay.getCasters(c);
-  if (!casters.length) return null;
-  if (casterName) return charOverlay.findCaster(c, casterName);
-  const spellTraditions = (spell.traditions ?? []).map(t => String(t).toLowerCase());
-  return casters.find(sc => spellTraditions.includes(String(sc.magicTradition ?? '').toLowerCase())) ?? casters[0];
-}
-
-function combatV2CasterStats(charEntry, spell, casterName = null) {
-  const c = charEntry?.data ?? {};
-  const caster = combatV2PickCaster(charEntry, spell, casterName);
-  const traditionProfMap = { arcane: 'castingArcane', divine: 'castingDivine', occult: 'castingOccult', primal: 'castingPrimal' };
-  const tradAbilMap = { arcane: 'int', divine: 'wis', occult: 'cha', primal: 'wis' };
-  const tradition = String(caster?.magicTradition ?? spell.traditions?.[0] ?? 'arcane').toLowerCase();
-  const keyAbility = String(caster?.ability ?? tradAbilMap[tradition] ?? 'int').toLowerCase();
-  const keyMod = Math.floor((((c.abilities ?? {})[keyAbility] ?? 10) - 10) / 2);
-  const profKey = traditionProfMap[tradition] ?? 'castingArcane';
-  const profNum = (c.proficiencies ?? {})[profKey] ?? 2;
-  const profBonus = calcProfNum(profNum, c.level ?? 1);
-  return { caster, attack: keyMod + profBonus, dc: 10 + keyMod + profBonus, tradition };
-}
-
-function combatV2ParseDefenseMap(input) {
-  if (input == null) return null;
-  const map = {};
-  for (const part of String(input).split(',')) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    const match = trimmed.match(/^(.+?)\s+(-?\d+)$/);
-    if (!match) continue;
-    map[match[1].trim().toLowerCase()] = Number(match[2]);
-  }
-  return map;
-}
-
-function combatV2ParseList(input) {
-  if (input == null) return null;
-  return String(input).split(',').map(s => s.trim()).filter(Boolean);
-}
-
-function combatV2CompanionAttacks(comp, scaled) {
-  const attacks = [];
-  if (scaled.primaryAttack) {
-    attacks.push({
-      name: scaled.primaryAttack.name,
-      bonus: scaled.attackBonus,
-      damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
-      damageType: scaled.damageType ?? '',
-      traits: scaled.primaryAttack.traits ?? [],
-      source: 'companion',
-    });
-  }
-  for (const a of (comp.customAttacks ?? [])) {
-    attacks.push({
-      name: a.name,
-      bonus: a.bonus ?? 0,
-      damage: a.damage ?? '1d4',
-      damageType: a.damageType ?? '',
-      traits: a.traits ?? [],
-      source: 'companion-custom',
-    });
-  }
-  return attacks;
-}
-
-function combatV2MonsterStats(monster, guildId) {
-  const edits = guildId ? getMonsterEdit(guildId, monster.name) : null;
-  const edited = applyMonsterEdits(monster, edits);
-  const withLibrary = guildId ? applyMonsterAttackLibrary(edited, guildId) : edited;
-  const core = withLibrary.core ?? {};
-  const summary = withLibrary.summary ?? {};
-  const rich = withLibrary.rich ?? null;
-  const rawAttacks = Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
-  const spellcasting = Array.isArray(rich?.spellcasting) ? rich.spellcasting : [];
-  const spells = [];
-  for (const caster of spellcasting) {
-    const byRank = caster.spells_by_level ?? {};
-    for (const [rank, bucket] of Object.entries(byRank)) {
-      for (const entry of (bucket?.spells ?? [])) {
-        const name = entry?.name ?? String(entry ?? '');
-        if (!name) continue;
-        spells.push({
-          name,
-          rank: Number(rank),
-          dc: caster.DC ?? caster.dc ?? null,
-          attack: caster.attack_bonus ?? caster.attack ?? null,
-          tradition: caster.tradition ?? null,
-          type: caster.type ?? null,
-          source: 'bestiary',
-        });
-      }
-    }
-  }
-  const resistanceMap = {};
-  for (const r of rich?.defenses?.resistances ?? []) {
-    if (typeof r === 'string') {
-      const match = r.match(/^(.+?)\s+(\d+)$/);
-      if (match) resistanceMap[match[1].trim().toLowerCase()] = Number(match[2]);
-    } else if (r?.type && r?.value != null) {
-      resistanceMap[String(r.type).toLowerCase()] = Number(r.value);
-    }
-  }
-  const weaknessMap = {};
-  for (const w of rich?.defenses?.weaknesses ?? []) {
-    if (typeof w === 'string') {
-      const match = w.match(/^(.+?)\s+(\d+)$/);
-      if (match) weaknessMap[match[1].trim().toLowerCase()] = Number(match[2]);
-    } else if (w?.type && w?.value != null) {
-      weaknessMap[String(w.type).toLowerCase()] = Number(w.value);
-    }
-  }
-  return {
-    monster: withLibrary,
-    hp: core.hp ?? summary.summary?.hp?.value ?? rich?.defenses?.hp ?? 1,
-    ac: core.ac ?? summary.summary?.ac ?? rich?.defenses?.ac ?? null,
-    perception: core.perception ?? summary.summary?.perception ?? rich?.perception ?? 0,
-    saves: combatV2NormalizeMonsterSaves(core, summary, rich),
-    skills: (rich?._skillTotals && typeof rich._skillTotals === 'object') ? { ...rich._skillTotals }
-      : (rich?.skills && typeof rich.skills === 'object') ? { ...rich.skills }
-      : {},
-    spells,
-    resistances: resistanceMap,
-    weaknesses: weaknessMap,
-    immunities: Array.isArray(rich?.defenses?.immunities) ? rich.defenses.immunities : [],
-    attacks: rawAttacks.map(a => {
-      const normalized = normalizeAttackForRolling(a);
-      return {
-        name: normalized.name,
-        bonus: normalized.bonus ?? normalized.to_hit ?? 0,
-        damage: normalized.damage ?? '1d4',
-        damageType: normalized.damageType ?? '',
-        traits: normalized.traits ?? [],
-        source: 'bestiary',
-      };
-    }),
-  };
-}
-
-function uniqueCombatV2Name(encounter, baseName, count, index) {
-  const taken = new Set((encounter?.combatants ?? []).map(c => c.name.toLowerCase()));
-  if (count === 1 && !taken.has(baseName.toLowerCase())) return baseName;
-  let suffix = index;
-  let name = `${baseName} ${suffix}`;
-  while (taken.has(name.toLowerCase())) {
-    suffix += 1;
-    name = `${baseName} ${suffix}`;
-  }
-  return name;
-}
-
-function combatV2HasName(encounter, name) {
-  return (encounter?.combatants ?? []).some(c => c.name.toLowerCase() === String(name).toLowerCase());
-}
-
 function combatV2PickActor(encounter, userId, actorName = null) {
   if (!encounter) return null;
   if (actorName) return combatV2State.findCombatant(encounter, actorName);
@@ -2187,37 +949,6 @@ function combatV2PickActor(encounter, userId, actorName = null) {
   if (current && (current.ownerId === userId || userId === encounter.gmId)) return current;
   const owned = encounter.combatants.filter(c => c.ownerId === userId && c.hp > 0);
   return owned.length === 1 ? owned[0] : null;
-}
-
-function combatV2PickTarget(encounter, actor, targetName = null) {
-  if (!encounter || !actor) return null;
-  if (targetName) return combatV2State.findCombatant(encounter, targetName);
-  const enemies = encounter.combatants.filter(c =>
-    c.id !== actor.id &&
-    c.hp > 0 &&
-    c.isNpc !== actor.isNpc
-  );
-  return enemies[0] ?? null;
-}
-
-function combatV2FindAttack(actor, attackName = null) {
-  const attacks = actor?.attacks ?? [];
-  if (attacks.length === 0) return null;
-  if (!attackName) return attacks[0];
-  const q = String(attackName).toLowerCase().trim();
-  return attacks.find(a => a.name.toLowerCase() === q)
-    ?? attacks.find(a => a.name.toLowerCase().includes(q))
-    ?? null;
-}
-
-function combatV2AttackListText(actor) {
-  const attacks = actor?.attacks ?? [];
-  if (!attacks.length) return `**${actor?.name ?? 'Actor'}** has no attacks configured.`;
-  return attacks.map(a => {
-    const traits = a.traits?.length ? ` (${a.traits.join(', ')})` : '';
-    const damage = a.damage ? `, ${a.damage}${a.damageType ? ` ${a.damageType}` : ''}` : '';
-    return `• **${a.name}** ${fmt(a.bonus ?? 0)}${damage}${traits}`;
-  }).join('\n');
 }
 
 // ── Recovery check display helper ────────────────────────────────────────────
@@ -2231,81 +962,6 @@ function combatV2AttackListText(actor) {
 //     stabilize at 0 HP without gaining wounded
 //
 // Pass in the recovery check result from ca.rollRecoveryCheck and the combatant.
-function buildRecoveryCheckPayload(rc, combatant, { heroButtons = true } = {}) {
-  const outcomeEmoji = rc.outcome === 'crit-success' ? '🌟'
-    : rc.outcome === 'success' ? '✅'
-    : rc.outcome === 'failure' ? '❌'
-    : '💥';
-
-  // Build the embed description with all the Remaster details
-  const lines = [
-    `Flat check vs DC ${rc.dc}: 1d20 (${rc.roll})`,
-    `${outcomeEmoji} **${rc.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}**`,
-    rc.narration,
-  ];
-  if (rc.doomed && rc.doomed > 0) {
-    lines.splice(1, 0, `*Doomed ${rc.doomed} → death threshold is Dying ${rc.maxDying}*`);
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor(rc.died ? 0x8B0000 : rc.awoke ? 0x2ecc71 : rc.outcome === 'success' || rc.outcome === 'crit-success' ? 0x27ae60 : 0xe74c3c)
-    .setTitle(`💀 ${combatant.name}'s Recovery Check`)
-    .setDescription(lines.join('\n'));
-
-  const components = [];
-  if (!heroButtons || combatant.isNpc || !combatant.ownerId) return { embeds: [embed], components };
-
-  // Look up hero points (PCs only)
-  let heroPoints = 0;
-  try {
-    const characters = loadCharacters();
-    const userCharacters = characters[combatant.ownerId] ?? {};
-    const charKey = combatant.name.toLowerCase().replace(/\s+/g, '-');
-    const charEntry = userCharacters[charKey];
-    heroPoints = charEntry?.heroPoints ?? (charEntry ? 1 : 0);
-  } catch (err) {
-    console.error('Recovery check: hero point lookup failed:', err);
-  }
-
-  if (heroPoints <= 0) return { embeds: [embed], components };
-
-  const safeName = combatant.name.replace(/[^a-zA-Z0-9]/g, '_');
-  const buttons = [];
-
-  // "Reroll" button — only when not dead. Reroll one die, keep better.
-  if (!rc.died) {
-    const awokeFlag = rc.awoke ? '1' : '0';
-    buttons.push(
-      new ButtonBuilder()
-        .setCustomId(`rcheck_reroll_${safeName}_${rc.dyingBefore}_${rc.dyingAfter}_${rc.roll}_${awokeFlag}`)
-        .setLabel(`🎭 Reroll (1 HP)`)
-        .setStyle(ButtonStyle.Primary)
-    );
-  }
-
-  // "Spend all to escape death" button — show whenever they got worse OR died.
-  // PF2e RAW: triggers at start of turn OR when dying value would increase.
-  const dyingWentUp = rc.dyingAfter > rc.dyingBefore;
-  if (rc.died || dyingWentUp) {
-    buttons.push(
-      new ButtonBuilder()
-        .setCustomId(`rcheck_stabilize_${safeName}`)
-        .setLabel(`🛡️ Escape Death (spend all ${heroPoints} HP)`)
-        .setStyle(rc.died ? ButtonStyle.Danger : ButtonStyle.Secondary)
-    );
-  }
-
-  if (buttons.length > 0) {
-    components.push(new ActionRowBuilder().addComponents(...buttons));
-  }
-  return { embeds: [embed], components };
-}
-
-function rollD20Plus(modifier) {
-  const roll = Math.floor(Math.random() * 20) + 1;
-  return { total: roll + modifier, roll, mod: modifier };
-}
-
 function rollDamageExpression(expr) {
   if (!expr) return null;
   const cleaned = expr.toLowerCase().replace(/\s+/g, '');
@@ -2333,214 +989,23 @@ function rollDamageExpression(expr) {
 // If nothing parses out, returns null. Use this for monster attacks where the
 // damage may be compound. For simple "1d6+2" expressions, rollDamageExpression
 // is the right tool.
-function parseAndRollAttackDamage(damageString) {
-  if (!damageString || typeof damageString !== 'string') return null;
-  // Split on " plus " to handle compound damage. PF2e canonically uses "plus"
-  // as the separator; we lowercase to be safe.
-  const parts = damageString.split(/\s+plus\s+/i);
-  const out = [];
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    // Try to extract a dice expression followed by a damage type. Patterns:
-    //   "1d6 slashing"
-    //   "3d12+15 piercing"
-    //   "2d6 fire"
-    //   "siphon life"   ← no dice, treat as flavor note
-    const dmgMatch = trimmed.match(/^(\d*d\d+(?:[+-]\d+)?)\s+(.+)$/i);
-    if (dmgMatch) {
-      const expr = dmgMatch[1];
-      const type = dmgMatch[2].trim().toLowerCase();
-      const rollResult = rollDamageExpression(expr);
-      if (rollResult) {
-        out.push({ expr, type, rollResult });
-        continue;
-      }
-    }
-    // Non-dice part — treat as flavor (e.g. "siphon life", "grab", "knockdown")
-    out.push({ expr: null, type: null, note: trimmed });
-  }
-  return out.length > 0 ? out : null;
-}
-
-function determineDegreeOfSuccess(attackTotal, dieRoll, targetAc) {
-  if (targetAc === null || targetAc === undefined) return null;
-  let degree;
-  if (attackTotal >= targetAc + 10) degree = 'crit-success';
-  else if (attackTotal >= targetAc) degree = 'success';
-  else if (attackTotal <= targetAc - 10) degree = 'crit-failure';
-  else degree = 'failure';
-  if (dieRoll === 20) {
-    degree = degree === 'crit-failure' ? 'failure' : degree === 'failure' ? 'success' : 'crit-success';
-  } else if (dieRoll === 1) {
-    degree = degree === 'crit-success' ? 'success' : degree === 'success' ? 'failure' : 'crit-failure';
-  }
-  return degree;
-}
-
-// Damage type → emoji. Falls back to ⚔️ for unknown types. PF2e has a fixed
-// set of damage types; these cover every canonical type in the Player Core.
-const DAMAGE_TYPE_EMOJI = {
-  acid: '🧪', bleed: '🩸', bludgeoning: '🔨', chaotic: '🌀', cold: '❄️',
-  electricity: '⚡', evil: '😈', fire: '🔥', force: '✨', good: '🌟',
-  lawful: '⚖️', mental: '🧠', negative: '💀', physical: '💥', piercing: '🏹',
-  poison: '☠️', positive: '✨', slashing: '🗡️', sonic: '🔊', spirit: '👻',
-  untyped: '⚔️', vitality: '💖', void: '🕳️',
-};
-function damageTypeEmoji(type) {
-  if (!type) return '⚔️';
-  const key = String(type).toLowerCase().trim();
-  // Handle "persistent fire", "precision", etc. — strip qualifiers, match main word
-  for (const [k, emoji] of Object.entries(DAMAGE_TYPE_EMOJI)) {
-    if (key.includes(k)) return emoji;
-  }
-  return '⚔️';
-}
-
 // Find a save bonus for a combatant. Checks in order:
 //   1. Character-sheet data (PC combatants)
 //   2. Bestiary data (NPC combatants matched by name to a monster)
 //   3. Stored combatant overrides (from /init addnpc with manual stats)
 // Returns { bonus, source } or null if no info.
 // saveType must be one of 'fortitude' / 'reflex' / 'will' (case-insensitive).
-function getTargetSaveBonus(target, saveType, loadedCharacters) {
-  if (!target || !saveType) return null;
-  const key = String(saveType).toLowerCase();
-  const normalized = key.startsWith('fort') ? 'fort' : key.startsWith('ref') ? 'ref' : key.startsWith('will') ? 'will' : null;
-  if (!normalized) return null;
-
-  // Combatants may have saveBonuses attached from /init addmonster integration.
-  // Preferred source — matches whatever the bestiary/GM configured.
-  if (target.saveBonuses && target.saveBonuses[normalized] != null) {
-    return { bonus: target.saveBonuses[normalized], source: 'stored' };
-  }
-
-  // PC combatants: look up their character sheet
-  if (!target.isNpc && target.ownerId) {
-    const characters = loadedCharacters ?? loadCharacters();
-    const userChars = characters[target.ownerId] ?? {};
-    for (const charEntry of Object.values(userChars)) {
-      if (charEntry?.data?.name && charEntry.data.name.toLowerCase() === target.name.toLowerCase()) {
-        const c = charEntry.data;
-        const ab = c.abilities ?? {};
-        const prof = c.proficiencies ?? {};
-        const lvl = c.level ?? 1;
-        const abilityFor = { fort: 'con', ref: 'dex', will: 'wis' };
-        const profKey = { fort: 'fortitude', ref: 'reflex', will: 'will' };
-        const abilMod = Math.floor(((ab[abilityFor[normalized]] ?? 10) - 10) / 2);
-        const profNum = prof[profKey[normalized]] ?? 0;
-        const itemBonus = (c.overlay?.saveItemBonuses?.[normalized]) ?? 0;
-        return { bonus: abilMod + calcCharacterProfNum(c, profNum, lvl) + itemBonus, source: 'character' };
-      }
-    }
-  }
-
-  // NPC combatants: try the bestiary
-  if (target.isNpc) {
-    const { monster } = findMonster(target.name) || {};
-    if (monster) {
-      const rich = monster.rich ?? null;
-      const coreSaves = monster.core?.saves ?? {};
-      const legacySaves = monster.summary?.summary ?? {};
-      const saveMap = { fort: ['fort', 'fortitude'], ref: ['ref', 'reflex'], will: ['will'] };
-      for (const k of saveMap[normalized]) {
-        if (coreSaves[k] != null) return { bonus: coreSaves[k], source: 'bestiary' };
-        if (legacySaves[k] != null) return { bonus: legacySaves[k], source: 'bestiary' };
-        if (rich?.defenses?.saves?.[k.charAt(0).toUpperCase() + k.slice(1)] != null) {
-          return { bonus: rich.defenses.saves[k.charAt(0).toUpperCase() + k.slice(1)], source: 'bestiary' };
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
 // Roll a save and compute the degree of success vs the given DC.
 // Returns { dieRoll, total, degree } — degree is 'crit-success' | 'success' |
 // 'failure' | 'crit-failure'. Uses the same DoS table as attack rolls.
-function rollSaveForTarget(bonus, dc) {
-  const dieRoll = Math.floor(Math.random() * 20) + 1;
-  const total = dieRoll + bonus;
-  const degree = determineDegreeOfSuccess(total, dieRoll, dc);
-  return { dieRoll, total, degree };
-}
-
 // Given a spell's damage and a basic-save degree of success, return the final
 // damage amount. Per PF2e Remaster:
 //   crit-success → 0 damage
 //   success → half damage (rounded down)
 //   failure → full damage
 //   crit-failure → double damage (ALL dice and bonuses)
-function basicSaveDamage(fullDamage, degree) {
-  if (degree === 'crit-success') return 0;
-  if (degree === 'success')      return Math.floor(fullDamage / 2);
-  if (degree === 'failure')      return fullDamage;
-  if (degree === 'crit-failure') return fullDamage * 2;
-  return fullDamage;
-}
-
-function calculateMap(mapLevel, agile) {
-  if (mapLevel === 0 || !mapLevel) return 0;
-  if (mapLevel === 1) return agile ? -4 : -5;
-  return agile ? -8 : -10;
-}
-
 // Sum up all attack/damage/AC/save/skill modifiers from a combatant's effects.
-function sumEffectModifiers(combatant) {
-  const totals = {
-    attackBonus: 0,
-    damageBonus: 0,
-    acBonus: 0,
-    saveBonus: 0,
-    skillBonus: 0,
-    activeEffects: [],
-  };
-  if (!combatant?.effects || combatant.effects.length === 0) return totals;
-
-  for (const effect of combatant.effects) {
-    const m = effect.modifiers || {};
-    const atk = m.attackBonus ?? 0;
-    const dmg = m.damageBonus ?? 0;
-    const ac = m.acBonus ?? 0;
-    const save = m.saveBonus ?? 0;
-    const skill = m.skillBonus ?? 0;
-
-    totals.attackBonus += atk;
-    totals.damageBonus += dmg;
-    totals.acBonus += ac;
-    totals.saveBonus += save;
-    totals.skillBonus += skill;
-
-    if (atk || dmg || ac || save || skill) {
-      const displayValue = effect.value !== null && effect.value !== undefined ? ` ${effect.value}` : '';
-      totals.activeEffects.push({
-        name: `${effect.name}${displayValue}`,
-        attackBonus: atk,
-        damageBonus: dmg,
-        acBonus: ac,
-      });
-    }
-  }
-  return totals;
-}
-
 // Build a human-readable line showing which effects contributed to a roll.
-function formatEffectContributions(effects, kind) {
-  const contributions = effects
-    .filter(e => {
-      if (kind === 'attack') return e.attackBonus !== 0;
-      if (kind === 'damage') return e.damageBonus !== 0;
-      if (kind === 'ac') return e.acBonus !== 0;
-      return false;
-    })
-    .map(e => {
-      const val = kind === 'attack' ? e.attackBonus : kind === 'damage' ? e.damageBonus : e.acBonus;
-      return `${e.name} ${fmt(val)}`;
-    });
-  return contributions.length > 0 ? ` (${contributions.join(', ')})` : '';
-}
-
 // ── Spell lookup ──────────────────────────────────────────────────────────────
 function normalizeReferenceQuery(str) {
   return String(str ?? '').toLowerCase().trim()
@@ -2646,78 +1111,6 @@ function buildReferenceEmbed(commandName, entry) {
 // Build a paginated list embed of companions, optionally filtered by category.
 
 // Scale a companion's combat stats by character level + form.
-function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
-  const customLabel = comp.customStats?.fromBestiary ?? comp.customStats?.sourceName ?? 'custom';
-  const embed = new EmbedBuilder()
-    .setColor(isActive ? 0xf39c12 : 0x7289DA)
-    .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
-    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? customLabel : comp.baseType} companion*`);
-
-  // Show portrait if set. Prefer companion.art, fall back to character art.
-  if (comp.art) embed.setThumbnail(comp.art);
-  else if (charEntry.art) embed.setThumbnail(charEntry.art);
-
-  // Mark overridden fields with a small visible flag
-  const ov = comp.overrides ?? {};
-  const flag = (key) => ov[key] != null ? ' ✏️' : '';
-  const abFlag = (key) => (ov.abilities && ov.abilities[key] != null) ? '\\*' : '';
-  const saveFlag = (key) => (ov.saves && ov.saves[key] != null) ? '\\*' : '';
-
-  const hp = comp.currentHp ?? scaled.maxHp;
-  embed.addFields({ name: '🛡️ Defenses', value: `**HP** ${hp}/${scaled.maxHp}${flag('hp')} · **AC** ${scaled.ac}${flag('ac')} · **Size** ${scaled.size}${flag('size')} · **Speed** ${scaled.speed}${flag('speed')}`, inline: false });
-  embed.addFields({ name: '💪 Saves', value: `**Fort** ${fmt(scaled.saves.fort)}${saveFlag('fort')} · **Ref** ${fmt(scaled.saves.ref)}${saveFlag('ref')} · **Will** ${fmt(scaled.saves.will)}${saveFlag('will')} · **Perception** ${fmt(scaled.perception)}${flag('perception')}`, inline: false });
-  const ab = scaled.abilities;
-  embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)}${abFlag('str')} · Dex ${fmt(ab.dex ?? 0)}${abFlag('dex')} · Con ${fmt(ab.con ?? 0)}${abFlag('con')} · Int ${fmt(ab.int ?? -4)}${abFlag('int')} · Wis ${fmt(ab.wis ?? 0)}${abFlag('wis')} · Cha ${fmt(ab.cha ?? 0)}${abFlag('cha')}`, inline: false });
-
-  // Skills (override-only). Display alphabetically.
-  const skills = comp.skills ?? {};
-  const skillEntries = Object.entries(skills).sort(([a], [b]) => a.localeCompare(b));
-  if (skillEntries.length > 0) {
-    const line = skillEntries.map(([name, bonus]) => `**${name}** ${fmt(bonus)}`).join(' · ');
-    embed.addFields({ name: '🎯 Skills', value: line.slice(0, 1020), inline: false });
-  }
-
-  // Attacks: primary (from catalog/custom, with scaling) + any custom attacks
-  // added via /companion attack add. Show all of them.
-  const attackLines = [];
-  if (scaled.primaryAttack) {
-    const traits = scaled.primaryAttack.traits?.length ? ` *(${scaled.primaryAttack.traits.join(', ')})*` : '';
-    const dmgBonus = scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? `+${scaled.damageBonus}` : `${scaled.damageBonus}`) : '';
-    attackLines.push(`**${scaled.primaryAttack.name}**${traits} — **+${scaled.attackBonus}**${flag('attackBonus')} to hit · **${scaled.damageDice}${flag('damageDice')}${dmgBonus}${flag('damageBonus')}** ${scaled.damageType}`);
-  }
-  if (Array.isArray(comp.customAttacks) && comp.customAttacks.length) {
-    for (const atk of comp.customAttacks) {
-      const traits = atk.traits?.length ? ` *(${atk.traits.join(', ')})*` : '';
-      const bonusText = atk.bonus != null ? `**${fmt(atk.bonus)}** to hit · ` : '';
-      const dmgText = atk.damage ? `**${atk.damage}** ${atk.damageType ?? ''}` : '';
-      attackLines.push(`**${atk.name}**${traits} — ${bonusText}${dmgText}`);
-    }
-  }
-  if (attackLines.length) {
-    embed.addFields({ name: '⚔️ Attacks', value: attackLines.join('\n').slice(0, 1020), inline: false });
-  }
-
-  // Abilities: free-form text abilities + structured maneuver-style ones
-  if (Array.isArray(comp.customAbilities) && comp.customAbilities.length) {
-    const abilityLines = comp.customAbilities.map(a => {
-      if (a.actionCost) {
-        const costIcon = { 'one-action': '◆', 'two-actions': '◆◆', 'three-actions': '◆◆◆', 'reaction': '⤾', 'free-action': '◇' }[a.actionCost] ?? a.actionCost;
-        return `**${a.name}** ${costIcon} — ${a.description}`;
-      }
-      return `**${a.name}** — ${a.description}`;
-    });
-    embed.addFields({ name: '✨ Abilities', value: abilityLines.join('\n').slice(0, 1020), inline: false });
-  }
-
-  if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
-  const hasOverrides = (scaled.overriddenFields ?? []).length > 0;
-  const footerExtra = hasOverrides ? ` · ✏️ = overridden` : '';
-  embed.setFooter({ text: `Character: ${char.name} · /companion set to customize${footerExtra}` });
-  return embed;
-}
-
-
-
 // Given a combatant from the encounter (with bestiaryKey set by /init addmonster),
 // return the merged list of attacks available on that monster: bestiary base
 // attacks + GM edits + monster_attacks library entries. Returns [] if the
@@ -2731,35 +1124,6 @@ function getCombatantAttacks(combatant, guildId) {
   const edited = applyMonsterEdits(monster, edits);
   const withLibrary = guildId ? applyMonsterAttackLibrary(edited, guildId) : edited;
   return Array.isArray(withLibrary?.rich?.attacks) ? withLibrary.rich.attacks : [];
-}
-
-function findCombatantLoose(enc, name) {
-  if (!enc || !name) return null;
-  const q = String(name).toLowerCase().trim();
-  const exact = enc.combatants.find(c => c.name.toLowerCase() === q);
-  if (exact) return exact;
-  const partial = enc.combatants.filter(c => c.name.toLowerCase().includes(q));
-  return partial.length === 1 ? partial[0] : null;
-}
-
-function pickDefaultAttacker(enc, userId, attackerName) {
-  if (!enc || enc.combatants.length === 0) return null;
-  if (attackerName) return findCombatantLoose(enc, attackerName);
-  const current = enc.combatants[enc.turnIndex] ?? null;
-  if (current && (current.ownerId === userId || userId === enc.gmId)) return current;
-  const owned = enc.combatants.filter(c => c.ownerId === userId && c.hp > 0);
-  return owned.length === 1 ? owned[0] : current;
-}
-
-function pickDefaultTarget(enc, attacker, targetName) {
-  if (!enc || !attacker) return null;
-  if (targetName) return findCombatantLoose(enc, targetName);
-  const enemies = enc.combatants.filter(c =>
-    c.name.toLowerCase() !== attacker.name.toLowerCase() &&
-    c.hp > 0 &&
-    c.isNpc !== attacker.isNpc
-  );
-  return enemies[0] ?? null;
 }
 
 function findCharacterEntryForCombatant(characters, combatant) {
@@ -2782,20 +1146,6 @@ function findCharacterEntryForCombatant(characters, combatant) {
 
 // Find a specific named attack on a combatant. Tries exact match first,
 // then case-insensitive, then substring. Returns null if nothing matches.
-function findCombatantAttack(combatant, attackName, guildId) {
-  const attacks = getCombatantAttacks(combatant, guildId);
-  if (attacks.length === 0) return null;
-  const q = String(attackName ?? '').toLowerCase().trim();
-  if (!q) return attacks[0];
-  // 1. Exact (case-insensitive) match
-  const exact = attacks.find(a => String(a.name ?? '').toLowerCase() === q);
-  if (exact) return exact;
-  // 2. Substring match — return only if unambiguous
-  const partial = attacks.filter(a => String(a.name ?? '').toLowerCase().includes(q));
-  if (partial.length === 1) return partial[0];
-  return null;
-}
-
 // ── Attack schema normalizer ──────────────────────────────────────────────
 // The bestiary parser stores attacks in a different shape than the saved
 // attack library:
