@@ -132,6 +132,8 @@ const initiativeCmd    = require('./commands/initiative/command');
 const classCmd         = require('./commands/class/command');
 const classButtons     = require('./commands/class/buttons');
 const companionCmd     = require('./commands/companion/command');
+const weatherFeatureCmd = require('./commands/weather/command');
+const calendarFeatureCmd = require('./commands/calendar/command');
 const { scaleCompanion } = require('./commands/companion/helpers');
 const { buildCharHpEmbed } = require('./commands/hp/embed');
 // Notes autocomplete (still inline in index.js) reaches into note helpers.
@@ -199,16 +201,9 @@ const { computeCharPerception } = require('./rules/characterChecks');
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
 // their save degree of success. Used by /cast.
 const spellEffects = require('./rules/spellEffects');
-// Weather: per-server PF2e weather tracker. /weather subcommands handled by
-// commands/weather-cmd.js; the engine + persistence live in systems/weather.js.
 const weatherCmd = require('./commands/weather-cmd');
-// Calendar: Golarion calendar. We pull in both the engine (for systems that
-// need date math, like potentially weather later) and the command handler.
-// The command handler optionally takes the weather engine so /calendar advance
-// can update weather.season as the months change.
 const weatherEngine = require('./rules/weather');
 const calendarCmd = require('./commands/calendar-cmd');
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -11168,7 +11163,7 @@ client.on('interactionCreate', async (interaction) => {
   // encounters module in so /weather apply can attach effects to combatants
   // in the active encounter.
   else if (commandName === 'weather') {
-    return weatherCmd.handleWeather(interaction, encounters);
+    return weatherFeatureCmd.execute(interaction);
   }
 
   // ─── /calendar ───────────────────────────────────────────────────
@@ -11177,7 +11172,7 @@ client.on('interactionCreate', async (interaction) => {
   // automatically update the weather system's season when the month
   // boundary changes seasons (one-way integration).
   else if (commandName === 'calendar') {
-    return calendarCmd.handleCalendar(interaction, weatherEngine);
+    return calendarFeatureCmd.execute(interaction);
   }
 
   else {

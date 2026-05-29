@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 49 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 51 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 49 slash command entries)
+### Phase 3 — Command extraction (in progress: 51 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -127,8 +127,10 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/spellbook`, `/prepared` | 3.46 | command | Spellbook and prepared-spells display |
 | `/cast` | 3.47 | command | Spell casting, slot spend, encounter targeting, damage/effects |
 | `/roll`, `/r` | 3.48 | command, advancedRoll | Advanced dice roller aliases |
+| `/weather` | 3.49 | command wrapper | Feature-folder wrapper around legacy weather command module |
+| `/calendar` | 3.49 | command wrapper | Feature-folder wrapper around legacy calendar command module |
 
-**Cumulative index.js shrinkage**: 19,500 → **11,192** lines (−8,308 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **11,187** lines (−8,313 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
