@@ -268,7 +268,9 @@ function loadJson(filename, opts = {}) {
     }
     return data;
   } catch (err) {
-    console.error(`Could not load ${filename}:`, err.message);
+    if (!quiet) {
+      console.error(`Could not load ${filename}:`, err.message);
+    }
     return defaultValue;
   }
 }
