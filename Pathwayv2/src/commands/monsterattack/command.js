@@ -566,4 +566,5 @@ async function execute(interaction) {
 module.exports = {
   name: 'monsterattack',
   execute,
+  normalizeAttackForRolling,
 };

@@ -82,10 +82,21 @@ function combatV2AttackListText(actor) {
   }).join('\n');
 }
 
+function combatV2FindAttack(actor, attackName = null) {
+  const attacks = actor?.attacks ?? [];
+  if (attacks.length === 0) return null;
+  if (!attackName) return attacks[0];
+  const q = String(attackName).toLowerCase().trim();
+  return attacks.find(a => a.name.toLowerCase() === q)
+    ?? attacks.find(a => a.name.toLowerCase().includes(q))
+    ?? null;
+}
+
 module.exports = {
   combatV2SaveKey,
   combatV2SaveModifier,
   combatV2DegreeLabel,
   combatV2LegacyDegree,
   combatV2AttackListText,
+  combatV2FindAttack,
 };
