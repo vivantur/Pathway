@@ -80,6 +80,7 @@ const notesCmd         = require('./commands/notes/command');
 const snippetCmd       = require('./commands/snippet/command');
 const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
+const heroCmd          = require('./commands/hero/command');
 const spellCmd         = require('./commands/spell/command');
 const spelladdCmd      = require('./commands/spelladd/command');
 const monsteraddCmd    = require('./commands/monsteradd/command');
@@ -90,6 +91,7 @@ const xpCmd            = require('./commands/xp/command');
 const restCmd          = require('./commands/rest/command');
 const restButtonsCmd   = require('./commands/rest/buttons');
 const refocusCmd       = require('./commands/refocus/command');
+const resourceCmd      = require('./commands/resource/command');
 const conditionCmd     = require('./commands/condition/command');
 const backgroundCmd    = require('./commands/background/command');
 const heritageCmd      = require('./commands/heritage/command');
@@ -101,6 +103,7 @@ const itemCmd          = require('./commands/item/command');
 const itemaddCmd       = require('./commands/itemadd/command');
 const ruleCmd          = require('./commands/rule/command');
 const deityCmd         = require('./commands/deity/command');
+const goldCmd          = require('./commands/gold/command');
 const { deityAutocompleteChoices } = require('./commands/deity/lookup');
 const eberronCmd       = require('./commands/eberron/command');
 const { eberronDeityAutocompleteChoices } = require('./commands/eberron/deityLookup');
@@ -3817,76 +3820,13 @@ function buildHarvestEmbed({ monster, trait, skill, modifier, roll, total, dc, d
 // data is available: ability scores, skills, languages, items, attacks,
 // abilities (top/mid/bot), spellcasting, plus the embed-only lore/tactics.
 // ── Currency helpers ──────────────────────────────────────────────────────────
-const COPPER_VALUE = { cp: 1, sp: 10, gp: 100, pp: 1000 };
-
-function walletToCopper(wallet) {
-  return (wallet.cp ?? 0) + (wallet.sp ?? 0) * 10 + (wallet.gp ?? 0) * 100 + (wallet.pp ?? 0) * 1000;
-}
-function copperToWallet(total) {
-  const pp = Math.floor(total / 1000); total %= 1000;
-  const gp = Math.floor(total / 100);  total %= 100;
-  const sp = Math.floor(total / 10);   total %= 10;
-  return { pp, gp, sp, cp: total };
-}
-function formatWallet(wallet) {
-  const parts = [];
-  if (wallet.pp) parts.push(`${wallet.pp} pp`);
-  if (wallet.gp) parts.push(`${wallet.gp} gp`);
-  if (wallet.sp) parts.push(`${wallet.sp} sp`);
-  if (wallet.cp || parts.length === 0) parts.push(`${wallet.cp ?? 0} cp`);
-  return parts.join(', ');
-}
-function buildWalletEmbed(char, charEntry) {
-  const wallet = charEntry.wallet ?? { pp: 0, gp: 0, sp: 0, cp: 0 };
-  const totalGP = (walletToCopper(wallet) / 100).toFixed(2);
-  const embed = new EmbedBuilder()
-    .setColor(0xf1c40f)
-    .setTitle(`💰 ${char.name}'s Wallet`)
-    .addFields(
-      { name: '🟣 Platinum (pp)', value: `${wallet.pp ?? 0}`, inline: true },
-      { name: '🟡 Gold (gp)',     value: `${wallet.gp ?? 0}`, inline: true },
-      { name: '⚪ Silver (sp)',   value: `${wallet.sp ?? 0}`, inline: true },
-      { name: '🟤 Copper (cp)',   value: `${wallet.cp ?? 0}`, inline: true },
-      { name: '💵 Total Value',   value: `${totalGP} gp`,     inline: true },
-    )
-    .setFooter({ text: 'Use /gold add, /gold spend, or /gold convert' });
-  if (charEntry.art) embed.setThumbnail(charEntry.art);
-  return embed;
-}
 
 // ── Hero Points helpers ───────────────────────────────────────────────────────
 // PF2e rules: characters start with 1 HP per session, max 3 at any time.
 // Spend 1 to reroll a check (keep higher). Spend all to avoid death.
-const HERO_POINTS_MAX = 3;
-const HERO_POINTS_DEFAULT = 1;
-
-function getHeroPoints(charEntry) {
-  return charEntry.heroPoints ?? HERO_POINTS_DEFAULT;
-}
 
 // Visual representation: filled diamonds for held, hollow for empty (up to display cap).
 // If someone has >3 (via /hero set override), we just append "+N" at the end so the embed stays clean.
-function renderHeroPointsBar(points) {
-  const displayCap = HERO_POINTS_MAX;
-  const filled = Math.min(points, displayCap);
-  const empty = Math.max(0, displayCap - points);
-  const overflow = points > displayCap ? ` **+${points - displayCap}**` : '';
-  return '◆'.repeat(filled) + '◇'.repeat(empty) + overflow;
-}
-
-function buildHeroPointsEmbed(char, charEntry, note = null) {
-  const points = getHeroPoints(charEntry);
-  const bar = renderHeroPointsBar(points);
-  const embed = new EmbedBuilder()
-    .setColor(0xe67e22)
-    .setTitle(`⭐ ${char.name}'s Hero Points`)
-    .setDescription(`${bar}\n**${points}** / ${HERO_POINTS_MAX}${points > HERO_POINTS_MAX ? ` *(over cap)*` : ''}`)
-    .setFooter({ text: 'Spend 1 to reroll (keep higher) · Spend all to avoid death · Max 3' });
-  if (note) embed.addFields({ name: '\u200b', value: note, inline: false });
-  if (charEntry.art) embed.setThumbnail(charEntry.art);
-  return embed;
-}
-
 // ── XP helpers ────────────────────────────────────────────────────────────────
 // PF2e: 1000 XP = 1 level. Bot-managed XP is stored on charEntry.xp (overlay-style),
 // falling back to Pathbuilder's c.xp if the bot has never touched it. Awards are
@@ -3910,62 +3850,6 @@ function buildHeroPointsEmbed(char, charEntry, note = null) {
 // Roll an expression using the exact same engine as /roll.
 // Returns { total, breakdown, error } — breakdown is the pretty display string.
 // On parse error, returns { error: "..." }; callers should surface that to the user.
-function rollDiceExpression(raw) {
-  const expr = String(raw ?? '').toLowerCase().replace(/\s+/g, '');
-  if (!/^[0-9d+\-*/]+$/.test(expr)) return { error: 'Invalid expression. Use dice like `2d6`, math like `10+5`, or mix them like `1d8+4`.' };
-
-  const tokens = expr.split(/([+\-*/])/).filter(Boolean);
-  const breakdownParts = [];
-  const values = [];
-  for (const token of tokens) {
-    if (['+', '-', '*', '/'].includes(token)) {
-      breakdownParts.push(token === '*' ? '×' : token === '/' ? '÷' : token);
-      values.push(token);
-      continue;
-    }
-    if (token.includes('d')) {
-      const [numDiceStr, numSidesStr] = token.split('d');
-      const numDice = parseInt(numDiceStr) || 1;
-      const numSides = parseInt(numSidesStr);
-      if (!numSides || numSides < 1 || numSides > 10000 || numDice < 1 || numDice > 100) return { error: `Invalid dice: \`${token}\`.` };
-      const rolls = Array.from({ length: numDice }, () => Math.floor(Math.random() * numSides) + 1);
-      const rollTotal = rolls.reduce((a, b) => a + b, 0);
-      breakdownParts.push(numDice > 1 ? `${numDice}d${numSides}[${rolls.join(', ')}]` : `${numDice}d${numSides}(${rolls[0]})`);
-      values.push(rollTotal);
-    } else {
-      const num = parseInt(token);
-      if (isNaN(num)) return { error: `Couldn't parse \`${token}\`.` };
-      breakdownParts.push(`${num}`);
-      values.push(num);
-    }
-  }
-  // Two-pass: handle * and / first, then + and -
-  const pass1values = [];
-  const pass1ops = [];
-  let current = values[0];
-  for (let i = 1; i < values.length; i += 2) {
-    const op = values[i];
-    const next = values[i + 1];
-    if (op === '*') current = current * next;
-    else if (op === '/') {
-      if (next === 0) return { error: 'Cannot divide by zero.' };
-      current = Math.floor(current / next);
-    } else {
-      pass1values.push(current);
-      pass1ops.push(op);
-      current = next;
-    }
-  }
-  pass1values.push(current);
-  let total = pass1values[0];
-  for (let i = 0; i < pass1ops.length; i++) {
-    if (pass1ops[i] === '+') total += pass1values[i + 1];
-    if (pass1ops[i] === '-') total -= pass1values[i + 1];
-  }
-  total = Math.floor(total);
-  return { total, breakdown: breakdownParts.join(' ') };
-}
-
 // ── Variable substitution (cvars + built-ins) ────────────────────────────────
 // Resolves {{name}} tokens against a character. Order of resolution:
 //   1. User cvars stored on charEntry.overlay.cvars
@@ -8303,72 +8187,7 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /resource ───────────────────────────────────────────────────
   else if (commandName === 'resource') {
-    const sub = interaction.options.getSubcommand();
-    const nameArg = interaction.options.getString('character');
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(interaction.user.id, nameArg, characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    const c = charEntry.data;
-    charOverlay.ensureOverlay(charEntry);
-
-    if (sub === 'show') {
-      const focus = charOverlay.getCurrentFocus(charEntry);
-      const hero = charOverlay.getHeroPoints(charEntry);
-      const lines = [
-        `**🌟 Focus points:** ${focus.current}/${focus.max}`,
-        `**⭐ Hero points:** ${hero}/3`,
-      ];
-      for (const caster of charOverlay.getCasters(c)) {
-        const rankLines = [];
-        for (let rank = 1; rank <= 10; rank++) {
-          const max = Number(caster.perDay?.[rank] ?? 0);
-          if (max === 0) continue;
-          const { current } = charOverlay.getSlotsRemaining(charEntry, caster.name, rank);
-          rankLines.push(`  Rank ${rank}: ${current}/${max}`);
-        }
-        if (rankLines.length) {
-          lines.push(`**${caster.name} slots:**\n${rankLines.join('\n')}`);
-        }
-      }
-      const embed = new EmbedBuilder().setColor(0xf1c40f).setTitle(`${c.name}'s Daily Resources`).setDescription(lines.join('\n'));
-      if (charEntry.art) embed.setThumbnail(charEntry.art);
-      embed.setFooter({ text: 'Use /rest to refill · /refocus for 1 focus point · /resource set to override' });
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    if (sub === 'set') {
-      const resource = interaction.options.getString('resource');
-      const value = interaction.options.getInteger('value');
-      const rank = interaction.options.getInteger('rank');
-      const explicitCaster = interaction.options.getString('caster');
-      if (resource === 'focus') {
-        const max = charOverlay.getMaxFocus(c);
-        const clamped = Math.max(0, Math.min(max, value));
-        charEntry.overlay.daily.focus_spent = max - clamped;
-        saveCharacters(characters);
-        return interaction.reply({ content: `🌟 Focus points set to ${clamped}/${max}.` });
-      }
-      if (resource === 'hero') {
-        const v = charOverlay.setHeroPoints(charEntry, value);
-        saveCharacters(characters);
-        return interaction.reply({ content: `⭐ Hero points set to ${v}/3.` });
-      }
-      if (resource === 'slot') {
-        if (rank === null || rank === undefined) return interaction.reply({ content: '❌ The `rank` option is required when setting spell slots.', ephemeral: true });
-        const casters = charOverlay.getCasters(c);
-        const caster = explicitCaster ? charOverlay.findCaster(c, explicitCaster) : (casters.length === 1 ? casters[0] : null);
-        if (!caster) return interaction.reply({ content: `❌ Specify which caster with the \`caster\` option. Available: ${casters.map(x => x.name).join(', ')}`, ephemeral: true });
-        const max = Number(caster.perDay?.[rank] ?? 0);
-        const clamped = Math.max(0, Math.min(max, value));
-        if (!charEntry.overlay.daily.slots_used[caster.name]) charEntry.overlay.daily.slots_used[caster.name] = {};
-        charEntry.overlay.daily.slots_used[caster.name][rank] = max - clamped;
-        saveCharacters(characters);
-        return interaction.reply({ content: `✨ ${caster.name} rank ${rank} slots set to ${clamped}/${max}.` });
-      }
-      return interaction.reply({ content: '❌ Unknown resource.', ephemeral: true });
-    }
-
-    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+    await resourceCmd.execute(interaction);
   }
 
   // ─── /mattack ────────────────────────────────────────────────────
@@ -9926,188 +9745,12 @@ client.on('interactionCreate', async (interaction) => {
 
   // ─── /gold ───────────────────────────────────────────────────────
   else if (commandName === 'gold') {
-    const subcommand = interaction.options.getSubcommand();
-    const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    const char = charEntry.data;
-    if (!charEntry.wallet) charEntry.wallet = { pp: 0, gp: 0, sp: 0, cp: 0 };
-    const wallet = charEntry.wallet;
-
-    if (subcommand === 'view') return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry)] });
-    if (subcommand === 'add') {
-      const pp = interaction.options.getInteger('pp') ?? 0;
-      const gp = interaction.options.getInteger('gp') ?? 0;
-      const sp = interaction.options.getInteger('sp') ?? 0;
-      const cp = interaction.options.getInteger('cp') ?? 0;
-      if (pp === 0 && gp === 0 && sp === 0 && cp === 0) return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
-      wallet.pp = (wallet.pp ?? 0) + pp;
-      wallet.gp = (wallet.gp ?? 0) + gp;
-      wallet.sp = (wallet.sp ?? 0) + sp;
-      wallet.cp = (wallet.cp ?? 0) + cp;
-      charEntry.wallet = wallet;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💰 ${char.name}'s Wallet — Added ${formatWallet({ pp, gp, sp, cp })}`)] });
-    }
-    if (subcommand === 'spend') {
-      const pp = interaction.options.getInteger('pp') ?? 0;
-      const gp = interaction.options.getInteger('gp') ?? 0;
-      const sp = interaction.options.getInteger('sp') ?? 0;
-      const cp = interaction.options.getInteger('cp') ?? 0;
-      if (pp === 0 && gp === 0 && sp === 0 && cp === 0) return interaction.reply({ content: '❌ Specify at least one currency amount.', ephemeral: true });
-      const currentTotal = walletToCopper(wallet);
-      const spendTotal = pp * 1000 + gp * 100 + sp * 10 + cp;
-      if (spendTotal > currentTotal) return interaction.reply({ content: `❌ **${char.name}** can't afford that! They only have **${formatWallet(wallet)}**.`, ephemeral: true });
-      charEntry.wallet = copperToWallet(currentTotal - spendTotal);
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`💸 ${char.name}'s Wallet — Spent ${formatWallet({ pp, gp, sp, cp })}`)] });
-    }
-    if (subcommand === 'convert') {
-      const from   = interaction.options.getString('from');
-      const to     = interaction.options.getString('to');
-      const amount = interaction.options.getInteger('amount');
-      if (from === to) return interaction.reply({ content: `❌ Can't convert ${from} to ${from}!`, ephemeral: true });
-      const fromValue = COPPER_VALUE[from];
-      const toValue   = COPPER_VALUE[to];
-      const totalCopperToConvert = amount * fromValue;
-      if ((wallet[from] ?? 0) < amount) return interaction.reply({ content: `❌ **${char.name}** only has **${wallet[from] ?? 0} ${from}**.`, ephemeral: true });
-      if (fromValue < toValue && totalCopperToConvert < toValue) return interaction.reply({ content: `❌ ${amount} ${from} isn't worth even 1 ${to}.`, ephemeral: true });
-      const converted = Math.floor(totalCopperToConvert / toValue);
-      const remainder = totalCopperToConvert % toValue;
-      wallet[from] = (wallet[from] ?? 0) - amount;
-      wallet[to]   = (wallet[to]   ?? 0) + converted;
-      wallet.cp    = (wallet.cp    ?? 0) + remainder;
-      charEntry.wallet = wallet;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const remainderNote = remainder > 0 ? ` (+${remainder} cp remainder)` : '';
-      return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`🔄 ${char.name}'s Wallet — Converted`).setDescription(`Converted **${amount} ${from}** → **${converted} ${to}**${remainderNote}`)] });
-    }
-    if (subcommand === 'set') {
-      charEntry.wallet = {
-        pp: interaction.options.getInteger('pp') ?? wallet.pp ?? 0,
-        gp: interaction.options.getInteger('gp') ?? wallet.gp ?? 0,
-        sp: interaction.options.getInteger('sp') ?? wallet.sp ?? 0,
-        cp: interaction.options.getInteger('cp') ?? wallet.cp ?? 0,
-      };
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      return interaction.reply({ embeds: [buildWalletEmbed(char, charEntry).setTitle(`✏️ ${char.name}'s Wallet — Updated`)] });
-    }
+    await goldCmd.execute(interaction);
   }
 
   // ─── /hero ───────────────────────────────────────────────────────
   else if (commandName === 'hero') {
-    const sub = interaction.options.getSubcommand();
-    const characters = loadCharacters();
-    const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
-    if (error) return interaction.reply({ content: error, ephemeral: true });
-    const char = charEntry.data;
-    const current = getHeroPoints(charEntry);
-
-    if (sub === 'view') {
-      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry)] });
-    }
-
-    if (sub === 'add') {
-      const amount = interaction.options.getInteger('amount') ?? 1;
-      if (amount < 1) return interaction.reply({ content: '❌ Amount must be at least 1.', ephemeral: true });
-
-      // Cap at 3 per the rules; report how many were actually added and if any were wasted
-      const raw = current + amount;
-      const capped = Math.min(raw, HERO_POINTS_MAX);
-      charEntry.heroPoints = capped;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-
-      const actuallyAdded = capped - current;
-      const wasted = amount - actuallyAdded;
-      let note;
-      if (actuallyAdded === 0) note = `⚠️ **${char.name}** already has the max of ${HERO_POINTS_MAX}. No points added.`;
-      else if (wasted > 0)    note = `✨ Awarded **+${amount}**, but ${wasted} exceeded the cap. Now at **${capped}/${HERO_POINTS_MAX}**.`;
-      else                    note = `✨ Awarded **+${amount}**. Now at **${capped}/${HERO_POINTS_MAX}**.`;
-      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
-    }
-
-    if (sub === 'spend') {
-      const amount = interaction.options.getInteger('amount') ?? 1;
-      if (amount < 1) return interaction.reply({ content: '❌ Amount must be at least 1.', ephemeral: true });
-      if (amount > current) return interaction.reply({ content: `❌ **${char.name}** only has **${current}** Hero Point${current === 1 ? '' : 's'}.`, ephemeral: true });
-
-      charEntry.heroPoints = current - amount;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-
-      const note = amount === current && amount >= 3
-        ? `💫 **${char.name}** spent all **${amount}** Hero Points! *(Enough to avoid death and stabilize.)*`
-        : `🎲 **${char.name}** spent **${amount}** Hero Point${amount === 1 ? '' : 's'}. **${charEntry.heroPoints}** remaining.`;
-      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
-    }
-
-    if (sub === 'set') {
-      // Override — allows going above 3 if the GM really wants to
-      const value = interaction.options.getInteger('value');
-      if (value < 0) return interaction.reply({ content: '❌ Hero Points can\'t be negative.', ephemeral: true });
-      charEntry.heroPoints = value;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const overflow = value > HERO_POINTS_MAX ? ` *(above normal max of ${HERO_POINTS_MAX} — GM override)*` : '';
-      const note = `✏️ Set to **${value}**${overflow}.`;
-      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
-    }
-
-    if (sub === 'reset') {
-      // Reset to the session default (1)
-      charEntry.heroPoints = HERO_POINTS_DEFAULT;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-      const note = `🌅 Reset for a new session. **${char.name}** starts with **${HERO_POINTS_DEFAULT}**.`;
-      return interaction.reply({ embeds: [buildHeroPointsEmbed(char, charEntry, note)] });
-    }
-
-    if (sub === 'reroll') {
-      if (current < 1) return interaction.reply({ content: `❌ **${char.name}** has no Hero Points to spend. Use \`/hero add\` if the GM just awarded one.`, ephemeral: true });
-
-      const dice = interaction.options.getString('dice');
-      const previous = interaction.options.getInteger('previous'); // optional prior total for side-by-side
-
-      const result = rollDiceExpression(dice);
-      if (result.error) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-
-      // Deduct 1 hero point (the reroll cost)
-      charEntry.heroPoints = current - 1;
-      characters[interaction.user.id][charKey] = charEntry;
-      saveCharacters(characters);
-
-      // PF2e rule: keep the HIGHER of the two rolls. If user gave us their prior total, compare.
-      let keepLine;
-      if (previous !== null && previous !== undefined) {
-        const kept = Math.max(previous, result.total);
-        const improved = result.total > previous;
-        keepLine = improved
-          ? `**Kept: ${kept}** ✨ *(rerolled higher!)*`
-          : result.total === previous
-            ? `**Kept: ${kept}** *(tied)*`
-            : `**Kept: ${kept}** *(previous roll was better)*`;
-      } else {
-        keepLine = `**Result: ${result.total}**\n*Keep the higher of your original roll and this one.*`;
-      }
-
-      const embed = new EmbedBuilder()
-        .setColor(0xe67e22)
-        .setTitle(`⭐ ${char.name} spends a Hero Point to reroll!`)
-        .setDescription(
-          (previous !== null && previous !== undefined ? `**Previous:** ${previous}\n` : '') +
-          `**Reroll:** ${result.breakdown} = **${result.total}**\n\n` +
-          keepLine + '\n\n' +
-          `*Hero Points: ${renderHeroPointsBar(charEntry.heroPoints)} (${charEntry.heroPoints}/${HERO_POINTS_MAX})*`
-        )
-        .setFooter({ text: `${char.name} · 1 Hero Point spent` });
-      if (charEntry.art) embed.setThumbnail(charEntry.art);
-      return interaction.reply({ embeds: [embed] });
-    }
+    await heroCmd.execute(interaction);
   }
 
   // ─── /hp ─────────────────────────────────────────────────────────
