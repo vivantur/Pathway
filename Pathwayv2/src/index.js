@@ -148,6 +148,7 @@ const downtimeActivityCmd = require('./commands/downtimeActivities/command');
 const downtimeCmd      = require('./commands/downtimeCommand/command');
 const mattackCmd       = require('./commands/mattack/command');
 const attackCmd        = require('./commands/attack/command');
+const { routeMonsterAlias } = require('./commands/m/router');
 const { scaleCompanion } = require('./commands/companion/helpers');
 const { buildCharHpEmbed } = require('./commands/hp/embed');
 // Notes autocomplete (still inline in index.js) reaches into note helpers.
@@ -3730,21 +3731,7 @@ client.on('interactionCreate', async (interaction) => {
         // the existing autocomplete branches below work unchanged. Mirrors
         // the same rewrite in the main handler dispatcher above.
         let cmd = interaction.commandName;
-        if (cmd === 'm') {
-          const group = interaction.options.getSubcommandGroup(false);
-          if (group === 'roll')        cmd = 'monsterroll';
-          else if (group === 'attack') cmd = 'monsterattack';
-          else if (group === 'edit')   cmd = 'monsteredit';
-          else if (group === 'add')    cmd = 'monsteradd';
-          else {
-            const sub = interaction.options.getSubcommand(false);
-            if (sub === 'show') cmd = 'monster';
-            else if (sub === 'save' || sub === 'skill') cmd = 'monsterroll';
-            else if (sub === 'cast') cmd = 'monstercast';
-            else if (sub === 'ability') cmd = 'monsterability';
-            else if (sub === 'attacks') cmd = 'monsterattacks';
-          }
-        }
+        if (cmd === 'm') cmd = routeMonsterAlias(interaction);
 
         // Score & slice helper: exact > prefix > substring > fuzzy.
         // Powered by utils/fuzzyMatch — typos like "grabed" still surface
@@ -4523,24 +4510,7 @@ client.on('interactionCreate', async (interaction) => {
   // name in the slash-command picker is just `/m`; everything else flows.
   // Existing /monster, /monsterattack, /monsteredit, /monsteradd, /monsterroll
   // are kept registered as aliases so old muscle memory still works.
-  if (commandName === 'm') {
-    const group = interaction.options.getSubcommandGroup(false);
-    if (group === 'roll')        commandName = 'monsterroll';
-    else if (group === 'attack') commandName = 'monsterattack';
-    else if (group === 'edit')   commandName = 'monsteredit';
-    else if (group === 'add')    commandName = 'monsteradd';
-    else {
-      // No group — must be top-level subcommand like /m show
-      const sub = interaction.options.getSubcommand(false);
-      if (sub === 'show') commandName = 'monster';
-      else if (sub === 'save' || sub === 'skill') commandName = 'monsterroll';
-      else if (sub === 'cast') commandName = 'monstercast';
-      else if (sub === 'ability') commandName = 'monsterability';
-      else if (sub === 'attacks') commandName = 'monsterattacks';
-      // Everything else: /m alone or unknown — fall through with no rewrite,
-      // which will hit the catch-all "unknown command" handler.
-    }
-  }
+  if (commandName === 'm') commandName = routeMonsterAlias(interaction);
   if (commandName === 'ping') {
     await pingCmd.execute(interaction);
   }

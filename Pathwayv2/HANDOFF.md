@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 81 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 82 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 81 slash command entries)
+### Phase 3 — Command extraction (in progress: 82 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -143,8 +143,9 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/downtime` | 3.57 | command | Downtime bank check/spend/grant/log/reset and legacy scaffold |
 | `/mattack` | 3.58 | command | GM monster attack rolls in combat v2, out of initiative, and legacy encounters |
 | `/attack` | 3.59 | command | Character weapon attack roll with MAP, effects, damage, reactions, and encounter HP |
+| `/m` | 3.60 | router | Monster umbrella alias router shared by dispatch and autocomplete |
 
-**Cumulative index.js shrinkage**: 19,500 → **7,728** lines (−11,772 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **7,698** lines (−11,802 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
