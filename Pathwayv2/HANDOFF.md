@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 20 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 31 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 20 / ~40)
+### Phase 3 — Command extraction (in progress: 31 / ~40)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -100,8 +100,19 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/eberron` | 3.21 | command, houseLookup, houseEmbed, deityLookup | Subcommands `house` + `deity`; cross-imports from `commands/deity/` |
 | `/skillinfo` | 3.22 | command, lookup, embed, buttons | 3-page buttons; character-aware Overview |
 | `/class` | 3.23 | command, lookup, embed, buttons | 5-page buttons; character-aware Overview |
+| `/itemadd` | 3.24 | command, database | Bot-owner homebrew item paste/file/remove |
+| `/spell` | 3.25 | command, lookup, embed | Spell lookup + duplicate-source handling |
+| `/spelladd` | 3.26 | command, database | Bot-owner homebrew spell paste/file/remove |
+| `/companion` | 3.27 | command, helpers | Companion info/list/tracking/import moved zero-ctx |
+| `/monsteradd` | 3.28 | command, database | Bot-owner bestiary paste/file/remove |
+| `/skill` | 3.29 | command | Character skill roll |
+| `/perception` | 3.30 | command | Character Perception roll |
+| `/help` | 3.31 | command | Category embeds + `help_` button handler |
+| `/save` | 3.32 | command | Character save roll |
+| `/initiative` | 3.33 | command | Standalone initiative roll |
+| `/rule` | 3.34 | command | Rule lookup |
 
-**Cumulative index.js shrinkage**: 19,500 → **16,210** lines (−3,290 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **13,702** lines (−5,798 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -296,14 +307,14 @@ But this branch hasn't been deployed at all — Railway is still serving from `P
 In order:
 
 ### Immediate (one-batch each)
-1. **`/itemadd`** — closes the cross-feature `buildItemEmbed` loop. Probably the smallest remaining extraction. Estimate: 30 min.
-2. **`/companion`** — multi-subcommand, straightforward. Estimate: 1 hour.
-3. **`/spell`** — first big reference command. Will exercise the spell-damage resolver path. Estimate: 1.5 hours.
+1. **`/monster`** — pairs with `state/monster.js` (already in place). Integration with bestiary attacks + GM edits + monster_attacks library.
+2. **Roll/resource wrappers** — `/resource`, `/hero`, `/gold`, `/bag` are still inline and likely smaller than `/char` or `/init`.
+3. **Spellbook surface** — `/spellbook`, `/prepared`, `/spells`, `/cast` are still inline and share spell overlay helpers.
 
 ### Medium-term
-4. **`/monster`** — pairs with `state/monster.js` (already in place). Integration with bestiary attacks + GM edits + monster_attacks library.
-5. **`/help`** — paged category nav. Could share button-handler patterns with `/class` and `/skillinfo`.
-6. Helper mining: extract `tryResolveLoadedCharacter(interaction)` into `state/characters.js` — used by `/skillinfo`, `/class`, and would be used by `/spell`/`/monster` to surface "Your character: X."
+4. **`/monsteredit`, `/monsterart`, `/monsterroll`, `/monsterattack`** — monster management cluster.
+5. **`/weather`, `/calendar`, `/downtime`** — old top-level command modules should be folded into feature folders only when extracting the slash command.
+6. Helper mining: extract `tryResolveLoadedCharacter(interaction)` into `state/characters.js` — used by remaining character-aware commands.
 
 ### Big single PRs (save for last)
 7. **`/char` family** — entire character management. Many subcommands, modals, buttons. Likely needs its own multi-week effort.
