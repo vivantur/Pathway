@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 56 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 59 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 56 slash command entries)
+### Phase 3 — Command extraction (in progress: 59 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -134,8 +134,11 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/monsterroll` | 3.51 | command | Monster save/skill rolls for combat v2 and legacy encounters |
 | `/monsteredit` | 3.52 | command | Per-guild bestiary statblock edits and reset/view flows |
 | `/monsterattack` | 3.53 | command | Saved monster attack library add/remove/list/use |
+| `/monstercast` | 3.54 | command | GM monster spell/ability casting in combat v2 |
+| `/monsterattacks` | 3.54 | command | GM action list for combat v2 monsters |
+| `/monsterability` | 3.54 | command | GM monster save-based ability in combat v2 |
 
-**Cumulative index.js shrinkage**: 19,500 → **9,265** lines (−10,235 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **9,086** lines (−10,414 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -154,6 +157,8 @@ These weren't extractions but architectural cleanups along the way. They unblock
 - `formatSlotPips` → `commands/spellbook/command.js`
 - `rollAdvanced` → `rules/advancedRoll.js`
 - Legacy initiative summary updater → `commands/init/legacySummary.js`
+- Combat v2 summary updater → `commands/init/combatV2Summary.js`
+- Monster combat v2 save/action helpers → `commands/monster/combatV2Helpers.js`
 
 ---
 
