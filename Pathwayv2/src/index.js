@@ -82,6 +82,7 @@ const featsCmd         = require('./commands/feats/command');
 const abilitiesCmd     = require('./commands/abilities/command');
 const descriptionCmd   = require('./commands/description/command');
 const brCmd            = require('./commands/br/command');
+const pingCmd          = require('./commands/ping/command');
 const snippetCmd       = require('./commands/snippet/command');
 const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
@@ -5358,9 +5359,8 @@ client.on('interactionCreate', async (interaction) => {
       // which will hit the catch-all "unknown command" handler.
     }
   }
-  // ─── /ping ───────────────────────────────────────────────────────
   if (commandName === 'ping') {
-    await interaction.reply('Pong! 🏓 Bot is alive and running.');
+    await pingCmd.execute(interaction);
   }
 
   else if (commandName === 'br' || commandName === 'break') {
