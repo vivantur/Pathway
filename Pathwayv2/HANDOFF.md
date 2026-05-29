@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 84 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 extraction complete. 85 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` remains the entry point while startup/autocomplete/button scaffolding is audited. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 84 slash command entries)
+### Phase 3 — Command extraction (complete: 85 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -146,8 +146,9 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/m` | 3.60 | router | Monster umbrella alias router shared by dispatch and autocomplete |
 | `/i` | 3.61 | command, combatV2Actors | Player combat v2 actions: join, attacks, HP/temp HP, reactions, checks, and spell casting |
 | `/init` | 3.62 | command | Combat tracker start/view/turn/add/remove/effect/end/recovery/delay flows |
+| `/char` | 3.63 | command, modals | Character import/update/edit/create/delete/list/active/art and modal handlers |
 
-**Cumulative index.js shrinkage**: 19,500 → **5,662** lines (−13,838 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **4,244** lines (−15,256 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -169,30 +170,16 @@ These weren't extractions but architectural cleanups along the way. They unblock
 - Combat v2 summary updater → `commands/init/combatV2Summary.js`
 - Monster combat v2 save/action helpers → `commands/monster/combatV2Helpers.js`
 - Player/actor combat v2 helpers → `commands/init/combatV2Actors.js`
+- Character management modal handlers → `commands/char/modals.js`
 - Hunt/harvest activity math and embeds → `commands/hunt/helpers.js`
 
 ---
 
 ## What's NOT Done
 
-### Unextracted commands (~20 remaining)
+### Unextracted commands
 
-Sorted by likely ROI for index.js shrinkage:
-
-**Easy wins (similar to what's already extracted)**:
-- `/itemadd` — closes the `/item` cross-feature loop. Has 3 subcommands (paste, file, remove) + uses `parseItemStatBlock`, `addItemToDatabase`, `removeItemFromDatabase`, `syncHomebrewEntryToSupabase`. Estimate: ~150 lines, 4 files (`command.js`, `paste.js`, `file.js`, `remove.js`?). When done, the top-level `buildItemEmbed` import in `src/index.js` becomes a local import inside the new `/itemadd` folder.
-- `/companion` — multi-subcommand (info, set, list). Sits adjacent to `/class` in dispatch. Has `findCompanion`, `buildCompanionEmbed`, plus companion-state interactions.
-- `/skill`, `/skillcheck` — small wrapper commands using existing `computeCharSkillModifier`.
-
-**Bigger but high-value**:
-- `/spell` — uses `spellDatabase` + `resolveSpellDamage` from `lib/spellDamage.js`. Multi-page like `/class`.
-- `/monster` — uses `bestiaryDatabase` + `state/monster.js` (already extracted) for overrides. Multi-page; rolls attack damage.
-- `/help` — paged category navigation. `HELP_CATEGORIES` constant in index.js drives it.
-
-**Hardest (biggest single PRs)**:
-- `/char` family — the entire character-management surface (paste, file, edit, create, delete, list, ability/stat/skill/weapon/item subcommands). Modals + buttons. Probably 6+ subfiles. **Save for last**.
-- `/init` and `/i` — combat tracker. Significant state interactions with `state/encounters.js` + `state/monster.js`.
-- `/eberronregion`, `/weather`, `/calendar` — already have helpers in `rules/` but the slash command dispatchers are still inline.
+None known from the dispatcher audit. `src/index.js` now delegates slash commands to feature folders. The remaining work is cleanup/audit around startup, autocomplete, button dispatch, and legacy helper scaffolds that are still shared by extracted commands.
 
 ### Still-living scaffolds in v1 layout
 
