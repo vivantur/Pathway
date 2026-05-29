@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 20 of ~40 slash commands moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 extraction complete. 85 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` remains the entry point while startup/autocomplete/button scaffolding is audited. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -12,8 +12,8 @@ If you're a Claude Code session that just opened this folder, here's what you ne
 
 1. **You're in `Pathway/Pathwayv2/`**, a parallel rewrite of the v1 bot at `Pathway/` (the legacy 19,500-line `index.js` sits at the repo root). v2 organizes the same logic into feature folders.
 2. **The pattern is mechanical at this point**. Look at `src/commands/class/` or `src/commands/skillinfo/` for the gold-standard shape: `command.js` (zero-ctx orchestrator), `lookup.js` (pure data resolution), `embed.js` (renderers), optional `buttons.js` (when the command has buttons).
-3. **Don't redesign anything**. The architecture is settled. Your job is execution: keep extracting commands from `src/index.js` into feature folders following the existing pattern.
-4. **Validate every extraction** with `node --check src/index.js && node --check src/commands/<name>/*.js`. A module-load smoke test (`node -e "require('./src/commands/<name>/command')"`) catches missing exports that `--check` won't.
+3. **Don't redesign anything**. The architecture is settled. Phase 3 command extraction is complete; remaining work is audit/final hardening before any runtime cutover.
+4. **Validate every cleanup** with `node --check src/index.js`, `node --check` across `src/**/*.js`, and a command module-load smoke test confirming `execute.length === 1`.
 5. **Don't commit `.env`** or `gamedata/*.json` — both are in `Pathway/.gitignore` for good reason.
 
 ---
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 20 / ~40)
+### Phase 3 — Command extraction (complete: 85 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -100,8 +100,55 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/eberron` | 3.21 | command, houseLookup, houseEmbed, deityLookup | Subcommands `house` + `deity`; cross-imports from `commands/deity/` |
 | `/skillinfo` | 3.22 | command, lookup, embed, buttons | 3-page buttons; character-aware Overview |
 | `/class` | 3.23 | command, lookup, embed, buttons | 5-page buttons; character-aware Overview |
+| `/itemadd` | 3.24 | command, database | Bot-owner homebrew item paste/file/remove |
+| `/spell` | 3.25 | command, lookup, embed | Spell lookup + duplicate-source handling |
+| `/spelladd` | 3.26 | command, database | Bot-owner homebrew spell paste/file/remove |
+| `/companion` | 3.27 | command, helpers | Companion info/list/tracking/import moved zero-ctx |
+| `/monsteradd` | 3.28 | command, database | Bot-owner bestiary paste/file/remove |
+| `/skill` | 3.29 | command | Character skill roll |
+| `/perception` | 3.30 | command | Character Perception roll |
+| `/help` | 3.31 | command | Category embeds + `help_` button handler |
+| `/save` | 3.32 | command | Character save roll |
+| `/initiative` | 3.33 | command | Standalone initiative roll |
+| `/rule` | 3.34 | command | Rule lookup |
+| `/resource` | 3.35 | command | Focus/hero/slot daily resources |
+| `/hero` | 3.36 | command, embed | Hero point tracking + reroll |
+| `/gold` | 3.37 | command, wallet | Character wallet management |
+| `/bag` | 3.38 | command, helpers | Character inventory bag + autocomplete helper |
+| `/cc` | 3.39 | command, counterView | Custom character counters |
+| `/counters` | 3.39 | command, counterView | Shortcut view for custom counters |
+| `/feats` | 3.40 | command, fields | Character feats display |
+| `/abilities` | 3.40 | command | Character special abilities display |
+| `/description` | 3.41 | command, embed | Character description view/edit modal |
+| `/br`, `/break` | 3.42 | command | Scene-break divider aliases |
+| `/ping` | 3.43 | command | Bot health check |
+| `/cvar` | 3.44 | command | Per-character custom variables |
+| `/spells` | 3.45 | command | Character spellbook/repertoire/prepared overlay management |
+| `/spellbook`, `/prepared` | 3.46 | command | Spellbook and prepared-spells display |
+| `/cast` | 3.47 | command | Spell casting, slot spend, encounter targeting, damage/effects |
+| `/roll`, `/r` | 3.48 | command, advancedRoll | Advanced dice roller aliases |
+| `/weather` | 3.49 | command wrapper | Feature-folder wrapper around legacy weather command module |
+| `/calendar` | 3.49 | command wrapper | Feature-folder wrapper around legacy calendar command module |
+| `/monster` | 3.50 | command, helpers | Bestiary lookup with guild edits/art/attack library overlay |
+| `/monsterart` | 3.50 | command | Per-guild monster art library |
+| `/monsterroll` | 3.51 | command | Monster save/skill rolls for combat v2 and legacy encounters |
+| `/monsteredit` | 3.52 | command | Per-guild bestiary statblock edits and reset/view flows |
+| `/monsterattack` | 3.53 | command | Saved monster attack library add/remove/list/use |
+| `/monstercast` | 3.54 | command | GM monster spell/ability casting in combat v2 |
+| `/monsterattacks` | 3.54 | command | GM action list for combat v2 monsters |
+| `/monsterability` | 3.54 | command | GM monster save-based ability in combat v2 |
+| `/hunt` | 3.55 | command, helpers | Creature hunt activity and random prey selection |
+| `/harvest` | 3.55 | command | Creature harvesting using shared hunt helpers |
+| Downtime activity commands | 3.56 | command | `/income`, `/forgery`, `/craft`, `/longrest`, `/treatdisease`, `/cram`, `/retrain`, and simple downtime prep commands |
+| `/downtime` | 3.57 | command | Downtime bank check/spend/grant/log/reset and legacy scaffold |
+| `/mattack` | 3.58 | command | GM monster attack rolls in combat v2, out of initiative, and legacy encounters |
+| `/attack` | 3.59 | command | Character weapon attack roll with MAP, effects, damage, reactions, and encounter HP |
+| `/m` | 3.60 | router | Monster umbrella alias router shared by dispatch and autocomplete |
+| `/i` | 3.61 | command, combatV2Actors | Player combat v2 actions: join, attacks, HP/temp HP, reactions, checks, and spell casting |
+| `/init` | 3.62 | command | Combat tracker start/view/turn/add/remove/effect/end/recovery/delay flows |
+| `/char` | 3.63 | command, modals | Character import/update/edit/create/delete/list/active/art and modal handlers |
 
-**Cumulative index.js shrinkage**: 19,500 → **16,210** lines (−3,290 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **2,731** lines (−16,769 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
@@ -115,29 +162,24 @@ These weren't extractions but architectural cleanups along the way. They unblock
 - `_trackSync`, `drainSupabaseSyncs` → `lib/syncTracker.js`
 - `buildDiscordToUserMap` → `lib/userMap.js`
 - `MAX_CHARACTERS_PER_USER`, `_usernameCache` → `state/characters.js`
+- `isDeadInteractionError` → `lib/discordErrors.js`
+- `resolveVariable`, `expandVariables` → `rules/variables.js`
+- `formatSlotPips` → `commands/spellbook/command.js`
+- `rollAdvanced` → `rules/advancedRoll.js`
+- Legacy initiative summary updater → `commands/init/legacySummary.js`
+- Combat v2 summary updater → `commands/init/combatV2Summary.js`
+- Monster combat v2 save/action helpers → `commands/monster/combatV2Helpers.js`
+- Player/actor combat v2 helpers → `commands/init/combatV2Actors.js`
+- Character management modal handlers → `commands/char/modals.js`
+- Hunt/harvest activity math and embeds → `commands/hunt/helpers.js`
 
 ---
 
 ## What's NOT Done
 
-### Unextracted commands (~20 remaining)
+### Unextracted commands
 
-Sorted by likely ROI for index.js shrinkage:
-
-**Easy wins (similar to what's already extracted)**:
-- `/itemadd` — closes the `/item` cross-feature loop. Has 3 subcommands (paste, file, remove) + uses `parseItemStatBlock`, `addItemToDatabase`, `removeItemFromDatabase`, `syncHomebrewEntryToSupabase`. Estimate: ~150 lines, 4 files (`command.js`, `paste.js`, `file.js`, `remove.js`?). When done, the top-level `buildItemEmbed` import in `src/index.js` becomes a local import inside the new `/itemadd` folder.
-- `/companion` — multi-subcommand (info, set, list). Sits adjacent to `/class` in dispatch. Has `findCompanion`, `buildCompanionEmbed`, plus companion-state interactions.
-- `/skill`, `/skillcheck` — small wrapper commands using existing `computeCharSkillModifier`.
-
-**Bigger but high-value**:
-- `/spell` — uses `spellDatabase` + `resolveSpellDamage` from `lib/spellDamage.js`. Multi-page like `/class`.
-- `/monster` — uses `bestiaryDatabase` + `state/monster.js` (already extracted) for overrides. Multi-page; rolls attack damage.
-- `/help` — paged category navigation. `HELP_CATEGORIES` constant in index.js drives it.
-
-**Hardest (biggest single PRs)**:
-- `/char` family — the entire character-management surface (paste, file, edit, create, delete, list, ability/stat/skill/weapon/item subcommands). Modals + buttons. Probably 6+ subfiles. **Save for last**.
-- `/init` and `/i` — combat tracker. Significant state interactions with `state/encounters.js` + `state/monster.js`.
-- `/eberronregion`, `/weather`, `/calendar` — already have helpers in `rules/` but the slash command dispatchers are still inline.
+None known from the dispatcher audit. `src/index.js` now delegates slash commands to feature folders. The remaining work is cleanup/audit around startup, autocomplete, button dispatch, and legacy helper scaffolds that are still shared by extracted commands.
 
 ### Still-living scaffolds in v1 layout
 
@@ -293,26 +335,13 @@ But this branch hasn't been deployed at all — Railway is still serving from `P
 
 ## Suggested Next Steps for Viv's Session
 
-In order:
+Phase 3 command extraction is complete. Suggested next steps, in order:
 
-### Immediate (one-batch each)
-1. **`/itemadd`** — closes the cross-feature `buildItemEmbed` loop. Probably the smallest remaining extraction. Estimate: 30 min.
-2. **`/companion`** — multi-subcommand, straightforward. Estimate: 1 hour.
-3. **`/spell`** — first big reference command. Will exercise the spell-damage resolver path. Estimate: 1.5 hours.
-
-### Medium-term
-4. **`/monster`** — pairs with `state/monster.js` (already in place). Integration with bestiary attacks + GM edits + monster_attacks library.
-5. **`/help`** — paged category nav. Could share button-handler patterns with `/class` and `/skillinfo`.
-6. Helper mining: extract `tryResolveLoadedCharacter(interaction)` into `state/characters.js` — used by `/skillinfo`, `/class`, and would be used by `/spell`/`/monster` to surface "Your character: X."
-
-### Big single PRs (save for last)
-7. **`/char` family** — entire character management. Many subcommands, modals, buttons. Likely needs its own multi-week effort.
-8. **`/init` + `/i`** — combat tracker. Significant state interactions.
-
-### When everything's extracted
-9. Audit `src/index.js` for residual helpers/constants that should move. By the end it should be just: imports, env loading, Discord client, interaction dispatcher (one-line per command), autocomplete dispatcher, startup orchestration (`clientReady`).
-10. Cut over Railway from `Pathway/index.js` to `Pathway/Pathwayv2/src/index.js`. This is a separate PR.
-11. Eventually: delete `Pathway/index.js` (the 19,500-line legacy) and promote `Pathway/Pathwayv2/` to be the repo's primary source tree.
+1. **Final dispatcher audit** — `src/index.js` is now mostly imports, startup, buttons, modals, autocomplete, and one-line command dispatch. Review the remaining autocomplete and button handlers for any obvious feature-folder moves.
+2. **Fold old top-level command modules only when useful** — `commands/weather-cmd.js`, `commands/calendar-cmd.js`, `commands/downtime.js`, `commands/encounters.js`, and similar scaffolds still exist because feature wrappers depend on them. Don't churn these unless a focused cleanup needs it.
+3. **Runtime smoke test in a dev guild** — set `.env`, run `npm run deploy:guild`, start `Pathwayv2/src/index.js`, and test representative commands: `/sheet`, `/char list`, `/init start`, `/i join`, `/monster`, `/spell`, `/bag`, `/weather`, `/calendar`.
+4. **Cutover PR when ready** — Railway still serves `Pathway/index.js` (v1). Switching production to `Pathway/Pathwayv2/src/index.js` should be its own PR after the dev-guild smoke test.
+5. **Post-cutover cleanup** — after v2 has soaked safely, delete the old root `Pathway/index.js` and promote `Pathwayv2/` to the primary source tree in a separate cleanup.
 
 ---
 
@@ -329,8 +358,4 @@ In order:
 
 ## Last commit before handoff
 
-Phase 3.23 extracted `/class` to feature folder. Index.js shrunk to 16,210 lines.
-
-20 commands extracted: `/sheet`, `/hp`, `/notes`, `/snippet`, `/serversnippet`, `/portrait`, `/xp`, `/rest`, `/refocus`, `/condition`, `/background`, `/heritage`, `/feat`, `/ancestry`, `/archetype`, `/item`, `/deity`, `/eberron`, `/skillinfo`, `/class`.
-
-Good luck. The pattern is mechanical at this point — execution, not design. 🚀
+Phase 3 is complete: 85 slash command entries extracted, `src/index.js` shrunk to 2,731 lines, and the remaining work is dev-guild smoke testing plus a separate production cutover PR.
