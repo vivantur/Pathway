@@ -88,6 +88,7 @@ const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
 const heroCmd          = require('./commands/hero/command');
 const ccCmd            = require('./commands/cc/command');
+const cvarCmd          = require('./commands/cvar/command');
 const spellCmd         = require('./commands/spell/command');
 const spelladdCmd      = require('./commands/spelladd/command');
 const monsteraddCmd    = require('./commands/monsteradd/command');
@@ -190,6 +191,7 @@ const combatV2State = require('./rules/combatV2/state');
 const combatV2Render = require('./rules/combatV2/render');
 const combatV2Rolls = require('./rules/combatV2/rolls');
 const { computeCharPerception } = require('./rules/characterChecks');
+const { expandVariables } = require('./rules/variables');
 // Spell effects auto-application: maps spell names to mechanical effects
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
 // their save degree of success. Used by /cast.
@@ -3439,117 +3441,6 @@ function buildHarvestEmbed({ monster, trait, skill, modifier, roll, total, dc, d
 
 // Note helpers moved to src/commands/notes/ in Phase 3.6.
 
-// Roll an expression using the exact same engine as /roll.
-// Returns { total, breakdown, error } — breakdown is the pretty display string.
-// On parse error, returns { error: "..." }; callers should surface that to the user.
-// ── Variable substitution (cvars + built-ins) ────────────────────────────────
-// Resolves {{name}} tokens against a character. Order of resolution:
-//   1. User cvars stored on charEntry.overlay.cvars
-//   2. Built-in keys (level, ability mods, saves, perception, AC, HP,
-//      classDC, hero, speed, every skill total by name, rank.<skill>,
-//      counter.<name>, counter.<name>.max)
-// Returns the original {{name}} unchanged when no match is found, so the
-// caller can detect it and warn the user.
-
-const _SKILL_ABILITIES_FULL = {
-  acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
-  deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
-  nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',
-  society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex',
-};
-
-function _abilityMod(ab, key) {
-  const score = ab?.[key];
-  if (typeof score !== 'number') return 0;
-  return Math.floor((score - 10) / 2);
-}
-
-function resolveVariable(rawName, charEntry) {
-  if (!charEntry || !charEntry.data) return undefined;
-  const c = charEntry.data;
-  const name = String(rawName).trim().toLowerCase();
-  if (!name) return undefined;
-  const ab = c.abilities ?? {};
-  const prof = c.proficiencies ?? {};
-  const lvl = c.level ?? 1;
-
-  // 1. User cvars win.
-  const cvars = charEntry.overlay?.cvars ?? {};
-  if (Object.prototype.hasOwnProperty.call(cvars, name)) return cvars[name];
-
-  // 2. Counter sub-paths: counter.<name> (current) and counter.<name>.max
-  if (name.startsWith('counter.')) {
-    const counters = charEntry.overlay?.counters ?? {};
-    const rest = name.slice('counter.'.length);
-    const dotIdx = rest.indexOf('.');
-    const cname = dotIdx === -1 ? rest : rest.slice(0, dotIdx);
-    const field = dotIdx === -1 ? 'current' : rest.slice(dotIdx + 1);
-    const ctr = counters[cname];
-    if (!ctr) return undefined;
-    if (field === 'current' || field === '') return ctr.current;
-    if (field === 'max') return ctr.max;
-    return undefined;
-  }
-
-  // 3. Skill rank-only: rank.<skill>
-  if (name.startsWith('rank.')) {
-    const skill = name.slice('rank.'.length);
-    return Number(prof[skill] ?? 0);
-  }
-
-  // 4. Core built-ins.
-  switch (name) {
-    case 'name':       return charEntry.name || c.name || '';
-    case 'level':      return lvl;
-    case 'speed':      return c.stats?.speed ?? ((c.attributes?.speed ?? 25) + (c.attributes?.speedBonus ?? 0));
-    case 'ac':         return c.acTotal?.acTotal ?? 10;
-    case 'hp':         return charEntry.hp ?? c.attributes?.ancestryhp ?? 0;
-    case 'maxhp':      return computeCharMaxHp(charEntry);
-    case 'hero':       return charOverlay.getHeroPoints(charEntry);
-    case 'classdc':    return 10 + _abilityMod(ab, c.keyability) + calcCharacterProfNum(c, canonicalProfValue(prof, 'class_dc', 'classDC'), lvl);
-    case 'str': case 'dex': case 'con':
-    case 'int': case 'wis': case 'cha':
-      return _abilityMod(ab, name);
-    case 'key':        return _abilityMod(ab, c.keyability);
-    case 'fort': case 'fortitude':
-      return _abilityMod(ab, 'con') + calcCharacterProfNum(c, prof.fortitude ?? 0, lvl);
-    case 'ref': case 'reflex':
-      return _abilityMod(ab, 'dex') + calcCharacterProfNum(c, prof.reflex ?? 0, lvl);
-    case 'will':
-      return _abilityMod(ab, 'wis') + calcCharacterProfNum(c, prof.will ?? 0, lvl);
-    case 'perception':
-      return computeCharPerception(charEntry);
-  }
-
-  // 5. Skill totals by name (athletics, stealth, deception, ...).
-  if (Object.prototype.hasOwnProperty.call(_SKILL_ABILITIES_FULL, name)) {
-    const abilKey = _SKILL_ABILITIES_FULL[name];
-    return _abilityMod(ab, abilKey) + calcCharacterProfNum(c, prof[name] ?? 0, lvl);
-  }
-
-  // 6. Lore subskills, e.g. "warfare-lore", "academia-lore". Pathbuilder
-  // stores these on prof keyed by their slug. Use Int as the ability.
-  if (name.endsWith('-lore') || name.endsWith('_lore') || name === 'lore') {
-    const normalized = loreKey(name);
-    const profEntry = Object.entries(prof).find(([key]) => loreKey(key) === normalized);
-    return _abilityMod(ab, 'int') + calcEditableProfNum(profEntry?.[1] ?? 0, lvl);
-  }
-
-  return undefined;
-}
-
-// Replace every {{name}} in `text` with its resolved value. Unknown variables
-// are left intact so the caller can warn instead of silently inserting 0.
-function expandVariables(text, charEntry) {
-  if (!text || typeof text !== 'string') return text;
-  if (text.indexOf('{{') === -1) return text;
-  return text.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_.\-]*)\s*\}\}/g, (match, name) => {
-    const v = resolveVariable(name, charEntry);
-    if (v === undefined) return match;
-    return String(v);
-  });
-}
-
 // ── Advanced roll engine ──────────────────────────────────────────────────────
 // Supports modifiers beyond basic dice arithmetic:
 //   adv / dis        — roll everything twice, take higher / lower of each die
@@ -6625,80 +6516,7 @@ client.on('interactionCreate', async (interaction) => {
   // Per-character variables. Used by /roll to expand {{name}} into a value.
   // Stored on charEntry.overlay.cvars (no separate Supabase column).
   else if (commandName === 'cvar') {
-    const sub = interaction.options.getSubcommand();
-    const characters = loadCharacters();
-    const { error, char: charEntry } = resolveChar(
-      interaction.user.id,
-      interaction.options.getString('character'),
-      characters,
-    );
-    if (error) return interaction.reply({ content: `❌ ${error}`, ephemeral: true });
-    charOverlay.ensureOverlay(charEntry);
-
-    if (sub === 'set') {
-      const name = interaction.options.getString('name').trim();
-      const value = interaction.options.getString('value');
-      const existed = Object.prototype.hasOwnProperty.call(charEntry.overlay.cvars, name.toLowerCase());
-      const result = charOverlay.setCvar(charEntry, name, value);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      // Show what {{name}} resolves to right now so the user can sanity-check.
-      const resolved = resolveVariable(name, charEntry);
-      const resolvedLine = (resolved !== undefined && String(resolved) !== value)
-        ? `\nResolves to: \`${resolved}\``
-        : '';
-      return interaction.reply({
-        content: `${existed ? '✏️ Updated' : '✅ Created'} cvar **${name.toLowerCase()}** = \`${value}\` on **${charEntry.data.name}**.${resolvedLine}\nUse it in \`/roll\` like \`{{${name.toLowerCase()}}}\`.`,
-        ephemeral: true,
-      });
-    }
-
-    if (sub === 'list') {
-      const cvars = charOverlay.listCvars(charEntry);
-      const entries = Object.entries(cvars).sort(([a], [b]) => a.localeCompare(b));
-      const userLines = entries.length === 0
-        ? ['*No cvars set on this character yet. Use `/cvar set` to create one.*']
-        : entries.map(([n, v]) => `• \`{{${n}}}\` → \`${v}\``);
-      const builtinGroups = [
-        '**Core:** `{{level}}` `{{name}}` `{{ac}}` `{{hp}}` `{{maxhp}}` `{{speed}}` `{{hero}}` `{{classdc}}`',
-        '**Ability mods:** `{{str}}` `{{dex}}` `{{con}}` `{{int}}` `{{wis}}` `{{cha}}` `{{key}}`',
-        '**Saves & Perception:** `{{fort}}` `{{ref}}` `{{will}}` `{{perception}}`',
-        '**Skill totals:** `{{athletics}}` `{{stealth}}` `{{deception}}` `{{arcana}}` … (any of the 16)',
-        '**Skill rank only:** `{{rank.athletics}}` etc.',
-        '**Counters:** `{{counter.<name>}}` (current) and `{{counter.<name>.max}}`',
-      ];
-      const embed = new EmbedBuilder()
-        .setColor(0x7289DA)
-        .setTitle(`🔧 ${charEntry.data.name} — cvars (${entries.length}/50)`)
-        .setDescription(userLines.join('\n'))
-        .addFields({ name: 'Built-in variables (always available)', value: builtinGroups.join('\n') })
-        .setFooter({ text: 'Use {{name}} inside any /roll expression. User cvars override built-ins.' });
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    if (sub === 'show') {
-      const name = interaction.options.getString('name').trim().toLowerCase();
-      const cvarValue = charOverlay.getCvar(charEntry, name);
-      const resolved = resolveVariable(name, charEntry);
-      if (cvarValue === undefined && resolved === undefined) {
-        return interaction.reply({ content: `❌ \`{{${name}}}\` is not a defined cvar or built-in on **${charEntry.data.name}**.`, ephemeral: true });
-      }
-      const lines = [];
-      if (cvarValue !== undefined) lines.push(`Cvar value: \`${cvarValue}\``);
-      else lines.push(`Built-in variable on **${charEntry.data.name}**.`);
-      if (resolved !== undefined) lines.push(`Resolves to: **${resolved}**`);
-      return interaction.reply({ content: `\`{{${name}}}\`\n${lines.join('\n')}`, ephemeral: true });
-    }
-
-    if (sub === 'delete') {
-      const name = interaction.options.getString('name').trim().toLowerCase();
-      const result = charOverlay.deleteCvar(charEntry, name);
-      if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
-      await saveCharacters(characters);
-      return interaction.reply({ content: `🗑️ Deleted cvar **${name}** on **${charEntry.data.name}**.`, ephemeral: true });
-    }
-
-    return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });
+    await cvarCmd.execute(interaction);
   }
 
   // ─── /cc ─────────────────────────────────────────────────────────
