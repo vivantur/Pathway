@@ -9,6 +9,9 @@ Pathway now runs from `Pathwayv2`. Treat the old root bot files and folders as l
 - Root start command: `npm start`
 - Root deploy commands: `npm run deploy` and `npm run deploy:guild`
 
+Root `index.js` and `deploy.js` may exist as compatibility launchers only. Do
+not put bot logic there.
+
 ## Active Source Layout
 
 ```text
@@ -26,7 +29,7 @@ For deeper architecture details, use `Pathwayv2/CLAUDE.md` and `Pathwayv2/HANDOF
 
 ## Cleanup Guidance
 
-Do not add new code to the old root `index.js`, `deploy.js`, `commands/`, `systems/`, `utils/`, or `parsers/`. Those belonged to the v1 layout.
+Do not add bot logic to the root `index.js`, `deploy.js`, `commands/`, `systems/`, `utils/`, or `parsers/`. Those belonged to the v1 layout; the root entry files are only host compatibility launchers.
 
 CI validates `Pathwayv2`, so the old root bot files can be removed after confirming the deployment uses `npm start`.
 

@@ -15,6 +15,8 @@ npm run deploy:guild # node Pathwayv2/src/deploy.js --guild
 ```
 
 The old root bot files and folders are legacy only and should not be used for new work.
+Root `index.js` and `deploy.js` are tiny compatibility launchers for hosts that
+still call those old paths; both immediately hand off to `Pathwayv2`.
 
 ## Setup
 
