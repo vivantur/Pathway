@@ -8,7 +8,7 @@ on:
 
 jobs:
   check:
-    name: Syntax & dependency check
+    name: Pathwayv2 syntax check
     runs-on: ubuntu-latest
 
     steps:
@@ -24,31 +24,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # node --check parses the file for syntax errors without executing it.
-      # This catches crashes-on-startup without needing a running bot or Discord token.
-      - name: Syntax check — index.js
-        run: node --check index.js
-
-      - name: Syntax check — deploy.js
-        run: node --check deploy.js
-
-      - name: Syntax check — systems/
+      - name: Syntax check - Pathwayv2 entry points
         run: |
-          for f in systems/*.js; do
+          node --check Pathwayv2/src/index.js
+          node --check Pathwayv2/src/deploy.js
+
+      - name: Syntax check - Pathwayv2 source
+        shell: bash
+        run: |
+          find Pathwayv2/src -name '*.js' -print0 | while IFS= read -r -d '' f; do
             echo "Checking $f"
             node --check "$f"
           done
 
-      - name: Syntax check — commands/
+      - name: Syntax check - Pathwayv2 scripts
+        shell: bash
         run: |
-          for f in commands/*.js; do
-            echo "Checking $f"
-            node --check "$f"
-          done
-
-      - name: Syntax check — utils/
-        run: |
-          for f in utils/*.js; do
+          find Pathwayv2/supabase Pathwayv2/tools -name '*.js' -print0 | while IFS= read -r -d '' f; do
             echo "Checking $f"
             node --check "$f"
           done
