@@ -1,6 +1,6 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 mid-extraction. 83 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+**Status as of this handoff**: Phase 3 mid-extraction. 84 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` still hosts the unextracted commands and remains the entry point. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -74,7 +74,7 @@ Migrations applied to both **prod** (`cmmwirlrvqmjqbydlqks`) and **develop** (`n
 - `20260524200000` through `20260524200700` (8 files) — REPLICA IDENTITY FULL + publication membership for every user-state table
 - `20260430120000_align_user_ids_with_auth.sql` — modified to be idempotent (wrapped in `DO $$ IF EXISTS pg_tables ... END $$` blocks)
 
-### Phase 3 — Command extraction (in progress: 83 slash command entries)
+### Phase 3 — Command extraction (in progress: 84 slash command entries)
 
 Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `execute(interaction)` has `.length === 1`):
 
@@ -145,8 +145,9 @@ Extracted to `src/commands/<name>/` with the zero-ctx pattern (every command's `
 | `/attack` | 3.59 | command | Character weapon attack roll with MAP, effects, damage, reactions, and encounter HP |
 | `/m` | 3.60 | router | Monster umbrella alias router shared by dispatch and autocomplete |
 | `/i` | 3.61 | command, combatV2Actors | Player combat v2 actions: join, attacks, HP/temp HP, reactions, checks, and spell casting |
+| `/init` | 3.62 | command | Combat tracker start/view/turn/add/remove/effect/end/recovery/delay flows |
 
-**Cumulative index.js shrinkage**: 19,500 → **7,274** lines (−12,226 lines through Phase 3).
+**Cumulative index.js shrinkage**: 19,500 → **5,662** lines (−13,838 lines through Phase 3).
 
 ### Helpers mined to permanent homes
 
