@@ -2306,13 +2306,20 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'bag') {
           const sub = interaction.options.getSubcommand(false);
-          if (sub === 'add' && focused.name === 'item') {
+          if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          } else if (sub === 'add' && focused.name === 'item') {
             // Suggest from the full item database
             suggestions = pick(itemDatabase.map(i => i.name));
           } else if (sub === 'remove' && focused.name === 'item') {
-            // Suggest only from the user's own bag contents in that category (if they've picked one)
+            // Suggest only from the selected character's bag contents in that category (if they've picked one)
             const bags = loadBags();
-            const userBag = bags[interaction.user.id];
+            const characters = loadCharacters();
+            const resolved = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+            const bagKey = resolved.error ? null : bagState.makeBagKey(interaction.user.id, resolved.charKey);
+            const userBag = bagKey ? bags[bagKey] : null;
             const cat = interaction.options.getString('category');
             const names = [];
             if (userBag?.categories) {
@@ -2327,7 +2334,10 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(names);
           } else if ((sub === 'remove' || sub === 'removecategory') && focused.name === 'category') {
             const bags = loadBags();
-            const userBag = bags[interaction.user.id];
+            const characters = loadCharacters();
+            const resolved = resolveChar(interaction.user.id, interaction.options.getString('character'), characters);
+            const bagKey = resolved.error ? null : bagState.makeBagKey(interaction.user.id, resolved.charKey);
+            const userBag = bagKey ? bags[bagKey] : null;
             suggestions = pick(Object.keys(userBag?.categories ?? {}));
           }
         }

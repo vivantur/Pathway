@@ -892,20 +892,27 @@ const itemaddCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 const bagCommand = new SlashCommandBuilder()
   .setName('bag')
-  .setDescription('Manage your inventory bag (shared across characters).')
-  .addSubcommand(s => s.setName('view').setDescription('Show everything in your bag.'))
+  .setDescription('Manage a character inventory bag.')
+  .addSubcommand(s => s.setName('view').setDescription('Show everything in a character bag.')
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('rename').setDescription('Give your bag a custom name.')
-    .addStringOption(o => o.setName('name').setDescription('New bag name').setRequired(true)))
+    .addStringOption(o => o.setName('name').setDescription('New bag name').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('add').setDescription('Add an item to the bag.')
     .addStringOption(o => o.setName('category').setDescription('Category (e.g. Weapons, Consumables, Gear)').setRequired(true))
     .addStringOption(o => o.setName('item').setDescription('Item name').setRequired(true))
-    .addIntegerOption(o => o.setName('qty').setDescription('Quantity (default: 1)').setRequired(false).setMinValue(1)))
+    .addIntegerOption(o => o.setName('qty').setDescription('Quantity (default: 1)').setRequired(false).setMinValue(1))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('remove').setDescription('Remove an item from the bag.')
     .addStringOption(o => o.setName('category').setDescription('Category the item is in').setRequired(true))
     .addStringOption(o => o.setName('item').setDescription('Item name').setRequired(true))
-    .addIntegerOption(o => o.setName('qty').setDescription('Quantity to remove (omit to remove whole stack)').setRequired(false).setMinValue(1)))
+    .addIntegerOption(o => o.setName('qty').setDescription('Quantity to remove (omit to remove whole stack)').setRequired(false).setMinValue(1))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
   .addSubcommand(s => s.setName('removecategory').setDescription('Remove an entire category from the bag.')
-    .addStringOption(o => o.setName('category').setDescription('Category to remove').setRequired(true)));
+    .addStringOption(o => o.setName('category').setDescription('Category to remove').setRequired(true))
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)))
+  .addSubcommand(s => s.setName('clear').setDescription('Clear all items from a character bag.')
+    .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /gold

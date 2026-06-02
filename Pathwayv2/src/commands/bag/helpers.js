@@ -1,11 +1,11 @@
 const { EmbedBuilder } = require('discord.js');
 const { itemDatabase } = require('../../reference/databases');
 
-function getOrCreateBag(bags, userId) {
-  if (!bags[userId]) {
-    bags[userId] = { bagName: 'Bag 1', categories: {} };
+function getOrCreateBag(bags, bagKey, characterName = null) {
+  if (!bags[bagKey]) {
+    bags[bagKey] = { bagName: characterName ? `${characterName}'s Bag` : 'Bag 1', categories: {} };
   }
-  return bags[userId];
+  return bags[bagKey];
 }
 
 // ── Bag entry helpers ─────────────────────────────────────────────────────────

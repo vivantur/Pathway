@@ -14,22 +14,35 @@ async function saveBags(bags) {
   await bagState.saveAll(bags);
 }
 
+function resolveCharacterBag(interaction, bags) {
+  const userId = interaction.user.id;
+  const characters = characterState.getAll();
+  const nameArg = interaction.options.getString('character');
+  const resolved = characterState.resolveChar(userId, nameArg, characters);
+  if (resolved.error) return { error: resolved.error };
+
+  const { charKey, char: charEntry } = resolved;
+  const character = charEntry.data ?? charEntry;
+  const characterName = character?.name ?? charEntry.name ?? 'Character';
+  const bagKey = bagState.makeBagKey(userId, charKey);
+  return {
+    charKey,
+    character,
+    characterName,
+    bagKey,
+    userBag: getOrCreateBag(bags, bagKey, characterName),
+  };
+}
+
 async function execute(interaction) {
   const sub = interaction.options.getSubcommand();
-  const userId = interaction.user.id;
   const bags = bagState.getAll();
-  const userBag = getOrCreateBag(bags, userId);
+  const resolvedBag = resolveCharacterBag(interaction, bags);
+  if (resolvedBag.error) return interaction.reply({ content: resolvedBag.error, ephemeral: true });
+
+  const { character, characterName, userBag } = resolvedBag;
 
   if (sub === 'view') {
-    let character = null;
-    try {
-      const characters = characterState.getAll();
-      const nameArg = interaction.options.getString('character');
-      const resolved = characterState.resolveChar(userId, nameArg, characters);
-      if (!resolved.error) character = resolved.character;
-    } catch {
-      // Encumbrance is optional; the bag can render without a character.
-    }
     return interaction.reply({ embeds: [buildBagEmbed(userBag, character)] });
   }
 
@@ -37,7 +50,7 @@ async function execute(interaction) {
     const newName = interaction.options.getString('name');
     userBag.bagName = newName;
     await saveBags(bags);
-    return interaction.reply({ content: `✅ Bag renamed to **${newName}**!`, ephemeral: true });
+    return interaction.reply({ content: `✅ **${characterName}**'s bag renamed to **${newName}**!`, ephemeral: true });
   }
 
   if (sub === 'add') {
@@ -80,7 +93,10 @@ async function execute(interaction) {
 
     const tag = data ? '' : ' *(homebrew)*';
     const qtyLabel = qty > 1 ? ` x${qty}` : '';
-    return interaction.reply({ content: `✅ Added **${displayName}**${qtyLabel}${tag} to **${category}**!`, ephemeral: true });
+    return interaction.reply({
+      content: `✅ Added **${displayName}**${qtyLabel}${tag} to **${characterName}**'s **${category}** bag category!`,
+      ephemeral: true,
+    });
   }
 
   if (sub === 'remove') {
@@ -88,7 +104,7 @@ async function execute(interaction) {
     const itemInput = interaction.options.getString('item').trim();
     const qty = interaction.options.getInteger('qty') ?? null;
     if (!userBag.categories[category]) {
-      return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in your bag.`, ephemeral: true });
+      return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in **${characterName}**'s bag.`, ephemeral: true });
     }
 
     const bucket = userBag.categories[category];
@@ -96,7 +112,9 @@ async function execute(interaction) {
       const entry = normalizeBagEntry(raw);
       return entry && entry.name.toLowerCase() === itemInput.toLowerCase();
     });
-    if (idx === -1) return interaction.reply({ content: `❌ **${itemInput}** not found in **${category}**.`, ephemeral: true });
+    if (idx === -1) {
+      return interaction.reply({ content: `❌ **${itemInput}** not found in **${characterName}**'s **${category}** category.`, ephemeral: true });
+    }
 
     const existing = normalizeBagEntry(bucket[idx]);
     if (qty == null || qty >= existing.qty) {
@@ -110,23 +128,26 @@ async function execute(interaction) {
 
     const removedQty = qty == null ? existing.qty : Math.min(qty, existing.qty);
     const qtyLabel = removedQty > 1 ? ` x${removedQty}` : '';
-    return interaction.reply({ content: `✅ Removed **${existing.name}**${qtyLabel} from **${category}**!`, ephemeral: true });
+    return interaction.reply({
+      content: `✅ Removed **${existing.name}**${qtyLabel} from **${characterName}**'s **${category}** category!`,
+      ephemeral: true,
+    });
   }
 
   if (sub === 'removecategory') {
     const category = interaction.options.getString('category').trim();
     if (!userBag.categories[category]) {
-      return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist.`, ephemeral: true });
+      return interaction.reply({ content: `❌ Category **"${category}"** doesn't exist in **${characterName}**'s bag.`, ephemeral: true });
     }
     delete userBag.categories[category];
     await saveBags(bags);
-    return interaction.reply({ content: `🗑️ Removed category **${category}** from your bag.`, ephemeral: true });
+    return interaction.reply({ content: `🗑️ Removed category **${category}** from **${characterName}**'s bag.`, ephemeral: true });
   }
 
   if (sub === 'clear') {
     userBag.categories = {};
     await saveBags(bags);
-    return interaction.reply({ content: '🗑️ Your bag has been cleared!', ephemeral: true });
+    return interaction.reply({ content: `🗑️ **${characterName}**'s bag has been cleared!`, ephemeral: true });
   }
 
   return interaction.reply({ content: '❌ Unknown subcommand.', ephemeral: true });

@@ -19,7 +19,6 @@
 
 const { getSupabase } = require('../lib/supabase');
 const { _recordSyncSuccess, _recordSyncFailure } = require('../lib/syncTracker');
-const { buildDiscordToUserMap } = require('../lib/userMap');
 
 // ── In-memory cache ────────────────────────────────────────────────────────
 let _cache = null;
@@ -30,6 +29,25 @@ let _userIdToDiscordId = {};
 let _discordIdToUserId = {};
 // Coalesce bag_items refreshes per user_id within the same tick.
 const _pendingUserRefresh = new Set();
+const LEGACY_BAG_CHAR_KEY = '__legacy__';
+
+function makeBagKey(discordId, charKey = LEGACY_BAG_CHAR_KEY) {
+  return `${discordId}:${charKey || LEGACY_BAG_CHAR_KEY}`;
+}
+
+function parseBagKey(rawKey) {
+  const key = String(rawKey ?? '');
+  const match = key.match(/^(\d+)(?::(.+))?$/);
+  if (!match) return null;
+  return {
+    discordId: match[1],
+    charKey: match[2] || LEGACY_BAG_CHAR_KEY,
+  };
+}
+
+function _refreshKey(userId, charKey = LEGACY_BAG_CHAR_KEY) {
+  return `${userId}:${charKey || LEGACY_BAG_CHAR_KEY}`;
+}
 
 function _ensureCache() {
   if (_cache === null) _cache = {};
@@ -98,13 +116,14 @@ async function resolveItemNames(sb, names) {
   return { itemIdByNameLower, homebrewIdByNameLower };
 }
 
-function buildBagItemRows(userId, entries, itemIdByNameLower, homebrewIdByNameLower) {
+function buildBagItemRows(userId, charKey, entries, itemIdByNameLower, homebrewIdByNameLower) {
   return entries.map(e => {
     const nl        = e.name.toLowerCase();
     const itemId    = itemIdByNameLower[nl]     ?? null;
     const homebrewId = homebrewIdByNameLower[nl] ?? null;
     return {
       user_id:      userId,
+      char_key:     charKey || LEGACY_BAG_CHAR_KEY,
       category:     e.category,
       item_id:      itemId,
       homebrew_id:  homebrewId,
@@ -116,27 +135,31 @@ function buildBagItemRows(userId, entries, itemIdByNameLower, homebrewIdByNameLo
   });
 }
 
-async function syncBagToSupabase(discordId, userBag) {
+async function syncBagToSupabase(bagKey, userBag) {
   try {
     const sb = getSupabase();
     if (!sb) return;
+    const parsed = parseBagKey(bagKey);
+    if (!parsed) return;
+    const { discordId, charKey } = parsed;
     const { data: userRow } = await sb.from('users').select('id').eq('discord_id', discordId).single();
     if (!userRow) return;
     const userId = userRow.id;
 
     await sb.from('bags').upsert({
       user_id:    userId,
+      char_key:   charKey,
       bag_name:   userBag.bagName ?? 'Bag 1',
       categories: {},   // deprecated; kept empty for schema compat during cutover
-    }, { onConflict: 'user_id' });
+    }, { onConflict: 'user_id,char_key' });
 
     const entries = flattenBagEntries(userBag);
-    await sb.from('bag_items').delete().eq('user_id', userId);
+    await sb.from('bag_items').delete().eq('user_id', userId).eq('char_key', charKey);
 
     if (entries.length > 0) {
       const { itemIdByNameLower, homebrewIdByNameLower } =
         await resolveItemNames(sb, entries.map(e => e.name));
-      const rows = buildBagItemRows(userId, entries, itemIdByNameLower, homebrewIdByNameLower);
+      const rows = buildBagItemRows(userId, charKey, entries, itemIdByNameLower, homebrewIdByNameLower);
       const { error } = await sb.from('bag_items').insert(rows);
       if (error) throw error;
     }
@@ -144,7 +167,7 @@ async function syncBagToSupabase(discordId, userBag) {
     // Update cache so reads immediately reflect the change. (Without this,
     // the cache would only get the change after Realtime delivers the
     // INSERT/DELETE events — a small race window.)
-    _ensureCache()[discordId] = userBag;
+    _ensureCache()[makeBagKey(discordId, charKey)] = userBag;
   } catch (err) {
     console.error('[Supabase] bag sync failed:', err.message);
   }
@@ -154,55 +177,9 @@ async function syncAllBagsToSupabase(bags) {
   try {
     const sb = getSupabase();
     if (!sb || !bags) return;
-    const discordIds = Object.keys(bags).filter(k => /^\d+$/.test(k));
-    if (discordIds.length === 0) return;
-    const userMap = await buildDiscordToUserMap(sb, discordIds);
-
-    const bagUpserts = [];
-    for (const [discordId, userBag] of Object.entries(bags)) {
-      const userId = userMap[discordId];
-      if (!userId || !userBag) continue;
-      bagUpserts.push({ user_id: userId, bag_name: userBag.bagName ?? 'Bag 1', categories: {} });
-    }
-    if (bagUpserts.length === 0) return;
-    const { error: bagErr } = await sb.from('bags').upsert(bagUpserts, { onConflict: 'user_id' });
-    if (bagErr) throw bagErr;
-
-    const allEntries = [];
-    const affectedUserIds = [];
-    for (const [discordId, userBag] of Object.entries(bags)) {
-      const userId = userMap[discordId];
-      if (!userId || !userBag) continue;
-      affectedUserIds.push(userId);
-      const flat = flattenBagEntries(userBag);
-      for (const e of flat) allEntries.push({ ...e, userId });
-    }
-
-    if (affectedUserIds.length > 0) {
-      const { error: delErr } = await sb.from('bag_items').delete().in('user_id', affectedUserIds);
-      if (delErr) throw delErr;
-    }
-
-    if (allEntries.length > 0) {
-      const allNames = [...new Set(allEntries.map(e => e.name))];
-      const { itemIdByNameLower, homebrewIdByNameLower } = await resolveItemNames(sb, allNames);
-
-      const rows = [];
-      for (const e of allEntries) {
-        const nameLower = e.name.toLowerCase();
-        rows.push({
-          user_id:      e.userId,
-          category:     e.category,
-          display_name: e.name,
-          quantity:     e.qty,
-          sort_order:   e.sortOrder,
-          item_id:      itemIdByNameLower[nameLower] ?? null,
-          homebrew_id:  homebrewIdByNameLower[nameLower] ?? null,
-          custom_name:  (!itemIdByNameLower[nameLower] && !homebrewIdByNameLower[nameLower]) ? e.name : null,
-        });
-      }
-      const { error: insErr } = await sb.from('bag_items').insert(rows);
-      if (insErr) throw insErr;
+    for (const [bagKey, userBag] of Object.entries(bags)) {
+      if (!userBag || !parseBagKey(bagKey)) continue;
+      await syncBagToSupabase(bagKey, userBag);
     }
 
     _recordSyncSuccess();
@@ -263,17 +240,19 @@ function _applyBagsEvent(payload) {
       const row = payload.old;
       const discordId = _userIdToDiscordId[row.user_id];
       if (!discordId) return;
-      delete cache[discordId];
-      console.log(`[state/bags:realtime meta] - ${discordId}`);
+      const bagKey = makeBagKey(discordId, row.char_key);
+      delete cache[bagKey];
+      console.log(`[state/bags:realtime meta] - ${bagKey}`);
       return;
     }
 
     const row = payload.new;
     const discordId = _userIdToDiscordId[row.user_id];
     if (!discordId) return;
-    if (!cache[discordId]) cache[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories: {} };
-    else cache[discordId].bagName = row.bag_name ?? 'Bag 1';
-    console.log(`[state/bags:realtime meta] ${event === 'INSERT' ? '+' : '~'} ${discordId} (bagName)`);
+    const bagKey = makeBagKey(discordId, row.char_key);
+    if (!cache[bagKey]) cache[bagKey] = { bagName: row.bag_name ?? 'Bag 1', categories: {} };
+    else cache[bagKey].bagName = row.bag_name ?? 'Bag 1';
+    console.log(`[state/bags:realtime meta] ${event === 'INSERT' ? '+' : '~'} ${bagKey} (bagName)`);
   } catch (e) {
     console.error('[state/bags:realtime meta] handler error:', e.message);
   }
@@ -284,8 +263,9 @@ function _applyBagItemsEvent(payload) {
     // Find the user_id on whichever row is present (INSERT/UPDATE have .new,
     // DELETE has .old with REPLICA IDENTITY FULL).
     const userId = payload.new?.user_id ?? payload.old?.user_id;
+    const charKey = payload.new?.char_key ?? payload.old?.char_key ?? LEGACY_BAG_CHAR_KEY;
     if (!userId) return;
-    _scheduleUserRefresh(userId);
+    _scheduleUserRefresh(userId, charKey);
   } catch (e) {
     console.error('[state/bags:realtime items] handler error:', e.message);
   }
@@ -294,18 +274,19 @@ function _applyBagItemsEvent(payload) {
 // Coalesce bursts of bag_items events for the same user into a single
 // Supabase fetch. setImmediate schedules onto the NEXT tick — any events
 // dispatched in the current tick merge into one refresh.
-function _scheduleUserRefresh(userId) {
-  if (_pendingUserRefresh.has(userId)) return;
-  _pendingUserRefresh.add(userId);
+function _scheduleUserRefresh(userId, charKey = LEGACY_BAG_CHAR_KEY) {
+  const key = _refreshKey(userId, charKey);
+  if (_pendingUserRefresh.has(key)) return;
+  _pendingUserRefresh.add(key);
   setImmediate(() => {
-    _pendingUserRefresh.delete(userId);
-    _refreshUserBagItems(userId).catch(err => {
-      console.error('[state/bags:realtime] refresh failed for user', userId, '-', err.message);
+    _pendingUserRefresh.delete(key);
+    _refreshUserBagItems(userId, charKey).catch(err => {
+      console.error('[state/bags:realtime] refresh failed for bag', key, '-', err.message);
     });
   });
 }
 
-async function _refreshUserBagItems(userId) {
+async function _refreshUserBagItems(userId, charKey = LEGACY_BAG_CHAR_KEY) {
   const sb = getSupabase();
   if (!sb) return;
   const discordId = _userIdToDiscordId[userId];
@@ -315,6 +296,7 @@ async function _refreshUserBagItems(userId) {
     .from('bag_items')
     .select('category, display_name, quantity, sort_order')
     .eq('user_id', userId)
+    .eq('char_key', charKey)
     .order('sort_order', { ascending: true });
   if (error) {
     console.error('[state/bags:realtime] refetch failed for user', discordId, '-', error.message);
@@ -329,9 +311,10 @@ async function _refreshUserBagItems(userId) {
   }
 
   const cache = _ensureCache();
-  if (!cache[discordId]) cache[discordId] = { bagName: 'Bag 1', categories };
-  else cache[discordId].categories = categories;
-  console.log(`[state/bags:realtime items] ~ ${discordId} (${items?.length ?? 0} items)`);
+  const bagKey = makeBagKey(discordId, charKey);
+  if (!cache[bagKey]) cache[bagKey] = { bagName: 'Bag 1', categories };
+  else cache[bagKey].categories = categories;
+  console.log(`[state/bags:realtime items] ~ ${bagKey} (${items?.length ?? 0} items)`);
 }
 
 // ── Restore ────────────────────────────────────────────────────────────────
@@ -345,12 +328,12 @@ async function restore(sb, { bySupabaseId, byDiscordId }, diskBags = {}) {
 
   const { data: bagRows, error: bagErr } = await sb
     .from('bags')
-    .select('user_id, bag_name');
+    .select('user_id, char_key, bag_name');
   if (bagErr) throw bagErr;
 
   const { data: bagItemRows, error: biErr } = await sb
     .from('bag_items')
-    .select('user_id, category, display_name, quantity, sort_order')
+    .select('user_id, char_key, category, display_name, quantity, sort_order')
     .order('sort_order', { ascending: true });
   if (biErr) throw biErr;
 
@@ -360,11 +343,12 @@ async function restore(sb, { bySupabaseId, byDiscordId }, diskBags = {}) {
   const cache = _ensureCache();
   Object.assign(cache, diskBags);
 
-  // Index bag_items by user_id
-  const itemsByUserId = {};
+  // Index bag_items by user_id + char_key.
+  const itemsByBag = {};
   for (const item of bagItemRows ?? []) {
-    if (!itemsByUserId[item.user_id]) itemsByUserId[item.user_id] = [];
-    itemsByUserId[item.user_id].push(item);
+    const bagRef = _refreshKey(item.user_id, item.char_key);
+    if (!itemsByBag[bagRef]) itemsByBag[bagRef] = [];
+    itemsByBag[bagRef].push(item);
   }
 
   // Pull Supabase rows in (Supabase wins on conflict)
@@ -372,36 +356,43 @@ async function restore(sb, { bySupabaseId, byDiscordId }, diskBags = {}) {
   for (const row of bagRows ?? []) {
     const discordId = bySupabaseId[row.user_id];
     if (!discordId) continue;
-    bagsInSupabase.add(discordId);
+    const charKey = row.char_key || LEGACY_BAG_CHAR_KEY;
+    const bagKey = makeBagKey(discordId, charKey);
+    bagsInSupabase.add(bagKey);
 
     const categories = {};
-    for (const item of itemsByUserId[row.user_id] ?? []) {
+    for (const item of itemsByBag[_refreshKey(row.user_id, charKey)] ?? []) {
       const cat = item.category ?? 'General';
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push({ name: item.display_name, qty: item.quantity ?? 1 });
     }
-    cache[discordId] = { bagName: row.bag_name ?? 'Bag 1', categories };
+    cache[bagKey] = { bagName: row.bag_name ?? 'Bag 1', categories };
   }
 
   // Backfill disk-only bags into Supabase.
   let backfilled = 0;
-  for (const [discordId, userBag] of Object.entries(diskBags)) {
-    if (bagsInSupabase.has(discordId)) continue;
+  for (const [rawKey, userBag] of Object.entries(diskBags)) {
+    const parsed = parseBagKey(rawKey);
+    if (!parsed) continue;
+    const { discordId, charKey } = parsed;
+    const bagKey = makeBagKey(discordId, charKey);
+    if (bagsInSupabase.has(bagKey)) continue;
     const supabaseUserId = byDiscordId[discordId];
     if (!supabaseUserId) continue;
 
     const { error: uErr } = await sb.from('bags').upsert({
       user_id:    supabaseUserId,
+      char_key:   charKey,
       bag_name:   userBag.bagName ?? 'Bag 1',
       categories: {},
-    }, { onConflict: 'user_id' });
+    }, { onConflict: 'user_id,char_key' });
     if (uErr) { console.error(`[Supabase] bag backfill failed for ${discordId}:`, uErr.message); continue; }
 
     const entries = flattenBagEntries(userBag);
     if (entries.length > 0) {
       const { itemIdByNameLower, homebrewIdByNameLower } =
         await resolveItemNames(sb, entries.map(e => e.name));
-      const rows = buildBagItemRows(supabaseUserId, entries, itemIdByNameLower, homebrewIdByNameLower);
+      const rows = buildBagItemRows(supabaseUserId, charKey, entries, itemIdByNameLower, homebrewIdByNameLower);
       const { error: biUErr } = await sb.from('bag_items').insert(rows);
       if (biUErr) console.error(`[Supabase] bag_items backfill failed for ${discordId}:`, biUErr.message);
     }
@@ -436,4 +427,7 @@ module.exports = {
   flattenBagEntries,
   resolveItemNames,
   buildBagItemRows,
+  makeBagKey,
+  parseBagKey,
+  LEGACY_BAG_CHAR_KEY,
 };
