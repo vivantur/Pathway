@@ -25,7 +25,9 @@ function loreKey(name) {
   const cleaned = String(name ?? '')
     .trim()
     .replace(/^lore\s*[:\-]?\s*/i, '')
+    .replace(/^lore[_\s-]+/i, '')
     .replace(/\s+lore$/i, '')
+    .replace(/[_\s-]+lore$/i, '')
     .trim();
   return _customKey(`${cleaned} Lore`);
 }
@@ -36,7 +38,10 @@ function loreTopicLabel(name) {
   const cleaned = String(name ?? '')
     .trim()
     .replace(/^lore\s*[:\-]?\s*/i, '')
+    .replace(/^lore[_\s-]+/i, '')
     .replace(/\s+lore$/i, '')
+    .replace(/[_\s-]+lore$/i, '')
+    .replace(/[_-]+/g, ' ')
     .trim();
   return cleaned.replace(/\b\w/g, c => c.toUpperCase());
 }

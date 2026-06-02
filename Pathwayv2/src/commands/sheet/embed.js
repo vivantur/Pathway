@@ -142,7 +142,9 @@ function buildSheetEmbed(charEntry) {
   // Collect all skills the character might have: base keys plus override keys
   const skillKeys = new Set([
     ...Object.keys(skillMap),
-    ...Object.keys(skillOverrides).filter(k => skillMap[k.toLowerCase()]).map(k => k.toLowerCase()),
+    ...Object.keys(skillOverrides)
+      .filter(k => skillMap[k.toLowerCase()] && !isLoreProficiencyKey(k))
+      .map(k => k.toLowerCase()),
   ]);
   for (const skill of skillKeys) {
     const override = skillOverrides[skill] ?? null;
