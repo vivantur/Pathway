@@ -692,6 +692,7 @@ module.exports = {
   // Weapons derivation (Phase 3.5 — merges Pathbuilder weapons, Pathway-web
   // custom attacks, and bot-added attacks into a single list).
   getCharacterWeapons,
+  normalizePathwayCustomAttacks: _normalizePathwayCustomAttacks,
   splitCharacterDamage: _splitCharacterDamage,
 
   // Character resolution (Phase 3.3 — formerly in index.js, used in 87+

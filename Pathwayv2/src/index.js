@@ -74,6 +74,7 @@ const {
 const sheetCmd         = require('./commands/sheet/command');
 const hpCmd            = require('./commands/hp/command');
 const notesCmd         = require('./commands/notes/command');
+const { NOTE_CATEGORIES, truncateNote } = require('./commands/notes/notebook');
 const featsCmd         = require('./commands/feats/command');
 const abilitiesCmd     = require('./commands/abilities/command');
 const descriptionCmd   = require('./commands/description/command');

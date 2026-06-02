@@ -5,6 +5,8 @@ const downtimeState = require('../../state/downtime');
 const downtime = require('../downtime');
 const { fmt, calcProfNum } = require('../../lib/format');
 
+const { resolveChar } = characterState;
+
 function loadCharacters() {
   return characterState.getAll();
 }

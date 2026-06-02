@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 const characterState = require('../../state/characters');
 const downtimeState = require('../../state/downtime');

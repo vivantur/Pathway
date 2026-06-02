@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const {
   EmbedBuilder,
+  AttachmentBuilder,
   ActionRowBuilder,
   ModalBuilder,
   TextInputBuilder,
@@ -12,12 +13,23 @@ const {
   saveImportedCharacter,
 } = require('../../lib/pathwayWebClient');
 const { syncActiveCharacterToSupabase } = require('../../lib/storage');
+const { calcProfNum } = require('../../lib/format');
+const {
+  computeCharSkillModifier,
+  calcCharacterProfNum,
+  calcEditableProfNum,
+  characterProfValue,
+  editableProfValue,
+} = require('../../rules/pf2eMath');
+const { loreKey, loreTopicLabel, isLoreProficiencyKey } = require('../../rules/lore');
 
 const {
   computeCharMaxHp,
   getCharacterHp,
   setCharacterHp,
   resolveChar,
+  getCharacterWeapons,
+  normalizePathwayCustomAttacks,
 } = characterState;
 
 const PATHWAY_CHARACTER_ID_RE =
@@ -109,6 +121,87 @@ function parseCharacterUpdateRef(raw) {
     };
   }
   return { type: 'pathbuilder', id: pathbuilderRef.id };
+}
+
+function getBlankCharacterTemplate() {
+  const template = {
+    name: '',
+    class: '',
+    dualClass: null,
+    level: 1,
+    ancestry: '',
+    heritage: '',
+    background: '',
+    deity: '',
+    abilities: {
+      str: 10,
+      dex: 10,
+      con: 10,
+      int: 10,
+      wis: 10,
+      cha: 10,
+    },
+    attributes: {
+      ancestryhp: 0,
+      classhp: 0,
+      bonushp: 0,
+      bonushpPerLevel: 0,
+      speed: 25,
+      perception: 0,
+    },
+    stats: {
+      acTotal: 10,
+      classDC: 0,
+    },
+    proficiencies: {
+      classDC: 0,
+      perception: 0,
+      fortitude: 0,
+      reflex: 0,
+      will: 0,
+      unarmored: 0,
+      light: 0,
+      medium: 0,
+      heavy: 0,
+      unarmed: 0,
+      simple: 0,
+      martial: 0,
+      advanced: 0,
+      arcana: 0,
+      crafting: 0,
+      deception: 0,
+      diplomacy: 0,
+      intimidation: 0,
+      medicine: 0,
+      nature: 0,
+      occultism: 0,
+      performance: 0,
+      religion: 0,
+      society: 0,
+      stealth: 0,
+      survival: 0,
+      thievery: 0,
+    },
+    lores: [],
+    languages: [],
+    senses: [],
+    weapons: [],
+    armor: [],
+    feats: [],
+    spells: [],
+    focus: {
+      pool: 0,
+      current: 0,
+    },
+  };
+
+  return [
+    '// Pathway blank character template',
+    '// Fill in the fields you know, then upload this file with /char add file.',
+    '// Proficiency values use PF2e bonuses: 0 untrained, 2 trained, 4 expert, 6 master, 8 legendary.',
+    JSON.stringify(template, null, 2),
+    '',
+  ].join('\n');
 }
 
 async function fetchPathbuilderCharacter(id) {

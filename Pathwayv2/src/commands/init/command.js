@@ -7,8 +7,10 @@ const combatV2Render = require('../../rules/combatV2/render');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 const { computeCharPerception } = require('../../rules/characterChecks');
 const { getPreset, listPresets } = require('../../rules/effects');
+const { sumEffectModifiers } = require('../../rules/combatEffects');
 const { fmt, calcProfNum } = require('../../lib/format');
 const { rollD20Plus, rollDamageExpression, determineDegreeOfSuccess, calculateMap } = require('../../lib/dice');
+const { rollCompoundExpression } = require('../../lib/spellDamage');
 const { combatDeathPayload, combatDyingSuffix } = require('../../discord/rollEmbeds');
 const encounters = require('../encounters');
 const { scaleCompanion } = require('../companion/helpers');
@@ -16,7 +18,12 @@ const { findMonster } = require('../monster/lookup');
 const { buildMonsterEmbed } = require('../monster/embed');
 const { getMonsterEdit, applyMonsterEdits, applyMonsterAttackLibrary } = require('../monster/helpers');
 const { normalizeAttackForRolling } = require('../monsterattack/command');
-const { updateSummary, clearSummary } = require('./legacySummary');
+const {
+  buildInitiativeEmbed,
+  buildInitiativeButtons,
+  updateSummary,
+  clearSummary,
+} = require('./legacySummary');
 const { updateCombatV2Summary, clearCombatV2Summary } = require('./combatV2Summary');
 const {
   combatV2Initiative,
@@ -56,6 +63,21 @@ function firstNumber(...values) {
     if (Number.isFinite(number)) return number;
   }
   return null;
+}
+
+function formatEffectContributions(effects, kind) {
+  const contributions = effects
+    .filter(e => {
+      if (kind === 'attack') return e.attackBonus !== 0;
+      if (kind === 'damage') return e.damageBonus !== 0;
+      if (kind === 'ac') return e.acBonus !== 0;
+      return false;
+    })
+    .map(e => {
+      const val = kind === 'attack' ? e.attackBonus : kind === 'damage' ? e.damageBonus : e.acBonus;
+      return `${e.name} ${fmt(val)}`;
+    });
+  return contributions.length > 0 ? ` (${contributions.join(', ')})` : '';
 }
 
 function combatV2NormalizeMonsterSaves(core = {}, summary = {}, rich = null) {
