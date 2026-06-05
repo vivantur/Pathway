@@ -2292,6 +2292,15 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           }
         }
+        else if (cmd === 'skill' || cmd === 'initiative') {
+          if (focused.name === 'skill') {
+            suggestions = pick(Object.values(skillDatabase).map(s => s.name).filter(Boolean));
+          } else if (focused.name === 'character') {
+            const characters = loadCharacters();
+            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
+            suggestions = pick(own);
+          }
+        }
         else if (cmd === 'class') {
           if (focused.name === 'class') {
             suggestions = pick(Object.values(classDatabase).map(c => c.name).filter(Boolean));

@@ -10,6 +10,7 @@ const {
   formatRollBreakdown,
   rollFallbackFiles,
 } = require('../../discord/rollEmbeds');
+const { findSkill } = require('../skillinfo/lookup');
 
 const SKILL_ABILITIES = {
   acrobatics: 'dex',
@@ -56,13 +57,13 @@ async function execute(interaction) {
   let profNum;
   let sourceLabel;
 
-  const skillKey = String(skillOverride ?? '').toLowerCase();
+  const { skill, key: skillKey } = findSkill(skillOverride);
   if (skillKey && skillKey !== 'perception' && SKILL_ABILITIES[skillKey]) {
     const abilKey = SKILL_ABILITIES[skillKey];
     const abilMod = Math.floor(((ab[abilKey] ?? 10) - 10) / 2);
     profNum = prof[skillKey] ?? 0;
     modifier = abilMod + calcCharacterProfNum(c, profNum, lvl);
-    sourceLabel = titleCase(skillOverride);
+    sourceLabel = skill?.name ?? titleCase(skillKey);
   } else {
     modifier = computeCharPerception(charEntry);
     profNum = prof.perception ?? 0;
