@@ -379,7 +379,7 @@ async function execute(interaction) {
       // No target / manual resolution: show the rolled damage and scaling hints
       finalDamage = damageResult.total;
       description += `**Damage**${headerSuffix}\n${damageResult.display} = **${finalDamage}**\n`;
-      if (saveType && !target) {
+      if (saveType && (!target || !saveDegreeApplied)) {
         const scaleNote = spell.saveIsBasic
           ? `Basic save: crit-success 0 · success ${Math.floor(finalDamage / 2)} · failure ${finalDamage} · crit-fail ${finalDamage * 2}`
           : `Non-basic save — see spell text for effect per degree`;

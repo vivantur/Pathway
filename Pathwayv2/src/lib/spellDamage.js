@@ -84,6 +84,177 @@ function findApplicableFixedLevel(levels, castRank) {
   return best;
 }
 
+const DAMAGE_TYPES = [
+  'acid',
+  'bleed',
+  'bludgeoning',
+  'chaotic',
+  'cold',
+  'electricity',
+  'evil',
+  'fire',
+  'force',
+  'good',
+  'lawful',
+  'mental',
+  'negative',
+  'piercing',
+  'poison',
+  'positive',
+  'precision',
+  'slashing',
+  'sonic',
+  'spirit',
+  'vitality',
+  'void',
+];
+
+function cleanDiceExpression(expr) {
+  if (!expr) return null;
+  const tokens = String(expr).match(/[+\-]?\s*\d*d\d+|[+\-]\s*\d+/gi);
+  if (!tokens || !tokens.some((token) => /d/i.test(token))) return null;
+  return tokens.map((token) => token.replace(/\s+/g, '')).join(' ');
+}
+
+function extractDiceExpression(text) {
+  if (!text) return null;
+  const m = String(text).match(/\b(\d*d\d+(?:\s*[+\-]\s*(?:\d*d\d+|\d+))*)\b/i);
+  return m ? cleanDiceExpression(m[1]) : null;
+}
+
+function inferDamageType(text) {
+  if (!text) return null;
+  const normalized = String(text).toLowerCase().replace(/[_-]+/g, ' ');
+  const beforeDamage = normalized.match(/\b\d*d\d+(?:\s*[+\-]\s*(?:\d*d\d+|\d+))*\s+([a-z][a-z\s]+?)\s+damage\b/i);
+
+  if (beforeDamage) {
+    const words = beforeDamage[1].trim().split(/\s+/);
+    const found = DAMAGE_TYPES.find((type) => words.includes(type));
+    if (found) return found;
+  }
+
+  return DAMAGE_TYPES.find((type) => normalized.includes(`${type} damage`)) || null;
+}
+
+function extractDamageFromText(text) {
+  if (!text) return null;
+  const source = String(text);
+  const damagePhrase = source.match(/\b(?:deals?|dealing|takes?|taking|suffers?)\s+(\d*d\d+(?:\s*[+\-]\s*(?:\d*d\d+|\d+))*)\s+([a-z][a-z\s-]+?)\s+damage\b/i)
+    || source.match(/\b(\d*d\d+(?:\s*[+\-]\s*(?:\d*d\d+|\d+))*)\s+([a-z][a-z\s-]+?)\s+damage\b/i);
+
+  if (damagePhrase) {
+    return {
+      diceExpr: cleanDiceExpression(damagePhrase[1]),
+      damageType: inferDamageType(damagePhrase[0]),
+      extra: '',
+    };
+  }
+
+  const diceExpr = extractDiceExpression(source);
+  if (!diceExpr) return null;
+
+  return {
+    diceExpr,
+    damageType: inferDamageType(source),
+    extra: '',
+  };
+}
+
+function extractDamageFromObject(dmg) {
+  if (!dmg || typeof dmg !== 'object') return null;
+  const candidates = [
+    dmg.base,
+    dmg.dice,
+    dmg.formula,
+    dmg.expression,
+    dmg.value,
+    dmg.damage,
+    dmg.text,
+    dmg.label,
+  ];
+
+  for (const candidate of candidates) {
+    const diceExpr = extractDiceExpression(candidate);
+    if (!diceExpr) continue;
+    return {
+      diceExpr,
+      damageType: dmg.type || dmg.damageType || inferDamageType(candidate),
+      extra: dmg.extra || dmg.notes || '',
+    };
+  }
+
+  return null;
+}
+
+function extractDamageFromRolls(rolls) {
+  if (!Array.isArray(rolls)) return null;
+
+  for (const roll of rolls) {
+    if (!roll) continue;
+    const kind = String(roll.type || roll.kind || roll.category || roll.stat || '').toLowerCase();
+    const joined = [
+      roll.formula,
+      roll.expression,
+      roll.dice,
+      roll.damage,
+      roll.value,
+      roll.text,
+      roll.label,
+      roll.name,
+    ].filter(Boolean).join(' ');
+    const kindIsDamageType = DAMAGE_TYPES.includes(kind);
+    const looksLikeDamage = !kind || kind.includes('damage') || kindIsDamageType || /damage/i.test(joined);
+    if (!looksLikeDamage) continue;
+
+    const diceExpr = extractDiceExpression(joined);
+    if (!diceExpr) continue;
+
+    return {
+      diceExpr,
+      damageType: roll.damageType || roll.typeLabel || (kindIsDamageType ? kind : null) || inferDamageType(joined),
+      extra: roll.extra || roll.notes || '',
+    };
+  }
+
+  return null;
+}
+
+function extractSpellDamageSource(spell) {
+  if (!spell) return null;
+
+  if (spell.damageBase) {
+    const diceExpr = extractDiceExpression(spell.damageBase);
+    if (diceExpr) {
+      return {
+        diceExpr,
+        damageType: spell.damageType || inferDamageType(`${spell.damageBase} ${spell.damageType || ''}`),
+        extra: spell.damageExtra || '',
+      };
+    }
+  }
+
+  if (spell.damage && typeof spell.damage === 'object') {
+    const fromObject = extractDamageFromObject(spell.damage);
+    if (fromObject) return fromObject;
+  }
+
+  if (spell.damage && typeof spell.damage === 'string') {
+    const fromText = extractDamageFromText(spell.damage);
+    if (fromText) {
+      return {
+        ...fromText,
+        damageType: spell.damageType || fromText.damageType,
+        extra: spell.damageExtra || fromText.extra,
+      };
+    }
+  }
+
+  const fromRolls = extractDamageFromRolls(spell.rolls);
+  if (fromRolls) return fromRolls;
+
+  return extractDamageFromText(spell.description || spell.summary || spell.effect || '');
+}
+
 /**
  * Main resolver. Given a spell entry and the rank it's being cast at,
  * returns a fully assembled damage expression along with metadata.
@@ -119,6 +290,13 @@ function resolveSpellDamage(spell, castRank) {
       damageType = dmg.type || null;
       extra = dmg.extra || '';
     }
+  }
+
+  const baseDamage = extractSpellDamageSource(spell);
+  if (baseDamage) {
+    diceExpr = baseDamage.diceExpr;
+    damageType = baseDamage.damageType || null;
+    extra = baseDamage.extra || '';
   }
 
   let heightenedNote = '';
