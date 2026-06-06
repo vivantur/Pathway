@@ -133,7 +133,9 @@ function inferDamageType(text) {
     if (found) return found;
   }
 
-  return DAMAGE_TYPES.find((type) => normalized.includes(`${type} damage`)) || null;
+  return DAMAGE_TYPES.find((type) => normalized.includes(`${type} damage`))
+    || DAMAGE_TYPES.find((type) => new RegExp(`\\b${type}\\b`, 'i').test(normalized))
+    || null;
 }
 
 function extractDamageFromText(text) {
@@ -303,6 +305,21 @@ function resolveSpellDamage(spell, castRank) {
   let fixedReplaced = false;
 
   const ht = spell.heightening;
+  const isCantrip = spell.type === 'Cantrip'
+    || (Array.isArray(spell.traits) && spell.traits.some((trait) => String(trait).toLowerCase() === 'cantrip'));
+  if (!diceExpr && isCantrip && ht?.damage_bonus) {
+    const fallbackDamage = cleanDiceExpression(ht.damage_bonus);
+    if (fallbackDamage) {
+      diceExpr = fallbackDamage;
+      damageType = damageType || inferDamageType([
+        spell.damageType,
+        Array.isArray(spell.traits) ? spell.traits.join(' ') : '',
+        spell.description,
+        ht.extra_text,
+      ].filter(Boolean).join(' '));
+    }
+  }
+
   if (ht && typeof ht === 'object') {
     if (ht.type === 'per_rank') {
       const step = ht.step || 1;
