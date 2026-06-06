@@ -2,7 +2,7 @@
 // Pure XP arithmetic + the award mutation. No Discord, no I/O.
 //
 // `awardXp` is the central mutation for /xp award: it adds amount to the
-// character's XP, appends to the bot-managed log (capped at 20 entries),
+// character's XP, appends to the bot-managed log (capped at 100 entries),
 // and reports whether the change crossed a 1000-XP threshold so the
 // caller can show a level-up embed.
 
@@ -21,9 +21,11 @@ function awardXp(charEntry, amount, reason, awarderId) {
     reason: reason ?? null,
     at: new Date().toISOString(),
     awardedBy: awarderId ?? null,
+    oldXp,
+    newXp,
   });
-  // Cap the log at 20 entries to keep the row from ballooning over a campaign.
-  while (charEntry.xpLog.length > 20) charEntry.xpLog.shift();
+  // Keep a useful campaign audit trail without letting the row grow forever.
+  while (charEntry.xpLog.length > 100) charEntry.xpLog.shift();
   // Leveled up if we crossed a 1000-XP threshold this award.
   const cap = xpToNextLevel();
   const oldLevels = Math.floor(oldXp / cap);
