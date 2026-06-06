@@ -2380,9 +2380,9 @@ client.on('interactionCreate', async (interaction) => {
             const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
             suggestions = pick(own);
           } else if (focused.name === 'name') {
-            // Autocomplete skill name from PF2e's standard 16 skills
+            // Autocomplete Perception + PF2e's standard 16 skills.
             const pfSkills = [
-              'Acrobatics','Arcana','Athletics','Crafting','Deception','Diplomacy',
+              'Perception','Acrobatics','Arcana','Athletics','Crafting','Deception','Diplomacy',
               'Intimidation','Medicine','Nature','Occultism','Performance','Religion',
               'Society','Stealth','Survival','Thievery',
             ];
@@ -2438,15 +2438,6 @@ client.on('interactionCreate', async (interaction) => {
             if (ce) {
               suggestions = pick([...new Set(getCharacterWeapons(ce).map(w => w.display ?? w.name).filter(Boolean))]);
             }
-          }
-        }
-        else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'skill') {
-          if (focused.name === 'character') {
-            const characters = loadCharacters();
-            const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
-            suggestions = pick(own);
-          } else if (focused.name === 'name') {
-            suggestions = pick(Object.values(COMBAT_V2_SKILL_LABELS));
           }
         }
         else if (cmd === 'char' && interaction.options.getSubcommand(false) === 'feat') {
