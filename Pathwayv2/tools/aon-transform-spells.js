@@ -113,6 +113,16 @@ function extractDamage(raw) {
   return null;
 }
 
+function inferDamageType(raw) {
+  const traits = asArray(raw.trait).map(t => String(t).toLowerCase());
+  const known = [
+    'acid', 'bleed', 'bludgeoning', 'cold', 'electricity', 'fire', 'force',
+    'mental', 'negative', 'piercing', 'poison', 'positive', 'precision',
+    'slashing', 'sonic', 'spirit', 'vitality', 'void',
+  ];
+  return known.find(type => traits.includes(type)) || null;
+}
+
 // Parse heightening from AoN's `heighten` array + the markdown text.
 // AoN's `heighten` field tells us the structure:
 //   ["+1"]                           → per-rank: heightened by 1 each rank
@@ -212,6 +222,16 @@ function transformSpell(raw) {
   // Bot's normalizeSpell also re-checks via traits — both work.
   const traditions = asArray(raw.tradition);
   const traits = asArray(raw.trait);
+  const heightening = extractHeightening(raw);
+  let damage = extractDamage(raw);
+
+  if (!damage && String(spellTypeFor(raw)).toLowerCase() === 'cantrip' && heightening?.damage_bonus) {
+    damage = {
+      base: heightening.damage_bonus,
+      type: inferDamageType(raw),
+      extra: '',
+    };
+  }
 
   return {
     name: raw.name,
@@ -227,8 +247,8 @@ function transformSpell(raw) {
     target: null,                // AoN doesn't expose target as a structured field; description has it
     duration: null,              // same — only in markdown
     defense: deriveDefense(raw),
-    damage: extractDamage(raw),
-    heightening: extractHeightening(raw),
+    damage,
+    heightening,
     description: extractDescription(raw),
     summary: raw.summary || null,
     source: raw.primary_source_raw || raw.primary_source || (Array.isArray(raw.source) ? raw.source[0] : raw.source) || null,

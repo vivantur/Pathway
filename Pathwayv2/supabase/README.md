@@ -48,3 +48,21 @@ The importer replaces only official, non-companion monster rows. Homebrew
 monsters and companions are left alone. The full bot creature object is stored
 in `monster_metadata`, including AoN URL, art URL, description, attacks,
 abilities, spellcasting, defenses, skills, languages, and source.
+
+## AoN Spells
+
+Fetch fresh Archives of Nethys spell documents, transform them into the bot's
+spell metadata shape, then import official spells into the Supabase `spells`
+table:
+
+```powershell
+node tools/aon-fetch.js spell --force
+node tools/aon-transform-spells.js
+node supabase/import-aon-spells.js --dry-run
+node supabase/import-aon-spells.js --replace-official
+```
+
+The importer replaces official AoN spell rows and leaves homebrew spells alone.
+Damage is stored in `spell_metadata.damage` when the transformer can extract it,
+and cantrip base damage can fall back to heightening damage when AoN's raw entry
+does not expose a separate base damage field.
