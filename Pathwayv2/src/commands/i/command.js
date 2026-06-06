@@ -489,6 +489,14 @@ async function execute(interaction) {
           }
         } else if (target) {
           lines.push(`${target.name}'s save bonus is not recorded.`);
+          if (damageRoll) {
+            lines.push(`Damage if applicable: ${damageRoll.display} = **${damageRoll.total}**${damageType ? ` ${damageType}` : ''}`);
+            if (spell.saveIsBasic) {
+              lines.push(`*Basic save: crit-success 0 · success ${Math.floor(damageRoll.total / 2)} · failure ${damageRoll.total} · crit-fail ${damageRoll.total * 2}*`);
+            } else {
+              lines.push('*Non-basic save — see spell text for effect per degree.*');
+            }
+          }
         } else if (damageRoll) {
           lines.push(`Damage if applicable: ${damageRoll.display} = **${damageRoll.total}**${damageType ? ` ${damageType}` : ''}`);
         }
