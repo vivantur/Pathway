@@ -24,6 +24,58 @@ const {
 } = require('../../state/characters');
 const { loreKey, loreTopicLabel, isLoreProficiencyKey } = require('../../rules/lore');
 
+function cleanDefenseLabel(value) {
+  return String(value ?? '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatDefenseEntry(entry) {
+  if (entry == null || entry === '') return null;
+  if (typeof entry === 'string') return cleanDefenseLabel(entry);
+  if (typeof entry === 'number') return String(entry);
+  if (Array.isArray(entry)) return entry.map(formatDefenseEntry).filter(Boolean).join(' ');
+  if (typeof entry === 'object') {
+    const type = entry.type ?? entry.name ?? entry.damageType ?? entry.kind ?? entry.label;
+    const value = entry.value ?? entry.amount ?? entry.number ?? entry.total;
+    const note = entry.note ?? entry.notes ?? entry.exceptions ?? entry.exception;
+    if (type || value !== undefined) {
+      return [cleanDefenseLabel(type), value, note ? `(${cleanDefenseLabel(note)})` : null]
+        .filter(v => v !== null && v !== undefined && v !== '')
+        .join(' ');
+    }
+    return Object.entries(entry)
+      .filter(([, v]) => v !== false && v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => {
+        const label = cleanDefenseLabel(k);
+        if (v === true) return label;
+        if (typeof v === 'object') return formatDefenseEntry({ type: label, ...v });
+        return `${label} ${cleanDefenseLabel(v)}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+  }
+  return null;
+}
+
+function formatDefenseList(...sources) {
+  const parts = [];
+  for (const source of sources) {
+    if (source == null || source === '') continue;
+    if (typeof source === 'string') {
+      parts.push(...source.split(',').map(cleanDefenseLabel).filter(Boolean));
+    } else if (Array.isArray(source)) {
+      parts.push(...source.map(formatDefenseEntry).filter(Boolean));
+    } else if (typeof source === 'object') {
+      const formatted = formatDefenseEntry(source);
+      if (formatted) parts.push(...formatted.split(',').map(cleanDefenseLabel).filter(Boolean));
+    }
+  }
+  const unique = [...new Set(parts.filter(Boolean))];
+  return unique.length ? unique.join(', ') : 'none';
+}
+
 // As of Phase 3.5 buildSheetEmbed has no `deps` parameter — every helper it
 // needs comes through an explicit import. This is the target state for all
 // extracted commands and embeds: imports declare exact dependencies, no
@@ -243,6 +295,21 @@ function buildSheetEmbed(charEntry) {
   const speedValue = statOverrides.speed ?? c.stats?.speed ?? ((c.attributes?.speed ?? 30) + (c.attributes?.speedBonus ?? 0));
   const sizeDisplay = c.size ?? c.stats?.size ?? '';
   const spellStatsLine = spellAttackBonus !== null ? ` · **Spell Attack** ${fmt(spellAttackBonus)} · **Spell DC** ${spellDC}` : '';
+  const defenseData = c.defenses ?? c.defense ?? c.stats?.defenses ?? {};
+  const weaknessText = formatDefenseList(
+    charEntry.edits?.weaknesses, c.weaknesses, c.weakness, defenseData.weaknesses, defenseData.weakness,
+  );
+  const resistanceText = formatDefenseList(
+    charEntry.edits?.resistances, c.resistances, c.resistance, defenseData.resistances, defenseData.resistance,
+  );
+  const immunityText = formatDefenseList(
+    charEntry.edits?.immunities, c.immunities, c.immunity, defenseData.immunities, defenseData.immunity,
+  );
+  const savingThrowsText =
+    `**Fort** ${fmt(fortMod)} \u00B7 **Reflex** ${fmt(reflexMod)} \u00B7 **Will** ${fmt(willMod)}\n` +
+    `**Weaknesses:** ${weaknessText}\n` +
+    `**Resistances:** ${resistanceText}\n` +
+    `**Immunities:** ${immunityText}`;
   const embed = new EmbedBuilder()
     .setColor(0x7289DA)
     .setTitle(c.name)
@@ -262,6 +329,7 @@ function buildSheetEmbed(charEntry) {
       ...(overriddenFields.length > 0 ? [{ name: '⚠️ Manual overrides', value: `The following values are manually set (ignoring JSON): ${overriddenFields.join(', ')}. Use \`/char stat field:<field> action:clear\` to revert.`, inline: false }] : []),
     )
     .setFooter({ text: `Pathfinder 2e · Saved ${charEntry.saved?.split('T')[0] ?? ''}` });
+  if (embed.data.fields?.[2]) embed.data.fields[2].value = savingThrowsText;
   if (charEntry.art) embed.setThumbnail(charEntry.art);
   return embed;
 }
