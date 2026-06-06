@@ -1,11 +1,9 @@
-const { calcCharacterProfNum } = require('./pf2eMath');
+const { computeCharSkillModifier } = require('./pf2eMath');
 
 function computeCharPerception(charEntry) {
-  const c = charEntry.data;
-  const lvl = c.level ?? 1;
-  const wisMod = Math.floor(((c.abilities?.wis ?? 10) - 10) / 2);
-  const profNum = c.proficiencies?.perception ?? 0;
-  return wisMod + calcCharacterProfNum(c, profNum, lvl);
+  const statOverride = charEntry.edits?.stats?.perception;
+  if (typeof statOverride === 'number') return statOverride;
+  return computeCharSkillModifier(charEntry, 'perception')?.modifier ?? 0;
 }
 
 module.exports = {

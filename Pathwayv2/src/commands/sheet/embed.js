@@ -17,7 +17,7 @@ const { fmt, getMod, calcProfNum, xpToNextLevel } = require('../../lib/format');
 const {
   calcCharacterProfNum, calcEditableProfNum,
   characterProfValue, canonicalProfValue, editableProfValue,
-  profIconForValue,
+  profIconForValue, computeCharSkillModifier,
 } = require('../../rules/pf2eMath');
 const {
   getCharacterHp, getCharacterXp, getCharacterWeapons,
@@ -69,7 +69,8 @@ function buildSheetEmbed(charEntry) {
   const hpDisplay = (currentHP < totalHP) ? `${currentHP}/${totalHP}` : `${totalHP}`;
   const wisMod = Math.floor(((ab.wis ?? 10) - 10) / 2);
   const percComputed = wisMod + calcCharacterProfNum(c, prof.perception ?? 0, lvl);
-  const percMod = statOverridesPre.perception ?? percComputed;
+  const percSkill = computeCharSkillModifier(charEntry, 'perception');
+  const percMod = statOverridesPre.perception ?? percSkill?.modifier ?? percComputed;
   const overriddenFields = [];
   let spellAttackBonus = null, spellDC = null;
   if (c.spellCasters?.length > 0) {
@@ -98,6 +99,7 @@ function buildSheetEmbed(charEntry) {
   // Stat overrides: user-set values via /char stat. These win over the
   // computed values from c.data. Track which ones are overridden so we
   // can mark them in the display with a warning.
+  const skillOverrides = (charEntry.edits?.skillOverrides) ?? {};
   const statOverrides = charEntry.edits?.stats ?? {};
   const fortModComputed   = Math.floor(((ab.con ?? 10) - 10) / 2) + calcCharacterProfNum(c, prof.fortitude ?? 0, lvl);
   const reflexModComputed = Math.floor(((ab.dex ?? 10) - 10) / 2) + calcCharacterProfNum(c, prof.reflex ?? 0, lvl);
@@ -109,7 +111,7 @@ function buildSheetEmbed(charEntry) {
   if (statOverrides.reflex !== undefined)    overriddenFields.push('Ref');
   if (statOverrides.will !== undefined)      overriddenFields.push('Will');
   if (statOverrides.hpMax !== undefined)     overriddenFields.push('HP max');
-  if (statOverrides.perception !== undefined) overriddenFields.push('Perception');
+  if (statOverrides.perception !== undefined || skillOverrides.perception !== undefined) overriddenFields.push('Perception');
   if (statOverrides.ac !== undefined)        overriddenFields.push('AC');
   if (statOverrides.speed !== undefined)     overriddenFields.push('Speed');
   // Identity / misc / ability / money overrides
@@ -137,7 +139,6 @@ function buildSheetEmbed(charEntry) {
   //   { rank: 2|4|6|8 } — proficiency rank (trained/expert/master/legendary)
   //   { total: N }      — flat bonus override (ignores rank math)
   // If both present, total wins.
-  const skillOverrides = (charEntry.edits?.skillOverrides) ?? {};
   const trainedSkills = [];
   // Collect all skills the character might have: base keys plus override keys
   const skillKeys = new Set([

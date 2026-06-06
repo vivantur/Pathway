@@ -60,6 +60,7 @@ function profIconForValue(value, { override = false } = {}) {
 // PF2e Remaster: each of the 16 core skills maps to a fixed key ability.
 // This is canonical (from the rulebook), not character-dependent.
 const SKILL_ABIL_MAP = {
+  perception: 'wis',
   acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
   deception: 'cha', diplomacy: 'cha', intimidation: 'cha', medicine: 'wis',
   nature: 'wis', occultism: 'int', performance: 'cha', religion: 'wis',

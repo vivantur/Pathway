@@ -426,6 +426,7 @@ async function execute(interaction) {
       const rankMap = { untrained: 0, trained: 2, expert: 4, master: 6, legendary: 8 };
       {
         const skillLabels = {
+          perception: 'Perception',
           acrobatics: 'Acrobatics', arcana: 'Arcana', athletics: 'Athletics', crafting: 'Crafting',
           deception: 'Deception', diplomacy: 'Diplomacy', intimidation: 'Intimidation', medicine: 'Medicine',
           nature: 'Nature', occultism: 'Occultism', performance: 'Performance', religion: 'Religion',
@@ -588,6 +589,9 @@ async function execute(interaction) {
         if (rankStr?.toLowerCase() === 'untrained' && total === null) {
           delete charEntry.edits.skillOverrides[skillKeyLower];
         } else {
+          if (skillKeyLower === 'perception' && charEntry.edits.stats) {
+            delete charEntry.edits.stats.perception;
+          }
           charEntry.edits.skillOverrides[skillKeyLower] = override;
         }
         saveCharacters(characters);
@@ -603,6 +607,7 @@ async function execute(interaction) {
       }
       const skillKeyLower = skillName.toLowerCase();
       const validSkills = new Set([
+        'perception',
         'acrobatics','arcana','athletics','crafting','deception','diplomacy',
         'intimidation','medicine','nature','occultism','performance','religion',
         'society','stealth','survival','thievery',
@@ -633,6 +638,9 @@ async function execute(interaction) {
       if (rankStr?.toLowerCase() === 'untrained' && total === null) {
         delete charEntry.edits.skillOverrides[skillKeyLower];
       } else {
+        if (skillKeyLower === 'perception' && charEntry.edits.stats) {
+          delete charEntry.edits.stats.perception;
+        }
         charEntry.edits.skillOverrides[skillKeyLower] = override;
       }
 
