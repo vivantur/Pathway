@@ -458,9 +458,8 @@ const mattackCommand = new SlashCommandBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 const rollCommand = new SlashCommandBuilder()
   .setName('roll')
-  .setDescription('Roll dice with snippet expansion (e.g. /roll 1d20+@hylia.athletics).')
-  .addStringOption(o => o.setName('dice').setDescription('Dice expression (supports @snippets and basic math)').setRequired(true))
-  .addStringOption(o => o.setName('character').setDescription('Character whose snippets/portrait to use').setRequired(false).setAutocomplete(true));
+  .setDescription('Roll dice, Avrae-style, without linking to a character.')
+  .addStringOption(o => o.setName('dice').setDescription('Dice expression (supports snippets and basic math)').setRequired(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /skill  /perception  /initiative  /save
@@ -1193,9 +1192,8 @@ const mCommand = new SlashCommandBuilder()
 
 const rCommand = new SlashCommandBuilder()
   .setName('r')
-  .setDescription('Quick alias for /roll. Roll dice with snippet expansion (e.g. /r 1d20+@hylia.athletics).')
-  .addStringOption(o => o.setName('dice').setDescription('Dice expression. Supports @snippets and basic math.').setRequired(true))
-  .addStringOption(o => o.setName('character').setDescription('Character whose snippets/portrait to use.').setRequired(false).setAutocomplete(true));
+  .setDescription('Quick alias for /roll. Roll dice without linking to a character.')
+  .addStringOption(o => o.setName('dice').setDescription('Dice expression. Supports snippets and basic math.').setRequired(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /attack

@@ -59,7 +59,7 @@ const HELP_CATEGORIES = {
     label: 'Rolls',
     blurb: 'Dice rolling, skill checks, saves, and reusable snippets.',
     commands: [
-      { name: '/roll', summary: 'Roll dice with full PF2e expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, iterations (`4#`), and user/server snippets.', options: 'dice, character', example: '/roll dice:1d20+7 adv sneaky 3' },
+      { name: '/roll', summary: 'Roll dice with full expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, and iterations (`4#`).', options: 'dice', example: '/roll dice:1d20+7 adv' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
       { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },

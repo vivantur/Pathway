@@ -1,8 +1,12 @@
 const { EmbedBuilder } = require('discord.js');
 
-const characterState = require('../../state/characters');
 const snippetState = require('../../state/snippets');
 const { rollAdvanced } = require('../../rules/advancedRoll');
+const {
+  PATHWAY_DICE_REF,
+  PATHWAY_DICE_BUFFER,
+  rollFallbackFiles,
+} = require('../../discord/rollEmbeds');
 
 function mergedSnippetsFor(userId, guildId) {
   const personal = snippetState.getAllUser()[userId] ?? {};
@@ -14,16 +18,7 @@ async function execute(interaction) {
   const raw = interaction.options.getString('dice');
   const snippets = mergedSnippetsFor(interaction.user.id, interaction.guildId);
 
-  const charNameArg = interaction.options.getString('character');
-  const characters = characterState.getAll();
-  let charEntry = null;
-  const userChars = characters[interaction.user.id] ?? {};
-  if (Object.keys(userChars).filter(key => !key.startsWith('_')).length > 0) {
-    const resolved = characterState.resolveChar(interaction.user.id, charNameArg, characters);
-    if (!resolved.error) charEntry = resolved.char;
-  }
-
-  const result = rollAdvanced(raw, snippets, charEntry);
+  const result = rollAdvanced(raw, snippets, null);
   if (result.error) return interaction.reply({ content: `\u274c ${result.error}`, ephemeral: true });
 
   const lines = result.iterations.map((iter, index) =>
@@ -43,12 +38,10 @@ async function execute(interaction) {
     .setTitle(`\ud83c\udfb2 ${raw}`)
     .setDescription(description);
 
-  if (charEntry?.art) embed.setThumbnail(charEntry.art);
-  const footerParts = [charEntry?.data?.name ?? charEntry?.name ?? charNameArg ?? interaction.user.username];
-  if (expandedChanged) footerParts.push(`Expanded: ${result.expanded}`);
-  embed.setFooter({ text: footerParts.join(' \u00b7 ') });
+  if (PATHWAY_DICE_BUFFER) embed.setThumbnail(PATHWAY_DICE_REF);
+  if (expandedChanged) embed.setFooter({ text: `Expanded: ${result.expanded}` });
 
-  return interaction.reply({ embeds: [embed] });
+  return interaction.reply({ embeds: [embed], files: rollFallbackFiles(null) });
 }
 
 module.exports = {
