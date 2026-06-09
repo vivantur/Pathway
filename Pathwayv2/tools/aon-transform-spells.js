@@ -104,6 +104,8 @@ function extractDamage(raw) {
     /deals?\s+(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s+([a-z]+)\s+damage/i,
     // Bare "Xd6 fire damage" anywhere
     /(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s+([a-z]+)\s+damage/i,
+    // Variable or contextual damage type: "deals 2d10 damage"
+    /\b(?:deals?|dealing|takes?|taking|suffers?)\s+(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s+damage\b/i,
   ];
 
   for (const re of patterns) {
@@ -111,7 +113,7 @@ function extractDamage(raw) {
     if (m) {
       return {
         base: m[1].replace(/\s+/g, ''),
-        type: m[2].trim().toLowerCase(),
+        type: m[2] ? m[2].trim().toLowerCase() : inferDamageType(raw),
         extra: '',
       };
     }
