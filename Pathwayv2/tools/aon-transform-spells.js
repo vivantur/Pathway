@@ -58,13 +58,19 @@ function extractDescription(raw) {
   let md = raw.markdown
     .replace(/<title[^>]*>[\s\S]*?<\/title>/g, '')
     .replace(/<traits>[\s\S]*?<\/traits>/g, '')
-    .replace(/<column[^>]*>|<\/column>/g, '')
-    .replace(/<row[^>]*>|<\/row>/g, '')
+    .replace(/<\/column>\s*<column[^>]*>/g, ' | ')
+    .replace(/<column[^>]*>/g, '')
+    .replace(/<\/column>/g, '')
+    .replace(/<row[^>]*>/g, '\n')
+    .replace(/<\/row>/g, '\n')
     .replace(/<actions[^/]*\/>/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')   // [text](link) → text
     .replace(/<additional-info>[\s\S]*?<\/additional-info>/g, '')
     .replace(/<summary>([\s\S]*?)<\/summary>/g, '$1')
-    .replace(/<[^>]+>/g, '');                   // strip remaining tags
+    .replace(/<[^>]+>/g, '')                    // strip remaining tags
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n');
 
   // Now split on the "---" separator. Description is between the first and
   // (optional) second separator.

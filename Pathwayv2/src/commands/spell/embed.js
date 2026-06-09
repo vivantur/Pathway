@@ -68,6 +68,50 @@ function normalizeSpell(spell) {
   };
 }
 
+function formatShiningStarlightAttackDescription(description) {
+  const intro = String(description || '').split(/Constellation\s*Attack|ConstellationAttack/i)[0].trim();
+  const rows = [
+    ['Underworld Dragon', 'Volcanic Vents', 'line', 'Reflex', 'fire'],
+    ['Ogre', 'Wild club swing', 'cone', 'Fortitude', 'bludgeoning'],
+    ['Swordswoman', 'Falling blades of light', 'line', 'Reflex', 'piercing'],
+    ['Forest Dragon', 'Swarm of Insects', 'cone', 'Fortitude', 'poison'],
+    ['Sea Dragon', 'Pressurized seawater', 'line', 'Reflex', 'piercing; water trait'],
+    ['Blossom', 'Storming petals and pollen', 'line', 'Fortitude', 'poison, plant, wood'],
+    ['Swallow', 'Wind gust', 'cone', 'Reflex', 'slashing; air'],
+    ['Dog', 'A biting dog', 'line', 'Reflex', 'slashing'],
+    ['Ox', 'A trampling ox', 'line', 'Reflex', 'bludgeoning'],
+    ['Sky Dragon', 'Draconic lightning', 'line', 'Reflex', 'electricity'],
+    ['Sovereign Dragon', 'Psychic roar', 'cone', 'Will', 'mental'],
+    ['Archer', 'Hail of silver arrows', 'cone', 'Reflex', 'piercing'],
+  ];
+
+  return [
+    intro,
+    '**Constellation Attacks**',
+    ...rows.map(([constellation, attack, area, save, traits]) =>
+      `**${constellation}:** ${attack} (${area}, ${save}, ${traits})`
+    ),
+    '',
+    '**Heightened (+1)** The damage increases by 1d10.',
+  ].filter(line => line !== null && line !== undefined).join('\n');
+}
+
+function cleanSpellDescription(spell) {
+  let description = spell.description && spell.description.trim()
+    ? spell.description
+    : '*No description available.*';
+
+  if (/^shining starlight attack$/i.test(String(spell.name || '')) || /Constellation\s*Attack|ConstellationAttack/i.test(description)) {
+    description = formatShiningStarlightAttackDescription(description);
+  }
+
+  return description
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function formatSpellHeightened(heightened, baseLevel = null) {
   if (!heightened) return '';
   if (typeof heightened === 'string') return heightened.trim();
@@ -116,7 +160,7 @@ function buildSpellEmbed(rawSpell) {
   const levelDisplay = isCantrip ? `Cantrip ${spell.level}` : `Spell ${spell.level}`;
   const traditionsDisplay = spell.traditions.length > 0 ? spell.traditions.join(', ') : 'None';
   const traitsDisplay = spell.traits.length > 0 ? spell.traits.join(', ') : null;
-  let description = spell.description && spell.description.trim() ? spell.description : '*No description available.*';
+  let description = cleanSpellDescription(spell);
   if (description.length > 1500) description = description.slice(0, 1500) + '...\n*(description truncated)*';
   const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(spell.name).setDescription(description);
   const levelLine = [`**${levelDisplay}**`, spell.school ?? null].filter(Boolean).join(' · ');
