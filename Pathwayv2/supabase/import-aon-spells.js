@@ -128,10 +128,12 @@ async function main() {
   const withHeighteningDamage = official.filter(spell => spell.heightening?.damage_bonus).length;
   const withSave = official.filter(spell => spell.defense && spell.defense !== 'AC').length;
   const attackRolls = official.filter(spell => spell.defense === 'AC').length;
+  const withDuration = official.filter(spell => spell.duration).length;
 
   console.log(`Prepared ${rows.length} official AoN spells.`);
   console.log(`Damage: ${withDamage} base damage entries; ${withHeighteningDamage} heightening damage entries.`);
   console.log(`Defenses: ${withSave} save spells; ${attackRolls} attack-roll spells.`);
+  console.log(`Duration: ${withDuration} entries.`);
   console.log(`First: ${rows[0]?.name}; Last: ${rows[rows.length - 1]?.name}`);
 
   if (dryRun || !replaceOfficial) {

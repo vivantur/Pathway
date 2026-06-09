@@ -213,6 +213,30 @@ function deriveArea(raw) {
   return raw.area_raw || (Array.isArray(raw.area) && raw.area_type ? `${raw.area[0]}-foot ${raw.area_type[0] || ''}`.trim() : null);
 }
 
+// AoN exposes most spell durations as both seconds and a human-readable
+// `duration_raw`. Keep the readable version for Discord, and fall back to
+// the markdown line for any odd entries that only expose it there.
+function deriveDuration(raw) {
+  if (raw.duration_raw && typeof raw.duration_raw === 'string') {
+    return raw.duration_raw.trim().replace(/\s+/g, ' ');
+  }
+  if (raw.duration !== undefined && raw.duration !== null && raw.duration !== '') {
+    const seconds = Number(raw.duration);
+    if (Number.isFinite(seconds)) {
+      if (seconds === 0) return null;
+      if (seconds % 3600 === 0) return `${seconds / 3600} hour${seconds === 3600 ? '' : 's'}`;
+      if (seconds % 60 === 0) return `${seconds / 60} minute${seconds === 60 ? '' : 's'}`;
+      if (seconds % 6 === 0) return `${seconds / 6} round${seconds === 6 ? '' : 's'}`;
+      return `${seconds} second${seconds === 1 ? '' : 's'}`;
+    }
+    return String(raw.duration).trim().replace(/\s+/g, ' ') || null;
+  }
+
+  const md = raw.markdown || raw.text || '';
+  const match = md.match(/(?:^|\n)\s*\*?\*?Duration\*?\*?\s+([^\n<]+)/i);
+  return match ? match[1].trim().replace(/\s+/g, ' ') : null;
+}
+
 // AoN's component field is an array like ["somatic", "verbal"]. Bot expects
 // a `cast` string, but we'd rather keep it as the action cost text and put
 // components elsewhere. Stick to the action cost string for `cast`.
@@ -251,7 +275,7 @@ function transformSpell(raw) {
     range: raw.range_raw || null,
     area: deriveArea(raw),
     target: null,                // AoN doesn't expose target as a structured field; description has it
-    duration: null,              // same — only in markdown
+    duration: deriveDuration(raw),
     defense: deriveDefense(raw),
     damage,
     heightening,
@@ -286,6 +310,7 @@ async function main() {
   let damageFound = 0;
   let saveDetected = 0;
   let attackDetected = 0;
+  let durationDetected = 0;
   for (const r of raw) {
     const t = transformSpell(r);
     if (!t) { skipped++; continue; }
@@ -293,12 +318,15 @@ async function main() {
     if (t.damage) damageFound++;
     if (t.defense && t.defense !== 'AC') saveDetected++;
     if (t.defense === 'AC') attackDetected++;
+    if (t.duration) durationDetected++;
     if (VERBOSE) console.log(`   ✓ ${t.name} (level ${t.level} ${t.type})`);
   }
   console.log(`✅ Transformed ${transformed.length.toLocaleString()} spells (skipped ${skipped})`);
   console.log(`   • ${damageFound.toLocaleString()} have damage detected`);
   console.log(`   • ${saveDetected.toLocaleString()} have a save defense`);
   console.log(`   • ${attackDetected.toLocaleString()} are attack-roll spells`);
+
+  console.log(`   • ${durationDetected.toLocaleString()} have duration detected`);
 
   // 3. Preserve any existing homebrew. We read the current spells.json (if
   // it exists), filter for custom: true, and merge those on top of the

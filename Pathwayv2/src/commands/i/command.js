@@ -424,6 +424,7 @@ async function execute(interaction) {
       if (spell.range) lines.push(`**Range** ${spell.range}`);
       if (spell.area) lines.push(`**Area** ${spell.area}`);
       if (spell.target) lines.push(`**Target** ${spell.target}`);
+      lines.push(`**Duration** ${spell.duration || 'Instantaneous'}`);
       if (target) lines.push(`**Combat Target** ${target.name}`);
       lines.push('');
 

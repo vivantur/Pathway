@@ -265,7 +265,7 @@ async function execute(interaction) {
   if (spell.range)    description += `**Range** ${spell.range}\n`;
   if (spell.area)     description += `**Area** ${spell.area}\n`;
   if (spell.target)   description += `**Target** ${spell.target}\n`;
-  if (spell.duration) description += `**Duration** ${spell.duration}\n`;
+  description += `**Duration** ${spell.duration || 'Instantaneous'}\n`;
   description += '\n';
 
   // Look up caster's active effects if in encounter

@@ -62,6 +62,7 @@ async function execute(interaction) {
     const lines = [];
     lines.push(`*${spell.type === 'Cantrip' ? `Cantrip ${effectiveLevel}` : spell.type === 'Ability' ? 'Ability' : `Rank ${effectiveLevel} spell`}*`);
     if (target) lines.push(`**Target** ${target.name}`);
+    lines.push(`**Duration** ${spell.duration || 'Instantaneous'}`);
     lines.push('');
     let appliedLine = null;
 

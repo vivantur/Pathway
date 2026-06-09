@@ -173,7 +173,7 @@ function buildSpellEmbed(rawSpell) {
     spell.range    ? `**Range** ${spell.range}`       : null,
     spell.area     ? `**Area** ${spell.area}`         : null,
     spell.target   ? `**Target** ${spell.target}`     : null,
-    spell.duration ? `**Duration** ${spell.duration}` : null,
+    `**Duration** ${spell.duration || 'Instantaneous'}`,
   ].filter(Boolean);
   if (metaLines.length > 0) embed.addFields({ name: 'Meta', value: metaLines.join('\n'), inline: false });
   if (spell.isAttackSpell) {
