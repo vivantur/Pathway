@@ -1419,6 +1419,7 @@ client.once('clientReady', async () => {
 
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
+  return characterState.runWithResolveContext({ guildId: interaction.guildId }, async () => {
   // Cache the Discord username so character writes can auto-create users
   // rows for bot-only users who haven't logged into the web app. The cache
   // itself lives in state/characters now (Phase 3.7).
@@ -2138,7 +2139,7 @@ client.on('interactionCreate', async (interaction) => {
           const skills = ['Perception', 'Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
           suggestions = pick(skills);
         }
-        else if (cmd === 'char' && focused.name === 'character' && interaction.options.getSubcommand(false) === 'active') {
+        else if (cmd === 'char' && focused.name === 'character' && ['active', 'serveractive'].includes(interaction.options.getSubcommand(false))) {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -2986,6 +2987,7 @@ client.on('interactionCreate', async (interaction) => {
     });
   }
 
+  });
 });
 
 client.login(TOKEN);

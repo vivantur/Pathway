@@ -16,6 +16,7 @@ const HELP_CATEGORIES = {
       { name: '/char list', summary: 'List all your saved characters.', example: '/char list' },
       { name: '/char remove', summary: 'Delete a saved character.', options: 'name', example: '/char remove name:Hylia' },
       { name: '/char active', summary: 'Set a default character so you don\'t have to type character: every time.', options: 'character (or action:clear)', example: '/char active character:Hylia' },
+      { name: '/char serveractive', summary: 'Set a default character only for the current Discord server.', options: 'character (or action:clear)', example: '/char serveractive character:Hylia' },
       { name: '/char art', summary: 'Set a portrait URL shown on your character\'s rolls and sheets.', options: 'url, character', example: '/char art url:https://... character:Hylia' },
       { name: '/sheet', summary: 'Display a full character sheet with skills, attacks, and defenses.', options: 'name', example: '/sheet' },
       { name: '/feats', summary: 'Show your character\'s feats in a compact block.', options: 'character', example: '/feats' },

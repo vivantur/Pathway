@@ -15,6 +15,7 @@
 // hydrated from Supabase by this module's restore() but mutated via
 // Realtime by state/companions.
 
+const { AsyncLocalStorage } = require('node:async_hooks');
 const { getSupabase } = require('../lib/supabase');
 const { _trackSync, _recordSyncSuccess, _recordSyncFailure } = require('../lib/syncTracker');
 
@@ -31,6 +32,7 @@ const _pendingEvents = [];
 let _userIdToDiscordId = {};
 // Freshness key: `${discordId}:${charKey}` → row.updated_at
 const _rowUpdatedAt = Object.create(null);
+const _resolveContext = new AsyncLocalStorage();
 
 // ── Username cache ─────────────────────────────────────────────────────────
 // Records Discord usernames captured from interactionCreate. Used by
@@ -54,6 +56,14 @@ function _ensureCache() {
 
 function _freshKey(discordId, charKey) {
   return `${discordId}:${charKey}`;
+}
+
+function runWithResolveContext(context, fn) {
+  return _resolveContext.run(context ?? {}, fn);
+}
+
+function _characterKeys(userChars) {
+  return Object.keys(userChars ?? {}).filter(k => !k.startsWith('_'));
 }
 
 // ── Overlay shape helpers ──────────────────────────────────────────────────
@@ -281,23 +291,27 @@ function getCharacterWeapons(charEntry) {
 // call sites (87 of them in index.js as of Phase 3.3) keep passing the
 // cache explicitly because they were written before this convenience.
 
-function resolveChar(userId, nameArg, characters = null) {
+function resolveChar(userId, nameArg, characters = null, options = {}) {
   if (characters === null) characters = getAll();
-  if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0)
+  if (!characters[userId] || _characterKeys(characters[userId]).length === 0)
     return { error: 'You have no saved characters! Use `/char add` to add one.' };
   let charKey;
   if (!nameArg) {
     // Filter out underscore-prefixed metadata keys (like _activeChar)
-    const keys = Object.keys(characters[userId]).filter(k => !k.startsWith('_'));
+    const keys = _characterKeys(characters[userId]);
     if (keys.length === 1) { charKey = keys[0]; }
     else {
       // Multiple characters — check for an active character setting first.
-      const activeKey = characters[userId]._activeChar;
+      const guildId = options.guildId ?? _resolveContext.getStore()?.guildId ?? null;
+      const serverActiveKey = guildId ? characters[userId]._serverActiveChars?.[guildId] : null;
+      const activeKey = serverActiveKey && characters[userId][serverActiveKey]
+        ? serverActiveKey
+        : characters[userId]._activeChar;
       if (activeKey && characters[userId][activeKey]) {
         charKey = activeKey;
       } else {
         const names = keys.map(k => characters[userId][k].name).join(', ');
-        return { error: `You have multiple characters! Specify one with \`character:<name>\`, or set a default with \`/char active character:<name>\`.\nYour characters: ${names}` };
+        return { error: `You have multiple characters! Specify one with \`character:<name>\`, set a server default with \`/char serveractive character:<name>\`, or set a global default with \`/char active character:<name>\`.\nYour characters: ${names}` };
       }
     }
   } else {
@@ -312,7 +326,7 @@ function resolveChar(userId, nameArg, characters = null) {
     }
   }
   if (!characters[userId][charKey]) {
-    const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
+    const names = _characterKeys(characters[userId]).map(k => characters[userId][k].name).join(', ');
     return { error: `Couldn't find that character. Your characters: ${names}` };
   }
   return { charKey, char: characters[userId][charKey] };
@@ -338,6 +352,35 @@ async function saveActive(discordId, charKey, discordUsername = null) {
   if (charKey && cache[discordId][charKey]) cache[discordId]._activeChar = charKey;
   else delete cache[discordId]._activeChar;
   await syncActiveCharacterToSupabase(discordId, charKey, discordUsername);
+}
+
+// Update a server-scoped active char key. This mirrors Avrae's server active
+// character behavior while preserving the existing global active fallback.
+async function saveServerActive(discordId, guildId, charKey, discordUsername = null) {
+  const cache = _ensureCache();
+  if (!guildId) return { error: '`/char serveractive` only works in a server, not in DMs.' };
+  if (!cache[discordId]) cache[discordId] = {};
+  if (!cache[discordId]._serverActiveChars) cache[discordId]._serverActiveChars = {};
+  const previous = cache[discordId]._serverActiveChars[guildId] ?? null;
+
+  if (charKey && cache[discordId][charKey]) {
+    cache[discordId]._serverActiveChars[guildId] = charKey;
+  } else {
+    delete cache[discordId]._serverActiveChars[guildId];
+    if (Object.keys(cache[discordId]._serverActiveChars).length === 0) {
+      delete cache[discordId]._serverActiveChars;
+    }
+  }
+
+  const synced = await syncServerActiveCharacterToSupabase(discordId, guildId, charKey, discordUsername);
+  if (synced.error) {
+    if (previous) cache[discordId]._serverActiveChars = { ...(cache[discordId]._serverActiveChars ?? {}), [guildId]: previous };
+    else if (cache[discordId]._serverActiveChars) delete cache[discordId]._serverActiveChars[guildId];
+    if (cache[discordId]._serverActiveChars && Object.keys(cache[discordId]._serverActiveChars).length === 0) {
+      delete cache[discordId]._serverActiveChars;
+    }
+  }
+  return synced;
 }
 
 // ── Subscribe (Realtime — call BEFORE restore) ─────────────────────────────
@@ -374,6 +417,12 @@ function _applyEvent(payload) {
       if (cache[discordId]?.[row.char_key]) {
         delete cache[discordId][row.char_key];
         if (cache[discordId]._activeChar === row.char_key) delete cache[discordId]._activeChar;
+        if (cache[discordId]._serverActiveChars) {
+          for (const [guildId, activeKey] of Object.entries(cache[discordId]._serverActiveChars)) {
+            if (activeKey === row.char_key) delete cache[discordId]._serverActiveChars[guildId];
+          }
+          if (Object.keys(cache[discordId]._serverActiveChars).length === 0) delete cache[discordId]._serverActiveChars;
+        }
       }
       delete _rowUpdatedAt[_freshKey(discordId, row.char_key)];
       console.log(`[state/characters:realtime] - ${discordId}:${row.char_key}`);
@@ -391,6 +440,12 @@ function _applyEvent(payload) {
       if (cache[discordId]?.[row.char_key]) {
         delete cache[discordId][row.char_key];
         if (cache[discordId]._activeChar === row.char_key) delete cache[discordId]._activeChar;
+        if (cache[discordId]._serverActiveChars) {
+          for (const [guildId, activeKey] of Object.entries(cache[discordId]._serverActiveChars)) {
+            if (activeKey === row.char_key) delete cache[discordId]._serverActiveChars[guildId];
+          }
+          if (Object.keys(cache[discordId]._serverActiveChars).length === 0) delete cache[discordId]._serverActiveChars;
+        }
       }
       delete _rowUpdatedAt[_freshKey(discordId, row.char_key)];
       console.log(`[state/characters:realtime] - ${discordId}:${row.char_key} (status=${row.status})`);
@@ -487,6 +542,30 @@ async function restore(sb, { bySupabaseId, userRows }) {
     const activeKey = row.active_char_key;
     if (discordId && activeKey && cache[discordId]?.[activeKey]) {
       cache[discordId]._activeChar = activeKey;
+    }
+  }
+
+  // Server-scoped active characters, keyed by Discord guild ID. This lets a
+  // player have different defaults in different servers while keeping their
+  // global active character as a fallback.
+  const userIds = (userRows ?? []).map(row => row.id).filter(Boolean);
+  if (userIds.length > 0) {
+    const { data: serverRows, error: serverErr } = await sb
+      .from('user_guild_active_characters')
+      .select('user_id, discord_guild_id, active_char_key')
+      .in('user_id', userIds);
+    if (serverErr) {
+      console.warn('[Supabase] restore: server active characters unavailable:', serverErr.message);
+    } else {
+      for (const row of serverRows ?? []) {
+        const discordId = _userIdToDiscordId[row.user_id];
+        const guildId = row.discord_guild_id;
+        const activeKey = row.active_char_key;
+        if (!discordId || !guildId || !activeKey || !cache[discordId]?.[activeKey]) continue;
+        if (!cache[discordId]._serverActiveChars) cache[discordId]._serverActiveChars = {};
+        cache[discordId]._serverActiveChars[guildId] = activeKey;
+      }
+      console.log(`[Supabase] restore: loaded ${serverRows?.length ?? 0} server active character settings`);
     }
   }
 
@@ -621,6 +700,50 @@ async function syncActiveCharacterToSupabase(discordId, activeCharKey, discordUs
   }
 }
 
+async function syncServerActiveCharacterToSupabase(discordId, guildId, activeCharKey, discordUsername = null) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !guildId) return {};
+
+    const payload = { discord_id: String(discordId) };
+    if (discordUsername) payload.discord_username = discordUsername;
+
+    const { data: userRow, error: userErr } = await sb
+      .from('users')
+      .upsert(payload, { onConflict: 'discord_id' })
+      .select('id')
+      .single();
+    if (userErr) throw userErr;
+    if (!userRow?.id) return {};
+
+    if (!activeCharKey) {
+      const { error } = await sb
+        .from('user_guild_active_characters')
+        .delete()
+        .eq('user_id', userRow.id)
+        .eq('discord_guild_id', String(guildId));
+      if (error) throw error;
+      _recordSyncSuccess();
+      return {};
+    }
+
+    const { error } = await sb
+      .from('user_guild_active_characters')
+      .upsert({
+        user_id: userRow.id,
+        discord_guild_id: String(guildId),
+        active_char_key: activeCharKey,
+      }, { onConflict: 'user_id,discord_guild_id' });
+    if (error) throw error;
+    _recordSyncSuccess();
+    return {};
+  } catch (err) {
+    _recordSyncFailure();
+    console.error('[Supabase] server active character sync failed:', err.message);
+    return { error: `I couldn't save that server active character yet: ${err.message}` };
+  }
+}
+
 // Pull all active characters for a Discord user from Supabase and merge any
 // that aren't already in the local in-memory characters map. Returns the
 // number of new entries added. Never throws — Supabase failures are silent.
@@ -674,8 +797,10 @@ module.exports = {
   get,
   saveAll,
   saveActive,
+  saveServerActive,
   restore,
   subscribe,
+  runWithResolveContext,
 
   // HP overlay accessors (Phase 3 — moved here from index.js so /hp,
   // /sheet, /rest, /init hp, and the combat tracker all share one source
@@ -714,5 +839,6 @@ module.exports = {
   // Phase 1 sync helpers (still re-exported by the storage barrel)
   syncAllCharactersToSupabase,
   syncActiveCharacterToSupabase,
+  syncServerActiveCharacterToSupabase,
   mergeCharactersFromSupabase,
 };

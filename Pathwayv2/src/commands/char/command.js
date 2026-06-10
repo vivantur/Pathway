@@ -1259,7 +1259,16 @@ async function execute(interaction) {
       delete characters[userId][charKey];
       // If the removed character was the active one, clear that pointer.
       if (characters[userId]._activeChar === charKey) delete characters[userId]._activeChar;
-      saveCharacters(characters);
+      if (characters[userId]._serverActiveChars) {
+        for (const [guildId, activeKey] of Object.entries(characters[userId]._serverActiveChars)) {
+          if (activeKey === charKey) {
+            delete characters[userId]._serverActiveChars[guildId];
+            await characterState.syncServerActiveCharacterToSupabase(userId, guildId, null, interaction.user.username);
+          }
+        }
+        if (Object.keys(characters[userId]._serverActiveChars).length === 0) delete characters[userId]._serverActiveChars;
+      }
+      await saveCharacters(characters);
       await interaction.reply(`✅ **${name}** has been removed.`);
     }
 
@@ -1437,6 +1446,52 @@ async function execute(interaction) {
       await saveCharacters(characters);
       const charName = characters[userId][charKey].name;
       return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
+    }
+
+    else if (sub === 'serveractive') {
+      const userId = interaction.user.id;
+      const guildId = interaction.guildId;
+      if (!guildId) {
+        return interaction.reply({ content: '`/char serveractive` only works in a server, not in DMs.', ephemeral: true });
+      }
+
+      const characters = loadCharacters();
+      if (!characters[userId] || Object.keys(characters[userId]).filter(k => !k.startsWith('_')).length === 0) {
+        return interaction.reply({ content: 'You have no saved characters! Use `/char add` to add one.', ephemeral: true });
+      }
+      const nameArg = interaction.options.getString('character');
+      const action = interaction.options.getString('action');
+
+      if (action === 'clear') {
+        await characterState.saveServerActive(userId, guildId, null, interaction.user.username);
+        return interaction.reply({ content: `Server active character cleared for **${interaction.guild?.name ?? 'this server'}**. Commands will fall back to your global active character.`, ephemeral: true });
+      }
+
+      if (!nameArg) {
+        const activeKey = characters[userId]._serverActiveChars?.[guildId];
+        if (activeKey && characters[userId][activeKey]) {
+          const name = characters[userId][activeKey].name;
+          return interaction.reply({ content: `Server active character for **${interaction.guild?.name ?? 'this server'}**: **${name}**\nUse \`/char serveractive character:<n>\` to change, or \`/char serveractive action:clear\` to clear.`, ephemeral: true });
+        }
+        const globalKey = characters[userId]._activeChar;
+        const globalName = globalKey && characters[userId][globalKey]?.name ? characters[userId][globalKey].name : null;
+        const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
+        return interaction.reply({
+          content: `No server active character set for **${interaction.guild?.name ?? 'this server'}**.${globalName ? `\nGlobal fallback: **${globalName}**.` : ''}\nYour characters: ${names}\nUse \`/char serveractive character:<n>\` to set one.`,
+          ephemeral: true,
+        });
+      }
+
+      const resolved = resolveChar(userId, nameArg, characters, { guildId });
+      if (resolved.error) return interaction.reply({ content: resolved.error, ephemeral: true });
+
+      const saved = await characterState.saveServerActive(userId, guildId, resolved.charKey, interaction.user.username);
+      if (saved.error) return interaction.reply({ content: saved.error, ephemeral: true });
+
+      return interaction.reply({
+        content: `Server active character for **${interaction.guild?.name ?? 'this server'}** set to **${resolved.char.name}**. Commands in this server will default to them when no \`character:\` is specified.`,
+        ephemeral: true,
+      });
     }
 
     else if (sub === 'feat') {
