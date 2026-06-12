@@ -979,6 +979,12 @@ const heroCommand = new SlashCommandBuilder()
     .addIntegerOption(o => o.setName('previous').setDescription('Your original roll total (to compare and keep higher)').setRequired(false))
     .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
+const recoveryCommand = new SlashCommandBuilder()
+  .setName('recovery')
+  .setDescription('Roll an out-of-initiative recovery check for a dying character.')
+  .addStringOption(o => o.setName('character').setDescription('Character name (default: active)').setRequired(false).setAutocomplete(true))
+  .addIntegerOption(o => o.setName('set_dying').setDescription('Set Dying first, then roll (useful outside initiative)').setRequired(false).setMinValue(1).setMaxValue(4));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // /xp
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1655,6 +1661,7 @@ const commands = [
   // Character resources
   hpCommand,
   heroCommand,
+  recoveryCommand,
   xpCommand,
   resourceCommand,
   restCommand,

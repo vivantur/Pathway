@@ -84,6 +84,7 @@ const snippetCmd       = require('./commands/snippet/command');
 const serverSnippetCmd = require('./commands/serversnippet/command');
 const portraitCmd      = require('./commands/portrait/command');
 const heroCmd          = require('./commands/hero/command');
+const recoveryCmd      = require('./commands/recovery/command');
 const ccCmd            = require('./commands/cc/command');
 const cvarCmd          = require('./commands/cvar/command');
 const spellsCmd        = require('./commands/spells/command');
@@ -2088,7 +2089,7 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
-        else if ((cmd === 'hp' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats' || cmd === 'abilities' || cmd === 'description') && focused.name === 'character') {
+        else if ((cmd === 'hp' || cmd === 'recovery' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats' || cmd === 'abilities' || cmd === 'description') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -2910,6 +2911,10 @@ client.on('interactionCreate', async (interaction) => {
   // clamped to [0, maxHp]. In-combat HP uses /init hp instead (tracked on the
   // combatant, not the character entry). This command is for between-combat
   // use: setting HP after a fight that wasn't tracked, healing over time, etc.
+  else if (commandName === 'recovery') {
+    await recoveryCmd.execute(interaction);
+  }
+
   else if (commandName === 'hp') {
     await hpCmd.execute(interaction);
   }
