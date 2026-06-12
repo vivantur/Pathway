@@ -24,7 +24,7 @@ const HELP_CATEGORIES = {
       { name: '/portrait', summary: 'Show your character\'s current portrait art, large. Hint: set one with `/char art`.', options: 'character', example: '/portrait' },
       { name: '/hp', summary: 'Out-of-combat HP tracking. Set/heal/damage your character\'s HP between fights.', options: '(subcommands: view, set, add, reset, max)', example: '/hp max value:52' },
       { name: '/recovery', summary: 'Roll a PF2e recovery check for your dying character outside initiative.', options: 'character, set_dying', example: '/recovery set_dying:1' },
-      { name: '/xp', summary: 'Track experience per character. Award XP and see level progress.', options: '(subcommands: award, view, set, reset)', example: '/xp award character:Hylia amount:80' },
+      { name: '/xp', summary: 'Track experience per character. Award XP, view history, or clear old log entries.', options: '(subcommands: award, view, history, clearlog, set, reset)', example: '/xp award character:Hylia amount:80' },
       { name: '/hero', summary: 'Track and use Hero Points (PF2e: max 3, start with 1 per session).', options: '(subcommands)', example: '/hero use' },
       { name: '/notes', summary: 'Per-character session notebook: NPCs, Locations, Plot Threads, Influence, Items.', options: '(subcommands: add, list, view, search, edit, remove, pin)', example: '/notes add category:NPCs text:Met Lord Aldori' },
       { name: '/resource show', summary: 'View current focus points, hero points, and spell slots.', options: 'character', example: '/resource show' },

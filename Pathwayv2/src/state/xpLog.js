@@ -61,6 +61,15 @@ async function record(discordId, charKey, entry) {
   return cache[key];
 }
 
+async function clear(discordId, charKey) {
+  const cache = _ensureCache();
+  const key = flatKey(discordId, charKey);
+  const deletedCount = cache[key]?.length ?? 0;
+  cache[key] = [];
+  await deleteCharacterLogFromSupabase(discordId, charKey);
+  return deletedCount;
+}
+
 function subscribe(sb) {
   if (!sb) {
     console.warn('[state/xpLog:realtime] Supabase not available - live sync disabled');
@@ -193,11 +202,40 @@ async function syncEntryToSupabase(discordId, charKey, entry) {
   }
 }
 
+async function deleteCharacterLogFromSupabase(discordId, charKey) {
+  try {
+    if (_disabled.write) return;
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: userRow, error: userErr } = await sb
+      .from('users')
+      .select('id')
+      .eq('discord_id', String(discordId))
+      .single();
+    if (userErr || !userRow?.id) return;
+
+    const { error } = await sb
+      .from('character_xp_log')
+      .delete()
+      .eq('user_id', userRow.id)
+      .eq('char_key', charKey);
+    if (error) throw error;
+  } catch (err) {
+    if (/character_xp_log|does not exist|schema cache/i.test(err.message)) {
+      _disabled.write = true;
+    }
+    console.error('[Supabase] XP log delete failed:', err.message);
+  }
+}
+
 module.exports = {
   get,
   setLocal,
   record,
+  clear,
   restore,
   subscribe,
   syncEntryToSupabase,
+  deleteCharacterLogFromSupabase,
 };

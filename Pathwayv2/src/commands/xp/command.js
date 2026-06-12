@@ -32,6 +32,17 @@ async function execute(interaction) {
     return interaction.reply({ embeds: [buildXpHistoryEmbed(char, charEntry)] });
   }
 
+  if (sub === 'clearlog') {
+    const deletedCount = await xpLogState.clear(interaction.user.id, charKey);
+    charEntry.xpLog = [];
+    characters[interaction.user.id][charKey] = charEntry;
+    await characterState.saveAll(characters);
+    const note = deletedCount > 0
+      ? `Cleared **${deletedCount}** XP log entr${deletedCount === 1 ? 'y' : 'ies'}. Current XP was not changed.`
+      : 'XP log was already empty. Current XP was not changed.';
+    return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note, showLog: true })] });
+  }
+
   if (sub === 'award') {
     const amount = interaction.options.getInteger('amount');
     const reason = interaction.options.getString('reason');
