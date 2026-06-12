@@ -44,6 +44,7 @@ const monsterState   = require('../state/monster');
 const encounterState = require('../state/encounters');
 const homebrewState  = require('../state/homebrew');
 const guildState     = require('../state/guild');
+const xpLogState     = require('../state/xpLog');
 
 // Phase 2: character + bag helpers are no longer used inline by restoreAll
 // — characterState.restore() and bagState.restore() own those sections now.
@@ -731,6 +732,7 @@ async function restoreAllFromSupabase() {
     // flow through state/companions, which patches the same cache) and the
     // active_char_key sentinel from each user row.
     const characters = await characterState.restore(sb, { bySupabaseId, userRows });
+    await xpLogState.restore(sb, { bySupabaseId });
 
     // ── 3. Bags (Phase 2: delegated to state/bags) ──────────────────────────
     const diskBags = loadJson('bags.json', { default: {}, quiet: true }) || {};

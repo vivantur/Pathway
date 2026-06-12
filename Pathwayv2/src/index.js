@@ -34,6 +34,7 @@ const monsterState = require('./state/monster');
 const bagState = require('./state/bags');
 const companionState = require('./state/companions');
 const characterState = require('./state/characters');
+const xpLogState = require('./state/xpLog');
 const {
   computeCharMaxHp, getCharacterHp, setCharacterHp,
   getCharacterXp, setCharacterXp,
@@ -1354,6 +1355,7 @@ client.once('clientReady', async () => {
     monsterState.subscribe(sb);
     bagState.subscribe(sb);
     characterState.subscribe(sb);
+    xpLogState.subscribe(sb);
     guildStateModule.subscribe(sb);
     // Companions don't own their own cache — they patch the shared
     // characters cache (owned by state/characters as of Phase 2) in place.

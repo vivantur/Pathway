@@ -3,6 +3,7 @@
 // every award is kept in the character's XP log for later review.
 
 const characterState = require('../../state/characters');
+const xpLogState = require('../../state/xpLog');
 const {
   resolveChar,
   getCharacterXp,
@@ -19,6 +20,9 @@ async function execute(interaction) {
   const { error, charKey, char: charEntry } = resolveChar(interaction.user.id, charNameArg, characters);
   if (error) return interaction.reply({ content: error, ephemeral: true });
   const char = charEntry.data;
+  const persistedLog = xpLogState.get(interaction.user.id, charKey);
+  const legacyLog = Array.isArray(charEntry.xpLog) ? charEntry.xpLog : [];
+  charEntry.xpLog = persistedLog.length > 0 ? persistedLog : xpLogState.setLocal(interaction.user.id, charKey, legacyLog);
 
   if (sub === 'view') {
     return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { showLog: true })] });
@@ -34,8 +38,12 @@ async function execute(interaction) {
     if (amount === 0) return interaction.reply({ content: 'Amount cannot be 0.', ephemeral: true });
 
     const { oldXp, newXp, leveledUp } = awardXp(charEntry, amount, reason, interaction.user.id);
+    const latestLogEntry = charEntry.xpLog.at(-1);
     characters[interaction.user.id][charKey] = charEntry;
     await characterState.saveAll(characters);
+    if (latestLogEntry) {
+      charEntry.xpLog = await xpLogState.record(interaction.user.id, charKey, latestLogEntry);
+    }
 
     const sign = amount >= 0 ? '+' : '';
     const note = `**${sign}${amount} XP**${reason ? ` - *${reason}*` : ''}\n${oldXp} -> **${newXp}** XP`;
@@ -57,6 +65,16 @@ async function execute(interaction) {
     if (amount < 0) return interaction.reply({ content: 'XP cannot be negative.', ephemeral: true });
     const oldXp = getCharacterXp(charEntry);
     setCharacterXp(charEntry, amount);
+    const entry = {
+      amount: amount - oldXp,
+      reason: 'Manual XP set',
+      at: new Date().toISOString(),
+      awardedBy: interaction.user.id,
+      oldXp,
+      newXp: amount,
+      type: 'set',
+    };
+    charEntry.xpLog = await xpLogState.record(interaction.user.id, charKey, entry);
     characters[interaction.user.id][charKey] = charEntry;
     await characterState.saveAll(characters);
     const note = `Set XP to **${amount}** (was ${oldXp}).`;
@@ -66,10 +84,18 @@ async function execute(interaction) {
   if (sub === 'reset') {
     const oldXp = getCharacterXp(charEntry);
     charEntry.xp = 0;
-    charEntry.xpLog = [];
+    charEntry.xpLog = await xpLogState.record(interaction.user.id, charKey, {
+      amount: -oldXp,
+      reason: 'XP reset',
+      at: new Date().toISOString(),
+      awardedBy: interaction.user.id,
+      oldXp,
+      newXp: 0,
+      type: 'reset',
+    });
     characters[interaction.user.id][charKey] = charEntry;
     await characterState.saveAll(characters);
-    const note = `Reset XP to **0** (was ${oldXp}). Good luck on the road to the next level!`;
+    const note = `Reset XP to **0** (was ${oldXp}). The XP history was kept.`;
     return interaction.reply({ embeds: [buildXpEmbed(char, charEntry, { note })] });
   }
 }

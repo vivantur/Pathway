@@ -86,6 +86,7 @@ function buildCharacterOverlayForSupabase(charEntry) {
   if (charEntry?.languages !== undefined) botState.languages = charEntry.languages;
   if (charEntry?.wallet !== undefined) botState.wallet = charEntry.wallet;
   if (charEntry?._hpMaxOverride !== undefined) botState.hpMaxOverride = charEntry._hpMaxOverride;
+  if (charEntry?.xp !== undefined) botState.xp = charEntry.xp;
   if (charEntry?.xpLog !== undefined) botState.xpLog = charEntry.xpLog;
   if (charEntry?.pathwayWebId !== undefined) botState.pathwayWebId = charEntry.pathwayWebId;
 
@@ -102,6 +103,7 @@ function applyCharacterBotState(charEntry, overlay) {
   if (botState.languages !== undefined) charEntry.languages = botState.languages;
   if (botState.wallet !== undefined) charEntry.wallet = botState.wallet;
   if (botState.hpMaxOverride !== undefined) charEntry._hpMaxOverride = botState.hpMaxOverride;
+  if (botState.xp !== undefined) charEntry.xp = botState.xp;
   if (botState.xpLog !== undefined) charEntry.xpLog = botState.xpLog;
   if (botState.pathwayWebId !== undefined) charEntry.pathwayWebId = botState.pathwayWebId;
 
@@ -128,6 +130,7 @@ function _entryFromRow(row, existing) {
     art:        row.art ?? null,
     saved:      new Date().toISOString(),
   };
+  if (typeof row.experience === 'number') entry.xp = row.experience;
   applyCharacterBotState(entry, row.overlay ?? {});
   // Preserve companion sub-state managed by state/companions.
   if (existing?.companions)      entry.companions      = existing.companions;
@@ -486,7 +489,7 @@ async function restore(sb, { bySupabaseId, userRows }) {
   // Characters
   const { data: charRows, error: charErr } = await sb
     .from('characters')
-    .select('user_id, char_key, name, source, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, status, updated_at')
+    .select('user_id, char_key, name, source, pathbuilder_data, experience, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, status, updated_at')
     .eq('status', 'active');
   if (charErr) throw charErr;
 
@@ -634,7 +637,7 @@ async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
           ancestry_name:    d.ancestry ?? null,
           background_name:  d.background ?? null,
           level:            d.level ?? 1,
-          experience:       d.xp ?? 0,
+          experience:       getCharacterXp(charEntry),
           pathbuilder_data: d,
           current_hp:       charEntry.hp ?? null,
           overlay:          buildCharacterOverlayForSupabase(charEntry),
@@ -764,7 +767,7 @@ async function mergeCharactersFromSupabase(discordId, charactersMap) {
 
     const { data: rows } = await sb
       .from('characters')
-      .select('char_key, name, source, pathbuilder_data, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, updated_at')
+      .select('char_key, name, source, pathbuilder_data, experience, current_hp, overlay, dying, wounded, hero_points, discord_guild_id, art, updated_at')
       .eq('user_id', userRow.id)
       .eq('status', 'active');
     if (!rows || rows.length === 0) return 0;
