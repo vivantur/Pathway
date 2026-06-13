@@ -32,12 +32,19 @@ function normalizeItemQuery(str) {
  */
 function itemSourceRank(item) {
   const source = String(item?.source ?? item?.source?.source_text ?? '').toLowerCase();
+  const metadata = item && typeof item === 'object' && item.item_metadata && typeof item.item_metadata === 'object'
+    ? item.item_metadata
+    : item;
   const aon = String(item?.aon_url ?? '');
   let rank = 0;
+  if (item?.aon_id || metadata?.aon_id) rank += 10000;
+  if (item?.description) rank += Math.min(String(item.description).length, 1000);
+  if (item?.price_cp > 0 || item?.price_raw || metadata?.price_raw) rank += 500;
   if (source.includes('player core') || source.includes('gm core')) rank += 100;
   if (source.includes('rage of elements') || source.includes('war of immortals')) rank += 80;
   if (!source.includes('legacy') && !source.includes('core rulebook')) rank += 10;
   if (item?.pfs_availability === 'Standard') rank += 5;
+  if (Array.isArray(metadata?.child_ids) || Array.isArray(metadata?.item_child_id)) rank -= 250;
   const idMatch = aon.match(/ID=(\d+)/i);
   if (idMatch) rank += Math.min(Number(idMatch[1]) / 10000, 1);
   return rank;
