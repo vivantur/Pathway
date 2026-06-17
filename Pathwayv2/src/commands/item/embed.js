@@ -54,6 +54,27 @@ function buildDetailLines(item) {
     .filter(Boolean);
 }
 
+function cleanItemDescription(item) {
+  const raw = String(item.description ?? '').trim();
+  if (!raw) return '';
+
+  const source = sourceLine(item);
+  const price = displayValue(item.price_raw || item.price || (item.price_cp != null && item.price_cp > 0 ? `${item.price_cp} cp` : null));
+  const bulk = displayValue(item.bulk_raw || item.bulk);
+  let text = raw
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+
+  // Parent AoN entries can include child variant blocks. Once a second Source
+  // or Price block appears, it is no longer the selected item's prose.
+  text = text.split(/\n\s*(?:Source|Price)\b/i)[0].trim();
+  if (source) text = text.replace(new RegExp(`\\bSource\\s+${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
+  if (price) text = text.replace(new RegExp(`\\bPrice\\s+${price.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
+  if (bulk) text = text.replace(new RegExp(`\\bBulk\\s+${bulk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function sourceLine(item) {
   if (typeof item.source === 'string') return item.source;
   return item.source?.source_text
@@ -65,11 +86,21 @@ function buildItemEmbed(item) {
   const traitChips = [];
   if (item.rarity && item.rarity !== 'Common') traitChips.push(item.rarity);
   if (Array.isArray(item.traits)) traitChips.push(...item.traits);
-  const traitsDisplay = traitChips.length ? `*${traitChips.join(', ')}*` : null;
+  const uniqueTraits = [];
+  const seenTraits = new Set();
+  for (const trait of traitChips) {
+    const label = String(trait).trim();
+    const key = label.toLowerCase();
+    if (!label || seenTraits.has(key)) continue;
+    seenTraits.add(key);
+    uniqueTraits.push(label);
+  }
+  const traitsDisplay = uniqueTraits.length ? `*${uniqueTraits.join(', ')}*` : null;
 
   const descriptionParts = [];
   if (traitsDisplay) descriptionParts.push(traitsDisplay);
-  if (item.description) descriptionParts.push(String(item.description).slice(0, 1500));
+  const cleanedDescription = cleanItemDescription(item);
+  if (cleanedDescription) descriptionParts.push(cleanedDescription.slice(0, 1200));
 
   const category = CATEGORY_LABELS[item.item_type] ?? item.category;
   const categoryLine = [category, item.subcategory ?? item.item_subtype].filter(Boolean).join(' - ');
@@ -80,20 +111,20 @@ function buildItemEmbed(item) {
 
   if (descriptionParts.length) embed.setDescription(descriptionParts.join('\n\n'));
 
-  embed.addFields(
-    { name: 'Level', value: item.level != null ? String(item.level) : '-', inline: true },
-    { name: 'Price', value: item.price_raw || item.price || (item.price_cp != null ? `${item.price_cp} cp` : '-'), inline: true },
-    { name: 'Bulk', value: item.bulk_raw || item.bulk || '-', inline: true },
-  );
-
-  if (item.usage) embed.addFields({ name: 'Usage', value: String(item.usage).slice(0, 1024), inline: false });
+  const summary = [
+    `**Level:** ${item.level != null ? String(item.level) : '-'}`,
+    `**Price:** ${item.price_raw || item.price || (item.price_cp != null && item.price_cp > 0 ? `${item.price_cp} cp` : '-')}`,
+    `**Bulk:** ${item.bulk_raw || item.bulk || '-'}`,
+    item.usage ? `**Usage:** ${item.usage}` : null,
+    categoryLine ? `**Category:** ${categoryLine}` : null,
+  ].filter(Boolean).join('\n');
+  embed.addFields({ name: 'Item', value: summary, inline: false });
 
   const detailLines = buildDetailLines(item);
   if (detailLines.length) {
     embed.addFields({ name: 'Details', value: detailLines.join('\n').slice(0, 1024), inline: false });
   }
 
-  if (categoryLine) embed.addFields({ name: 'Category', value: categoryLine, inline: true });
   if (item.pfs_availability) embed.addFields({ name: 'PFS', value: item.pfs_availability, inline: true });
   if (item.campaign) embed.addFields({ name: 'Campaign', value: item.campaign, inline: true });
   if (item.notes) embed.addFields({ name: 'Notes', value: String(item.notes).slice(0, 1000), inline: false });

@@ -40,7 +40,9 @@ function itemSourceRank(item) {
   if (item?.aon_id || metadata?.aon_id) rank += 10000;
   if (item?.description) rank += Math.min(String(item.description).length, 1000);
   if (item?.price_cp > 0 || item?.price_raw || metadata?.price_raw) rank += 500;
+  if (metadata?.item_parent_id) rank += 300;
   if (source.includes('player core') || source.includes('gm core')) rank += 100;
+  if (source.includes('remastered')) rank += 75;
   if (source.includes('rage of elements') || source.includes('war of immortals')) rank += 80;
   if (!source.includes('legacy') && !source.includes('core rulebook')) rank += 10;
   if (item?.pfs_availability === 'Standard') rank += 5;
