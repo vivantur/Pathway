@@ -31,6 +31,55 @@ function displayValue(value) {
   return String(value);
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeCompare(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[,._*`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripItemMetaLines(text) {
+  return String(text ?? '')
+    .split('\n')
+    .filter(line => !/^\s*(?:\*\*)?(?:Source|Price|Level|Bulk|Usage|Hands|Access|Category|PFS)(?:\*\*)?\s*\b/i.test(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function selectedVariantDescription(text, item) {
+  const firstMetaIndex = text.search(/\n\s*(?:\*\*)?(?:Source|Price)(?:\*\*)?\s*\b/i);
+  if (firstMetaIndex < 0) return { intro: text, variant: '' };
+
+  const intro = text.slice(0, firstMetaIndex).trim();
+  const rest = text.slice(firstMetaIndex).trim();
+  const blocks = rest
+    .split(/\n(?=\s*(?:\*\*)?Source(?:\*\*)?\s*\b)/i)
+    .map(block => block.trim())
+    .filter(Boolean);
+  if (!blocks.length) return { intro, variant: '' };
+
+  const wantedPrice = normalizeCompare(displayValue(item.price_raw || item.price || null));
+  const wantedSource = normalizeCompare(sourceLine(item));
+  const chosen = blocks.find(block => {
+    const blockPrice = normalizeCompare(block.match(/(?:^|\n)\s*(?:\*\*)?Price(?:\*\*)?\s+([^\n]+)/i)?.[1]);
+    const blockSource = normalizeCompare(block.match(/(?:^|\n)\s*(?:\*\*)?Source(?:\*\*)?\s+([^\n]+)/i)?.[1]);
+    const priceMatches = wantedPrice && blockPrice === wantedPrice;
+    const sourceMatches = wantedSource && blockSource && (blockSource.includes(wantedSource) || wantedSource.includes(blockSource));
+    return priceMatches && (!wantedSource || !blockSource || sourceMatches);
+  }) ?? blocks.find(block => {
+    const blockPrice = normalizeCompare(block.match(/(?:^|\n)\s*(?:\*\*)?Price(?:\*\*)?\s+([^\n]+)/i)?.[1]);
+    return wantedPrice && blockPrice === wantedPrice;
+  }) ?? blocks[0];
+
+  return { intro, variant: stripItemMetaLines(chosen) };
+}
+
 function buildDetailLines(item) {
   return [
     ['Hands', item.hands],
@@ -62,16 +111,18 @@ function cleanItemDescription(item) {
   const price = displayValue(item.price_raw || item.price || (item.price_cp != null && item.price_cp > 0 ? `${item.price_cp} cp` : null));
   const bulk = displayValue(item.bulk_raw || item.bulk);
   let text = raw
+    .replace(/\r\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+/g, ' ')
     .trim();
 
-  // Parent AoN entries can include child variant blocks. Once a second Source
-  // or Price block appears, it is no longer the selected item's prose.
-  text = text.split(/\n\s*(?:Source|Price)\b/i)[0].trim();
-  if (source) text = text.replace(new RegExp(`\\bSource\\s+${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
-  if (price) text = text.replace(new RegExp(`\\bPrice\\s+${price.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
-  if (bulk) text = text.replace(new RegExp(`\\bBulk\\s+${bulk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '').trim();
+  // Parent AoN entries can include child variant blocks. Keep the shared prose
+  // plus the selected tier's effect, then drop all other Source/Price blocks.
+  const selected = selectedVariantDescription(text, item);
+  text = [selected.intro, selected.variant].filter(Boolean).join('\n\n').trim();
+  if (source) text = text.replace(new RegExp(`\\b(?:\\*\\*)?Source(?:\\*\\*)?\\s+${escapeRegExp(source)}`, 'gi'), '').trim();
+  if (price) text = text.replace(new RegExp(`\\b(?:\\*\\*)?Price(?:\\*\\*)?\\s+${escapeRegExp(price)}`, 'gi'), '').trim();
+  if (bulk) text = text.replace(new RegExp(`\\b(?:\\*\\*)?Bulk(?:\\*\\*)?\\s+${escapeRegExp(bulk)}`, 'gi'), '').trim();
   return text.replace(/\n{3,}/g, '\n\n').trim();
 }
 
