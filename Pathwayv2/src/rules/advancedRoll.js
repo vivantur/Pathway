@@ -197,8 +197,8 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
   // ── 5. Validate characters ─────────────────────────────────────────────
   // Allow k/h/l/b for kh/kl dice suffixes and "lbl" label sentinels,
   // plus underscores for the sentinels themselves.
-  const cleaned = expr.toLowerCase().replace(/\s+/g, '');
-  if (!/^[0-9dkhlb_+\-*/().]+$/.test(cleaned)) {
+  const cleaned = expr.toLowerCase().replace(/\s+/g, '').replace(/x/g, '*');
+  if (!/^[0-9dkhlb_+\-*/().^]+$/.test(cleaned)) {
     return { error: `Invalid characters in expression: \`${expr}\`` };
   }
 
@@ -252,19 +252,80 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
   }
 
   function evalOnce() {
-    // Split on operators; labels-as-sentinels stay attached to their dice term
-    const tokens = workExpr.split(/([+\-*/()])/).filter(t => t && t.trim());
     const breakdownParts = [];
-    const values = [];
-    for (const token of tokens) {
-      if ('+-*/()'.includes(token)) {
-        const disp = token === '*' ? '×' : token === '/' ? '÷' : token;
-        breakdownParts.push(disp);
-        values.push(token);
+    const tokens = [];
+    const source = workExpr.replace(/x/g, '*');
+    let cursor = 0;
+
+    function isPrimaryStart(token) {
+      return token && (token.type === 'number' || token.type === 'dice' || token.value === '(');
+    }
+
+    while (cursor < source.length) {
+      const ch = source[cursor];
+      if ('+-*/()^'.includes(ch)) {
+        tokens.push({ type: 'op', value: ch });
+        cursor++;
         continue;
       }
-      // Pull a trailing label sentinel off this token, if any
-      let cleanTok = token;
+
+      const rest = source.slice(cursor);
+      const diceMatch = rest.match(/^(\d*)d(\d+)(kh\d+|kl\d+)?(_lbl\d+_)?/i);
+      if (diceMatch) {
+        tokens.push({ type: 'dice', value: diceMatch[0] });
+        cursor += diceMatch[0].length;
+        continue;
+      }
+
+      const numMatch = rest.match(/^\d+/);
+      if (numMatch) {
+        tokens.push({ type: 'number', value: numMatch[0] });
+        cursor += numMatch[0].length;
+        continue;
+      }
+
+      return { error: `Couldn't parse \`${rest}\`.` };
+    }
+
+    let pos = 0;
+    function peek() { return tokens[pos]; }
+    function take() { return tokens[pos++]; }
+    function recordOperator(op) {
+      const display = op === '*' ? 'x' : op === '/' ? '/' : op;
+      breakdownParts.push(display);
+    }
+
+    function parsePrimary() {
+      const token = peek();
+      if (!token) return { error: 'Unexpected end of expression.' };
+
+      if (token.value === '(') {
+        take();
+        breakdownParts.push('(');
+        const inner = parseExpression();
+        if (inner.error) return inner;
+        if (!peek() || peek().value !== ')') return { error: 'Missing closing parenthesis.' };
+        take();
+        breakdownParts.push(')');
+        return inner;
+      }
+
+      if (token.value === '+') {
+        take();
+        recordOperator('+');
+        return parsePrimary();
+      }
+
+      if (token.value === '-') {
+        take();
+        recordOperator('-');
+        const primary = parsePrimary();
+        if (primary.error) return primary;
+        return { total: -primary.total };
+      }
+
+      take();
+      let cleanTok = token.value;
       let labelText = null;
       const sentMatch = cleanTok.match(/_lbl(\d+)_$/i);
       if (sentMatch) {
@@ -272,7 +333,7 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
         cleanTok = cleanTok.replace(/_lbl\d+_$/i, '');
       }
 
-      if (cleanTok.includes('d')) {
+      if (token.type === 'dice') {
         const diceMatch = cleanTok.match(/^(\d*)d(\d+)(kh\d+|kl\d+)?$/);
         if (!diceMatch) return { error: `Could not parse dice \`${cleanTok}\`.` };
         const numDice = parseInt(diceMatch[1]) || 1;
@@ -294,10 +355,10 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
             const oStr = r.picked === r.a ? `~~${r.b}~~` : `~~${r.a}~~`;
             const ordered = r.a === r.picked ? `${pStr},${oStr}` : `${oStr},${pStr}`;
             let s = `(${ordered})`;
-            if (r.rerolled) s += `→↻${r.rerolled.to}`;
+            if (r.rerolled) s += `->rr${r.rerolled.to}`;
             return s;
           }).join(',');
-          diceDisplay = `${numDice}d${numSides}${mods.adv ? '↑' : '↓'}[${parts}]`;
+          diceDisplay = `${numDice}d${numSides} ${mods.adv ? 'adv' : 'dis'}[${parts}]`;
         } else {
           if (keptIndices) {
             const display = rolls.map((v, i) => keptIndices.includes(i) ? `**${v}**` : `~~${v}~~`);
@@ -305,7 +366,7 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
           } else {
             const parts = rolls.map((v, i) => {
               const rer = (rerollInfo || []).find(r => r.idx === i);
-              return rer ? `~~${rer.from}~~→${v}` : `${v}`;
+              return rer ? `~~${rer.from}~~->${v}` : `${v}`;
             });
             diceDisplay = numDice > 1
               ? `${numDice}d${numSides}[${parts.join(', ')}]`
@@ -314,43 +375,76 @@ function rollAdvanced(raw, userSnippets = {}, charEntry = null) {
         }
         if (labelText) diceDisplay += ` *[${labelText}]*`;
         breakdownParts.push(diceDisplay);
-        values.push(rollTotal);
-      } else {
-        const num = parseInt(cleanTok);
-        if (isNaN(num)) return { error: `Couldn't parse \`${cleanTok}\`.` };
+        return { total: rollTotal };
+      }
+
+      if (token.type === 'number') {
+        const num = parseInt(cleanTok, 10);
+        if (Number.isNaN(num)) return { error: `Couldn't parse \`${cleanTok}\`.` };
         breakdownParts.push(`${num}`);
-        values.push(num);
+        return { total: num };
       }
+
+      return { error: `Unexpected token \`${token.value}\`.` };
     }
 
-    // Math evaluator (same as rollDiceExpression: × ÷ first, then + -)
-    const flat = values.filter(v => v !== '(' && v !== ')');
-    if (flat.length === 0) return { error: 'Empty evaluation.' };
-    const pass1values = [];
-    const pass1ops = [];
-    let current = flat[0];
-    for (let i = 1; i < flat.length; i += 2) {
-      const op = flat[i];
-      const next = flat[i + 1];
-      if (op === '*') current = current * next;
-      else if (op === '/') {
-        if (next === 0) return { error: 'Cannot divide by zero.' };
-        current = Math.floor(current / next);
-      } else {
-        pass1values.push(current);
-        pass1ops.push(op);
-        current = next;
+    function parsePower() {
+      let left = parsePrimary();
+      if (left.error) return left;
+      if (peek() && peek().value === '^') {
+        take();
+        recordOperator('^');
+        const right = parsePower();
+        if (right.error) return right;
+        const powered = Math.pow(left.total, right.total);
+        if (!Number.isFinite(powered)) return { error: 'Exponent result is too large.' };
+        left = { total: powered };
       }
+      return left;
     }
-    pass1values.push(current);
-    let total = pass1values[0];
-    for (let i = 0; i < pass1ops.length; i++) {
-      if (pass1ops[i] === '+') total += pass1values[i + 1];
-      if (pass1ops[i] === '-') total -= pass1values[i + 1];
+
+    function parseTerm() {
+      let left = parsePower();
+      if (left.error) return left;
+
+      while (true) {
+        const token = peek();
+        const implicitMultiply = isPrimaryStart(token);
+        if (!token || (!implicitMultiply && token.value !== '*' && token.value !== '/')) break;
+
+        const op = implicitMultiply ? '*' : take().value;
+        recordOperator(op);
+        const right = parsePower();
+        if (right.error) return right;
+        if (op === '/') {
+          if (right.total === 0) return { error: 'Cannot divide by zero.' };
+          left = { total: Math.floor(left.total / right.total) };
+        } else {
+          left = { total: left.total * right.total };
+        }
+      }
+      return left;
     }
-    return { total: Math.floor(total), breakdown: breakdownParts.join(' ') };
+
+    function parseExpression() {
+      let left = parseTerm();
+      if (left.error) return left;
+
+      while (peek() && (peek().value === '+' || peek().value === '-')) {
+        const op = take().value;
+        recordOperator(op);
+        const right = parseTerm();
+        if (right.error) return right;
+        left = { total: op === '+' ? left.total + right.total : left.total - right.total };
+      }
+      return left;
+    }
+
+    const parsed = parseExpression();
+    if (parsed.error) return parsed;
+    if (pos < tokens.length) return { error: `Unexpected token \`${tokens[pos].value}\`.` };
+    return { total: Math.floor(parsed.total), breakdown: breakdownParts.join(' ') };
   }
-
   function parseKeep(suffix) {
     const m = suffix.match(/^(kh|kl)(\d+)$/);
     if (!m) return null;

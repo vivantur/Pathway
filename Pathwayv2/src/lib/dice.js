@@ -6,6 +6,8 @@
 
 'use strict';
 
+const { rollAdvanced } = require('../rules/advancedRoll');
+
 // Roll 1d20 plus a modifier. Returns { total, roll, mod } so callers can
 // display the raw die result as well as the modified total.
 function rollD20Plus(modifier) {
@@ -22,7 +24,20 @@ function rollDamageExpression(expr) {
   if (!expr) return null;
   const cleaned = expr.toLowerCase().replace(/\s+/g, '');
   const match = cleaned.match(/^(\d*)d(\d+)([+-]\d+)?$/);
-  if (!match) return null;
+  if (!match) {
+    const advanced = rollAdvanced(expr, {}, null);
+    const first = advanced.iterations?.[0];
+    if (advanced.error || !first) return null;
+    return {
+      rolls: [],
+      bonus: 0,
+      numDice: null,
+      numSides: null,
+      sum: first.total,
+      total: first.total,
+      display: first.breakdown,
+    };
+  }
   const numDice = parseInt(match[1]) || 1;
   const numSides = parseInt(match[2]);
   const bonus = match[3] ? parseInt(match[3]) : 0;

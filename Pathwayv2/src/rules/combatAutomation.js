@@ -14,6 +14,7 @@
 // Discord embeds/messages. It never calls Discord APIs directly.
 
 const enc = require('../commands/encounters');
+const { rollAdvanced } = require('./advancedRoll');
 
 // ─── MAP (Multi-Attack Penalty) ──────────────────────────────────────────────
 
@@ -550,7 +551,13 @@ function processTurnTransition(channelId) {
 // ─── Utility: dice expression rolling (local copy to avoid circular import) ─
 
 function rollDiceExpression(expr) {
-  // Simple parser: "1d6", "2d4+3", "1d10+5". Returns { total, rolls, display }.
+  const advanced = rollAdvanced(expr, {}, null);
+  const first = advanced.iterations?.[0];
+  if (!advanced.error && first) {
+    return { total: Math.max(0, first.total), rolls: [], display: first.breakdown, bonus: 0 };
+  }
+
+  // Fallback parser: "1d6", "2d4+3", "1d10+5". Returns { total, rolls, display }.
   const m = String(expr).match(/^(\d+)d(\d+)(?:\s*([+-])\s*(\d+))?$/i);
   if (!m) return { total: 0, rolls: [], display: expr };
   const num = parseInt(m[1]) || 1;
