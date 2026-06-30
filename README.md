@@ -41,20 +41,26 @@ first job is to **stay in sync** with the bot. The repo currently holds the
 
 ## Status
 
-🪶 **Phase W0 — Reconcile with the live backend (in progress).** The Vite +
-React + TypeScript + Tailwind app is scaffolded and connects to Supabase with
-the **anon key under RLS** (the service-role key is refused in the browser). It
-ships Supabase Auth (Discord OAuth + email magic-link), a protected **Character
-Vault** that reads the signed-in user's own `characters` rows via RLS, and
-`supabase/migrations/` adopted as the canonical schema home. Still open before
-the W0 gate fully closes: plug in the develop project's URL + anon key, back-fill
-the already-applied migrations, and confirm a real login reads a real character.
+🪶 **Phase W0 — Reconcile with the live backend (mostly done; migration pending).**
+The Vite + React + TypeScript + Tailwind app is **live at
+[www.pathwaypf2e.com](https://www.pathwaypf2e.com)** (Vercel, HTTPS), connected to
+the Supabase project with the **anon key under RLS** (the service-role key is
+refused in the browser). **Email magic-link sign-in works end-to-end.** It ships
+Supabase Auth (email magic-link now; Discord OAuth wired and pending the provider
+being enabled), a protected **Character Vault** that reads the signed-in user's
+own `characters` rows via RLS, and `supabase/migrations/` adopted as the canonical
+schema home.
+
+What's left to close W0: the Discord auth provider, and the **data migration** —
+moving the bot's schema + data into this Supabase project (the bot still reads a
+third-party project today), after which the Vault shows real characters and true
+website ⇄ bot sync switches on.
 
 ### Run it locally
 
 ```bash
 npm install                 # one-time: install dependencies
-cp .env.example .env        # then edit .env with the develop URL + anon key
+cp .env.example .env        # then edit .env with your project URL + anon key
 npm run dev                 # start the dev server → http://localhost:5173
 ```
 
