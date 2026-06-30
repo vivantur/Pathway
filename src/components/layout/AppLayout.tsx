@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
+import { Footer } from './Footer';
 
 /** The persistent grimoire shell: header + page outlet + footer. */
 export function AppLayout() {
@@ -9,9 +10,7 @@ export function AppLayout() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
         <Outlet />
       </main>
-      <footer className="border-t border-gold/10 px-4 py-6 text-center text-xs text-silver/40">
-        Pathway · A second client on the Pathfinder 2e ecosystem · Phase W0
-      </footer>
+      <Footer />
     </div>
   );
 }
