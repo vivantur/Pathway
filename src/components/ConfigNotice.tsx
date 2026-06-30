@@ -15,12 +15,11 @@ export function ConfigNotice() {
         <code className="rounded bg-midnight-900 px-1.5 py-0.5 text-arcane">.env.example</code>{' '}
         to{' '}
         <code className="rounded bg-midnight-900 px-1.5 py-0.5 text-arcane">.env</code>{' '}
-        and fill in the <strong>develop</strong> project&apos;s URL and{' '}
-        <strong>anon</strong> key:
+        and fill in your project&apos;s URL and <strong>anon</strong> key:
       </p>
       <pre className="mt-4 overflow-x-auto rounded bg-midnight-950 p-4 text-xs text-silver/90">
-        {`VITE_SUPABASE_URL=https://nqnswvuqszpkntnjzomv.supabase.co
-VITE_SUPABASE_ANON_KEY=<develop anon / publishable key>`}
+        {`VITE_SUPABASE_URL=https://udefzabsnuqwcwqevtpd.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon / publishable key>`}
       </pre>
       <p className="mt-4 text-xs text-silver/60">
         Use the <strong>anon</strong> key only — never the service-role key. The

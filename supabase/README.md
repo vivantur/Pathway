@@ -6,12 +6,18 @@ By the bot's own convention (see
 Supabase migrations** — the Discord bot deliberately does not. Schema changes,
 even ones the bot needs, are authored and applied from here.
 
-## Projects
+## Project
 
-| Environment | Project ref | Use |
-| --- | --- | --- |
-| develop | `nqnswvuqszpkntnjzomv` | Default for all day-to-day schema work. |
-| prod | `cmmwirlrvqmjqbydlqks` | Deploy only; re-link deliberately. |
+One Supabase project for now: **`udefzabsnuqwcwqevtpd`**
+(`https://udefzabsnuqwcwqevtpd.supabase.co`). This is the website's backend and
+the destination the bot's data is being migrated to.
+
+> **Current reality (migration pending):** the live Discord bot still reads a
+> third-party Supabase project; its data has not yet been migrated here, so this
+> project may not contain the bot's tables yet. The website connects to this
+> project today, but true website ⇄ bot sync only switches on once the bot also
+> points at this project. A separate "develop/sandbox" project can be added
+> later as a safety net but is not required to start.
 
 ## Invariants every user-state migration must preserve
 
@@ -29,12 +35,12 @@ The bot's `20260612_character_xp_log.sql` is the reference template for all four
 ## Workflow (Phase W0+)
 
 - Author migrations as timestamped SQL files in `migrations/`.
-- Apply with the Supabase CLI (`npx supabase ...`), linked to **develop** by
-  default. **Verify the linked project before pushing**, and re-link to prod
-  only to deploy.
-- **Back-fill** already-applied migrations (the `20260524*` Realtime set,
+- Apply with the Supabase CLI (`npx supabase ...`), linked to project
+  `udefzabsnuqwcwqevtpd`. **Verify the linked project before pushing.**
+- **Back-fill** the bot's existing migrations (the `20260524*` Realtime set,
   `align_user_ids_with_auth`, `active_character`, `character_xp_log`, the
-  homebrew/draft catch-ups) so this repo holds a single tracked schema history.
+  homebrew/draft catch-ups) into this repo as part of the data migration, so the
+  schema has a single tracked history here.
 - **Coordinate with the bot** before changing existing tables — it caches their
   shapes in `state/*` modules and needs a paired change.
 

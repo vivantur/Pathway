@@ -2,6 +2,7 @@ import { GildedRule } from '@/components/ui/GildedRule';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
 import { useMyCharacters } from '@/features/characters/useCharacters';
+import { isSchemaNotReady } from '@/features/characters/errors';
 import type { CharacterSummary } from '@/features/characters/types';
 
 /**
@@ -33,7 +34,18 @@ export function VaultPage() {
         </div>
       )}
 
-      {isError && (
+      {isError && isSchemaNotReady(error) && (
+        <div className="rounded-lg border border-arcane/25 bg-arcane/5 p-8 text-center">
+          <p className="font-display text-arcane">Your database isn&apos;t set up yet</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-silver/70">
+            Pathway is connected to your Supabase project, but the character
+            tables haven&apos;t been created yet. Once the schema is migrated in,
+            your characters will appear here automatically.
+          </p>
+        </div>
+      )}
+
+      {isError && !isSchemaNotReady(error) && (
         <p className="rounded-md border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
           Couldn&apos;t load your characters: {error instanceof Error ? error.message : 'unknown error'}
         </p>
