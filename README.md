@@ -23,7 +23,8 @@ first job is to **stay in sync** with the bot. The repo currently holds the
 
 | Document | What it covers |
 | --- | --- |
-| [Master Specification](./PATHWAY_MASTER_SPEC.md) | The north star: vision, goals, stack, design philosophy, feature summary. |
+| [**Master Vision Specification**](./PATHWAY_VISION.md) | The north star, in the author's words: the full long-term vision, design language, and complete feature set. |
+| [Master Specification](./PATHWAY_MASTER_SPEC.md) | The condensed, architecture-aware working spec derived from the vision: goals, stack, design philosophy, feature summary. |
 | [System Architecture](./docs/architecture/system-architecture.md) | The real topology: website as a second client on the bot's live Supabase backend. |
 | [**Web ⇄ Bot Sync Contract**](./docs/architecture/web-bot-sync.md) | **The concrete rules for staying in sync** — connection, identity, column shapes, `updated_at`, Realtime. |
 | [Data Model](./docs/architecture/data-model.md) | The **existing** Supabase schema (reverse-engineered from the bot) the website must honor. |

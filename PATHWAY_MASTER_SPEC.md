@@ -1,6 +1,6 @@
-# PATHWAY Master Specification (Starter)
+# PATHWAY Master Specification (Working Spec)
 
-> **Purpose:** This document serves as the master architectural prompt for Claude Code. It defines the long-term vision, product philosophy, and development workflow for Pathway.
+> **Purpose:** This document serves as the master architectural prompt for Claude Code. It is the condensed, architecture-aware working spec — a distillation of the full [Master Vision Specification](./PATHWAY_VISION.md) (by Olyvia Green), reconciled with the real situation captured in the [System Architecture](./docs/architecture/system-architecture.md). For the complete, authoritative vision and full feature set, read [`PATHWAY_VISION.md`](./PATHWAY_VISION.md); this document summarizes it and defines the development workflow.
 
 # Vision
 
