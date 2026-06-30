@@ -41,7 +41,25 @@ first job is to **stay in sync** with the bot. The repo currently holds the
 
 ## Status
 
-🪶 **Phase W0 — Reconcile with the live backend.** Architecture documents are
-under review. Before any feature work, this repo must confirm it is the bot's
-`web/` app, adopt `supabase/migrations/` as the canonical schema home, and stand
-up a web app that connects to Supabase **develop** with the anon key under RLS.
+🪶 **Phase W0 — Reconcile with the live backend (in progress).** The Vite +
+React + TypeScript + Tailwind app is scaffolded and connects to Supabase with
+the **anon key under RLS** (the service-role key is refused in the browser). It
+ships Supabase Auth (Discord OAuth + email magic-link), a protected **Character
+Vault** that reads the signed-in user's own `characters` rows via RLS, and
+`supabase/migrations/` adopted as the canonical schema home. Still open before
+the W0 gate fully closes: plug in the develop project's URL + anon key, back-fill
+the already-applied migrations, and confirm a real login reads a real character.
+
+### Run it locally
+
+```bash
+npm install                 # one-time: install dependencies
+cp .env.example .env        # then edit .env with the develop URL + anon key
+npm run dev                 # start the dev server → http://localhost:5173
+```
+
+Other scripts: `npm run build` (production build), `npm run typecheck`,
+`npm run lint`, `npm run preview` (serve the production build).
+
+> The app boots **without** a backend — it shows a "Connect the archive" notice
+> until `.env` is filled in — so a fresh clone always runs.

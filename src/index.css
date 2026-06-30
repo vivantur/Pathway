@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-midnight-900 font-serif text-silver antialiased;
+  }
+
+  /* Gilded focus ring for keyboard users — readable, on-theme. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-arcane/70 ring-offset-2 ring-offset-midnight-900;
+  }
+
+  ::selection {
+    @apply bg-gold/30 text-silver;
+  }
+}
