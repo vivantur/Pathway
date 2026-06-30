@@ -1,171 +1,138 @@
 # Roadmap
 
-> Status: **Draft for review** · Phase 0 (Planning).
+> Status: **Revised after reading the live bot.** Re-sequenced around the real
+> situation: the Discord bot and its Supabase backend already exist; the website
+> is a new client that must join them and stay in sync.
 
-Pathway is built in phases. Per the [Master Specification](../../PATHWAY_MASTER_SPEC.md),
-every phase moves through **Design → Review → Approve → Build → Test → Refactor
-→ Release**, and we do not start a phase's build step until its design is
-approved. This roadmap sequences the phases and states the **gate** (the
-condition that must be true) to move on.
+The earlier draft sequenced phases as if the whole platform were greenfield
+(rules library → character engine → *then build the bot*). That ordering is
+wrong: the bot is **done and in production**, and the database already holds
+characters, content, and play state. So the website's phases are labeled **W**
+(web) and are ordered around *connecting to and conforming with the existing
+backend first*, then expanding feature coverage.
 
-The ordering principle: **build the shared spine before the clients.** The
-`core` rules engine, schema, and data layer are dependencies of almost
-everything, so they come first. Both the website and the bot are clients of that
-spine.
-
----
-
-## Phase 0 — Planning *(current)*
-
-Architecture documents and decision records.
-
-- Master spec committed ✅
-- System architecture ✅
-- Conceptual data model ✅
-- Roadmap (this doc) ✅
-- ADR template + first ADR ✅
-
-**Gate to Phase 1:** stakeholder approval of the architecture, data model, and
-this phase plan.
+Per the [Master Specification](../../PATHWAY_MASTER_SPEC.md), each phase still
+moves through **Design → Review → Approve → Build → Test → Refactor → Release**,
+with a gate before the next phase.
 
 ---
 
-## Phase 1 — Foundation
+## Phase W0 — Reconcile with the live backend *(do this first)*
 
-The runnable skeleton and shared spine. No user features yet.
+No user features. Establish the truth and the wiring.
 
-- Monorepo tooling decided (ADR) and scaffolded: `apps/`, `packages/`.
-- `apps/api` (Express + TS) and `apps/web` (Vite + React + Tailwind) boot and
-  talk to each other with a health check.
-- Supabase project: Postgres, Auth, Storage wired; first migrations + RLS
-  baseline for `user` / `account_link`.
-- `packages/schema` (Zod + types) and an empty `packages/core` established.
-- CI: lint, typecheck, test on every PR. Deploy previews (Vercel / Railway).
-- The grimoire **design system** seed in `packages/ui`: color tokens (midnight
-  blues, gold filigree), typography, base components.
+- Confirm `pathway-website` **is** the bot's `web/` repo; adopt
+  `supabase/migrations/` here as the canonical schema home.
+- **Back-fill already-applied migrations** into this repo (the `20260524*`
+  Realtime set, `align_user_ids_with_auth`, `active_character`,
+  `character_xp_log`, the homebrew/draft catch-ups) so schema history is tracked.
+- Introspect the **develop** project to pin exact column inventories/types for
+  every table in [data-model.md](./data-model.md); fix any *(inferred)* notes.
+- Stand up `apps/web` (Vite + React + TS + Tailwind) that boots and connects to
+  Supabase **develop** with the **anon key** under RLS.
 
-**Gate to Phase 2:** app deploys, auth works end-to-end, CI is green.
-
----
-
-## Phase 2 — Rules Library (read path)
-
-Get official content in and make it browsable/searchable. This unblocks both the
-builder and the bot.
-
-- AoN **import pipeline**: scheduled job → staging → review queue → published
-  tables, with attribution. (ADR for the pipeline + search backend.)
-- Rules schema in `packages/schema` for spells, feats, classes, ancestries,
-  items, monsters, hazards, conditions, traits.
-- Website: searchable, filterable rules browser with the grimoire layout.
-- API: read endpoints for all rules entities, versioned under `/v1`.
-
-**Gate to Phase 3:** a reviewer can publish AoN content; users can search it on
-the web.
+**Gate to W1:** the web app authenticates a user against develop and reads one of
+*their own* `characters` rows through RLS — no service key in the browser.
 
 ---
 
-## Phase 3 — Character System
+## Phase W1 — Identity unification
 
-The flagship feature.
+Make a web login and a Discord user the **same `users` row**.
 
-- `packages/core` rules engine: compute a full sheet from a `build`.
-- Guided builder with Beginner Mode, Learning Mode, tooltips, automatic
-  calculations + manual overrides.
-- Character Vault, level history, audit log.
-- Portraits / tokens / banners via Supabase Storage.
-- Exports: **Pathbuilder-compatible JSON** and **PDF** as adapters over `core`.
+- Decide & implement Discord ⇄ web identity (ADR): Discord as a Supabase Auth
+  provider (recommended) and/or an explicit link flow writing `users.discord_id`.
+- Guarantee `users.id = auth.uid()` and never double-create a user.
 
-**Gate to Phase 4:** a user can build, save, level, and export a legal
-character; the engine matches PF2e math in tests.
+**Gate to W2:** a user who exists in the bot can log into the website and land on
+*their* account, and a brand-new web user can link Discord and be seen by the bot.
 
 ---
 
-## Phase 4 — Companions
+## Phase W2 — Character read + live sync (the core of "in sync")
 
-- Animal companions, familiars, eidolons, mounts, custom companions.
-- Reuse `core` + builder patterns; export + (later) bot sync.
+The flagship sync milestone.
 
-**Gate to Phase 5:** companions build and attach to characters.
+- Read & render a character from `pathbuilder_data` (sheet view).
+- **Subscribe to Realtime** on `characters` (+ `character_xp_log`) so bot-side HP/
+  XP/condition changes appear live, with the `updated_at` freshness check.
+- Write-path correctness: live state to columns, build to `pathbuilder_data`,
+  `overlay` read-modify-written, `updated_at` always stamped (add DB triggers).
 
----
-
-## Phase 5 — Discord Bot (parity client)
-
-Now that the spine exists, the bot is a second client — not a rewrite.
-
-- Discord OAuth account linking via `account_link`.
-- Commands: rules lookup, character sheet, dice, conditions, combat tracker.
-- **Two-way sync**: realtime updates between web and Discord; audit log records
-  bot edits.
-
-**Gate to Phase 6:** a linked user can view/roll their character in Discord and
-see web edits reflected live.
+**Gate to W3:** a character edited in Discord updates live on the website and
+vice-versa, with no clobbering in either direction. This satisfies the
+[sync "definition of done"](./web-bot-sync.md#8-definition-of-done-for-in-sync).
 
 ---
 
-## Phase 6 — Campaigns
+## Phase W3 — Character builder / editor (write-heavy)
 
-- Campaigns + membership/roles enforced by RLS.
-- NPCs, encounters, journals, loot, quests.
-- Shared homebrew at campaign scope; permissions.
+- Guided builder with Beginner/Learning modes, tooltips, auto-calculation +
+  manual overrides, producing valid `pathbuilder_data`.
+- Level history & audit (`character_xp_log` already exists; extend as needed).
+- Portraits/tokens/banners via Supabase Storage.
+- Pathbuilder JSON + PDF export from `pathbuilder_data`.
 
-**Gate to Phase 7:** a GM runs a campaign with players and shared content.
-
----
-
-## Phase 7 — Organizations / West Marches
-
-- Organizations, multi-GM, org-scoped shared content.
-- Discord server (guild) integration; role-based permissions.
-
-**Gate to Phase 8:** an org with multiple GMs shares content across campaigns.
+**Gate to W4:** a user builds/levels/exports a character on the web that the bot
+reads back correctly.
 
 ---
 
-## Phase 8 — Homebrew Workshop
+## Phase W4 — Companions, inventory, downtime, notes
 
-- Authoring for all PF2e object types, validated against official schemas.
-- Visibility scopes (Private / Campaign / Organization / Public).
-- Version history, moderation queue, ratings, comments, bot sync.
+Surface the rest of the per-character state the bot already stores.
 
-**Gate to Phase 9:** a user publishes homebrew that the engine and bot consume
-like official content.
+- `companions`, `bags`/`bag_items`, `downtime`, `character_notes`, snippets —
+  read, edit, and live-sync each, honoring its table's shape and invariants.
 
----
-
-## Phase 9 — Table Mode
-
-- A focused play view (web) pulling characters, encounters, combat tracker,
-  and rules together for live sessions.
-
-**Gate to Phase 10:** a table can run an encounter end-to-end.
+**Gate to W5:** all per-character state is editable on web and stays in sync.
 
 ---
 
-## Phase 10+ — Platform & Future
+## Phase W5 — Rules & homebrew browser
 
-Sequenced after the core product is proven:
+- Browse/search `monsters`, `spells`, `items`, `gamedata`, and `homebrew_entries`
+  with the grimoire UI.
+- Homebrew authoring writes `homebrew_entries` in the shape the bot splices live.
 
-- **Community Library / Marketplace** (browse, share, later sell homebrew).
-- **Public API** hardening + scoped API keys.
-- **Plugin framework** (API-only, reviewed).
-- **Payments**: Stripe-ready billing, entitlements behind the whitelist.
-- **Offline** character sheets (local cache + reconcile).
-- **Localization** rollout beyond `en`.
+**Gate to W6:** the website is a usable rules/homebrew reference matching the bot.
 
 ---
 
-## Notes on sequencing tradeoffs
+## Phase W6 — Campaigns, encounters, guild/server features
 
-- **Why the bot is Phase 5, not earlier:** it depends on rules (Phase 2) and the
-  character engine (Phase 3). Building it first would mean re-implementing logic
-  that later moves to `core` — exactly the drift the architecture forbids.
-- **Why rules content precedes the builder:** the builder is meaningless without
-  feats/spells/items to choose from, and the import pipeline has its own review
-  complexity worth isolating.
-- **Why payments/marketplace are last:** they are revenue, not product. The
-  whitelist + Stripe-ready stubs from Phase 1 mean we can switch them on without
-  re-architecting.
+- Combat tracker / encounter views over `encounters`/`encounter_events`.
+- Guild-scoped content (`guild_state`, `guild_snippets`, monster overlays).
+- Campaign/GM organization features per the master spec, layered on the above.
 
-Phase boundaries are gates, not deadlines. We never rush a feature.
+**Gate to W7:** GMs can run server-side content from the website in step with
+the bot.
+
+---
+
+## Phase W7+ — Platform & future
+
+Sequenced after parity and proven sync:
+
+- Community Library / Marketplace.
+- Public API hardening + scoped API keys; plugin framework (API-only).
+- Payments (Stripe-ready) gated behind the whitelist flag.
+- Offline character sheets (local cache + reconcile).
+- Localization beyond `en`.
+- (If/when worthwhile) extract shared PF2e rules logic from the bot into a
+  package both clients consume.
+
+---
+
+## Sequencing rationale
+
+- **Why reconcile (W0) before any feature:** writing the wrong column shape or a
+  migration that breaks an invariant would desync or even corrupt live bot data.
+  Get the schema truth and safe wiring first.
+- **Why identity (W1) before character sync (W2):** syncing the wrong user's row
+  is worse than not syncing. The accounts must be one before the data can be one.
+- **Why the bot is *not* a build phase:** it already exists. The roadmap's job is
+  to bring the website up to it, not to rebuild it.
+
+Phase boundaries are gates, not deadlines. We never rush — and we never ship a
+change that could clobber live bot data.

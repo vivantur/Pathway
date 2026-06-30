@@ -1,208 +1,193 @@
-# Data Model (Conceptual)
+# Data Model — The Existing Supabase Schema
 
-> Status: **Draft for review** · Phase 0 (Planning) · Companion to the
-> [System Architecture](./system-architecture.md).
+> Status: **Reverse-engineered from the live bot** (`vivantur/pathway`,
+> `Pathwayv2/`). Companion to [System Architecture](./system-architecture.md)
+> and the [Web ⇄ Bot Sync Contract](./web-bot-sync.md).
 
-This is a **conceptual** data model — entities, relationships, and the scoping
-columns that drive Row Level Security. It is not a finalized schema. Exact
-column types, indexes, and migrations are produced during the foundation and
-per-feature phases. The goal here is to agree on the shape before writing SQL.
+This is **not a proposed schema.** It documents the database that already exists
+and that the bot reads and writes in production. The website must conform to it.
+Column lists below are drawn from the bot's queries (`src/lib`, `src/state`,
+`src/index.js`) and its migrations; where a column is known to exist but its
+exact type is not pinned in code, it is marked *(inferred)*. Treat the live
+Supabase project as the final authority and reconcile before writing migrations.
 
-Legend: `PK` primary key · `FK` foreign key · *italic* = scope/permission column.
+Two Supabase projects: **prod** `cmmwirlrvqmjqbydlqks`, **develop**
+`nqnswvuqszpkntnjzomv`. Default to develop for any schema work.
 
 ---
 
-## 1. Domains at a glance
+## 1. Table map
 
 ```
- Identity        Rules Content        Player Content         Collaboration
- ─────────       ──────────────       ───────────────        ─────────────
- user            rule_source          character              campaign
- account_link    spell                companion              campaign_member
- (discord)       feat                 character_feat         organization
-                 class                character_item         org_member
-                 ancestry             character_history      campaign_entity
-                 item                  (audit/level log)      (npc/quest/loot…)
-                 monster
-                 hazard               Homebrew              Commerce / API
-                 condition            ─────────             ───────────────
-                 trait                homebrew_object        subscription
-                                      homebrew_version       api_key
-                                      moderation_report      plugin
-                                      rating / comment
+ Identity                 Characters & play state            Reference / content
+ ────────                 ───────────────────────            ───────────────────
+ users                    characters                         monsters
+ user_guild_active_       character_xp_log                   spells
+   characters             character_notes                    items
+                          bags / bag_items                   homebrew_entries
+ Guild / server           downtime                           gamedata
+ ─────────────            companions                         (homebrew_packs,
+ guild_state              encounters / encounter_events       homebrew_pack_
+ guild_snippets           user_snippets                       entries)
+ monster_art              (character_builder_drafts)
+ monster_edits
+ monster_attacks
 ```
+
+The tables in (parentheses) appear in migration history (created out-of-band on
+prod, then RLS/catch-up migrations added) but are touched lightly in current
+code; confirm against the live project.
 
 ---
 
 ## 2. Identity
 
-### `user`
-The Pathway account. Backed by Supabase Auth.
-- `id` PK
-- `display_name`, `avatar_url`
-- `created_at`
-- *`is_whitelisted`* (gates premium features pre-launch)
+### `users`
+The Pathway account, shared by web and bot.
+- `id` UUID PK — **equals Supabase Auth `auth.uid()`** (see migration
+  `align_user_ids_with_auth`).
+- `discord_id` TEXT — Discord snowflake; how the bot finds the user
+  (`lib/userMap.js`).
+- `active_char_key` TEXT — the user's currently active character slug
+  (migration `20260506_active_character.sql`).
+- *(plus profile columns — display name / username cache; confirm on live DB.)*
 
-### `account_link`
-Links external identities (Discord) to a `user`.
-- `id` PK
-- `user_id` FK → user
-- `provider` (`discord`)
-- `provider_user_id`
-- `linked_at`
-
-**Why separate:** the bot resolves a Discord user → Pathway user through this
-table, so bot actions run with the right account's permissions.
+### `user_guild_active_characters`
+Per-guild "active character" selection (a user can be different characters in
+different servers).
+- `user_id` UUID FK → users · `discord_guild_id` TEXT · `char_key` TEXT
+  *(inferred shape from `state/characters.js` usage)*.
 
 ---
 
-## 3. Rules content (ingested, read-only to users)
+## 3. Characters & play state
 
-All official content is **published** from the AoN pipeline and is read-only to
-normal users. Every record carries source/attribution.
+### `characters` — the central table
+Confirmed columns (from `lib/pathwayWebClient.js` selects and `state/characters.js`):
 
-### `rule_source`
-- `id` PK · `name` (e.g. "Player Core") · `publisher` · `license` · `url`
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `id` | UUID PK | The web-side character id (`/char add pathway-id:<uuid>`). |
+| `user_id` | UUID FK → users | Owner. |
+| `char_key` | TEXT | Lowercase per-user slug; unique per user. |
+| `name` | TEXT | Character name. |
+| `source` | TEXT | Origin tag (e.g. pathbuilder/pathway). |
+| `pathbuilder_data` | JSONB | The full build. May be the build object directly or `{ build: {...} }`. |
+| `current_hp` | INT | Bot-managed live HP. |
+| `hero_points` | INT | Bot-managed. |
+| `dying` | INT | Bot-managed condition track. |
+| `wounded` | INT | Bot-managed condition track. |
+| `experience` | INT | Bot-managed XP. |
+| `overlay` | JSONB | Bot-managed mutable state (incl. a `daily` sub-object; shallow-merged on re-import). |
+| `updated_at` | TIMESTAMPTZ | **Freshness key for Realtime conflict avoidance — always set on write.** |
 
-### Shared columns on every rules entity
-- `id` PK
-- `source_id` FK → rule_source
-- `name`, `slug`
-- `traits` (array / join to `trait`)
-- `data` (JSONB — the structured rules body)
-- `legacy` (bool — Legacy vs. Remaster)
-- `published_at`
+> **The single most important compatibility fact:** the *sheet build* lives in
+> `pathbuilder_data`, while *live play state* (HP, XP, hero points, dying,
+> wounded, and the `overlay`) lives in **dedicated columns**, not inside the
+> build JSON. The website must respect that split — edit the build via
+> `pathbuilder_data`, and edit live state via the columns — or it will fight the
+> bot. See `saveImportedCharacter`'s `preserveOverlay` logic for the exact merge
+> rules.
 
-### Entities
-`spell`, `feat`, `class`, `ancestry`, `item`, `monster`, `hazard`,
-`condition`, `trait`. Each may add type-specific columns, but all follow the
-shared shape above so the `core` engine and search treat them uniformly.
+### `character_xp_log` (full DDL known — `20260612_character_xp_log.sql`)
+- `id` UUID PK · `user_id` UUID FK · `char_key` TEXT · `amount` INT ·
+  `reason` TEXT · `old_xp` INT · `new_xp` INT · `awarded_by_discord_id` TEXT ·
+  `entry_type` TEXT CHECK in (`award`,`set`,`reset`) · `created_at` TIMESTAMPTZ.
+- RLS: `service_role` ALL; `authenticated` SELECT where `user_id = auth.uid()`.
+- `REPLICA IDENTITY FULL` + in `supabase_realtime` publication.
+- **This is the canonical example to mirror for any new table.**
 
-**Tradeoff — JSONB `data`:** PF2e content is deeply variable. Storing the
-structured body as JSONB (with a Zod schema in `packages/schema`) avoids dozens
-of sparse columns while keeping name/traits/source as real, indexable columns
-for search and filtering.
+### `character_notes`
+Per-character notebooks (`state/notes.js`). Keyed by user + char_key.
 
----
+### `bags` / `bag_items`
+Inventory: a character's bags and the items within (`state/bags.js`, two tables
+one cache). `bag_items` FK → `bags`.
 
-## 4. Player content (character & companions)
+### `downtime`
+Per-character downtime bank/log (`state/downtime.js`).
 
-### `character`
-- `id` PK
-- *`owner_id`* FK → user
-- *`campaign_id`* FK → campaign (nullable)
-- `name`, `level`
-- `build` (JSONB — the raw choices: ancestry, class, boosts, selections)
-- `portrait_url`, `token_url`, `banner_url`
-- `created_at`, `updated_at`
+### `companions`
+Animal companions, familiars, eidolons, mounts, custom — attached to a
+character (`state/companions.js`; patches the characters cache via Realtime).
 
-The **computed sheet is derived**, not stored authoritatively — `packages/core`
-computes it from `build`. Optional cached computed snapshot for fast reads.
+### `encounters` / `encounter_events`
+Combat tracker state and its event log (`state/encounters.js`).
 
-### `character_feat`, `character_item`, `character_spell` …
-Join rows connecting a character to chosen rules/homebrew objects. Each FK may
-point at either official content or a `homebrew_object` (resolved via a
-`source_kind` discriminator), so the engine handles both identically.
-
-### `character_history`
-The **audit + level log** (also the sync conflict record).
-- `id` PK · `character_id` FK · `actor_id` FK → user
-- `change_type` (level_up, edit, import, bot_edit…)
-- `diff` (JSONB) · `created_at`
-
-### `companion`
-- `id` PK · *`owner_id`* · `character_id` FK (nullable)
-- `companion_type` (animal, familiar, eidolon, mount, custom)
-- `build` (JSONB)
+### `user_snippets`
+Per-user reusable text snippets (`state/snippets.js`).
 
 ---
 
-## 5. Collaboration: campaigns & organizations
+## 4. Guild / server-scoped state
 
-### `campaign`
-- `id` PK · *`organization_id`* FK (nullable) · *`gm_id`* FK → user
-- `name`, `description`, `settings` (JSONB)
+### `guild_state`
+Calendar, weather, and per-guild settings (`state/guild.js`, `mutateJson`
+pattern, keyed by `discord_guild_id`).
 
-### `campaign_member`
-- `campaign_id` FK · `user_id` FK · *`role`* (player, co_gm)
-- This row is what RLS policies read to authorize campaign data access.
+### `guild_snippets`
+Server-shared snippets (`state/snippets.js`, second cache).
 
-### `campaign_entity`
-A unified table (or a small set of typed tables) for GM content owned by a
-campaign: NPCs, encounters, journals, loot, quests.
-- `id` PK · *`campaign_id`* FK · `entity_type` · `data` (JSONB) · *`visibility`*
-
-### `organization` / `org_member`
-West Marches / multi-GM container.
-- `organization` : `id` PK · `name` · `discord_guild_id` (nullable)
-- `org_member` : `organization_id` FK · `user_id` FK · *`role`* (member, gm, admin)
-
-**Why containers:** campaigns and orgs exist primarily to *scope permissions and
-shared content*. RLS policies key off `campaign_member.role` and
-`org_member.role`, so granting access is a membership row, not bespoke code.
+### `monster_art` / `monster_edits` / `monster_attacks`
+Per-guild bestiary overlays — custom art, statblock edits, saved attacks —
+keyed by `discord_guild_id` (`state/monster.js`, `makeGuildKeyed` factory,
+`onConflict: 'discord_guild_id'`).
 
 ---
 
-## 6. Homebrew
+## 5. Reference / content tables
 
-### `homebrew_object`
-Mirrors a rules entity but is user-authored and scoped.
-- `id` PK · *`author_id`* FK · *`scope`* (private, campaign, organization, public)
-- *`scope_ref_id`* (campaign_id / organization_id when scoped)
-- `object_type` (spell, feat, item, monster, …)
-- `data` (JSONB — same schema as official content of that type)
-- *`moderation_state`* (draft, pending, approved, rejected)
+Loaded into in-memory arrays at bot startup and spliced with homebrew.
 
-### `homebrew_version`
-- `id` PK · `homebrew_object_id` FK · `version` · `data` (JSONB) · `created_at`
+| Table | Payload column | Notes |
+| --- | --- | --- |
+| `monsters` | `monster_metadata` | AoN bestiary import; official rows replaced, homebrew/companions preserved. |
+| `spells` | `spell_metadata` | AoN spell import; damage extracted into metadata. |
+| `items` | `item_metadata` | Item catalog. |
+| `homebrew_entries` | `data` | `type`, `entry_key`, `name`, `data`; spliced into the reference arrays live via Realtime. |
+| `gamedata` | `category, slug, data` | Calendar/weather rule docs and misc game data. |
 
-### `rating`, `comment`, `moderation_report`
-Community signals + moderation queue, all FK → homebrew_object.
-
-**Key invariant:** a `homebrew_object` of type `spell` must validate against the
-same Zod schema as an official `spell`, so the rules engine can consume either.
+`character_builder_drafts`, `homebrew_packs`, `homebrew_pack_entries` exist in
+migration history (with RLS catch-up migrations) — confirm current usage on the
+live project.
 
 ---
 
-## 7. Commerce, API, plugins (future-facing, stubbed early)
+## 6. RLS & Realtime invariants (must hold for new tables)
 
-### `subscription`
-- `id` PK · `user_id` FK · `stripe_customer_id` · `status` · `tier`
-- Entitlements gated behind *`user.is_whitelisted`* until launch.
+The website authors migrations (per the bot's convention), so it must preserve
+the patterns the bot depends on. For every **user-state** table:
 
-### `api_key`
-- `id` PK · *`user_id`* FK · `scopes` (array) · `hashed_key` · `revoked_at`
+1. **RLS enabled**, with:
+   - `service_role` → `FOR ALL ... USING (true) WITH CHECK (true)` (the bot).
+   - `authenticated` → row access scoped by `user_id = auth.uid()` (the website).
+2. **`REPLICA IDENTITY FULL`** (so DELETE payloads carry all columns — the bot's
+   cache keys aren't always the PK).
+3. **Membership in the `supabase_realtime` publication.**
+4. An **`updated_at TIMESTAMPTZ`** column the website sets on every write.
 
-### `plugin`
-- `id` PK · *`author_id`* · `manifest` (JSONB) · *`review_state`*
-- Plugins operate only through the scoped public API — never direct DB access.
-
----
-
-## 8. Scoping & RLS summary
-
-The columns that authorization depends on, in one place:
-
-| Entity | Scope columns RLS reads |
-| --- | --- |
-| character / companion | `owner_id`, `campaign_id` (+ campaign membership) |
-| campaign_entity | `campaign_id` (+ `campaign_member.role`), `visibility` |
-| campaign | `gm_id`, `organization_id` (+ membership) |
-| homebrew_object | `author_id`, `scope`, `scope_ref_id`, `moderation_state` |
-| rules content | public read; write restricted to import pipeline service role |
-| api_key / subscription / plugin | `user_id` / `author_id` |
+`20260612_character_xp_log.sql` is the reference template for all four.
 
 ---
 
-## 9. Open questions (future ADRs)
+## 7. Identity conventions (from the bot)
 
-1. **`campaign_entity` — one polymorphic table vs. typed tables per kind?**
-   Tradeoff: query simplicity & RLS uniformity vs. type safety & indexing.
-2. **Computed sheet caching** — store a materialized snapshot, recompute on
-   read, or both with invalidation on `character_history` writes?
-3. **Content versioning across Remaster/Legacy** — separate rows vs. a
-   `legacy` flag vs. an edition dimension on `rule_source`.
-4. **Homebrew ↔ official references** — discriminator column vs. separate join
-   tables per source kind.
+- `discordId` — Discord snowflake string.
+- `userId` — `users.id` UUID (= `auth.uid()`).
+- `charKey` — lowercase slug, unique per user (e.g. `aurelius`).
+- `compKey` — lowercase companion slug, unique per character.
 
-Each is resolved in its phase's ADR before schema is finalized.
+---
+
+## 8. Open questions to resolve against the live DB
+
+1. **Exact column inventory & types** for `users`, `bags/bag_items`,
+   `character_notes`, `downtime`, `companions`, `encounters`, snippets, and
+   guild tables — confirm by introspecting the live project (or back-filling the
+   migrations into this repo).
+2. **`pathbuilder_data` schema** — pin a Zod/TS type for the build so web and
+   bot validate identically. The bot's `parsers/` (Pathbuilder/AoN) define the
+   de-facto shape today.
+3. **`overlay` schema** — document the keys the bot reads/writes (esp. `daily`)
+   so the website never drops them.
+4. Status of `character_builder_drafts` / `homebrew_packs*` — live or vestigial.

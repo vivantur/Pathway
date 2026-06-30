@@ -1,8 +1,15 @@
 # ADR 0001: Monorepo with a shared, I/O-free `core` rules engine
 
-- **Status:** Proposed
+- **Status:** ❌ Superseded by [ADR-0002](./0002-website-as-second-client.md)
 - **Date:** 2026-06-30
 - **Phase:** 0 → enables Phase 1 (Foundation)
+
+> **Superseded.** This ADR was written before we learned the Discord bot and its
+> Supabase backend already exist in production. Its central premise — a greenfield
+> monorepo containing both clients and a brand-new shared `core` package — does
+> not match reality. The website is a separate repo joining an existing backend,
+> and the rules logic already lives in the bot as CommonJS. Kept for history;
+> see ADR-0002 for the decision that replaces it.
 
 ## Context
 
