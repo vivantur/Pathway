@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
+import { useRelink } from '@/features/auth/useRelink';
 import { useMyCharacters } from '@/features/characters/useCharacters';
 import { isSchemaNotReady } from '@/features/characters/errors';
 import type { CharacterSummary } from '@/features/characters/types';
@@ -27,6 +28,7 @@ export function VaultPage() {
   return (
     <div className="space-y-8">
       <VaultHeader characterCount={characters.length} portraitCount={withArt.length} />
+      <RelinkBanner />
 
       {isLoading && (
         <div className="py-10">
@@ -89,6 +91,73 @@ export function VaultPage() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------
+// Relink feedback — shown once when the session claims bot characters
+// ---------------------------------------------------------------
+
+function RelinkBanner() {
+  const { data } = useRelink();
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed || !data) return null;
+
+  // Only surface the two outcomes worth telling the user about. 'already_linked'
+  // and 'no_discord_id' are silent (normal state / non-Discord login).
+  if (data.status === 'linked') {
+    const n = data.characters ?? 0;
+    return (
+      <Banner
+        tone="success"
+        onDismiss={() => setDismissed(true)}
+      >
+        Welcome! We linked your Discord account and found{' '}
+        <span className="font-display text-emerald-soft">{n}</span>{' '}
+        {n === 1 ? 'character' : 'characters'} from the Pathway bot.
+      </Banner>
+    );
+  }
+
+  if (data.status === 'conflict') {
+    return (
+      <Banner tone="danger" onDismiss={() => setDismissed(true)}>
+        We couldn&apos;t link your Discord account automatically — it looks
+        already mapped to a different profile. Reach out to an admin so we can
+        sort it out.
+      </Banner>
+    );
+  }
+
+  return null;
+}
+
+function Banner({
+  tone,
+  children,
+  onDismiss,
+}: {
+  tone: 'success' | 'danger';
+  children: ReactNode;
+  onDismiss: () => void;
+}) {
+  const cls =
+    tone === 'success'
+      ? 'border-emerald/40 bg-emerald/10 text-silver/90'
+      : 'border-red-500/40 bg-red-500/10 text-red-200';
+  return (
+    <div className={`flex items-start justify-between gap-3 rounded-lg border p-4 text-sm ${cls}`}>
+      <div>{children}</div>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="shrink-0 text-silver/50 hover:text-gold"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
     </div>
   );
 }

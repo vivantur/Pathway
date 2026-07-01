@@ -413,6 +413,40 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
 }
 
 // -------------------------------------------------------------------------
+// Self-relink: claim bot characters for the signed-in Discord identity
+// -------------------------------------------------------------------------
+
+export type RelinkStatus =
+  | 'linked'
+  | 'already_linked'
+  | 'no_bot_identity'
+  | 'no_discord_id'
+  | 'conflict'
+  | 'not_authenticated';
+
+export interface RelinkResult {
+  status: RelinkStatus;
+  /** Characters owned after the call (present for linked / already_linked). */
+  characters?: number;
+  /** The bot users.id that was rewritten (present for linked). */
+  previous_id?: string;
+  detail?: string;
+}
+
+/**
+ * Call the `relink_current_user()` Postgres function, which matches the
+ * caller's verified Discord id to their bot `users` row and rewrites the
+ * bot id to the web `auth.uid()` (cascading ownership of all their
+ * characters). Idempotent — safe to call on every login.
+ */
+export async function relinkCurrentUser(): Promise<RelinkResult> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.rpc('relink_current_user');
+  if (error) throw error;
+  return (data as RelinkResult) ?? { status: 'no_bot_identity' };
+}
+
+// -------------------------------------------------------------------------
 // Public share lookup: fetch by public_share_id without auth
 // -------------------------------------------------------------------------
 
