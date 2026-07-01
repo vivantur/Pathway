@@ -9,6 +9,8 @@ import {
 } from '@/features/characters/useCharacterActions';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { useCharacterRealtime, type RealtimeState } from '@/features/characters/useCharacterRealtime';
+import { useUpdateCharacterState } from '@/features/characters/useUpdateCharacterState';
+import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import { mergeWeapons } from '@/features/characters/weapons';
@@ -105,6 +107,16 @@ export function Sheet({
     enabled: !readOnly,
   });
 
+  // Live-state editing (HP / hero / dying / wounded / XP / notes). Disabled on
+  // read-only shares. The hook is always called (rules of hooks); we just gate
+  // whether the UI exposes the controls.
+  const stateMutation = useUpdateCharacterState(character.char_key);
+  const edit: EditControls = {
+    enabled: !readOnly,
+    update: (patch) => stateMutation.mutate(patch),
+    isPending: stateMutation.isPending,
+  };
+
   const setActiveTab = (id: TabId) => {
     const next = new URLSearchParams(searchParams);
     // Keep the URL clean when we're on the default view.
@@ -116,10 +128,10 @@ export function Sheet({
 
   return (
     <div className="space-y-4">
-      <SheetHeader character={character} build={build} readOnly={readOnly} live={live} />
+      <SheetHeader character={character} build={build} readOnly={readOnly} live={live} edit={edit} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
         <LeftColumn character={character} build={build} readOnly={readOnly} />
-        <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} />
+        <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} edit={edit} />
         <RightColumn build={build} />
       </div>
       <BottomTabBar activeTab={activeTab} onSelect={setActiveTab} readOnly={readOnly} />
@@ -127,16 +139,28 @@ export function Sheet({
   );
 }
 
+/**
+ * Live-state editing controls threaded to the components that expose them.
+ * `enabled` is false on read-only public shares.
+ */
+export interface EditControls {
+  enabled: boolean;
+  update: (patch: CharacterStatePatch) => void;
+  isPending: boolean;
+}
+
 function TabContent({
   tab,
   character,
   build,
   readOnly,
+  edit,
 }: {
   tab: TabId;
   character: CharacterRow;
   build: PathbuilderBuild;
   readOnly: boolean;
+  edit: EditControls;
 }) {
   // Journal contains private data (character notes + XP log with awarder
   // Discord IDs). Force-swap it out of the router when readOnly.
@@ -151,7 +175,7 @@ function TabContent({
   }
   switch (tab) {
     case 'overview':
-      return <CenterColumn character={character} build={build} />;
+      return <CenterColumn character={character} build={build} edit={edit} />;
     case 'ancestry':
       return <AncestryTab character={character} build={build} />;
     case 'class':
@@ -184,11 +208,13 @@ function SheetHeader({
   build,
   readOnly = false,
   live,
+  edit,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
   readOnly?: boolean;
   live?: RealtimeState;
+  edit?: EditControls;
 }) {
   const level = character.level ?? build.level ?? 1;
   const xpTarget = 1000;
@@ -222,14 +248,22 @@ function SheetHeader({
           <HeaderField label="Background" value={bg} />
           <HeaderField label="Class" value={character.class_name ?? build.class} />
           <HeaderField label="Level" value={level} />
-          <HeaderField
-            label="Experience Points"
-            value={
-              <span className="tabular-nums">
-                {xp.toLocaleString()} <span className="text-silver/40">/ {xpTarget.toLocaleString()}</span>
-              </span>
-            }
-          />
+          {edit?.enabled ? (
+            <XpHeaderField
+              xp={xp}
+              target={xpTarget}
+              onChange={(n) => edit.update({ experience: n })}
+            />
+          ) : (
+            <HeaderField
+              label="Experience Points"
+              value={
+                <span className="tabular-nums">
+                  {xp.toLocaleString()} <span className="text-silver/40">/ {xpTarget.toLocaleString()}</span>
+                </span>
+              }
+            />
+          )}
           <HeaderField label="Size" value={sizeLabel(build.size)} />
           <HeaderField label="Speed" value={`${speed(build)} ft.`} />
         </div>
@@ -546,6 +580,46 @@ function HeaderField({
   );
 }
 
+/** Editable XP header field — commits on blur / Enter. */
+function XpHeaderField({
+  xp,
+  target,
+  onChange,
+}: {
+  xp: number;
+  target: number;
+  onChange: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft != null) {
+      const n = Number(draft);
+      if (!Number.isNaN(n) && n !== xp) onChange(Math.max(0, n));
+    }
+    setDraft(null);
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <div className="whitespace-nowrap text-[0.6rem] uppercase tracking-widest text-gold/70">
+        Experience Points
+      </div>
+      <div className="flex flex-1 items-center gap-1 rounded-sm border border-gold/20 bg-midnight-800/80 px-3 py-1 font-serif text-silver">
+        <input
+          type="number"
+          value={draft ?? String(xp)}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+          className="w-16 bg-transparent tabular-nums focus:outline-none"
+        />
+        <span className="text-silver/40">/ {target.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
 function HeaderButton({
   icon,
   label,
@@ -825,11 +899,19 @@ function FramedBlock({
 // Center column
 // ---------------------------------------------------------------
 
-function CenterColumn({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+function CenterColumn({
+  character,
+  build,
+  edit,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  edit: EditControls;
+}) {
   return (
     <div className="space-y-4">
-      <StatRow character={character} build={build} />
-      <ConditionsRow character={character} build={build} />
+      <StatRow character={character} build={build} edit={edit} />
+      <ConditionsRow character={character} build={build} edit={edit} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <AttacksPanel character={character} build={build} />
@@ -839,7 +921,7 @@ function CenterColumn({ character, build }: { character: CharacterRow; build: Pa
         <EquipmentPanel build={build} />
         <InventoryPanel build={build} />
         <TreasurePanel character={character} build={build} />
-        <NotesPanel charKey={character.char_key} shortNote={character.notes} />
+        <NotesPanel charKey={character.char_key} shortNote={character.notes} edit={edit} />
       </div>
     </div>
   );
@@ -847,28 +929,111 @@ function CenterColumn({ character, build }: { character: CharacterRow; build: Pa
 
 // ---- Ornate top stat row ---------------------------------------
 
-function StatRow({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+function StatRow({
+  character,
+  build,
+  edit,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  edit: EditControls;
+}) {
   const max = maxHp(build);
   const hero = character.hero_points ?? character.overlay?.daily?.hero_points ?? 0;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-      <StatCard
-        label="HP"
-        icon={<HeartIcon className="text-red-400" />}
-        value={
-          <span className="tabular-nums">
-            {character.current_hp ?? '—'}
-            <span className="text-silver/40"> / {max ?? '—'}</span>
-          </span>
-        }
-      />
+      <HpCard current={character.current_hp} max={max ?? null} edit={edit} />
       <StatCard label="AC" icon={<ShieldIcon />} value={acTotal(build) ?? '—'} />
       <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude'))} />
       <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
       <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />
       <StatCard label="Perception" icon={<EyeIcon />} value={fmtMod(perceptionBonus(build))} />
-      <HeroPointsCard value={hero} />
+      <HeroPointsCard value={hero} edit={edit} />
     </div>
+  );
+}
+
+/**
+ * HP stat card. Read-only when editing is disabled (public share); otherwise
+ * shows − / + damage-heal steppers and a click-to-set current value.
+ */
+function HpCard({
+  current,
+  max,
+  edit,
+}: {
+  current: number | null;
+  max: number | null;
+  edit: EditControls;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const clamp = (n: number) => Math.max(0, max != null ? Math.min(n, max) : n);
+  const setHp = (n: number) => edit.update({ current_hp: clamp(n) });
+
+  const commit = () => {
+    const n = Number(draft);
+    if (!Number.isNaN(n)) setHp(n);
+    setEditing(false);
+  };
+
+  return (
+    <div className="relative rounded-md border border-gold/30 bg-midnight-900/70 px-3 py-3 text-center shadow-gilded">
+      <CornerAccents />
+      <div className="text-[0.65rem] font-display uppercase tracking-widest text-gold/90">HP</div>
+      <div className="my-1 flex justify-center text-xl">
+        <HeartIcon className="text-red-400" />
+      </div>
+
+      {editing ? (
+        <input
+          autoFocus
+          type="number"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          className="w-16 rounded border border-gold/40 bg-midnight-800 text-center font-display text-lg text-silver focus:outline-none"
+        />
+      ) : (
+        <button
+          type="button"
+          disabled={!edit.enabled}
+          onClick={() => {
+            setDraft(String(current ?? 0));
+            setEditing(true);
+          }}
+          className={`font-display text-2xl text-silver tabular-nums ${edit.enabled ? 'hover:text-gold' : 'cursor-default'}`}
+          title={edit.enabled ? 'Click to set HP' : undefined}
+        >
+          {current ?? '—'}
+          <span className="text-silver/40"> / {max ?? '—'}</span>
+        </button>
+      )}
+
+      {edit.enabled && !editing && (
+        <div className="mt-1 flex items-center justify-center gap-1">
+          <StepBtn label="−" onClick={() => setHp((current ?? 0) - 1)} />
+          <StepBtn label="+" onClick={() => setHp((current ?? 0) + 1)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-5 w-5 items-center justify-center rounded border border-gold/30 bg-midnight-800/70 font-display text-sm text-gold/90 transition-colors hover:border-gold/60 hover:bg-midnight-800"
+    >
+      {label}
+    </button>
   );
 }
 
@@ -893,7 +1058,13 @@ function StatCard({
   );
 }
 
-function HeroPointsCard({ value }: { value: number }) {
+function HeroPointsCard({ value, edit }: { value: number; edit: EditControls }) {
+  // Clicking pip i sets hero points to i+1; clicking the current top pip
+  // toggles it back down by one.
+  const setPip = (i: number) => {
+    const next = value === i + 1 ? i : i + 1;
+    edit.update({ hero_points: next });
+  };
   return (
     <div className="relative rounded-md border border-gold/30 bg-midnight-900/70 px-3 py-3 text-center shadow-gilded">
       <CornerAccents />
@@ -904,12 +1075,22 @@ function HeroPointsCard({ value }: { value: number }) {
         <StarIcon />
       </div>
       <div className="flex justify-center gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className={`inline-block h-3 w-3 rounded-full border border-gold/60 ${i < value ? 'bg-gold' : 'bg-transparent'}`}
-          />
-        ))}
+        {[0, 1, 2].map((i) =>
+          edit.enabled ? (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPip(i)}
+              aria-label={`Set hero points to ${i + 1}`}
+              className={`h-3.5 w-3.5 rounded-full border border-gold/60 transition-colors hover:border-gold ${i < value ? 'bg-gold' : 'bg-transparent hover:bg-gold/30'}`}
+            />
+          ) : (
+            <span
+              key={i}
+              className={`inline-block h-3 w-3 rounded-full border border-gold/60 ${i < value ? 'bg-gold' : 'bg-transparent'}`}
+            />
+          ),
+        )}
       </div>
     </div>
   );
@@ -920,26 +1101,77 @@ function HeroPointsCard({ value }: { value: number }) {
 function ConditionsRow({
   character,
   build,
+  edit,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
+  edit: EditControls;
 }) {
   // Conditions + counters share the left bar (both are "current-state" facts).
   // Defenses (resist/weak/immune) always get the right bar so a silver
   // weakness is never hidden by an unrelated resource counter.
-  const conditions = renderConditions(character);
   const counters = renderCounters(character.overlay ?? null);
-  const leftItems = [...conditions, ...counters];
   const defenses = defenseLine(build);
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <SlimBar label="Conditions" value={leftItems.length ? leftItems.join(' · ') : '—'} />
+      {edit.enabled ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-gold/20 bg-midnight-900/50 px-3 py-2">
+          <span className="text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
+            Conditions
+          </span>
+          <ConditionStepper
+            label="Dying"
+            value={character.dying ?? 0}
+            max={4}
+            onChange={(n) => edit.update({ dying: n })}
+          />
+          <ConditionStepper
+            label="Wounded"
+            value={character.wounded ?? 0}
+            max={4}
+            onChange={(n) => edit.update({ wounded: n })}
+          />
+          {counters.length > 0 && (
+            <span className="text-xs text-silver/60">{counters.join(' · ')}</span>
+          )}
+        </div>
+      ) : (
+        <SlimBar
+          label="Conditions"
+          value={
+            [...renderConditions(character), ...counters].join(' · ') || '—'
+          }
+        />
+      )}
       <SlimBar
         label="Resistances & Immunities"
         value={defenses.length ? defenses.join(' · ') : '—'}
       />
     </div>
+  );
+}
+
+function ConditionStepper({
+  label,
+  value,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  const clamp = (n: number) => Math.max(0, Math.min(n, max));
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`text-xs ${value > 0 ? 'text-red-300' : 'text-silver/60'}`}>
+        {label} {value}
+      </span>
+      <StepBtn label="−" onClick={() => onChange(clamp(value - 1))} />
+      <StepBtn label="+" onClick={() => onChange(clamp(value + 1))} />
+    </span>
   );
 }
 
@@ -1261,9 +1493,11 @@ function TreasurePanel({ character, build }: { character: CharacterRow; build: P
 function NotesPanel({
   charKey,
   shortNote,
+  edit,
 }: {
   charKey: string;
   shortNote: string | null;
+  edit: EditControls;
 }) {
   const { data: notes, isLoading } = useCharacterNotes(charKey);
   const list = (notes ?? [])
@@ -1271,24 +1505,76 @@ function NotesPanel({
     .filter((t) => t.length > 0);
   const hasAny = list.length > 0 || (shortNote?.trim().length ?? 0) > 0;
 
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState('');
+
+  const startEdit = () => {
+    setBioDraft(shortNote ?? '');
+    setEditingBio(true);
+  };
+  const commitBio = () => {
+    if (bioDraft !== (shortNote ?? '')) edit.update({ notes: bioDraft });
+    setEditingBio(false);
+  };
+
   return (
     <Panel title="Notes" icon={<NoteIcon />}>
-      {isLoading ? (
-        <p className="text-sm text-silver/40">Loading…</p>
-      ) : !hasAny ? (
-        <p className="text-sm text-silver/40">—</p>
-      ) : (
-        <div className="space-y-2 text-sm leading-relaxed text-silver/85">
-          {shortNote?.trim() && <p className="italic text-silver/70">{shortNote}</p>}
-          {list.slice(0, 4).map((t, i) => (
-            <p key={i}>{t}</p>
-          ))}
-          {list.length > 4 && (
-            <p className="text-xs text-silver/50">
-              …{list.length - 4} more note{list.length - 4 === 1 ? '' : 's'}
-            </p>
-          )}
+      {editingBio ? (
+        <div className="space-y-2">
+          <textarea
+            autoFocus
+            value={bioDraft}
+            onChange={(e) => setBioDraft(e.target.value)}
+            rows={5}
+            placeholder="A short bio or note for this character…"
+            className="w-full rounded border border-gold/30 bg-midnight-800/80 p-2 text-sm text-silver focus:border-gold/60 focus:outline-none"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditingBio(false)}
+              className="text-xs uppercase tracking-widest text-silver/60 hover:text-gold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={commitBio}
+              className="rounded border border-gold/40 bg-gold/10 px-2 py-1 text-xs uppercase tracking-widest text-gold hover:bg-gold/20"
+            >
+              Save
+            </button>
+          </div>
         </div>
+      ) : (
+        <>
+          {isLoading ? (
+            <p className="text-sm text-silver/40">Loading…</p>
+          ) : !hasAny ? (
+            <p className="text-sm text-silver/40">—</p>
+          ) : (
+            <div className="space-y-2 text-sm leading-relaxed text-silver/85">
+              {shortNote?.trim() && <p className="italic text-silver/70">{shortNote}</p>}
+              {list.slice(0, 4).map((t, i) => (
+                <p key={i}>{t}</p>
+              ))}
+              {list.length > 4 && (
+                <p className="text-xs text-silver/50">
+                  …{list.length - 4} more note{list.length - 4 === 1 ? '' : 's'}
+                </p>
+              )}
+            </div>
+          )}
+          {edit.enabled && (
+            <button
+              type="button"
+              onClick={startEdit}
+              className="mt-2 text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"
+            >
+              {shortNote?.trim() ? 'Edit bio' : '+ Add a bio'}
+            </button>
+          )}
+        </>
       )}
     </Panel>
   );

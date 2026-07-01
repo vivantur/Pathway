@@ -460,6 +460,44 @@ export async function relinkCurrentUser(): Promise<RelinkResult> {
 }
 
 // -------------------------------------------------------------------------
+// Edit live state: HP / hero points / dying / wounded / XP / notes
+// -------------------------------------------------------------------------
+
+/**
+ * The player-editable "live state" fields. These are dedicated columns (the
+ * canonical source per web-bot-sync.md §3), NOT inside pathbuilder_data — so a
+ * plain column UPDATE is safe and never fights the build. The `overlay`
+ * (bot-managed conditions, xp log, counters) is deliberately untouched.
+ */
+export interface CharacterStatePatch {
+  current_hp?: number | null;
+  hero_points?: number | null;
+  dying?: number | null;
+  wounded?: number | null;
+  experience?: number | null;
+  notes?: string | null;
+}
+
+/**
+ * Write a live-state patch to one owned character. RLS + the explicit
+ * (user_id, char_key) predicate keep it scoped to the owner. Stamps
+ * updated_at so Realtime subscribers (other open web sheets) refresh.
+ */
+export async function updateCharacterState(input: {
+  userId: string;
+  charKey: string;
+  patch: CharacterStatePatch;
+}): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('characters')
+    .update({ ...input.patch, updated_at: new Date().toISOString() })
+    .eq('user_id', input.userId)
+    .eq('char_key', input.charKey);
+  if (error) throw error;
+}
+
+// -------------------------------------------------------------------------
 // Public share lookup: fetch by public_share_id without auth
 // -------------------------------------------------------------------------
 
