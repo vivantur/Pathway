@@ -318,12 +318,58 @@ export function acTotal(build: PathbuilderBuild): number | undefined {
 
 /**
  * The AC bonus a raised shield grants (0 if the character carries no shield).
- * Pathbuilder exports this on `acTotal.shieldBonus` — it's already excluded
- * from `acTotal.acTotal`, so callers add it only while the shield is raised.
+ *
+ * Pathbuilder is inconsistent about this: it only populates
+ * `acTotal.shieldBonus` when the shield is flagged as equipped/raised in the
+ * builder, so plenty of real exports carry a shield in the `armor` list (or the
+ * loose `equipment` list) while leaving `acTotal.shieldBonus` at 0/undefined.
+ * We therefore fall back to detecting the shield ourselves and deriving its AC
+ * bonus from its type (buckler +1, every other shield +2 by default).
  */
 export function shieldBonus(build: PathbuilderBuild): number {
-  const b = build.acTotal?.shieldBonus;
-  return typeof b === 'number' && b > 0 ? b : 0;
+  // 1. Pathbuilder's pre-computed value wins when it's actually there.
+  const pre = build.acTotal?.shieldBonus;
+  if (typeof pre === 'number' && pre > 0) return pre;
+
+  // 2. A shield listed alongside armor (Pathbuilder files shields there,
+  //    usually with prof === 'shield').
+  const fromArmor = shieldBonusFromArmor(build.armor ?? []);
+  if (fromArmor > 0) return fromArmor;
+
+  // 3. Last resort: a shield sitting in the loose [name, qty] equipment list.
+  return shieldBonusFromNames((build.equipment ?? []).map((e) => (Array.isArray(e) ? e[0] : '')));
+}
+
+/** Base AC bonus for a shield by name (0 if the name isn't a shield). */
+function shieldBonusForName(name: string): number {
+  const n = name.toLowerCase();
+  if (!n) return 0;
+  if (n.includes('buckler')) return 1;
+  // Wooden / steel / tower / darkwood / etc. all give +2 when raised.
+  if (n.includes('shield')) return 2;
+  return 0;
+}
+
+function isShieldArmor(a: Armor): boolean {
+  if ((a.prof ?? '').toLowerCase() === 'shield') return true;
+  return shieldBonusForName(a.display || a.name || '') > 0;
+}
+
+function shieldBonusFromArmor(armor: Armor[]): number {
+  let best = 0;
+  for (const a of armor) {
+    if (!isShieldArmor(a)) continue;
+    // Known shield entry: use the name's bonus, defaulting to +2 when the
+    // prof says "shield" but the name is unexpected.
+    best = Math.max(best, shieldBonusForName(a.display || a.name || '') || 2);
+  }
+  return best;
+}
+
+function shieldBonusFromNames(names: string[]): number {
+  let best = 0;
+  for (const name of names) best = Math.max(best, shieldBonusForName(name ?? ''));
+  return best;
 }
 
 /** Class DC for classes that have one (kineticist, monk, most casters). */
