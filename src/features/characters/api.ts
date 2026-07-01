@@ -31,16 +31,19 @@ const FULL_COLUMNS = [
 /**
  * Fetch the signed-in user's characters.
  *
- * No `user_id` filter is needed: RLS scopes `authenticated` reads to
- * `user_id = auth.uid()` (data-model.md §6). The anon key plus the user's
- * session is what makes this safe — the same query run by another user returns
- * only *their* rows.
+ * MUST filter by `user_id` explicitly. It's tempting to rely on RLS alone —
+ * and that WAS safe until the public-share policy (`is_public = true` readable
+ * by everyone) was added. With that policy live, an unfiltered select returns
+ * "my rows OR any public row in the whole database", so every public character
+ * would leak into every user's vault. The explicit `user_id` predicate scopes
+ * this to the owner regardless of how permissive RLS becomes.
  */
-export async function fetchMyCharacters(): Promise<CharacterSummary[]> {
+export async function fetchMyCharacters(userId: string): Promise<CharacterSummary[]> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('characters')
     .select(SUMMARY_COLUMNS)
+    .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -54,11 +57,20 @@ export async function fetchMyCharacters(): Promise<CharacterSummary[]> {
  * "not found" (either doesn't exist or isn't yours) is a clean 404, not an
  * error that bubbles up as a red panel.
  */
-export async function fetchCharacterByKey(charKey: string): Promise<CharacterRow | null> {
+export async function fetchCharacterByKey(
+  charKey: string,
+  userId: string,
+): Promise<CharacterRow | null> {
   const supabase = requireSupabase();
+  // Filter by user_id as well as char_key: char_key is only unique *per user*,
+  // so two people can both have "seravi". With the public-share RLS policy
+  // live, an unfiltered char_key match could return another user's public
+  // character (or two rows → maybeSingle() error). Scoping to the owner keeps
+  // this route strictly "my character".
   const { data, error } = await supabase
     .from('characters')
     .select(FULL_COLUMNS)
+    .eq('user_id', userId)
     .eq('char_key', charKey)
     .maybeSingle();
 

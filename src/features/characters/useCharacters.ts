@@ -13,7 +13,7 @@ export function useMyCharacters() {
   const { user } = useAuth();
   return useQuery({
     queryKey: charactersKey(user?.id),
-    queryFn: fetchMyCharacters,
+    queryFn: () => fetchMyCharacters(user!.id),
     enabled: Boolean(user),
   });
 }
