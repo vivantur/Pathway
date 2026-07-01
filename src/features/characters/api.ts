@@ -1,4 +1,5 @@
 import { requireSupabase } from '@/lib/supabase';
+import { preferRemaster } from './pf2eData/sourcePreference';
 import type {
   AncestryRow,
   CharacterNoteEntry,
@@ -179,16 +180,18 @@ export async function fetchAncestryBundle(input: {
   const { ancestryName, characterLevel } = input;
   const supabase = requireSupabase();
 
-  // Duplicates happen (Remaster vs Legacy variants). Take the first row
-  // deterministically instead of erroring out.
+  // Fetch up to a handful of candidates, then let preferRemaster pick the
+  // Remaster row when both exist. Grouping is by name so Legacy-only
+  // ancestries still make it through.
   const { data: ancestryRows, error: ancestryError } = await supabase
     .from('ancestries')
     .select('*')
     .ilike('name', ancestryName)
     .order('id', { ascending: true })
-    .limit(1);
+    .limit(5);
   if (ancestryError) throw ancestryError;
-  const ancestry = ((ancestryRows ?? [])[0] ?? null) as AncestryRow | null;
+  const ancestryCandidates = ((ancestryRows ?? []) as AncestryRow[]);
+  const ancestry = preferRemaster(ancestryCandidates)[0] ?? null;
 
   let heritages: HeritageRow[] = [];
   if (ancestry?.id) {
@@ -208,6 +211,8 @@ export async function fetchAncestryBundle(input: {
       .order('name');
     heritages = (heritageRowsByName ?? []) as HeritageRow[];
   }
+  // Collapse Legacy + Remaster twins to just Remaster, keeping the sort.
+  heritages = preferRemaster(heritages);
 
   // Ancestry feats: try both casings of the trait tag.
   const lowerName = ancestryName.trim().toLowerCase();
@@ -233,8 +238,10 @@ export async function fetchAncestryBundle(input: {
   for (const f of [...(featsA ?? []), ...(featsB ?? [])] as FeatRow[]) {
     if (!dedupe.has(f.id)) dedupe.set(f.id, f);
   }
-  const ancestryFeats = Array.from(dedupe.values()).sort(
-    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  const ancestryFeats = preferRemaster(
+    Array.from(dedupe.values()).sort(
+      (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+    ),
   );
 
   return { ancestry, heritages, ancestryFeats };
@@ -265,32 +272,26 @@ export async function fetchClassBundle(input: {
   const { className, characterLevel } = input;
   const supabase = requireSupabase();
 
-  // Some entries appear twice in gamedata (e.g. Fighter shows up as both a
-  // Remaster and a Legacy row). Prefer a slug match first (slugs are unique
-  // per category); fall back to a name match ordered by id ascending and
-  // take the first row — the older id is almost always the canonical entry.
-  const slug = className.trim().toLowerCase().replace(/\s+/g, '-');
-  const { data: slugRows, error: slugError } = await supabase
+  // Grab all matching gamedata rows (Fighter typically shows up twice —
+  // Legacy + Remaster). Handing them to preferRemaster picks the Remaster
+  // row when one exists and falls back to the older id otherwise. The
+  // gamedata "source" lives inside the JSONB `data`, so we shape a light
+  // wrapper for the helper.
+  const { data: classRows, error: classError } = await supabase
     .from('gamedata')
     .select('id, category, slug, name, data, updated_at')
     .eq('category', 'classes')
-    .eq('slug', slug)
-    .limit(1);
-  if (slugError) throw slugError;
+    .ilike('name', className)
+    .order('id', { ascending: true })
+    .limit(5);
+  if (classError) throw classError;
 
-  let classInfo: ClassGamedata | null = ((slugRows ?? [])[0] ?? null) as ClassGamedata | null;
-
-  if (!classInfo) {
-    const { data: nameRows, error: nameError } = await supabase
-      .from('gamedata')
-      .select('id, category, slug, name, data, updated_at')
-      .eq('category', 'classes')
-      .ilike('name', className)
-      .order('id', { ascending: true })
-      .limit(1);
-    if (nameError) throw nameError;
-    classInfo = ((nameRows ?? [])[0] ?? null) as ClassGamedata | null;
-  }
+  const classCandidates = ((classRows ?? []) as ClassGamedata[]).map((row) => ({
+    row,
+    name: row.name,
+    source: typeof row.data?.source === 'string' ? (row.data.source as string) : null,
+  }));
+  const classInfo = preferRemaster(classCandidates)[0]?.row ?? null;
 
   const lower = className.trim().toLowerCase();
   const proper = lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -317,8 +318,10 @@ export async function fetchClassBundle(input: {
   for (const f of [...(featuresA.data ?? []), ...(featuresB.data ?? [])] as ClassFeatureRow[]) {
     if (!featureDedupe.has(f.id)) featureDedupe.set(f.id, f);
   }
-  const features = Array.from(featureDedupe.values()).sort(
-    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  const features = preferRemaster(
+    Array.from(featureDedupe.values()).sort(
+      (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+    ),
   );
 
   const featsSelect =
@@ -345,8 +348,10 @@ export async function fetchClassBundle(input: {
   for (const f of [...(featsA.data ?? []), ...(featsB.data ?? [])] as FeatRow[]) {
     if (!featDedupe.has(f.id)) featDedupe.set(f.id, f);
   }
-  const feats = Array.from(featDedupe.values()).sort(
-    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  const feats = preferRemaster(
+    Array.from(featDedupe.values()).sort(
+      (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+    ),
   );
 
   return { classInfo, features, feats };
