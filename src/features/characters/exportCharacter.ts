@@ -1,8 +1,14 @@
 import type { PathbuilderBuild } from './pathbuilder';
 
 /** Trigger a client-side file download from in-memory content. */
-export function downloadFile(filename: string, content: BlobPart, mime: string): void {
-  const blob = new Blob([content], { type: mime });
+export function downloadFile(
+  filename: string,
+  content: BlobPart | Uint8Array,
+  mime: string,
+): void {
+  // Cast covers pdf-lib's Uint8Array<ArrayBufferLike>, which Blob accepts at
+  // runtime but TS's strict BlobPart type rejects.
+  const blob = new Blob([content as BlobPart], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

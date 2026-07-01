@@ -476,6 +476,32 @@ function ExportPopup({
   build: PathbuilderBuild;
   onClose: () => void;
 }) {
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const handlePdf = async () => {
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      // Lazy-load pdf-lib (and the generator) so it's not in the main bundle.
+      const [{ buildCharacterSheetPdf }, { downloadFile, safeFileName }] = await Promise.all([
+        import('@/features/characters/pdf/characterSheetPdf'),
+        import('@/features/characters/exportCharacter'),
+      ]);
+      const bytes = await buildCharacterSheetPdf(character, build);
+      downloadFile(
+        safeFileName(character.name || build.name, 'pdf'),
+        bytes,
+        'application/pdf',
+      );
+      onClose();
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : 'Could not build the PDF.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   return (
     <div className="w-64 rounded-md border border-gold/30 bg-midnight-900/90 p-3 shadow-gilded">
       <div className="mb-2 flex items-center justify-between">
@@ -489,24 +515,43 @@ function ExportPopup({
           ✕
         </button>
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          exportPathbuilderJson(character.name || build.name, build);
-          onClose();
-        }}
-        className="flex w-full items-center gap-2 rounded border border-gold/20 bg-midnight-900/60 px-2 py-2 text-left text-sm text-silver/90 hover:border-gold/50 hover:text-gold"
-      >
-        <span className="text-gold">
-          <DownloadIcon />
-        </span>
-        <span>
-          <span className="block">Pathbuilder JSON</span>
-          <span className="block text-[0.6rem] uppercase tracking-widest text-silver/50">
-            Round-trips to Pathbuilder tools
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={handlePdf}
+          disabled={pdfBusy}
+          className="flex w-full items-center gap-2 rounded border border-gold/20 bg-midnight-900/60 px-2 py-2 text-left text-sm text-silver/90 hover:border-gold/50 hover:text-gold disabled:opacity-60"
+        >
+          <span className="text-gold">
+            <DownloadIcon />
           </span>
-        </span>
-      </button>
+          <span>
+            <span className="block">{pdfBusy ? 'Building PDF…' : 'Character Sheet (PDF)'}</span>
+            <span className="block text-[0.6rem] uppercase tracking-widest text-silver/50">
+              Printable Pathway sheet
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            exportPathbuilderJson(character.name || build.name, build);
+            onClose();
+          }}
+          className="flex w-full items-center gap-2 rounded border border-gold/20 bg-midnight-900/60 px-2 py-2 text-left text-sm text-silver/90 hover:border-gold/50 hover:text-gold"
+        >
+          <span className="text-gold">
+            <DownloadIcon />
+          </span>
+          <span>
+            <span className="block">Pathbuilder JSON</span>
+            <span className="block text-[0.6rem] uppercase tracking-widest text-silver/50">
+              Round-trips to Pathbuilder tools
+            </span>
+          </span>
+        </button>
+      </div>
+      {pdfError && <p className="mt-2 text-[0.65rem] text-red-300">{pdfError}</p>}
     </div>
   );
 }
