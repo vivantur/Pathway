@@ -101,7 +101,7 @@ export function LandingPage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             to={user ? '/vault' : '/login'}
-            className="rounded-md bg-gold px-5 py-2.5 font-medium text-midnight-900 shadow-gilded transition-transform hover:-translate-y-0.5"
+            className="rounded-md bg-gold px-5 py-2.5 font-medium text-ink shadow-gilded transition-transform hover:-translate-y-0.5"
           >
             {user ? 'Open your Vault' : 'Enter Pathway'}
           </Link>
@@ -222,7 +222,7 @@ export function LandingPage() {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
             to={user ? '/vault' : '/login'}
-            className="rounded-md bg-gold px-5 py-2.5 font-medium text-midnight-900 shadow-gilded transition-transform hover:-translate-y-0.5"
+            className="rounded-md bg-gold px-5 py-2.5 font-medium text-ink shadow-gilded transition-transform hover:-translate-y-0.5"
           >
             {user ? 'Open your Vault' : 'Create an account'}
           </Link>

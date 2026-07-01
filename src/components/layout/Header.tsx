@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -34,6 +35,7 @@ export function Header() {
           <NavLink to="/vault" className={navClass}>
             Vault
           </NavLink>
+          <ThemeToggle />
           {user ? (
             <button
               type="button"

@@ -15,7 +15,7 @@ export function NotFoundPage() {
       <div className="flex flex-wrap justify-center gap-3">
         <Link
           to="/"
-          className="rounded-md bg-gold px-5 py-2 font-medium text-midnight-900 transition-transform hover:-translate-y-0.5"
+          className="rounded-md bg-gold px-5 py-2 font-medium text-ink transition-transform hover:-translate-y-0.5"
         >
           Return to the archive
         </Link>

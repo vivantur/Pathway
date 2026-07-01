@@ -3,8 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  /* Dark theme (default). Values are RGB channel triplets so Tailwind's
+     `rgb(var(--c-x) / <alpha>)` opacity modifiers keep working. */
   :root {
     color-scheme: dark;
+
+    --c-midnight: 11 16 38;
+    --c-midnight-50: 230 232 240;
+    --c-midnight-100: 194 199 221;
+    --c-midnight-200: 154 162 196;
+    --c-midnight-300: 111 122 166;
+    --c-midnight-400: 76 88 127;
+    --c-midnight-500: 47 58 92;
+    --c-midnight-600: 29 39 66;
+    --c-midnight-700: 20 28 51;
+    --c-midnight-800: 11 16 38;
+    --c-midnight-900: 7 10 26;
+    --c-midnight-950: 4 6 17;
+    --c-navy: 16 24 58;
+    --c-charcoal: 26 29 36;
+    --c-gold: 212 175 55;
+    --c-gold-soft: 232 207 126;
+    --c-gold-deep: 168 132 42;
+    --c-brass: 176 141 87;
+    --c-emerald: 46 139 111;
+    --c-emerald-soft: 91 191 161;
+    --c-arcane: 57 214 232;
+    --c-arcane-soft: 139 233 242;
+    --c-silver: 201 209 224;
+  }
+
+  /* Light theme — "aged parchment". Surfaces invert to warm creams; the
+     silver text token flips to dark ink; gold/arcane deepen for contrast on
+     light. Applied by toggling the `.light` class on <html>. */
+  .light {
+    color-scheme: light;
+
+    --c-midnight: 245 240 230;
+    --c-midnight-50: 32 27 17;
+    --c-midnight-100: 56 48 31;
+    --c-midnight-200: 87 74 50;
+    --c-midnight-300: 122 106 74;
+    --c-midnight-400: 156 139 106;
+    --c-midnight-500: 188 174 144;
+    --c-midnight-600: 213 203 180;
+    --c-midnight-700: 228 220 203;
+    --c-midnight-800: 236 229 214;
+    --c-midnight-900: 245 240 230;
+    --c-midnight-950: 250 246 238;
+    --c-navy: 232 228 214;
+    --c-charcoal: 234 228 213;
+    --c-gold: 150 118 26;
+    --c-gold-soft: 176 140 44;
+    --c-gold-deep: 120 92 24;
+    --c-brass: 138 106 58;
+    --c-emerald: 30 116 88;
+    --c-emerald-soft: 33 122 92;
+    --c-arcane: 22 128 142;
+    --c-arcane-soft: 20 112 126;
+    --c-silver: 43 40 32;
   }
 
   html,
@@ -15,6 +72,16 @@
 
   body {
     @apply bg-midnight-900 font-serif text-silver antialiased;
+  }
+
+  /* The dark radial vignette reads as grime on a light page — swap it for a
+     soft warm-gold glow when light. Scoped to html.light for specificity. */
+  html.light .bg-grimoire-radial {
+    background-image: radial-gradient(
+      120% 120% at 50% -10%,
+      rgba(212, 175, 55, 0.12) 0%,
+      rgba(245, 240, 230, 0) 55%
+    );
   }
 
   /* Gilded focus ring for keyboard users — readable, on-theme. */

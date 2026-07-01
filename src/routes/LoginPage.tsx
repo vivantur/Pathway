@@ -90,7 +90,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-md bg-gold px-4 py-2.5 font-medium text-midnight-900 transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="w-full rounded-md bg-gold px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {busy ? 'Sending…' : 'Email me a magic link'}
             </button>

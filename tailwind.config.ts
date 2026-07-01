@@ -13,39 +13,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary (surfaces)
+        // Every palette color is backed by a CSS variable (RGB channel
+        // triplet) defined in index.css. Dark values live in :root; a `.light`
+        // root class overrides them for light mode. Components keep using the
+        // same class names (bg-midnight-900, text-silver, …) — only the
+        // underlying color flips.
+        //
+        // `ink` is the ONE fixed exception: dark text on gold buttons, which
+        // must stay dark in BOTH themes, so it never swaps.
+        ink: '#0b1026',
         midnight: {
-          DEFAULT: '#0b1026',
-          50: '#e6e8f0',
-          100: '#c2c7dd',
-          200: '#9aa2c4',
-          300: '#6f7aa6',
-          400: '#4c587f',
-          500: '#2f3a5c',
-          600: '#1d2742',
-          700: '#141c33',
-          800: '#0b1026',
-          900: '#070a1a',
-          950: '#040611',
+          DEFAULT: 'rgb(var(--c-midnight) / <alpha-value>)',
+          50: 'rgb(var(--c-midnight-50) / <alpha-value>)',
+          100: 'rgb(var(--c-midnight-100) / <alpha-value>)',
+          200: 'rgb(var(--c-midnight-200) / <alpha-value>)',
+          300: 'rgb(var(--c-midnight-300) / <alpha-value>)',
+          400: 'rgb(var(--c-midnight-400) / <alpha-value>)',
+          500: 'rgb(var(--c-midnight-500) / <alpha-value>)',
+          600: 'rgb(var(--c-midnight-600) / <alpha-value>)',
+          700: 'rgb(var(--c-midnight-700) / <alpha-value>)',
+          800: 'rgb(var(--c-midnight-800) / <alpha-value>)',
+          900: 'rgb(var(--c-midnight-900) / <alpha-value>)',
+          950: 'rgb(var(--c-midnight-950) / <alpha-value>)',
         },
-        navy: '#10183a',
-        charcoal: '#1a1d24',
-        // Accents
+        navy: 'rgb(var(--c-navy) / <alpha-value>)',
+        charcoal: 'rgb(var(--c-charcoal) / <alpha-value>)',
         gold: {
-          DEFAULT: '#d4af37',
-          soft: '#e8cf7e',
-          deep: '#a8842a',
+          DEFAULT: 'rgb(var(--c-gold) / <alpha-value>)',
+          soft: 'rgb(var(--c-gold-soft) / <alpha-value>)',
+          deep: 'rgb(var(--c-gold-deep) / <alpha-value>)',
         },
-        brass: '#b08d57',
+        brass: 'rgb(var(--c-brass) / <alpha-value>)',
         emerald: {
-          DEFAULT: '#2e8b6f',
-          soft: '#5bbfa1',
+          DEFAULT: 'rgb(var(--c-emerald) / <alpha-value>)',
+          soft: 'rgb(var(--c-emerald-soft) / <alpha-value>)',
         },
         arcane: {
-          DEFAULT: '#39d6e8',
-          soft: '#8be9f2',
+          DEFAULT: 'rgb(var(--c-arcane) / <alpha-value>)',
+          soft: 'rgb(var(--c-arcane-soft) / <alpha-value>)',
         },
-        silver: '#c9d1e0',
+        silver: 'rgb(var(--c-silver) / <alpha-value>)',
       },
       fontFamily: {
         // Display: an engraved, grimoire feel. Body: highly readable serif.
