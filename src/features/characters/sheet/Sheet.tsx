@@ -911,7 +911,7 @@ function CenterColumn({
   return (
     <div className="space-y-4">
       <StatRow character={character} build={build} edit={edit} />
-      <ConditionsRow character={character} build={build} edit={edit} />
+      <ConditionsRow character={character} edit={edit} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <AttacksPanel character={character} build={build} />
@@ -1100,55 +1100,42 @@ function HeroPointsCard({ value, edit }: { value: number; edit: EditControls }) 
 
 function ConditionsRow({
   character,
-  build,
   edit,
 }: {
   character: CharacterRow;
-  build: PathbuilderBuild;
   edit: EditControls;
 }) {
-  // Conditions + counters share the left bar (both are "current-state" facts).
-  // Defenses (resist/weak/immune) always get the right bar so a silver
-  // weakness is never hidden by an unrelated resource counter.
+  // Conditions + counters live here. Resistances/weaknesses/immunities were
+  // moved to the right-column Defenses box (they were duplicated) per table
+  // feedback, so this row is now a single full-width bar.
   const counters = renderCounters(character.overlay ?? null);
-  const defenses = defenseLine(build);
 
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {edit.enabled ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-gold/20 bg-midnight-900/50 px-3 py-2">
-          <span className="text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
-            Conditions
-          </span>
-          <ConditionStepper
-            label="Dying"
-            value={character.dying ?? 0}
-            max={4}
-            onChange={(n) => edit.update({ dying: n })}
-          />
-          <ConditionStepper
-            label="Wounded"
-            value={character.wounded ?? 0}
-            max={4}
-            onChange={(n) => edit.update({ wounded: n })}
-          />
-          {counters.length > 0 && (
-            <span className="text-xs text-silver/60">{counters.join(' · ')}</span>
-          )}
-        </div>
-      ) : (
-        <SlimBar
-          label="Conditions"
-          value={
-            [...renderConditions(character), ...counters].join(' · ') || '—'
-          }
-        />
-      )}
-      <SlimBar
-        label="Resistances & Immunities"
-        value={defenses.length ? defenses.join(' · ') : '—'}
+  return edit.enabled ? (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-gold/20 bg-midnight-900/50 px-3 py-2">
+      <span className="text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
+        Conditions
+      </span>
+      <ConditionStepper
+        label="Dying"
+        value={character.dying ?? 0}
+        max={4}
+        onChange={(n) => edit.update({ dying: n })}
       />
+      <ConditionStepper
+        label="Wounded"
+        value={character.wounded ?? 0}
+        max={4}
+        onChange={(n) => edit.update({ wounded: n })}
+      />
+      {counters.length > 0 && (
+        <span className="text-xs text-silver/60">{counters.join(' · ')}</span>
+      )}
     </div>
+  ) : (
+    <SlimBar
+      label="Conditions"
+      value={[...renderConditions(character), ...counters].join(' · ') || '—'}
+    />
   );
 }
 
@@ -1590,6 +1577,9 @@ function RightColumn({ build }: { build: PathbuilderBuild }) {
   const primaryCaster = (build.spellCasters ?? []).find((c) => !c.innate);
   const spellAttack = primaryCaster ? spellAttackTotal(build, primaryCaster) : undefined;
   const initiative = perceptionBonus(build);
+  // Resistances / weaknesses / immunities now live here (consolidated out of
+  // the center row, which duplicated this "Defenses" box).
+  const defenses = defenseLine(build);
   return (
     <aside className="space-y-4">
       <MiniStat label="Class DC" value={cdc ?? '—'} />
@@ -1600,7 +1590,15 @@ function RightColumn({ build }: { build: PathbuilderBuild }) {
         value={fmtMod(initiative)}
       />
       <FramedBlock title="Defenses">
-        <p className="text-sm text-silver/40">—</p>
+        {defenses.length > 0 ? (
+          <ul className="space-y-1 text-sm text-silver/85">
+            {defenses.map((d) => (
+              <li key={d}>{d}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-silver/40">—</p>
+        )}
       </FramedBlock>
       <FramedBlock title="Movement">
         <p className="text-sm text-silver/80">{speed(build)} ft.</p>
