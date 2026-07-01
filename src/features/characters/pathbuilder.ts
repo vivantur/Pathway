@@ -149,6 +149,15 @@ export interface PathbuilderBuild {
   formula?: unknown;
   spellCasters?: Spellcaster[];
   focus?: FocusPools;
+  /**
+   * Damage-typed defenses. Stored inconsistently in Pathbuilder exports —
+   * sometimes a single string ("Silver 1"), sometimes a comma-separated string
+   * ("Silver 1, Cold Iron 3"), sometimes an array. Consumers should run through
+   * `normalizeDefenseList()` before rendering.
+   */
+  resistances?: string | string[] | null;
+  weaknesses?: string | string[] | null;
+  immunities?: string | string[] | null;
   pets?: unknown[];
   familiars?: unknown[];
   acTotal?: {
@@ -369,4 +378,34 @@ export function totalGp(money: Money | undefined): number {
   if (!money) return 0;
   const { pp = 0, gp = 0, sp = 0, cp = 0 } = money;
   return pp * 10 + gp + sp / 10 + cp / 100;
+}
+
+/**
+ * Normalize a resistance/weakness/immunity slot to a string[] of individual
+ * entries. Handles all three storage shapes Pathbuilder / the bot use:
+ *   - null / undefined → []
+ *   - string ("Silver 1") → ["Silver 1"]
+ *   - comma-or-semicolon-separated string ("Silver 1, Fire 2") → 2 entries
+ *   - array → filtered to non-empty strings
+ */
+export function normalizeDefenseList(v: string | string[] | null | undefined): string[] {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+  return v
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Build a "Resist X 5 · Weak Silver 1 · Immune Sleep" line from a character's
+ * three defense slots. Returns [] if none set so the caller can render a
+ * placeholder.
+ */
+export function defenseLine(build: PathbuilderBuild): string[] {
+  const parts: string[] = [];
+  for (const r of normalizeDefenseList(build.resistances)) parts.push(`Resist ${r}`);
+  for (const w of normalizeDefenseList(build.weaknesses)) parts.push(`Weak ${w}`);
+  for (const i of normalizeDefenseList(build.immunities)) parts.push(`Immune ${i}`);
+  return parts;
 }

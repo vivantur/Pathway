@@ -10,6 +10,7 @@ import {
   abilityMod,
   acTotal,
   classDC,
+  defenseLine,
   fmtMod,
   maxHp,
   perceptionBonus,
@@ -348,7 +349,7 @@ function CenterColumn({ character, build }: { character: CharacterRow; build: Pa
   return (
     <div className="space-y-4">
       <StatRow character={character} build={build} />
-      <ConditionsRow character={character} />
+      <ConditionsRow character={character} build={build} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <AttacksPanel character={character} build={build} />
@@ -436,18 +437,27 @@ function HeroPointsCard({ value }: { value: number }) {
 
 // ---- Conditions + resistances ----------------------------------
 
-function ConditionsRow({ character }: { character: CharacterRow }) {
+function ConditionsRow({
+  character,
+  build,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+}) {
+  // Conditions + counters share the left bar (both are "current-state" facts).
+  // Defenses (resist/weak/immune) always get the right bar so a silver
+  // weakness is never hidden by an unrelated resource counter.
   const conditions = renderConditions(character);
   const counters = renderCounters(character.overlay ?? null);
+  const leftItems = [...conditions, ...counters];
+  const defenses = defenseLine(build);
+
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      <SlimBar label="Conditions" value={leftItems.length ? leftItems.join(' · ') : '—'} />
       <SlimBar
-        label="Conditions"
-        value={conditions.length ? conditions.join(' · ') : '—'}
-      />
-      <SlimBar
-        label={counters.length ? 'Counters' : 'Resistances & Immunities'}
-        value={counters.length ? counters.join(' · ') : '—'}
+        label="Resistances & Immunities"
+        value={defenses.length ? defenses.join(' · ') : '—'}
       />
     </div>
   );
