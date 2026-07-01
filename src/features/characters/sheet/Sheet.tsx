@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { noteText, PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { errorMessage } from '@/features/characters/errorMessage';
@@ -8,6 +8,7 @@ import {
   useUpdateFromPathbuilder,
 } from '@/features/characters/useCharacterActions';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
+import { useCharacterRealtime, type RealtimeState } from '@/features/characters/useCharacterRealtime';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import { mergeWeapons } from '@/features/characters/weapons';
@@ -94,6 +95,14 @@ export function Sheet({
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTabId(searchParams.get('tab'));
 
+  // Live sync: subscribe to bot-side writes on this character. Disabled on
+  // read-only public shares (they use a different, non-owner query path).
+  const live = useCharacterRealtime({
+    characterId: character.id,
+    charKey: character.char_key,
+    enabled: !readOnly,
+  });
+
   const setActiveTab = (id: TabId) => {
     const next = new URLSearchParams(searchParams);
     // Keep the URL clean when we're on the default view.
@@ -105,7 +114,7 @@ export function Sheet({
 
   return (
     <div className="space-y-4">
-      <SheetHeader character={character} build={build} readOnly={readOnly} />
+      <SheetHeader character={character} build={build} readOnly={readOnly} live={live} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
         <LeftColumn character={character} build={build} readOnly={readOnly} />
         <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} />
@@ -168,10 +177,12 @@ function SheetHeader({
   character,
   build,
   readOnly = false,
+  live,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
   readOnly?: boolean;
+  live?: RealtimeState;
 }) {
   const level = character.level ?? build.level ?? 1;
   const xpTarget = 1000;
@@ -188,7 +199,10 @@ function SheetHeader({
         <div className="flex items-center gap-3">
           <CompassIcon className="text-3xl text-gold" />
           <div className="leading-tight">
-            <div className="font-display text-2xl tracking-wider text-gold">PATHWAY</div>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-2xl tracking-wider text-gold">PATHWAY</span>
+              {!readOnly && live && <LiveBadge live={live} />}
+            </div>
             <div className="text-[0.6rem] uppercase tracking-[0.25em] text-silver/50">
               PF2E Character Sheet
             </div>
@@ -461,6 +475,47 @@ function ConfirmDeleteDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * "Live" pill next to the wordmark. Shows a pulsing green dot when the
+ * Realtime channel is subscribed, and briefly flashes gold when the bot
+ * pushes an update. Silent (nothing rendered) while off/connecting so it
+ * doesn't clutter the header before the socket is up.
+ */
+function LiveBadge({ live }: { live: RealtimeState }) {
+  const [flash, setFlash] = useState(false);
+
+  // Flash on each new bot update.
+  useEffect(() => {
+    if (live.lastUpdateAt == null) return;
+    setFlash(true);
+    const t = window.setTimeout(() => setFlash(false), 1200);
+    return () => window.clearTimeout(t);
+  }, [live.lastUpdateAt]);
+
+  if (live.status !== 'live') return null;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.55rem] font-display uppercase tracking-widest transition-colors ${
+        flash
+          ? 'border-gold/70 bg-gold/20 text-gold'
+          : 'border-emerald/40 bg-emerald/10 text-emerald-soft'
+      }`}
+      title={
+        flash
+          ? 'Just synced a change from the bot'
+          : 'Live — bot changes appear here automatically'
+      }
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${flash ? 'bg-gold' : 'animate-pulse bg-emerald-soft'}`}
+        aria-hidden
+      />
+      {flash ? 'Synced' : 'Live'}
+    </span>
   );
 }
 
