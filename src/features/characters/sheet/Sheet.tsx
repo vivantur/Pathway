@@ -714,12 +714,6 @@ function LeftColumn({
           {languages.length ? languages.join(', ') : '—'}
         </p>
       </FramedBlock>
-      <FramedBlock title="Perception" icon={<EyeIcon />}>
-        <div className="font-display text-3xl text-gold">{fmtMod(perception)}</div>
-        <div className="text-xs text-silver/60">
-          {profLabel(build.proficiencies?.perception)} in Perception
-        </div>
-      </FramedBlock>
     </aside>
   );
 }
