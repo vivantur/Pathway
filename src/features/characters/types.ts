@@ -204,5 +204,5 @@ export interface CharacterRow {
 /** A lightweight projection for list/vault views. */
 export type CharacterSummary = Pick<
   CharacterRow,
-  'id' | 'char_key' | 'name' | 'source' | 'current_hp' | 'hero_points' | 'experience' | 'updated_at'
+  'id' | 'char_key' | 'name' | 'source' | 'current_hp' | 'hero_points' | 'experience' | 'updated_at' | 'art' | 'level' | 'ancestry_name' | 'class_name'
 >;

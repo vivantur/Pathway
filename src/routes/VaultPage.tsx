@@ -1,33 +1,32 @@
 import { Link } from 'react-router-dom';
-import { GildedRule } from '@/components/ui/GildedRule';
+import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
 import { useMyCharacters } from '@/features/characters/useCharacters';
 import { isSchemaNotReady } from '@/features/characters/errors';
 import type { CharacterSummary } from '@/features/characters/types';
 
+// The signed-in user is read inside <VaultHeader />, not here — the top-level
+// component only needs the character list. Kept as a note so future edits
+// don't add a top-level useAuth() call that never gets used.
+
 /**
- * The Character Vault — Phase W0's proof of life. It reads the signed-in user's
- * own `characters` rows through RLS (anon key + session, no service key) and
- * renders them. This satisfies the W0 gate: "the web app authenticates a user
- * and reads one of their own characters rows through RLS."
+ * The Character Vault — a Discord-profile-inspired gallery of the signed-in
+ * user's characters. Header pulls Discord metadata from Supabase auth
+ * (avatar, display name, username, discord id). Grid renders each character
+ * as a portrait-oriented tile using `characters.art` when available and a
+ * gilded initials placeholder otherwise.
  */
 export function VaultPage() {
-  const { user } = useAuth();
   const { data, isLoading, isError, error } = useMyCharacters();
 
-  return (
-    <div>
-      <header className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl text-gold">Character Vault</h1>
-          <p className="mt-1 text-sm text-silver/60">
-            Signed in as <span className="text-silver/90">{user?.email ?? user?.id}</span>
-          </p>
-        </div>
-      </header>
+  const characters = data ?? [];
+  const withArt = characters.filter((c) => c.art);
+  const withoutArt = characters.filter((c) => !c.art);
 
-      <GildedRule className="my-6" />
+  return (
+    <div className="space-y-8">
+      <VaultHeader characterCount={characters.length} portraitCount={withArt.length} />
 
       {isLoading && (
         <div className="py-10">
@@ -48,11 +47,12 @@ export function VaultPage() {
 
       {isError && !isSchemaNotReady(error) && (
         <p className="rounded-md border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-          Couldn&apos;t load your characters: {error instanceof Error ? error.message : 'unknown error'}
+          Couldn&apos;t load your characters:{' '}
+          {error instanceof Error ? error.message : 'unknown error'}
         </p>
       )}
 
-      {!isLoading && !isError && data && data.length === 0 && (
+      {!isLoading && !isError && characters.length === 0 && (
         <div className="rounded-lg border border-gold/15 bg-midnight-700/40 p-8 text-center">
           <p className="text-silver/80">No characters yet.</p>
           <p className="mt-1 text-sm text-silver/50">
@@ -62,47 +62,245 @@ export function VaultPage() {
         </div>
       )}
 
-      {!isLoading && !isError && data && data.length > 0 && (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((c) => (
-            <CharacterCard key={c.id} character={c} />
-          ))}
-        </ul>
+      {!isLoading && !isError && characters.length > 0 && (
+        <>
+          {withArt.length > 0 && (
+            <section>
+              <SectionHeading label="Portraits" count={withArt.length} />
+              <CharacterGrid characters={withArt} showArt />
+            </section>
+          )}
+          {withoutArt.length > 0 && (
+            <section>
+              <SectionHeading
+                label="Awaiting portraits"
+                count={withoutArt.length}
+                subtitle="Open a character sheet and tap the camera to add art."
+              />
+              <CharacterGrid characters={withoutArt} showArt={false} />
+            </section>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function CharacterCard({ character }: { character: CharacterSummary }) {
+// ---------------------------------------------------------------
+// Header — Discord-style profile card, grimoire palette
+// ---------------------------------------------------------------
+
+function VaultHeader({
+  characterCount,
+  portraitCount,
+}: {
+  characterCount: number;
+  portraitCount: number;
+}) {
+  const { user } = useAuth();
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+
+  const displayName = pickString(meta, 'full_name', 'name', 'user_name', 'preferred_username') ??
+    (user?.email ? user.email.split('@')[0] : 'Traveler');
+  const username = pickString(meta, 'preferred_username', 'user_name');
+  const avatarUrl = pickString(meta, 'avatar_url', 'picture');
+  const providerId = pickString(meta, 'provider_id', 'sub');
+
+  return (
+    <header className="relative overflow-hidden rounded-lg border border-gold/30 bg-midnight-900/70 p-6 shadow-gilded">
+      {/* Decorative gilded corner brackets */}
+      <CornerBrackets />
+      <div className="relative flex flex-wrap items-center gap-6">
+        <Avatar url={avatarUrl} name={displayName} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+            <h1 className="font-display text-3xl tracking-wide text-gold sm:text-4xl">
+              {displayName}
+            </h1>
+            <span className="text-sm text-silver/40">#0</span>
+          </div>
+          {username && (
+            <p className="mt-0.5 text-sm text-silver/60">@{username}</p>
+          )}
+          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <ProfileStat label="Characters" value={characterCount} />
+            <ProfileStat label="Portraits" value={portraitCount} />
+            {providerId && <ProfileStat label="Discord ID" value={providerId} mono />}
+          </dl>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Avatar({ url, name }: { url: string | null; name: string }) {
+  const initials = getInitials(name);
+  return (
+    <div className="relative shrink-0">
+      <div className="h-28 w-28 overflow-hidden rounded-full border-2 border-gold/50 bg-gradient-to-br from-midnight-700 to-midnight-950 shadow-gilded sm:h-32 sm:w-32">
+        {url ? (
+          <img
+            src={url}
+            alt={name}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center font-display text-3xl text-gold/70">
+            {initials}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProfileStat({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-[0.65rem] uppercase tracking-widest text-silver/50">{label}</dt>
+      <dd className={`font-display text-lg text-gold ${mono ? 'font-mono text-sm tabular-nums' : ''}`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------
+// Grid + tile
+// ---------------------------------------------------------------
+
+function SectionHeading({
+  label,
+  count,
+  subtitle,
+}: {
+  label: string;
+  count: number;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2 border-b border-gold/15 pb-2">
+      <h2 className="font-display text-xl text-gold">
+        {label} <span className="ml-1 text-sm text-silver/50">({count})</span>
+      </h2>
+      {subtitle && <p className="text-xs text-silver/50">{subtitle}</p>}
+    </div>
+  );
+}
+
+function CharacterGrid({
+  characters,
+  showArt,
+}: {
+  characters: CharacterSummary[];
+  showArt: boolean;
+}) {
+  return (
+    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {characters.map((c) => (
+        <CharacterTile key={c.id} character={c} showArt={showArt} />
+      ))}
+    </ul>
+  );
+}
+
+function CharacterTile({
+  character,
+  showArt,
+}: {
+  character: CharacterSummary;
+  showArt: boolean;
+}) {
+  const subtitle = [character.ancestry_name, character.class_name]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <li>
       <Link
         // encodeURIComponent so char_keys containing "/", "#", "?", etc. (e.g.
-        // characters named "Seika/Sekhmet") produce a single URL-safe segment
-        // instead of getting parsed as two path parts and landing on 404.
+        // "Seika/Sekhmet") produce a single URL-safe segment instead of
+        // getting parsed as two path parts and landing on 404.
         to={`/vault/${encodeURIComponent(character.char_key)}`}
-        className="block h-full rounded-lg border border-gold/15 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-gilded"
+        className="group relative block aspect-[3/4] overflow-hidden rounded-lg border border-gold/25 bg-midnight-900 shadow-gilded transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:shadow-arcane"
       >
-        <h2 className="font-display text-lg text-gold">{character.name}</h2>
-        <p className="text-xs uppercase tracking-wide text-silver/40">{character.char_key}</p>
-        <dl className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-          <Stat label="HP" value={character.current_hp} />
-          <Stat label="Hero" value={character.hero_points} />
-          <Stat label="XP" value={character.experience} />
-        </dl>
-        {character.source && (
-          <p className="mt-4 text-xs text-silver/40">via {character.source}</p>
+        {/* Art fills the whole tile; missing art falls back to initials */}
+        {showArt && character.art ? (
+          <img
+            src={character.art}
+            alt={character.name}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-midnight-700 to-midnight-950">
+            <span className="font-display text-6xl text-gold/50">
+              {getInitials(character.name)}
+            </span>
+          </div>
         )}
+
+        {/* Level badge (top-left) */}
+        {character.level != null && (
+          <div className="absolute left-2 top-2 rounded border border-gold/40 bg-midnight-950/85 px-1.5 py-0.5 text-[0.65rem] font-display uppercase tracking-widest text-gold">
+            L{character.level}
+          </div>
+        )}
+
+        {/* Bottom gradient with name + optional subtitle */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-midnight-950 via-midnight-950/85 to-transparent p-3 pt-10">
+          <div className="font-display text-base leading-tight text-gold">
+            {character.name}
+          </div>
+          {subtitle && (
+            <div className="mt-0.5 text-xs text-silver/70">{subtitle}</div>
+          )}
+        </div>
       </Link>
     </li>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | null }) {
+// ---------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------
+
+function CornerBrackets() {
+  const cls = 'pointer-events-none absolute h-4 w-4 border-gold/60';
   return (
-    <div className="rounded-md bg-midnight-900/60 py-2">
-      <div className="font-display text-arcane">{value ?? '—'}</div>
-      <div className="text-[0.65rem] uppercase tracking-wide text-silver/40">{label}</div>
-    </div>
+    <>
+      <span className={`${cls} left-1.5 top-1.5 border-l border-t`} aria-hidden />
+      <span className={`${cls} right-1.5 top-1.5 border-r border-t`} aria-hidden />
+      <span className={`${cls} bottom-1.5 left-1.5 border-b border-l`} aria-hidden />
+      <span className={`${cls} bottom-1.5 right-1.5 border-b border-r`} aria-hidden />
+    </>
   );
+}
+
+function pickString(obj: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === 'string' && v.trim().length > 0) return v;
+  }
+  return null;
+}
+
+function getInitials(name: string | undefined): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+  return (first + last).toUpperCase() || '?';
 }
