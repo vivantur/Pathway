@@ -77,7 +77,10 @@ function CharacterCard({ character }: { character: CharacterSummary }) {
   return (
     <li>
       <Link
-        to={`/vault/${character.char_key}`}
+        // encodeURIComponent so char_keys containing "/", "#", "?", etc. (e.g.
+        // characters named "Seika/Sekhmet") produce a single URL-safe segment
+        // instead of getting parsed as two path parts and landing on 404.
+        to={`/vault/${encodeURIComponent(character.char_key)}`}
         className="block h-full rounded-lg border border-gold/15 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-gilded"
       >
         <h2 className="font-display text-lg text-gold">{character.name}</h2>

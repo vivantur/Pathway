@@ -14,7 +14,11 @@ import { Sheet } from '@/features/characters/sheet/Sheet';
  * viewport — this component only handles the "before we can show it" branches.
  */
 export function CharacterPage() {
-  const { charKey } = useParams<{ charKey: string }>();
+  const { charKey: rawCharKey } = useParams<{ charKey: string }>();
+  // React Router already decodes params in practice, but we belt-and-suspender
+  // here so a stray `%2F` (from hand-typed URLs or an older bookmark) still
+  // resolves cleanly. decodeURIComponent on already-decoded input is a no-op.
+  const charKey = rawCharKey ? safeDecode(rawCharKey) : undefined;
   const { data, isLoading, isError, error } = useCharacter(charKey);
 
   if (isLoading) {
@@ -92,6 +96,19 @@ function NotFoundPanel({ charKey }: { charKey: string }) {
       </Link>
     </div>
   );
+}
+
+/**
+ * Best-effort URL decode. If the input was already decoded (React Router's
+ * usual behavior), decodeURIComponent is a no-op. If it fails (malformed
+ * `%XX` sequence), fall back to the raw string rather than throwing.
+ */
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 
 /** Pathbuilder JSON may or may not wrap the build under `.build`. */
