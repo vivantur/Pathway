@@ -19,6 +19,7 @@ import {
 } from '@/features/characters/conditions';
 import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
+import { parsePathbuilderId } from '@/features/characters/pathbuilderImport';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import { mergeWeapons } from '@/features/characters/weapons';
 import type { ActiveCondition, CharacterOverlay, CharacterRow } from '@/features/characters/types';
@@ -303,6 +304,9 @@ function SheetActions({ character }: { character: CharacterRow }) {
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkRaw, setLinkRaw] = useState('');
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const updateMutation = useUpdateFromPathbuilder();
   const deleteMutation = useDeleteCharacter();
@@ -311,11 +315,38 @@ function SheetActions({ character }: { character: CharacterRow }) {
   const hasPathbuilderId = typeof character.pathbuilder_id === 'number';
 
   const handleUpdate = () => {
-    if (!hasPathbuilderId || character.pathbuilder_id == null) return;
-    updateMutation.mutate({
-      charKey: character.char_key,
-      pathbuilderId: character.pathbuilder_id,
-    });
+    // With a stored ID, re-fetch directly. Without one (e.g. a character
+    // created in the bot, never imported), open the link form so the player
+    // can attach a Pathbuilder export ID — updateCharacterFromBuild will save
+    // it onto the row, so future updates work like any imported character.
+    if (hasPathbuilderId && character.pathbuilder_id != null) {
+      updateMutation.mutate({
+        charKey: character.char_key,
+        pathbuilderId: character.pathbuilder_id,
+      });
+    } else {
+      setLinkOpen(true);
+    }
+  };
+
+  const handleLinkSubmit = () => {
+    const id = parsePathbuilderId(linkRaw);
+    if (id == null) {
+      setLinkError(
+        "Couldn't find a Pathbuilder id in that. Paste the number (e.g. 123456) or the full URL.",
+      );
+      return;
+    }
+    setLinkError(null);
+    updateMutation.mutate(
+      { charKey: character.char_key, pathbuilderId: id },
+      {
+        onSuccess: () => {
+          setLinkOpen(false);
+          setLinkRaw('');
+        },
+      },
+    );
   };
 
   const handleDelete = async () => {
@@ -332,13 +363,19 @@ function SheetActions({ character }: { character: CharacterRow }) {
       <div className="flex flex-wrap gap-2">
         <HeaderButton
           icon={<RefreshIcon />}
-          label={updateMutation.isPending ? 'Updating…' : 'Update'}
+          label={
+            updateMutation.isPending
+              ? 'Updating…'
+              : hasPathbuilderId
+                ? 'Update'
+                : 'Link Pathbuilder'
+          }
           onClick={handleUpdate}
-          disabled={!hasPathbuilderId || updateMutation.isPending}
+          disabled={updateMutation.isPending}
           title={
             hasPathbuilderId
               ? 'Re-fetch this character from Pathbuilder and refresh the build (HP / XP / hero points / notes / portrait preserved).'
-              : 'No Pathbuilder ID on file for this character.'
+              : 'Attach a Pathbuilder export ID to this character so you can update its build from Pathbuilder.'
           }
         />
         <HeaderButton
@@ -358,7 +395,38 @@ function SheetActions({ character }: { character: CharacterRow }) {
         <p className="text-xs text-red-300">{errorMessage(updateMutation.error)}</p>
       )}
       {updateMutation.isSuccess && !updateMutation.isPending && (
-        <p className="text-xs text-emerald-soft">Updated from Pathbuilder ✓</p>
+        <p className="text-xs text-emerald-soft">
+          {hasPathbuilderId ? 'Updated from Pathbuilder ✓' : 'Linked to Pathbuilder ✓'}
+        </p>
+      )}
+
+      {/* Let characters that already have an ID re-point to a different one. */}
+      {hasPathbuilderId && !linkOpen && (
+        <button
+          type="button"
+          onClick={() => setLinkOpen(true)}
+          className="self-start text-[0.6rem] uppercase tracking-widest text-silver/50 hover:text-gold"
+        >
+          Change Pathbuilder link
+        </button>
+      )}
+
+      {linkOpen && (
+        <PathbuilderLinkForm
+          raw={linkRaw}
+          isBusy={updateMutation.isPending}
+          error={linkError}
+          relink={hasPathbuilderId}
+          onChange={(v) => {
+            setLinkRaw(v);
+            setLinkError(null);
+          }}
+          onSubmit={handleLinkSubmit}
+          onCancel={() => {
+            setLinkOpen(false);
+            setLinkError(null);
+          }}
+        />
       )}
 
       {shareOpen && (
@@ -378,6 +446,68 @@ function SheetActions({ character }: { character: CharacterRow }) {
           onCancel={() => setConfirmDelete(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** Inline form to attach (or re-point) a character's Pathbuilder export ID. */
+function PathbuilderLinkForm({
+  raw,
+  isBusy,
+  error,
+  relink,
+  onChange,
+  onSubmit,
+  onCancel,
+}: {
+  raw: string;
+  isBusy: boolean;
+  error: string | null;
+  relink: boolean;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="w-72 rounded-md border border-gold/30 bg-midnight-900/90 p-3 shadow-gilded">
+      <div className="mb-2 text-[0.65rem] uppercase tracking-widest text-gold/80">
+        {relink ? 'Re-link Pathbuilder' : 'Link a Pathbuilder export'}
+      </div>
+      <p className="mb-2 text-[0.65rem] leading-relaxed text-silver/60">
+        In Pathbuilder, tap <span className="text-silver/80">Export → JSON</span> to get an
+        ID, then paste the number or the full URL here. Your live state (HP, XP,
+        hero points, notes, portrait) is kept.
+      </p>
+      <input
+        autoFocus
+        type="text"
+        value={raw}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onSubmit();
+          if (e.key === 'Escape') onCancel();
+        }}
+        placeholder="123456 or https://pathbuilder2e.com/json.php?id=123456"
+        className="w-full rounded border border-gold/30 bg-midnight-800/80 px-2 py-1.5 text-sm text-silver placeholder:text-silver/30 focus:border-gold/60 focus:outline-none"
+      />
+      {error && <p className="mt-1 text-[0.65rem] text-red-300">{error}</p>}
+      <div className="mt-2 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs uppercase tracking-widest text-silver/60 hover:text-gold"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={isBusy || raw.trim().length === 0}
+          className="rounded border border-gold/40 bg-gold/10 px-2 py-1 text-xs font-display uppercase tracking-widest text-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isBusy ? 'Linking…' : relink ? 'Re-link & Update' : 'Link & Update'}
+        </button>
+      </div>
     </div>
   );
 }
