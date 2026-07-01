@@ -9,6 +9,7 @@ import type {
   ClassGamedata,
   FeatRow,
   HeritageRow,
+  SpellRow,
 } from './types';
 
 const SUMMARY_COLUMNS =
@@ -385,6 +386,28 @@ export async function fetchFeatsByNames(names: string[]): Promise<FeatRow[]> {
     .in('name', unique);
   if (error) throw error;
   return preferRemaster((data ?? []) as FeatRow[]);
+}
+
+/**
+ * Batch-fetch spell rows for a list of names. Same pattern as
+ * fetchFeatsByNames — one round-trip via `.in('name', ...)`, then
+ * preferRemaster collapses Legacy + Remaster twins.
+ *
+ * Uses SELECT * because the spells table's exact column set isn't audited
+ * yet and PF2e spells have a lot of PF-specific fields (range, area,
+ * targets, saving_throw, duration, heightened, etc.) — the SpellsTab
+ * reads them defensively via pickString helpers.
+ */
+export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
+  const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  if (unique.length === 0) return [];
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('spells')
+    .select('*')
+    .in('name', unique);
+  if (error) throw error;
+  return preferRemaster((data ?? []) as SpellRow[]);
 }
 
 /** Map a file's MIME type to a filesystem-friendly extension. */

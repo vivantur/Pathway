@@ -147,6 +147,37 @@ export interface ClassFeatureRow {
   class_feature_metadata?: Record<string, unknown> | null;
 }
 
+/**
+ * One row from `public.spells`. We don't have a schema audit for this table
+ * yet, so field names follow standard PF2e conventions; unknown fields are
+ * preserved via the index signature and any missing column just renders as
+ * "—" in the UI without breaking the layout.
+ */
+export interface SpellRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  level?: number | null;
+  spell_level?: number | null;
+  rank?: number | null;
+  traits?: string[] | null;
+  actions?: string | null;
+  action_cost?: string | null;
+  range?: string | null;
+  area?: string | null;
+  targets?: string | null;
+  duration?: string | null;
+  saving_throw?: string | null;
+  save?: string | null;
+  heightened?: string | null;
+  rarity?: string | null;
+  source?: string | null;
+  aon_id?: string | null;
+  aon_url?: string | null;
+  spell_metadata?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
 /** One row from `public.feats` — full rich shape (verified from the audit). */
 export interface FeatRow {
   id: string;
