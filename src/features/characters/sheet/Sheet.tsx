@@ -131,10 +131,15 @@ export function Sheet({
       <SheetHeader character={character} build={build} readOnly={readOnly} live={live} edit={edit} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
         <LeftColumn character={character} build={build} readOnly={readOnly} />
-        <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} edit={edit} />
-        <RightColumn build={build} />
+        {/* Center: vitals stay pinned; the tab bar sits above the content;
+            only the tab content below swaps per tab. */}
+        <div className="space-y-4">
+          <StatRow character={character} build={build} edit={edit} />
+          <TabBar activeTab={activeTab} onSelect={setActiveTab} readOnly={readOnly} />
+          <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} edit={edit} />
+        </div>
+        <RightColumn build={build} character={character} edit={edit} />
       </div>
-      <BottomTabBar activeTab={activeTab} onSelect={setActiveTab} readOnly={readOnly} />
     </div>
   );
 }
@@ -175,7 +180,7 @@ function TabContent({
   }
   switch (tab) {
     case 'overview':
-      return <CenterColumn character={character} build={build} edit={edit} />;
+      return <OverviewBody character={character} build={build} edit={edit} />;
     case 'ancestry':
       return <AncestryTab character={character} build={build} />;
     case 'class':
@@ -899,7 +904,12 @@ function FramedBlock({
 // Center column
 // ---------------------------------------------------------------
 
-function CenterColumn({
+/**
+ * The Overview tab's body — the per-tab content that swaps below the pinned
+ * vitals + tab bar. Skills / Attacks / Feats are the "three big boxes" the
+ * table feedback asked to sit under the tabs.
+ */
+function OverviewBody({
   character,
   build,
   edit,
@@ -910,8 +920,6 @@ function CenterColumn({
 }) {
   return (
     <div className="space-y-4">
-      <StatRow character={character} build={build} edit={edit} />
-      <ConditionsRow character={character} edit={edit} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <AttacksPanel character={character} build={build} />
@@ -1098,44 +1106,41 @@ function HeroPointsCard({ value, edit }: { value: number; edit: EditControls }) 
 
 // ---- Conditions + resistances ----------------------------------
 
-function ConditionsRow({
+/** Conditions block for the right sidebar (dying/wounded steppers in edit mode). */
+function ConditionsBlock({
   character,
   edit,
 }: {
   character: CharacterRow;
   edit: EditControls;
 }) {
-  // Conditions + counters live here. Resistances/weaknesses/immunities were
-  // moved to the right-column Defenses box (they were duplicated) per table
-  // feedback, so this row is now a single full-width bar.
   const counters = renderCounters(character.overlay ?? null);
-
-  return edit.enabled ? (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-gold/20 bg-midnight-900/50 px-3 py-2">
-      <span className="text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
-        Conditions
-      </span>
-      <ConditionStepper
-        label="Dying"
-        value={character.dying ?? 0}
-        max={4}
-        onChange={(n) => edit.update({ dying: n })}
-      />
-      <ConditionStepper
-        label="Wounded"
-        value={character.wounded ?? 0}
-        max={4}
-        onChange={(n) => edit.update({ wounded: n })}
-      />
-      {counters.length > 0 && (
-        <span className="text-xs text-silver/60">{counters.join(' · ')}</span>
+  return (
+    <FramedBlock title="Conditions">
+      {edit.enabled ? (
+        <div className="space-y-2">
+          <ConditionStepper
+            label="Dying"
+            value={character.dying ?? 0}
+            max={4}
+            onChange={(n) => edit.update({ dying: n })}
+          />
+          <ConditionStepper
+            label="Wounded"
+            value={character.wounded ?? 0}
+            max={4}
+            onChange={(n) => edit.update({ wounded: n })}
+          />
+          {counters.length > 0 && (
+            <p className="text-xs text-silver/60">{counters.join(' · ')}</p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-silver/85">
+          {[...renderConditions(character), ...counters].join(' · ') || '—'}
+        </p>
       )}
-    </div>
-  ) : (
-    <SlimBar
-      label="Conditions"
-      value={[...renderConditions(character), ...counters].join(' · ') || '—'}
-    />
+    </FramedBlock>
   );
 }
 
@@ -1152,13 +1157,15 @@ function ConditionStepper({
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(n, max));
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`text-xs ${value > 0 ? 'text-red-300' : 'text-silver/60'}`}>
+    <div className="flex items-center justify-between gap-2">
+      <span className={`text-xs ${value > 0 ? 'text-red-300' : 'text-silver/70'}`}>
         {label} {value}
       </span>
-      <StepBtn label="−" onClick={() => onChange(clamp(value - 1))} />
-      <StepBtn label="+" onClick={() => onChange(clamp(value + 1))} />
-    </span>
+      <span className="flex items-center gap-1">
+        <StepBtn label="−" onClick={() => onChange(clamp(value - 1))} />
+        <StepBtn label="+" onClick={() => onChange(clamp(value + 1))} />
+      </span>
+    </div>
   );
 }
 
@@ -1175,17 +1182,6 @@ function renderCounters(overlay: CharacterOverlay | null): string[] {
   return Object.entries(overlay.counters)
     .filter(([, v]) => v && (v.max ?? 0) > 0)
     .map(([k, v]) => `${v.label || k.toUpperCase()} ${v.current ?? 0}/${v.max ?? 0}`);
-}
-
-function SlimBar({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 rounded-md border border-gold/20 bg-midnight-900/50 px-3 py-2">
-      <span className="text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
-        {label}
-      </span>
-      <span className="text-sm text-silver/80">{value}</span>
-    </div>
-  );
 }
 
 // ---- Skills panel ----------------------------------------------
@@ -1572,13 +1568,21 @@ function NotesPanel({
 // Right column
 // ---------------------------------------------------------------
 
-function RightColumn({ build }: { build: PathbuilderBuild }) {
+function RightColumn({
+  build,
+  character,
+  edit,
+}: {
+  build: PathbuilderBuild;
+  character: CharacterRow;
+  edit: EditControls;
+}) {
   const cdc = classDC(build);
   const primaryCaster = (build.spellCasters ?? []).find((c) => !c.innate);
   const spellAttack = primaryCaster ? spellAttackTotal(build, primaryCaster) : undefined;
   const initiative = perceptionBonus(build);
-  // Resistances / weaknesses / immunities now live here (consolidated out of
-  // the center row, which duplicated this "Defenses" box).
+  // Resistances / weaknesses / immunities live in the Defenses box; the
+  // center row no longer duplicates them.
   const defenses = defenseLine(build);
   return (
     <aside className="space-y-4">
@@ -1589,6 +1593,7 @@ function RightColumn({ build }: { build: PathbuilderBuild }) {
         icon={<HourglassIcon />}
         value={fmtMod(initiative)}
       />
+      <ConditionsBlock character={character} edit={edit} />
       <FramedBlock title="Defenses">
         {defenses.length > 0 ? (
           <ul className="space-y-1 text-sm text-silver/85">
@@ -1634,7 +1639,7 @@ function MiniStat({
 // Bottom tab bar
 // ---------------------------------------------------------------
 
-function BottomTabBar({
+function TabBar({
   activeTab,
   onSelect,
   readOnly = false,
