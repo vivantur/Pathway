@@ -1,4 +1,6 @@
 import { requireSupabase } from '@/lib/supabase';
+import type { PathbuilderBuild } from './pathbuilder';
+import { maxHp } from './pathbuilder';
 import { preferRemaster } from './pf2eData/sourcePreference';
 import type {
   AncestryRow,
@@ -408,6 +410,119 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
     .in('name', unique);
   if (error) throw error;
   return preferRemaster((data ?? []) as SpellRow[]);
+}
+
+// -------------------------------------------------------------------------
+// Create character: from a fetched Pathbuilder build
+// -------------------------------------------------------------------------
+
+export interface CreateCharacterFromBuildInput {
+  userId: string;
+  build: PathbuilderBuild;
+  pathbuilderId: number;
+}
+
+export interface CreateCharacterResult {
+  id: string;
+  char_key: string;
+  name: string;
+}
+
+/**
+ * Insert a new character row from a fetched Pathbuilder build.
+ *
+ * Extracts the denormalized fields (name/ancestry/heritage/class/background/
+ * level) so vault + header displays don't have to parse the JSONB. Generates
+ * a URL-safe char_key from the name and appends `-2`, `-3`, ... if the user
+ * already has a character at that key. Seeds live-state columns to sensible
+ * defaults: current_hp = maxHp(build), hero_points = 1, dying/wounded = 0,
+ * experience = 0.
+ *
+ * RLS should already scope the insert to `user_id = auth.uid()`; if you
+ * haven't added the INSERT policy yet, this call will error with a
+ * "new row violates row-level security policy" message.
+ */
+export async function createCharacterFromBuild(
+  input: CreateCharacterFromBuildInput,
+): Promise<CreateCharacterResult> {
+  const { userId, build, pathbuilderId } = input;
+  const supabase = requireSupabase();
+
+  const name = (build.name ?? '').trim() || 'Unnamed Character';
+  const level = build.level ?? 1;
+
+  const baseKey = slugify(name);
+  const charKey = await findAvailableCharKey(userId, baseKey);
+
+  const initialHp = maxHp(build) ?? null;
+
+  const insertPayload = {
+    user_id: userId,
+    char_key: charKey,
+    name,
+    source: 'pathbuilder',
+    pathbuilder_id: pathbuilderId,
+    pathbuilder_data: build,
+    ancestry_name: build.ancestry ?? null,
+    heritage_name: build.heritage ?? null,
+    class_name: build.class ?? null,
+    background_name: build.background ?? null,
+    level,
+    current_hp: initialHp,
+    hero_points: 1,
+    dying: 0,
+    wounded: 0,
+    experience: 0,
+  };
+
+  const { data, error } = await supabase
+    .from('characters')
+    .insert(insertPayload)
+    .select('id, char_key, name')
+    .single();
+
+  if (error) throw error;
+  return data as CreateCharacterResult;
+}
+
+/**
+ * Look up the current char_keys the user already has that start with
+ * `baseKey`, then pick the smallest unused suffix. This is one round-trip
+ * with a `LIKE 'base%'` filter (much cheaper than probing each candidate).
+ */
+async function findAvailableCharKey(userId: string, baseKey: string): Promise<string> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('characters')
+    .select('char_key')
+    .eq('user_id', userId)
+    .like('char_key', `${baseKey}%`);
+  if (error) throw error;
+
+  const taken = new Set((data ?? []).map((r) => (r as { char_key: string }).char_key));
+  if (!taken.has(baseKey)) return baseKey;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${baseKey}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  // Absurd fallback — should never happen in practice.
+  return `${baseKey}-${Date.now()}`;
+}
+
+/**
+ * URL-safe slug of a character name. Lowercased, non-word chars collapsed to
+ * hyphens, leading/trailing hyphens stripped, capped at 64 chars.
+ */
+function slugify(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^\w\s-]+/g, '-')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return (slug || 'character').slice(0, 64);
 }
 
 /** Map a file's MIME type to a filesystem-friendly extension. */

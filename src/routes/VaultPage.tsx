@@ -53,12 +53,19 @@ export function VaultPage() {
       )}
 
       {!isLoading && !isError && characters.length === 0 && (
-        <div className="rounded-lg border border-gold/15 bg-midnight-700/40 p-8 text-center">
-          <p className="text-silver/80">No characters yet.</p>
-          <p className="mt-1 text-sm text-silver/50">
-            Characters created in the Pathway Discord bot will appear here once your
-            accounts are linked.
+        <div className="rounded-lg border border-gold/15 bg-midnight-700/40 p-10 text-center">
+          <p className="font-display text-lg text-gold">Your vault is empty.</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-silver/70">
+            Import a character from Pathbuilder 2e to start building your collection.
+            Characters created in the Pathway Discord bot will also appear here.
           </p>
+          <Link
+            to="/vault/new"
+            className="mt-6 inline-flex items-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-5 py-2.5 font-display text-sm uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded"
+          >
+            <span aria-hidden className="text-lg leading-none">+</span>
+            Import from Pathbuilder
+          </Link>
         </div>
       )}
 
@@ -110,7 +117,7 @@ function VaultHeader({
     <header className="relative overflow-hidden rounded-lg border border-gold/30 bg-midnight-900/70 p-6 shadow-gilded">
       {/* Decorative gilded corner brackets */}
       <CornerBrackets />
-      <div className="relative flex flex-wrap items-center gap-6">
+      <div className="relative flex flex-wrap items-start gap-6">
         <Avatar url={avatarUrl} name={displayName} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
@@ -128,6 +135,13 @@ function VaultHeader({
             {providerId && <ProfileStat label="Discord ID" value={providerId} mono />}
           </dl>
         </div>
+        <Link
+          to="/vault/new"
+          className="inline-flex shrink-0 items-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-display uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded"
+        >
+          <span aria-hidden className="text-lg leading-none">+</span>
+          Add Character
+        </Link>
       </div>
     </header>
   );
