@@ -9,6 +9,7 @@ import {
 } from '@/features/characters/useCharacterActions';
 import { useCharacterRealtime, type RealtimeState } from '@/features/characters/useCharacterRealtime';
 import { useUpdateCharacterState } from '@/features/characters/useUpdateCharacterState';
+import { useFavoriteSpells } from '@/features/characters/useFavoriteSpells';
 import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
@@ -39,6 +40,7 @@ import {
   perceptionBonus,
   profLabel,
   saveBonus,
+  shieldBonus,
   skillBonus,
   sizeLabel,
   speed,
@@ -174,7 +176,7 @@ function TabContent({
   }
   switch (tab) {
     case 'overview':
-      return <OverviewBody character={character} build={build} />;
+      return <OverviewBody character={character} build={build} edit={edit} />;
     case 'ancestry':
       return <AncestryTab character={character} build={build} />;
     case 'class':
@@ -860,9 +862,11 @@ function FramedBlock({
 function OverviewBody({
   character,
   build,
+  edit,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
+  edit: EditControls;
 }) {
   return (
     <div className="space-y-4">
@@ -873,7 +877,7 @@ function OverviewBody({
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <div className="lg:col-span-2">
-          <AttacksPanel character={character} build={build} />
+          <AttacksPanel character={character} build={build} edit={edit} />
         </div>
       </div>
     </div>
@@ -896,7 +900,7 @@ function StatRow({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       <HpCard current={character.current_hp} max={max ?? null} edit={edit} />
-      <StatCard label="AC" icon={<ShieldIcon />} value={acTotal(build) ?? '—'} />
+      <AcCard build={build} edit={edit} />
       <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude'))} />
       <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
       <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />
@@ -1020,6 +1024,55 @@ function StatCard({
           {sub}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * AC stat card with a "Raise Shield" quick action. When the character carries
+ * a shield (`acTotal.shieldBonus > 0`) and editing is enabled, a toggle bumps
+ * the shown AC by the shield bonus and tints the card — modelling the raised
+ * condition until your next turn. The raised state is deliberately ephemeral
+ * (view-only, resets on reload): it's a turn-scale combat toggle, not a
+ * persisted stat, and it never writes to the DB or overlay.
+ */
+function AcCard({ build, edit }: { build: PathbuilderBuild; edit: EditControls }) {
+  const base = acTotal(build);
+  const shield = shieldBonus(build);
+  const [raised, setRaised] = useState(false);
+  const canRaise = edit.enabled && shield > 0;
+  const shown = raised && base != null ? base + shield : base;
+
+  return (
+    <div
+      className={`relative rounded-md border bg-midnight-900/70 px-3 py-3 text-center shadow-gilded ${
+        raised ? 'border-arcane/70' : 'border-gold/30'
+      }`}
+    >
+      <CornerAccents />
+      <div className="text-[0.65rem] font-display uppercase tracking-widest text-gold/90">AC</div>
+      <div className="my-1 flex justify-center text-xl text-gold">
+        <ShieldIcon />
+      </div>
+      <div className={`font-display text-2xl tabular-nums ${raised ? 'text-arcane' : 'text-silver'}`}>
+        {shown ?? '—'}
+      </div>
+      {canRaise ? (
+        <button
+          type="button"
+          onClick={() => setRaised((r) => !r)}
+          title={`Raise a shield (+${shield} AC until your next turn)`}
+          className={`mt-1 text-[0.55rem] uppercase tracking-widest transition-colors ${
+            raised ? 'text-arcane hover:text-arcane-soft' : 'text-silver/50 hover:text-gold'
+          }`}
+        >
+          {raised ? `▲ Shield +${shield}` : 'Raise Shield'}
+        </button>
+      ) : shield > 0 ? (
+        <div className="mt-0.5 text-[0.55rem] uppercase tracking-widest text-silver/40">
+          Shield +{shield}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1212,13 +1265,27 @@ function RowContents({ children, dim }: { children: ReactNode; dim?: boolean }) 
 
 // ---- Attacks & spellcasting -----------------------------------
 
-function AttacksPanel({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+function AttacksPanel({
+  character,
+  build,
+  edit,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  edit: EditControls;
+}) {
   const weapons = mergeWeapons(build, character.overlay ?? null);
-  const spellRows = collectSpellAttackRows(build);
-  const rows = [
-    ...weapons.map((w) => ({ kind: 'weapon' as const, w })),
-    ...spellRows,
-  ];
+  const allSpells = collectSpellAttackRows(build);
+  const { favorites, toggle } = useFavoriteSpells(character.char_key);
+
+  // Pinned spells float to the very top and are always shown; the rest are
+  // capped so a big spellbook doesn't bury the weapons. The pin toggle only
+  // appears on your own editable sheet (it writes to this browser only).
+  const pinned = allSpells.filter((s) => favorites.has(s.name));
+  const rest = allSpells.filter((s) => !favorites.has(s.name)).slice(0, 10);
+  const isEmpty = pinned.length + weapons.length + rest.length === 0;
+  const onToggle = edit.enabled ? toggle : undefined;
+
   return (
     <Panel title="Attacks & Spellcasting">
       <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 gap-y-1.5 text-sm">
@@ -1226,12 +1293,18 @@ function AttacksPanel({ character, build }: { character: CharacterRow; build: Pa
         <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Name</div>
         <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Atk / Dmg / DC</div>
         <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Traits</div>
-        {rows.length === 0 && (
+        {isEmpty && (
           <div className="col-span-4 py-3 text-center text-sm text-silver/40">—</div>
         )}
-        {rows.map((r, i) =>
-          r.kind === 'weapon' ? <WeaponRow key={`w-${i}`} w={r.w} /> : <SpellRow key={`s-${i}`} row={r} />
-        )}
+        {pinned.map((s, i) => (
+          <SpellRow key={`p-${i}`} row={s} favorite onToggle={onToggle} />
+        ))}
+        {weapons.map((w, i) => (
+          <WeaponRow key={`w-${i}`} w={w} />
+        ))}
+        {rest.map((s, i) => (
+          <SpellRow key={`s-${i}`} row={s} favorite={false} onToggle={onToggle} />
+        ))}
       </div>
     </Panel>
   );
@@ -1277,14 +1350,37 @@ function collectSpellAttackRows(build: PathbuilderBuild): SpellAttackRow[] {
       }
     }
   }
-  return rows.slice(0, 10);
+  return rows;
 }
 
-function SpellRow({ row }: { row: SpellAttackRow }) {
+function SpellRow({
+  row,
+  favorite,
+  onToggle,
+}: {
+  row: SpellAttackRow;
+  favorite: boolean;
+  onToggle?: (name: string) => void;
+}) {
   const tint = TRADITION_COLOR[row.tradition] ?? 'gold';
   return (
     <>
-      <span className={`text-sm text-${tint === 'gold' ? 'gold' : tint}/70`}>✦</span>
+      {onToggle ? (
+        <button
+          type="button"
+          onClick={() => onToggle(row.name)}
+          title={favorite ? 'Unpin spell' : 'Pin spell to top'}
+          className={`text-sm transition-colors ${
+            favorite ? 'text-gold' : 'text-silver/25 hover:text-gold/70'
+          }`}
+        >
+          <StarIcon />
+        </button>
+      ) : favorite ? (
+        <StarIcon className="text-sm text-gold" />
+      ) : (
+        <span className={`text-sm text-${tint === 'gold' ? 'gold' : tint}/70`}>✦</span>
+      )}
       <span className="text-silver">{row.name}</span>
       <span className="tabular-nums text-arcane">{fmtMod(row.attack)}</span>
       <span className="text-xs capitalize text-silver/60">

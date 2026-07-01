@@ -316,6 +316,16 @@ export function acTotal(build: PathbuilderBuild): number | undefined {
   return build.acTotal?.acTotal;
 }
 
+/**
+ * The AC bonus a raised shield grants (0 if the character carries no shield).
+ * Pathbuilder exports this on `acTotal.shieldBonus` — it's already excluded
+ * from `acTotal.acTotal`, so callers add it only while the shield is raised.
+ */
+export function shieldBonus(build: PathbuilderBuild): number {
+  const b = build.acTotal?.shieldBonus;
+  return typeof b === 'number' && b > 0 ? b : 0;
+}
+
 /** Class DC for classes that have one (kineticist, monk, most casters). */
 export function classDC(build: PathbuilderBuild): number | undefined {
   const cdc = build.proficiencies?.classDC;
