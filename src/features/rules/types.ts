@@ -22,18 +22,48 @@ export interface RuleEntry {
   statBlock?: MonsterStatBlock;
 }
 
-/** The compact PF2e stat-block fields shown for a monster. */
+export interface MonsterAttack {
+  name: string;
+  /** "Melee" | "Ranged". */
+  kind: string;
+  toHit: string | null;
+  damage: string | null;
+  traits: string[];
+}
+
+export interface MonsterAbility {
+  name: string;
+  actionCost: string | null;
+  traits: string[];
+  description: string;
+}
+
+/** The full PF2e stat-block fields shown for a monster. */
 export interface MonsterStatBlock {
+  imageUrl: string | null;
+  aonUrl: string | null;
+  // Defense
   ac: string | null;
   hp: string | null;
   fort: string | null;
   ref: string | null;
   will: string | null;
   perception: string | null;
+  immunities: string[];
+  resistances: string[];
+  weaknesses: string[];
+  // Movement / senses / social
   speed: string | null;
   size: string | null;
-  /** Six ability modifiers, in STR…CHA order, as display strings ("+4"). */
+  senses: string[];
+  languages: string[];
+  // Six ability modifiers, STR…CHA order, as display strings ("+4").
   abilities: Array<{ label: string; value: string }>;
+  skills: Array<{ label: string; value: string }>;
+  items: string[];
+  // Offense
+  attacks: MonsterAttack[];
+  specialAbilities: MonsterAbility[];
 }
 
 export type RuleCategoryId =

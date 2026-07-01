@@ -217,65 +217,131 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
 }
 
 function StatBlock({ block }: { block: MonsterStatBlock }) {
-  const defenses: Array<{ label: string; value: string | null }> = [
-    { label: 'AC', value: block.ac },
-    { label: 'HP', value: block.hp },
-    { label: 'Fort', value: block.fort },
-    { label: 'Ref', value: block.ref },
-    { label: 'Will', value: block.will },
-    { label: 'Perception', value: block.perception },
-  ];
-  const shownDefenses = defenses.filter((d) => d.value != null);
-
   return (
-    <div className="mb-3 space-y-3 rounded-md border border-gold/20 bg-midnight-900/50 p-3">
-      {/* Defenses + Perception row */}
-      {shownDefenses.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {shownDefenses.map((d) => (
-            <div key={d.label} className="text-center">
-              <div className="text-[0.55rem] uppercase tracking-widest text-gold/70">
-                {d.label}
-              </div>
-              <div className="font-display text-lg text-silver">{d.value}</div>
-            </div>
-          ))}
-        </div>
+    <div className="mb-3 space-y-3 rounded-md border border-gold/25 bg-midnight-900/50 p-4">
+      {block.imageUrl && (
+        <img
+          src={block.imageUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="mx-auto max-h-56 w-auto rounded border border-gold/25 object-contain"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
       )}
 
-      {/* Ability modifiers */}
-      {block.abilities.length > 0 && (
-        <div className="grid grid-cols-6 gap-2 border-t border-gold/15 pt-2">
-          {block.abilities.map((a) => (
-            <div key={a.label} className="text-center">
-              <div className="text-[0.55rem] uppercase tracking-widest text-silver/50">
-                {a.label}
-              </div>
-              <div className="font-display text-sm text-arcane">{a.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Top band — senses / languages / skills / abilities / items */}
+      <div className="space-y-1 text-sm">
+        {block.perception && (
+          <SbLine label="Perception">
+            {block.perception}
+            {block.senses.length > 0 && `; ${block.senses.join(', ')}`}
+          </SbLine>
+        )}
+        {block.languages.length > 0 && (
+          <SbLine label="Languages">{block.languages.join(', ')}</SbLine>
+        )}
+        {block.skills.length > 0 && (
+          <SbLine label="Skills">
+            {block.skills.map((s) => `${s.label} ${s.value}`).join(', ')}
+          </SbLine>
+        )}
+        {block.abilities.length > 0 && (
+          <SbLine label="Abilities">
+            {block.abilities.map((a) => `${a.label} ${a.value}`).join(', ')}
+          </SbLine>
+        )}
+        {block.items.length > 0 && <SbLine label="Items">{block.items.join(', ')}</SbLine>}
+      </div>
 
-      {/* Speed + Size */}
-      {(block.speed || block.size) && (
-        <div className="flex flex-wrap gap-x-4 border-t border-gold/15 pt-2 text-xs">
-          {block.size && (
-            <span>
-              <span className="text-[0.6rem] uppercase tracking-widest text-gold/70">Size: </span>
-              <span className="text-silver/85">{block.size}</span>
-            </span>
-          )}
-          {block.speed && (
-            <span>
-              <span className="text-[0.6rem] uppercase tracking-widest text-gold/70">Speed: </span>
-              <span className="text-silver/85">{block.speed}</span>
-            </span>
-          )}
+      <SbRule />
+
+      {/* Defense band */}
+      <div className="space-y-1 text-sm">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {block.ac && <SbStat label="AC" value={block.ac} />}
+          {block.fort && <SbStat label="Fort" value={block.fort} />}
+          {block.ref && <SbStat label="Ref" value={block.ref} />}
+          {block.will && <SbStat label="Will" value={block.will} />}
+          {block.hp && <SbStat label="HP" value={block.hp} />}
         </div>
-      )}
+        {block.immunities.length > 0 && (
+          <SbLine label="Immunities">{block.immunities.join(', ')}</SbLine>
+        )}
+        {block.resistances.length > 0 && (
+          <SbLine label="Resistances">{block.resistances.join(', ')}</SbLine>
+        )}
+        {block.weaknesses.length > 0 && (
+          <SbLine label="Weaknesses">{block.weaknesses.join(', ')}</SbLine>
+        )}
+      </div>
+
+      {(block.speed || block.attacks.length > 0 || block.specialAbilities.length > 0) && <SbRule />}
+
+      {/* Offense band */}
+      <div className="space-y-2 text-sm">
+        {block.speed && <SbLine label="Speed">{block.speed}</SbLine>}
+
+        {block.attacks.map((atk, i) => (
+          <div key={`atk-${i}`} className="leading-relaxed">
+            <span className="font-display text-gold/90">{atk.kind}</span>{' '}
+            <span className="italic text-silver">{atk.name}</span>{' '}
+            {atk.toHit && <span className="text-arcane">{atk.toHit}</span>}
+            {atk.traits.length > 0 && (
+              <span className="text-silver/55"> ({atk.traits.join(', ')})</span>
+            )}
+            {atk.damage && (
+              <span className="text-silver/85">
+                , <span className="text-gold/70">Damage</span> {atk.damage}
+              </span>
+            )}
+          </div>
+        ))}
+
+        {block.specialAbilities.map((ab, i) => (
+          <div key={`ab-${i}`}>
+            <span className="font-display text-gold">{ab.name}</span>
+            {ab.actionCost && (
+              <span className="ml-1 text-xs uppercase tracking-wider text-silver/60">
+                [{ab.actionCost}]
+              </span>
+            )}
+            {ab.traits.length > 0 && (
+              <span className="ml-1 text-xs text-silver/50">({ab.traits.join(', ')})</span>
+            )}
+            {ab.description && (
+              <div className="mt-0.5 text-silver/80">
+                <GrimoireMarkdown strip={['**Source**']}>{ab.description}</GrimoireMarkdown>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
+}
+
+function SbLine({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <p className="leading-relaxed text-silver/85">
+      <span className="font-display text-gold/80">{label}</span> {children}
+    </p>
+  );
+}
+
+function SbStat({ label, value }: { label: string; value: string }) {
+  return (
+    <span>
+      <span className="font-display text-gold/80">{label}</span>{' '}
+      <span className="text-silver">{value}</span>
+    </span>
+  );
+}
+
+function SbRule() {
+  return <div className="h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />;
 }
 
 function RarityChip({ rarity }: { rarity: string }) {

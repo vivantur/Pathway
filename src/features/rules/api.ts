@@ -75,6 +75,87 @@ function abilityMods(v: unknown): Array<{ label: string; value: string }> {
   return out;
 }
 
+const asObj = (v: unknown): Record<string, unknown> =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+
+/** Strip AoN's markdown italic underscores from a name (`_dagger_` → `dagger`). */
+const cleanName = (s: string): string => s.replace(/^_+/, '').replace(/_+$/, '').trim();
+
+/** Turn a broken markdown-link trait (`[auditory](/Traits…`) into its label. */
+const cleanTrait = (t: string): string => {
+  const m = t.match(/^\[([^\]]+)\]/);
+  return (m ? m[1] : t).trim();
+};
+
+/**
+ * The AoN import concatenates the *next* stat-block section into an ability's
+ * description (Insightful's text bleeds into Items/AC/HP; Objection! bleeds
+ * into Speed/Melee). Truncate at the earliest bleed marker to recover just
+ * the ability text.
+ */
+function cleanAbilityDescription(s: string): string {
+  if (!s) return s;
+  const markers = [
+    '\n\n---', '\n\nItems\n', '\n\nItems ', '\n\nSpeed ', '\n\nSpeed\n',
+    '\n\nMelee\n', '\n\nMelee ', '\n\nRanged\n', '\n\nRanged ', '\n\nAC ', '\n\nHP ',
+  ];
+  let cut = s.length;
+  for (const m of markers) {
+    const idx = s.indexOf(m);
+    if (idx >= 0 && idx < cut) cut = idx;
+  }
+  return s.slice(0, cut).trim();
+}
+
+/** Skills jsonb ({ Deception: 20, … }) → sorted [{label, value:"+20"}]. */
+function monsterSkills(v: unknown): Array<{ label: string; value: string }> {
+  return Object.entries(asObj(v))
+    .map(([label, val]) => ({ label, value: fmtMod(num(val)) }))
+    .filter((s): s is { label: string; value: string } => s.value != null)
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Attacks jsonb → typed attack rows. */
+function monsterAttacks(v: unknown): import('./types').MonsterAttack[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((raw) => {
+    const a = asObj(raw);
+    return {
+      name: cleanName(str(a.name) ?? ''),
+      kind: capitalize(str(a.type) ?? ''),
+      toHit: fmtMod(num(a.to_hit)),
+      damage: str(a.damage),
+      traits: arr(a.traits).map(cleanTrait),
+    };
+  });
+}
+
+/** `abilities.{top,mid,bot}` groups → a flat, cleaned list of special abilities. */
+function monsterAbilities(v: unknown): import('./types').MonsterAbility[] {
+  const groups = asObj(v);
+  const out: import('./types').MonsterAbility[] = [];
+  for (const key of ['top', 'mid', 'bot']) {
+    const list = groups[key];
+    if (!Array.isArray(list)) continue;
+    for (const raw of list) {
+      const a = asObj(raw);
+      const name = str(a.name);
+      if (!name) continue;
+      out.push({
+        name,
+        actionCost: str(a.action_cost),
+        traits: arr(a.traits).map(cleanTrait),
+        description: cleanAbilityDescription(str(a.description) ?? ''),
+      });
+    }
+  }
+  return out;
+}
+
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export const RULE_CATEGORIES: CategoryConfig[] = [
   {
     id: 'feats',
@@ -157,39 +238,66 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
     label: 'Monsters',
     table: 'monsters',
     hasLevel: true,
-    map: (r) => ({
-      id: String(r.id),
-      name: str(r.name) ?? 'Unknown',
-      category: 'monsters',
-      level: num(r.level),
-      rarity: str(r.rarity),
-      traits: arr(r.traits),
-      actionCost: null,
-      prerequisites: null,
-      trigger: null,
-      description: str(r.description),
-      aonUrl: null, // monsters table has no aon_url column
-      meta: [
-        str(r.creature_type) ? { label: 'Type', value: str(r.creature_type)! } : null,
-        str(r.alignment) ? { label: 'Alignment', value: str(r.alignment)! } : null,
-        arr(r.languages).length ? { label: 'Languages', value: arr(r.languages).join(', ') } : null,
-        arr(r.immunities).length ? { label: 'Immunities', value: arr(r.immunities).join(', ') } : null,
-        arr(r.resistances).length ? { label: 'Resistances', value: arr(r.resistances).join(', ') } : null,
-        arr(r.weaknesses).length ? { label: 'Weaknesses', value: arr(r.weaknesses).join(', ') } : null,
-        str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
-      ].filter(Boolean) as RuleEntry['meta'],
-      statBlock: {
-        ac: num(r.ac) != null ? String(num(r.ac)) : null,
-        hp: num(r.hp) != null ? String(num(r.hp)) : null,
-        fort: fmtMod(jnum(r.saving_throws, 'fortitude', 'fort', 'fortitude_save')),
-        ref: fmtMod(jnum(r.saving_throws, 'reflex', 'ref', 'reflex_save')),
-        will: fmtMod(jnum(r.saving_throws, 'will', 'will_save')),
-        perception: fmtMod(num(r.perception)),
-        speed: formatSpeed(r.speed),
-        size: str(r.size),
-        abilities: abilityMods(r.ability_modifiers),
-      },
-    }),
+    map: (r) => {
+      // The richest, cleanest data lives in monster_metadata.rich for
+      // AoN-imported monsters; fall back to the top-level columns for
+      // homebrew that may only have those. Image + AoN url live only in
+      // monster_metadata.
+      const md = asObj(r.monster_metadata);
+      const rich = asObj(md.rich);
+      const richDef = asObj(rich.defenses);
+      const savesSrc = asObj(richDef.saves ?? r.saving_throws);
+      const pick = <T,>(a: T, b: T): T =>
+        a != null && !(Array.isArray(a) && a.length === 0) ? a : b;
+
+      const attacksSrc = pick(rich.attacks, r.attacks);
+      const abilitiesSrc = pick(rich.abilities, r.abilities);
+      const abilityModSrc = pick(rich.ability_modifiers, r.ability_modifiers);
+
+      return {
+        id: String(r.id),
+        name: str(r.name) ?? 'Unknown',
+        category: 'monsters',
+        level: num(r.level) ?? jnum(md, 'level'),
+        rarity: str(r.rarity),
+        traits: arr(r.traits),
+        actionCost: null,
+        prerequisites: null,
+        trigger: null,
+        description: str(r.description) ?? str(rich.description),
+        aonUrl: str(md.aon_url),
+        meta: [
+          str(r.creature_type) ? { label: 'Type', value: str(r.creature_type)! } : null,
+          str(r.alignment) ? { label: 'Alignment', value: str(r.alignment)! } : null,
+          str(md.family) ? { label: 'Family', value: str(md.family)! } : null,
+          str(md.source) ?? str(r.source)
+            ? { label: 'Source', value: (str(md.source) ?? str(r.source))! }
+            : null,
+        ].filter(Boolean) as RuleEntry['meta'],
+        statBlock: {
+          imageUrl: str(md.image),
+          aonUrl: str(md.aon_url),
+          ac: num(r.ac) != null ? String(num(r.ac)) : jnum(richDef, 'ac') != null ? String(jnum(richDef, 'ac')) : null,
+          hp: num(r.hp) != null ? String(num(r.hp)) : jnum(richDef, 'hp') != null ? String(jnum(richDef, 'hp')) : null,
+          fort: fmtMod(jnum(savesSrc, 'fortitude', 'fort')),
+          ref: fmtMod(jnum(savesSrc, 'reflex', 'ref')),
+          will: fmtMod(jnum(savesSrc, 'will')),
+          perception: fmtMod(num(r.perception) ?? jnum(rich, 'perception')),
+          immunities: pick(arr(richDef.immunities), arr(r.immunities)),
+          resistances: pick(arr(richDef.resistances), arr(r.resistances)),
+          weaknesses: pick(arr(richDef.weaknesses), arr(r.weaknesses)),
+          speed: formatSpeed(pick(rich.speed, r.speed)),
+          size: str(r.size),
+          senses: arr(rich.senses),
+          languages: pick(arr(rich.languages), arr(r.languages)),
+          abilities: abilityMods(abilityModSrc),
+          skills: monsterSkills(rich.skills),
+          items: arr(rich.items),
+          attacks: monsterAttacks(attacksSrc),
+          specialAbilities: monsterAbilities(abilitiesSrc),
+        },
+      };
+    },
   },
   {
     id: 'conditions',
