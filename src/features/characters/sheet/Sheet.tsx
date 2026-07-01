@@ -20,6 +20,7 @@ import {
 import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { parsePathbuilderId } from '@/features/characters/pathbuilderImport';
+import { exportPathbuilderJson } from '@/features/characters/exportCharacter';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import { mergeWeapons } from '@/features/characters/weapons';
 import type { ActiveCondition, CharacterOverlay, CharacterRow } from '@/features/characters/types';
@@ -66,6 +67,7 @@ import {
   CameraIcon,
   CompassIcon,
   CopyIcon,
+  DownloadIcon,
   EyeIcon,
   HeartIcon,
   OverviewIcon,
@@ -290,7 +292,7 @@ function SheetHeader({
         </div>
 
         {/* Actions — hidden entirely on read-only public shares */}
-        {!readOnly && <SheetActions character={character} />}
+        {!readOnly && <SheetActions character={character} build={build} />}
       </div>
     </header>
   );
@@ -300,10 +302,11 @@ function SheetHeader({
 // Header actions — Update from Pathbuilder / Share / Delete
 // ---------------------------------------------------------------
 
-function SheetActions({ character }: { character: CharacterRow }) {
+function SheetActions({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkRaw, setLinkRaw] = useState('');
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -384,6 +387,11 @@ function SheetActions({ character }: { character: CharacterRow }) {
           onClick={() => setShareOpen((v) => !v)}
         />
         <HeaderButton
+          icon={<DownloadIcon />}
+          label="Export"
+          onClick={() => setExportOpen((v) => !v)}
+        />
+        <HeaderButton
           icon={<TrashIcon />}
           label="Delete"
           onClick={() => setConfirmDelete(true)}
@@ -437,6 +445,14 @@ function SheetActions({ character }: { character: CharacterRow }) {
         />
       )}
 
+      {exportOpen && (
+        <ExportPopup
+          character={character}
+          build={build}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
+
       {confirmDelete && (
         <ConfirmDeleteDialog
           name={character.name}
@@ -446,6 +462,51 @@ function SheetActions({ character }: { character: CharacterRow }) {
           onCancel={() => setConfirmDelete(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** Export menu — download the character in various formats. */
+function ExportPopup({
+  character,
+  build,
+  onClose,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  onClose: () => void;
+}) {
+  return (
+    <div className="w-64 rounded-md border border-gold/30 bg-midnight-900/90 p-3 shadow-gilded">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[0.65rem] uppercase tracking-widest text-gold/80">Export</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-silver/50 hover:text-gold"
+          aria-label="Close export panel"
+        >
+          ✕
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          exportPathbuilderJson(character.name || build.name, build);
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 rounded border border-gold/20 bg-midnight-900/60 px-2 py-2 text-left text-sm text-silver/90 hover:border-gold/50 hover:text-gold"
+      >
+        <span className="text-gold">
+          <DownloadIcon />
+        </span>
+        <span>
+          <span className="block">Pathbuilder JSON</span>
+          <span className="block text-[0.6rem] uppercase tracking-widest text-silver/50">
+            Round-trips to Pathbuilder tools
+          </span>
+        </span>
+      </button>
     </div>
   );
 }
