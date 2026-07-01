@@ -121,6 +121,17 @@ function RelinkBanner() {
     );
   }
 
+  if (data.status === 'created') {
+    return (
+      <Banner tone="success" onDismiss={() => setDismissed(true)}>
+        Welcome to Pathway! Your account is set up. Import your first character
+        from Pathbuilder to get started — hit{' '}
+        <span className="font-display text-emerald-soft">+ Add Character</span>{' '}
+        above.
+      </Banner>
+    );
+  }
+
   if (data.status === 'conflict') {
     return (
       <Banner tone="danger" onDismiss={() => setDismissed(true)}>

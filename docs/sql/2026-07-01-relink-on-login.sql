@@ -19,10 +19,19 @@
 -- Return shape (jsonb): { status, characters?, previous_id?, detail? }
 --   status = 'linked'          -> rewrote OLD id → auth.uid(); characters = count claimed
 --            'already_linked'  -> nothing to do; characters = count owned
---            'no_bot_identity' -> no users row for this Discord id (web-only user)
+--            'created'         -> web-only user (no prior bot row); created a fresh
+--                                 users row keyed to auth.uid() so they can import
 --            'no_discord_id'   -> JWT had no Discord claim (non-Discord login)
 --            'conflict'        -> auth.uid() already maps to a DIFFERENT bot user
 --            'not_authenticated'
+--
+-- Web-only signup: a user who has never used the Discord bot has no `users`
+-- row, but characters.user_id FKs to users.id — so without a row, they can't
+-- import. The 'no_bot_identity' path now CREATES a minimal users row (only
+-- discord_id is required; everything else is nullable or defaulted) keyed to
+-- auth.uid(), pulling username/avatar/email from the JWT. Because the row is
+-- keyed by discord_id, when that user later uses the bot, the bot finds this
+-- exact row and stays in sync.
 -- =============================================================================
 
 create or replace function public.relink_current_user()
@@ -37,6 +46,9 @@ declare
   v_old_id   uuid;
   v_conflict_discord text;
   v_char_count int;
+  v_username text;
+  v_avatar   text;
+  v_email    text;
 begin
   if v_auth_uid is null then
     return jsonb_build_object('status', 'not_authenticated');
@@ -56,7 +68,35 @@ begin
   select id into v_old_id from public.users where discord_id = v_discord limit 1;
 
   if v_old_id is null then
-    return jsonb_build_object('status', 'no_bot_identity');
+    -- Web-only signup: no bot row exists for this Discord id. Guard against a
+    -- row already carrying auth.uid() under a different discord (shouldn't
+    -- happen — auth uids are random — but abort cleanly if so).
+    select discord_id into v_conflict_discord from public.users where id = v_auth_uid;
+    if v_conflict_discord is not null then
+      return jsonb_build_object(
+        'status', 'conflict',
+        'detail', 'auth id already exists as a bot user with a different Discord id'
+      );
+    end if;
+
+    -- Pull display fields from the verified JWT (all optional / defaulted in
+    -- the users table; only discord_id is strictly required).
+    v_username := coalesce(
+      auth.jwt() -> 'user_metadata' ->> 'full_name',
+      auth.jwt() -> 'user_metadata' ->> 'name',
+      auth.jwt() -> 'user_metadata' ->> 'user_name',
+      'Discord User'
+    );
+    v_avatar := auth.jwt() -> 'user_metadata' ->> 'avatar_url';
+    v_email  := coalesce(
+      auth.jwt() ->> 'email',
+      auth.jwt() -> 'user_metadata' ->> 'email'
+    );
+
+    insert into public.users (id, discord_id, discord_username, discord_avatar, email)
+    values (v_auth_uid, v_discord, v_username, v_avatar, v_email);
+
+    return jsonb_build_object('status', 'created', 'characters', 0);
   end if;
 
   if v_old_id = v_auth_uid then

@@ -431,6 +431,7 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
 export type RelinkStatus =
   | 'linked'
   | 'already_linked'
+  | 'created'
   | 'no_bot_identity'
   | 'no_discord_id'
   | 'conflict'
