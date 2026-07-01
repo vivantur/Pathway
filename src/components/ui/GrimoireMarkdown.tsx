@@ -17,12 +17,26 @@ import remarkGfm from 'remark-gfm';
 export function GrimoireMarkdown({
   children,
   strip = [],
+  structure = false,
+  name,
 }: {
   children: string;
   /** Case-insensitive substring matches; any line containing one is dropped. */
   strip?: string[];
+  /**
+   * When true, run the raw text through `structurePf2eSections` first — this
+   * turns unstructured AoN lore prose (where section titles like "Physical
+   * Description" / "Society" are embedded inline with no line breaks) into
+   * proper headed sections, and strips the inline "Source … pg. N" citation.
+   * Use for long lore blocks (ancestries, backgrounds, classes); leave off for
+   * already-structured feat/spell text.
+   */
+  structure?: boolean;
+  /** The entry's name — stripped from the start of the description when structuring. */
+  name?: string;
 }) {
-  const source = preprocessDescription(children ?? '', strip);
+  let source = preprocessDescription(children ?? '', strip);
+  if (structure) source = structurePf2eSections(source, name);
   if (!source.trim()) return null;
 
   return (
@@ -112,4 +126,57 @@ function preprocessDescription(raw: string, strip: string[]): string {
     // after we strip the source line.
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/**
+ * Canonical section labels AoN uses inside ancestry / background / class lore
+ * prose. In our reference data these arrive embedded inline with no line
+ * breaks, so the whole thing renders as one paragraph. We detect them and
+ * promote each to a markdown `## heading`, which the renderer then styles as
+ * a proper section. Multi-word, distinctively-capitalized phrases keep false
+ * positives low. Order longest-first so a longer header wins over a substring.
+ */
+const PF2E_SECTION_HEADERS = [
+  'Alignment and Religion',
+  'Physical Description',
+  'Other Information',
+  'You Might…',
+  'You Might...',
+  'Others Probably…',
+  'Others Probably...',
+  'Sample Names',
+  'Adventurers',
+  'Society',
+  'Names',
+  'Beliefs',
+  'Appearance',
+];
+
+/**
+ * Turn a wall of AoN lore prose into headed markdown sections + strip the
+ * inline "Source <book> pg. N" citation and a redundant leading name.
+ */
+function structurePf2eSections(raw: string, name?: string): string {
+  if (!raw) return raw;
+  let text = raw.trim();
+
+  // Drop a redundant leading "<Name> " (AoN prose often repeats it).
+  if (name && text.toLowerCase().startsWith(`${name.toLowerCase()} `)) {
+    text = text.slice(name.length + 1);
+  }
+  // Drop the inline source citation — already shown as a meta chip. `[^.]*?`
+  // keeps it from swallowing past the sentence.
+  text = text.replace(/\bSource\b[^.]*?pg\.\s*\d+\s*/gi, '').trim();
+
+  // Dynamic "<Word> Heritage Mechanics" header (aasimar, tiefling, etc.).
+  text = text.replace(/\s+(\w+ Heritage Mechanics)\s+/g, '\n\n## $1\n\n');
+
+  // Known section headers → markdown h2. Matched only when flanked by
+  // whitespace (a real section boundary), not mid-word.
+  for (const h of PF2E_SECTION_HEADERS) {
+    const esc = h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(new RegExp(`\\s+${esc}\\s+`, 'g'), `\n\n## ${h}\n\n`);
+  }
+
+  return text.replace(/\n{3,}/g, '\n\n').trim();
 }

@@ -135,7 +135,7 @@ function AncestryOverview({ ancestry }: { ancestry: AncestryRow }) {
       {/* Description */}
       {ancestry.description && (
         <div className="mb-4">
-          <GrimoireMarkdown strip={['**Source**', 'Source ', 'source:']}>
+          <GrimoireMarkdown strip={['**Source**']} structure name={ancestry.name}>
             {ancestry.description}
           </GrimoireMarkdown>
         </div>

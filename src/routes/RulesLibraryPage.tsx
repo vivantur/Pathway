@@ -7,6 +7,9 @@ import { RULE_CATEGORIES } from '@/features/rules/api';
 import { useRulesSearch } from '@/features/rules/useRulesSearch';
 import type { RuleCategoryId, RuleEntry } from '@/features/rules/types';
 
+/** Categories whose descriptions are long AoN lore prose worth sectioning. */
+const structuredCategories = new Set<RuleCategoryId>(['ancestries', 'backgrounds']);
+
 /**
  * Rules Library — a public, searchable browser across the reference tables
  * (feats / spells / items / conditions / ancestries / backgrounds). No auth:
@@ -184,7 +187,13 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
           )}
 
           {entry.description ? (
-            <GrimoireMarkdown strip={['**Source**']}>{entry.description}</GrimoireMarkdown>
+            <GrimoireMarkdown
+              strip={['**Source**']}
+              structure={structuredCategories.has(entry.category)}
+              name={entry.name}
+            >
+              {entry.description}
+            </GrimoireMarkdown>
           ) : (
             <p className="text-xs italic text-silver/40">No description recorded.</p>
           )}
