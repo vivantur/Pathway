@@ -163,8 +163,9 @@ function ArmorPanel({
   armor: Armor[];
   totalAc: number | undefined;
 }) {
-  const worn = armor.filter((a) => a.worn);
-  const carried = armor.filter((a) => !a.worn);
+  const worn = resolveWornArmor(armor);
+  const wornSet = new Set(worn);
+  const carried = armor.filter((a) => !wornSet.has(a));
 
   return (
     <Panel title="Armor" icon={<ShieldIcon />}>
@@ -174,10 +175,7 @@ function ArmorPanel({
           label="Worn"
           value={worn[0] ? armorDisplayName(worn[0]) : 'None'}
         />
-        <StatBox
-          label="Proficiency"
-          value={worn[0]?.prof ?? '—'}
-        />
+        <StatBox label="Proficiency" value={worn[0]?.prof ?? '—'} />
       </div>
 
       {armor.length > 0 && (
@@ -193,7 +191,7 @@ function ArmorPanel({
             </thead>
             <tbody className="divide-y divide-gold/10">
               {[...worn, ...carried].map((a, i) => (
-                <ArmorRow key={`${a.name ?? 'armor'}-${i}`} armor={a} />
+                <ArmorRow key={`${a.name ?? 'armor'}-${i}`} armor={a} isWorn={wornSet.has(a)} />
               ))}
             </tbody>
           </table>
@@ -203,7 +201,27 @@ function ArmorPanel({
   );
 }
 
-function ArmorRow({ armor: a }: { armor: Armor }) {
+/**
+ * "What is the character actually wearing?"
+ *
+ * Pathbuilder's `worn` boolean is inconsistent — sometimes set explicitly,
+ * sometimes omitted entirely on the sole armor entry (because Pathbuilder
+ * assumes "if it's in your build, you're wearing it"). Fall through:
+ *   1. Any armor with `worn === true` wins.
+ *   2. Otherwise, the first non-Unarmored entry is treated as worn (most
+ *      characters only list the armor they wear).
+ *   3. If everything is Unarmored (or the array is empty), no worn armor.
+ */
+function resolveWornArmor(armor: Armor[]): Armor[] {
+  const explicit = armor.filter((a) => a.worn === true);
+  if (explicit.length > 0) return explicit;
+  const meaningful = armor.filter(
+    (a) => (a.name ?? '').trim().toLowerCase() !== 'unarmored',
+  );
+  return meaningful.length > 0 ? [meaningful[0]] : [];
+}
+
+function ArmorRow({ armor: a, isWorn }: { armor: Armor; isWorn: boolean }) {
   const runes = (a.runes ?? []).filter((r) => typeof r === 'string' && r.trim().length > 0);
   return (
     <tr className="align-top">
@@ -231,7 +249,7 @@ function ArmorRow({ armor: a }: { armor: Armor }) {
         {a.prof ?? '—'}
       </td>
       <td className="py-2 pr-2 text-right">
-        {a.worn ? (
+        {isWorn ? (
           <span className="rounded border border-emerald/40 bg-emerald/10 px-1.5 py-0.5 text-[0.6rem] font-display uppercase tracking-widest text-emerald-soft">
             Worn
           </span>
