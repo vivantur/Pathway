@@ -113,6 +113,40 @@ export interface HeritageRow {
   [key: string]: unknown;
 }
 
+/**
+ * One row from `public.gamedata` where `category = 'classes'`. The rich class
+ * shape (HP per level, key ability, initial proficiencies, etc.) lives in the
+ * `data` JSONB. We only type the wrapper here — the `data` payload is read
+ * defensively at render time because Pathbuilder / Foundry / AoN each store
+ * class shape slightly differently.
+ */
+export interface ClassGamedata {
+  id: number;
+  category: string;
+  slug: string;
+  name: string;
+  data: Record<string, unknown>;
+  updated_at?: string | null;
+}
+
+/** One row from `public.class_features` (schema confirmed by audit). */
+export interface ClassFeatureRow {
+  id: string;
+  aon_id?: string | null;
+  aon_url?: string | null;
+  character_class_id?: string | null;
+  archetype_id?: string | null;
+  name: string;
+  level?: number | null;
+  description?: string | null;
+  traits?: string[] | null;
+  is_choice?: boolean | null;
+  rarity?: string | null;
+  source?: string | null;
+  is_official?: boolean | null;
+  class_feature_metadata?: Record<string, unknown> | null;
+}
+
 /** One row from `public.feats` — full rich shape (verified from the audit). */
 export interface FeatRow {
   id: string;

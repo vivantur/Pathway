@@ -4,6 +4,8 @@ import type {
   CharacterNoteEntry,
   CharacterRow,
   CharacterSummary,
+  ClassFeatureRow,
+  ClassGamedata,
   FeatRow,
   HeritageRow,
 } from './types';
@@ -233,6 +235,100 @@ export async function fetchAncestryBundle(input: {
   );
 
   return { ancestry, heritages, ancestryFeats };
+}
+
+// -------------------------------------------------------------------------
+// Reference data: class overview + class features + class feats
+// -------------------------------------------------------------------------
+
+/** Everything the Class tab reads in one round-trip. */
+export interface ClassBundle {
+  classInfo: ClassGamedata | null;
+  features: ClassFeatureRow[];
+  feats: FeatRow[];
+}
+
+/**
+ * Load a class's overview, its level-eligible class features, and its
+ * level-eligible class feats in one bundled call. Class lookup uses
+ * `gamedata` (category='classes'); features/feats use the typed tables
+ * filtered by the class name as a trait — tried in both lowercase and
+ * capitalized casing to survive inconsistent tagging.
+ */
+export async function fetchClassBundle(input: {
+  className: string;
+  characterLevel: number;
+}): Promise<ClassBundle> {
+  const { className, characterLevel } = input;
+  const supabase = requireSupabase();
+
+  const { data: classRow, error: classError } = await supabase
+    .from('gamedata')
+    .select('id, category, slug, name, data, updated_at')
+    .eq('category', 'classes')
+    .ilike('name', className)
+    .maybeSingle();
+  if (classError) throw classError;
+  const classInfo = (classRow ?? null) as ClassGamedata | null;
+
+  const lower = className.trim().toLowerCase();
+  const proper = lower.charAt(0).toUpperCase() + lower.slice(1);
+
+  const featuresSelect =
+    'id, aon_id, aon_url, character_class_id, archetype_id, name, level, description, traits, is_choice, rarity, source, is_official, class_feature_metadata';
+
+  const [featuresA, featuresB] = await Promise.all([
+    supabase
+      .from('class_features')
+      .select(featuresSelect)
+      .lte('level', characterLevel)
+      .contains('traits', [lower])
+      .order('level'),
+    supabase
+      .from('class_features')
+      .select(featuresSelect)
+      .lte('level', characterLevel)
+      .contains('traits', [proper])
+      .order('level'),
+  ]);
+
+  const featureDedupe = new Map<string, ClassFeatureRow>();
+  for (const f of [...(featuresA.data ?? []), ...(featuresB.data ?? [])] as ClassFeatureRow[]) {
+    if (!featureDedupe.has(f.id)) featureDedupe.set(f.id, f);
+  }
+  const features = Array.from(featureDedupe.values()).sort(
+    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  );
+
+  const featsSelect =
+    'id, name, description, feat_type, level, traits, prerequisites, action_cost, trigger, rarity, source, aon_id, aon_url';
+
+  const [featsA, featsB] = await Promise.all([
+    supabase
+      .from('feats')
+      .select(featsSelect)
+      .eq('feat_type', 'class')
+      .lte('level', characterLevel)
+      .contains('traits', [lower])
+      .order('level'),
+    supabase
+      .from('feats')
+      .select(featsSelect)
+      .eq('feat_type', 'class')
+      .lte('level', characterLevel)
+      .contains('traits', [proper])
+      .order('level'),
+  ]);
+
+  const featDedupe = new Map<string, FeatRow>();
+  for (const f of [...(featsA.data ?? []), ...(featsB.data ?? [])] as FeatRow[]) {
+    if (!featDedupe.has(f.id)) featDedupe.set(f.id, f);
+  }
+  const feats = Array.from(featDedupe.values()).sort(
+    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  );
+
+  return { classInfo, features, feats };
 }
 
 /** Map a file's MIME type to a filesystem-friendly extension. */
