@@ -28,6 +28,9 @@ export function Header() {
           <NavLink to="/roadmap" className={navClass}>
             Roadmap
           </NavLink>
+          <NavLink to="/rules" className={navClass}>
+            Rules
+          </NavLink>
           <NavLink to="/vault" className={navClass}>
             Vault
           </NavLink>

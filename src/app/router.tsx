@@ -4,6 +4,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { LandingPage } from '@/routes/LandingPage';
 import { AboutPage } from '@/routes/AboutPage';
 import { RoadmapPage } from '@/routes/RoadmapPage';
+import { RulesLibraryPage } from '@/routes/RulesLibraryPage';
 import { LoginPage } from '@/routes/LoginPage';
 import { VaultPage } from '@/routes/VaultPage';
 import { AddCharacterPage } from '@/routes/AddCharacterPage';
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
       { index: true, element: <LandingPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'roadmap', element: <RoadmapPage /> },
+      { path: 'rules', element: <RulesLibraryPage /> },
       { path: 'login', element: <LoginPage /> },
       {
         path: 'vault',
