@@ -4,6 +4,15 @@ import { relinkCurrentUser, type RelinkResult } from '@/features/characters/api'
 import { useAuth } from './useAuth';
 
 /**
+ * KILL SWITCH — the auto-relink is disabled (2026-07-01) after a mis-merge
+ * pulled another user's character into the owner's vault. While false, the
+ * RPC never runs from anywhere in the app. Flip back to true only once the
+ * relink function is hardened against the users-row / discord_id collision
+ * that caused the incident.
+ */
+const RELINK_ENABLED = false;
+
+/**
  * Run the self-relink RPC once per signed-in session.
  *
  * On first Discord login this claims the user's existing bot characters by
@@ -24,7 +33,7 @@ export function useRelink() {
   const query = useQuery<RelinkResult>({
     queryKey: ['relink', user?.id],
     queryFn: relinkCurrentUser,
-    enabled: Boolean(user),
+    enabled: RELINK_ENABLED && Boolean(user),
     staleTime: Infinity,
     retry: false,
   });

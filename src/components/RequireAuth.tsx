@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
-import { useRelink } from '@/features/auth/useRelink';
 import { Spinner } from './ui/Spinner';
 
 /** Gate a route behind a signed-in Supabase session. */
@@ -9,10 +8,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Fire the self-relink RPC once per session (no-op after the first link).
-  // The hook internally gates on `user`, so it's safe to call before the
-  // early returns below — it just won't run while signed out / loading.
-  useRelink();
+  // NOTE: auto-relink temporarily DISABLED (2026-07-01) while we investigate a
+  // mis-merge — a relink pulled another user's character into the owner's
+  // vault. Do not re-enable until the root cause (a users-row / discord_id
+  // collision) is understood and the function is hardened. See
+  // docs/sql/2026-07-01-relink-on-login.sql.
 
   if (loading) {
     return (
