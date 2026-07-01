@@ -1,5 +1,12 @@
 import { requireSupabase } from '@/lib/supabase';
-import type { CharacterNoteEntry, CharacterRow, CharacterSummary } from './types';
+import type {
+  AncestryRow,
+  CharacterNoteEntry,
+  CharacterRow,
+  CharacterSummary,
+  FeatRow,
+  HeritageRow,
+} from './types';
 
 const SUMMARY_COLUMNS =
   'id, char_key, name, source, current_hp, hero_points, experience, updated_at';
@@ -138,6 +145,94 @@ export async function uploadCharacterPortrait(input: {
   if (updateError) throw updateError;
 
   return publicUrl;
+}
+
+// -------------------------------------------------------------------------
+// Reference data: ancestry + heritage + ancestry feats
+// -------------------------------------------------------------------------
+
+/**
+ * Bundle everything the Ancestry tab needs in one call so the tab is a single
+ * useQuery. Uses SELECT * for ancestry + heritages because the exact column
+ * set isn't fully audited yet — the UI reads the fields defensively.
+ *
+ * Heritage linkage assumes `heritages.ancestry_id` (normalized FK). If your
+ * bot uses a text column instead we'll see empty heritage results and swap
+ * the query — cheap fix.
+ *
+ * Ancestry feats are pulled from `feats` where `feat_type = 'ancestry'` AND
+ * the ancestry name appears in the `traits` jsonb array. Case is checked
+ * both ways so "Elf" / "elf" both match.
+ */
+export interface AncestryBundle {
+  ancestry: AncestryRow | null;
+  heritages: HeritageRow[];
+  ancestryFeats: FeatRow[];
+}
+
+export async function fetchAncestryBundle(input: {
+  ancestryName: string;
+  characterLevel: number;
+}): Promise<AncestryBundle> {
+  const { ancestryName, characterLevel } = input;
+  const supabase = requireSupabase();
+
+  const { data: ancestryRow, error: ancestryError } = await supabase
+    .from('ancestries')
+    .select('*')
+    .ilike('name', ancestryName)
+    .maybeSingle();
+  if (ancestryError) throw ancestryError;
+  const ancestry = (ancestryRow ?? null) as AncestryRow | null;
+
+  let heritages: HeritageRow[] = [];
+  if (ancestry?.id) {
+    const { data: heritageRows } = await supabase
+      .from('heritages')
+      .select('*')
+      .eq('ancestry_id', ancestry.id)
+      .order('name');
+    heritages = (heritageRows ?? []) as HeritageRow[];
+  }
+  // Fallback: some schemas link heritages by ancestry name instead of id.
+  if (heritages.length === 0) {
+    const { data: heritageRowsByName } = await supabase
+      .from('heritages')
+      .select('*')
+      .ilike('ancestry_name', ancestryName)
+      .order('name');
+    heritages = (heritageRowsByName ?? []) as HeritageRow[];
+  }
+
+  // Ancestry feats: try both casings of the trait tag.
+  const lowerName = ancestryName.trim().toLowerCase();
+  const properName =
+    lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
+
+  const { data: featsA } = await supabase
+    .from('feats')
+    .select('id, name, description, feat_type, level, traits, prerequisites, action_cost, trigger, rarity, source, aon_id, aon_url')
+    .eq('feat_type', 'ancestry')
+    .lte('level', characterLevel)
+    .contains('traits', [lowerName])
+    .order('level');
+  const { data: featsB } = await supabase
+    .from('feats')
+    .select('id, name, description, feat_type, level, traits, prerequisites, action_cost, trigger, rarity, source, aon_id, aon_url')
+    .eq('feat_type', 'ancestry')
+    .lte('level', characterLevel)
+    .contains('traits', [properName])
+    .order('level');
+
+  const dedupe = new Map<string, FeatRow>();
+  for (const f of [...(featsA ?? []), ...(featsB ?? [])] as FeatRow[]) {
+    if (!dedupe.has(f.id)) dedupe.set(f.id, f);
+  }
+  const ancestryFeats = Array.from(dedupe.values()).sort(
+    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+  );
+
+  return { ancestry, heritages, ancestryFeats };
 }
 
 /** Map a file's MIME type to a filesystem-friendly extension. */

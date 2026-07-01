@@ -75,6 +75,61 @@ export interface XpLogEntry {
   awardedBy?: string;
 }
 
+/**
+ * One row from `public.ancestries`. Field names are our best guess from PF2e
+ * convention + Pathbuilder's shape; unknown columns are preserved on the row
+ * via the index signature so re-render works even when this type is wrong
+ * about a specific field name.
+ */
+export interface AncestryRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  hp?: number | null;
+  size?: string | number | null;
+  speed?: number | null;
+  ability_boosts?: string[] | null;
+  ability_flaws?: string[] | null;
+  languages?: string[] | null;
+  traits?: string[] | null;
+  rarity?: string | null;
+  source?: string | null;
+  aon_id?: string | null;
+  aon_url?: string | null;
+  [key: string]: unknown;
+}
+
+/** One row from `public.heritages`. */
+export interface HeritageRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  ancestry_id?: string | null;
+  ancestry_name?: string | null;
+  traits?: string[] | null;
+  rarity?: string | null;
+  source?: string | null;
+  aon_url?: string | null;
+  [key: string]: unknown;
+}
+
+/** One row from `public.feats` — full rich shape (verified from the audit). */
+export interface FeatRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  feat_type?: string | null;
+  level?: number | null;
+  traits?: string[] | null;
+  prerequisites?: string | null;
+  action_cost?: string | null;
+  trigger?: string | null;
+  rarity?: string | null;
+  source?: string | null;
+  aon_id?: string | null;
+  aon_url?: string | null;
+}
+
 /** Per-user, per-character note list (character_notes table). */
 export interface CharacterNoteEntry {
   id: number;

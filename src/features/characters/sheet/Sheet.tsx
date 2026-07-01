@@ -5,6 +5,7 @@ import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
+import { AncestryTab } from './tabs/AncestryTab';
 import { JournalTab } from './tabs/JournalTab';
 import { PlaceholderTab } from './tabs/PlaceholderTab';
 import { SpellsTab } from './tabs/SpellsTab';
@@ -104,6 +105,8 @@ function TabContent({
   switch (tab) {
     case 'overview':
       return <CenterColumn character={character} build={build} />;
+    case 'ancestry':
+      return <AncestryTab character={character} build={build} />;
     case 'spells':
       return <SpellsTab build={build} />;
     case 'journal':
