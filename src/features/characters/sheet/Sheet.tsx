@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
-import { noteText } from '@/features/characters/api';
+import { useRef, useState, type ReactNode } from 'react';
+import { noteText, PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
+import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
+import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
 import {
   ABILITY_ORDER,
@@ -189,12 +191,25 @@ function HeaderButton({
 function LeftColumn({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
   const perception = perceptionBonus(build);
   const overlay = character.overlay ?? {};
-  const senses = overlay.pathway_bot_state?.edits?.senses ?? inferSenses(build);
+  // Overlay-side edits win when present (bot is the authority when set);
+  // otherwise fall back to the ancestry+heritage senses lookup, preferring the
+  // denormalized `ancestry_name`/`heritage_name` columns which stay accurate
+  // even after Pathbuilder re-imports.
+  const senses =
+    overlay.pathway_bot_state?.edits?.senses ??
+    computeSensesFromAncestry(
+      character.ancestry_name ?? build.ancestry,
+      character.heritage_name ?? build.heritage,
+    );
   const languages =
     overlay.pathway_bot_state?.edits?.languages ?? build.languages ?? [];
   return (
     <aside className="space-y-4">
-      <Portrait art={character.art} name={character.name || build.name} />
+      <Portrait
+        art={character.art}
+        name={character.name || build.name}
+        charKey={character.char_key}
+      />
       <AbilityScoreList build={build} />
       <FramedBlock title="Ability Boosts">
         <AbilityBoostsSummary build={build} />
@@ -220,28 +235,76 @@ function LeftColumn({ character, build }: { character: CharacterRow; build: Path
   );
 }
 
-function Portrait({ art, name }: { art: string | null; name: string | undefined }) {
+function Portrait({
+  art,
+  name,
+  charKey,
+}: {
+  art: string | null;
+  name: string | undefined;
+  charKey: string;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const upload = usePortraitUpload(charKey);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMessage(null);
+    const file = e.target.files?.[0];
+    // Reset so selecting the same file again re-triggers `onChange`.
+    e.target.value = '';
+    if (!file) return;
+    upload.mutate(file, {
+      onError: (err) => {
+        setErrorMessage(err instanceof Error ? err.message : 'Upload failed.');
+      },
+    });
+  };
+
   const wrapCls =
     'relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded';
+
   return (
-    <div className={wrapCls}>
-      {art ? (
-        <img
-          src={art}
-          alt={name ?? 'Character portrait'}
-          className="h-full w-full object-cover"
-          referrerPolicy="no-referrer"
+    <div className="mx-auto flex w-40 flex-col items-center">
+      <div className={wrapCls}>
+        {art ? (
+          <img
+            src={art}
+            alt={name ?? 'Character portrait'}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="font-display text-4xl text-gold/60">{initials(name)}</span>
+        )}
+
+        {upload.isPending && (
+          <div className="absolute inset-0 flex items-center justify-center bg-midnight-900/70 text-xs uppercase tracking-widest text-gold/90">
+            Uploading…
+          </div>
+        )}
+
+        <button
+          type="button"
+          aria-label="Upload portrait"
+          disabled={upload.isPending}
+          onClick={() => fileInputRef.current?.click()}
+          className="absolute bottom-2 right-2 rounded-full border border-gold/40 bg-midnight-900/90 p-1.5 text-gold/70 transition-colors hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <CameraIcon className="text-sm" />
+        </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={PORTRAIT_MIME_TYPES.join(',')}
+          className="hidden"
+          onChange={handleFile}
         />
-      ) : (
-        <span className="font-display text-4xl text-gold/60">{initials(name)}</span>
+      </div>
+      {errorMessage && (
+        <p className="mt-2 max-w-[10rem] text-center text-xs text-red-300">{errorMessage}</p>
       )}
-      <button
-        type="button"
-        aria-label="Upload portrait"
-        className="absolute bottom-2 right-2 rounded-full border border-gold/40 bg-midnight-900/90 p-1.5 text-gold/70 hover:text-gold"
-      >
-        <CameraIcon className="text-sm" />
-      </button>
     </div>
   );
 }
@@ -1004,19 +1067,3 @@ function initials(name: string | undefined): string {
   return (first + last).toUpperCase() || '?';
 }
 
-/**
- * Rough senses list from ancestry hints. The Pathbuilder JSON doesn't have a
- * dedicated senses field, so this is a best-effort inference; a proper mapping
- * (ancestry → senses table) can replace this later.
- */
-function inferSenses(build: PathbuilderBuild): string[] {
-  const out: string[] = [];
-  const ancestry = (build.ancestry ?? '').toLowerCase();
-  if (['elf', 'gnome', 'goblin', 'halfling', 'kobold', 'orc'].includes(ancestry)) {
-    out.push('Low-Light Vision');
-  }
-  if (['orc', 'dwarf', 'kobold'].includes(ancestry)) {
-    out.push('Darkvision');
-  }
-  return out;
-}
