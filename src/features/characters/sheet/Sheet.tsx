@@ -1,9 +1,14 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { noteText, PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
+import { JournalTab } from './tabs/JournalTab';
+import { PlaceholderTab } from './tabs/PlaceholderTab';
+import { SpellsTab } from './tabs/SpellsTab';
+import { TAB_DEFINITIONS, normalizeTabId, type TabId } from './tabs/tabDefs';
 import {
   ABILITY_ORDER,
   SKILL_ORDER,
@@ -29,22 +34,17 @@ import {
   type Weapon,
 } from '@/features/characters/pathbuilder';
 import {
-  AbilitiesIcon,
-  AncestryIcon,
   BookIcon,
   BrainIcon,
   CameraIcon,
-  ClassIcon,
   CoinsIcon,
   CompassIcon,
   DotsIcon,
   DownloadIcon,
   EquipmentIcon,
   EyeIcon,
-  FeatsIcon,
   HeartIcon,
   HourglassIcon,
-  JournalIcon,
   NoteIcon,
   OverviewIcon,
   PencilIcon,
@@ -53,8 +53,6 @@ import {
   ShareIcon,
   ShieldIcon,
   ShieldPlusIcon,
-  SkillsIcon,
-  SpellsIcon,
   StarIcon,
   SwordIcon,
 } from './icons';
@@ -69,17 +67,52 @@ import {
  * for undermodeled characters.
  */
 export function Sheet({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = normalizeTabId(searchParams.get('tab'));
+
+  const setActiveTab = (id: TabId) => {
+    const next = new URLSearchParams(searchParams);
+    // Keep the URL clean when we're on the default view.
+    if (id === 'overview') next.delete('tab');
+    else next.set('tab', id);
+    setSearchParams(next, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-4">
       <SheetHeader character={character} build={build} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
         <LeftColumn character={character} build={build} />
-        <CenterColumn character={character} build={build} />
+        <TabContent tab={activeTab} character={character} build={build} />
         <RightColumn build={build} />
       </div>
-      <BottomTabBar />
+      <BottomTabBar activeTab={activeTab} onSelect={setActiveTab} />
     </div>
   );
+}
+
+function TabContent({
+  tab,
+  character,
+  build,
+}: {
+  tab: TabId;
+  character: CharacterRow;
+  build: PathbuilderBuild;
+}) {
+  switch (tab) {
+    case 'overview':
+      return <CenterColumn character={character} build={build} />;
+    case 'spells':
+      return <SpellsTab build={build} />;
+    case 'journal':
+      return <JournalTab character={character} />;
+    default: {
+      const def = TAB_DEFINITIONS.find((t) => t.id === tab);
+      return <PlaceholderTab label={def?.label ?? 'Coming soon'} description={def?.description ?? ''} Icon={def?.icon ?? OverviewIcon} />;
+    }
+  }
 }
 
 // ---------------------------------------------------------------
@@ -990,35 +1023,46 @@ function MiniStat({
 // Bottom tab bar
 // ---------------------------------------------------------------
 
-const TABS: Array<{ label: string; icon: (props: { className?: string }) => JSX.Element; active?: boolean }> = [
-  { label: 'Overview', icon: OverviewIcon, active: true },
-  { label: 'Ancestry', icon: AncestryIcon },
-  { label: 'Class', icon: ClassIcon },
-  { label: 'Abilities', icon: AbilitiesIcon },
-  { label: 'Skills', icon: SkillsIcon },
-  { label: 'Feats', icon: FeatsIcon },
-  { label: 'Spells', icon: SpellsIcon },
-  { label: 'Equipment', icon: EquipmentIcon },
-  { label: 'Journal', icon: JournalIcon },
-];
-
-function BottomTabBar() {
+function BottomTabBar({
+  activeTab,
+  onSelect,
+}: {
+  activeTab: TabId;
+  onSelect: (id: TabId) => void;
+}) {
   return (
-    <nav className="flex items-center justify-between gap-4 rounded-lg border border-gold/25 bg-midnight-900/60 px-4 py-3 shadow-gilded">
+    <nav
+      role="tablist"
+      aria-label="Character sheet sections"
+      className="flex items-center justify-between gap-4 rounded-lg border border-gold/25 bg-midnight-900/60 px-4 py-3 shadow-gilded"
+    >
       <div className="flex flex-1 flex-wrap items-center gap-2 sm:gap-4">
-        {TABS.map((t) => (
-          <button
-            key={t.label}
-            type="button"
-            className={`group inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs uppercase tracking-widest transition-colors ${t.active ? 'text-gold' : 'text-silver/60 hover:text-gold/80'}`}
-          >
-            <t.icon className="text-base" />
-            <span className="font-display">{t.label}</span>
-            {t.active && (
-              <span className="ml-2 h-px w-6 bg-gold/70" aria-hidden />
-            )}
-          </button>
-        ))}
+        {TAB_DEFINITIONS.map((t) => {
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onSelect(t.id)}
+              className={`group relative inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs uppercase tracking-widest transition-colors ${
+                isActive
+                  ? 'text-gold'
+                  : 'text-silver/60 hover:bg-midnight-800/50 hover:text-gold/80'
+              }`}
+            >
+              <t.icon className="text-base" />
+              <span className="font-display">{t.label}</span>
+              {isActive && (
+                <span
+                  className="absolute inset-x-2 -bottom-0.5 h-px bg-gold/70"
+                  aria-hidden
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
       <CompassIcon className="text-xl text-gold/50" />
     </nav>
@@ -1029,7 +1073,7 @@ function BottomTabBar() {
 // Shared decorations
 // ---------------------------------------------------------------
 
-function Panel({
+export function Panel({
   title,
   icon,
   children,
@@ -1051,7 +1095,7 @@ function Panel({
 }
 
 /** Four gilded L-brackets at each panel corner — approximates the ornate frames. */
-function CornerAccents() {
+export function CornerAccents() {
   const size = 'h-2.5 w-2.5';
   return (
     <>

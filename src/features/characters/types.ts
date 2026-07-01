@@ -57,8 +57,22 @@ export interface CharacterOverlay {
       skillOverrides?: Record<string, { rank?: number }>;
       stats?: Record<string, unknown>;
     };
+    xpLog?: Array<XpLogEntry>;
+    xp?: number;
+    senses?: string[] | null;
+    pathwayWebId?: string;
   };
   [key: string]: unknown;
+}
+
+/** One entry in `overlay.pathway_bot_state.xpLog` — bot-side XP award history. */
+export interface XpLogEntry {
+  at?: string;
+  amount?: number;
+  reason?: string;
+  oldXp?: number;
+  newXp?: number;
+  awardedBy?: string;
 }
 
 /** Per-user, per-character note list (character_notes table). */
