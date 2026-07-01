@@ -372,6 +372,28 @@ function shieldBonusFromNames(names: string[]): number {
   return best;
 }
 
+/**
+ * The character's focus-pool size (0 if they have no focus spells).
+ *
+ * Pathbuilder stores a `focusPoints` count on each spellcaster; we sum those
+ * and cap at the PF2e maximum of 3. If no explicit count is present but the
+ * character has focus spells (not just at-will focus cantrips), we infer a
+ * pool of at least 1.
+ */
+export function focusPoolMax(build: PathbuilderBuild): number {
+  let pts = 0;
+  for (const c of build.spellCasters ?? []) {
+    if (typeof c.focusPoints === 'number' && c.focusPoints > 0) pts += c.focusPoints;
+  }
+  if (pts === 0) {
+    const hasFocusSpells = Object.values(build.focus ?? {}).some((byAbility) =>
+      Object.values(byAbility).some((p) => (p.focusSpells?.length ?? 0) > 0),
+    );
+    if (hasFocusSpells) pts = 1;
+  }
+  return Math.min(3, pts);
+}
+
 /** Class DC for classes that have one (kineticist, monk, most casters). */
 export function classDC(build: PathbuilderBuild): number | undefined {
   const cdc = build.proficiencies?.classDC;

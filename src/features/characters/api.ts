@@ -5,6 +5,7 @@ import { preferRemaster } from './pf2eData/sourcePreference';
 import type {
   AncestryRow,
   CharacterNoteEntry,
+  CharacterOverlay,
   CharacterRow,
   CharacterSummary,
   ClassFeatureRow,
@@ -497,6 +498,27 @@ export async function updateCharacterState(input: {
   const { error } = await supabase
     .from('characters')
     .update({ ...input.patch, updated_at: new Date().toISOString() })
+    .eq('user_id', input.userId)
+    .eq('char_key', input.charKey);
+  if (error) throw error;
+}
+
+/**
+ * Write the FULL `overlay` blob for one owned character. The bot owns the
+ * overlay's shape (xp log, counters, bot-side edits), so callers MUST do
+ * read-modify-write — compute the new overlay from the current one and pass
+ * the whole thing here — rather than replacing it wholesale. Used for
+ * player-editable live counters that live in the overlay (focus points, etc.).
+ */
+export async function updateCharacterOverlay(input: {
+  userId: string;
+  charKey: string;
+  overlay: CharacterOverlay;
+}): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('characters')
+    .update({ overlay: input.overlay, updated_at: new Date().toISOString() })
     .eq('user_id', input.userId)
     .eq('char_key', input.charKey);
   if (error) throw error;

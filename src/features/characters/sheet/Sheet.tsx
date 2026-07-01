@@ -9,6 +9,7 @@ import {
 } from '@/features/characters/useCharacterActions';
 import { useCharacterRealtime, type RealtimeState } from '@/features/characters/useCharacterRealtime';
 import { useUpdateCharacterState } from '@/features/characters/useUpdateCharacterState';
+import { useUpdateCharacterOverlay } from '@/features/characters/useUpdateCharacterOverlay';
 import { useFavoriteSpells } from '@/features/characters/useFavoriteSpells';
 import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
@@ -36,6 +37,7 @@ import {
   classDC,
   defenseLine,
   fmtMod,
+  focusPoolMax,
   maxHp,
   perceptionBonus,
   profLabel,
@@ -107,10 +109,12 @@ export function Sheet({
   // read-only shares. The hook is always called (rules of hooks); we just gate
   // whether the UI exposes the controls.
   const stateMutation = useUpdateCharacterState(character.char_key);
+  const overlayMutation = useUpdateCharacterOverlay(character.char_key);
   const edit: EditControls = {
     enabled: !readOnly,
     update: (patch) => stateMutation.mutate(patch),
-    isPending: stateMutation.isPending,
+    updateOverlay: (next) => overlayMutation.mutate(next),
+    isPending: stateMutation.isPending || overlayMutation.isPending,
   };
 
   const setActiveTab = (id: TabId) => {
@@ -147,6 +151,12 @@ export function Sheet({
 export interface EditControls {
   enabled: boolean;
   update: (patch: CharacterStatePatch) => void;
+  /**
+   * Read-modify-write the `overlay` blob. Pass the FULL new overlay (computed
+   * from `character.overlay`) — the bot owns the shape, so we never replace it
+   * blindly. Used for overlay-resident live counters (focus points, etc.).
+   */
+  updateOverlay: (next: CharacterOverlay) => void;
   isPending: boolean;
 }
 
@@ -1420,10 +1430,12 @@ function RightColumn({
   // Perception vitals card; Speed lives in the header (Movement box removed
   // to avoid showing speed twice).
   const defenses = defenseLine(build);
+  const focusMax = focusPoolMax(build);
   return (
     <aside className="space-y-4">
       <MiniStat label="Class DC" value={cdc ?? '—'} />
       <MiniStat label="Spell Attack" value={spellAttack != null ? fmtMod(spellAttack) : '—'} />
+      {focusMax > 0 && <FocusPool max={focusMax} character={character} edit={edit} />}
       <ConditionsBlock character={character} edit={edit} />
       <FramedBlock title="Defenses">
         {defenses.length > 0 ? (
@@ -1440,6 +1452,83 @@ function RightColumn({
         <p className="text-sm text-silver/40">—</p>
       </FramedBlock>
     </aside>
+  );
+}
+
+/**
+ * Focus-pool tracker for casters. Reads/writes `overlay.daily.focus_spent`
+ * (bot-synced) via read-modify-write. Pips show remaining points; clicking one
+ * sets the remaining count (clicking the current top pip spends one). A
+ * "Refocus" link restores the pool to full.
+ */
+function FocusPool({
+  max,
+  character,
+  edit,
+}: {
+  max: number;
+  character: CharacterRow;
+  edit: EditControls;
+}) {
+  const spent = Math.max(0, Math.min(max, character.overlay?.daily?.focus_spent ?? 0));
+  const current = max - spent;
+
+  const setSpent = (nextSpent: number) => {
+    const clamped = Math.max(0, Math.min(max, nextSpent));
+    const prev = character.overlay ?? {};
+    const next: CharacterOverlay = {
+      ...prev,
+      daily: { ...(prev.daily ?? {}), focus_spent: clamped },
+    };
+    edit.updateOverlay(next);
+  };
+
+  // Clicking pip i sets remaining to i+1; clicking the current top pip spends one.
+  const setPip = (i: number) => {
+    const nextCurrent = current === i + 1 ? i : i + 1;
+    setSpent(max - nextCurrent);
+  };
+
+  return (
+    <div className="relative rounded-md border border-arcane/30 bg-midnight-900/60 px-3 py-3 text-center">
+      <div className="text-[0.65rem] font-display uppercase tracking-widest text-arcane/90">
+        Focus Pool
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-1.5">
+        {Array.from({ length: max }, (_, i) =>
+          edit.enabled ? (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPip(i)}
+              aria-label={`Set focus points to ${i + 1}`}
+              className={`h-3.5 w-3.5 rounded-full border border-arcane/60 transition-colors hover:border-arcane ${
+                i < current ? 'bg-arcane' : 'bg-transparent hover:bg-arcane/30'
+              }`}
+            />
+          ) : (
+            <span
+              key={i}
+              className={`inline-block h-3 w-3 rounded-full border border-arcane/60 ${
+                i < current ? 'bg-arcane' : 'bg-transparent'
+              }`}
+            />
+          ),
+        )}
+      </div>
+      <div className="mt-1.5 text-[0.6rem] uppercase tracking-widest text-silver/50">
+        {current} / {max}
+      </div>
+      {edit.enabled && spent > 0 && (
+        <button
+          type="button"
+          onClick={() => setSpent(0)}
+          className="mt-1 text-[0.6rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"
+        >
+          Refocus
+        </button>
+      )}
+    </div>
   );
 }
 
