@@ -34,7 +34,10 @@ const pillars: Array<{
   title: string;
   icon: typeof BookIcon;
   body: string;
+  /** Internal route. */
   to?: string;
+  /** External URL (opens in a new tab). */
+  href?: string;
   soon?: boolean;
 }> = [
   {
@@ -71,7 +74,7 @@ const pillars: Array<{
     title: 'Discord-native',
     icon: DiscordIcon,
     body: 'The Pathway bot and the website are two interfaces for one backend. Edit on Discord, see it on the web — and vice versa.',
-    soon: true,
+    ...(links.communityDiscord ? { href: links.communityDiscord } : { soon: true }),
   },
 ];
 
@@ -155,6 +158,7 @@ export function LandingPage() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {pillars.map((p) => {
             const Icon = p.icon;
+            const isLinked = Boolean(p.to || p.href);
             const inner = (
               <>
                 <div className="flex items-center justify-between">
@@ -164,9 +168,9 @@ export function LandingPage() {
                       Coming soon
                     </span>
                   )}
-                  {p.to && (
+                  {isLinked && (
                     <span className="text-gold/50 transition-transform group-hover:translate-x-0.5 group-hover:text-gold">
-                      →
+                      {p.href ? '↗' : '→'}
                     </span>
                   )}
                 </div>
@@ -175,12 +179,24 @@ export function LandingPage() {
               </>
             );
 
+            const linkedClass =
+              'group block rounded-lg border border-gold/25 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:shadow-gilded';
+
+            if (p.href) {
+              return (
+                <a
+                  key={p.title}
+                  href={p.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkedClass}
+                >
+                  {inner}
+                </a>
+              );
+            }
             return p.to ? (
-              <Link
-                key={p.title}
-                to={p.to}
-                className="group block rounded-lg border border-gold/25 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:shadow-gilded"
-              >
+              <Link key={p.title} to={p.to} className={linkedClass}>
                 {inner}
               </Link>
             ) : (
