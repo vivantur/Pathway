@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
 import { RULE_CATEGORIES } from '@/features/rules/api';
 import { useRulesSearch } from '@/features/rules/useRulesSearch';
-import type { RuleCategoryId, RuleEntry } from '@/features/rules/types';
+import type { MonsterStatBlock, RuleCategoryId, RuleEntry } from '@/features/rules/types';
 
 /** Categories whose descriptions are long AoN lore prose worth sectioning. */
 const structuredCategories = new Set<RuleCategoryId>(['ancestries', 'backgrounds']);
@@ -162,6 +162,8 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
             </div>
           )}
 
+          {entry.statBlock && <StatBlock block={entry.statBlock} />}
+
           {entry.meta.length > 0 && (
             <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
               {entry.meta.map((m) => (
@@ -211,6 +213,68 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
         </div>
       )}
     </li>
+  );
+}
+
+function StatBlock({ block }: { block: MonsterStatBlock }) {
+  const defenses: Array<{ label: string; value: string | null }> = [
+    { label: 'AC', value: block.ac },
+    { label: 'HP', value: block.hp },
+    { label: 'Fort', value: block.fort },
+    { label: 'Ref', value: block.ref },
+    { label: 'Will', value: block.will },
+    { label: 'Perception', value: block.perception },
+  ];
+  const shownDefenses = defenses.filter((d) => d.value != null);
+
+  return (
+    <div className="mb-3 space-y-3 rounded-md border border-gold/20 bg-midnight-900/50 p-3">
+      {/* Defenses + Perception row */}
+      {shownDefenses.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {shownDefenses.map((d) => (
+            <div key={d.label} className="text-center">
+              <div className="text-[0.55rem] uppercase tracking-widest text-gold/70">
+                {d.label}
+              </div>
+              <div className="font-display text-lg text-silver">{d.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Ability modifiers */}
+      {block.abilities.length > 0 && (
+        <div className="grid grid-cols-6 gap-2 border-t border-gold/15 pt-2">
+          {block.abilities.map((a) => (
+            <div key={a.label} className="text-center">
+              <div className="text-[0.55rem] uppercase tracking-widest text-silver/50">
+                {a.label}
+              </div>
+              <div className="font-display text-sm text-arcane">{a.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Speed + Size */}
+      {(block.speed || block.size) && (
+        <div className="flex flex-wrap gap-x-4 border-t border-gold/15 pt-2 text-xs">
+          {block.size && (
+            <span>
+              <span className="text-[0.6rem] uppercase tracking-widest text-gold/70">Size: </span>
+              <span className="text-silver/85">{block.size}</span>
+            </span>
+          )}
+          {block.speed && (
+            <span>
+              <span className="text-[0.6rem] uppercase tracking-widest text-gold/70">Speed: </span>
+              <span className="text-silver/85">{block.speed}</span>
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -29,6 +29,52 @@ const arr = (v: unknown): string[] =>
 const num = (v: unknown): number | null =>
   typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null;
 
+/** Read a number out of a jsonb object by trying several key spellings. */
+function jnum(obj: unknown, ...keys: string[]): number | null {
+  if (!obj || typeof obj !== 'object') return null;
+  const rec = obj as Record<string, unknown>;
+  for (const k of keys) {
+    const n = num(rec[k]);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+const fmtMod = (n: number | null): string | null => (n == null ? null : n >= 0 ? `+${n}` : `${n}`);
+
+/** Format the monster `speed` jsonb — number, string, or {land/fly/swim: n}. */
+function formatSpeed(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === 'number') return `${v} ft.`;
+  if (typeof v === 'string') return v.trim() || null;
+  if (typeof v === 'object') {
+    const rec = v as Record<string, unknown>;
+    const parts: string[] = [];
+    for (const [k, val] of Object.entries(rec)) {
+      const n = num(val);
+      if (n == null) continue;
+      const key = k.toLowerCase();
+      parts.push(key === 'land' || key === 'walk' ? `${n} ft.` : `${k} ${n} ft.`);
+    }
+    return parts.length ? parts.join(', ') : null;
+  }
+  return null;
+}
+
+/** Extract STR…CHA modifiers from the monster `ability_modifiers` jsonb. */
+function abilityMods(v: unknown): Array<{ label: string; value: string }> {
+  const order: Array<[string, string]> = [
+    ['STR', 'str'], ['DEX', 'dex'], ['CON', 'con'],
+    ['INT', 'int'], ['WIS', 'wis'], ['CHA', 'cha'],
+  ];
+  const out: Array<{ label: string; value: string }> = [];
+  for (const [label, key] of order) {
+    const mod = fmtMod(jnum(v, key, key.toUpperCase()));
+    if (mod != null) out.push({ label, value: mod });
+  }
+  return out;
+}
+
 export const RULE_CATEGORIES: CategoryConfig[] = [
   {
     id: 'feats',
@@ -104,6 +150,45 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
         str(r.item_type) ?? str(r.category) ? { label: 'Type', value: (str(r.item_type) ?? str(r.category))! } : null,
         str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
       ].filter(Boolean) as RuleEntry['meta'],
+    }),
+  },
+  {
+    id: 'monsters',
+    label: 'Monsters',
+    table: 'monsters',
+    hasLevel: true,
+    map: (r) => ({
+      id: String(r.id),
+      name: str(r.name) ?? 'Unknown',
+      category: 'monsters',
+      level: num(r.level),
+      rarity: str(r.rarity),
+      traits: arr(r.traits),
+      actionCost: null,
+      prerequisites: null,
+      trigger: null,
+      description: str(r.description),
+      aonUrl: null, // monsters table has no aon_url column
+      meta: [
+        str(r.creature_type) ? { label: 'Type', value: str(r.creature_type)! } : null,
+        str(r.alignment) ? { label: 'Alignment', value: str(r.alignment)! } : null,
+        arr(r.languages).length ? { label: 'Languages', value: arr(r.languages).join(', ') } : null,
+        arr(r.immunities).length ? { label: 'Immunities', value: arr(r.immunities).join(', ') } : null,
+        arr(r.resistances).length ? { label: 'Resistances', value: arr(r.resistances).join(', ') } : null,
+        arr(r.weaknesses).length ? { label: 'Weaknesses', value: arr(r.weaknesses).join(', ') } : null,
+        str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
+      ].filter(Boolean) as RuleEntry['meta'],
+      statBlock: {
+        ac: num(r.ac) != null ? String(num(r.ac)) : null,
+        hp: num(r.hp) != null ? String(num(r.hp)) : null,
+        fort: fmtMod(jnum(r.saving_throws, 'fortitude', 'fort', 'fortitude_save')),
+        ref: fmtMod(jnum(r.saving_throws, 'reflex', 'ref', 'reflex_save')),
+        will: fmtMod(jnum(r.saving_throws, 'will', 'will_save')),
+        perception: fmtMod(num(r.perception)),
+        speed: formatSpeed(r.speed),
+        size: str(r.size),
+        abilities: abilityMods(r.ability_modifiers),
+      },
     }),
   },
   {

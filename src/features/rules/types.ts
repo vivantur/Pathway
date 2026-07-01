@@ -18,6 +18,22 @@ export interface RuleEntry {
   aonUrl: string | null;
   /** Type-specific labeled facts shown in the detail view (range, price, …). */
   meta: Array<{ label: string; value: string }>;
+  /** Present for monsters — renders as a PF2e stat-block grid. */
+  statBlock?: MonsterStatBlock;
+}
+
+/** The compact PF2e stat-block fields shown for a monster. */
+export interface MonsterStatBlock {
+  ac: string | null;
+  hp: string | null;
+  fort: string | null;
+  ref: string | null;
+  will: string | null;
+  perception: string | null;
+  speed: string | null;
+  size: string | null;
+  /** Six ability modifiers, in STR…CHA order, as display strings ("+4"). */
+  abilities: Array<{ label: string; value: string }>;
 }
 
 export type RuleCategoryId =
@@ -26,4 +42,5 @@ export type RuleCategoryId =
   | 'items'
   | 'conditions'
   | 'ancestries'
-  | 'backgrounds';
+  | 'backgrounds'
+  | 'monsters';
