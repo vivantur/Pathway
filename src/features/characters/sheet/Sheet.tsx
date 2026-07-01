@@ -72,7 +72,7 @@ export function Sheet({ character, build }: { character: CharacterRow; build: Pa
   return (
     <div className="space-y-4">
       <SheetHeader character={character} build={build} />
-      <div className="grid gap-4 xl:grid-cols-[220px_1fr_240px]">
+      <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
         <LeftColumn character={character} build={build} />
         <CenterColumn character={character} build={build} />
         <RightColumn build={build} />
@@ -261,37 +261,45 @@ function Portrait({
     });
   };
 
-  const wrapCls =
-    'relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded';
-
   return (
-    <div className="mx-auto flex w-40 flex-col items-center">
-      <div className={wrapCls}>
-        {art ? (
-          <img
-            src={art}
-            alt={name ?? 'Character portrait'}
-            className="h-full w-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="font-display text-4xl text-gold/60">{initials(name)}</span>
-        )}
+    <div className="mx-auto flex flex-col items-center">
+      {/* Outer wrapper stays un-clipped so the camera button can peek over
+          the circle's edge without getting eaten by the rounded mask. */}
+      <div className="relative h-64 w-64">
+        {/* Inner mask: the actual circle. Overflow-hidden lives HERE, not
+            on the parent — otherwise the button gets clipped and disappears
+            (which is exactly what happened in the previous version). */}
+        <div className="absolute inset-0 overflow-hidden rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded">
+          {art ? (
+            <img
+              src={art}
+              alt={name ?? 'Character portrait'}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="font-display text-6xl text-gold/60">{initials(name)}</span>
+            </div>
+          )}
 
-        {upload.isPending && (
-          <div className="absolute inset-0 flex items-center justify-center bg-midnight-900/70 text-xs uppercase tracking-widest text-gold/90">
-            Uploading…
-          </div>
-        )}
+          {upload.isPending && (
+            <div className="absolute inset-0 flex items-center justify-center bg-midnight-900/75 text-xs uppercase tracking-widest text-gold/90">
+              Uploading…
+            </div>
+          )}
+        </div>
 
+        {/* Camera button — outside the clipped circle so it's fully visible
+            even when it slightly overlaps the round edge. Sits at ~5 o'clock. */}
         <button
           type="button"
           aria-label="Upload portrait"
           disabled={upload.isPending}
           onClick={() => fileInputRef.current?.click()}
-          className="absolute bottom-2 right-2 rounded-full border border-gold/40 bg-midnight-900/90 p-1.5 text-gold/70 transition-colors hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute bottom-2 right-2 z-10 rounded-full border-2 border-gold/60 bg-midnight-900 p-2.5 text-gold shadow-gilded transition-all hover:scale-105 hover:border-gold hover:bg-midnight-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <CameraIcon className="text-sm" />
+          <CameraIcon className="text-base" />
         </button>
 
         <input
@@ -303,7 +311,7 @@ function Portrait({
         />
       </div>
       {errorMessage && (
-        <p className="mt-2 max-w-[10rem] text-center text-xs text-red-300">{errorMessage}</p>
+        <p className="mt-2 max-w-[16rem] text-center text-xs text-red-300">{errorMessage}</p>
       )}
     </div>
   );
