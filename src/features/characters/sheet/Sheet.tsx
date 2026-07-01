@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import type { CharacterRow } from '@/features/characters/types';
+import { noteText } from '@/features/characters/api';
+import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
+import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
 import {
   ABILITY_ORDER,
   SKILL_ORDER,
@@ -82,9 +84,14 @@ export function Sheet({ character, build }: { character: CharacterRow; build: Pa
 // ---------------------------------------------------------------
 
 function SheetHeader({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
-  const level = build.level ?? 1;
+  const level = character.level ?? build.level ?? 1;
   const xpTarget = 1000;
   const xp = character.experience ?? 0;
+  const overlay = character.overlay ?? {};
+  const bg =
+    overlay.pathway_bot_state?.edits?.background ??
+    character.background_name ??
+    build.background;
   return (
     <header className="rounded-lg border border-gold/25 bg-midnight-900/60 p-4 shadow-gilded">
       <div className="grid items-center gap-4 lg:grid-cols-[auto_1fr_auto]">
@@ -102,9 +109,9 @@ function SheetHeader({ character, build }: { character: CharacterRow; build: Pat
         {/* Form-style field grid */}
         <div className="grid gap-2 sm:grid-cols-3">
           <HeaderField label="Character Name" value={character.name || build.name || '—'} wide />
-          <HeaderField label="Ancestry" value={build.ancestry} />
-          <HeaderField label="Background" value={build.background} />
-          <HeaderField label="Class" value={build.class} />
+          <HeaderField label="Ancestry" value={character.ancestry_name ?? build.ancestry} />
+          <HeaderField label="Background" value={bg} />
+          <HeaderField label="Class" value={character.class_name ?? build.class} />
           <HeaderField label="Level" value={level} />
           <HeaderField
             label="Experience Points"
@@ -180,25 +187,26 @@ function HeaderButton({
 
 function LeftColumn({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
   const perception = perceptionBonus(build);
-  const boostsRaw = (build as unknown as { abilityBoosts?: string[] }).abilityBoosts;
+  const overlay = character.overlay ?? {};
+  const senses = overlay.pathway_bot_state?.edits?.senses ?? inferSenses(build);
+  const languages =
+    overlay.pathway_bot_state?.edits?.languages ?? build.languages ?? [];
   return (
     <aside className="space-y-4">
-      <Portrait initials={initials(character.name || build.name)} />
+      <Portrait art={character.art} name={character.name || build.name} />
       <AbilityScoreList build={build} />
       <FramedBlock title="Ability Boosts">
-        <p className="text-sm text-silver/80">
-          {boostsRaw?.join(', ') ?? '—'}
-        </p>
+        <AbilityBoostsSummary build={build} />
       </FramedBlock>
       <FramedBlock title="Senses">
         <p className="text-sm text-silver/80">
-          {inferSenses(build).join(', ') || '—'}
+          {senses.length ? senses.join(', ') : '—'}
         </p>
         <p className="mt-1 text-xs text-silver/60">Perception {fmtMod(perception)}</p>
       </FramedBlock>
       <FramedBlock title="Languages">
         <p className="text-sm text-silver/80">
-          {build.languages?.length ? build.languages.join(', ') : '—'}
+          {languages.length ? languages.join(', ') : '—'}
         </p>
       </FramedBlock>
       <FramedBlock title="Perception" icon={<EyeIcon />}>
@@ -211,10 +219,21 @@ function LeftColumn({ character, build }: { character: CharacterRow; build: Path
   );
 }
 
-function Portrait({ initials }: { initials: string }) {
+function Portrait({ art, name }: { art: string | null; name: string | undefined }) {
+  const wrapCls =
+    'relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded';
   return (
-    <div className="relative mx-auto flex h-40 w-40 items-center justify-center rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded">
-      <span className="font-display text-4xl text-gold/60">{initials}</span>
+    <div className={wrapCls}>
+      {art ? (
+        <img
+          src={art}
+          alt={name ?? 'Character portrait'}
+          className="h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span className="font-display text-4xl text-gold/60">{initials(name)}</span>
+      )}
       <button
         type="button"
         aria-label="Upload portrait"
@@ -223,6 +242,53 @@ function Portrait({ initials }: { initials: string }) {
         <CameraIcon className="text-sm" />
       </button>
     </div>
+  );
+}
+
+/**
+ * Renders the ability-boost trail from `pathbuilder_data.abilities.breakdown`,
+ * grouped by category. Empty when Pathbuilder didn't record it (rare).
+ */
+function AbilityBoostsSummary({ build }: { build: PathbuilderBuild }) {
+  const b = build.abilities?.breakdown;
+  if (!b) return <p className="text-sm text-silver/40">—</p>;
+
+  const lines: Array<{ label: string; content: string }> = [];
+  const ancestryBits: string[] = [];
+  if (b.ancestryBoosts?.length) ancestryBits.push(b.ancestryBoosts.join(', '));
+  if (b.ancestryFree?.length) ancestryBits.push(`free ${b.ancestryFree.join(', ')}`);
+  if (b.ancestryFlaws?.length) ancestryBits.push(`flaw ${b.ancestryFlaws.join(', ')}`);
+  if (ancestryBits.length) lines.push({ label: 'Ancestry', content: ancestryBits.join('; ') });
+
+  if (b.backgroundBoosts?.length) {
+    lines.push({ label: 'Background', content: b.backgroundBoosts.join(', ') });
+  }
+  if (b.classBoosts?.length) {
+    lines.push({ label: 'Class', content: b.classBoosts.join(', ') });
+  }
+  if (b.mapLevelledBoosts) {
+    const levels = Object.keys(b.mapLevelledBoosts)
+      .map((k) => Number(k))
+      .filter((n) => !Number.isNaN(n))
+      .sort((a, b) => a - b);
+    for (const lvl of levels) {
+      const arr = b.mapLevelledBoosts[String(lvl)];
+      if (arr?.length) lines.push({ label: `L${lvl}`, content: arr.join(', ') });
+    }
+  }
+
+  if (lines.length === 0) return <p className="text-sm text-silver/40">—</p>;
+  return (
+    <ul className="space-y-1 text-sm">
+      {lines.map((l) => (
+        <li key={l.label} className="leading-tight">
+          <span className="text-[0.65rem] uppercase tracking-widest text-gold/70">
+            {l.label}:{' '}
+          </span>
+          <span className="text-silver/85">{l.content}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -282,17 +348,17 @@ function CenterColumn({ character, build }: { character: CharacterRow; build: Pa
   return (
     <div className="space-y-4">
       <StatRow character={character} build={build} />
-      <ConditionsRow />
+      <ConditionsRow character={character} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
-        <AttacksPanel build={build} />
+        <AttacksPanel character={character} build={build} />
         <FeatsPanel build={build} />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <EquipmentPanel build={build} />
         <InventoryPanel build={build} />
-        <TreasurePanel build={build} />
-        <NotesPanel />
+        <TreasurePanel character={character} build={build} />
+        <NotesPanel charKey={character.char_key} shortNote={character.notes} />
       </div>
     </div>
   );
@@ -302,6 +368,7 @@ function CenterColumn({ character, build }: { character: CharacterRow; build: Pa
 
 function StatRow({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
   const max = maxHp(build);
+  const hero = character.hero_points ?? character.overlay?.daily?.hero_points ?? 0;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       <StatCard
@@ -319,7 +386,7 @@ function StatRow({ character, build }: { character: CharacterRow; build: Pathbui
       <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
       <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />
       <StatCard label="Perception" icon={<EyeIcon />} value={fmtMod(perceptionBonus(build))} />
-      <HeroPointsCard value={character.hero_points ?? 0} />
+      <HeroPointsCard value={hero} />
     </div>
   );
 }
@@ -369,13 +436,36 @@ function HeroPointsCard({ value }: { value: number }) {
 
 // ---- Conditions + resistances ----------------------------------
 
-function ConditionsRow() {
+function ConditionsRow({ character }: { character: CharacterRow }) {
+  const conditions = renderConditions(character);
+  const counters = renderCounters(character.overlay ?? null);
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <SlimBar label="Conditions" value="—" />
-      <SlimBar label="Resistances & Immunities" value="—" />
+      <SlimBar
+        label="Conditions"
+        value={conditions.length ? conditions.join(' · ') : '—'}
+      />
+      <SlimBar
+        label={counters.length ? 'Counters' : 'Resistances & Immunities'}
+        value={counters.length ? counters.join(' · ') : '—'}
+      />
     </div>
   );
+}
+
+function renderConditions(c: CharacterRow): string[] {
+  const out: string[] = [];
+  if ((c.dying ?? 0) > 0) out.push(`Dying ${c.dying}`);
+  if ((c.wounded ?? 0) > 0) out.push(`Wounded ${c.wounded}`);
+  if (c.status) out.push(c.status);
+  return out;
+}
+
+function renderCounters(overlay: CharacterOverlay | null): string[] {
+  if (!overlay?.counters) return [];
+  return Object.entries(overlay.counters)
+    .filter(([, v]) => v && (v.max ?? 0) > 0)
+    .map(([k, v]) => `${v.label || k.toUpperCase()} ${v.current ?? 0}/${v.max ?? 0}`);
 }
 
 function SlimBar({ label, value }: { label: string; value: ReactNode }) {
@@ -459,8 +549,8 @@ function RowContents({ children, dim }: { children: ReactNode; dim?: boolean }) 
 
 // ---- Attacks & spellcasting -----------------------------------
 
-function AttacksPanel({ build }: { build: PathbuilderBuild }) {
-  const weapons = build.weapons ?? [];
+function AttacksPanel({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+  const weapons = mergeWeapons(build, character.overlay ?? null);
   const spellRows = collectSpellAttackRows(build);
   const rows = [
     ...weapons.map((w) => ({ kind: 'weapon' as const, w })),
@@ -647,8 +737,10 @@ function InventoryPanel({ build }: { build: PathbuilderBuild }) {
   );
 }
 
-function TreasurePanel({ build }: { build: PathbuilderBuild }) {
-  const money = build.money ?? {};
+function TreasurePanel({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+  // Live `currency` column wins over the Pathbuilder snapshot — the bot updates
+  // it as coin is earned/spent, while `pathbuilder_data.money` stays frozen.
+  const money = character.currency ?? build.money ?? {};
   const rows: Array<[string, number | undefined]> = [
     ['CP', money.cp],
     ['SP', money.sp],
@@ -676,12 +768,90 @@ function TreasurePanel({ build }: { build: PathbuilderBuild }) {
   );
 }
 
-function NotesPanel() {
+function NotesPanel({
+  charKey,
+  shortNote,
+}: {
+  charKey: string;
+  shortNote: string | null;
+}) {
+  const { data: notes, isLoading } = useCharacterNotes(charKey);
+  const list = (notes ?? [])
+    .map(noteText)
+    .filter((t) => t.length > 0);
+  const hasAny = list.length > 0 || (shortNote?.trim().length ?? 0) > 0;
+
   return (
     <Panel title="Notes" icon={<NoteIcon />}>
-      <p className="text-sm text-silver/40">—</p>
+      {isLoading ? (
+        <p className="text-sm text-silver/40">Loading…</p>
+      ) : !hasAny ? (
+        <p className="text-sm text-silver/40">—</p>
+      ) : (
+        <div className="space-y-2 text-sm leading-relaxed text-silver/85">
+          {shortNote?.trim() && <p className="italic text-silver/70">{shortNote}</p>}
+          {list.slice(0, 4).map((t, i) => (
+            <p key={i}>{t}</p>
+          ))}
+          {list.length > 4 && (
+            <p className="text-xs text-silver/50">
+              …{list.length - 4} more note{list.length - 4 === 1 ? '' : 's'}
+            </p>
+          )}
+        </div>
+      )}
     </Panel>
   );
+}
+
+/**
+ * Merge the Pathbuilder weapons array with the bot's overlay-side additions
+ * (natural weapons, custom entries) — bot-side takes precedence when a name
+ * matches. Overlay weapons come with pre-formatted `die` like `"1d8+3"`, so
+ * we normalize to the shape our WeaponRow expects.
+ */
+function mergeWeapons(
+  build: PathbuilderBuild,
+  overlay: CharacterOverlay | null,
+): Weapon[] {
+  const pathbuilderWeapons: Weapon[] = build.weapons ?? [];
+  const overlayWeapons = overlay?.pathway_bot_state?.edits?.weapons ?? [];
+  if (overlayWeapons.length === 0) return pathbuilderWeapons;
+
+  const nameOf = (w: { name?: string; display?: string }) =>
+    (w.display ?? w.name ?? '').toLowerCase();
+  const overlayByName = new Map(overlayWeapons.map((w) => [nameOf(w), w]));
+  const merged: Weapon[] = pathbuilderWeapons.map((w) => {
+    const override = overlayByName.get(nameOf(w));
+    if (!override) return w;
+    overlayByName.delete(nameOf(w));
+    return {
+      ...w,
+      display: override.display ?? w.display,
+      die: parseOverlayDie(override.die) ?? w.die,
+      damageBonus: override.damageBonus ?? w.damageBonus,
+      damageType: override.damageType?.[0] ?? w.damageType,
+      attack: override.attack ?? w.attack,
+    };
+  });
+  for (const extra of overlayByName.values()) {
+    merged.push({
+      name: extra.name ?? extra.display ?? 'Weapon',
+      display: extra.display ?? extra.name,
+      die: parseOverlayDie(extra.die),
+      attack: extra.attack,
+      damageBonus: extra.damageBonus,
+      damageType: extra.damageType?.[0],
+    });
+  }
+  return merged;
+}
+
+/** Overlay stores die as `"1d8+3"`; the Weapon row wants just the die (`d8`). */
+function parseOverlayDie(die: string | undefined): string | undefined {
+  if (!die) return undefined;
+  const m = die.match(/d\d+/);
+  return m ? m[0] : die;
 }
 
 // ---------------------------------------------------------------

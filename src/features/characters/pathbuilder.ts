@@ -112,7 +112,22 @@ export interface PathbuilderBuild {
     speed?: number;
     speedBonus?: number;
   };
-  abilities?: Partial<Record<Ability, number>> & { breakdown?: unknown };
+  abilities?: Partial<Record<Ability, number>> & {
+    breakdown?: {
+      /** Fixed ancestry boosts (e.g. Elf: Dex + Int). */
+      ancestryBoosts?: string[];
+      /** Free ancestry boosts the player picked. */
+      ancestryFree?: string[];
+      /** Ancestry flaws (usually one). */
+      ancestryFlaws?: string[];
+      /** Background boosts (usually two). */
+      backgroundBoosts?: string[];
+      /** Class key boosts. */
+      classBoosts?: string[];
+      /** Level-5/10/15/20 boosts, keyed by level. */
+      mapLevelledBoosts?: Record<string, string[]>;
+    };
+  };
   /** Static bonuses/penalties keyed by target. */
   mods?: Record<string, unknown>;
   proficiencies?: Partial<Record<string, number>> & {
