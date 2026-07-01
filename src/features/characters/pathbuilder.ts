@@ -171,13 +171,19 @@ export interface PathbuilderBuild {
 
 // -------- Constants --------
 
+/**
+ * Pathbuilder 2e exports `size` as a 0-indexed integer (0=Tiny → 5=Gargantuan).
+ * The 1-indexed mapping this table used before was off by one, which is why
+ * every Medium character rendered as Small — Pathbuilder writes `2` for
+ * Medium, and we were mapping 2 → 'Small'.
+ */
 const SIZE_LABELS: Record<number, string> = {
-  1: 'Tiny',
-  2: 'Small',
-  3: 'Medium',
-  4: 'Large',
-  5: 'Huge',
-  6: 'Gargantuan',
+  0: 'Tiny',
+  1: 'Small',
+  2: 'Medium',
+  3: 'Large',
+  4: 'Huge',
+  5: 'Gargantuan',
 };
 
 export const ABILITY_LABELS: Record<Ability, string> = {
