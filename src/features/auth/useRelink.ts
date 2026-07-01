@@ -4,13 +4,15 @@ import { relinkCurrentUser, type RelinkResult } from '@/features/characters/api'
 import { useAuth } from './useAuth';
 
 /**
- * KILL SWITCH — the auto-relink is disabled (2026-07-01) after a mis-merge
- * pulled another user's character into the owner's vault. While false, the
- * RPC never runs from anywhere in the app. Flip back to true only once the
- * relink function is hardened against the users-row / discord_id collision
- * that caused the incident.
+ * KILL SWITCH for the auto-relink RPC.
+ *
+ * History: briefly disabled 2026-07-01 during a vault-leak scare that turned
+ * out to be an unrelated query-scoping bug (public-share RLS + an unfiltered
+ * "my characters" select), NOT the relink — the owner's data was provably
+ * intact. Re-enabled after that fix. If anything ever looks wrong with a real
+ * relink, flip this to false and redeploy to instantly stop all auto-relinks.
  */
-const RELINK_ENABLED = false;
+const RELINK_ENABLED = true;
 
 /**
  * Run the self-relink RPC once per signed-in session.
