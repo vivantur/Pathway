@@ -70,6 +70,7 @@ export interface CharacterOverlay {
    */
   web_edits?: {
     spells?: AddedSpell[];
+    conditions?: ActiveCondition[];
   };
   [key: string]: unknown;
 }
@@ -79,6 +80,15 @@ export interface AddedSpell {
   name: string;
   /** Spell rank (0 = cantrip). */
   rank: number;
+}
+
+/**
+ * A condition toggled on from the web (beyond dying/wounded, which are their
+ * own columns). `value` is present only for valued conditions (Frightened 2).
+ */
+export interface ActiveCondition {
+  name: string;
+  value?: number;
 }
 
 /** One entry in `overlay.pathway_bot_state.xpLog` — bot-side XP award history. */

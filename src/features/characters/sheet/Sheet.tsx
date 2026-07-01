@@ -11,11 +11,17 @@ import { useCharacterRealtime, type RealtimeState } from '@/features/characters/
 import { useUpdateCharacterState } from '@/features/characters/useUpdateCharacterState';
 import { useUpdateCharacterOverlay } from '@/features/characters/useUpdateCharacterOverlay';
 import { useFavoriteSpells } from '@/features/characters/useFavoriteSpells';
+import {
+  PF2E_CONDITIONS,
+  conditionDef,
+  isValuedCondition,
+  type ConditionDef,
+} from '@/features/characters/conditions';
 import type { CharacterStatePatch } from '@/features/characters/api';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
 import { mergeWeapons } from '@/features/characters/weapons';
-import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
+import type { ActiveCondition, CharacterOverlay, CharacterRow } from '@/features/characters/types';
 import { AncestryTab } from './tabs/AncestryTab';
 import { AbilitiesTab } from './tabs/AbilitiesTab';
 import { ClassTab } from './tabs/ClassTab';
@@ -1131,31 +1137,84 @@ function ConditionsBlock({
   edit: EditControls;
 }) {
   const counters = renderCounters(character.overlay ?? null);
+  const webConditions = character.overlay?.web_edits?.conditions ?? [];
+
+  // Read-modify-write the web-owned conditions list, preserving the rest of
+  // the overlay (including web_edits.spells).
+  const writeConditions = (conditions: ActiveCondition[]) => {
+    const prev = character.overlay ?? {};
+    const next: CharacterOverlay = {
+      ...prev,
+      web_edits: { ...(prev.web_edits ?? {}), conditions },
+    };
+    edit.updateOverlay(next);
+  };
+  const others = (name: string) =>
+    webConditions.filter((c) => c.name.toLowerCase() !== name.toLowerCase());
+  const addCondition = (name: string) => {
+    if (webConditions.some((c) => c.name.toLowerCase() === name.toLowerCase())) return;
+    writeConditions([...webConditions, isValuedCondition(name) ? { name, value: 1 } : { name }]);
+  };
+  const removeCondition = (name: string) => writeConditions(others(name));
+  const setConditionValue = (name: string, value: number) => {
+    if (value <= 0) {
+      writeConditions(others(name));
+      return;
+    }
+    writeConditions([...others(name), { name, value }]);
+  };
+
+  if (!edit.enabled) {
+    const active = [...renderConditions(character, webConditions), ...counters];
+    return (
+      <FramedBlock title="Conditions">
+        <p className="text-sm text-silver/85">{active.join(' · ') || '—'}</p>
+      </FramedBlock>
+    );
+  }
+
+  const available = PF2E_CONDITIONS.filter(
+    (d) => !webConditions.some((c) => c.name.toLowerCase() === d.name.toLowerCase()),
+  );
+
   return (
     <FramedBlock title="Conditions">
-      {edit.enabled ? (
-        <div className="space-y-2">
-          <ConditionStepper
-            label="Dying"
-            value={character.dying ?? 0}
-            max={4}
-            onChange={(n) => edit.update({ dying: n })}
-          />
-          <ConditionStepper
-            label="Wounded"
-            value={character.wounded ?? 0}
-            max={4}
-            onChange={(n) => edit.update({ wounded: n })}
-          />
-          {counters.length > 0 && (
-            <p className="text-xs text-silver/60">{counters.join(' · ')}</p>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-silver/85">
-          {[...renderConditions(character), ...counters].join(' · ') || '—'}
-        </p>
-      )}
+      <div className="space-y-2">
+        <ConditionStepper
+          label="Dying"
+          value={character.dying ?? 0}
+          max={4}
+          onChange={(n) => edit.update({ dying: n })}
+        />
+        <ConditionStepper
+          label="Wounded"
+          value={character.wounded ?? 0}
+          max={4}
+          onChange={(n) => edit.update({ wounded: n })}
+        />
+        {webConditions.map((c) => {
+          const def = conditionDef(c.name);
+          return def?.valued ? (
+            <ConditionStepper
+              key={c.name}
+              label={c.name}
+              value={c.value ?? 1}
+              max={6}
+              title={def.summary}
+              onChange={(n) => setConditionValue(c.name, n)}
+            />
+          ) : (
+            <ConditionChip
+              key={c.name}
+              label={c.name}
+              title={def?.summary}
+              onRemove={() => removeCondition(c.name)}
+            />
+          );
+        })}
+        <AddConditionSelect available={available} onAdd={addCondition} />
+        {counters.length > 0 && <p className="text-xs text-silver/60">{counters.join(' · ')}</p>}
+      </div>
     </FramedBlock>
   );
 }
@@ -1165,16 +1224,21 @@ function ConditionStepper({
   value,
   max,
   onChange,
+  title,
 }: {
   label: string;
   value: number;
   max: number;
   onChange: (n: number) => void;
+  title?: string;
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(n, max));
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className={`text-xs ${value > 0 ? 'text-red-300' : 'text-silver/70'}`}>
+      <span
+        className={`text-xs ${value > 0 ? 'text-red-300' : 'text-silver/70'}`}
+        title={title}
+      >
         {label} {value}
       </span>
       <span className="flex items-center gap-1">
@@ -1185,10 +1249,67 @@ function ConditionStepper({
   );
 }
 
-function renderConditions(c: CharacterRow): string[] {
+/** A boolean (non-valued) active condition with a remove control. */
+function ConditionChip({
+  label,
+  title,
+  onRemove,
+}: {
+  label: string;
+  title?: string;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs text-red-300" title={title}>
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${label}`}
+        title="Remove condition"
+        className="text-silver/40 hover:text-red-300"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function AddConditionSelect({
+  available,
+  onAdd,
+}: {
+  available: ConditionDef[];
+  onAdd: (name: string) => void;
+}) {
+  if (available.length === 0) return null;
+  return (
+    <select
+      value=""
+      onChange={(e) => {
+        if (e.target.value) onAdd(e.target.value);
+      }}
+      className="w-full rounded border border-gold/30 bg-midnight-800/80 px-2 py-1 text-xs text-silver/80 focus:border-gold/60 focus:outline-none"
+    >
+      <option value="">+ Add condition…</option>
+      {available.map((d) => (
+        <option key={d.name} value={d.name}>
+          {d.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function renderConditions(c: CharacterRow, web: ActiveCondition[]): string[] {
   const out: string[] = [];
   if ((c.dying ?? 0) > 0) out.push(`Dying ${c.dying}`);
   if ((c.wounded ?? 0) > 0) out.push(`Wounded ${c.wounded}`);
+  for (const cond of web) {
+    out.push(cond.value != null ? `${cond.name} ${cond.value}` : cond.name);
+  }
   if (c.status) out.push(c.status);
   return out;
 }
