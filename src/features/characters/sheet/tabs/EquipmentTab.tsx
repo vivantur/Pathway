@@ -39,7 +39,11 @@ export function EquipmentTab({
   return (
     <div className="space-y-4">
       <WeaponsPanel weapons={weapons} />
-      <ArmorPanel armor={armor} totalAc={acTotal(build)} />
+      <ArmorPanel
+        armor={armor}
+        totalAc={acTotal(build)}
+        itemBonus={build.acTotal?.acItemBonus}
+      />
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <CurrencyPanel currency={currency} />
         <InventoryPanel inventory={inventory} />
@@ -159,24 +163,52 @@ function formatDamage(w: Weapon): string {
 function ArmorPanel({
   armor,
   totalAc,
+  itemBonus,
 }: {
   armor: Armor[];
   totalAc: number | undefined;
+  itemBonus: number | undefined;
 }) {
   const worn = resolveWornArmor(armor);
   const wornSet = new Set(worn);
   const carried = armor.filter((a) => !wornSet.has(a));
 
+  // Pathbuilder can export a character with `armor: null` while still baking
+  // the armor's +N into acItemBonus (happens when the armor section of the
+  // build wasn't filled in but the AC total was calculated). In that case
+  // the character IS mechanically wearing armor — we just don't know which
+  // piece. Surface it as a placeholder rather than pretending they're
+  // unarmored.
+  const armorEntryMissing = worn.length === 0 && (itemBonus ?? 0) > 0;
+
+  const wornSummary = worn[0]
+    ? armorDisplayName(worn[0])
+    : armorEntryMissing
+      ? `Armor (+${itemBonus})`
+      : 'None';
+
   return (
     <Panel title="Armor" icon={<ShieldIcon />}>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatBox label="AC" value={totalAc ?? '—'} />
-        <StatBox
-          label="Worn"
-          value={worn[0] ? armorDisplayName(worn[0]) : 'None'}
-        />
+        <StatBox label="Worn" value={wornSummary} />
         <StatBox label="Proficiency" value={worn[0]?.prof ?? '—'} />
       </div>
+
+      {armorEntryMissing && (
+        <div className="mb-4 rounded border border-arcane/30 bg-arcane/5 p-3 text-xs text-silver/80">
+          <div className="mb-1 font-display text-[0.65rem] uppercase tracking-widest text-arcane">
+            Armor details missing from Pathbuilder export
+          </div>
+          <p className="leading-relaxed">
+            The AC math includes a{' '}
+            <span className="text-arcane">+{itemBonus}</span> armor bonus, so
+            this character <em>is</em> wearing armor — but the Pathbuilder JSON
+            has no entry naming which piece. Re-export from Pathbuilder (with
+            an armor selected) and re-import into the bot to fill this in.
+          </p>
+        </div>
+      )}
 
       {armor.length > 0 && (
         <div className="overflow-x-auto">
