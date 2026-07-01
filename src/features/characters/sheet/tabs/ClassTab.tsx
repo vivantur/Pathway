@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
+import { errorMessage } from '@/features/characters/errorMessage';
 import { useClassBundle } from '@/features/characters/useClassBundle';
 import type {
   CharacterRow,
@@ -56,9 +57,12 @@ export function ClassTab({
       <Empty
         icon={<ClassIcon />}
         message={
-          error instanceof Error
-            ? `Couldn't load ${className}: ${error.message}`
-            : 'Failed to load class data.'
+          <>
+            <div className="mb-2">Couldn&apos;t load {className}:</div>
+            <code className="block whitespace-pre-wrap rounded border border-red-500/30 bg-red-500/5 p-2 text-left text-xs text-red-300">
+              {errorMessage(error)}
+            </code>
+          </>
         }
       />
     );

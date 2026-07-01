@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
+import { errorMessage } from '@/features/characters/errorMessage';
 import { useAncestryBundle } from '@/features/characters/useAncestryBundle';
 import type {
   AncestryRow,
@@ -52,7 +53,12 @@ export function AncestryTab({
       <Empty
         icon={<AncestryIcon />}
         message={
-          error instanceof Error ? `Couldn't load ${ancestryName}: ${error.message}` : 'Failed to load ancestry data.'
+          <>
+            <div className="mb-2">Couldn&apos;t load {ancestryName}:</div>
+            <code className="block whitespace-pre-wrap rounded border border-red-500/30 bg-red-500/5 p-2 text-left text-xs text-red-300">
+              {errorMessage(error)}
+            </code>
+          </>
         }
       />
     );
