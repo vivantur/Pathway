@@ -41,20 +41,29 @@ first job is to **stay in sync** with the bot. The repo currently holds the
 
 ## Status
 
-🪶 **Phase W0 — Reconcile with the live backend (mostly done; migration pending).**
+🪶 **Phase W0 — Reconcile with the live backend (essentially complete).**
 The Vite + React + TypeScript + Tailwind app is **live at
 [www.pathwaypf2e.com](https://www.pathwaypf2e.com)** (Vercel, HTTPS), connected to
-the Supabase project with the **anon key under RLS** (the service-role key is
-refused in the browser). **Email magic-link sign-in works end-to-end.** It ships
-Supabase Auth (email magic-link now; Discord OAuth wired and pending the provider
-being enabled), a protected **Character Vault** that reads the signed-in user's
-own `characters` rows via RLS, and `supabase/migrations/` adopted as the canonical
-schema home.
+the project's own Supabase with the **anon key under RLS** (the service-role key is
+refused in the browser). Both **email magic-link** and **Discord OAuth** sign-in
+work end-to-end; Supabase identity linking merges them into a single Pathway
+account. The bot's full production schema and data have been migrated in (49
+tables, ~50k rows including feats, spells, monsters, items, and community
+characters). RLS lockdown applied to every user-owned table via
+`pathway_own_*` and `pathway_char_*` policy sets, plus per-user access on
+`public.users`; content tables (feats, spells, monsters, etc.) remain public
+reads; `service_role` bypasses via explicit `pathway_service_all` policies so the
+bot keeps working. Web-to-bot identity linked via cascade UPDATE on
+`public.users.id` (ADR-worthy: we standardized every FK to `users.id` on
+`ON UPDATE CASCADE`). Vault renders the signed-in user's own characters with
+their live HP / Hero Points / XP.
 
-What's left to close W0: the Discord auth provider, and the **data migration** —
-moving the bot's schema + data into this Supabase project (the bot still reads a
-third-party project today), after which the Vault shows real characters and true
-website ⇄ bot sync switches on.
+Still open before Phase W1: the bot itself still reads the original third-party
+Supabase — the pointer flip on Railway hasn't happened yet, so today's sync is
+one-way (bot writes go to the old project; the migrated copy is a snapshot).
+Also deferred to a proper design pass: RLS for guild-scoped, homebrew, and ops
+tables (currently service-role only), and `bag_items` policy chained through
+`bags.user_id`.
 
 ### Run it locally
 
