@@ -476,6 +476,11 @@ export interface CharacterStatePatch {
   wounded?: number | null;
   experience?: number | null;
   notes?: string | null;
+  /**
+   * Coin purse. This is a jsonb column, so a write REPLACES the whole object —
+   * callers must send all four denominations, not a partial patch.
+   */
+  currency?: { pp?: number; gp?: number; sp?: number; cp?: number } | null;
 }
 
 /**

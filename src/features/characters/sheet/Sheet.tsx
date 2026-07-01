@@ -192,7 +192,7 @@ function TabContent({
     case 'companions':
       return <CompanionsTab build={build} />;
     case 'equipment':
-      return <EquipmentTab character={character} build={build} />;
+      return <EquipmentTab character={character} build={build} edit={edit} />;
     case 'journal':
       return <JournalTab character={character} edit={edit} />;
     default: {

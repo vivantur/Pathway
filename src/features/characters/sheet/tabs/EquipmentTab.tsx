@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   acTotal,
   damageTypeLabel,
@@ -10,7 +10,7 @@ import {
 } from '@/features/characters/pathbuilder';
 import type { CharacterRow } from '@/features/characters/types';
 import { mergeWeapons } from '@/features/characters/weapons';
-import { Panel } from '../Sheet';
+import { Panel, type EditControls } from '../Sheet';
 import {
   CoinsIcon,
   PouchIcon,
@@ -27,9 +27,11 @@ import {
 export function EquipmentTab({
   character,
   build,
+  edit,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
+  edit: EditControls;
 }) {
   const weapons = mergeWeapons(build, character.overlay ?? null);
   const armor = build.armor ?? [];
@@ -45,7 +47,7 @@ export function EquipmentTab({
         itemBonus={build.acTotal?.acItemBonus}
       />
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <CurrencyPanel currency={currency} />
+        <CurrencyPanel currency={currency} edit={edit} />
         <InventoryPanel inventory={inventory} />
       </div>
     </div>
@@ -320,14 +322,31 @@ function armorDisplayName(a: Armor): string {
 // Currency
 // ---------------------------------------------------------------
 
-function CurrencyPanel({ currency }: { currency: Money }) {
-  const rows: Array<{ label: string; symbol: string; value: number | undefined }> = [
-    { label: 'Platinum', symbol: 'pp', value: currency.pp },
-    { label: 'Gold', symbol: 'gp', value: currency.gp },
-    { label: 'Silver', symbol: 'sp', value: currency.sp },
-    { label: 'Copper', symbol: 'cp', value: currency.cp },
+type Denom = 'pp' | 'gp' | 'sp' | 'cp';
+
+function CurrencyPanel({ currency, edit }: { currency: Money; edit: EditControls }) {
+  const rows: Array<{ label: string; symbol: Denom }> = [
+    { label: 'Platinum', symbol: 'pp' },
+    { label: 'Gold', symbol: 'gp' },
+    { label: 'Silver', symbol: 'sp' },
+    { label: 'Copper', symbol: 'cp' },
   ];
   const total = totalGp(currency);
+
+  // A jsonb write replaces the whole object, so seed from the currently
+  // displayed purse (which may be the Pathbuilder `money` fallback on first
+  // edit) and override just the one denomination that changed.
+  const setDenom = (symbol: Denom, value: number) => {
+    const next: Money = {
+      pp: currency.pp ?? 0,
+      gp: currency.gp ?? 0,
+      sp: currency.sp ?? 0,
+      cp: currency.cp ?? 0,
+    };
+    next[symbol] = Math.max(0, Math.floor(value));
+    edit.update({ currency: next });
+  };
+
   return (
     <Panel title="Currency" icon={<CoinsIcon />}>
       <dl className="space-y-1.5">
@@ -341,7 +360,11 @@ function CurrencyPanel({ currency }: { currency: Money }) {
               <span className="text-sm text-silver/80">{r.label}</span>
             </dt>
             <dd className="font-display text-lg tabular-nums text-silver">
-              {r.value != null ? r.value.toLocaleString() : '—'}
+              <CoinValue
+                value={currency[r.symbol]}
+                editable={edit.enabled}
+                onSet={(v) => setDenom(r.symbol, v)}
+              />
             </dd>
           </div>
         ))}
@@ -355,6 +378,61 @@ function CurrencyPanel({ currency }: { currency: Money }) {
         </span>
       </div>
     </Panel>
+  );
+}
+
+/** One coin amount: static text, or click-to-edit number input when editable. */
+function CoinValue({
+  value,
+  editable,
+  onSet,
+}: {
+  value: number | undefined;
+  editable: boolean;
+  onSet: (value: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  if (!editable) {
+    return <>{value != null ? value.toLocaleString() : '—'}</>;
+  }
+
+  if (editing) {
+    const commit = () => {
+      const n = Number(draft);
+      if (!Number.isNaN(n)) onSet(n);
+      setEditing(false);
+    };
+    return (
+      <input
+        autoFocus
+        type="number"
+        min={0}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        className="w-20 rounded border border-gold/40 bg-midnight-800 px-1 text-right font-display text-lg text-silver focus:outline-none"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setDraft(String(value ?? 0));
+        setEditing(true);
+      }}
+      className="font-display tabular-nums text-silver hover:text-gold"
+      title="Click to edit"
+    >
+      {value != null ? value.toLocaleString() : '0'}
+    </button>
   );
 }
 
