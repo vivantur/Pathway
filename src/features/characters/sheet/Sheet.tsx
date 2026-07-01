@@ -1020,7 +1020,7 @@ function StatCard({
       <div className="my-1 flex justify-center text-xl text-gold">{icon}</div>
       <div className="font-display text-2xl text-silver">{value}</div>
       {sub && (
-        <div className="mt-0.5 text-[0.55rem] uppercase tracking-widest text-silver/50">
+        <div className="mt-1 border-t border-gold/15 pt-1 text-[0.62rem] font-display uppercase tracking-wide text-arcane/90">
           {sub}
         </div>
       )}
@@ -1371,7 +1371,7 @@ function SpellRow({
           onClick={() => onToggle(row.name)}
           title={favorite ? 'Unpin spell' : 'Pin spell to top'}
           className={`text-sm transition-colors ${
-            favorite ? 'text-gold' : 'text-silver/25 hover:text-gold/70'
+            favorite ? 'text-gold' : 'text-silver/45 hover:text-gold'
           }`}
         >
           <StarIcon />
