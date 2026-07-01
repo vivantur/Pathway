@@ -413,6 +413,167 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
 }
 
 // -------------------------------------------------------------------------
+// Find existing character by Pathbuilder id (for the update-on-reimport flow)
+// -------------------------------------------------------------------------
+
+export interface ExistingCharacterMatch {
+  id: string;
+  char_key: string;
+  name: string;
+  updated_at: string | null;
+}
+
+/**
+ * Check if the signed-in user already imported this exact Pathbuilder id.
+ * Used by the /vault/new page to offer "Update existing" instead of
+ * silently creating a duplicate. RLS scopes to the current user so the
+ * uniqueness only checks their own row set.
+ */
+export async function findCharacterByPathbuilderId(
+  pathbuilderId: number,
+): Promise<ExistingCharacterMatch | null> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('characters')
+    .select('id, char_key, name, updated_at')
+    .eq('pathbuilder_id', pathbuilderId)
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const first = (data ?? [])[0];
+  return (first as ExistingCharacterMatch | undefined) ?? null;
+}
+
+// -------------------------------------------------------------------------
+// Update character from a fetched Pathbuilder build (preserves live state)
+// -------------------------------------------------------------------------
+
+export interface UpdateCharacterFromBuildInput {
+  userId: string;
+  charKey: string;
+  build: PathbuilderBuild;
+  pathbuilderId: number;
+}
+
+/**
+ * Re-sync an existing character's build fields from a fresh Pathbuilder
+ * export while PRESERVING everything the bot / player has changed since:
+ *   - current_hp / hero_points / dying / wounded (combat state)
+ *   - experience (XP progression)
+ *   - currency (loot spent/earned since import)
+ *   - overlay (bot-managed conditions, counters, XP log)
+ *   - art (portrait uploads)
+ *   - notes (bio text)
+ *   - is_public / public_share_id (sharing state)
+ *
+ * We only touch pathbuilder_data, pathbuilder_id, and the denormalized
+ * name/ancestry/heritage/class/background/level columns. If the character's
+ * name has changed in Pathbuilder we let it change here too — but char_key
+ * stays stable so existing URLs and vault card positions don't break.
+ */
+export async function updateCharacterFromBuild(
+  input: UpdateCharacterFromBuildInput,
+): Promise<CreateCharacterResult> {
+  const { userId, charKey, build, pathbuilderId } = input;
+  const supabase = requireSupabase();
+
+  const updates = {
+    pathbuilder_data: build,
+    pathbuilder_id: pathbuilderId,
+    name: (build.name ?? '').trim() || 'Unnamed Character',
+    ancestry_name: build.ancestry ?? null,
+    heritage_name: build.heritage ?? null,
+    class_name: build.class ?? null,
+    background_name: build.background ?? null,
+    level: build.level ?? 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('characters')
+    .update(updates)
+    .eq('user_id', userId)
+    .eq('char_key', charKey)
+    .select('id, char_key, name')
+    .single();
+
+  if (error) throw error;
+  return data as CreateCharacterResult;
+}
+
+// -------------------------------------------------------------------------
+// Delete character
+// -------------------------------------------------------------------------
+
+/**
+ * Delete one character owned by the signed-in user. RLS enforces owner
+ * scoping so a stray char_key can't nuke someone else's row.
+ */
+export async function deleteCharacter(input: {
+  userId: string;
+  charKey: string;
+}): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('characters')
+    .delete()
+    .eq('user_id', input.userId)
+    .eq('char_key', input.charKey);
+  if (error) throw error;
+}
+
+// -------------------------------------------------------------------------
+// Toggle public sharing (writes is_public + generates a share id if missing)
+// -------------------------------------------------------------------------
+
+export interface SetPublicResult {
+  is_public: boolean;
+  public_share_id: string | null;
+}
+
+/**
+ * Flip a character's `is_public` flag. When making a character public for the
+ * first time we generate a `public_share_id` UUID that becomes the stable
+ * shareable-URL segment. Subsequent toggles never re-generate the id so
+ * anyone with the previous link keeps their access when the character is
+ * turned public again.
+ */
+export async function setCharacterPublic(input: {
+  userId: string;
+  charKey: string;
+  isPublic: boolean;
+}): Promise<SetPublicResult> {
+  const supabase = requireSupabase();
+
+  // Fetch the existing share id (if any) so we know whether to generate one.
+  const { data: existing, error: fetchError } = await supabase
+    .from('characters')
+    .select('public_share_id')
+    .eq('user_id', input.userId)
+    .eq('char_key', input.charKey)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+
+  const shareId =
+    (existing as { public_share_id: string | null } | null)?.public_share_id ??
+    (input.isPublic ? crypto.randomUUID() : null);
+
+  const { data, error } = await supabase
+    .from('characters')
+    .update({
+      is_public: input.isPublic,
+      public_share_id: shareId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', input.userId)
+    .eq('char_key', input.charKey)
+    .select('is_public, public_share_id')
+    .single();
+  if (error) throw error;
+  return data as SetPublicResult;
+}
+
+// -------------------------------------------------------------------------
 // Create character: from a fetched Pathbuilder build
 // -------------------------------------------------------------------------
 

@@ -1,6 +1,12 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { noteText, PORTRAIT_MIME_TYPES } from '@/features/characters/api';
+import { errorMessage } from '@/features/characters/errorMessage';
+import {
+  useDeleteCharacter,
+  useSetCharacterPublic,
+  useUpdateFromPathbuilder,
+} from '@/features/characters/useCharacterActions';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { usePortraitUpload } from '@/features/characters/usePortraitUpload';
 import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses';
@@ -44,22 +50,22 @@ import {
   CameraIcon,
   CoinsIcon,
   CompassIcon,
-  DotsIcon,
-  DownloadIcon,
+  CopyIcon,
   EquipmentIcon,
   EyeIcon,
   HeartIcon,
   HourglassIcon,
   NoteIcon,
   OverviewIcon,
-  PencilIcon,
   PouchIcon,
+  RefreshIcon,
   RunningIcon,
   ShareIcon,
   ShieldIcon,
   ShieldPlusIcon,
   StarIcon,
   SwordIcon,
+  TrashIcon,
 } from './icons';
 
 /**
@@ -175,16 +181,252 @@ function SheetHeader({ character, build }: { character: CharacterRow; build: Pat
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <HeaderButton icon={<PencilIcon />} label="Edit" />
-            <HeaderButton icon={<ShareIcon />} label="Share" />
-            <HeaderButton icon={<DotsIcon />} aria-label="More" />
-          </div>
-          <HeaderButton icon={<DownloadIcon />} label="Export" />
-        </div>
+        <SheetActions character={character} />
       </div>
     </header>
+  );
+}
+
+// ---------------------------------------------------------------
+// Header actions — Update from Pathbuilder / Share / Delete
+// ---------------------------------------------------------------
+
+function SheetActions({ character }: { character: CharacterRow }) {
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const updateMutation = useUpdateFromPathbuilder();
+  const deleteMutation = useDeleteCharacter();
+  const publicMutation = useSetCharacterPublic(character.char_key);
+
+  const hasPathbuilderId = typeof character.pathbuilder_id === 'number';
+
+  const handleUpdate = () => {
+    if (!hasPathbuilderId || character.pathbuilder_id == null) return;
+    updateMutation.mutate({
+      charKey: character.char_key,
+      pathbuilderId: character.pathbuilder_id,
+    });
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync(character.char_key);
+      navigate('/vault');
+    } catch {
+      // Error surfaces via deleteMutation.error below.
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        <HeaderButton
+          icon={<RefreshIcon />}
+          label={updateMutation.isPending ? 'Updating…' : 'Update'}
+          onClick={handleUpdate}
+          disabled={!hasPathbuilderId || updateMutation.isPending}
+          title={
+            hasPathbuilderId
+              ? 'Re-fetch this character from Pathbuilder and refresh the build (HP / XP / hero points / notes / portrait preserved).'
+              : 'No Pathbuilder ID on file for this character.'
+          }
+        />
+        <HeaderButton
+          icon={<ShareIcon />}
+          label="Share"
+          onClick={() => setShareOpen((v) => !v)}
+        />
+        <HeaderButton
+          icon={<TrashIcon />}
+          label="Delete"
+          onClick={() => setConfirmDelete(true)}
+          className="hover:border-red-400/60 hover:text-red-300"
+        />
+      </div>
+
+      {updateMutation.isError && (
+        <p className="text-xs text-red-300">{errorMessage(updateMutation.error)}</p>
+      )}
+      {updateMutation.isSuccess && !updateMutation.isPending && (
+        <p className="text-xs text-emerald-soft">Updated from Pathbuilder ✓</p>
+      )}
+
+      {shareOpen && (
+        <SharePopup
+          character={character}
+          publicMutation={publicMutation}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDeleteDialog
+          name={character.name}
+          isDeleting={deleteMutation.isPending}
+          error={deleteMutation.error ? errorMessage(deleteMutation.error) : null}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function SharePopup({
+  character,
+  publicMutation,
+  onClose,
+}: {
+  character: CharacterRow;
+  publicMutation: ReturnType<typeof useSetCharacterPublic>;
+  onClose: () => void;
+}) {
+  const isPublic = Boolean(character.is_public);
+  const shareUrl = character.public_share_id
+    ? `${window.location.origin}/share/${character.public_share_id}`
+    : null;
+
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard write can fail on non-HTTPS or old browsers; ignore.
+    }
+  };
+
+  return (
+    <div className="w-72 rounded-md border border-gold/30 bg-midnight-900/90 p-3 shadow-gilded">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[0.65rem] uppercase tracking-widest text-gold/80">
+          Sharing
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-silver/50 hover:text-gold"
+          aria-label="Close share panel"
+        >
+          ✕
+        </button>
+      </div>
+
+      <label className="flex cursor-pointer items-center justify-between gap-3 rounded border border-gold/15 bg-midnight-900/60 px-2 py-1.5">
+        <span className="text-xs text-silver/85">
+          {isPublic ? 'Publicly viewable' : 'Private (only you)'}
+        </span>
+        <input
+          type="checkbox"
+          checked={isPublic}
+          onChange={(e) => publicMutation.mutate(e.target.checked)}
+          disabled={publicMutation.isPending}
+          className="h-4 w-4 accent-gold"
+        />
+      </label>
+
+      {shareUrl && isPublic && (
+        <div className="mt-2 space-y-1">
+          <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">
+            Share URL{' '}
+            <span className="text-silver/40">(anyone with the link can view)</span>
+          </div>
+          <div className="flex gap-1">
+            <input
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 rounded border border-gold/20 bg-midnight-800/70 px-2 py-1 font-mono text-[0.65rem] text-silver/80"
+            />
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 rounded border border-gold/30 bg-midnight-800/70 px-2 text-[0.65rem] uppercase tracking-widest text-gold hover:border-gold/60"
+              title="Copy to clipboard"
+            >
+              <CopyIcon />
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <p className="text-[0.6rem] italic text-silver/50">
+            The public view is read-only. Turn sharing off to revoke access.
+          </p>
+        </div>
+      )}
+
+      {publicMutation.isError && (
+        <p className="mt-2 text-[0.65rem] text-red-300">
+          {errorMessage(publicMutation.error)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ConfirmDeleteDialog({
+  name,
+  isDeleting,
+  error,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  isDeleting: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-midnight-950/80 p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-lg border border-red-500/40 bg-midnight-900 p-5 shadow-gilded"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-display text-lg text-red-300">Delete {name}?</h3>
+        <p className="mt-2 text-sm text-silver/80">
+          This removes the character from your vault permanently. Their bot-side
+          record (if any) is not affected.
+        </p>
+        {error && (
+          <p className="mt-3 rounded border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-300">
+            {error}
+          </p>
+        )}
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="rounded-md border border-gold/25 bg-midnight-800/70 px-3 py-1.5 text-sm text-silver/80 hover:border-gold/50 hover:text-gold disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-2 rounded-md border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-sm font-display uppercase tracking-widest text-red-300 hover:border-red-400 hover:bg-red-500/20 disabled:opacity-50"
+          >
+            {isDeleting && (
+              <span
+                aria-hidden
+                className="h-3 w-3 animate-spin rounded-full border-2 border-red-500/30 border-t-red-300"
+              />
+            )}
+            {isDeleting ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -212,16 +454,27 @@ function HeaderField({
 function HeaderButton({
   icon,
   label,
+  onClick,
+  disabled,
+  className,
+  title,
   ...aria
 }: {
   icon: ReactNode;
   label?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  title?: string;
   'aria-label'?: string;
 }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-2 rounded-md border border-gold/25 bg-midnight-800/70 px-3 py-1.5 text-sm text-silver/80 transition-colors hover:border-gold/60 hover:text-gold"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`inline-flex items-center gap-2 rounded-md border border-gold/25 bg-midnight-800/70 px-3 py-1.5 text-sm text-silver/80 transition-colors hover:border-gold/60 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ''}`}
       {...aria}
     >
       <span className="text-base text-gold">{icon}</span>
