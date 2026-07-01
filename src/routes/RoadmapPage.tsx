@@ -2,72 +2,86 @@ import { GildedRule } from '@/components/ui/GildedRule';
 
 type Status = 'done' | 'in-progress' | 'next' | 'later';
 
+/** A bullet is either plain text, or text with an explicit done/pending flag. */
+type Bullet = string | { text: string; done: boolean };
+
 const phases: Array<{
   id: string;
   title: string;
   status: Status;
-  bullets: string[];
+  bullets: Bullet[];
 }> = [
   {
     id: 'W0',
     title: 'Phase W0 — Foundations',
-    status: 'in-progress',
+    status: 'done',
     bullets: [
       'Website live at www.pathwaypf2e.com on a custom domain with HTTPS',
       'Connected to Supabase with the safe (anon) key under row-level security',
-      'Email magic-link sign-in working end-to-end',
-      'Vault scaffolded, ready to show characters once the data is in place',
+      'Email and Discord sign-in working end-to-end',
+      'The Vault reads your real characters through RLS',
     ],
   },
   {
     id: 'W1',
     title: 'Phase W1 — One identity for web and Discord',
-    status: 'next',
+    status: 'done',
     bullets: [
-      'Sign in with Discord, in one click',
-      'Link an existing web account to a Discord identity',
-      'A single Pathway account, however you reach it',
+      'Sign in with Discord in one click',
+      'Your first login automatically claims your existing bot characters',
+      'Brand-new players get an account created for them on the spot',
+      'One Pathway identity, whether you arrive from Discord or the web',
     ],
   },
   {
     id: 'W2',
     title: 'Phase W2 — Live sync with the bot',
-    status: 'later',
+    status: 'done',
     bullets: [
-      'Open your character on the web; see HP and XP change in real time as the bot runs combat',
-      'Edit on the web, see the bot use the new values instantly',
-      'No more "refresh and hope" — the website and the bot agree on every value',
+      'Open your character on the web and watch HP, XP, and hero points change in real time as the bot runs combat',
+      'A "Live" indicator shows the connection; no more "refresh and hope"',
+      'The website and the bot are two views of one backend',
     ],
   },
   {
     id: 'W3',
-    title: 'Phase W3 — Character builder & vault',
-    status: 'later',
+    title: 'Phase W3 — Character vault & sheet',
+    status: 'in-progress',
     bullets: [
-      'Guided creation with Beginner and Learning modes',
-      'Tooltips that teach as you build; automatic calculations with manual overrides',
-      'Portraits, tokens, banners; Pathbuilder JSON and PDF export',
-      'Variant rules: Free Archetype, ABP, Ancestry Paragon, Gradual Boosts',
-    ],
-  },
-  {
-    id: 'W4',
-    title: 'Phase W4 — Companions, inventory, notes',
-    status: 'later',
-    bullets: [
-      'Animal companions, familiars, eidolons, mounts, and custom companions',
-      'Bags, inventory, downtime, and per-character notes',
-      'All live-synced with the Discord bot',
+      { text: 'Import a character from Pathbuilder by ID', done: true },
+      {
+        text: 'Full sheet: Overview, Ancestry, Class, Abilities, Skills, Feats, Spells, Equipment, Journal',
+        done: true,
+      },
+      { text: 'Spell and feat descriptions with full rules text', done: true },
+      { text: 'Portrait uploads, update-from-Pathbuilder, delete, and public share links', done: true },
+      { text: 'Guided builder with Beginner and Learning modes', done: false },
+      { text: 'In-browser editing with automatic calculation and manual overrides', done: false },
+      { text: 'PDF export and variant rules (Free Archetype, ABP, Ancestry Paragon, Gradual Boosts)', done: false },
     ],
   },
   {
     id: 'W5',
     title: 'Phase W5 — Rules library & homebrew workshop',
-    status: 'later',
+    status: 'in-progress',
     bullets: [
-      'A searchable Pathfinder 2e archive: feats, spells, monsters, traits, conditions',
-      'Authoring tools for classes, ancestries, items, monsters, and more',
-      'Publish private, to a campaign, an organization, or the public',
+      { text: 'Searchable archive: feats, spells, items, conditions, ancestries, backgrounds', done: true },
+      { text: 'Remaster preferred, Archive of Nethys links, full descriptions', done: true },
+      { text: 'Monsters and traits in the library', done: false },
+      { text: 'Full-text search across descriptions', done: false },
+      { text: 'Authoring tools for classes, ancestries, items, and monsters', done: false },
+      { text: 'Publish private, to a campaign, an organization, or the public', done: false },
+    ],
+  },
+  {
+    id: 'W4',
+    title: 'Phase W4 — Companions, inventory, notes',
+    status: 'next',
+    bullets: [
+      { text: 'Inventory, currency, and notes shown on the sheet', done: true },
+      { text: 'Animal companions, familiars, eidolons, mounts, and custom companions', done: false },
+      { text: 'Editable bags, downtime, and per-character notes', done: false },
+      { text: 'All live-synced with the Discord bot', done: false },
     ],
   },
   {
@@ -111,6 +125,24 @@ const statusMeta: Record<Status, { label: string; className: string }> = {
   },
 };
 
+function BulletRow({ bullet }: { bullet: Bullet }) {
+  const text = typeof bullet === 'string' ? bullet : bullet.text;
+  const done = typeof bullet === 'string' ? undefined : bullet.done;
+
+  return (
+    <li className="flex gap-3">
+      {done === undefined ? (
+        <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rotate-45 bg-gold/70" />
+      ) : done ? (
+        <span className="mt-0.5 shrink-0 font-display text-emerald-soft" aria-label="done">✓</span>
+      ) : (
+        <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full border border-silver/40" aria-label="planned" />
+      )}
+      <span className={done === false ? 'text-silver/55' : 'text-silver/80'}>{text}</span>
+    </li>
+  );
+}
+
 export function RoadmapPage() {
   return (
     <article className="mx-auto max-w-3xl">
@@ -142,12 +174,9 @@ export function RoadmapPage() {
                 {statusMeta[phase.status].label}
               </span>
             </div>
-            <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver/80">
+            <ul className="mt-4 space-y-2 text-sm leading-relaxed">
               {phase.bullets.map((b) => (
-                <li key={b} className="flex gap-3">
-                  <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rotate-45 bg-gold/70" />
-                  <span>{b}</span>
-                </li>
+                <BulletRow key={typeof b === 'string' ? b : b.text} bullet={b} />
               ))}
             </ul>
           </li>
