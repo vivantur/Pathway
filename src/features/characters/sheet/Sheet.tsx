@@ -59,7 +59,6 @@ import {
   EquipmentIcon,
   EyeIcon,
   HeartIcon,
-  HourglassIcon,
   NoteIcon,
   OverviewIcon,
   PouchIcon,
@@ -693,9 +692,8 @@ function LeftColumn({
         readOnly={readOnly}
       />
       <AbilityScoreList build={build} />
-      <FramedBlock title="Ability Boosts">
-        <AbilityBoostsSummary build={build} />
-      </FramedBlock>
+      {/* Ability-boost trail moved off the main page — it's on the Abilities
+          tab. Keeps the left rail focused on at-a-glance info. */}
       <FramedBlock title="Senses">
         <p className="text-sm text-silver/80">
           {senses.length ? senses.join(', ') : '—'}
@@ -805,53 +803,6 @@ function Portrait({
   );
 }
 
-/**
- * Renders the ability-boost trail from `pathbuilder_data.abilities.breakdown`,
- * grouped by category. Empty when Pathbuilder didn't record it (rare).
- */
-function AbilityBoostsSummary({ build }: { build: PathbuilderBuild }) {
-  const b = build.abilities?.breakdown;
-  if (!b) return <p className="text-sm text-silver/40">—</p>;
-
-  const lines: Array<{ label: string; content: string }> = [];
-  const ancestryBits: string[] = [];
-  if (b.ancestryBoosts?.length) ancestryBits.push(b.ancestryBoosts.join(', '));
-  if (b.ancestryFree?.length) ancestryBits.push(`free ${b.ancestryFree.join(', ')}`);
-  if (b.ancestryFlaws?.length) ancestryBits.push(`flaw ${b.ancestryFlaws.join(', ')}`);
-  if (ancestryBits.length) lines.push({ label: 'Ancestry', content: ancestryBits.join('; ') });
-
-  if (b.backgroundBoosts?.length) {
-    lines.push({ label: 'Background', content: b.backgroundBoosts.join(', ') });
-  }
-  if (b.classBoosts?.length) {
-    lines.push({ label: 'Class', content: b.classBoosts.join(', ') });
-  }
-  if (b.mapLevelledBoosts) {
-    const levels = Object.keys(b.mapLevelledBoosts)
-      .map((k) => Number(k))
-      .filter((n) => !Number.isNaN(n))
-      .sort((a, b) => a - b);
-    for (const lvl of levels) {
-      const arr = b.mapLevelledBoosts[String(lvl)];
-      if (arr?.length) lines.push({ label: `L${lvl}`, content: arr.join(', ') });
-    }
-  }
-
-  if (lines.length === 0) return <p className="text-sm text-silver/40">—</p>;
-  return (
-    <ul className="space-y-1 text-sm">
-      {lines.map((l) => (
-        <li key={l.label} className="leading-tight">
-          <span className="text-[0.65rem] uppercase tracking-widest text-gold/70">
-            {l.label}:{' '}
-          </span>
-          <span className="text-silver/85">{l.content}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function AbilityScoreList({ build }: { build: PathbuilderBuild }) {
   return (
     <ul className="space-y-1.5">
@@ -920,10 +871,14 @@ function OverviewBody({
 }) {
   return (
     <div className="space-y-4">
+      {/* Skills gets one column; Attacks & Spellcasting spans two so its
+          dense rows have room to breathe. Feats moved off Overview — they
+          have their own tab. */}
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
-        <AttacksPanel character={character} build={build} />
-        <FeatsPanel build={build} />
+        <div className="lg:col-span-2">
+          <AttacksPanel character={character} build={build} />
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <EquipmentPanel build={build} />
@@ -955,7 +910,12 @@ function StatRow({
       <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude'))} />
       <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
       <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />
-      <StatCard label="Perception" icon={<EyeIcon />} value={fmtMod(perceptionBonus(build))} />
+      <StatCard
+        label="Perception"
+        icon={<EyeIcon />}
+        value={fmtMod(perceptionBonus(build))}
+        sub={`Init ${fmtMod(perceptionBonus(build))}`}
+      />
       <HeroPointsCard value={hero} edit={edit} />
     </div>
   );
@@ -1049,10 +1009,13 @@ function StatCard({
   label,
   icon,
   value,
+  sub,
 }: {
   label: string;
   icon: ReactNode;
   value: ReactNode;
+  /** Small caption under the value (e.g. Perception's Initiative modifier). */
+  sub?: ReactNode;
 }) {
   return (
     <div className="relative rounded-md border border-gold/30 bg-midnight-900/70 px-3 py-3 text-center shadow-gilded">
@@ -1062,6 +1025,11 @@ function StatCard({
       </div>
       <div className="my-1 flex justify-center text-xl text-gold">{icon}</div>
       <div className="font-display text-2xl text-silver">{value}</div>
+      {sub && (
+        <div className="mt-0.5 text-[0.55rem] uppercase tracking-widest text-silver/50">
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
@@ -1343,35 +1311,6 @@ function spellAttackTotal(build: PathbuilderBuild, c: Spellcaster): number {
   return rank > 0 ? level + rank + ab : ab;
 }
 
-// ---- Feats & Abilities ----------------------------------------
-
-function FeatsPanel({ build }: { build: PathbuilderBuild }) {
-  const feats = build.feats ?? [];
-  return (
-    <Panel title="Feats & Abilities">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="mb-1.5 text-[0.6rem] uppercase tracking-widest text-gold/70">Feats</div>
-          <ul className="space-y-1 text-sm">
-            {feats.length === 0 && <li className="text-silver/40">—</li>}
-            {feats.slice(0, 12).map((f, i) => (
-              <li key={`${f[0]}-${i}`} className="flex items-center gap-1.5 text-silver/90">
-                <BookIcon className="text-[0.75rem] text-gold/50" />
-                <span className="truncate" title={f[0]}>{f[0]}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <div className="mb-1.5 text-[0.6rem] uppercase tracking-widest text-gold/70">Abilities</div>
-          <ul className="space-y-1 text-sm text-silver/60">
-            <li>—</li>
-          </ul>
-        </div>
-      </div>
-    </Panel>
-  );
-}
 
 // ---- Bottom row: equipment / inventory / treasure / notes ------
 
@@ -1580,19 +1519,15 @@ function RightColumn({
   const cdc = classDC(build);
   const primaryCaster = (build.spellCasters ?? []).find((c) => !c.innate);
   const spellAttack = primaryCaster ? spellAttackTotal(build, primaryCaster) : undefined;
-  const initiative = perceptionBonus(build);
   // Resistances / weaknesses / immunities live in the Defenses box; the
-  // center row no longer duplicates them.
+  // center row no longer duplicates them. Initiative folded into the
+  // Perception vitals card; Speed lives in the header (Movement box removed
+  // to avoid showing speed twice).
   const defenses = defenseLine(build);
   return (
     <aside className="space-y-4">
       <MiniStat label="Class DC" value={cdc ?? '—'} />
       <MiniStat label="Spell Attack" value={spellAttack != null ? fmtMod(spellAttack) : '—'} />
-      <MiniStat
-        label="Initiative"
-        icon={<HourglassIcon />}
-        value={fmtMod(initiative)}
-      />
       <ConditionsBlock character={character} edit={edit} />
       <FramedBlock title="Defenses">
         {defenses.length > 0 ? (
@@ -1604,9 +1539,6 @@ function RightColumn({
         ) : (
           <p className="text-sm text-silver/40">—</p>
         )}
-      </FramedBlock>
-      <FramedBlock title="Movement">
-        <p className="text-sm text-silver/80">{speed(build)} ft.</p>
       </FramedBlock>
       <FramedBlock title="Specials">
         <p className="text-sm text-silver/40">—</p>
