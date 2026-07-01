@@ -8,6 +8,7 @@ import { LoginPage } from '@/routes/LoginPage';
 import { VaultPage } from '@/routes/VaultPage';
 import { AddCharacterPage } from '@/routes/AddCharacterPage';
 import { CharacterPage } from '@/routes/CharacterPage';
+import { PublicSharePage } from '@/routes/PublicSharePage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -44,6 +45,12 @@ export const router = createBrowserRouter([
             <CharacterPage />
           </RequireAuth>
         ),
+      },
+      {
+        // Public share view — no RequireAuth. RLS on characters must
+        // include a policy allowing `is_public = true` for anon reads.
+        path: 'share/:shareId',
+        element: <PublicSharePage />,
       },
       { path: '*', element: <NotFoundPage /> },
     ],

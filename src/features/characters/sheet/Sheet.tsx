@@ -77,7 +77,20 @@ import {
  * doesn't tell us renders as an em-dash placeholder so the layout stays intact
  * for undermodeled characters.
  */
-export function Sheet({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+export function Sheet({
+  character,
+  build,
+  readOnly = false,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  /**
+   * When true, hides all editing affordances — SheetActions, portrait upload
+   * camera, and the Journal tab (whose bot notes / XP log may be private).
+   * Set by the /share/:id public-view route.
+   */
+  readOnly?: boolean;
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTabId(searchParams.get('tab'));
 
@@ -92,13 +105,13 @@ export function Sheet({ character, build }: { character: CharacterRow; build: Pa
 
   return (
     <div className="space-y-4">
-      <SheetHeader character={character} build={build} />
+      <SheetHeader character={character} build={build} readOnly={readOnly} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
-        <LeftColumn character={character} build={build} />
-        <TabContent tab={activeTab} character={character} build={build} />
+        <LeftColumn character={character} build={build} readOnly={readOnly} />
+        <TabContent tab={activeTab} character={character} build={build} readOnly={readOnly} />
         <RightColumn build={build} />
       </div>
-      <BottomTabBar activeTab={activeTab} onSelect={setActiveTab} />
+      <BottomTabBar activeTab={activeTab} onSelect={setActiveTab} readOnly={readOnly} />
     </div>
   );
 }
@@ -107,11 +120,24 @@ function TabContent({
   tab,
   character,
   build,
+  readOnly,
 }: {
   tab: TabId;
   character: CharacterRow;
   build: PathbuilderBuild;
+  readOnly: boolean;
 }) {
+  // Journal contains private data (character notes + XP log with awarder
+  // Discord IDs). Force-swap it out of the router when readOnly.
+  if (readOnly && tab === 'journal') {
+    return (
+      <PlaceholderTab
+        label="Journal"
+        description="The character journal is private and isn't included in public share views."
+        Icon={OverviewIcon}
+      />
+    );
+  }
   switch (tab) {
     case 'overview':
       return <CenterColumn character={character} build={build} />;
@@ -138,7 +164,15 @@ function TabContent({
 // Header
 // ---------------------------------------------------------------
 
-function SheetHeader({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+function SheetHeader({
+  character,
+  build,
+  readOnly = false,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  readOnly?: boolean;
+}) {
   const level = character.level ?? build.level ?? 1;
   const xpTarget = 1000;
   const xp = character.experience ?? 0;
@@ -180,8 +214,8 @@ function SheetHeader({ character, build }: { character: CharacterRow; build: Pat
           <HeaderField label="Speed" value={`${speed(build)} ft.`} />
         </div>
 
-        {/* Actions */}
-        <SheetActions character={character} />
+        {/* Actions — hidden entirely on read-only public shares */}
+        {!readOnly && <SheetActions character={character} />}
       </div>
     </header>
   );
@@ -487,7 +521,15 @@ function HeaderButton({
 // Left column
 // ---------------------------------------------------------------
 
-function LeftColumn({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
+function LeftColumn({
+  character,
+  build,
+  readOnly = false,
+}: {
+  character: CharacterRow;
+  build: PathbuilderBuild;
+  readOnly?: boolean;
+}) {
   const perception = perceptionBonus(build);
   const overlay = character.overlay ?? {};
   // Overlay-side edits win when present (bot is the authority when set);
@@ -508,6 +550,7 @@ function LeftColumn({ character, build }: { character: CharacterRow; build: Path
         art={character.art}
         name={character.name || build.name}
         charKey={character.char_key}
+        readOnly={readOnly}
       />
       <AbilityScoreList build={build} />
       <FramedBlock title="Ability Boosts">
@@ -538,10 +581,12 @@ function Portrait({
   art,
   name,
   charKey,
+  readOnly = false,
 }: {
   art: string | null;
   name: string | undefined;
   charKey: string;
+  readOnly?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -591,23 +636,27 @@ function Portrait({
 
         {/* Camera button — outside the clipped circle so it's fully visible
             even when it slightly overlaps the round edge. Sits at ~5 o'clock. */}
-        <button
-          type="button"
-          aria-label="Upload portrait"
-          disabled={upload.isPending}
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute bottom-2 right-2 z-10 rounded-full border-2 border-gold/60 bg-midnight-900 p-2.5 text-gold shadow-gilded transition-all hover:scale-105 hover:border-gold hover:bg-midnight-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <CameraIcon className="text-base" />
-        </button>
+        {!readOnly && (
+          <>
+            <button
+              type="button"
+              aria-label="Upload portrait"
+              disabled={upload.isPending}
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-2 right-2 z-10 rounded-full border-2 border-gold/60 bg-midnight-900 p-2.5 text-gold shadow-gilded transition-all hover:scale-105 hover:border-gold hover:bg-midnight-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CameraIcon className="text-base" />
+            </button>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={PORTRAIT_MIME_TYPES.join(',')}
-          className="hidden"
-          onChange={handleFile}
-        />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={PORTRAIT_MIME_TYPES.join(',')}
+              className="hidden"
+              onChange={handleFile}
+            />
+          </>
+        )}
       </div>
       {errorMessage && (
         <p className="mt-2 max-w-[16rem] text-center text-xs text-red-300">{errorMessage}</p>
@@ -1243,10 +1292,18 @@ function MiniStat({
 function BottomTabBar({
   activeTab,
   onSelect,
+  readOnly = false,
 }: {
   activeTab: TabId;
   onSelect: (id: TabId) => void;
+  readOnly?: boolean;
 }) {
+  // On public share views the Journal tab is hidden since it can contain
+  // private notes and the bot's XP log with awarder Discord IDs.
+  const visibleTabs = readOnly
+    ? TAB_DEFINITIONS.filter((t) => t.id !== 'journal')
+    : TAB_DEFINITIONS;
+
   return (
     <nav
       role="tablist"
@@ -1254,7 +1311,7 @@ function BottomTabBar({
       className="flex items-center justify-between gap-4 rounded-lg border border-gold/25 bg-midnight-900/60 px-4 py-3 shadow-gilded"
     >
       <div className="flex flex-1 flex-wrap items-center gap-2 sm:gap-4">
-        {TAB_DEFINITIONS.map((t) => {
+        {visibleTabs.map((t) => {
           const isActive = activeTab === t.id;
           return (
             <button

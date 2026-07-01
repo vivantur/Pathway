@@ -413,6 +413,35 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
 }
 
 // -------------------------------------------------------------------------
+// Public share lookup: fetch by public_share_id without auth
+// -------------------------------------------------------------------------
+
+/**
+ * Fetch a character by its public share UUID. Bypasses "must be signed in
+ * as owner" because the RLS policy `is_public = true` opens anon reads for
+ * this exact case. We ALSO filter `is_public = true` in the query for
+ * belt-and-suspenders — if a share URL leaks after the owner has turned
+ * sharing off, the extra predicate returns null instead of the row.
+ *
+ * Returns null when nothing matches OR when the row exists but sharing is
+ * off — the caller renders a friendly "not shared / no longer shared" page
+ * either way.
+ */
+export async function fetchPublicCharacterByShareId(
+  shareId: string,
+): Promise<CharacterRow | null> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('characters')
+    .select(FULL_COLUMNS)
+    .eq('public_share_id', shareId)
+    .eq('is_public', true)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as CharacterRow | null) ?? null;
+}
+
+// -------------------------------------------------------------------------
 // Find existing character by Pathbuilder id (for the update-on-reimport flow)
 // -------------------------------------------------------------------------
 
