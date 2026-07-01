@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
 import { useAncestryBundle } from '@/features/characters/useAncestryBundle';
@@ -133,9 +134,11 @@ function AncestryOverview({ ancestry }: { ancestry: AncestryRow }) {
 
       {/* Description */}
       {ancestry.description && (
-        <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-silver/85">
-          {ancestry.description}
-        </p>
+        <div className="mb-4">
+          <GrimoireMarkdown strip={['**Source**', 'Source ', 'source:']}>
+            {ancestry.description}
+          </GrimoireMarkdown>
+        </div>
       )}
 
       {/* Base stats */}
@@ -220,7 +223,7 @@ function HeritagePanel({
             {current.rarity && <RarityChip rarity={current.rarity} />}
           </div>
           {current.description && (
-            <p className="text-sm leading-relaxed text-silver/85">{current.description}</p>
+            <GrimoireMarkdown strip={['**Source**']}>{current.description}</GrimoireMarkdown>
           )}
         </div>
       )}
@@ -238,7 +241,9 @@ function HeritagePanel({
                   {h.rarity && <RarityChip rarity={h.rarity} />}
                 </div>
                 {h.description && (
-                  <p className="text-xs leading-relaxed text-silver/70">{h.description}</p>
+                  <div className="text-xs">
+                    <GrimoireMarkdown strip={['**Source**']}>{h.description}</GrimoireMarkdown>
+                  </div>
                 )}
               </li>
             ))}
@@ -341,9 +346,7 @@ function FeatCard({ feat }: { feat: FeatRow }) {
         </p>
       )}
       {feat.description && (
-        <p className="whitespace-pre-line text-sm leading-relaxed text-silver/85">
-          {feat.description}
-        </p>
+        <GrimoireMarkdown strip={['**Source**']}>{feat.description}</GrimoireMarkdown>
       )}
     </li>
   );

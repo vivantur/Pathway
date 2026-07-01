@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
 import { useClassBundle } from '@/features/characters/useClassBundle';
@@ -140,9 +141,11 @@ function ClassOverview({
       </div>
 
       {description && (
-        <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-silver/85">
-          {description}
-        </p>
+        <div className="mb-4">
+          <GrimoireMarkdown strip={['**Source**', 'Source ', 'source:']}>
+            {description}
+          </GrimoireMarkdown>
+        </div>
       )}
 
       <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -246,9 +249,7 @@ function FeatureCard({ feature }: { feature: ClassFeatureRow }) {
         </div>
       )}
       {feature.description && (
-        <p className="whitespace-pre-line text-sm leading-relaxed text-silver/85">
-          {feature.description}
-        </p>
+        <GrimoireMarkdown strip={['**Source**']}>{feature.description}</GrimoireMarkdown>
       )}
     </li>
   );
@@ -340,9 +341,7 @@ function FeatCard({ feat }: { feat: FeatRow }) {
         </p>
       )}
       {feat.description && (
-        <p className="whitespace-pre-line text-sm leading-relaxed text-silver/85">
-          {feat.description}
-        </p>
+        <GrimoireMarkdown strip={['**Source**']}>{feat.description}</GrimoireMarkdown>
       )}
     </li>
   );
