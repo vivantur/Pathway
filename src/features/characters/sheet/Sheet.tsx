@@ -14,11 +14,13 @@ import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses
 import { mergeWeapons } from '@/features/characters/weapons';
 import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
 import { AncestryTab } from './tabs/AncestryTab';
+import { AbilitiesTab } from './tabs/AbilitiesTab';
 import { ClassTab } from './tabs/ClassTab';
 import { EquipmentTab } from './tabs/EquipmentTab';
 import { FeatsTab } from './tabs/FeatsTab';
 import { JournalTab } from './tabs/JournalTab';
 import { PlaceholderTab } from './tabs/PlaceholderTab';
+import { SkillsTab } from './tabs/SkillsTab';
 import { SpellsTab } from './tabs/SpellsTab';
 import { TAB_DEFINITIONS, normalizeTabId, type TabId } from './tabs/tabDefs';
 import {
@@ -154,6 +156,10 @@ function TabContent({
       return <AncestryTab character={character} build={build} />;
     case 'class':
       return <ClassTab character={character} build={build} />;
+    case 'abilities':
+      return <AbilitiesTab build={build} />;
+    case 'skills':
+      return <SkillsTab build={build} />;
     case 'feats':
       return <FeatsTab build={build} />;
     case 'spells':
