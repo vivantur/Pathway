@@ -199,8 +199,14 @@ function SpellLevelRow({
 
 /**
  * CSS grid layout for spell chips. Grid columns via auto-fill/minmax so each
- * chip claims ~130px min-width; expanded detail cards use col-span-full to
+ * chip claims ~140px min-width; expanded detail cards use col-span-full to
  * flow underneath their chip without breaking layout.
+ *
+ * Duplicates in the incoming name list (e.g. Heal prepared in all four
+ * Divine Font slots) are collapsed to one chip with a `×N` count tag —
+ * mechanically the four slots all point to the same spell, so showing four
+ * identical chips is noise; the ×N badge preserves the "how many prepared"
+ * information without the repetition.
  */
 function SpellChipGrid({
   spells,
@@ -212,10 +218,26 @@ function SpellChipGrid({
   emptyLabel?: string;
 }) {
   if (spells.length === 0) return <span className="text-xs text-silver/40">{emptyLabel}</span>;
+
+  const counts = new Map<string, { name: string; count: number }>();
+  for (const raw of spells) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    const existing = counts.get(key);
+    if (existing) existing.count += 1;
+    else counts.set(key, { name: trimmed, count: 1 });
+  }
+
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-1.5">
-      {spells.map((name, i) => (
-        <SpellChipWithDetail key={`${name}-${i}`} name={name} ctx={ctx} />
+      {Array.from(counts.values()).map(({ name, count }) => (
+        <SpellChipWithDetail
+          key={name}
+          name={name}
+          tag={count > 1 ? `×${count}` : undefined}
+          ctx={ctx}
+        />
       ))}
     </div>
   );
@@ -412,11 +434,11 @@ function InnateSpellsPanel({
                 <TraditionBadge tradition={c.magicTradition} />
               </div>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-1.5">
-                {spells.map((entry, si) => (
+                {dedupeInnate(spells).map(({ name, level, count }) => (
                   <SpellChipWithDetail
-                    key={`${entry.name}-${si}`}
-                    name={entry.name}
-                    tag={perDayLabel(c, entry.level)}
+                    key={name}
+                    name={name}
+                    tag={`${perDayLabel(c, level)}${count > 1 ? ` ×${count}` : ''}`}
                     ctx={ctx}
                   />
                 ))}
@@ -635,6 +657,25 @@ function flattenSpellList(c: Spellcaster): Array<{ level: number; name: string }
     for (const name of sl.list ?? []) out.push({ level: sl.spellLevel, name });
   }
   return out;
+}
+
+/**
+ * Collapse identical innate-spell entries (same name, same level) to one row
+ * with a count. Different levels of the same name stay separate — an innate
+ * caster that grants Mindlink both at cantrip and level-2 rank would still
+ * show as two chips.
+ */
+function dedupeInnate(
+  spells: Array<{ level: number; name: string }>,
+): Array<{ name: string; level: number; count: number }> {
+  const map = new Map<string, { name: string; level: number; count: number }>();
+  for (const s of spells) {
+    const key = `${s.level}::${s.name.trim().toLowerCase()}`;
+    const existing = map.get(key);
+    if (existing) existing.count += 1;
+    else map.set(key, { name: s.name.trim(), level: s.level, count: 1 });
+  }
+  return Array.from(map.values());
 }
 
 function perDayLabel(c: Spellcaster, level: number): string {
