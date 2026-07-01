@@ -14,6 +14,80 @@ export type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 /** Pathbuilder encodes proficiency ranks as raw bonuses: 0/2/4/6/8. */
 export type ProfRank = 0 | 2 | 4 | 6 | 8;
 
+/** One spellcaster entry inside `pathbuilder_data.spellCasters`. */
+export interface Spellcaster {
+  name: string;
+  innate: boolean;
+  /** Slots per day, indexed by spell level (0 = cantrips). */
+  perDay: number[];
+  /** Known / accessible spells, grouped by spell level. */
+  spells: Array<{ spellLevel: number; list: string[] }>;
+  /** For prepared casters: today's selection, grouped by level. */
+  prepared?: Array<{ spellLevel?: number; list?: string[] }>;
+  ability: Ability;
+  focusPoints: number;
+  proficiency: number;
+  blendedSpells?: unknown[];
+  magicTradition: 'arcane' | 'divine' | 'occult' | 'primal' | string;
+  spellcastingType: 'spontaneous' | 'prepared' | string;
+}
+
+/** `pathbuilder_data.focus` shape: tradition → ability → pool descriptor. */
+export type FocusPools = Record<
+  string,
+  Record<
+    string,
+    {
+      itemBonus?: number;
+      focusSpells?: string[];
+      focusCantrips?: string[];
+      proficiency?: number;
+      abilityBonus?: number;
+    }
+  >
+>;
+
+export interface Weapon {
+  name: string;
+  display?: string;
+  die?: string;
+  /** Total to-hit modifier (Pathbuilder pre-computes it). */
+  attack?: number;
+  damageBonus?: number;
+  /** Single-letter code: S=slashing, P=piercing, B=bludgeoning, etc. */
+  damageType?: string;
+  prof?: string;
+  qty?: number;
+  pot?: number;
+  runes?: string[];
+  mat?: string | null;
+  grade?: string;
+  str?: string;
+  extraDamage?: unknown[];
+  increasedDice?: boolean;
+  isInventor?: boolean;
+}
+
+export interface Armor {
+  name: string;
+  display?: string;
+  prof?: string;
+  worn?: boolean;
+  qty?: number;
+  pot?: number;
+  runes?: string[];
+  mat?: string | null;
+  res?: string;
+  grade?: string;
+}
+
+export interface Money {
+  pp?: number;
+  gp?: number;
+  sp?: number;
+  cp?: number;
+}
+
 export interface PathbuilderBuild {
   name?: string;
   class?: string;
@@ -53,13 +127,13 @@ export interface PathbuilderBuild {
   /** [feat name, sourcebook, type/category, level acquired]. */
   feats?: Array<[string, string | null, string, number]>;
   specificProficiencies?: Record<string, unknown>;
-  weapons?: Array<Record<string, unknown>>;
-  armor?: Array<Record<string, unknown>>;
-  money?: { pp?: number; gp?: number; sp?: number; cp?: number };
+  weapons?: Weapon[];
+  armor?: Armor[];
+  money?: Money;
   equipment?: Array<[string, number]>;
   formula?: unknown;
-  spellCasters?: Array<Record<string, unknown>>;
-  focus?: Record<string, unknown>;
+  spellCasters?: Spellcaster[];
+  focus?: FocusPools;
   pets?: unknown[];
   familiars?: unknown[];
   acTotal?: {
@@ -220,4 +294,64 @@ export function classDC(build: PathbuilderBuild): number | undefined {
   if (!ability) return undefined;
   const level = build.level ?? 1;
   return 10 + abilityMod(build.abilities?.[ability]) + (cdc > 0 ? cdc + level : 0);
+}
+
+// -------- Spells / weapons / money --------
+
+/** Single-letter Pathbuilder damage-type codes → human labels. */
+const DAMAGE_TYPE_LABEL: Record<string, string> = {
+  S: 'slashing',
+  P: 'piercing',
+  B: 'bludgeoning',
+  A: 'acid',
+  C: 'cold',
+  E: 'electricity',
+  F: 'fire',
+  Ne: 'negative',
+  Po: 'poison',
+  Ps: 'psychic',
+  So: 'sonic',
+  Vo: 'void',
+  Sp: 'spirit',
+};
+
+export function damageTypeLabel(code: string | undefined): string {
+  if (!code) return '';
+  return DAMAGE_TYPE_LABEL[code] ?? code.toLowerCase();
+}
+
+/** Formatted damage line like `1d8+3 slashing`. */
+export function weaponDamage(w: Weapon): string {
+  const die = w.die ?? '';
+  const dmgType = damageTypeLabel(w.damageType);
+  const bonus = w.damageBonus;
+  const bonusStr = bonus == null || bonus === 0 ? '' : bonus > 0 ? `+${bonus}` : `${bonus}`;
+  return `1${die}${bonusStr}${dmgType ? ` ${dmgType}` : ''}`.trim();
+}
+
+/** Ordered tradition list (arcane, divine, occult, primal) for consistent UI. */
+export const TRADITION_ORDER = ['arcane', 'divine', 'occult', 'primal'] as const;
+
+/** Nice display for the tradition, matching the palette. */
+export const TRADITION_COLOR: Record<string, string> = {
+  arcane: 'arcane',
+  divine: 'gold',
+  occult: 'gold-soft',
+  primal: 'emerald',
+};
+
+/** Highest spell level a caster actually has slots for. */
+export function highestSlotLevel(caster: Spellcaster): number {
+  const slots = caster.perDay ?? [];
+  for (let i = slots.length - 1; i >= 0; i--) {
+    if ((slots[i] ?? 0) > 0) return i;
+  }
+  return 0;
+}
+
+/** Total money as gold pieces (for a rough "how rich" display). */
+export function totalGp(money: Money | undefined): number {
+  if (!money) return 0;
+  const { pp = 0, gp = 0, sp = 0, cp = 0 } = money;
+  return pp * 10 + gp + sp / 10 + cp / 100;
 }
