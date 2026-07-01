@@ -6,6 +6,7 @@ import { AboutPage } from '@/routes/AboutPage';
 import { RoadmapPage } from '@/routes/RoadmapPage';
 import { LoginPage } from '@/routes/LoginPage';
 import { VaultPage } from '@/routes/VaultPage';
+import { CharacterPage } from '@/routes/CharacterPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -21,6 +22,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <VaultPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'vault/:charKey',
+        element: (
+          <RequireAuth>
+            <CharacterPage />
           </RequireAuth>
         ),
       },

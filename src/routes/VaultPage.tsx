@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
@@ -74,17 +75,22 @@ export function VaultPage() {
 
 function CharacterCard({ character }: { character: CharacterSummary }) {
   return (
-    <li className="rounded-lg border border-gold/15 bg-midnight-700/40 p-5 transition-colors hover:border-gold/40">
-      <h2 className="font-display text-lg text-gold">{character.name}</h2>
-      <p className="text-xs uppercase tracking-wide text-silver/40">{character.char_key}</p>
-      <dl className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-        <Stat label="HP" value={character.current_hp} />
-        <Stat label="Hero" value={character.hero_points} />
-        <Stat label="XP" value={character.experience} />
-      </dl>
-      {character.source && (
-        <p className="mt-4 text-xs text-silver/40">via {character.source}</p>
-      )}
+    <li>
+      <Link
+        to={`/vault/${character.char_key}`}
+        className="block h-full rounded-lg border border-gold/15 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-gilded"
+      >
+        <h2 className="font-display text-lg text-gold">{character.name}</h2>
+        <p className="text-xs uppercase tracking-wide text-silver/40">{character.char_key}</p>
+        <dl className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+          <Stat label="HP" value={character.current_hp} />
+          <Stat label="Hero" value={character.hero_points} />
+          <Stat label="XP" value={character.experience} />
+        </dl>
+        {character.source && (
+          <p className="mt-4 text-xs text-silver/40">via {character.source}</p>
+        )}
+      </Link>
     </li>
   );
 }
