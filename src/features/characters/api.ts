@@ -179,13 +179,16 @@ export async function fetchAncestryBundle(input: {
   const { ancestryName, characterLevel } = input;
   const supabase = requireSupabase();
 
-  const { data: ancestryRow, error: ancestryError } = await supabase
+  // Duplicates happen (Remaster vs Legacy variants). Take the first row
+  // deterministically instead of erroring out.
+  const { data: ancestryRows, error: ancestryError } = await supabase
     .from('ancestries')
     .select('*')
     .ilike('name', ancestryName)
-    .maybeSingle();
+    .order('id', { ascending: true })
+    .limit(1);
   if (ancestryError) throw ancestryError;
-  const ancestry = (ancestryRow ?? null) as AncestryRow | null;
+  const ancestry = ((ancestryRows ?? [])[0] ?? null) as AncestryRow | null;
 
   let heritages: HeritageRow[] = [];
   if (ancestry?.id) {
@@ -262,14 +265,32 @@ export async function fetchClassBundle(input: {
   const { className, characterLevel } = input;
   const supabase = requireSupabase();
 
-  const { data: classRow, error: classError } = await supabase
+  // Some entries appear twice in gamedata (e.g. Fighter shows up as both a
+  // Remaster and a Legacy row). Prefer a slug match first (slugs are unique
+  // per category); fall back to a name match ordered by id ascending and
+  // take the first row — the older id is almost always the canonical entry.
+  const slug = className.trim().toLowerCase().replace(/\s+/g, '-');
+  const { data: slugRows, error: slugError } = await supabase
     .from('gamedata')
     .select('id, category, slug, name, data, updated_at')
     .eq('category', 'classes')
-    .ilike('name', className)
-    .maybeSingle();
-  if (classError) throw classError;
-  const classInfo = (classRow ?? null) as ClassGamedata | null;
+    .eq('slug', slug)
+    .limit(1);
+  if (slugError) throw slugError;
+
+  let classInfo: ClassGamedata | null = ((slugRows ?? [])[0] ?? null) as ClassGamedata | null;
+
+  if (!classInfo) {
+    const { data: nameRows, error: nameError } = await supabase
+      .from('gamedata')
+      .select('id, category, slug, name, data, updated_at')
+      .eq('category', 'classes')
+      .ilike('name', className)
+      .order('id', { ascending: true })
+      .limit(1);
+    if (nameError) throw nameError;
+    classInfo = ((nameRows ?? [])[0] ?? null) as ClassGamedata | null;
+  }
 
   const lower = className.trim().toLowerCase();
   const proper = lower.charAt(0).toUpperCase() + lower.slice(1);
