@@ -108,19 +108,25 @@ function ClassOverview({
   }
 
   const data = classInfo.data ?? {};
-  const description = pickString(data, 'description', 'summary', 'flavor');
-  const keyAbility =
-    pickList(data, 'keyAbility', 'key_ability', 'keyAbilities', 'key_abilities') ??
-    pickString(data, 'keyAbility', 'key_ability');
-  const hp = pickString(data, 'hp', 'hitPoints', 'hit_points');
+  const summary = pickString(data, 'summary');
+  const keyAttribute = pickString(data, 'keyAttribute', 'key_ability', 'keyAbility');
+  const hp = pickString(data, 'hitPoints', 'hp', 'hit_points');
+  const image = pickImageUrl(data);
   const rarity = pickString(data, 'rarity');
   const source = pickString(data, 'source', 'sourcebook');
   const traits = pickStringArray(data, 'traits');
   const aonUrl = pickString(data, 'aon_url', 'aonUrl', 'archive_url');
+  const proficiencies = (data.proficiencies ?? {}) as Record<string, unknown>;
+
+  // NOTE: we deliberately do NOT render `data.description`. It's an AoN-page
+  // dump that (a) duplicates keyAttribute / hitPoints / proficiencies as
+  // prose, (b) contains the class-progression table already served by the
+  // Class Features panel below, and (c) has no consistent heading structure.
+  // The structured fields above cover the same information cleanly.
 
   return (
     <Panel title={classInfo.name} icon={<ClassIcon />}>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {rarity && <RarityChip rarity={rarity} />}
         {source && (
           <span className="inline-flex items-center rounded border border-gold/20 bg-midnight-900/60 px-2 py-0.5 text-[0.65rem] uppercase tracking-widest text-silver/70">
@@ -140,25 +146,48 @@ function ClassOverview({
         )}
       </div>
 
-      {description && (
-        <div className="mb-4">
-          <GrimoireMarkdown strip={['**Source**', 'Source ', 'source:']}>
-            {description}
-          </GrimoireMarkdown>
+      {/* Iconic art (if present) alongside the summary */}
+      {(image || summary) && (
+        <div className="mb-5 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+          {image && (
+            <figure className="mx-auto sm:mx-0">
+              <img
+                src={image}
+                alt={`Iconic ${classInfo.name}`}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="h-40 w-auto rounded border border-gold/25 bg-midnight-900 object-contain shadow-gilded"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <figcaption className="mt-1 text-center text-[0.55rem] uppercase tracking-widest text-silver/40">
+                Iconic
+              </figcaption>
+            </figure>
+          )}
+          {summary && (
+            <p className="text-sm italic leading-relaxed text-silver/85">{summary}</p>
+          )}
         </div>
       )}
 
-      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Key structured stats */}
+      <dl className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <BaseStat label="Key Attribute" value={keyAttribute} />
         <BaseStat
-          label="Key Ability"
-          value={Array.isArray(keyAbility) ? keyAbility.join(' / ') : keyAbility}
+          label="Hit Points"
+          value={hp != null ? `${hp} + Con mod` : null}
         />
-        <BaseStat label="HP per level" value={hp} />
-        <BaseStat label="Class DC" value="See stats" />
-      </div>
+        <BaseStat
+          label="Perception"
+          value={pickString(proficiencies, 'perception')}
+        />
+      </dl>
 
+      {/* Traits (if any) */}
       {traits.length > 0 && (
-        <div>
+        <div className="mb-5">
           <SectionLabel>Traits</SectionLabel>
           <div className="flex flex-wrap gap-1.5">
             {traits.map((t) => (
@@ -167,8 +196,66 @@ function ClassOverview({
           </div>
         </div>
       )}
+
+      {/* Initial proficiencies — driven off the structured object */}
+      <InitialProficienciesBlock proficiencies={proficiencies} />
     </Panel>
   );
+}
+
+/**
+ * Render `data.proficiencies` as a clean labeled grid. Each entry is a short
+ * prose or bullet-list string; we keep the bullets intact by using
+ * whitespace-pre-line, which respects the "\n• " newlines in the source.
+ */
+function InitialProficienciesBlock({
+  proficiencies,
+}: {
+  proficiencies: Record<string, unknown>;
+}) {
+  const rows: Array<{ key: string; label: string; text: string | null }> = [
+    { key: 'perception',   label: 'Perception',      text: pickString(proficiencies, 'perception') },
+    { key: 'savingthrows', label: 'Saving Throws',   text: pickString(proficiencies, 'savingthrows', 'saving_throws') },
+    { key: 'skills',       label: 'Skills',          text: pickString(proficiencies, 'skills') },
+    { key: 'attacks',      label: 'Weapon Attacks',  text: pickString(proficiencies, 'attacks', 'weapons') },
+    { key: 'defenses',     label: 'Defenses',        text: pickString(proficiencies, 'defenses', 'armor') },
+  ];
+  const filled = rows.filter((r) => r.text && r.text.trim().length > 0);
+  if (filled.length === 0) return null;
+
+  return (
+    <div className="rounded border border-gold/20 bg-midnight-900/50 p-4">
+      <div className="mb-3 text-[0.65rem] font-display uppercase tracking-widest text-gold/80">
+        Initial Proficiencies
+      </div>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        {filled.map((r) => (
+          <div key={r.key} className="rounded bg-midnight-900/40 p-3">
+            <dt className="mb-1 text-[0.6rem] font-display uppercase tracking-widest text-gold/70">
+              {r.label}
+            </dt>
+            <dd className="whitespace-pre-line text-sm leading-relaxed text-silver/85">
+              {r.text}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/**
+ * Iconic image URLs in gamedata are stored as relative AoN paths like
+ * `/Images/Classes/Iconic_Valeros.png`. Prepend the AoN host so <img> can
+ * fetch them. Returns null if the field is missing or already absolute (in
+ * which case we hand it back unchanged).
+ */
+function pickImageUrl(data: Record<string, unknown>): string | null {
+  const raw = data.image;
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof first !== 'string' || first.trim().length === 0) return null;
+  if (/^https?:\/\//i.test(first)) return first;
+  return `https://2e.aonprd.com${first.startsWith('/') ? '' : '/'}${first}`;
 }
 
 // ---------------------------------------------------------------
@@ -433,15 +520,6 @@ function pickString(obj: unknown, ...keys: string[]): string | null {
   return null;
 }
 
-function pickList(obj: unknown, ...keys: string[]): string[] | null {
-  if (!obj || typeof obj !== 'object') return null;
-  const rec = obj as Record<string, unknown>;
-  for (const k of keys) {
-    const v = rec[k];
-    if (Array.isArray(v) && v.length > 0) return v.map(String);
-  }
-  return null;
-}
 
 function pickStringArray(obj: unknown, key: string): string[] {
   if (!obj || typeof obj !== 'object') return [];
