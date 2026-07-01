@@ -204,21 +204,37 @@ function ArmorPanel({
 /**
  * "What is the character actually wearing?"
  *
- * Pathbuilder's `worn` boolean is inconsistent — sometimes set explicitly,
- * sometimes omitted entirely on the sole armor entry (because Pathbuilder
- * assumes "if it's in your build, you're wearing it"). Fall through:
- *   1. Any armor with `worn === true` wins.
+ * Pathbuilder's `worn` field is inconsistently populated — sometimes a real
+ * boolean, sometimes the string "true"/"false", sometimes missing entirely
+ * (Pathbuilder assumes "if it's in your build, you're wearing it"). Fall
+ * through:
+ *   1. Any armor with a truthy `worn` (real true OR string "true") wins.
  *   2. Otherwise, the first non-Unarmored entry is treated as worn (most
  *      characters only list the armor they wear).
- *   3. If everything is Unarmored (or the array is empty), no worn armor.
+ *   3. If every entry looks Unarmored, or the array is empty, no worn armor.
+ *
+ * "Unarmored" is matched against BOTH `name` and `display` because some
+ * Pathbuilder exports leave one of the two blank.
  */
 function resolveWornArmor(armor: Armor[]): Armor[] {
-  const explicit = armor.filter((a) => a.worn === true);
+  const explicit = armor.filter(isWornTruthy);
   if (explicit.length > 0) return explicit;
-  const meaningful = armor.filter(
-    (a) => (a.name ?? '').trim().toLowerCase() !== 'unarmored',
-  );
+  const meaningful = armor.filter((a) => !isUnarmored(a));
   return meaningful.length > 0 ? [meaningful[0]] : [];
+}
+
+function isWornTruthy(a: Armor): boolean {
+  const w = a.worn as unknown;
+  if (w === true) return true;
+  if (typeof w === 'string' && w.trim().toLowerCase() === 'true') return true;
+  if (typeof w === 'number' && w > 0) return true;
+  return false;
+}
+
+function isUnarmored(a: Armor): boolean {
+  const name = (a.name ?? '').trim().toLowerCase();
+  const display = (a.display ?? '').trim().toLowerCase();
+  return name === 'unarmored' || display === 'unarmored';
 }
 
 function ArmorRow({ armor: a, isWorn }: { armor: Armor; isWorn: boolean }) {
