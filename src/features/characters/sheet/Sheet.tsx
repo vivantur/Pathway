@@ -1136,7 +1136,6 @@ function ConditionsBlock({
   character: CharacterRow;
   edit: EditControls;
 }) {
-  const counters = renderCounters(character.overlay ?? null);
   const webConditions = character.overlay?.web_edits?.conditions ?? [];
 
   // Read-modify-write the web-owned conditions list, preserving the rest of
@@ -1165,7 +1164,7 @@ function ConditionsBlock({
   };
 
   if (!edit.enabled) {
-    const active = [...renderConditions(character, webConditions), ...counters];
+    const active = renderConditions(character, webConditions);
     return (
       <FramedBlock title="Conditions">
         <p className="text-sm text-silver/85">{active.join(' · ') || '—'}</p>
@@ -1213,7 +1212,64 @@ function ConditionsBlock({
           );
         })}
         <AddConditionSelect available={available} onAdd={addCondition} />
-        {counters.length > 0 && <p className="text-xs text-silver/60">{counters.join(' · ')}</p>}
+      </div>
+    </FramedBlock>
+  );
+}
+
+/**
+ * Editable view of the bot's custom counters (`overlay.counters`). We only let
+ * players adjust each counter's CURRENT value (clamped to its max) — the bot
+ * owns the definitions. Writes to the real overlay, so they sync to the bot.
+ */
+function CountersBlock({
+  character,
+  edit,
+}: {
+  character: CharacterRow;
+  edit: EditControls;
+}) {
+  const counters = character.overlay?.counters ?? {};
+  const entries = Object.entries(counters).filter(([, v]) => v && (v.max ?? 0) > 0);
+  if (entries.length === 0) return null;
+
+  const setCurrent = (key: string, current: number) => {
+    const prev = character.overlay ?? {};
+    const all = prev.counters ?? {};
+    const c = all[key];
+    if (!c) return;
+    const clamped = Math.max(0, Math.min(c.max ?? 0, current));
+    const next: CharacterOverlay = {
+      ...prev,
+      counters: { ...all, [key]: { ...c, current: clamped } },
+    };
+    edit.updateOverlay(next);
+  };
+
+  return (
+    <FramedBlock title="Counters">
+      <div className="space-y-2">
+        {entries.map(([key, v]) => {
+          const label = v.label || key.toUpperCase();
+          const current = v.current ?? 0;
+          const max = v.max ?? 0;
+          return (
+            <div key={key} className="flex items-center justify-between gap-2">
+              <span className="text-xs text-silver/80">
+                {label}{' '}
+                <span className="tabular-nums text-silver/60">
+                  {current}/{max}
+                </span>
+              </span>
+              {edit.enabled && (
+                <span className="flex items-center gap-1">
+                  <StepBtn label="−" onClick={() => setCurrent(key, current - 1)} />
+                  <StepBtn label="+" onClick={() => setCurrent(key, current + 1)} />
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </FramedBlock>
   );
@@ -1312,13 +1368,6 @@ function renderConditions(c: CharacterRow, web: ActiveCondition[]): string[] {
   }
   if (c.status) out.push(c.status);
   return out;
-}
-
-function renderCounters(overlay: CharacterOverlay | null): string[] {
-  if (!overlay?.counters) return [];
-  return Object.entries(overlay.counters)
-    .filter(([, v]) => v && (v.max ?? 0) > 0)
-    .map(([k, v]) => `${v.label || k.toUpperCase()} ${v.current ?? 0}/${v.max ?? 0}`);
 }
 
 // ---- Skills panel ----------------------------------------------
@@ -1553,6 +1602,7 @@ function RightColumn({
       <MiniStat label="Spell Attack" value={spellAttack != null ? fmtMod(spellAttack) : '—'} />
       {focusMax > 0 && <FocusPool max={focusMax} character={character} edit={edit} />}
       <ConditionsBlock character={character} edit={edit} />
+      <CountersBlock character={character} edit={edit} />
       <FramedBlock title="Defenses">
         {defenses.length > 0 ? (
           <ul className="space-y-1 text-sm text-silver/85">
