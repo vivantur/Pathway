@@ -357,6 +357,36 @@ export async function fetchClassBundle(input: {
   return { classInfo, features, feats };
 }
 
+// -------------------------------------------------------------------------
+// Reference data: batch feat lookup by name
+// -------------------------------------------------------------------------
+
+/**
+ * Batch-fetch feat rows for a list of names. Used by the Feats tab: the
+ * character's build has feat names but no descriptions/prereqs, so we
+ * hydrate them against the reference table in one round-trip.
+ *
+ * Uses `.in('name', ...)` which is case-sensitive; the caller can query
+ * both a lowercase and a Title Case pass if needed, but in practice the
+ * bot and Pathbuilder both write feats in Title Case, matching what the
+ * reference table stores.
+ *
+ * De-duplicated via preferRemaster so Legacy + Remaster twins collapse.
+ */
+export async function fetchFeatsByNames(names: string[]): Promise<FeatRow[]> {
+  const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  if (unique.length === 0) return [];
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('feats')
+    .select(
+      'id, name, description, feat_type, level, traits, prerequisites, action_cost, trigger, rarity, source, aon_id, aon_url',
+    )
+    .in('name', unique);
+  if (error) throw error;
+  return preferRemaster((data ?? []) as FeatRow[]);
+}
+
 /** Map a file's MIME type to a filesystem-friendly extension. */
 function extensionFor(file: File): string {
   switch (file.type) {

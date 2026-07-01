@@ -7,6 +7,7 @@ import { computeSensesFromAncestry } from '@/features/characters/pf2eData/senses
 import type { CharacterOverlay, CharacterRow } from '@/features/characters/types';
 import { AncestryTab } from './tabs/AncestryTab';
 import { ClassTab } from './tabs/ClassTab';
+import { FeatsTab } from './tabs/FeatsTab';
 import { JournalTab } from './tabs/JournalTab';
 import { PlaceholderTab } from './tabs/PlaceholderTab';
 import { SpellsTab } from './tabs/SpellsTab';
@@ -110,6 +111,8 @@ function TabContent({
       return <AncestryTab character={character} build={build} />;
     case 'class':
       return <ClassTab character={character} build={build} />;
+    case 'feats':
+      return <FeatsTab build={build} />;
     case 'spells':
       return <SpellsTab build={build} />;
     case 'journal':
