@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { noteText, PORTRAIT_MIME_TYPES } from '@/features/characters/api';
+import { PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { errorMessage } from '@/features/characters/errorMessage';
 import {
   useDeleteCharacter,
   useSetCharacterPublic,
   useUpdateFromPathbuilder,
 } from '@/features/characters/useCharacterActions';
-import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { useCharacterRealtime, type RealtimeState } from '@/features/characters/useCharacterRealtime';
 import { useUpdateCharacterState } from '@/features/characters/useUpdateCharacterState';
 import type { CharacterStatePatch } from '@/features/characters/api';
@@ -18,6 +17,7 @@ import type { CharacterOverlay, CharacterRow } from '@/features/characters/types
 import { AncestryTab } from './tabs/AncestryTab';
 import { AbilitiesTab } from './tabs/AbilitiesTab';
 import { ClassTab } from './tabs/ClassTab';
+import { CompanionsTab } from './tabs/CompanionsTab';
 import { EquipmentTab } from './tabs/EquipmentTab';
 import { FeatsTab } from './tabs/FeatsTab';
 import { JournalTab } from './tabs/JournalTab';
@@ -42,7 +42,6 @@ import {
   skillBonus,
   sizeLabel,
   speed,
-  totalGp,
   weaponDamage,
   type Ability,
   type PathbuilderBuild,
@@ -53,15 +52,11 @@ import {
   BookIcon,
   BrainIcon,
   CameraIcon,
-  CoinsIcon,
   CompassIcon,
   CopyIcon,
-  EquipmentIcon,
   EyeIcon,
   HeartIcon,
-  NoteIcon,
   OverviewIcon,
-  PouchIcon,
   RefreshIcon,
   RunningIcon,
   ShareIcon,
@@ -179,7 +174,7 @@ function TabContent({
   }
   switch (tab) {
     case 'overview':
-      return <OverviewBody character={character} build={build} edit={edit} />;
+      return <OverviewBody character={character} build={build} />;
     case 'ancestry':
       return <AncestryTab character={character} build={build} />;
     case 'class':
@@ -192,10 +187,12 @@ function TabContent({
       return <FeatsTab build={build} />;
     case 'spells':
       return <SpellsTab build={build} />;
+    case 'companions':
+      return <CompanionsTab build={build} />;
     case 'equipment':
       return <EquipmentTab character={character} build={build} />;
     case 'journal':
-      return <JournalTab character={character} />;
+      return <JournalTab character={character} edit={edit} />;
     default: {
       const def = TAB_DEFINITIONS.find((t) => t.id === tab);
       return <PlaceholderTab label={def?.label ?? 'Coming soon'} description={def?.description ?? ''} Icon={def?.icon ?? OverviewIcon} />;
@@ -863,28 +860,21 @@ function FramedBlock({
 function OverviewBody({
   character,
   build,
-  edit,
 }: {
   character: CharacterRow;
   build: PathbuilderBuild;
-  edit: EditControls;
 }) {
   return (
     <div className="space-y-4">
       {/* Skills gets one column; Attacks & Spellcasting spans two so its
           dense rows have room to breathe. Feats moved off Overview — they
-          have their own tab. */}
+          have their own tab. Equipment / Inventory / Treasure / Notes were
+          removed too: each has a dedicated tab, so Overview stays focused. */}
       <div className="grid gap-4 lg:grid-cols-3">
         <SkillsPanel build={build} />
         <div className="lg:col-span-2">
           <AttacksPanel character={character} build={build} />
         </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <EquipmentPanel build={build} />
-        <InventoryPanel build={build} />
-        <TreasurePanel character={character} build={build} />
-        <NotesPanel charKey={character.char_key} shortNote={character.notes} edit={edit} />
       </div>
     </div>
   );
@@ -1311,196 +1301,6 @@ function spellAttackTotal(build: PathbuilderBuild, c: Spellcaster): number {
   return rank > 0 ? level + rank + ab : ab;
 }
 
-
-// ---- Bottom row: equipment / inventory / treasure / notes ------
-
-function EquipmentPanel({ build }: { build: PathbuilderBuild }) {
-  const weapons = build.weapons ?? [];
-  const armor = build.armor ?? [];
-  const gear = build.equipment ?? [];
-  return (
-    <Panel title="Equipment" icon={<PouchIcon />}>
-      <div className="mb-2 flex justify-center gap-2 border-b border-gold/15 pb-2 text-lg text-gold/70">
-        <SwordIcon /><ShieldIcon /><EquipmentIcon /><PouchIcon /><CoinsIcon /><BookIcon />
-      </div>
-      <ul className="space-y-1 text-sm">
-        {weapons.map((w, i) => (
-          <li key={`w-${i}`} className="flex items-baseline justify-between gap-2">
-            <span className="text-silver/90 truncate">
-              {w.pot ? `+${w.pot} ` : ''}
-              {w.display || w.name}
-            </span>
-            <span className="text-xs text-silver/40">—</span>
-          </li>
-        ))}
-        {armor.map((a, i) => (
-          <li key={`a-${i}`} className="flex items-baseline justify-between gap-2">
-            <span className="text-silver/90 truncate">
-              {a.pot ? `+${a.pot} ` : ''}
-              {a.display || a.name}
-            </span>
-            <span className="text-xs text-silver/40">—</span>
-          </li>
-        ))}
-        {gear.slice(0, 8).map(([name, qty], i) => (
-          <li key={`g-${i}`} className="flex items-baseline justify-between gap-2">
-            <span className="text-silver/90 truncate">
-              {name}
-              {qty > 1 && <span className="text-silver/50"> ×{qty}</span>}
-            </span>
-            <span className="text-xs text-silver/40">—</span>
-          </li>
-        ))}
-        {weapons.length + armor.length + gear.length === 0 && (
-          <li className="text-silver/40">—</li>
-        )}
-      </ul>
-    </Panel>
-  );
-}
-
-function InventoryPanel({ build }: { build: PathbuilderBuild }) {
-  const gear = build.equipment ?? [];
-  const overflow = gear.slice(8);
-  return (
-    <Panel title="Inventory" icon={<PouchIcon />}>
-      <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1 text-sm">
-        <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Item</div>
-        <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Qty</div>
-        <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Wt.</div>
-        {overflow.length === 0 && <div className="col-span-3 text-silver/40">—</div>}
-        {overflow.map(([name, qty], i) => (
-          <RowContents key={`i-${i}`}>
-            <span className="text-silver/90 truncate">{name}</span>
-            <span className="tabular-nums text-silver/70">{qty}</span>
-            <span className="text-silver/40">—</span>
-          </RowContents>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function TreasurePanel({ character, build }: { character: CharacterRow; build: PathbuilderBuild }) {
-  // Live `currency` column wins over the Pathbuilder snapshot — the bot updates
-  // it as coin is earned/spent, while `pathbuilder_data.money` stays frozen.
-  const money = character.currency ?? build.money ?? {};
-  const rows: Array<[string, number | undefined]> = [
-    ['CP', money.cp],
-    ['SP', money.sp],
-    ['GP', money.gp],
-    ['PP', money.pp],
-  ];
-  return (
-    <Panel title="Treasure" icon={<CoinsIcon />}>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-        <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">Coin</div>
-        <div className="text-[0.6rem] uppercase tracking-widest text-gold/70 text-right">Amount</div>
-        {rows.map(([c, v]) => (
-          <RowContents key={c}>
-            <span className="text-gold/80">{c}</span>
-            <span className="text-right tabular-nums text-silver/90">
-              {v?.toLocaleString() ?? '—'}
-            </span>
-          </RowContents>
-        ))}
-      </div>
-      <div className="mt-2 border-t border-gold/15 pt-2 text-right text-xs text-silver/50">
-        ≈ {totalGp(money).toLocaleString()} gp total
-      </div>
-    </Panel>
-  );
-}
-
-function NotesPanel({
-  charKey,
-  shortNote,
-  edit,
-}: {
-  charKey: string;
-  shortNote: string | null;
-  edit: EditControls;
-}) {
-  const { data: notes, isLoading } = useCharacterNotes(charKey);
-  const list = (notes ?? [])
-    .map(noteText)
-    .filter((t) => t.length > 0);
-  const hasAny = list.length > 0 || (shortNote?.trim().length ?? 0) > 0;
-
-  const [editingBio, setEditingBio] = useState(false);
-  const [bioDraft, setBioDraft] = useState('');
-
-  const startEdit = () => {
-    setBioDraft(shortNote ?? '');
-    setEditingBio(true);
-  };
-  const commitBio = () => {
-    if (bioDraft !== (shortNote ?? '')) edit.update({ notes: bioDraft });
-    setEditingBio(false);
-  };
-
-  return (
-    <Panel title="Notes" icon={<NoteIcon />}>
-      {editingBio ? (
-        <div className="space-y-2">
-          <textarea
-            autoFocus
-            value={bioDraft}
-            onChange={(e) => setBioDraft(e.target.value)}
-            rows={5}
-            placeholder="A short bio or note for this character…"
-            className="w-full rounded border border-gold/30 bg-midnight-800/80 p-2 text-sm text-silver focus:border-gold/60 focus:outline-none"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setEditingBio(false)}
-              className="text-xs uppercase tracking-widest text-silver/60 hover:text-gold"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={commitBio}
-              className="rounded border border-gold/40 bg-gold/10 px-2 py-1 text-xs uppercase tracking-widest text-gold hover:bg-gold/20"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {isLoading ? (
-            <p className="text-sm text-silver/40">Loading…</p>
-          ) : !hasAny ? (
-            <p className="text-sm text-silver/40">—</p>
-          ) : (
-            <div className="space-y-2 text-sm leading-relaxed text-silver/85">
-              {shortNote?.trim() && <p className="italic text-silver/70">{shortNote}</p>}
-              {list.slice(0, 4).map((t, i) => (
-                <p key={i}>{t}</p>
-              ))}
-              {list.length > 4 && (
-                <p className="text-xs text-silver/50">
-                  …{list.length - 4} more note{list.length - 4 === 1 ? '' : 's'}
-                </p>
-              )}
-            </div>
-          )}
-          {edit.enabled && (
-            <button
-              type="button"
-              onClick={startEdit}
-              className="mt-2 text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"
-            >
-              {shortNote?.trim() ? 'Edit bio' : '+ Add a bio'}
-            </button>
-          )}
-        </>
-      )}
-    </Panel>
-  );
-}
 
 
 // ---------------------------------------------------------------

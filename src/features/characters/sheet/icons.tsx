@@ -247,3 +247,13 @@ export const JournalIcon: Icon = (p) => (
     <path d="M6 18a2 2 0 0 1 2-2h11M10 8h6M10 12h5" />
   </svg>
 );
+
+export const CompanionIcon: Icon = (p) => (
+  <svg {...base} {...p}>
+    <ellipse cx="12" cy="15" rx="4" ry="3.5" />
+    <circle cx="6.5" cy="10" r="1.6" />
+    <circle cx="17.5" cy="10" r="1.6" />
+    <circle cx="9" cy="6" r="1.6" />
+    <circle cx="15" cy="6" r="1.6" />
+  </svg>
+);

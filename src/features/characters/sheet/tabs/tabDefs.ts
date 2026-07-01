@@ -2,6 +2,7 @@ import {
   AbilitiesIcon,
   AncestryIcon,
   ClassIcon,
+  CompanionIcon,
   EquipmentIcon,
   FeatsIcon,
   JournalIcon,
@@ -18,6 +19,7 @@ export type TabId =
   | 'skills'
   | 'feats'
   | 'spells'
+  | 'companions'
   | 'equipment'
   | 'journal';
 
@@ -41,9 +43,10 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   { id: 'abilities', label: 'Abilities', icon: AbilitiesIcon, description: 'Ability score breakdown and the boost trail from level 1 onward.' },
   { id: 'skills',    label: 'Skills',    icon: SkillsIcon,    description: 'Every skill with its full breakdown — proficiency, ability, and any bonuses.' },
   { id: 'feats',     label: 'Feats',     icon: FeatsIcon,     description: 'All feats grouped by category and level with detail.' },
-  { id: 'spells',    label: 'Spells',    icon: SpellsIcon,    description: 'Spellcasters, spells per level, slots, focus pool, and innate magic.' },
-  { id: 'equipment', label: 'Equipment', icon: EquipmentIcon, description: 'Weapons, armor, full inventory, and treasure.' },
-  { id: 'journal',   label: 'Journal',   icon: JournalIcon,   description: 'XP history, notes, and biographical detail.' },
+  { id: 'spells',    label: 'Spells',     icon: SpellsIcon,     description: 'Spellcasters, spells per level, slots, focus pool, and innate magic.' },
+  { id: 'companions',label: 'Companions', icon: CompanionIcon,  description: 'Animal companions, familiars, eidolons, and mounts.' },
+  { id: 'equipment', label: 'Equipment',  icon: EquipmentIcon,  description: 'Weapons, armor, full inventory, and treasure.' },
+  { id: 'journal',   label: 'Journal',    icon: JournalIcon,    description: 'XP history, notes, and biographical detail.' },
 ];
 
 export function normalizeTabId(raw: string | null): TabId {
