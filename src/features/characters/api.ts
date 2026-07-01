@@ -441,9 +441,12 @@ export async function searchSpellsForPicker(query: string): Promise<SpellPickRes
   const q = query.trim();
   if (q.length < 2) return [];
   const supabase = requireSupabase();
+  // SELECT * — the spells table's exact column set isn't audited (see
+  // fetchSpellsByNames), so naming columns that don't exist would 400 the
+  // whole query and silently return nothing. Read defensively below.
   const { data, error } = await supabase
     .from('spells')
-    .select('id, name, level, rank, spell_level, traits, source, spell_metadata')
+    .select('*')
     .ilike('name', `%${q}%`)
     .limit(40);
   if (error) throw error;
