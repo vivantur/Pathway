@@ -30,36 +30,48 @@ const audiences = [
   },
 ];
 
-const pillars = [
+const pillars: Array<{
+  title: string;
+  icon: typeof BookIcon;
+  body: string;
+  to?: string;
+  soon?: boolean;
+}> = [
   {
     title: 'Rules Library',
     icon: BookIcon,
     body: 'A searchable archive of feats, spells, monsters, traits, conditions, and source books — both Remaster and Legacy, side by side.',
+    to: '/rules',
   },
   {
     title: 'Character Vault',
     icon: ShieldIcon,
     body: 'Every character, with portraits, tokens, banners, inventory, spellbook, level history, and an audit log. Export to Pathbuilder or PDF anytime.',
+    to: '/vault',
   },
   {
     title: 'Companions',
     icon: SparklesIcon,
     body: 'Animal companions, familiars, eidolons, mounts, and custom companions — each with their own sheet and Discord-side sync.',
+    soon: true,
   },
   {
     title: 'Campaigns',
     icon: ScrollIcon,
     body: 'Players, NPCs, journals, loot, quests, session recaps, and shared homebrew. Permissions for multiple GMs and organizations.',
+    soon: true,
   },
   {
     title: 'Homebrew Workshop',
     icon: SparklesIcon,
     body: 'Craft classes, ancestries, items, monsters and more. Keep them private, share with a campaign, or publish to the community.',
+    soon: true,
   },
   {
     title: 'Discord-native',
     icon: DiscordIcon,
     body: 'The Pathway bot and the website are two interfaces for one backend. Edit on Discord, see it on the web — and vice versa.',
+    soon: true,
   },
 ];
 
@@ -143,14 +155,40 @@ export function LandingPage() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {pillars.map((p) => {
             const Icon = p.icon;
-            return (
-              <article
-                key={p.title}
-                className="rounded-lg border border-gold/15 bg-midnight-700/40 p-5 transition-colors hover:border-gold/35"
-              >
-                <Icon size={22} className="text-gold" />
+            const inner = (
+              <>
+                <div className="flex items-center justify-between">
+                  <Icon size={22} className="text-gold" />
+                  {p.soon && (
+                    <span className="rounded border border-silver/20 bg-midnight-900/60 px-1.5 py-0.5 text-[0.55rem] font-display uppercase tracking-widest text-silver/50">
+                      Coming soon
+                    </span>
+                  )}
+                  {p.to && (
+                    <span className="text-gold/50 transition-transform group-hover:translate-x-0.5 group-hover:text-gold">
+                      →
+                    </span>
+                  )}
+                </div>
                 <h3 className="mt-3 font-display text-lg text-gold">{p.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-silver/75">{p.body}</p>
+              </>
+            );
+
+            return p.to ? (
+              <Link
+                key={p.title}
+                to={p.to}
+                className="group block rounded-lg border border-gold/25 bg-midnight-700/40 p-5 transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:shadow-gilded"
+              >
+                {inner}
+              </Link>
+            ) : (
+              <article
+                key={p.title}
+                className="rounded-lg border border-gold/15 bg-midnight-700/40 p-5 opacity-80"
+              >
+                {inner}
               </article>
             );
           })}
