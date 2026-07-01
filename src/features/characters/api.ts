@@ -425,6 +425,46 @@ export async function fetchSpellsByNames(names: string[]): Promise<SpellRow[]> {
   return preferRemaster((data ?? []) as SpellRow[]);
 }
 
+/** One match in the "add a spell" picker. */
+export interface SpellPickResult {
+  name: string;
+  rank: number;
+  traits: string[];
+}
+
+/**
+ * Case-insensitive name search of the spells archive for the sheet's
+ * "add a spell" picker. Dedupes Legacy/Remaster twins via preferRemaster and
+ * returns a light shape (name + rank + traits) sorted by rank then name.
+ */
+export async function searchSpellsForPicker(query: string): Promise<SpellPickResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('spells')
+    .select('id, name, level, rank, spell_level, traits, source, spell_metadata')
+    .ilike('name', `%${q}%`)
+    .limit(40);
+  if (error) throw error;
+
+  const rows = preferRemaster((data ?? []) as SpellRow[]);
+  const seen = new Set<string>();
+  const out: SpellPickResult[] = [];
+  for (const r of rows) {
+    const key = r.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const rank = r.rank ?? r.level ?? r.spell_level ?? 0;
+    out.push({
+      name: r.name,
+      rank: typeof rank === 'number' ? rank : 0,
+      traits: Array.isArray(r.traits) ? r.traits.filter((t): t is string => typeof t === 'string') : [],
+    });
+  }
+  return out.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+}
+
 // -------------------------------------------------------------------------
 // Self-relink: claim bot characters for the signed-in Discord identity
 // -------------------------------------------------------------------------

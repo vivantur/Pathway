@@ -62,7 +62,23 @@ export interface CharacterOverlay {
     senses?: string[] | null;
     pathwayWebId?: string;
   };
+  /**
+   * Additions made from the website that live OUTSIDE the bot-owned
+   * `pathway_bot_state` so the bot can never clobber them on its own overlay
+   * writes. `spells` are player-added spells shown in the Spells tab's
+   * "Added Spells" grimoire.
+   */
+  web_edits?: {
+    spells?: AddedSpell[];
+  };
   [key: string]: unknown;
+}
+
+/** A spell a player added to their sheet from the web (Spells tab). */
+export interface AddedSpell {
+  name: string;
+  /** Spell rank (0 = cantrip). */
+  rank: number;
 }
 
 /** One entry in `overlay.pathway_bot_state.xpLog` — bot-side XP award history. */

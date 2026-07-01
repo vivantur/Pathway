@@ -1,14 +1,20 @@
 import { useCallback, useMemo, useState } from 'react';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { useSpellsByNames } from '@/features/characters/useSpellsByNames';
+import { useSpellSearch } from '@/features/characters/useSpellSearch';
 import {
   abilityMod,
   type FocusPools,
   type PathbuilderBuild,
   type Spellcaster,
 } from '@/features/characters/pathbuilder';
-import type { SpellRow } from '@/features/characters/types';
-import { Panel } from '../Sheet';
+import type {
+  AddedSpell,
+  CharacterOverlay,
+  CharacterRow,
+  SpellRow,
+} from '@/features/characters/types';
+import { Panel, type EditControls } from '../Sheet';
 import { SpellsIcon, StarIcon } from '../icons';
 
 /**
@@ -22,14 +28,35 @@ import { SpellsIcon, StarIcon } from '../icons';
  * Layout uses CSS grid rather than flex-wrap so the expanded detail card
  * (`col-span-full`) can span the full row without disrupting the chip flow.
  */
-export function SpellsTab({ build }: { build: PathbuilderBuild }) {
+export function SpellsTab({
+  build,
+  character,
+  edit,
+}: {
+  build: PathbuilderBuild;
+  character: CharacterRow;
+  edit: EditControls;
+}) {
   // Memoize the fallbacks so a fresh empty array/object each render doesn't
   // invalidate downstream useMemo deps (and their queries).
   const casters = useMemo(() => build.spellCasters ?? [], [build.spellCasters]);
   const focus = useMemo(() => build.focus ?? {}, [build.focus]);
 
-  // Every unique spell name across all casters + focus pools → one query.
-  const allNames = useMemo(() => collectAllSpellNames(casters, focus), [casters, focus]);
+  // Player-added spells (web-owned overlay slot), sorted by rank then name.
+  const added = useMemo(
+    () =>
+      [...(character.overlay?.web_edits?.spells ?? [])].sort(
+        (a, b) => a.rank - b.rank || a.name.localeCompare(b.name),
+      ),
+    [character.overlay?.web_edits?.spells],
+  );
+
+  // Every unique spell name across all casters + focus pools + added spells
+  // → one query for descriptions.
+  const allNames = useMemo(
+    () => [...collectAllSpellNames(casters, focus), ...added.map((s) => s.name)],
+    [casters, focus, added],
+  );
   const { data: spellRows } = useSpellsByNames(allNames);
 
   // Lookup: lowercased name → SpellRow (case-insensitive so "Heal" and "heal" match).
@@ -57,12 +84,32 @@ export function SpellsTab({ build }: { build: PathbuilderBuild }) {
   const innateCasters = casters.filter((c) => c.innate && hasAnyContent(c));
   const focusEntries = flattenFocus(focus);
 
-  const empty =
-    mainCasters.length === 0 &&
-    innateCasters.length === 0 &&
-    focusEntries.length === 0;
+  // Read-modify-write the web-owned spell list, preserving the rest of overlay.
+  const writeAdded = (spells: AddedSpell[]) => {
+    const prev = character.overlay ?? {};
+    const next: CharacterOverlay = {
+      ...prev,
+      web_edits: { ...(prev.web_edits ?? {}), spells },
+    };
+    edit.updateOverlay(next);
+  };
+  const addSpell = (name: string, rank: number) => {
+    if (added.some((s) => s.name.toLowerCase() === name.toLowerCase())) return;
+    writeAdded([...added, { name, rank }]);
+  };
+  const removeSpell = (name: string) => {
+    writeAdded(added.filter((s) => s.name.toLowerCase() !== name.toLowerCase()));
+  };
 
-  if (empty) {
+  const hasBuildSpells =
+    mainCasters.length > 0 || innateCasters.length > 0 || focusEntries.length > 0;
+
+  // Show the "Added Spells" grimoire whenever there's something to show or the
+  // owner can add to it — so a character with no spellcasting can still keep a
+  // list (archetype spells, scrolls, wands, etc.).
+  const showAdded = edit.enabled || added.length > 0;
+
+  if (!hasBuildSpells && !showAdded) {
     return (
       <div className="space-y-4">
         <Panel title="Spellcasting" icon={<SpellsIcon />}>
@@ -84,6 +131,218 @@ export function SpellsTab({ build }: { build: PathbuilderBuild }) {
       )}
       {focusEntries.length > 0 && (
         <FocusSpellsPanel entries={focusEntries} build={build} ctx={ctx} />
+      )}
+      {showAdded && (
+        <AddedSpellsPanel
+          added={added}
+          ctx={ctx}
+          canEdit={edit.enabled}
+          onAdd={addSpell}
+          onRemove={removeSpell}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------
+// Added spells (web-owned) + picker
+// ---------------------------------------------------------------
+
+function AddedSpellsPanel({
+  added,
+  ctx,
+  canEdit,
+  onAdd,
+  onRemove,
+}: {
+  added: AddedSpell[];
+  ctx: SpellCtx;
+  canEdit: boolean;
+  onAdd: (name: string, rank: number) => void;
+  onRemove: (name: string) => void;
+}) {
+  const byRank = new Map<number, AddedSpell[]>();
+  for (const s of added) {
+    const list = byRank.get(s.rank) ?? [];
+    list.push(s);
+    byRank.set(s.rank, list);
+  }
+  const ranks = [...byRank.keys()].sort((a, b) => a - b);
+  const existing = new Set(added.map((s) => s.name.toLowerCase()));
+
+  return (
+    <Panel title="Added Spells" icon={<SpellsIcon />}>
+      {canEdit && (
+        <div className="mb-3">
+          <AddSpellPicker existing={existing} onAdd={onAdd} />
+        </div>
+      )}
+      {added.length === 0 ? (
+        <p className="py-4 text-center text-sm text-silver/50">
+          No added spells yet. Use “Add a spell” to search the archive and pin
+          spells from scrolls, wands, archetypes, or anything the build doesn’t
+          already track.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {ranks.map((rank) => (
+            <div key={rank} className="border-l-2 border-gold/25 pl-3">
+              <div className="mb-1.5 font-display text-xs uppercase tracking-widest text-gold/90">
+                {rank === 0 ? 'Cantrips' : `Rank ${rank}`}
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-1.5">
+                {byRank.get(rank)!.map((s) => (
+                  <AddedSpellChip
+                    key={s.name}
+                    name={s.name}
+                    ctx={ctx}
+                    onRemove={canEdit ? () => onRemove(s.name) : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/** Like SpellChipWithDetail but with an optional remove control. */
+function AddedSpellChip({
+  name,
+  ctx,
+  onRemove,
+}: {
+  name: string;
+  ctx: SpellCtx;
+  onRemove?: () => void;
+}) {
+  const key = name.toLowerCase();
+  const row = ctx.spellMap.get(key);
+  const isExpanded = ctx.expanded.has(key);
+
+  return (
+    <>
+      <div
+        className={`inline-flex items-center justify-between gap-1 rounded border px-2 py-1 text-xs transition-colors ${
+          isExpanded
+            ? 'border-gold/60 bg-gold/10 text-gold'
+            : 'border-gold/15 bg-midnight-900/60 text-silver/90 hover:border-gold/40'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => ctx.toggleExpanded(name)}
+          className="min-w-0 flex-1 truncate text-left hover:text-gold/90"
+        >
+          {name}
+        </button>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remove ${name}`}
+            title="Remove spell"
+            className="shrink-0 text-silver/40 hover:text-red-300"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {isExpanded && (
+        <div className="col-span-full">
+          <SpellDetailCard name={name} row={row} />
+        </div>
+      )}
+    </>
+  );
+}
+
+function AddSpellPicker({
+  existing,
+  onAdd,
+}: {
+  existing: Set<string>;
+  onAdd: (name: string, rank: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const { data: results, isFetching } = useSpellSearch(query);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-display uppercase tracking-widest text-gold hover:bg-gold/20"
+      >
+        + Add a spell
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded border border-gold/25 bg-midnight-900/60 p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <input
+          autoFocus
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search spells by name…"
+          className="w-full rounded border border-gold/30 bg-midnight-800/80 px-2 py-1.5 text-sm text-silver focus:border-gold/60 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setQuery('');
+          }}
+          className="shrink-0 text-xs uppercase tracking-widest text-silver/60 hover:text-gold"
+        >
+          Done
+        </button>
+      </div>
+      {query.trim().length < 2 ? (
+        <p className="px-1 py-2 text-xs text-silver/40">Type at least 2 letters to search.</p>
+      ) : isFetching ? (
+        <p className="px-1 py-2 text-xs text-silver/40">Searching…</p>
+      ) : (results?.length ?? 0) === 0 ? (
+        <p className="px-1 py-2 text-xs text-silver/40">No spells match “{query.trim()}”.</p>
+      ) : (
+        <ul className="max-h-64 space-y-1 overflow-y-auto">
+          {results!.map((r) => {
+            const already = existing.has(r.name.toLowerCase());
+            return (
+              <li key={r.name}>
+                <button
+                  type="button"
+                  disabled={already}
+                  onClick={() => onAdd(r.name, r.rank)}
+                  className={`flex w-full items-center justify-between gap-2 rounded border px-2 py-1.5 text-left text-sm ${
+                    already
+                      ? 'cursor-default border-gold/10 bg-midnight-900/40 text-silver/40'
+                      : 'border-gold/15 bg-midnight-900/60 text-silver/90 hover:border-gold/40 hover:text-gold'
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{r.name}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-[0.6rem] uppercase tracking-widest text-silver/50">
+                      {r.rank === 0 ? 'Cantrip' : `Rank ${r.rank}`}
+                    </span>
+                    {already && (
+                      <span className="text-[0.6rem] uppercase tracking-widest text-emerald-soft">
+                        Added
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

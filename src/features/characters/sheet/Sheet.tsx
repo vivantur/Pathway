@@ -198,7 +198,7 @@ function TabContent({
     case 'feats':
       return <FeatsTab build={build} />;
     case 'spells':
-      return <SpellsTab build={build} />;
+      return <SpellsTab build={build} character={character} edit={edit} />;
     case 'companions':
       return <CompanionsTab build={build} />;
     case 'equipment':
