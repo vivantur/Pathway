@@ -622,6 +622,7 @@ export async function createCharacterFromBuild(
     char_key: charKey,
     name,
     source: 'pathbuilder',
+    status: 'active',
     pathbuilder_id: pathbuilderId,
     pathbuilder_data: build,
     ancestry_name: build.ancestry ?? null,
@@ -634,6 +635,13 @@ export async function createCharacterFromBuild(
     dying: 0,
     wounded: 0,
     experience: 0,
+    // Seed a bot-compatible overlay. Without pathway_bot_state the bot
+    // treats the character as "not managed by me" and hides it from
+    // vault/list commands. Structure mirrors what the bot writes on its
+    // own — empty edits / xpLog / counters, hero_points = 1, and a fresh
+    // pathwayWebId so the bot has a stable per-character key to hang state
+    // off of.
+    overlay: defaultBotOverlay(),
   };
 
   const { data, error } = await supabase
@@ -668,6 +676,49 @@ async function findAvailableCharKey(userId: string, baseKey: string): Promise<st
   }
   // Absurd fallback — should never happen in practice.
   return `${baseKey}-${Date.now()}`;
+}
+
+/**
+ * Fresh `overlay` blob for a newly-imported character.
+ *
+ * The bot filters vault/list commands by the presence of a fully-formed
+ * `pathway_bot_state` — a character without it renders invisible in
+ * Discord even though the row is visible via RLS. This helper produces
+ * the same shape the bot writes when it creates a character natively:
+ * empty edits (stats/senses/weapons/languages/skillOverrides), empty
+ * xpLog, empty counters, hero_points seeded to 1, and a stable
+ * pathwayWebId UUID that the bot uses as its per-character identifier.
+ *
+ * Called on INSERT only — updateCharacterFromBuild deliberately does
+ * NOT touch overlay so the bot's accumulated state (xp log, counters,
+ * senses edits, etc.) survives re-imports.
+ */
+function defaultBotOverlay(): Record<string, unknown> {
+  return {
+    cvars: {},
+    daily: {
+      slots_used: {},
+      focus_spent: 0,
+      hero_points: 1,
+    },
+    counters: {},
+    spellbook: [],
+    repertoire_swaps: [],
+    pathway_bot_state: {
+      xp: 0,
+      edits: {
+        stats: {},
+        senses: [],
+        weapons: [],
+        languages: [],
+        skillOverrides: {},
+      },
+      xpLog: [],
+      senses: null,
+      pathwayWebId: crypto.randomUUID(),
+    },
+    prepared_override: {},
+  };
 }
 
 /**
