@@ -26,6 +26,7 @@ import { JournalTab } from './tabs/JournalTab';
 import { PlaceholderTab } from './tabs/PlaceholderTab';
 import { SkillsTab } from './tabs/SkillsTab';
 import { SpellsTab } from './tabs/SpellsTab';
+import { DiceRoller } from './DiceRoller';
 import { TAB_DEFINITIONS, normalizeTabId, type TabId } from './tabs/tabDefs';
 import {
   ABILITY_ORDER,
@@ -1445,6 +1446,7 @@ function RightColumn({
       <FramedBlock title="Specials">
         <p className="text-sm text-silver/40">—</p>
       </FramedBlock>
+      <DiceRoller />
     </aside>
   );
 }

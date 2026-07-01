@@ -257,3 +257,11 @@ export const CompanionIcon: Icon = (p) => (
     <circle cx="15" cy="6" r="1.6" />
   </svg>
 );
+
+/** Faceted d20 — the dice roller. */
+export const DiceIcon: Icon = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 2l8.5 5v10L12 22l-8.5-5V7z" />
+    <path d="M12 2v20M3.5 7l8.5 5 8.5-5M3.5 17l8.5-5 8.5 5" />
+  </svg>
+);
