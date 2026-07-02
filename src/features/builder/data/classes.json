@@ -31,7 +31,30 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Research Field",
+    "subclasses": [
+      {
+        "id": "bomber",
+        "name": "Bomber",
+        "description": "Specialize in bombs, throwing them with precision and control."
+      },
+      {
+        "id": "chirurgeon",
+        "name": "Chirurgeon",
+        "description": "A master healer who uses Crafting for Medicine and brews potent elixirs."
+      },
+      {
+        "id": "mutagenist",
+        "name": "Mutagenist",
+        "description": "Embrace mutagens, gaining their power with reduced drawbacks."
+      },
+      {
+        "id": "toxicologist",
+        "name": "Toxicologist",
+        "description": "A master of poisons who crafts and applies deadly toxins."
+      }
+    ]
   },
   {
     "id": "animist",
@@ -99,7 +122,35 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Instinct",
+    "subclasses": [
+      {
+        "id": "animal",
+        "name": "Animal Instinct",
+        "description": "Channel a spirit animal, gaining bestial unarmed attacks."
+      },
+      {
+        "id": "dragon",
+        "name": "Dragon Instinct",
+        "description": "Rage with draconic might and elemental damage."
+      },
+      {
+        "id": "fury",
+        "name": "Fury Instinct",
+        "description": "Pure, flexible, hard-hitting rage."
+      },
+      {
+        "id": "giant",
+        "name": "Giant Instinct",
+        "description": "Wield oversized weapons with titanic strength."
+      },
+      {
+        "id": "spirit",
+        "name": "Spirit Instinct",
+        "description": "Channel ancestral spirits, dealing void or vitality damage."
+      }
+    ]
   },
   {
     "id": "bard",
@@ -396,7 +447,30 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Way",
+    "subclasses": [
+      {
+        "id": "drifter",
+        "name": "Drifter",
+        "description": "A versatile gunfighter blending firearms and melee."
+      },
+      {
+        "id": "pistolero",
+        "name": "Pistolero",
+        "description": "A quick-draw duelist with one-handed firearms."
+      },
+      {
+        "id": "sniper",
+        "name": "Sniper",
+        "description": "A patient marksman landing devastating aimed shots."
+      },
+      {
+        "id": "vanguard",
+        "name": "Vanguard",
+        "description": "A frontline gunner using heavy firearms and area attacks."
+      }
+    ]
   },
   {
     "id": "inventor",
@@ -430,7 +504,25 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Innovation",
+    "subclasses": [
+      {
+        "id": "armor",
+        "name": "Armor Innovation",
+        "description": "A powered suit of armor you tinker with and upgrade."
+      },
+      {
+        "id": "construct",
+        "name": "Construct Innovation",
+        "description": "A loyal robotic companion you build and improve."
+      },
+      {
+        "id": "weapon",
+        "name": "Weapon Innovation",
+        "description": "A signature weapon packed with experimental upgrades."
+      }
+    ]
   },
   {
     "id": "investigator",
@@ -464,7 +556,30 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Methodology",
+    "subclasses": [
+      {
+        "id": "alchemical-sciences",
+        "name": "Alchemical Sciences",
+        "description": "Investigate with chemistry, gaining quick alchemy and versatile vials."
+      },
+      {
+        "id": "empiricism",
+        "name": "Empiricism",
+        "description": "Rely on keen observation and deduction to Recall Knowledge."
+      },
+      {
+        "id": "forensic-medicine",
+        "name": "Forensic Medicine",
+        "description": "Study wounds and bodies; excel at Medicine and healing."
+      },
+      {
+        "id": "interrogation",
+        "name": "Interrogation",
+        "description": "Read people and pursue leads through conversation."
+      }
+    ]
   },
   {
     "id": "kineticist",
@@ -498,7 +613,40 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Kinetic Element",
+    "subclasses": [
+      {
+        "id": "air",
+        "name": "Air",
+        "description": "Command wind and lightning — mobile, precise impulses."
+      },
+      {
+        "id": "earth",
+        "name": "Earth",
+        "description": "Command stone and soil — sturdy, defensive impulses."
+      },
+      {
+        "id": "fire",
+        "name": "Fire",
+        "description": "Unleash flame — aggressive, high-damage impulses."
+      },
+      {
+        "id": "metal",
+        "name": "Metal",
+        "description": "Shape metal — sharp, versatile impulses."
+      },
+      {
+        "id": "water",
+        "name": "Water",
+        "description": "Flow with water and ice — control and healing impulses."
+      },
+      {
+        "id": "wood",
+        "name": "Wood",
+        "description": "Channel living wood — protective, sustaining impulses."
+      }
+    ]
   },
   {
     "id": "magus",
@@ -533,7 +681,35 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Hybrid Study",
+    "subclasses": [
+      {
+        "id": "inexorable-iron",
+        "name": "Inexorable Iron",
+        "description": "Two-handed weapons and toughness; a mighty Spellstrike."
+      },
+      {
+        "id": "laughing-shadow",
+        "name": "Laughing Shadow",
+        "description": "Mobile, one-handed finesse with a free hand."
+      },
+      {
+        "id": "sparkling-targe",
+        "name": "Sparkling Targe",
+        "description": "Sword-and-board, warding yourself with magical shields."
+      },
+      {
+        "id": "starlit-span",
+        "name": "Starlit Span",
+        "description": "Spellstrike at range with a bow or thrown weapon."
+      },
+      {
+        "id": "twisting-tree",
+        "name": "Twisting Tree",
+        "description": "Master a staff, blending reach and versatility."
+      }
+    ]
   },
   {
     "id": "monk",
@@ -600,7 +776,50 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Mystery",
+    "subclasses": [
+      {
+        "id": "ancestors",
+        "name": "Ancestors",
+        "description": "Commune with ancestral spirits for guidance and skill."
+      },
+      {
+        "id": "battle",
+        "name": "Battle",
+        "description": "A martial oracle who wades into the fray."
+      },
+      {
+        "id": "bones",
+        "name": "Bones",
+        "description": "Command death and undeath."
+      },
+      {
+        "id": "cosmos",
+        "name": "Cosmos",
+        "description": "Channel the stars and the night sky."
+      },
+      {
+        "id": "flames",
+        "name": "Flames",
+        "description": "Wield searing fire and light."
+      },
+      {
+        "id": "life",
+        "name": "Life",
+        "description": "A healer bound to the cycle of life."
+      },
+      {
+        "id": "lore",
+        "name": "Lore",
+        "description": "A keeper of secret knowledge."
+      },
+      {
+        "id": "tempest",
+        "name": "Tempest",
+        "description": "Command storms, wind, and water."
+      }
+    ]
   },
   {
     "id": "psychic",
@@ -632,7 +851,40 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Conscious Mind",
+    "subclasses": [
+      {
+        "id": "the-distant-grasp",
+        "name": "The Distant Grasp",
+        "description": "Telekinesis — move and strike from afar."
+      },
+      {
+        "id": "the-infinite-eye",
+        "name": "The Infinite Eye",
+        "description": "Divination and sharpened senses."
+      },
+      {
+        "id": "the-oscillating-wave",
+        "name": "The Oscillating Wave",
+        "description": "Fire and cold, entropy and energy."
+      },
+      {
+        "id": "the-silent-whisper",
+        "name": "The Silent Whisper",
+        "description": "Words and thoughts that pierce the mind."
+      },
+      {
+        "id": "the-unbound-step",
+        "name": "The Unbound Step",
+        "description": "Teleportation and swift movement."
+      },
+      {
+        "id": "the-tangible-dream",
+        "name": "The Tangible Dream",
+        "description": "Shape illusions into something real."
+      }
+    ]
   },
   {
     "id": "ranger",
@@ -774,7 +1026,60 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Bloodline",
+    "subclasses": [
+      {
+        "id": "aberrant",
+        "name": "Aberrant",
+        "description": "Alien power from beyond — occult magic."
+      },
+      {
+        "id": "angelic",
+        "name": "Angelic",
+        "description": "Celestial heritage — divine magic."
+      },
+      {
+        "id": "demonic",
+        "name": "Demonic",
+        "description": "Abyssal destruction — divine magic."
+      },
+      {
+        "id": "diabolic",
+        "name": "Diabolic",
+        "description": "Infernal cunning — divine magic."
+      },
+      {
+        "id": "draconic",
+        "name": "Draconic",
+        "description": "The might of dragons — arcane magic."
+      },
+      {
+        "id": "elemental",
+        "name": "Elemental",
+        "description": "Raw elemental force — primal magic."
+      },
+      {
+        "id": "fey",
+        "name": "Fey",
+        "description": "First World whimsy — primal magic."
+      },
+      {
+        "id": "hag",
+        "name": "Hag",
+        "description": "Cursed heritage — occult magic."
+      },
+      {
+        "id": "imperial",
+        "name": "Imperial",
+        "description": "Arcane bloodline of old empires — arcane magic."
+      },
+      {
+        "id": "undead",
+        "name": "Undead",
+        "description": "The chill of undeath — divine magic."
+      }
+    ]
   },
   {
     "id": "summoner",
@@ -806,7 +1111,60 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Eidolon",
+    "subclasses": [
+      {
+        "id": "beast",
+        "name": "Beast Eidolon",
+        "description": "A bestial companion of claw and fang."
+      },
+      {
+        "id": "construct",
+        "name": "Construct Eidolon",
+        "description": "A crafted, resilient guardian."
+      },
+      {
+        "id": "dragon",
+        "name": "Dragon Eidolon",
+        "description": "A proud draconic ally."
+      },
+      {
+        "id": "elemental",
+        "name": "Elemental Eidolon",
+        "description": "A being of raw element."
+      },
+      {
+        "id": "fey",
+        "name": "Fey Eidolon",
+        "description": "A capricious First World spirit."
+      },
+      {
+        "id": "plant",
+        "name": "Plant Eidolon",
+        "description": "A verdant, growing companion."
+      },
+      {
+        "id": "angel",
+        "name": "Celestial Eidolon",
+        "description": "A radiant celestial ally."
+      },
+      {
+        "id": "fiend",
+        "name": "Fiendish Eidolon",
+        "description": "A sinister lower-planar ally."
+      },
+      {
+        "id": "psychopomp",
+        "name": "Psychopomp Eidolon",
+        "description": "A shepherd of souls."
+      },
+      {
+        "id": "undead",
+        "name": "Undead Eidolon",
+        "description": "A restless undead companion."
+      }
+    ]
   },
   {
     "id": "swashbuckler",
@@ -840,7 +1198,35 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "Style",
+    "subclasses": [
+      {
+        "id": "battledancer",
+        "name": "Battledancer",
+        "description": "Gain panache by Performing — graceful and inspiring."
+      },
+      {
+        "id": "braggart",
+        "name": "Braggart",
+        "description": "Gain panache by Demoralizing — brash and bold."
+      },
+      {
+        "id": "fencer",
+        "name": "Fencer",
+        "description": "Gain panache by Feinting — cunning and precise."
+      },
+      {
+        "id": "gymnast",
+        "name": "Gymnast",
+        "description": "Gain panache with Athletics — acrobatic and forceful."
+      },
+      {
+        "id": "wit",
+        "name": "Wit",
+        "description": "Gain panache with Bon Mot — clever and charming."
+      }
+    ]
   },
   {
     "id": "thaumaturge",
@@ -877,7 +1263,55 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "subclassLabel": "First Implement",
+    "subclasses": [
+      {
+        "id": "amulet",
+        "name": "Amulet",
+        "description": "A protective charm warding you from harm."
+      },
+      {
+        "id": "bell",
+        "name": "Bell",
+        "description": "A ringing tool that unsettles and banishes."
+      },
+      {
+        "id": "chalice",
+        "name": "Chalice",
+        "description": "A vessel of healing and vitality."
+      },
+      {
+        "id": "lantern",
+        "name": "Lantern",
+        "description": "A light that reveals the hidden."
+      },
+      {
+        "id": "mirror",
+        "name": "Mirror",
+        "description": "A reflection you can send forth."
+      },
+      {
+        "id": "regalia",
+        "name": "Regalia",
+        "description": "Symbols of authority that command respect."
+      },
+      {
+        "id": "tome",
+        "name": "Tome",
+        "description": "A book of esoteric lore."
+      },
+      {
+        "id": "wand",
+        "name": "Wand",
+        "description": "A conduit for a blast of energy."
+      },
+      {
+        "id": "weapon",
+        "name": "Weapon",
+        "description": "A martial implement for the front line."
+      }
+    ]
   },
   {
     "id": "witch",
