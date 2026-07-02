@@ -292,6 +292,8 @@ export interface DerivedCharacter {
   speed: number;
   /** Focus points from the level-1 subclass (0 or 1 for now). */
   focusPoints: number;
+  /** GMG Stamina variant: null unless the variant is on. */
+  stamina: { points: number; resolve: number } | null;
   skills: SkillProficiency[];
   weapons: EquippedWeapon[];
   ranks: {
@@ -409,6 +411,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,
     focusPoints: focusPoints(state),
+    stamina: opt(state, OPT.legacyStamina)
+      ? {
+          // GMG: (half class HP, min 1, + Con mod) per level; Resolve = key ability mod.
+          points: Math.max(0, (Math.max(1, Math.floor((klass?.hp ?? 0) / 2)) + mods.con) * level),
+          resolve: Math.max(0, state.keyAbility ? mods[state.keyAbility] : 0),
+        }
+      : null,
     skills,
     weapons,
     ranks: {

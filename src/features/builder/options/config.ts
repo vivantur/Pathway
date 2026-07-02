@@ -65,7 +65,7 @@ export const OPTION_GROUPS: OptionGroup[] = [
       { id: 'applyMythicCustomOnly', label: 'Apply Mythic via custom feat choices only?', scope: 'character', implemented: false, note: 'Needs mythic content.' },
       { id: 'mythicDestiniesAsArchetypes', label: 'Use Mythic Destinies as high level archetypes?', scope: 'character', implemented: false, note: 'Needs mythic content.' },
       { id: 'legacyDualClass', label: 'Use Legacy GMG Dual Classing variant rules?', scope: 'character', implemented: false, note: 'Planned — a second class.' },
-      { id: 'legacyStamina', label: 'Use Legacy GMG Stamina variant rules?', scope: 'character', implemented: false, note: 'Planned — stamina points.' },
+      { id: 'legacyStamina', label: 'Use Legacy GMG Stamina variant rules?', scope: 'character', implemented: true, note: 'Adds Stamina Points and Resolve Points (GMG formula — confirm with your GM).' },
     ],
   },
 ];
@@ -77,6 +77,7 @@ export const OPT = {
   proficiencyWithoutLevel: 'proficiencyWithoutLevel',
   gradualAbilityBoosts: 'gradualAbilityBoosts',
   automaticBonusProgression: 'automaticBonusProgression',
+  legacyStamina: 'legacyStamina',
   autosave: 'autosave',
   disableAllAutosaving: 'disableAllAutosaving',
 } as const;

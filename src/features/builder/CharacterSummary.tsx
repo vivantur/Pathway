@@ -96,9 +96,11 @@ export function CharacterSummary() {
         </div>
       )}
 
-      {d.focusPoints > 0 && (
+      {(d.focusPoints > 0 || d.stamina) && (
         <div className="grid grid-cols-3 gap-2">
-          <StatBox label="Focus Pts" value={d.focusPoints} />
+          {d.focusPoints > 0 && <StatBox label="Focus Pts" value={d.focusPoints} />}
+          {d.stamina && <StatBox label="Stamina" value={d.stamina.points} />}
+          {d.stamina && <StatBox label="Resolve" value={d.stamina.resolve} />}
         </div>
       )}
 
