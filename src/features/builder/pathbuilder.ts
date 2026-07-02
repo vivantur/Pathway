@@ -4,9 +4,11 @@ import {
   findClass,
   findHeritage,
   findItem,
+  findSpell,
   getDataset,
   type AbilityKey,
 } from '@/features/builder/data';
+import { casterConfig } from './spellcasting';
 import { deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState } from '@/features/builder/types';
 
@@ -189,6 +191,32 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     })
     .map((e) => [findItem(e.itemId)?.name ?? e.itemId, e.qty] as [string, number]);
 
+  // Spellcasting → Pathbuilder spellCasters entry (spell lists by rank, cantrips at 0).
+  const caster = casterConfig(state.classId);
+  const sc = state.spellcasting;
+  const spellName = (id: string) => findSpell(id)?.name ?? id;
+  const spellCastersOut =
+    caster && sc
+      ? [
+          {
+            name: klass?.name ?? 'Spellcaster',
+            magicTradition: caster.tradition,
+            spellcastingType: caster.type,
+            ability: caster.keyAbility,
+            proficiency: 2, // trained at level 1
+            focusPoints: 0,
+            spells: [
+              { spellLevel: 0, list: (sc.cantrips ?? []).map(spellName) },
+              ...Object.entries(sc.spellsByRank ?? {})
+                .map(([rank, ids]) => ({ spellLevel: Number(rank), list: ids.map(spellName) }))
+                .filter((g) => g.list.length > 0),
+            ],
+            prepared: [],
+            blendedSpells: [],
+          },
+        ]
+      : [];
+
   const build: PathbuilderBuild = {
     name: state.name || 'Unnamed Adventurer',
     class: klass?.name ?? '',
@@ -223,7 +251,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     weapons: weaponsOut,
     money,
     armor: armorOut,
-    spellCasters: [],
+    spellCasters: spellCastersOut,
     focusPoints: 0,
     focus: {},
     formula: [],

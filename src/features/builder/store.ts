@@ -12,6 +12,7 @@ export const STEPS: { id: StepId; label: string }[] = [
   { id: 'skills', label: 'Skills' },
   { id: 'feats', label: 'Feats' },
   { id: 'advancement', label: 'Advancement' },
+  { id: 'spells', label: 'Spells' },
   { id: 'equipment', label: 'Equipment' },
   { id: 'review', label: 'Review' },
 ];
@@ -41,6 +42,9 @@ interface BuilderStore {
   setItemQty: (itemId: string, qty: number) => void;
   toggleEquip: (itemId: string) => void;
   setMoney: (gp: number) => void;
+
+  toggleCantrip: (id: string, max: number) => void;
+  toggleSpell: (rank: number, id: string, max: number) => void;
 }
 
 export const useBuilder = create<BuilderStore>((set) => ({
@@ -164,4 +168,22 @@ export const useBuilder = create<BuilderStore>((set) => ({
     })),
 
   setMoney: (gp) => set((s) => ({ state: { ...s.state, money: Math.max(0, gp) } })),
+
+  toggleCantrip: (id, max) =>
+    set((s) => {
+      const chosen = new Set(s.state.spellcasting.cantrips);
+      if (chosen.has(id)) chosen.delete(id);
+      else if (chosen.size < max) chosen.add(id);
+      return { state: { ...s.state, spellcasting: { ...s.state.spellcasting, cantrips: [...chosen] } } };
+    }),
+
+  toggleSpell: (rank, id, max) =>
+    set((s) => {
+      const byRank = { ...s.state.spellcasting.spellsByRank };
+      const chosen = new Set(byRank[rank] ?? []);
+      if (chosen.has(id)) chosen.delete(id);
+      else if (chosen.size < max) chosen.add(id);
+      byRank[rank] = [...chosen];
+      return { state: { ...s.state, spellcasting: { ...s.state.spellcasting, spellsByRank: byRank } } };
+    }),
 }));

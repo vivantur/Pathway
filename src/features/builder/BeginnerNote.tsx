@@ -39,6 +39,10 @@ const HELP: Record<StepId, { title: string; body: string }> = {
     title: 'How does gear work?',
     body: 'Buy items from the shop to spend your gold, then press “Equip” on armor, a shield, or a weapon to use it. Equipped armor changes your AC (and heavy armor can slow you if you’re not strong enough); equipped weapons show their attack bonus and damage on the right. New level-1 characters start with 15 gp.',
   },
+  spells: {
+    title: 'How do spells work?',
+    body: 'If your class casts spells, pick your cantrips (at-will spells you can cast any number of times) and your leveled spells. Prepared casters (wizards, clerics) choose spells to have ready; spontaneous casters (bards, sorcerers) build a repertoire they cast freely. Your Spell attack and Spell DC — how hard your spells are to resist — show up top. Not a caster? Just skip this step.',
+  },
   review: {
     title: 'You’re almost done!',
     body: 'This page checks your character is complete and lets you save it or export it. “Download JSON” gives you a file your Pathway Discord bot can read. Anything still missing is listed in red so you know what to finish.',
