@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { emptyBuilderState } from './types';
 import { STEPS, useBuilder } from './store';
@@ -7,10 +7,11 @@ import { clearDraft, isEmptyState, loadDraft, saveDraft, type BuilderDraft } fro
 import { CharacterSummary } from './CharacterSummary';
 import { BeginnerNote } from './BeginnerNote';
 import { PortraitPicker } from './PortraitPicker';
-import { fromPathbuilder } from '@/features/builder/pathbuilder';
+import { fromPathbuilder, hasEmbeddedBuild } from '@/features/builder/pathbuilder';
 import { useApp } from '@/features/builder/appStore';
 import { useSaveBuild } from './useSaveBuild';
 import { useAuth } from '@/features/auth/useAuth';
+import { useCharacter } from '@/features/characters/useCharacter';
 import { OptionsModal } from '@/features/builder/options/OptionsModal';
 import { AncestryStep } from './steps/AncestryStep';
 import { HeritageStep } from './steps/HeritageStep';
@@ -65,19 +66,44 @@ function BeginnerToggle() {
   );
 }
 
-export function BuilderApp() {
+export function BuilderApp({
+  editCharKey,
+  levelUpOnLoad = false,
+}: {
+  editCharKey?: string;
+  levelUpOnLoad?: boolean;
+} = {}) {
   const { step, setStep } = useBuilder();
   const state = useBuilder((s) => s.state);
   const update = useBuilder((s) => s.update);
   const replace = useBuilder((s) => s.replace);
+  const levelUp = useBuilder((s) => s.levelUp);
   const setCurrentId = useApp((s) => s.setCurrentCharacterId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
-  const [resumeDraft, setResumeDraft] = useState<BuilderDraft | null>(() => loadDraft());
+  const [resumeDraft, setResumeDraft] = useState<BuilderDraft | null>(() =>
+    editCharKey ? null : loadDraft(),
+  );
+  const [partialLoad, setPartialLoad] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const save = useSaveBuild();
+
+  // Edit / level-up: load the existing character and hydrate the builder once.
+  const editing = Boolean(editCharKey);
+  const charQuery = useCharacter(editCharKey);
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!editCharKey || hydratedRef.current || !charQuery.data) return;
+    hydratedRef.current = true;
+    const data = charQuery.data;
+    replace({ ...emptyBuilderState(), ...fromPathbuilder(data.pathbuilder_data) });
+    setCurrentId(data.id);
+    setPartialLoad(!hasEmbeddedBuild(data.pathbuilder_data));
+    if (levelUpOnLoad) levelUp();
+    else setStep('ancestry');
+  }, [editCharKey, charQuery.data, levelUpOnLoad, replace, setCurrentId, setStep, levelUp]);
 
   const index = STEPS.findIndex((s) => s.id === step);
   const Content = STEP_CONTENT[step];
@@ -103,19 +129,34 @@ export function BuilderApp() {
   };
 
   const onSave = () => {
-    save.mutate(state, {
-      onSuccess: (result) => {
-        clearDraft(); // character is saved for real; drop the draft
-        setCurrentId(result.id);
-        navigate(`/vault/${result.char_key}`);
+    save.mutate(
+      { state, editCharKey },
+      {
+        onSuccess: (result) => {
+          if (!editing) clearDraft(); // a fresh build's draft is now saved for real
+          setCurrentId(result.id);
+          navigate(`/vault/${result.char_key}`);
+        },
       },
-    });
+    );
   };
+  // Creating requires a complete character; updating an existing one doesn't
+  // (you may be mid-level-up), so we only gate create on validity.
+  const canSave = Boolean(user) && !save.isPending && (editing || complete);
+  const saveLabel = save.isPending
+    ? editing
+      ? 'Updating…'
+      : 'Saving…'
+    : editing
+      ? 'Update Character'
+      : 'Save to Vault';
   const saveTitle = !user
     ? 'Sign in to save to your vault — you can still Export JSON on the Review step.'
-    : !complete
+    : !editing && !complete
       ? 'Finish the remaining choices (see the Review step) before saving.'
-      : 'Save this character to your vault and sync it to the Discord bot.';
+      : editing
+        ? 'Update this character in your vault and sync it to the Discord bot.'
+        : 'Save this character to your vault and sync it to the Discord bot.';
 
   const importJson = async (file: File) => {
     try {
@@ -164,11 +205,11 @@ export function BuilderApp() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={!user || !complete || save.isPending}
+              disabled={!canSave}
               title={saveTitle}
               onClick={onSave}
             >
-              {save.isPending ? 'Saving…' : 'Save to Vault'}
+              {saveLabel}
             </button>
             <button type="button" className="btn" onClick={() => setOptionsOpen(true)}>
               ⚙ Options
@@ -178,6 +219,19 @@ export function BuilderApp() {
             </button>
           </div>
         </div>
+
+        {editing && charQuery.isLoading && (
+          <div className="rounded-xl border border-gold-500/25 bg-midnight-800/60 p-3 font-ui text-sm text-parchment/70">
+            Loading your character…
+          </div>
+        )}
+        {editing && partialLoad && (
+          <div className="rounded-xl border border-gold-500/30 bg-gold-500/10 p-3 font-ui text-sm text-parchment/85">
+            This character wasn’t built here, so we reconstructed the basics from its Pathbuilder
+            data. Review each step — some choices (skills, feats, boosts) may need re‑entering before
+            you update.
+          </div>
+        )}
 
         {resumeDraft && isEmptyState(state) && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/10 p-3">
