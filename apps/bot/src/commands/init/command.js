@@ -1524,7 +1524,7 @@ async function execute(interaction) {
       let deathPayload = null;
       let mentionLine = '';
       if (degree === 'success' || degree === 'crit-success') {
-        const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
+        const dmgResult = ca.applyDamage(channelId, target.name, finalDamage, { isCrit: degree === 'crit-success' });
         const dyingNote = dmgResult?.displaySuffix ?? '';
         hpLine = target.isNpc
           ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`

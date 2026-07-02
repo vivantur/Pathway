@@ -412,7 +412,7 @@ async function execute(interaction) {
   const attackHit = target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success');
   const basicSaveDealsDamage = target && !isAttackSpell && spell.saveIsBasic && saveDegreeApplied && finalDamage > 0;
   if ((attackHit || basicSaveDealsDamage) && finalDamage > 0) {
-    const dmgResult = ca.applyDamage(channelId, target.name, finalDamage);
+    const dmgResult = ca.applyDamage(channelId, target.name, finalDamage, { isCrit: attackDegree === 'crit-success' || saveDegreeApplied === 'crit-failure' });
     const dyingNote = dmgResult?.displaySuffix ?? '';
     description += target.isNpc
       ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`

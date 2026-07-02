@@ -100,9 +100,10 @@ function applyDamage(channelId, combatantName, damage, opts = {}) {
   let died = false;
 
   if (wasAlive && newHp === 0 && damage > 0) {
-    // First time hitting 0 HP this fight: gain Dying 1 + wounded value
+    // First time hitting 0 HP this fight: gain Dying 1 (Dying 2 if reduced to 0
+    // by a critical hit / critical failure on a save) + existing wounded value.
     wentDown = true;
-    c.dying = 1 + (c.wounded ?? 0);
+    c.dying = 1 + (c.wounded ?? 0) + (isCrit ? 1 : 0);
     if (c.dying >= maxDying) {
       died = true;
       c.dying = maxDying;
