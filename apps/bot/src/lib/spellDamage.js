@@ -109,6 +109,22 @@ const DAMAGE_TYPES = [
   'void',
 ];
 
+// Remaster renamed/removed several damage types. Normalize legacy → Remaster on
+// output so the bot never surfaces a removed type: positive→vitality,
+// negative→void, and alignment damage (good/evil/lawful/chaotic)→spirit.
+const LEGACY_TO_REMASTER_DAMAGE = {
+  positive: 'vitality',
+  negative: 'void',
+  good: 'spirit',
+  evil: 'spirit',
+  lawful: 'spirit',
+  chaotic: 'spirit',
+};
+function toRemasterDamageType(type) {
+  if (!type) return type;
+  return LEGACY_TO_REMASTER_DAMAGE[String(type).toLowerCase()] ?? type;
+}
+
 function cleanDiceExpression(expr) {
   if (!expr) return null;
   const tokens = String(expr).match(/[+\-]?\s*\d*d\d+|[+\-]\s*\d+/gi);
@@ -133,9 +149,10 @@ function inferDamageType(text) {
     if (found) return found;
   }
 
-  return DAMAGE_TYPES.find((type) => normalized.includes(`${type} damage`))
+  const found = DAMAGE_TYPES.find((type) => normalized.includes(`${type} damage`))
     || DAMAGE_TYPES.find((type) => new RegExp(`\\b${type}\\b`, 'i').test(normalized))
     || null;
+  return toRemasterDamageType(found);
 }
 
 function extractDamageFromText(text) {

@@ -157,13 +157,15 @@ function formatSpellHeightened(heightened, baseLevel = null) {
 function buildSpellEmbed(rawSpell) {
   const spell = normalizeSpell(rawSpell);
   const isCantrip = spell.type === 'Cantrip';
-  const levelDisplay = isCantrip ? `Cantrip ${spell.level}` : `Spell ${spell.level}`;
+  // Remaster: spells have a "rank", not a "level".
+  const levelDisplay = isCantrip ? `Cantrip ${spell.level}` : `Rank ${spell.level}`;
   const traditionsDisplay = spell.traditions.length > 0 ? spell.traditions.join(', ') : 'None';
   const traitsDisplay = spell.traits.length > 0 ? spell.traits.join(', ') : null;
   let description = cleanSpellDescription(spell);
   if (description.length > 1500) description = description.slice(0, 1500) + '...\n*(description truncated)*';
   const embed = new EmbedBuilder().setColor(0x9B59B6).setTitle(spell.name).setDescription(description);
-  const levelLine = [`**${levelDisplay}**`, spell.school ?? null].filter(Boolean).join(' · ');
+  // Remaster removed magic schools as a mechanical trait — don't surface spell.school.
+  const levelLine = `**${levelDisplay}**`;
   embed.addFields({ name: '\u200b', value: levelLine, inline: false });
   if (spell.source) embed.addFields({ name: 'Source', value: spell.source, inline: false });
   embed.addFields({ name: 'Traditions', value: traditionsDisplay, inline: false });

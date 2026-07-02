@@ -182,7 +182,8 @@ async function execute(interaction) {
   const effectiveLevel = castLevel ?? spell.level ?? 1;
   const isCantrip = spell.type === 'Cantrip';
   const isFocus = spell.type === 'Focus';
-  const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Level ${effectiveLevel}`;
+  // Remaster: spells have a "rank", not a "level".
+  const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Rank ${effectiveLevel}`;
   const traditionDisplay = spell.traditions?.[0] ?? '';
 
   // ── Overlay-aware slot tracking ──
