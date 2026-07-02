@@ -17,7 +17,8 @@
 // Requires env (loaded from .env via dotenv): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // ⚠️ ALWAYS point at your DEVELOP project first and back up. See DEDUPE_RUNBOOK.md.
 
-require('dotenv').config();
+// Load apps/bot/.env regardless of the directory you run this from.
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { getSupabase } = require('../src/lib/supabase');
 
 const APPLY = process.argv.includes('--apply');
