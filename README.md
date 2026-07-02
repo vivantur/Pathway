@@ -1,4 +1,15 @@
-# Pathway - PF2e Discord Bot
+# Pathway — PF2e Ecosystem (monorepo)
+
+This repository holds **both** halves of Pathway, which share one Supabase backend:
+
+| Path | What it is | Deploys to |
+| --- | --- | --- |
+| **repo root** (`Pathwayv2/`, `index.js`, …) | The **Discord bot** (Node.js / discord.js) | **Railway** — builds from the repo root, `npm start` → `Pathwayv2/src/index.js` |
+| **`web/`** | The **website** (React + TS + Vite + Supabase) — rules library, character sheet, and character **builder** | **Vercel** — set the project's *Root Directory* to `web/` |
+
+Shared Supabase migrations live in `web/supabase/migrations/` (referenced by the bot as `../web/supabase/migrations/`). The website was merged in from the former `vivantur/pathway-website` repository with its history preserved.
+
+---
 
 A Pathfinder 2e companion bot for Discord. Pathway tracks combat, characters, spells, inventory, downtime, companions, calendar, weather, and lookup commands from Discord slash commands.
 
