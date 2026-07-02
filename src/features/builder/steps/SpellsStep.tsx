@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { findClass, type Spell } from '@/features/builder/data';
 import { useBuilder } from '../store';
 import {
@@ -99,7 +100,8 @@ function SpellSection({
         )}
       </div>
 
-      {hover && (
+      {hover &&
+        createPortal(
         <div
           role="tooltip"
           className="pointer-events-none fixed z-50 w-80 rounded-xl border border-gold-500/40 bg-midnight-900/95 p-3 shadow-rune backdrop-blur"
@@ -131,8 +133,9 @@ function SpellSection({
           <p className="mt-2 font-ui text-xs leading-relaxed text-parchment/85">
             {hover.spell.description || 'No description available.'}
           </p>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </section>
   );
 }
