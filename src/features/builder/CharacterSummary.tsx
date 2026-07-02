@@ -38,7 +38,7 @@ export function CharacterSummary() {
     Object.values(state.spellcasting.spellsByRank).reduce((n, ids) => n + ids.length, 0);
 
   return (
-    <aside className="panel sticky top-6 flex flex-col gap-4 p-5">
+    <aside className="panel flex flex-col gap-4 p-5 lg:sticky lg:top-6">
       <div className="flex items-center gap-3">
         {state.portrait && (
           <img

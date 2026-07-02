@@ -5,6 +5,7 @@ import { STEPS, useBuilder } from './store';
 import { validate } from './rules';
 import { clearDraft, isEmptyState, loadDraft, saveDraft, type BuilderDraft } from './drafts';
 import { CharacterSummary } from './CharacterSummary';
+import { MobileStatBar } from './MobileStatBar';
 import { BeginnerNote } from './BeginnerNote';
 import { PortraitPicker } from './PortraitPicker';
 import { fromPathbuilder, hasEmbeddedBuild } from '@/features/builder/pathbuilder';
@@ -175,6 +176,7 @@ export function BuilderApp({
   return (
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
       <main className="flex flex-col gap-6">
+        <MobileStatBar />
         {/* Top toolbar: back, portrait, name, actions */}
         <div className="panel flex flex-wrap items-center gap-4 p-4">
           <Link to="/vault" className="btn py-1 text-xs" title="Back to your vault">
