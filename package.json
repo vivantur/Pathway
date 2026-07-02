@@ -1,24 +1,20 @@
 {
-  "name": "pathway-pf2e-bot",
+  "name": "pathway",
   "version": "1.0.0",
-  "description": "A Pathfinder 2e companion bot for Discord with combat tracking, character sheets, spells, and more.",
-  "main": "Pathwayv2/src/index.js",
+  "private": true,
+  "description": "Pathway — a Pathfinder 2e companion monorepo: Discord bot + web app on a shared PF2e core.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "start": "node Pathwayv2/src/index.js",
-    "deploy": "node Pathwayv2/src/deploy.js",
-    "deploy:guild": "node Pathwayv2/src/deploy.js --guild",
-    "import:homebrew-items": "node Pathwayv2/supabase/import-homebrew-items.js",
-    "import:aon-bestiary": "node Pathwayv2/supabase/import-aon-bestiary.js"
+    "start": "npm --workspace apps/bot run start",
+    "deploy": "npm --workspace apps/bot run deploy",
+    "deploy:guild": "npm --workspace apps/bot run deploy:guild",
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "test": "npm --workspace packages/core run test --if-present",
+    "typecheck": "npm --workspaces --if-present run typecheck"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.78.0",
-    "discord.js": "^14.25.1",
-    "dotenv": "^17.3.1",
-    "node-fetch": "^2.7.0",
-    "pdf-parse": "^2.4.5"
-  }
+  "license": "ISC"
 }

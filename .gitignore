@@ -1,18 +1,18 @@
-# Raw AoN dumps - regenerate with `node Pathwayv2/tools/aon-fetch.js`
-Pathwayv2/gamedata/aon-raw/*.json
-!Pathwayv2/gamedata/aon-raw/README.md
-!Pathwayv2/gamedata/aon-raw/.gitkeep
+# Raw AoN dumps - regenerate with `node apps/bot/tools/aon-fetch.js`
+apps/bot/gamedata/aon-raw/*.json
+!apps/bot/gamedata/aon-raw/README.md
+!apps/bot/gamedata/aon-raw/.gitkeep
 
 # Reference JSON files - archived in git tag `gamedata-archive-20260506`.
 # All reference data now lives in the Supabase `gamedata` / `monsters` / `spells`
 # / `items` tables and is loaded at startup by loadReferenceDatabasesFromSupabase().
 # These files are kept on disk for the AoN transformer tools
-# (Pathwayv2/tools/aon-*.js) but must never be committed - the bot no longer
+# (apps/bot/tools/aon-*.js) but must never be committed - the bot no longer
 # reads them at runtime.
-Pathwayv2/gamedata/*.json
+apps/bot/gamedata/*.json
 
 # Local backups - don't push these
-Pathwayv2/gamedata/*.backup
+apps/bot/gamedata/*.backup
 *.backup
 characters.json
 saves/*.json

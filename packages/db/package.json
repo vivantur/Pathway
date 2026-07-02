@@ -1,0 +1,19 @@
+{
+  "name": "@pathway/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Supabase client, generated DB types, and queries. Depends on @pathway/core; validation happens here at the edges using core's schemas.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pathway/core": "*",
+    "@supabase/supabase-js": "^2.78.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

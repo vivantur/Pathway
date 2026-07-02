@@ -1,5 +1,5 @@
 'use strict';
 
-// Compatibility launcher for old deploy commands.
-// The active slash-command deploy script lives in Pathwayv2.
-require('./Pathwayv2/src/deploy');
+// Compatibility launcher for old deploy commands run from the repo root.
+// The active slash-command deploy script lives in apps/bot; prefer `npm run deploy`.
+require('./apps/bot/src/deploy');

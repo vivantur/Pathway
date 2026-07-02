@@ -7,10 +7,42 @@ on:
     branches: [main]
 
 jobs:
-  check:
-    name: Pathwayv2 syntax check
+  bot:
+    name: Bot syntax check
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax check - bot entry points
+        run: |
+          node --check apps/bot/src/index.js
+          node --check apps/bot/src/deploy.js
+
+      - name: Syntax check - bot source
+        shell: bash
+        run: |
+          find apps/bot/src -name '*.js' -print0 | while IFS= read -r -d '' f; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+      - name: Syntax check - bot scripts
+        shell: bash
+        run: |
+          find apps/bot/supabase apps/bot/tools -name '*.js' -print0 | while IFS= read -r -d '' f; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+  web:
+    name: Web typecheck + build
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,26 +53,33 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install workspaces
         run: npm ci
 
-      - name: Syntax check - Pathwayv2 entry points
-        run: |
-          node --check Pathwayv2/src/index.js
-          node --check Pathwayv2/src/deploy.js
+      - name: Typecheck web
+        run: npm --workspace apps/web run typecheck
 
-      - name: Syntax check - Pathwayv2 source
-        shell: bash
-        run: |
-          find Pathwayv2/src -name '*.js' -print0 | while IFS= read -r -d '' f; do
-            echo "Checking $f"
-            node --check "$f"
-          done
+      - name: Lint web
+        run: npm --workspace apps/web run lint
 
-      - name: Syntax check - Pathwayv2 scripts
-        shell: bash
-        run: |
-          find Pathwayv2/supabase Pathwayv2/tools -name '*.js' -print0 | while IFS= read -r -d '' f; do
-            echo "Checking $f"
-            node --check "$f"
-          done
+      - name: Build web
+        run: npm --workspace apps/web run build
+
+  core:
+    name: Core tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspaces
+        run: npm ci
+
+      - name: Test core
+        run: npm --workspace packages/core run test
