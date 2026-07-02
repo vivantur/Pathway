@@ -31,6 +31,7 @@ interface BuilderStore {
   chooseBackground: (id: string) => void;
   chooseClass: (id: string) => void;
   toggleSkill: (id: string, maxFree: number) => void;
+  toggleLanguage: (name: string, max: number) => void;
 
   setLevel: (level: number) => void;
   levelUp: () => void;
@@ -104,6 +105,14 @@ export const useBuilder = create<BuilderStore>((set) => ({
         chosen.add(id);
       }
       return { state: { ...s.state, skillChoices: [...chosen] } };
+    }),
+
+  toggleLanguage: (name, max) =>
+    set((s) => {
+      const chosen = new Set(s.state.languageChoices);
+      if (chosen.has(name)) chosen.delete(name);
+      else if (chosen.size < max) chosen.add(name);
+      return { state: { ...s.state, languageChoices: [...chosen] } };
     }),
 
   setLevel: (level) =>
