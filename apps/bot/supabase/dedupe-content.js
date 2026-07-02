@@ -86,6 +86,23 @@ async function auditSpells(sb) {
   }
   if (dupGroups.length > 40) console.log(`  ...and ${dupGroups.length - 40} more groups`);
 
+  // Remaster-superseded LEGACY spells: a row whose metadata.remaster_id points to
+  // a spell that IS present in the DB. That row is the legacy version — dropping
+  // it keeps the Remaster replacement. This is the precise legacy→remaster dedupe
+  // (uses AoN's own cross-reference + an existence check; no guessing).
+  const aonIdSet = new Set(rows.map(r => r.spell_metadata?.aon_id).filter(Boolean));
+  const asArray = v => (Array.isArray(v) ? v : v ? [v] : []);
+  const supersededLegacy = rows.filter(r => {
+    const targets = asArray(r.spell_metadata?.remaster_id);
+    return targets.length > 0 && targets.some(t => aonIdSet.has(t));
+  });
+  console.log(`Remaster-superseded LEGACY spells (remaster_id replacement present — safe to drop): ${supersededLegacy.length}`);
+  for (const r of supersededLegacy.slice(0, 15)) {
+    const m = r.spell_metadata || {};
+    console.log(`  LEGACY "${r.name}" ${m.aon_id} → ${asArray(m.remaster_id).join(',')}`);
+  }
+  if (supersededLegacy.length > 15) console.log(`  ...and ${supersededLegacy.length - 15} more`);
+
   // Same NAME across different identities = possible legacy+remaster pair. NEVER
   // auto-deleted — these need a human to decide which version to keep.
   const byName = new Map();
@@ -129,13 +146,16 @@ async function auditSpells(sb) {
     return;
   }
 
-  const toDelete = [];
+  const toDeleteSet = new Set();
   for (const rs of dupGroups) {
     const keep = pickKeep(rs);
-    for (const r of rs) if (r.id !== keep.id) toDelete.push(r.id);
+    for (const r of rs) if (r.id !== keep.id) toDeleteSet.add(r.id);
   }
-  console.log(`\n--apply: plan is to DELETE ${toDelete.length} duplicate spell rows (keeping the best row in each group).`);
-  console.log(`  ids to delete: [${toDelete.slice(0, 100).join(', ')}${toDelete.length > 100 ? ', …' : ''}]`);
+  const exactDupCount = toDeleteSet.size;
+  for (const r of supersededLegacy) toDeleteSet.add(r.id);
+  const toDelete = [...toDeleteSet];
+  console.log(`\n--apply: plan is to DELETE ${toDelete.length} spell rows = ${exactDupCount} exact-duplicate + ${supersededLegacy.length} remaster-superseded legacy (keeping the Remaster version of each).`);
+  console.log(`  first ids: [${toDelete.slice(0, 60).join(', ')}${toDelete.length > 60 ? ', …' : ''}]`);
   if (!CONFIRM) {
     console.log("\n(No deletion performed. Add '--yes' to execute — AFTER you have a backup and are on DEVELOP.)");
     return;
