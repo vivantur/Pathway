@@ -17,6 +17,12 @@ interface CategoryConfig {
   table: string;
   /** Whether rows carry a meaningful `level` we can sort/show. */
   hasLevel: boolean;
+  /**
+   * When set, this category is backed by the generic `gamedata` table filtered
+   * to this `category` value (rather than its own typed table). The row shape
+   * is `{ id, category, slug, name, data }` with the payload inside `data`.
+   */
+  gamedataCategory?: string;
   map: (row: Record<string, unknown>) => RuleEntry;
 }
 
@@ -368,7 +374,42 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
       ) as RuleEntry['meta'],
     }),
   },
+  // ---- gamedata-backed categories (generic AoN import keyed by `category`) ----
+  { id: 'classes', label: 'Classes', table: 'gamedata', gamedataCategory: 'classes', hasLevel: false, map: gamedataMap('classes') },
+  { id: 'archetypes', label: 'Archetypes', table: 'gamedata', gamedataCategory: 'archetypes', hasLevel: false, map: gamedataMap('archetypes') },
+  { id: 'actions', label: 'Actions', table: 'gamedata', gamedataCategory: 'actions', hasLevel: false, map: gamedataMap('actions') },
+  { id: 'afflictions', label: 'Afflictions', table: 'gamedata', gamedataCategory: 'afflictions', hasLevel: false, map: gamedataMap('afflictions') },
 ];
+
+/**
+ * Shared mapper for gamedata-backed categories. The payload lives in `data`
+ * with a fairly uniform AoN shape across categories (name, description/summary,
+ * level, traits, rarity, source, aon_url, plus action/prereq/trigger extras),
+ * so one defensive mapper covers them all.
+ */
+function gamedataMap(category: RuleCategoryId): CategoryConfig['map'] {
+  return (row) => {
+    const d = asObj(row.data);
+    return {
+      id: String(row.id),
+      name: str(row.name) ?? str(d.name) ?? 'Unknown',
+      category,
+      level: num(d.level),
+      rarity: str(d.rarity),
+      traits: arr(d.traits),
+      actionCost: str(d.actions) ?? str(d.action_type),
+      prerequisites: str(d.prerequisites) ?? str(d.prerequisite),
+      trigger: str(d.trigger),
+      description: str(d.description) ?? str(d.summary),
+      aonUrl: str(d.aon_url),
+      meta: [
+        str(d.frequency) ? { label: 'Frequency', value: str(d.frequency)! } : null,
+        str(d.requirements) ? { label: 'Requirements', value: str(d.requirements)! } : null,
+        str(d.source) ? { label: 'Source', value: str(d.source)! } : null,
+      ].filter(Boolean) as RuleEntry['meta'],
+    };
+  };
+}
 
 export function categoryById(id: RuleCategoryId): CategoryConfig {
   return RULE_CATEGORIES.find((c) => c.id === id) ?? RULE_CATEGORIES[0];
@@ -390,9 +431,16 @@ export async function searchRules(input: {
   const supabase = requireSupabase();
   const q = input.query.trim();
 
-  let builder = supabase.from(cfg.table).select('*');
+  let builder = cfg.gamedataCategory
+    ? supabase
+        .from('gamedata')
+        .select('id, category, slug, name, data')
+        .eq('category', cfg.gamedataCategory)
+    : supabase.from(cfg.table).select('*');
   if (q.length > 0) builder = builder.ilike('name', `%${q}%`);
-  if (cfg.hasLevel) builder = builder.order('level', { ascending: true });
+  // gamedata keeps `level` inside the jsonb payload, so we can only order by
+  // the top-level name column there; typed tables can also sort by level.
+  if (cfg.hasLevel && !cfg.gamedataCategory) builder = builder.order('level', { ascending: true });
   builder = builder.order('name', { ascending: true }).limit(PAGE_SIZE);
 
   const { data, error } = await builder;

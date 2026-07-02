@@ -73,4 +73,8 @@ export type RuleCategoryId =
   | 'conditions'
   | 'ancestries'
   | 'backgrounds'
-  | 'monsters';
+  | 'monsters'
+  | 'classes'
+  | 'archetypes'
+  | 'actions'
+  | 'afflictions';
