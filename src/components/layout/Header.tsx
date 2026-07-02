@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { GlobalSearch } from '@/features/search/GlobalSearch';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -37,6 +38,9 @@ export function Header() {
           <img src="/favicon.svg" alt="" className="h-7 w-7 animate-rune-pulse" />
           <span className="font-display text-lg tracking-wide text-gold">Pathway</span>
         </Link>
+
+        {/* Site-wide search — single instance, visible on all breakpoints */}
+        <GlobalSearch />
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
