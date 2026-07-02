@@ -806,7 +806,10 @@ export async function createCharacterFromBuild(
     user_id: userId,
     char_key: charKey,
     name,
-    source: pathbuilderId != null ? 'pathbuilder' : 'pathway-web',
+    // The live `characters_source_check` constraint only permits known origin
+    // tags (e.g. 'pathbuilder'); web-built characters are stored in the same
+    // Pathbuilder-format `pathbuilder_data`, so we use 'pathbuilder' here too.
+    source: 'pathbuilder',
     status: 'active',
     pathbuilder_id: pathbuilderId ?? null,
     pathbuilder_data: build,
