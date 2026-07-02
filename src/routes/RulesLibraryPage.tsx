@@ -115,61 +115,24 @@ export function RulesLibraryPage() {
 }
 
 /**
- * Paizo Community Use Policy + ORC attribution. Keeping this visible on the
- * Rules Library (which surfaces the most game content) is the legally-friendly
- * thing to do: it credits Paizo's marks, notes the ORC-licensed rules text, and
- * carries the required "not endorsed by Paizo / no charge to access" language.
+ * Rules-specific sourcing note. The full Paizo Community Use / ORC notice lives
+ * in the site-wide footer, so here we just credit the descriptive source.
  */
 function RulesAttribution() {
   return (
-    <footer className="mt-8 space-y-2 border-t border-gold/15 pt-4 text-[0.7rem] leading-relaxed text-silver/45">
-      <p>
-        This site uses trademarks and/or copyrights owned by Paizo Inc., used
-        under Paizo&apos;s{' '}
-        <a
-          href="https://paizo.com/community/communityuse"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-arcane/80 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
-        >
-          Community Use Policy
-        </a>
-        . We are expressly prohibited from charging you to use or access this
-        content. Pathway is not published, endorsed, or specifically approved by
-        Paizo. For more information about Paizo Inc. and Paizo products, visit{' '}
-        <a
-          href="https://paizo.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-arcane/80 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
-        >
-          paizo.com
-        </a>
-        .
-      </p>
-      <p>
-        Rules content from the Pathfinder Second Edition Remaster is used under
-        the{' '}
-        <a
-          href="https://paizo.com/orclicense"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-arcane/80 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
-        >
-          ORC License
-        </a>
-        . Descriptions and reference data are aggregated with attribution from{' '}
-        <a
-          href="https://2e.aonprd.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-arcane/80 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
-        >
-          Archive of Nethys
-        </a>
-        , the official Pathfinder 2e SRD.
-      </p>
-    </footer>
+    <p className="mt-8 border-t border-gold/15 pt-4 text-[0.7rem] leading-relaxed text-silver/45">
+      Descriptions and reference data are aggregated with attribution from{' '}
+      <a
+        href="https://2e.aonprd.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-arcane/80 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
+      >
+        Archive of Nethys
+      </a>
+      , the official Pathfinder 2e SRD. See the footer for the full Paizo
+      Community Use and ORC License notice.
+    </p>
   );
 }
 

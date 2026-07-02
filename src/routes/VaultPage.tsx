@@ -197,27 +197,31 @@ function VaultHeader({
     <header className="relative overflow-hidden rounded-lg border border-gold/30 bg-midnight-900/70 p-6 shadow-gilded">
       {/* Decorative gilded corner brackets */}
       <CornerBrackets />
-      <div className="relative flex flex-wrap items-start gap-6">
-        <Avatar url={avatarUrl} name={displayName} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-            <h1 className="font-display text-3xl tracking-wide text-gold sm:text-4xl">
-              {displayName}
-            </h1>
-            <span className="text-sm text-silver/40">#0</span>
+      {/* Stacks on mobile (button drops full-width below the profile) and
+          becomes a row on sm+ with the button pinned top-right. */}
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-6">
+          <Avatar url={avatarUrl} name={displayName} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+              <h1 className="font-display text-3xl tracking-wide text-gold [overflow-wrap:anywhere] sm:text-4xl">
+                {displayName}
+              </h1>
+              <span className="text-sm text-silver/40">#0</span>
+            </div>
+            {username && (
+              <p className="mt-0.5 break-words text-sm text-silver/60">@{username}</p>
+            )}
+            <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <ProfileStat label="Characters" value={characterCount} />
+              <ProfileStat label="Portraits" value={portraitCount} />
+              {providerId && <ProfileStat label="Discord ID" value={providerId} mono />}
+            </dl>
           </div>
-          {username && (
-            <p className="mt-0.5 text-sm text-silver/60">@{username}</p>
-          )}
-          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <ProfileStat label="Characters" value={characterCount} />
-            <ProfileStat label="Portraits" value={portraitCount} />
-            {providerId && <ProfileStat label="Discord ID" value={providerId} mono />}
-          </dl>
         </div>
         <Link
           to="/vault/new"
-          className="inline-flex shrink-0 items-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-display uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded"
+          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-display uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded sm:w-auto sm:justify-start"
         >
           <span aria-hidden className="text-lg leading-none">+</span>
           Add Character

@@ -92,10 +92,44 @@ export function Footer() {
 
         <GildedRule className="my-8" />
 
-        <p className="text-center text-xs text-silver/40">
-          Pathway is an independent fan project. Pathfinder and its logos are trademarks
-          of Paizo Inc. Used under the Community Use Policy. © {new Date().getFullYear()} Pathway.
-        </p>
+        <div className="mx-auto max-w-3xl space-y-2 text-center text-[0.7rem] leading-relaxed text-silver/40">
+          <p>
+            Pathway is an independent fan project. It uses trademarks and/or copyrights owned
+            by Paizo Inc., used under Paizo&apos;s{' '}
+            <a
+              href="https://paizo.com/community/communityuse"
+              target="_blank"
+              rel="noreferrer"
+              className="text-arcane/70 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
+            >
+              Community Use Policy
+            </a>
+            . We are expressly prohibited from charging you to use or access this content.
+            Pathway is not published, endorsed, or specifically approved by Paizo. For more
+            information about Paizo Inc. and Paizo products, visit{' '}
+            <a
+              href="https://paizo.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-arcane/70 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
+            >
+              paizo.com
+            </a>
+            .
+          </p>
+          <p>
+            Pathfinder Second Edition Remaster rules content is used under the{' '}
+            <a
+              href="https://paizo.com/orclicense"
+              target="_blank"
+              rel="noreferrer"
+              className="text-arcane/70 underline decoration-arcane/30 underline-offset-2 hover:decoration-arcane/70"
+            >
+              ORC License
+            </a>
+            . © {new Date().getFullYear()} Pathway.
+          </p>
+        </div>
       </div>
     </footer>
   );
