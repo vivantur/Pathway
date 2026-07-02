@@ -23,6 +23,7 @@ const { getSupabase } = require('../src/lib/supabase');
 
 const APPLY = process.argv.includes('--apply');
 const CONFIRM = process.argv.includes('--yes');
+const INSPECT = process.argv.includes('--inspect');
 const TABLE = (process.argv.find(a => a.startsWith('--table=')) || '').split('=')[1] || 'all';
 
 const LEGACY_DAMAGE = ['positive', 'negative', 'good', 'evil', 'lawful', 'chaotic'];
@@ -97,6 +98,23 @@ async function auditSpells(sb) {
   console.log(`Same-name / different-identity (possible legacy+remaster — MANUAL review): ${nameCollisions.length}`);
   for (const [n, keys] of nameCollisions.slice(0, 20)) console.log(`  NAME "${n}": ${[...keys].join('  |  ')}`);
 
+  if (INSPECT) {
+    const flagKey = k => /remaster|legacy|replaced|deprecat/i.test(k);
+    const sample = rows.find(r => r.spell_metadata) || {};
+    const metaKeys = Object.keys(sample.spell_metadata || {});
+    console.log('\n[inspect] spell_metadata keys:', metaKeys.join(', ') || '(none)');
+    console.log('[inspect] remaster/legacy link keys present:', metaKeys.filter(flagKey).join(', ') || '(NONE stored)');
+    for (const [n] of nameCollisions.slice(0, 8)) {
+      const pair = rows.filter(r => String(r.name || '').toLowerCase().trim() === n);
+      console.log(`[inspect] "${n}":`);
+      for (const r of pair) {
+        const m = r.spell_metadata || {};
+        const flags = Object.entries(m).filter(([k]) => flagKey(k)).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(' ');
+        console.log(`   id=${r.id} aon=${m.aon_id} rank=${m.level} source=${JSON.stringify(m.source)} traits=[${(m.traits || []).join(',')}] ${flags}`);
+      }
+    }
+  }
+
   // Legacy (pre-Remaster) fields — read-only report; cleanup is separate SQL.
   const withSchool = rows.filter(r => r.spell_metadata && r.spell_metadata.school);
   const legacyDamage = rows.filter(r => {
@@ -152,6 +170,20 @@ async function auditMonsters(sb) {
   const dupNames = [...byName.entries()].filter(([, c]) => c > 1);
   console.log(`Official monster name duplicates: ${dupNames.length}`);
   for (const [n, c] of dupNames.slice(0, 20)) console.log(`  "${n}" x${c}`);
+  if (INSPECT) {
+    const flagKey = k => /remaster|legacy|replaced|deprecat/i.test(k);
+    const { data: sampleRows } = await sb.from('monsters').select('*').limit(1);
+    const cols = Object.keys(sampleRows?.[0] || {});
+    console.log('[inspect] monster columns:', cols.join(', '));
+    console.log('[inspect] remaster/legacy link columns:', cols.filter(flagKey).join(', ') || '(NONE at top level)');
+    const blobCol = cols.find(c => /data|rich|meta|stat|block/i.test(c) && sampleRows?.[0]?.[c] && typeof sampleRows[0][c] === 'object');
+    if (blobCol) {
+      const bk = Object.keys(sampleRows[0][blobCol]);
+      console.log(`[inspect] '${blobCol}' keys:`, bk.join(', '));
+      console.log(`[inspect] remaster/legacy in '${blobCol}':`, bk.filter(flagKey).join(', ') || '(none)');
+    }
+  }
+
   console.log("Monsters are best deduped by re-running 'import-aon-bestiary.js --replace-official' after a backup — not manual deletes.");
 }
 
