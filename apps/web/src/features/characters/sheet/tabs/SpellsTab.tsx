@@ -435,7 +435,7 @@ function SpellLevelRow({
     <div className="border-l-2 border-gold/25 pl-3">
       <div className="mb-1.5 flex items-baseline justify-between gap-3 text-xs">
         <span className="font-display uppercase tracking-widest text-gold/90">
-          {level === 0 ? 'Cantrips' : `Level ${level}`}
+          {level === 0 ? 'Cantrips' : `Rank ${level}`}
         </span>
         {slots > 0 && (
           <span className="flex items-center gap-2 text-silver/60">
@@ -578,7 +578,7 @@ function SpellDetailCard({ name, row }: { name: string; row?: SpellRow }) {
             <h4 className="font-display text-lg text-gold">{row.name}</h4>
             {spellLevel != null && (
               <span className="rounded border border-arcane/40 bg-arcane/10 px-1.5 py-0.5 text-[0.6rem] font-display uppercase tracking-widest text-arcane">
-                {spellLevel === 0 ? 'Cantrip' : `Level ${spellLevel}`}
+                {spellLevel === 0 ? 'Cantrip' : `Rank ${spellLevel}`}
               </span>
             )}
             {actions && (

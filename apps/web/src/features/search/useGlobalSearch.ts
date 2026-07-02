@@ -99,7 +99,11 @@ export function useGlobalSearch(query: string) {
 function ruleSubtitle(e: RuleEntry): string | undefined {
   const parts: string[] = [];
   if (e.level != null) {
-    parts.push(e.category === 'spells' && e.level === 0 ? 'Cantrip' : `Lvl ${e.level}`);
+    parts.push(
+      e.category === 'spells'
+        ? (e.level === 0 ? 'Cantrip' : `Rank ${e.level}`)
+        : `Lvl ${e.level}`,
+    );
   }
   if (e.traits[0]) parts.push(e.traits[0]);
   return parts.join(' · ') || undefined;

@@ -175,7 +175,9 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
         <span className="font-display text-silver">{entry.name}</span>
         {entry.level != null && (
           <span className="rounded border border-arcane/40 bg-arcane/10 px-1.5 py-0.5 text-[0.6rem] font-display uppercase tracking-widest text-arcane">
-            {entry.category === 'spells' && entry.level === 0 ? 'Cantrip' : `Lvl ${entry.level}`}
+            {entry.category === 'spells'
+              ? (entry.level === 0 ? 'Cantrip' : `Rank ${entry.level}`)
+              : `Lvl ${entry.level}`}
           </span>
         )}
         {entry.actionCost && (

@@ -415,7 +415,7 @@ const DAMAGE_TYPE_LABEL: Record<string, string> = {
   C: 'cold',
   E: 'electricity',
   F: 'fire',
-  Ne: 'negative',
+  Ne: 'void',
   Po: 'poison',
   Ps: 'psychic',
   So: 'sonic',
