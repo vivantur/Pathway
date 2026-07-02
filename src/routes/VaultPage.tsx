@@ -219,13 +219,24 @@ function VaultHeader({
             </dl>
           </div>
         </div>
-        <Link
-          to="/vault/new"
-          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-display uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded sm:w-auto sm:justify-start"
-        >
-          <span aria-hidden className="text-lg leading-none">+</span>
-          Add Character
-        </Link>
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto">
+          <Link
+            to="/vault/new"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-display uppercase tracking-widest text-gold transition-all hover:-translate-y-0.5 hover:border-gold/70 hover:bg-gold/20 hover:shadow-gilded"
+          >
+            <span aria-hidden className="text-lg leading-none">+</span>
+            Add Character
+          </Link>
+          <Link
+            to="/vault/create"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-gold/20 px-4 py-2 text-sm font-display uppercase tracking-widest text-silver/70 transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:text-gold"
+          >
+            Build from scratch
+            <span className="rounded border border-arcane/40 bg-arcane/10 px-1 text-[0.55rem] tracking-widest text-arcane">
+              Beta
+            </span>
+          </Link>
+        </div>
       </div>
     </header>
   );

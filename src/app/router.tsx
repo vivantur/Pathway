@@ -8,6 +8,7 @@ import { RulesLibraryPage } from '@/routes/RulesLibraryPage';
 import { LoginPage } from '@/routes/LoginPage';
 import { VaultPage } from '@/routes/VaultPage';
 import { AddCharacterPage } from '@/routes/AddCharacterPage';
+import { CharacterBuilderPage } from '@/routes/CharacterBuilderPage';
 import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
@@ -37,6 +38,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AddCharacterPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'vault/create',
+        element: (
+          <RequireAuth>
+            <CharacterBuilderPage />
           </RequireAuth>
         ),
       },
