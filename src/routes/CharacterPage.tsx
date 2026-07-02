@@ -5,6 +5,7 @@ import { isSchemaNotReady } from '@/features/characters/errors';
 import type { PathbuilderData } from '@/features/characters/types';
 import type { PathbuilderBuild } from '@/features/characters/pathbuilder';
 import { Sheet } from '@/features/characters/sheet/Sheet';
+import { BotImportButton } from '@/features/characters/BotImportButton';
 
 /**
  * Character sheet route: `/vault/:charKey`.
@@ -63,7 +64,8 @@ export function CharacterPage() {
         >
           ← Character Vault
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <BotImportButton characterId={data.id} />
           <Link
             to={editBase}
             className="rounded-md border border-gold/25 px-3 py-1.5 text-xs font-display uppercase tracking-widest text-silver/80 transition-colors hover:border-gold/50 hover:text-gold"
