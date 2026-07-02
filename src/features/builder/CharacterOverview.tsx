@@ -12,6 +12,7 @@ import {
 } from '@/features/builder/data';
 import { deriveCharacter } from './rules';
 import { casterConfig, spellStats } from './spellcasting';
+import { grantedFocusSpell } from './subclassEffects';
 import type { BuilderState } from './types';
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
@@ -156,6 +157,12 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
             {spells && <Chip>Spell attack {sign(spells.attack)}</Chip>}
             {spells && <Chip>Spell DC {spells.dc}</Chip>}
           </div>
+          {grantedFocusSpell(state.classId, state.subclassId) && (
+            <p className="font-ui text-sm text-parchment/80">
+              <span className="text-gold-400">Focus spell:</span>{' '}
+              {grantedFocusSpell(state.classId, state.subclassId)}
+            </p>
+          )}
           {cantrips.length > 0 && (
             <p className="font-ui text-sm text-parchment/80">
               <span className="text-gold-400">Cantrips:</span> {cantrips.join(', ')}

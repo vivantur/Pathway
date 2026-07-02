@@ -13,7 +13,7 @@ import {
   type Weapon,
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
-import { focusPoints } from './subclassEffects';
+import { focusPoints, subclassArmorRank } from './subclassEffects';
 import type { BuilderState } from './types';
 
 export type AbilityScores = Record<AbilityKey, number>;
@@ -335,7 +335,10 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
 
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
   const armorCategory = armor?.category ?? 'unarmored';
-  const defenseRank = (ip?.defenses[armorCategory] ?? 0) as ProficiencyRank;
+  const defenseRank = Math.max(
+    ip?.defenses[armorCategory] ?? 0,
+    subclassArmorRank(state, armorCategory),
+  ) as ProficiencyRank;
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =

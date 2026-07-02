@@ -11,6 +11,7 @@ import {
   spellsForRank,
   subclassNote,
 } from '../spellcasting';
+import { grantedFocusSpell } from '../subclassEffects';
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][n % 10 > 3 || (n >= 11 && n <= 13) ? 0 : n % 10]}`;
@@ -187,6 +188,13 @@ export function SpellsStep() {
               Spell DC <span className="text-gold-400">{stats.dc}</span>
             </span>
           </div>
+        )}
+        {grantedFocusSpell(state.classId, state.subclassId) && (
+          <p className="mt-3 rounded-lg border border-arcane-400/25 bg-arcane-500/10 px-3 py-2 font-ui text-sm text-parchment/85">
+            <span className="text-arcane-400">Focus spell{sub ? ` (${sub})` : ''}:</span>{' '}
+            {grantedFocusSpell(state.classId, state.subclassId)} — cast it using your focus point,
+            refreshed on a 10‑minute rest.
+          </p>
         )}
       </div>
 

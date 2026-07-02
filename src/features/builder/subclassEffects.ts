@@ -61,3 +61,33 @@ export function rogueRacketAbility(subclassId?: string): AbilityKey | undefined 
 export function focusPoints(state: BuilderState): number {
   return state.classId && FOCUS_SUBCLASS_CLASSES.has(state.classId) && state.subclassId ? 1 : 0;
 }
+
+// The specific focus spell a subclass grants at level 1, where it's a clear,
+// well-known mapping. (Other focus-granting subclasses still grant a focus
+// point above; their spell is surfaced via the subclass description.)
+const SUBCLASS_FOCUS_SPELL: Record<string, Record<string, string>> = {
+  druid: { animal: 'Heal Animal', leaf: 'Goodberry', storm: 'Tempest Surge', untamed: 'Untamed Form' },
+  sorcerer: {
+    aberrant: 'Tentacular Limbs',
+    angelic: 'Angelic Halo',
+    demonic: "Glutton's Jaw",
+    diabolic: 'Diabolic Edict',
+    draconic: 'Dragon Claws',
+    elemental: 'Elemental Toss',
+    fey: 'Faerie Dust',
+    hag: 'Jealous Hex',
+    imperial: 'Ancestral Memories',
+    undead: 'Touch of Undeath',
+  },
+};
+
+export function grantedFocusSpell(classId?: string, subclassId?: string): string | undefined {
+  if (!classId || !subclassId) return undefined;
+  return SUBCLASS_FOCUS_SPELL[classId]?.[subclassId];
+}
+
+/** Armor proficiency a subclass grants beyond the class default (e.g. Ruffian → medium). */
+export function subclassArmorRank(state: BuilderState, category: string): number {
+  if (state.classId === 'rogue' && state.subclassId === 'ruffian' && category === 'medium') return 1;
+  return 0;
+}
