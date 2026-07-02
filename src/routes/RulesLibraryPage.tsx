@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
-import { RULE_CATEGORIES } from '@/features/rules/api';
+import { RULE_CATEGORIES, RULE_CATEGORY_GROUPS, categoryById } from '@/features/rules/api';
 import { useRulesSearch } from '@/features/rules/useRulesSearch';
 import type { MonsterStatBlock, RuleCategoryId, RuleEntry } from '@/features/rules/types';
 
@@ -52,21 +52,30 @@ export function RulesLibraryPage() {
         </p>
       </header>
 
-      {/* Category tabs */}
-      <div className="flex flex-wrap gap-2">
-        {RULE_CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setCategory(c.id)}
-            className={`rounded-md border px-3 py-1.5 text-xs font-display uppercase tracking-widest transition-colors ${
-              category === c.id
-                ? 'border-gold/60 bg-gold/10 text-gold'
-                : 'border-gold/20 bg-midnight-900/50 text-silver/70 hover:border-gold/40 hover:text-gold/90'
-            }`}
-          >
-            {c.label}
-          </button>
+      {/* Category picker — grouped into scannable clusters */}
+      <div className="space-y-3">
+        {RULE_CATEGORY_GROUPS.map((g) => (
+          <div key={g.label}>
+            <div className="mb-1.5 text-[0.6rem] font-display uppercase tracking-widest text-gold/50">
+              {g.label}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {g.ids.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCategory(id)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-display uppercase tracking-widest transition-colors ${
+                    category === id
+                      ? 'border-gold/60 bg-gold/10 text-gold'
+                      : 'border-gold/20 bg-midnight-900/50 text-silver/70 hover:border-gold/40 hover:text-gold/90'
+                  }`}
+                >
+                  {categoryById(id).label}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

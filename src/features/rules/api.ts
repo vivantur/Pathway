@@ -428,6 +428,26 @@ export function categoryById(id: RuleCategoryId): CategoryConfig {
   return RULE_CATEGORIES.find((c) => c.id === id) ?? RULE_CATEGORIES[0];
 }
 
+/**
+ * Category groupings for the library's picker, so 24 sections read as a few
+ * scannable clusters instead of one long wrapping row. Every category id
+ * appears in exactly one group.
+ */
+export const RULE_CATEGORY_GROUPS: Array<{ label: string; ids: RuleCategoryId[] }> = [
+  {
+    label: 'Character Options',
+    ids: ['ancestries', 'heritages', 'backgrounds', 'classes', 'archetypes', 'feats'],
+  },
+  { label: 'Spells & Rituals', ids: ['spells', 'rituals', 'domains'] },
+  { label: 'Equipment', ids: ['items', 'relics'] },
+  {
+    label: 'Actions & Rules',
+    ids: ['actions', 'conditions', 'traits', 'skills', 'rules', 'languages'],
+  },
+  { label: 'Bestiary', ids: ['monsters', 'hazards', 'afflictions', 'familiars'] },
+  { label: 'World & Lore', ids: ['deities', 'planes', 'sources'] },
+];
+
 const PAGE_SIZE = 60;
 
 /**
