@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import {
   createCharacterFromBuild,
   updateCharacterFromBuild,
+  uploadCharacterPortrait,
   type CreateCharacterResult,
 } from '@/features/characters/api';
 import type { PathbuilderBuild } from '@/features/characters/pathbuilder';
@@ -31,9 +32,23 @@ export function useSaveBuild() {
       if (!user) throw new Error('Sign in to save to your vault.');
       const base = toPathbuilder(state).build;
       const build = { ...base, _pathwayBuild: state } as unknown as PathbuilderBuild;
-      return editCharKey
-        ? updateCharacterFromBuild({ userId: user.id, charKey: editCharKey, build })
-        : createCharacterFromBuild({ userId: user.id, build });
+      const result = editCharKey
+        ? await updateCharacterFromBuild({ userId: user.id, charKey: editCharKey, build })
+        : await createCharacterFromBuild({ userId: user.id, build });
+
+      // Persist the builder portrait to Storage → the character's `art`. This
+      // is best-effort: the character is already saved, so a portrait failure
+      // must not fail the whole save.
+      if (state.portrait?.startsWith('data:')) {
+        try {
+          const blob = await (await fetch(state.portrait)).blob();
+          const file = new File([blob], 'portrait.jpg', { type: blob.type || 'image/jpeg' });
+          await uploadCharacterPortrait({ userId: user.id, charKey: result.char_key, file });
+        } catch {
+          /* portrait upload is optional — ignore */
+        }
+      }
+      return result;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['characters'] });
