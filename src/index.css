@@ -93,3 +93,30 @@
     @apply bg-gold/30 text-silver;
   }
 }
+
+/* Component classes used by the ported character builder (theme-aware via the
+   shared CSS-variable tokens, so they follow light/dark like the rest of main). */
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-gold-500/25 bg-midnight-800/70 shadow-rune backdrop-blur;
+  }
+  .rune-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-gold-500/40 to-transparent;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gold-500/30
+      bg-midnight-700/60 px-4 py-2 font-ui text-sm font-medium text-parchment
+      transition hover:border-gold-400/70 hover:bg-midnight-600/70
+      focus:outline-none focus:ring-2 focus:ring-gold-400/50 disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply border-gold-400/60 bg-gold-500/20 text-gold-400 hover:bg-gold-500/30;
+  }
+  .choice-card {
+    @apply cursor-pointer rounded-xl border border-gold-500/20 bg-midnight-800/60 p-4
+      transition hover:border-gold-400/60 hover:bg-midnight-700/60;
+  }
+  .choice-card[data-selected='true'] {
+    @apply border-gold-400 bg-gold-500/15 shadow-rune;
+  }
+}
