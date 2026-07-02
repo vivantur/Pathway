@@ -168,6 +168,12 @@ function structurePf2eSections(raw: string, name?: string): string {
   // keeps it from swallowing past the sentence.
   text = text.replace(/\bSource\b[^.]*?pg\.\s*\d+\s*/gi, '').trim();
 
+  // Class pages carry flattened advancement + spellcasting tables that can't
+  // be reconstructed as prose — clean those separately.
+  if (/\bYou gain these features as\b|Your Level\s*Class Features|Your Level\s*Cantrips/i.test(text)) {
+    return structureClassText(text);
+  }
+
   // Dynamic "<Word> Heritage Mechanics" header (aasimar, tiefling, etc.).
   text = text.replace(/\s+(\w+ Heritage Mechanics)\s+/g, '\n\n## $1\n\n');
 
@@ -179,4 +185,29 @@ function structurePf2eSections(raw: string, name?: string): string {
   }
 
   return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/**
+ * Clean a class page's flattened text. AoN class descriptions concatenate the
+ * narrative, a proficiency block, and two tables (class features by level, and
+ * the spellcasting/cantrips grid) with no structure — the tables become an
+ * unreadable run-on ("1Ancestry… 2Cleric feat…", "Your LevelCantrips1st2nd…").
+ * We can't rebuild those grids as prose, so we cut them (the entry's AoN link
+ * carries the real tables) and put each proficiency statement on its own line.
+ */
+function structureClassText(text: string): string {
+  // Cut everything from where the level-by-level tables begin.
+  const cut = text.search(/\bYou gain these features as\b|Your Level\s*Class Features|Your Level\s*Cantrips/i);
+  let body = cut > 0 ? text.slice(0, cut) : text;
+
+  // Break the jammed proficiency statements ("Trained in Reflex Expert in
+  // Will") onto separate paragraphs. Capitalized rank words only, so lowercase
+  // "trained in …" inside narrative sentences is left alone.
+  body = body.replace(
+    /\s+(?=(?:Trained|Expert|Master|Legendary|Untrained) in )/g,
+    '\n\n',
+  );
+
+  body = body.replace(/\n{3,}/g, '\n\n').trim();
+  return `${body}\n\n_The full class features by level and spellcasting tables are on Archive of Nethys (link below)._`;
 }
