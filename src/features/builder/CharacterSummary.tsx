@@ -109,7 +109,8 @@ export function CharacterSummary() {
               >
                 <span>{w.name}</span>
                 <span className="text-gold-400">
-                  {sign(w.attack)} · 1{w.damageDie}
+                  {sign(w.attack)} · {w.dice}
+                  {w.damageDie}
                   {w.damageMod ? sign(w.damageMod) : ''} {w.damageType}
                 </span>
               </div>

@@ -250,12 +250,32 @@ export interface EquippedWeapon {
   id: string;
   name: string;
   attack: number;
+  /** Number of weapon damage dice (>1 with Automatic Bonus Progression). */
+  dice: number;
   damageDie: string;
   damageMod: number;
   damageType: string;
   ranged: boolean;
   range?: number;
   hands: string;
+}
+
+// Automatic Bonus Progression (GMG variant): the "big six" item bonuses granted
+// automatically by character level.
+function abpAttack(level: number): number {
+  return level >= 16 ? 3 : level >= 10 ? 2 : level >= 2 ? 1 : 0;
+}
+function abpDamageDice(level: number): number {
+  return level >= 19 ? 4 : level >= 12 ? 3 : level >= 4 ? 2 : 1;
+}
+function abpDefense(level: number): number {
+  return level >= 18 ? 3 : level >= 11 ? 2 : level >= 5 ? 1 : 0;
+}
+function abpResilience(level: number): number {
+  return level >= 20 ? 3 : level >= 14 ? 2 : level >= 8 ? 1 : 0;
+}
+function abpPerception(level: number): number {
+  return level >= 19 ? 3 : level >= 13 ? 2 : level >= 7 ? 1 : 0;
 }
 
 export interface DerivedCharacter {
@@ -294,6 +314,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const ip = klass?.initialProficiencies;
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
   const pb = (rank: ProficiencyRank) => proficiencyBonus(rank, level, pwl);
+  const abp = opt(state, OPT.automaticBonusProgression);
 
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
   const maxHp = (ancestry?.hp ?? 0) + ((klass?.hp ?? 0) + mods.con) * level;
@@ -312,7 +333,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const defenseRank = (ip?.defenses[armorCategory] ?? 0) as ProficiencyRank;
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
-  const ac = 10 + pb(defenseRank) + dexForAc + (armor?.acBonus ?? 0);
+  const ac =
+    10 + pb(defenseRank) + dexForAc + (armor?.acBonus ?? 0) + (abp ? abpDefense(level) : 0);
   const unarmoredDefense = (ip?.defenses.unarmored ?? 0) as ProficiencyRank;
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
@@ -321,7 +343,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
   const perceptionRank = (ip?.perception ?? 0) as ProficiencyRank;
-  const perception = pb(perceptionRank) + mods.wis;
+  const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
 
   const fortRank = (ip?.fortitude ?? 0) as ProficiencyRank;
   const refRank = (ip?.reflex ?? 0) as ProficiencyRank;
@@ -358,7 +380,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     return {
       id: w.id,
       name: w.name,
-      attack: pb(catRank) + attackMod,
+      attack: pb(catRank) + attackMod + (abp ? abpAttack(level) : 0),
+      dice: abp ? abpDamageDice(level) : 1,
       damageDie: w.damageDie,
       damageMod,
       damageType: w.damageType,
@@ -376,9 +399,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     shieldBonus: shield?.acBonus ?? 0,
     perception,
     saves: {
-      fortitude: pb(fortRank) + mods.con,
-      reflex: pb(refRank) + mods.dex,
-      will: pb(willRank) + mods.wis,
+      fortitude: pb(fortRank) + mods.con + (abp ? abpResilience(level) : 0),
+      reflex: pb(refRank) + mods.dex + (abp ? abpResilience(level) : 0),
+      will: pb(willRank) + mods.wis + (abp ? abpResilience(level) : 0),
     },
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,

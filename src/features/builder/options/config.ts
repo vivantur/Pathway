@@ -58,7 +58,7 @@ export const OPTION_GROUPS: OptionGroup[] = [
       { id: 'freeArchetype', label: 'Use Free Archetype variant rules?', scope: 'character', implemented: true, note: 'Adds an archetype feat slot at even levels (archetype content arrives with the full data import).' },
       { id: 'removeFreeArchetypeFeatRestrictions', label: 'Remove Free Archetype feat restrictions?', scope: 'character', implemented: false, note: 'Needs archetype content.' },
       { id: 'removeFreeArchetypeAbilityRequirements', label: 'Remove Free Archetype ability requirements', scope: 'character', implemented: false, note: 'Needs archetype content.' },
-      { id: 'automaticBonusProgression', label: 'Use Automatic Bonus Progression variant rules?', scope: 'character', implemented: false, note: 'Planned — replaces item bonuses with automatic ones.' },
+      { id: 'automaticBonusProgression', label: 'Use Automatic Bonus Progression variant rules?', scope: 'character', implemented: true, note: 'Replaces the “big six” magic items with automatic bonuses by level (attack, AC, saves, Perception, extra weapon dice).' },
       { id: 'proficiencyWithoutLevel', label: 'Use Proficiency Without Level variant rules?', scope: 'character', implemented: true, note: 'Removes your level from proficiency-based numbers (a lower-magic play style).' },
       { id: 'ancestryParagon', label: 'Use Ancestry Paragon variant rules?', scope: 'character', implemented: true, note: 'Grants extra ancestry feats (levels 1, 3, 7, 11, 15, 19).' },
       { id: 'gradualAbilityBoosts', label: 'Use Gradual Ability Boost variant rules?', scope: 'character', implemented: true, note: 'Spreads the four level-up boosts across several levels instead of all at once.' },
@@ -76,6 +76,7 @@ export const OPT = {
   ancestryParagon: 'ancestryParagon',
   proficiencyWithoutLevel: 'proficiencyWithoutLevel',
   gradualAbilityBoosts: 'gradualAbilityBoosts',
+  automaticBonusProgression: 'automaticBonusProgression',
   autosave: 'autosave',
   disableAllAutosaving: 'disableAllAutosaving',
 } as const;
