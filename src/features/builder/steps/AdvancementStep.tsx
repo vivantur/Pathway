@@ -11,7 +11,7 @@ import {
   type AbilityKey,
 } from '@/features/builder/data';
 import { MAX_LEVEL, useBuilder } from '../store';
-import { gainsForLevel, skillRankMap, unmetAtLevel, RANK_LABEL } from '../rules';
+import { chosenFeatIds, gainsForLevel, skillRankMap, unmetAtLevel, RANK_LABEL } from '../rules';
 import { emptyLevelGains } from '../types';
 import { FeatPicker } from '../FeatPicker';
 
@@ -29,6 +29,7 @@ function LevelCard({ level }: { level: number }) {
   const updateLevelGains = useBuilder((s) => s.updateLevelGains);
   const slots = gainsForLevel(level, state.options);
   const gains = state.progression[level] ?? emptyLevelGains();
+  const taken = chosenFeatIds(state);
   const unmet = unmetAtLevel(state, level);
   const feats = getDataset().feats;
   const klass = state.classId ? findClass(state.classId) : undefined;
@@ -131,6 +132,7 @@ function LevelCard({ level }: { level: number }) {
               recommendations={level <= 4 ? classRecommendations(klass?.id) : []}
               selectedId={gains.classFeatId}
               onSelect={(id) => updateLevelGains(level, { classFeatId: id })}
+              takenIds={taken}
             />
           </SlotBlock>
         )}
@@ -142,6 +144,7 @@ function LevelCard({ level }: { level: number }) {
               recommendations={level <= 5 ? ancestryRecommendations(ancestry?.id) : []}
               selectedId={gains.ancestryFeatId}
               onSelect={(id) => updateLevelGains(level, { ancestryFeatId: id })}
+              takenIds={taken}
             />
           </SlotBlock>
         )}
@@ -152,6 +155,7 @@ function LevelCard({ level }: { level: number }) {
               feats={skillFeats}
               selectedId={gains.skillFeatId}
               onSelect={(id) => updateLevelGains(level, { skillFeatId: id })}
+              takenIds={taken}
             />
           </SlotBlock>
         )}
@@ -162,6 +166,7 @@ function LevelCard({ level }: { level: number }) {
               feats={generalFeats}
               selectedId={gains.generalFeatId}
               onSelect={(id) => updateLevelGains(level, { generalFeatId: id })}
+              takenIds={taken}
             />
           </SlotBlock>
         )}
@@ -172,7 +177,8 @@ function LevelCard({ level }: { level: number }) {
               feats={archetypeFeats}
               selectedId={gains.archetypeFeatId}
               onSelect={(id) => updateLevelGains(level, { archetypeFeatId: id })}
-              emptyLabel="No archetype feats in the dataset yet — they arrive with the full data import. The slot is reserved."
+              emptyLabel="No archetype feats available at this level."
+              takenIds={taken}
             />
           </SlotBlock>
         )}

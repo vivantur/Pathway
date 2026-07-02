@@ -217,6 +217,26 @@ export function trainedSkillIds(state: BuilderState): Set<string> {
   return set;
 }
 
+/** Every feat id chosen anywhere on the build (all levels + creation slots). */
+export function chosenFeatIds(state: BuilderState): Set<string> {
+  const ids = new Set<string>();
+  const add = (id?: string) => {
+    if (id) ids.add(id);
+  };
+  add(state.ancestryFeatId);
+  add(state.classFeatId);
+  const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
+  add(bg?.skillFeat);
+  for (const g of Object.values(state.progression)) {
+    add(g.classFeatId);
+    add(g.ancestryFeatId);
+    add(g.skillFeatId);
+    add(g.generalFeatId);
+    add(g.archetypeFeatId);
+  }
+  return ids;
+}
+
 /** Total number of free skills the player may pick (class count + Int bonus). */
 export function freeSkillCount(state: BuilderState): number {
   const klass = state.classId ? findClass(state.classId) : undefined;

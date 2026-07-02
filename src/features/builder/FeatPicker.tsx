@@ -7,15 +7,24 @@ function FeatCard({
   feat,
   selected,
   reason,
+  taken,
   onSelect,
 }: {
   feat: Feat;
   selected: boolean;
   reason?: string;
+  taken?: boolean;
   onSelect: () => void;
 }) {
   return (
-    <button type="button" className="choice-card text-left" data-selected={selected} onClick={onSelect}>
+    <button
+      type="button"
+      className="choice-card text-left disabled:cursor-not-allowed disabled:opacity-45"
+      data-selected={selected}
+      disabled={taken}
+      title={taken ? 'Already taken elsewhere in this build' : undefined}
+      onClick={onSelect}
+    >
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-display text-lg text-parchment">
           {reason && (
@@ -25,10 +34,16 @@ function FeatCard({
           )}
           {feat.name}
         </span>
-        {feat.prerequisites && (
-          <span className="font-ui text-[10px] uppercase tracking-wider text-parchment/50">
-            {feat.prerequisites}
+        {taken ? (
+          <span className="rounded bg-midnight-600/70 px-1.5 py-0.5 font-ui text-[10px] uppercase tracking-wider text-parchment/60">
+            Taken
           </span>
+        ) : (
+          feat.prerequisites && (
+            <span className="font-ui text-[10px] uppercase tracking-wider text-parchment/50">
+              {feat.prerequisites}
+            </span>
+          )
         )}
       </div>
       {reason ? (
@@ -51,14 +66,18 @@ export function FeatPicker({
   selectedId,
   onSelect,
   emptyLabel = 'No options in the current dataset.',
+  takenIds,
 }: {
   feats: Feat[];
   recommendations?: Recommendation[];
   selectedId?: string;
   onSelect: (id: string) => void;
   emptyLabel?: string;
+  /** Feat ids already chosen elsewhere in the build — shown as "Taken". */
+  takenIds?: Set<string>;
 }) {
   const beginner = useApp((s) => s.beginner);
+  const isTaken = (id: string) => Boolean(takenIds?.has(id)) && id !== selectedId;
   const [query, setQuery] = useState('');
   const [theme, setTheme] = useState<Theme | 'All'>('All');
 
@@ -91,7 +110,7 @@ export function FeatPicker({
           <div className="flex flex-col gap-2">
             {recommendations.slice(0, 3).map((r) => {
               const feat = feats.find((f) => f.id === r.featId);
-              if (!feat) return null;
+              if (!feat || isTaken(feat.id)) return null;
               return (
                 <div key={r.featId} className="flex items-center justify-between gap-3">
                   <span className="font-ui text-sm text-parchment/80">
@@ -149,6 +168,7 @@ export function FeatPicker({
                 feat={f}
                 selected={selectedId === f.id}
                 reason={reasonById.get(f.id)}
+                taken={isTaken(f.id)}
                 onSelect={() => onSelect(f.id)}
               />
             ))}
@@ -169,6 +189,7 @@ export function FeatPicker({
                 key={f.id}
                 feat={f}
                 selected={selectedId === f.id}
+                taken={isTaken(f.id)}
                 onSelect={() => onSelect(f.id)}
               />
             ))}

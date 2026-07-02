@@ -7,11 +7,13 @@ import {
   findClass,
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
+import { chosenFeatIds } from '../rules';
 import { FeatPicker } from '../FeatPicker';
 
 export function FeatsStep() {
   const state = useBuilder((s) => s.state);
   const update = useBuilder((s) => s.update);
+  const taken = chosenFeatIds(state);
 
   const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
   const klass = state.classId ? findClass(state.classId) : undefined;
@@ -49,6 +51,7 @@ export function FeatsStep() {
           selectedId={state.ancestryFeatId}
           onSelect={(id) => update({ ancestryFeatId: id })}
           emptyLabel="Choose an ancestry first."
+          takenIds={taken}
         />
       </section>
 
@@ -65,6 +68,7 @@ export function FeatsStep() {
           selectedId={state.classFeatId}
           onSelect={(id) => update({ classFeatId: id })}
           emptyLabel="Choose a class first."
+          takenIds={taken}
         />
       </section>
 
