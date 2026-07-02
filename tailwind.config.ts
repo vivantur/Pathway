@@ -42,6 +42,10 @@ export default {
           DEFAULT: 'rgb(var(--c-gold) / <alpha-value>)',
           soft: 'rgb(var(--c-gold-soft) / <alpha-value>)',
           deep: 'rgb(var(--c-gold-deep) / <alpha-value>)',
+          // Numeric shades (aliases) used by the ported character builder.
+          400: 'rgb(var(--c-gold-soft) / <alpha-value>)',
+          500: 'rgb(var(--c-gold) / <alpha-value>)',
+          600: 'rgb(var(--c-gold-deep) / <alpha-value>)',
         },
         brass: 'rgb(var(--c-brass) / <alpha-value>)',
         emerald: {
@@ -51,18 +55,26 @@ export default {
         arcane: {
           DEFAULT: 'rgb(var(--c-arcane) / <alpha-value>)',
           soft: 'rgb(var(--c-arcane-soft) / <alpha-value>)',
+          400: 'rgb(var(--c-arcane) / <alpha-value>)',
+          500: 'rgb(var(--c-arcane-soft) / <alpha-value>)',
         },
         silver: 'rgb(var(--c-silver) / <alpha-value>)',
+        // Body-text alias used by the ported builder (maps to the silver token).
+        parchment: 'rgb(var(--c-silver) / <alpha-value>)',
       },
       fontFamily: {
         // Display: an engraved, grimoire feel. Body: highly readable serif.
         display: ['"Cinzel"', 'Georgia', 'serif'],
         serif: ['"EB Garamond"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
+        // Aliases used by the ported character builder.
+        body: ['"EB Garamond"', 'Georgia', 'serif'],
+        ui: ['"Inter"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         arcane: '0 0 24px -4px rgba(57, 214, 232, 0.35)',
         gilded: '0 1px 0 0 rgba(212, 175, 55, 0.4), 0 8px 30px -12px rgba(0,0,0,0.7)',
+        rune: '0 0 0 1px rgba(212,175,55,0.25), 0 8px 30px -8px rgba(0,0,0,0.7)',
       },
       backgroundImage: {
         'grimoire-radial':
