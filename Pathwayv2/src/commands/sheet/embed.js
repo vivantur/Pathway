@@ -248,16 +248,15 @@ function buildSheetEmbed(charEntry) {
   }
   const loreSkills = [...loreMap.values()].map(lore => {
     const intMod = Math.floor(((ab.int ?? 10) - 10) / 2);
-    const profBonus = lore.source === 'proficiency'
-      ? calcEditableProfNum(lore.rank, lvl)
-      : lore.source === 'edit'
-        ? calcProfNum(lore.rank, lvl)
-        : calcCharacterProfNum(c, lore.rank, lvl);
-    const displayProfValue = lore.source === 'proficiency'
-      ? editableProfValue(lore.rank)
-      : lore.source === 'edit'
-        ? lore.rank
-        : characterProfValue(c, lore.rank);
+    // 'proficiency' (raw c.proficiencies) and JSON lores use the source-aware
+    // helper so Pathbuilder ranks (2/4/6/8) aren't inflated by a rank; only
+    // manual 'edit' overrides bypass it.
+    const profBonus = lore.source === 'edit'
+      ? calcProfNum(lore.rank, lvl)
+      : calcCharacterProfNum(c, lore.rank, lvl);
+    const displayProfValue = lore.source === 'edit'
+      ? lore.rank
+      : characterProfValue(c, lore.rank);
     const computedTotal = intMod + profBonus;
     const total = (lore.total !== null) ? lore.total : computedTotal;
     const icon = profIconForValue(displayProfValue, { override: lore.total !== null });

@@ -96,7 +96,10 @@ function resolveVariable(rawName, charEntry) {
   if (name.endsWith('-lore') || name.endsWith('_lore') || name === 'lore') {
     const normalized = loreKey(name);
     const profEntry = Object.entries(prof).find(([key]) => loreKey(key) === normalized);
-    return abilityMod(ab, 'int') + calcEditableProfNum(profEntry?.[1] ?? 0, lvl);
+    // Source-aware: Pathbuilder stores lore proficiency as 2/4/6/8, native as
+    // 1/2/3/4. calcCharacterProfNum flips on the source so trained/expert lores
+    // aren't inflated by one rank for Pathbuilder-imported characters.
+    return abilityMod(ab, 'int') + calcCharacterProfNum(c, profEntry?.[1] ?? 0, lvl);
   }
 
   return undefined;

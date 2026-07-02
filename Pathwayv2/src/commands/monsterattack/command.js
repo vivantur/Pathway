@@ -140,10 +140,11 @@ async function execute(interaction) {
     // ── add (strike) ──
     if (sub === 'add' || sub === 'addspell') {
       const monsterInput = interaction.options.getString('monster');
-      const attackName = interaction.options.getString('attack').trim();
+      const attackName = interaction.options.getString('attack')?.trim();
       const bonus = interaction.options.getInteger('bonus');
-      const damage = interaction.options.getString('damage').trim();
+      const damage = interaction.options.getString('damage')?.trim();
       const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
+      if (!attackName || !damage) return interaction.reply({ content: '❌ Both `attack` (name) and `damage` are required.', ephemeral: true });
       const traitsRaw = sub === 'add' ? interaction.options.getString('traits') : null;
       const extraDamage = sub === 'add' ? interaction.options.getString('extra_damage') : null;
       const extraType = sub === 'add' ? interaction.options.getString('extra_type') : null;
@@ -184,11 +185,12 @@ async function execute(interaction) {
     // ── addsave ──
     if (sub === 'addsave') {
       const monsterInput = interaction.options.getString('monster');
-      const attackName = interaction.options.getString('attack').trim();
+      const attackName = interaction.options.getString('attack')?.trim();
       const saveType = interaction.options.getString('save');
       const dc = interaction.options.getInteger('dc');
-      const damage = interaction.options.getString('damage').trim();
+      const damage = interaction.options.getString('damage')?.trim();
       const damageType = (interaction.options.getString('type') ?? 'damage').toLowerCase();
+      if (!attackName || !damage) return interaction.reply({ content: '❌ Both `attack` (name) and `damage` are required.', ephemeral: true });
       if (!rollDamageExpression(damage)) return interaction.reply({ content: `❌ Couldn't parse damage "${damage}". Use something like \`6d6\` or \`4d10+5\`.`, ephemeral: true });
 
       const store = loadMonsterAttacks();
@@ -208,7 +210,8 @@ async function execute(interaction) {
     // ── remove ──
     if (sub === 'remove') {
       const monsterInput = interaction.options.getString('monster');
-      const attackName = interaction.options.getString('attack').trim();
+      const attackName = interaction.options.getString('attack')?.trim();
+      if (!attackName) return interaction.reply({ content: '❌ An `attack` name is required.', ephemeral: true });
       const store = loadMonsterAttacks();
       const guild = getGuildMonsters(store, guildId);
       const displayName = resolveMonsterDisplayName(monsterInput);

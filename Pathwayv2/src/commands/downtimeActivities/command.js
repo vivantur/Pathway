@@ -151,7 +151,7 @@ if (commandName === 'income') {
     const roll = downtimeRoll(skill.total, dc, bonus);
     const outcome = roll.degree === 'criticalSuccess' ? 'crit-success' : roll.degree === 'criticalFailure' ? 'crit-failure' : roll.degree;
     const dailyCp = downtime.dailyIncomeCopper({ taskLevel, profRank: skill.profNum, outcome });
-    saveDowntime(store);
+    await saveDowntime(store);
 
     const embed = new EmbedBuilder()
       .setColor(roll.degree === 'criticalFailure' ? 0xC0392B : roll.degree === 'failure' ? 0xE67E22 : 0x27AE60)
@@ -184,7 +184,7 @@ if (commandName === 'income') {
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Create Forgery (${document})`);
     if (!spend.ok) return interaction.reply(spend.reply);
     const roll = downtimeRoll(skill.total, 20, bonus);
-    saveDowntime(store);
+    await saveDowntime(store);
 
     const embed = new EmbedBuilder()
       .setColor(roll.total >= 20 ? 0x27AE60 : 0xE67E22)
@@ -218,7 +218,7 @@ if (commandName === 'income') {
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Craft ${item}`);
     if (!spend.ok) return interaction.reply(spend.reply);
     const roll = downtimeRoll(skill.total, dc, bonus);
-    saveDowntime(store);
+    await saveDowntime(store);
 
     const reductionLevel = roll.degree === 'criticalSuccess' ? Math.min(20, (c.level ?? 1) + 1) : (c.level ?? 1);
     const dailyReduction = ['criticalSuccess', 'success'].includes(roll.degree)
@@ -255,7 +255,7 @@ if (commandName === 'income') {
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, 'Long-Term Rest');
     if (!spend.ok) return interaction.reply(spend.reply);
-    saveDowntime(store);
+    await saveDowntime(store);
     return interaction.reply({
       embeds: [new EmbedBuilder()
         .setColor(0x27AE60)
@@ -280,7 +280,7 @@ if (commandName === 'income') {
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, `Treat Disease (${target})`);
     if (!spend.ok) return interaction.reply(spend.reply);
     const roll = downtimeRoll(skill.total, dc, bonus);
-    saveDowntime(store);
+    await saveDowntime(store);
     const resultText = {
       criticalSuccess: `${target} gains a +4 circumstance bonus to the next save against the disease.`,
       success: `${target} gains a +2 circumstance bonus to the next save against the disease.`,
@@ -324,7 +324,7 @@ if (commandName === 'income') {
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, titleMap[commandName] ?? commandName);
     if (!spend.ok) return interaction.reply(spend.reply);
     const roll = downtimeRoll(skill.total, dc, bonus);
-    saveDowntime(store);
+    await saveDowntime(store);
 
     const guidance = {
       learnname: { criticalSuccess: 'You find private name information plus hidden fragments that may point toward a true name.', success: 'You find one private name or useful name clue.', failure: 'You find no useful name.', criticalFailure: 'You may alert the individual or uncover a dangerous/wrong name.' },
@@ -363,7 +363,7 @@ if (commandName === 'income') {
     const store = loadDowntime();
     const spend = spendDowntimeDaysOrReply(store, interaction, userId, charKey, c.name ?? 'Character', days, commandName === 'cram' ? `Cram (${subject})` : `Retrain (${subject})`);
     if (!spend.ok) return interaction.reply(spend.reply);
-    saveDowntime(store);
+    await saveDowntime(store);
     const description = commandName === 'cram'
       ? `**Branch/topic:** ${subject}\nYou Study twice, but until your next Study downtime activity, each adventuring day starts with a DC 8 flat check or you are fatigued for that day.`
       : `**Change:** ${subject}\nMost feats, trained skills, and selected class features can be retrained with GM approval. You cannot normally retrain ancestry, heritage, background, class, or ability scores.`;

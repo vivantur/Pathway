@@ -115,10 +115,10 @@ async function execute(interaction) {
 
   if (subcommand === 'set') {
     charEntry.wallet = {
-      pp: interaction.options.getInteger('pp') ?? wallet.pp ?? 0,
-      gp: interaction.options.getInteger('gp') ?? wallet.gp ?? 0,
-      sp: interaction.options.getInteger('sp') ?? wallet.sp ?? 0,
-      cp: interaction.options.getInteger('cp') ?? wallet.cp ?? 0,
+      pp: Math.max(0, interaction.options.getInteger('pp') ?? wallet.pp ?? 0),
+      gp: Math.max(0, interaction.options.getInteger('gp') ?? wallet.gp ?? 0),
+      sp: Math.max(0, interaction.options.getInteger('sp') ?? wallet.sp ?? 0),
+      cp: Math.max(0, interaction.options.getInteger('cp') ?? wallet.cp ?? 0),
     };
     characters[interaction.user.id][charKey] = charEntry;
     await saveCharacters(characters);

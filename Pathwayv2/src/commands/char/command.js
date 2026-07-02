@@ -497,16 +497,15 @@ async function execute(interaction) {
           for (const lore of loreMap.values()) {
             const intMod = Math.floor((((charEntry.data?.abilities ?? {}).int ?? 10) - 10) / 2);
             const lvlForLore = charEntry.data?.level ?? 1;
-            const profBonus = lore.source === 'proficiency'
-              ? calcEditableProfNum(lore.rank, lvlForLore)
-              : lore.source === 'edit'
-                ? calcProfNum(lore.rank, lvlForLore)
-                : calcCharacterProfNum(charEntry.data, lore.rank, lvlForLore);
-            const displayProfValue = lore.source === 'proficiency'
-              ? editableProfValue(lore.rank)
-              : lore.source === 'edit'
-                ? lore.rank
-                : characterProfValue(charEntry.data, lore.rank);
+            // Both 'proficiency' (raw c.proficiencies) and JSON lores go through
+            // the source-aware helper so Pathbuilder ranks (2/4/6/8) aren't
+            // inflated. Only manual 'edit' overrides bypass it.
+            const profBonus = lore.source === 'edit'
+              ? calcProfNum(lore.rank, lvlForLore)
+              : calcCharacterProfNum(charEntry.data, lore.rank, lvlForLore);
+            const displayProfValue = lore.source === 'edit'
+              ? lore.rank
+              : characterProfValue(charEntry.data, lore.rank);
             const computedTotal = intMod + profBonus;
             const totalValue = lore.total !== null ? lore.total : computedTotal;
             const rankLabel = { 0: 'Untrained', 2: 'Trained', 4: 'Expert', 6: 'Master', 8: 'Legendary' }[displayProfValue] ?? 'Untrained';
@@ -545,7 +544,7 @@ async function execute(interaction) {
               if (!charEntry.edits.hiddenLores) charEntry.edits.hiddenLores = [];
               if (!charEntry.edits.hiddenLores.some(h => String(h).toLowerCase() === topicLower)) charEntry.edits.hiddenLores.push(loreTopic);
             }
-            saveCharacters(characters);
+            await saveCharacters(characters);
             return interaction.reply({ content: `Removed **Lore: ${loreTopic}** from **${charEntry.name}**.`, ephemeral: true });
           }
 
@@ -565,7 +564,7 @@ async function execute(interaction) {
           } else {
             charEntry.edits.lores.push(loreEntry);
           }
-          saveCharacters(characters);
+          await saveCharacters(characters);
           const rankText = rankStr !== null ? rankStr.toLowerCase() : (total === null ? 'trained' : null);
           const detail = [rankText ? `rank **${rankText}**` : null, total !== null ? `flat total **${total >= 0 ? '+' : ''}${total}**` : null].filter(Boolean).join(' and ');
           return interaction.reply({ content: `Set **Lore: ${loreTopic}** on **${charEntry.name}** to ${detail}. Use \`/sheet\` to see it.`, ephemeral: true });
@@ -577,7 +576,7 @@ async function execute(interaction) {
             return interaction.reply({ content: `**${skillLabels[skillKeyLower]}** does not have a manual override on **${charEntry.name}**.`, ephemeral: true });
           }
           delete charEntry.edits.skillOverrides[skillKeyLower];
-          saveCharacters(characters);
+          await saveCharacters(characters);
           return interaction.reply({ content: `Removed manual override for **${skillLabels[skillKeyLower]}** on **${charEntry.name}**.`, ephemeral: true });
         }
 
@@ -594,7 +593,7 @@ async function execute(interaction) {
           }
           charEntry.edits.skillOverrides[skillKeyLower] = override;
         }
-        saveCharacters(characters);
+        await saveCharacters(characters);
 
         const parts = [];
         if (rankStr !== null) parts.push(`rank **${rankStr.toLowerCase()}**`);
@@ -644,7 +643,7 @@ async function execute(interaction) {
         charEntry.edits.skillOverrides[skillKeyLower] = override;
       }
 
-      saveCharacters(characters);
+      await saveCharacters(characters);
 
       // Build confirmation message
       const parts = [];
@@ -710,7 +709,7 @@ async function execute(interaction) {
           const alreadyHidden = charEntry.edits.hiddenLores.some(h => h.toLowerCase() === topicLower);
           if (!alreadyHidden) charEntry.edits.hiddenLores.push(topic);
         }
-        saveCharacters(characters);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Removed **Lore: ${topic}** from **${charEntry.name}**.`, ephemeral: true });
       }
 
@@ -735,7 +734,7 @@ async function execute(interaction) {
       } else {
         charEntry.edits.lores.push(loreEntry);
       }
-      saveCharacters(characters);
+      await saveCharacters(characters);
 
       const parts = [];
       if (rankStr !== null) parts.push(`rank **${rankStr.toLowerCase()}**`);
@@ -774,13 +773,13 @@ async function execute(interaction) {
 
       if (action === 'clear') {
         delete charEntry.edits.stats[field];
-        saveCharacters(characters);
+        await saveCharacters(characters);
         const fieldLabel = { ac: 'AC', hpMax: 'HP max', fortitude: 'Fort save', reflex: 'Reflex save', will: 'Will save', perception: 'Perception', speed: 'Speed' }[field];
         return interaction.reply({ content: `✅ Cleared **${fieldLabel}** override on **${charEntry.name}**. JSON value will show on \`/sheet\`.`, ephemeral: true });
       }
 
       charEntry.edits.stats[field] = value;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       const fieldLabel = { ac: 'AC', hpMax: 'HP max', fortitude: 'Fort save', reflex: 'Reflex save', will: 'Will save', perception: 'Perception', speed: 'Speed' }[field];
       return interaction.reply({ content: `✅ Set **${fieldLabel}** to **${value}** on **${charEntry.name}**. Use \`/sheet\` to see it.`, ephemeral: true });
     }
@@ -854,7 +853,7 @@ async function execute(interaction) {
             charEntry.edits.hiddenWeapons.push(name);
           }
         }
-        saveCharacters(characters);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Removed **${name}** from **${charEntry.name}**.`, ephemeral: true });
       }
 
@@ -893,7 +892,7 @@ async function execute(interaction) {
       } else {
         charEntry.edits.weapons.push(newWeapon);
       }
-      saveCharacters(characters);
+      await saveCharacters(characters);
 
       const verb = action === 'add' ? (existingIdx !== -1 ? 'Updated' : 'Added') : 'Updated';
       return interaction.reply({ content: `✅ ${verb} **${name}** on **${charEntry.name}** (${newWeapon.attack >= 0 ? '+' : ''}${newWeapon.attack} to hit, ${newWeapon.die} ${newWeapon.damageType}). Use \`/sheet\` to see it.`, ephemeral: true });
@@ -993,12 +992,12 @@ async function execute(interaction) {
 
       if (action === 'clear') {
         delete charEntry.edits.abilities[field];
-        saveCharacters(characters);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Cleared **${field.toUpperCase()}** override on **${charEntry.name}**. JSON value will show on \`/sheet\`.`, ephemeral: true });
       }
 
       charEntry.edits.abilities[field] = value;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       const mod = Math.floor((value - 10) / 2);
       const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
       return interaction.reply({ content: `✅ Set **${field.toUpperCase()}** to **${value}** (${modStr} mod) on **${charEntry.name}**.`, ephemeral: true });
@@ -1041,7 +1040,7 @@ async function execute(interaction) {
             charEntry.edits.hiddenItems.push(name);
           }
         }
-        saveCharacters(characters);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Removed **${name}** from **${charEntry.name}**.`, ephemeral: true });
       }
 
@@ -1054,7 +1053,7 @@ async function execute(interaction) {
       } else {
         charEntry.edits.items.push([name, quantity]);
       }
-      saveCharacters(characters);
+      await saveCharacters(characters);
       const verb = (existingEditIdx !== -1 || existingJsonIdx !== -1) ? 'Updated' : 'Added';
       return interaction.reply({ content: `✅ ${verb} **${name}** (x${quantity}) on **${charEntry.name}**.`, ephemeral: true });
     }
@@ -1085,7 +1084,7 @@ async function execute(interaction) {
 
       if (action === 'clear') {
         delete charEntry.edits.spellcasting[field];
-        saveCharacters(characters);
+        await saveCharacters(characters);
         return interaction.reply({ content: `✅ Cleared spellcasting **${field}** override on **${charEntry.name}**.`, ephemeral: true });
       }
 
@@ -1096,7 +1095,7 @@ async function execute(interaction) {
         if (!valueStr) return interaction.reply({ content: `❌ Provide a \`text_value\` (e.g. "arcane", "int") when setting ${field}.`, ephemeral: true });
         charEntry.edits.spellcasting[field] = valueStr.toLowerCase();
       }
-      saveCharacters(characters);
+      await saveCharacters(characters);
       const val = numericFields.includes(field) ? valueInt : valueStr.toLowerCase();
       return interaction.reply({ content: `✅ Set spellcasting **${field}** to **${val}** on **${charEntry.name}**.`, ephemeral: true });
     }
@@ -1240,7 +1239,7 @@ async function execute(interaction) {
         }
       }
 
-      saveCharacters(characters);
+      await saveCharacters(characters);
 
       const finalMax = computeCharMaxHp(charEntry);
       const finalCurrent = getCharacterHp(charEntry);
@@ -1397,7 +1396,7 @@ async function execute(interaction) {
       if (error) return interaction.reply({ content: error, ephemeral: true });
       if (!url.startsWith('http://') && !url.startsWith('https://')) return interaction.reply({ content: "That doesn't look like a valid URL.", ephemeral: true });
       characters[interaction.user.id][charKey].art = url;
-      saveCharacters(characters);
+      await saveCharacters(characters);
       const charName = characters[interaction.user.id][charKey].name;
       await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x7289DA).setTitle(`✅ Art set for ${charName}`).setThumbnail(url).setDescription('Character art updated!')] });
     }

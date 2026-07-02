@@ -2556,6 +2556,12 @@ client.on('interactionCreate', async (interaction) => {
   // Existing /monster, /monsterattack, /monsteredit, /monsteradd, /monsterroll
   // are kept registered as aliases so old muscle memory still works.
   if (commandName === 'm') commandName = routeMonsterAlias(interaction);
+
+  // Backstop: every button/modal/autocomplete branch above has its own
+  // try/catch; the slash-command dispatch chain did not. Without this, any
+  // command whose execute() throws leaves the interaction dead ("the
+  // application did not respond") and surfaces only as an unhandled rejection.
+  try {
   if (commandName === 'ping') {
     await pingCmd.execute(interaction);
   }
@@ -2992,6 +2998,16 @@ client.on('interactionCreate', async (interaction) => {
       content: `This bot build does not have a handler for /${commandName}. Redeploy the latest code and run the command deploy script again.`,
       ephemeral: true,
     });
+  }
+  } catch (err) {
+    console.error(`Command /${commandName} failed:`, err);
+    try {
+      if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: '❌ Something went wrong running that command. Please try again.', ephemeral: true });
+      } else if (interaction.deferred && !interaction.replied) {
+        await interaction.editReply('❌ Something went wrong running that command. Please try again.');
+      }
+    } catch {}
   }
 
   });

@@ -18,27 +18,33 @@ function rollRecoveryForCharacter(charEntry) {
   const dc = 10 + dyingBefore;
   const roll = Math.floor(Math.random() * 20) + 1;
 
+  // Degree of success from the DC bands first...
   let outcome;
-  let baseDelta;
-  if (roll === 20) {
+  if (roll >= dc + 10) {
     outcome = 'crit-success';
-    baseDelta = -2;
-  } else if (roll === 1) {
-    outcome = 'crit-failure';
-    baseDelta = 2;
-  } else if (roll >= dc + 10) {
-    outcome = 'crit-success';
-    baseDelta = -2;
   } else if (roll >= dc) {
     outcome = 'success';
-    baseDelta = -1;
   } else if (roll <= dc - 10) {
     outcome = 'crit-failure';
-    baseDelta = 2;
   } else {
     outcome = 'failure';
-    baseDelta = 1;
   }
+
+  // ...then a natural 20 shifts the result one step better and a natural 1 one
+  // step worse (PF2e). A nat 20 is NOT an automatic critical success.
+  const DEGREES = ['crit-failure', 'failure', 'success', 'crit-success'];
+  let degreeIdx = DEGREES.indexOf(outcome);
+  if (roll === 20) degreeIdx = Math.min(DEGREES.length - 1, degreeIdx + 1);
+  else if (roll === 1) degreeIdx = Math.max(0, degreeIdx - 1);
+  outcome = DEGREES[degreeIdx];
+
+  const DELTA_BY_OUTCOME = {
+    'crit-success': -2,
+    success: -1,
+    failure: 1,
+    'crit-failure': 2,
+  };
+  const baseDelta = DELTA_BY_OUTCOME[outcome];
 
   let delta = baseDelta;
   let woundedAdded = 0;

@@ -181,6 +181,7 @@ async function execute(interaction) {
   const saveType = spell.savingThrow ?? null;
   const effectiveLevel = castLevel ?? spell.level ?? 1;
   const isCantrip = spell.type === 'Cantrip';
+  const isFocus = spell.type === 'Focus';
   const levelDisplay = isCantrip ? `Cantrip ${effectiveLevel}` : `Level ${effectiveLevel}`;
   const traditionDisplay = spell.traditions?.[0] ?? '';
 
@@ -192,8 +193,9 @@ async function execute(interaction) {
     const spellTraditions = spell.traditions.map(t => t.toLowerCase());
     castingCaster = c.spellCasters.find(sc => spellTraditions.includes(sc.magicTradition?.toLowerCase())) ?? c.spellCasters[0];
   }
-  // Non-cantrips consume slots. Cantrips and focus spells are at-will.
-  const consumesSlot = !isCantrip && castingCaster && effectiveLevel > 0;
+  // Non-cantrips consume slots. Cantrips and focus spells are at-will (focus
+  // spells cost focus points, not leveled slots), so both are excluded.
+  const consumesSlot = !isCantrip && !isFocus && castingCaster && effectiveLevel > 0;
   const warnings = [];
   if (consumesSlot) {
     const slots = charOverlay.getSlotsRemaining(charEntry, castingCaster.name, effectiveLevel);
@@ -218,7 +220,7 @@ async function execute(interaction) {
     }
     // Spend the slot
     charOverlay.spendSlot(charEntry, castingCaster.name, effectiveLevel);
-    characterState.saveAll(characters);
+    await characterState.saveAll(characters);
   }
 
   const channelId = interaction.channel.id;
