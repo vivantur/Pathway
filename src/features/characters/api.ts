@@ -764,7 +764,8 @@ export async function setCharacterPublic(input: {
 export interface CreateCharacterFromBuildInput {
   userId: string;
   build: PathbuilderBuild;
-  pathbuilderId: number;
+  /** Pathbuilder cloud id when imported; omitted for characters built on the web. */
+  pathbuilderId?: number;
 }
 
 export interface CreateCharacterResult {
@@ -805,9 +806,9 @@ export async function createCharacterFromBuild(
     user_id: userId,
     char_key: charKey,
     name,
-    source: 'pathbuilder',
+    source: pathbuilderId != null ? 'pathbuilder' : 'pathway-web',
     status: 'active',
-    pathbuilder_id: pathbuilderId,
+    pathbuilder_id: pathbuilderId ?? null,
     pathbuilder_data: build,
     ancestry_name: build.ancestry ?? null,
     heritage_name: build.heritage ?? null,

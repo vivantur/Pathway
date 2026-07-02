@@ -42,12 +42,11 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        // Public: anyone can build a character and export JSON. Saving to the
+        // vault (and syncing to the bot) requires login, enforced in the
+        // builder's Save button.
         path: 'vault/create',
-        element: (
-          <RequireAuth>
-            <CharacterBuilderPage />
-          </RequireAuth>
-        ),
+        element: <CharacterBuilderPage />,
       },
       {
         path: 'vault/:charKey',

@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { emptyBuilderState } from './types';
 import { STEPS, useBuilder } from './store';
+import { validate } from './rules';
 import { CharacterSummary } from './CharacterSummary';
 import { BeginnerNote } from './BeginnerNote';
 import { PortraitPicker } from './PortraitPicker';
 import { fromPathbuilder } from '@/features/builder/pathbuilder';
 import { useApp } from '@/features/builder/appStore';
+import { useSaveBuild } from './useSaveBuild';
+import { useAuth } from '@/features/auth/useAuth';
 import { OptionsModal } from '@/features/builder/options/OptionsModal';
 import { AncestryStep } from './steps/AncestryStep';
 import { HeritageStep } from './steps/HeritageStep';
@@ -69,9 +72,28 @@ export function BuilderApp() {
   const setCurrentId = useApp((s) => s.setCurrentCharacterId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const save = useSaveBuild();
 
   const index = STEPS.findIndex((s) => s.id === step);
   const Content = STEP_CONTENT[step];
+  const problems = validate(state);
+  const complete = problems.length === 0;
+
+  const onSave = () => {
+    save.mutate(state, {
+      onSuccess: (result) => {
+        setCurrentId(result.id);
+        navigate(`/vault/${result.char_key}`);
+      },
+    });
+  };
+  const saveTitle = !user
+    ? 'Sign in to save to your vault — you can still Export JSON on the Review step.'
+    : !complete
+      ? 'Finish the remaining choices (see the Review step) before saving.'
+      : 'Save this character to your vault and sync it to the Discord bot.';
 
   const importJson = async (file: File) => {
     try {
@@ -111,11 +133,12 @@ export function BuilderApp() {
             <BeginnerToggle />
             <button
               type="button"
-              className="btn"
-              disabled
-              title="Saving to your vault (and syncing to the Discord bot) is wired in the next integration step. For now, finish on the Review step and use Export JSON."
+              className="btn btn-primary"
+              disabled={!user || !complete || save.isPending}
+              title={saveTitle}
+              onClick={onSave}
             >
-              Save to Vault (soon)
+              {save.isPending ? 'Saving…' : 'Save to Vault'}
             </button>
             <button type="button" className="btn" onClick={() => setOptionsOpen(true)}>
               ⚙ Options
@@ -125,6 +148,19 @@ export function BuilderApp() {
             </button>
           </div>
         </div>
+
+        {save.isError && (
+          <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 font-ui text-sm text-red-200">
+            Couldn’t save: {save.error.message}
+          </div>
+        )}
+        {!user && (
+          <div className="rounded-xl border border-arcane-400/30 bg-arcane-500/10 p-3 font-ui text-sm text-parchment/80">
+            You’re not signed in. You can build and <span className="text-arcane-400">Export JSON</span>{' '}
+            freely; <Link to="/login" className="text-gold-400 underline">sign in</Link> to save to your
+            vault and sync to the Discord bot.
+          </div>
+        )}
 
         {optionsOpen && <OptionsModal onClose={() => setOptionsOpen(false)} />}
 
