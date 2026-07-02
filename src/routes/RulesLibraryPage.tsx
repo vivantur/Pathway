@@ -8,7 +8,14 @@ import { useRulesSearch } from '@/features/rules/useRulesSearch';
 import type { MonsterStatBlock, RuleCategoryId, RuleEntry } from '@/features/rules/types';
 
 /** Categories whose descriptions are long AoN lore prose worth sectioning. */
-const structuredCategories = new Set<RuleCategoryId>(['ancestries', 'backgrounds']);
+const structuredCategories = new Set<RuleCategoryId>([
+  'ancestries',
+  'backgrounds',
+  'classes',
+  'archetypes',
+  'deities',
+  'rules',
+]);
 
 /**
  * Rules Library — a public, searchable browser across the reference tables

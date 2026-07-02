@@ -77,4 +77,17 @@ export type RuleCategoryId =
   | 'classes'
   | 'archetypes'
   | 'actions'
-  | 'afflictions';
+  | 'afflictions'
+  | 'heritages'
+  | 'hazards'
+  | 'rituals'
+  | 'deities'
+  | 'domains'
+  | 'familiars'
+  | 'relics'
+  | 'planes'
+  | 'languages'
+  | 'skills'
+  | 'traits'
+  | 'rules'
+  | 'sources';

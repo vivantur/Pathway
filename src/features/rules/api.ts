@@ -377,8 +377,21 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
   // ---- gamedata-backed categories (generic AoN import keyed by `category`) ----
   { id: 'classes', label: 'Classes', table: 'gamedata', gamedataCategory: 'classes', hasLevel: false, map: gamedataMap('classes') },
   { id: 'archetypes', label: 'Archetypes', table: 'gamedata', gamedataCategory: 'archetypes', hasLevel: false, map: gamedataMap('archetypes') },
+  { id: 'heritages', label: 'Heritages', table: 'gamedata', gamedataCategory: 'heritages', hasLevel: false, map: gamedataMap('heritages') },
   { id: 'actions', label: 'Actions', table: 'gamedata', gamedataCategory: 'actions', hasLevel: false, map: gamedataMap('actions') },
+  { id: 'rituals', label: 'Rituals', table: 'gamedata', gamedataCategory: 'rituals', hasLevel: false, map: gamedataMap('rituals') },
+  { id: 'hazards', label: 'Hazards', table: 'gamedata', gamedataCategory: 'hazards', hasLevel: false, map: gamedataMap('hazards') },
   { id: 'afflictions', label: 'Afflictions', table: 'gamedata', gamedataCategory: 'afflictions', hasLevel: false, map: gamedataMap('afflictions') },
+  { id: 'deities', label: 'Deities', table: 'gamedata', gamedataCategory: 'deities', hasLevel: false, map: gamedataMap('deities') },
+  { id: 'domains', label: 'Domains', table: 'gamedata', gamedataCategory: 'domains', hasLevel: false, map: gamedataMap('domains') },
+  { id: 'familiars', label: 'Familiars', table: 'gamedata', gamedataCategory: 'familiars', hasLevel: false, map: gamedataMap('familiars') },
+  { id: 'relics', label: 'Relics', table: 'gamedata', gamedataCategory: 'relics', hasLevel: false, map: gamedataMap('relics') },
+  { id: 'planes', label: 'Planes', table: 'gamedata', gamedataCategory: 'planes', hasLevel: false, map: gamedataMap('planes') },
+  { id: 'languages', label: 'Languages', table: 'gamedata', gamedataCategory: 'languages', hasLevel: false, map: gamedataMap('languages') },
+  { id: 'skills', label: 'Skills', table: 'gamedata', gamedataCategory: 'skills', hasLevel: false, map: gamedataMap('skills') },
+  { id: 'traits', label: 'Traits', table: 'gamedata', gamedataCategory: 'traits', hasLevel: false, map: gamedataMap('traits') },
+  { id: 'rules', label: 'Rules', table: 'gamedata', gamedataCategory: 'rules', hasLevel: false, map: gamedataMap('rules') },
+  { id: 'sources', label: 'Source Books', table: 'gamedata', gamedataCategory: 'sources', hasLevel: false, map: gamedataMap('sources') },
 ];
 
 /**
