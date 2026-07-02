@@ -1,0 +1,3739 @@
+[
+  {
+    "id": "anadi",
+    "name": "Anadi",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Anadi",
+      "Mwangi"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Iruxi",
+      "Kholo",
+      "Orcish"
+    ],
+    "traits": [
+      "anadi",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "adaptive-anadi",
+        "ancestryId": "anadi",
+        "name": "Adaptive Anadi",
+        "description": "You descend from a line of anadi who worked to perfect their transformation magic, allowing them to integrate into a wider variety of cultures.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "polychromatic-anadi",
+        "ancestryId": "anadi",
+        "name": "Polychromatic Anadi",
+        "description": "Your body is covered with exceptionally colorful hairs that create vibrant, eye-catching patterns, some of which might even show in your human form.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "snaring-anadi",
+        "ancestryId": "anadi",
+        "name": "Snaring Anadi",
+        "description": "You were hatched with hooked fangs that give you an edge when hunting in your true form.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "spindly-anadi",
+        "ancestryId": "anadi",
+        "name": "Spindly Anadi",
+        "description": "Your limbs are exceptionally long in both forms, allowing you to skitter about with surprising agility.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "venomous-anadi",
+        "ancestryId": "anadi",
+        "name": "Venomous Anadi",
+        "description": "Your natural form's fangs are capable of injecting foes with venom.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      }
+    ],
+    "source": "Pathfinder Lost Omens The Mwangi Expanse",
+    "description": "Anadi people are reclusive, sapient spiders who hail from the jungles of southern Garund."
+  },
+  {
+    "id": "android",
+    "name": "Android",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Androffan",
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Chthonian",
+      "Draconic",
+      "Dwarven",
+      "Empyrean",
+      "Sakvroth",
+      "Utopian"
+    ],
+    "traits": [
+      "android",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "artisan-android",
+        "ancestryId": "android",
+        "name": "Artisan Android",
+        "description": "Your body was originally designed to create works of art, complex tools, or maintain advanced machinery.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "impersonator-android",
+        "ancestryId": "android",
+        "name": "Impersonator Android",
+        "description": "Your body was augmented with processes and an appearance intended to blend in with humans more easily.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "laborer-android",
+        "ancestryId": "android",
+        "name": "Laborer Android",
+        "description": "Your body is adapted to endure physical hardships or perform hard labor for long periods of time.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "polyglot-android",
+        "ancestryId": "android",
+        "name": "Polyglot Android",
+        "description": "You were preprogrammed with a multitude of linguistic proficiencies, likely to act as a translator.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "warrior-android",
+        "ancestryId": "android",
+        "name": "Warrior Android",
+        "description": "Your body was originally created to function as a security officer or soldier.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Technological wonders from another world, androids have synthetic bodies and living souls."
+  },
+  {
+    "id": "athamaru",
+    "name": "Athamaru",
+    "hp": 8,
+    "size": "medium",
+    "speed": 20,
+    "boosts": [
+      "str",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common",
+      "Thalassic"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Alghollthu",
+      "Azlanti",
+      "Fey",
+      "Tien"
+    ],
+    "traits": [
+      "amphibious",
+      "athamaru",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "coral-athamaru",
+        "ancestryId": "athamaru",
+        "name": "Coral Athamaru",
+        "description": "Coral covers patches of your body, which provides a natural layer of defense.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "hopeful-athamaru",
+        "ancestryId": "athamaru",
+        "name": "Hopeful Athamaru",
+        "description": "You have begun to prepare yourself to become an athamaru matriarch, and are likely stepping outside of your community to better prepare yourself as a leader.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "kaleidoscopic-athamaru",
+        "ancestryId": "athamaru",
+        "name": "Kaleidoscopic Athamaru",
+        "description": "Your scales are a spectrum of color that shimmers in the light.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "quilled-athamaru",
+        "ancestryId": "athamaru",
+        "name": "Quilled Athamaru",
+        "description": "Sharp quills on your head can pierce your foes deeply.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "Athamarus are fish-like humanoids who form tight-knit undersea communities."
+  },
+  {
+    "id": "automaton",
+    "name": "Automaton",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Utopian"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Chthonian",
+      "Diabolic",
+      "Dwarven",
+      "Elven",
+      "Empyrean",
+      "Jistkan",
+      "Petran",
+      "Pyric",
+      "Sussuran",
+      "Thalassic"
+    ],
+    "traits": [
+      "automaton",
+      "construct"
+    ],
+    "heritages": [
+      {
+        "id": "hunter-automaton",
+        "ancestryId": "automaton",
+        "name": "Hunter Automaton",
+        "description": "You were designed to serve as a scout or assassin and have a body resembling a pack hunter like a large cat or wolf.",
+        "source": "Pathfinder Guns & Gears"
+      },
+      {
+        "id": "mage-automaton",
+        "ancestryId": "automaton",
+        "name": "Mage Automaton",
+        "description": "The chamber housing your core has a more direct connection to the rest of your humanoid shape, allowing you to tap into your core's magical energy.",
+        "source": "Pathfinder Guns & Gears"
+      },
+      {
+        "id": "sharpshooter-automaton",
+        "ancestryId": "automaton",
+        "name": "Sharpshooter Automaton",
+        "description": "Your lithe, humanoid shape is designed for speed and accuracy suitable for ranged combat.",
+        "source": "Pathfinder Guns & Gears"
+      },
+      {
+        "id": "warrior-automaton",
+        "ancestryId": "automaton",
+        "name": "Warrior Automaton",
+        "description": "Sporting a bulkier, powerful design, your body has been designed for combat.",
+        "source": "Pathfinder Guns & Gears"
+      }
+    ],
+    "source": "Pathfinder Guns & Gears",
+    "description": "These intelligent constructs house actual souls and represent what remains of a dying empire's last attempt at greatness."
+  },
+  {
+    "id": "awakened-animal",
+    "name": "Awakened Animal",
+    "hp": 6,
+    "size": "medium",
+    "speed": 5,
+    "boosts": [
+      "con",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [],
+    "traits": [
+      "awakened-animal",
+      "beast"
+    ],
+    "heritages": [
+      {
+        "id": "climbing-animal",
+        "ancestryId": "awakened-animal",
+        "name": "Climbing Animal",
+        "description": "You are an animal whose limbs are adapted to grab, climb, and brachiate.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "flying-animal",
+        "ancestryId": "awakened-animal",
+        "name": "Flying Animal",
+        "description": "You are an animal that can take flight for long or sustained bursts, such as an eagle, bat, bee, or flying squirrel.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "running-animal",
+        "ancestryId": "awakened-animal",
+        "name": "Running Animal",
+        "description": "You are an animal meant for running at great speeds across land.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "swimming-animal",
+        "ancestryId": "awakened-animal",
+        "name": "Swimming Animal",
+        "description": "You are an aquatic animal who is most comfortable in the water.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "You once enjoyed the simple and boundless pleasures of nature with an innocent, uncluttered mind."
+  },
+  {
+    "id": "azarketi",
+    "name": "Azarketi",
+    "hp": 8,
+    "size": "medium",
+    "speed": 20,
+    "boosts": [
+      "cha",
+      "con",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Alghollthu",
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Azlanti",
+      "Draconic",
+      "Elven",
+      "Thalassic",
+      "Sakvroth"
+    ],
+    "traits": [
+      "amphibious",
+      "azarketi",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "ancient-scale-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Ancient Scale Azarketi",
+        "description": "Your lineage stems from azarketis who remain dedicated to their deep-sea roots.",
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+      },
+      {
+        "id": "benthic-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Benthic Azarketi",
+        "description": "Your heritage traces to azarketis living deep beneath the sea, and you can handle the chilling depths more easily than most.",
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+      },
+      {
+        "id": "inured-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Inured Azarketi",
+        "description": "Your ancestors had to survive in polluted water that made every breath noxious.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "mistbreath-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Mistbreath Azarketi",
+        "description": "You descend from azarketis who migrated to land environments that could support their need for water.",
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+      },
+      {
+        "id": "murkeyed-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Murkeyed Azarketi",
+        "description": "You live in murky waters and have grown accustomed to life in a low-visibility environment.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "river-azarketi",
+        "ancestryId": "azarketi",
+        "name": "River Azarketi",
+        "description": "You come from azarketis who abandoned the oceans for the fresh water of inland life.",
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+      },
+      {
+        "id": "spined-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Spined Azarketi",
+        "description": "Your fins conceal launchable toxic spines.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "tactile-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Tactile Azarketi",
+        "description": "Your skin can detect the slightest changes in ocean currents.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "thalassic-azarketi",
+        "ancestryId": "azarketi",
+        "name": "Thalassic Azarketi",
+        "description": "You trace your lineage from azarketis who lived their lives among the great oceans and seas of the world.",
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Absalom, City of Lost Omens",
+    "description": "Azarketis, inheritors of a shattered empire's legacy, hold their proud traditions close but still surface to interact with the rest of the world."
+  },
+  {
+    "id": "catfolk",
+    "name": "Catfolk",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "dex",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Amurrun",
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Halfling",
+      "Iruxi",
+      "Jotun"
+    ],
+    "traits": [
+      "catfolk",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "clawed-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Clawed Catfolk",
+        "description": "Your family has particularly long, sharp claws capable of delivering bleeding wounds with a wicked swipe.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "flexible-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Flexible Catfolk",
+        "description": "You've inherited flexibility beyond that of most humanoids.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "hunting-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Hunting Catfolk",
+        "description": "You come from a long line of skilled hunters and trackers and have a particularly keen sense of smell.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "jungle-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Jungle Catfolk",
+        "description": "You're descended from jungle stalkers and can move swiftly through scrub and underbrush.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "liminal-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Liminal Catfolk",
+        "description": "You've inherited a closeness to the far corners of the world, where the boundaries between dimensions grow thin.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "nine-lives-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Nine Lives Catfolk",
+        "description": "Your family has always seems to bounce back from disaster, not through physical hardiness or specialized skill, but from sheer luck.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "sharp-eared-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Sharp-Eared Catfolk",
+        "description": "You were born with big, expressive ears that move with your moods and perk up at any unexpected sound.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "winter-catfolk",
+        "ancestryId": "catfolk",
+        "name": "Winter Catfolk",
+        "description": "You have a thick coat of fur that protects you from the cold.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Curious and gregarious wanderers, catfolk combine the features of felines and humanoids in both appearance and temperament."
+  },
+  {
+    "id": "centaur",
+    "name": "Centaur",
+    "hp": 8,
+    "size": "large",
+    "speed": 30,
+    "boosts": [
+      "str",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Common",
+      "Fey"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Arboreal",
+      "Cyclops",
+      "Dwarven",
+      "Elven",
+      "Gnomish",
+      "Halfling",
+      "Jotun"
+    ],
+    "traits": [
+      "beast",
+      "centaur",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "budding-speaker-centaur",
+        "ancestryId": "centaur",
+        "name": "Budding Speaker Centaur",
+        "description": "You were born with a spark of magic that could set you on the path to becoming a Greenspeaker or Faithspeaker.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "fleetwind-centaur",
+        "ancestryId": "centaur",
+        "name": "Fleetwind Centaur",
+        "description": "You're sleek of frame and capable of reaching incredible speeds on hooves alone.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "ironhoof-centaur",
+        "ancestryId": "centaur",
+        "name": "Ironhoof Centaur",
+        "description": "Your hooves are incredibly strong and serve as formidable weapons.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "mottle-coat-centaur",
+        "ancestryId": "centaur",
+        "name": "Mottle-Coat Centaur",
+        "description": "Your coat is mottled or striped, granting you natural camouflage in your home environment.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "ponygait-centaur",
+        "ancestryId": "centaur",
+        "name": "Ponygait Centaur",
+        "description": "You are smaller than most other centaurs, though no less fleet of foot.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "stoutheart-centaur",
+        "ancestryId": "centaur",
+        "name": "Stoutheart Centaur",
+        "description": "You're a hardy centaur, firm of stance and strong of heart.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "Centaurs are proud nomads who range far and wide across their ancestral territories, protecting their lands from exploitation and intrusion."
+  },
+  {
+    "id": "conrasu",
+    "name": "Conrasu",
+    "hp": 10,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Mwangi",
+      "Rasu"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Elven",
+      "Empyrean",
+      "Fey",
+      "Iruxi",
+      "Petran",
+      "Utopian"
+    ],
+    "traits": [
+      "aeon",
+      "conrasu",
+      "plant"
+    ],
+    "heritages": [
+      {
+        "id": "rite-of-invocation",
+        "ancestryId": "conrasu",
+        "name": "Rite of Invocation",
+        "description": "You augmented your exoskeleton with magic.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "rite-of-knowing",
+        "ancestryId": "conrasu",
+        "name": "Rite of Knowing",
+        "description": "You enhanced your exoskeleton with a connection to Axis, allowing you to tap into the infinite knowledge of the plane.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "rite-of-light",
+        "ancestryId": "conrasu",
+        "name": "Rite of Light",
+        "description": "Your exoskeleton bears small shoots that can share life.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "rite-of-passage",
+        "ancestryId": "conrasu",
+        "name": "Rite of Passage",
+        "description": "Your exoskeleton remains connected with the plants that created it.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "rite-of-reinforcement",
+        "ancestryId": "conrasu",
+        "name": "Rite of Reinforcement",
+        "description": "Your woven exoskeleton rivals the hardest armors that can be found.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      }
+    ],
+    "source": "Pathfinder Lost Omens The Mwangi Expanse",
+    "description": "Conrasus are shards of cosmic force given consciousness who construct intricate exoskeletons to interface with the mortal world."
+  },
+  {
+    "id": "dwarf",
+    "name": "Dwarf",
+    "hp": 10,
+    "size": "medium",
+    "speed": 20,
+    "boosts": [
+      "con",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Common",
+      "Dwarven"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Gnomish",
+      "Goblin",
+      "Jotun",
+      "Orcish",
+      "Petran",
+      "Sakvroth"
+    ],
+    "traits": [
+      "dwarf",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "ancient-blooded-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Ancient-Blooded Dwarf",
+        "description": "Dwarven heroes of old could shrug off their enemies' magic, and some of that resistance manifests in you.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "anvil-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Anvil Dwarf",
+        "description": "You are a descendant of a famed crafter and have your own amazing talent.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "death-warden-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Death Warden Dwarf",
+        "description": "Your ancestors were tomb guardians, and their power to ward off death passed on to you.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "elemental-heart-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Elemental Heart Dwarf",
+        "description": "Whether through a connection to Torag's forge, the azers of the Plane of Fire, or another source, you can exude a burst of energy.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "forge-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Forge Dwarf",
+        "description": "You have a remarkable adaptation to hot environments.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "forge-blessed-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Forge-Blessed Dwarf",
+        "description": "You are from a family in Highhelm that venerates a particular dwarven deity above all others.",
+        "source": "Pathfinder Lost Omens Highhelm"
+      },
+      {
+        "id": "oathkeeper-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Oathkeeper Dwarf",
+        "description": "Growing up, you never tried to lie to get what you wanted, and even when necessary, lying makes you uncomfortable.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "rock-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Rock Dwarf",
+        "description": "Your ancestors lived and worked among the ancient stones of the mountains or the depths of the earth.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "strong-blooded-dwarf",
+        "ancestryId": "dwarf",
+        "name": "Strong-Blooded Dwarf",
+        "description": "Your blood runs hearty and strong, and you can shake off toxins.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "Dwarves have a well-earned reputation as a stoic and stern people, ensconced within citadels and cities carved from solid rock."
+  },
+  {
+    "id": "elf",
+    "name": "Elf",
+    "hp": 6,
+    "size": "medium",
+    "speed": 30,
+    "boosts": [
+      "dex",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Common",
+      "Elven"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Empyrean",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Kholo",
+      "Orcish"
+    ],
+    "traits": [
+      "elf",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "ancient-elf",
+        "ancestryId": "elf",
+        "name": "Ancient Elf",
+        "description": "In your long life, you've dabbled in many paths and many styles.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "arctic-elf",
+        "ancestryId": "elf",
+        "name": "Arctic Elf",
+        "description": "You dwell deep in the frozen north and have gained incredible resilience against cold environments, granting you cold resistance equal to half your level (minimum 1).",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "cavern-elf",
+        "ancestryId": "elf",
+        "name": "Cavern Elf",
+        "description": "You were born or spent many years in underground tunnels or caverns where light is scarce.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "desert-elf",
+        "ancestryId": "elf",
+        "name": "Desert Elf",
+        "description": "You live under the desert's blazing heat, gaining incredible resilience to warm environments.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "seer-elf",
+        "ancestryId": "elf",
+        "name": "Seer Elf",
+        "description": "You have an inborn ability to detect and understand magical phenomena.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "whisper-elf",
+        "ancestryId": "elf",
+        "name": "Whisper Elf",
+        "description": "Your ears are finely tuned, able to detect even the slightest whispers of sound.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "woodland-elf",
+        "ancestryId": "elf",
+        "name": "Woodland Elf",
+        "description": "You're adapted to life in the forest, the deep jungle, or a similar environment, and you know how to climb trees and use foliage to your advantage.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "As an ancient people, elves have seen great change and have the perspective that can come only from watching the arc of history."
+  },
+  {
+    "id": "fetchling",
+    "name": "Fetchling",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Shadowtongue"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Dziriak",
+      "Necril",
+      "Sakvroth"
+    ],
+    "traits": [
+      "fetchling",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "bright-fetchling",
+        "ancestryId": "fetchling",
+        "name": "Bright Fetchling",
+        "description": "Your body proves that shadow can't exist without light.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "deep-fetchling",
+        "ancestryId": "fetchling",
+        "name": "Deep Fetchling",
+        "description": "Your predecessors dwelled in the Shadow Plane's deepest, most treacherous regions.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "liminal-fetchling",
+        "ancestryId": "fetchling",
+        "name": "Liminal Fetchling",
+        "description": "You come from a line of fetchlings with a closer connection to the Ethereal and Shadow Planes, and you share those realms' affinity with the in-between and unseen.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "resolute-fetchling",
+        "ancestryId": "fetchling",
+        "name": "Resolute Fetchling",
+        "description": "Your ancestors have long dealt with the horrific—in the Shadow Plane or elsewhere—and you bear their mental fortitude.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "wisp-fetchling",
+        "ancestryId": "fetchling",
+        "name": "Wisp Fetchling",
+        "description": "Your ancestors' exposure to the Shadow Plane wrought great physical changes.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Once human and now something apart, fetchlings display the Shadow Plane's ancient influence through monochrome complexions, glowing eyes, and the casting of supernatural shadows."
+  },
+  {
+    "id": "fleshwarp",
+    "name": "Fleshwarp",
+    "hp": 10,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Dwarven",
+      "Elven",
+      "Goblin",
+      "Sakvroth"
+    ],
+    "traits": [
+      "aberration",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "cataphract-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Cataphract Fleshwarp",
+        "description": "Your battle-hardened skeleton is laced with additional cartilage and muscle to help bear armor across vast areas of operation, and your skin is bedecked with tiny spurs of pliable, resilient keratin to optimize the grip and weight distribution of your armor.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "created-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Created Fleshwarp",
+        "description": "You were created through occult or alchemical processes, such as being grown in a vat or stitched together from the body parts of other creatures by a scientist in Ustalav.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "discarded-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Discarded Fleshwarp",
+        "description": "The biomancers and mutagenists who warped your form labeled you a \"discard on discovery\"—a euphemism for destroying you on sight.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "mutated-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Mutated Fleshwarp",
+        "description": "Transformed by uncontrolled magic, you originated in a the Mana Wastes or another region similarly devastated by uncontrolled magic.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "shapewrought-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Shapewrought Fleshwarp",
+        "description": "A victim of fleshwarping, you likely bear loose flesh, bony spurs, or features of inhuman creatures sprouting from your skin.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "surgewise-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Surgewise Fleshwarp",
+        "description": "The undulations of your body's cilia are hyper-attuned to wellsprings of magic; they trill and thrum with insights into occult energies, and their vibrations alert you to the presence of secrets.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "technological-fleshwarp",
+        "ancestryId": "fleshwarp",
+        "name": "Technological Fleshwarp",
+        "description": "Your transformation is due to manipulation by advanced technology, like that found in Numeria.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Fleshwarps are people whose forms were created or radically transformed by magic, alchemy, or unnatural energies."
+  },
+  {
+    "id": "ghoran",
+    "name": "Ghoran",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Fey"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Elven",
+      "Gnomish",
+      "Jotun"
+    ],
+    "traits": [
+      "ghoran",
+      "humanoid",
+      "plant"
+    ],
+    "heritages": [
+      {
+        "id": "ancient-ash",
+        "ancestryId": "ghoran",
+        "name": "Ancient Ash",
+        "description": "Your memory is sharp and clear, and you remember so much.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "enchanting-lily",
+        "ancestryId": "ghoran",
+        "name": "Enchanting Lily",
+        "description": "You smell ever so sweet—a delicate, floral scent like the intoxicating fragrance of lilies and the soft scent of lilacs.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "strong-oak",
+        "ancestryId": "ghoran",
+        "name": "Strong Oak",
+        "description": "Most ghorans have bodies of pliable vines and tough stems, but you're covered in sturdy, rough bark and your legs are stable as roots.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "thorned-rose",
+        "ancestryId": "ghoran",
+        "name": "Thorned Rose",
+        "description": "Your beautiful petals and seemingly smooth skin hide silent barbs to pierce the unwary.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Impossible Lands",
+    "description": "These intelligent plant people, created by a long-dead druid, possess a sort of immortality through their seeds—unless these are destroyed by external events other than merely the ravages of time."
+  },
+  {
+    "id": "gnome",
+    "name": "Gnome",
+    "hp": 8,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "con",
+      "free"
+    ],
+    "flaws": [
+      "str"
+    ],
+    "languages": [
+      "Common",
+      "Fey",
+      "Gnomish"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Dwarven",
+      "Elven",
+      "Goblin",
+      "Jotun",
+      "Orcish"
+    ],
+    "traits": [
+      "gnome",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "chameleon-gnome",
+        "ancestryId": "gnome",
+        "name": "Chameleon Gnome",
+        "description": "The color of your hair and skin is mutable, possibly due to latent magic from First World influences or lingering illusion effects.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "fey-touched-gnome",
+        "ancestryId": "gnome",
+        "name": "Fey-Touched Gnome",
+        "description": "The blood of the fey flows through your veins, saturating you with their magic and making you truly one of them.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "kijimuna-gnome",
+        "ancestryId": "gnome",
+        "name": "Kijimuna Gnome",
+        "description": "Your ancestors lived in the trees and fished in all the waters of Tian Xia.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "sensate-gnome",
+        "ancestryId": "gnome",
+        "name": "Sensate Gnome",
+        "description": "You see all colors as brighter, hear all sounds as richer, and especially smell all scents with incredible detail.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "umbral-gnome",
+        "ancestryId": "gnome",
+        "name": "Umbral Gnome",
+        "description": "Whether from a connection to dark or shadowy fey, from the underground gnomes known as drathnelar, or from another source, you can see in complete darkness.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "vivacious-gnome",
+        "ancestryId": "gnome",
+        "name": "Vivacious Gnome",
+        "description": "You have an incredibly strong connection to the vitality energy that flows through the First World, making it harder to attack your life force with void energy.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "wellspring-gnome",
+        "ancestryId": "gnome",
+        "name": "Wellspring Gnome",
+        "description": "Some other source of magic has a greater hold on you than the primal magic of your fey lineage does.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "Long ago, early gnome ancestors emigrated from the First World, realm of the fey."
+  },
+  {
+    "id": "goblin",
+    "name": "Goblin",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "dex",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Common",
+      "Goblin"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Dwarven",
+      "Gnomish",
+      "Halfling",
+      "Kholo",
+      "Orcish"
+    ],
+    "traits": [
+      "goblin",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "charhide-goblin",
+        "ancestryId": "goblin",
+        "name": "Charhide Goblin",
+        "description": "Your ancestors have always had a connection to fire and a thicker skin, which allows you to resist burning.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "dokkaebi-goblin",
+        "ancestryId": "goblin",
+        "name": "Dokkaebi Goblin",
+        "description": "Your ancestors mastered illusion-based magic, giving you an innate understanding of it.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "irongut-goblin",
+        "ancestryId": "goblin",
+        "name": "Irongut Goblin",
+        "description": "You can subsist on food that most folks would consider spoiled.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "razortooth-goblin",
+        "ancestryId": "goblin",
+        "name": "Razortooth Goblin",
+        "description": "Your family's teeth are formidable weapons.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "snow-goblin",
+        "ancestryId": "goblin",
+        "name": "Snow Goblin",
+        "description": "You are acclimated to living in frigid lands and have skin ranging from sky blue to navy in color, as well as blue fur.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "tailed-goblin",
+        "ancestryId": "goblin",
+        "name": "Tailed Goblin",
+        "description": "You have a powerful tail, likely because you descend from a community of monkey goblins.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "treedweller-goblin",
+        "ancestryId": "goblin",
+        "name": "Treedweller Goblin",
+        "description": "You have adapted particularly well to living in forested environments.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "unbreakable-goblin",
+        "ancestryId": "goblin",
+        "name": "Unbreakable Goblin",
+        "description": "You're able to bounce back from injuries easily due to an exceptionally thick skull, cartilaginous bones, or some other mixed blessing.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "The convoluted histories other people cling to don't interest goblins."
+  },
+  {
+    "id": "goloma",
+    "name": "Goloma",
+    "hp": 8,
+    "size": "medium",
+    "speed": 30,
+    "boosts": [
+      "wis",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Goloma",
+      "Mwangi"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Chthonian",
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Halfling",
+      "Necril",
+      "Orcish"
+    ],
+    "traits": [
+      "goloma",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "farsight-goloma",
+        "ancestryId": "goloma",
+        "name": "Farsight Goloma",
+        "description": "Your eyes have adapted to see more in less than favorable conditions.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "frightful-goloma",
+        "ancestryId": "goloma",
+        "name": "Frightful Goloma",
+        "description": "Your face has a particularly off-putting appearance.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "insightful-goloma",
+        "ancestryId": "goloma",
+        "name": "Insightful Goloma",
+        "description": "You've learned to watch for telltale signs of dangerous sentiments to help you avoid trouble.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "vicious-goloma",
+        "ancestryId": "goloma",
+        "name": "Vicious Goloma",
+        "description": "The chitin on your hands forms powerful claws that allow you to defend yourself.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "vigilant-goloma",
+        "ancestryId": "goloma",
+        "name": "Vigilant Goloma",
+        "description": "You've learned to be aware of not just obvious physical dangers, but also noticeable magical threats.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      }
+    ],
+    "source": "Pathfinder Lost Omens The Mwangi Expanse",
+    "description": "Golomas fear most other people and deliberately use their unusual biology to frighten off those they consider to be dangerous predators."
+  },
+  {
+    "id": "halfling",
+    "name": "Halfling",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "str"
+    ],
+    "languages": [
+      "Common",
+      "Halfling"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Dwarven",
+      "Elven",
+      "Gnomish",
+      "Goblin"
+    ],
+    "traits": [
+      "halfling",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "gutsy-halfling",
+        "ancestryId": "halfling",
+        "name": "Gutsy Halfling",
+        "description": "Your family line is known for keeping a level head and staving off fear when the chips were down.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "hillock-halfling",
+        "ancestryId": "halfling",
+        "name": "Hillock Halfling",
+        "description": "Accustomed to a calm life in the hills, your people find rest and relaxation especially replenishing, particularly when indulging in creature comforts.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "jinxed-halfling",
+        "ancestryId": "halfling",
+        "name": "Jinxed Halfling",
+        "description": "You were born with a strange blessing: bereft of the typical halfling luck, you can instead manipulate the fortunes of others.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "nomadic-halfling",
+        "ancestryId": "halfling",
+        "name": "Nomadic Halfling",
+        "description": "Your ancestors have traveled from place to place for generations, never content to settle down.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "observant-halfling",
+        "ancestryId": "halfling",
+        "name": "Observant Halfling",
+        "description": "Your finely honed senses quickly clue you in to danger or trickery.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      },
+      {
+        "id": "twilight-halfling",
+        "ancestryId": "halfling",
+        "name": "Twilight Halfling",
+        "description": "Your ancestors performed many secret acts under the concealing cover of dusk, whether for good or ill, and over time they developed the ability to see in twilight beyond even the usual keen sight of halflings.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "wildwood-halfling",
+        "ancestryId": "halfling",
+        "name": "Wildwood Halfling",
+        "description": "You hail from deep within a jungle or forest, and you've learned how to use your small size to wriggle through undergrowth and other obstacles.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "Claiming no place as their own, halflings control few settlements larger than villages."
+  },
+  {
+    "id": "hobgoblin",
+    "name": "Hobgoblin",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Common",
+      "Goblin"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Dwarven",
+      "Halfling",
+      "Jotun",
+      "Kholo",
+      "Orcish"
+    ],
+    "traits": [
+      "hobgoblin",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "elfbane-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Elfbane Hobgoblin",
+        "description": "Hobgoblins were engineered long ago from the unreliable and fecund goblins to be used as an army against the elves.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "runtboss-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Runtboss Hobgoblin",
+        "description": "You come from a long line of hobgoblins who commanded goblins.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "shortshanks-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Shortshanks Hobgoblin",
+        "description": "You have a longer torso and broader shoulders than most hobgoblins, making your legs seem short by comparison.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "smokeworker-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Smokeworker Hobgoblin",
+        "description": "Your family have been alchemists, engineers, and scientists for generations, laboring on projects that bring smoke and fire to the field of battle.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "steelskin-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Steelskin Hobgoblin",
+        "description": "When you are cut or burned, your body responds by forming tough but flexible callouses over the site of the injury.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "warmarch-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Warmarch Hobgoblin",
+        "description": "You come from a line of wandering mercenaries constantly on the march and scavenging food on the trail.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "warrenbred-hobgoblin",
+        "ancestryId": "hobgoblin",
+        "name": "Warrenbred Hobgoblin",
+        "description": "Your ancestors lived underground.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Taller and stronger than their goblin kin, hobgoblins are equals in strength and size to humans, with broad shoulders and long, powerful arms."
+  },
+  {
+    "id": "human",
+    "name": "Human",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "free",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 1,
+    "bonusLanguageChoices": [],
+    "traits": [
+      "human",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "battle-trained-human-bb",
+        "ancestryId": "human",
+        "name": "Battle-Trained Human (BB)",
+        "description": "Your family has trained in battle for generations, granting you advantages in a fight.",
+        "source": "Pathfinder Beginner Box"
+      },
+      {
+        "id": "skilled-human",
+        "ancestryId": "human",
+        "name": "Skilled Human",
+        "description": "Your ingenuity allows you to train in a wide variety of skills.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "versatile-human",
+        "ancestryId": "human",
+        "name": "Versatile Human",
+        "description": "Humanity's versatility and ambition have fueled its ascendance to be the most common ancestry in most nations throughout the world.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "warden-human-bb",
+        "ancestryId": "human",
+        "name": "Warden Human (BB)",
+        "description": "You and your family members are survivors, and you've learned how to take care of yourself.",
+        "source": "Pathfinder Beginner Box"
+      },
+      {
+        "id": "wintertouched-human",
+        "ancestryId": "human",
+        "name": "Wintertouched Human",
+        "description": "The power of winter flows through you.",
+        "source": "Pathfinder Lost Omens Character Guide"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "As unpredictable and varied as any of Golarion's peoples, humans have exceptional drive and the capacity to endure and expand."
+  },
+  {
+    "id": "kashrishi",
+    "name": "Kashrishi",
+    "hp": 8,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Empyrean",
+      "Fey",
+      "Petran",
+      "Thalassic"
+    ],
+    "traits": [
+      "humanoid",
+      "kashrishi"
+    ],
+    "heritages": [
+      {
+        "id": "athamasi",
+        "ancestryId": "kashrishi",
+        "name": "Athamasi",
+        "description": "You have a set of small secondary arms adapted for climbing and hanging from trees.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "lethoci",
+        "ancestryId": "kashrishi",
+        "name": "Lethoci",
+        "description": "You come from a kashrishi family adapted to coastal shores, or inland ponds and lakes.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "nascent",
+        "ancestryId": "kashrishi",
+        "name": "Nascent",
+        "description": "While most kashrishi are fully adapted to their environment by the time they reach adulthood, some retain unrealized potential well into adulthood before unlocking it.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "trogloshi",
+        "ancestryId": "kashrishi",
+        "name": "Trogloshi",
+        "description": "You're adapted to the sunless regions of dense jungle forests and deep caves, with soft flesh lacking pigment and unusually clear crystalline horns.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "xyloshi",
+        "ancestryId": "kashrishi",
+        "name": "Xyloshi",
+        "description": "You have prominent neck muscles that allow you to use your facial horn as a tool or weapon.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Impossible Lands",
+    "description": "Kashrishi make their homes in remote areas of the world."
+  },
+  {
+    "id": "kholo",
+    "name": "Kholo",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Common",
+      "Kholo"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Iruxi",
+      "Necril",
+      "Orcish"
+    ],
+    "traits": [
+      "gnoll",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "ant-kholo",
+        "ancestryId": "kholo",
+        "name": "Ant Kholo",
+        "description": "You're a sharp-featured, big-eared kholo about 3 feet tall.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "cave-kholo",
+        "ancestryId": "kholo",
+        "name": "Cave Kholo",
+        "description": "Storytellers spin ancient tales claiming that kholo lived in caves and underground before most of your kind ventured into the light.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "dog-kholo",
+        "ancestryId": "kholo",
+        "name": "Dog Kholo",
+        "description": "You're a nimble-bodied kholo with a prehistoric, almost dog-like build.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "great-kholo",
+        "ancestryId": "kholo",
+        "name": "Great Kholo",
+        "description": "You're an imposing, powerful kholo, with tawny fur and brown spots on your hide.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "sweetbreath-kholo",
+        "ancestryId": "kholo",
+        "name": "Sweetbreath Kholo",
+        "description": "You're a striped, pale-furred kholo with oddly pleasant breath, which you can use to entrance your prey.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "winter-kholo",
+        "ancestryId": "kholo",
+        "name": "Winter Kholo",
+        "description": "You're a hardy kholo covered in thick, tufted fur that makes you able to survive in the harsh winters of the colder territories.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "witch-kholo",
+        "ancestryId": "kholo",
+        "name": "Witch Kholo",
+        "description": "You're a shaggy, dark-furred kholo capable of making some truly uncanny sounds.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Kholo have bad reputations as brutal raiders and demon-worshipers."
+  },
+  {
+    "id": "kitsune",
+    "name": "Kitsune",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Dwarven",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Halfling"
+    ],
+    "traits": [
+      "humanoid",
+      "kitsune"
+    ],
+    "heritages": [
+      {
+        "id": "celestial-envoy-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Celestial Envoy Kitsune",
+        "description": "Whether due to Daikitsu's grace or faithful forebears, you have a strong connection to the divine, affording you certain protections.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "dark-fields-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Dark Fields Kitsune",
+        "description": "You can exert your unsettling presence to subtly Demoralize others.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "earthly-wilds-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Earthly Wilds Kitsune",
+        "description": "You are a creature of the material world, with an affinity closer to the wilds than urban society.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "empty-sky-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Empty Sky Kitsune",
+        "description": "Your spirit is open to the secrets of beyond, granting you greater access to kitsune magic.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "frozen-wind-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Frozen Wind Kitsune",
+        "description": "Your ancestors crossed the Crown of the World or resided on snowy peaks.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "palace-echoes-kitsune",
+        "ancestryId": "kitsune",
+        "name": "Palace Echoes Kitsune",
+        "description": "You descend from kitsune who possessed such compelling powers of persuasion that they could walk into a palace at sunrise and end up as the power behind the throne by nightfall.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Kitsune are a charismatic and witty people with a connection to the spiritual that grants them many magical abilities, chiefly the power to shapechange into other forms."
+  },
+  {
+    "id": "kobold",
+    "name": "Kobold",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "dex",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Common",
+      "Sakvroth"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Diabolic",
+      "Draconic",
+      "Dwarven",
+      "Empyrean",
+      "Fey",
+      "Gnomish",
+      "Petran"
+    ],
+    "traits": [
+      "humanoid",
+      "kobold"
+    ],
+    "heritages": [
+      {
+        "id": "caveclimber-kobold",
+        "ancestryId": "kobold",
+        "name": "Caveclimber Kobold",
+        "description": "You live in a vertically-oriented home, and you're a consummate climber.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "cavernstalker-kobold",
+        "ancestryId": "kobold",
+        "name": "Cavernstalker Kobold",
+        "description": "You hatched in a warren with narrow tunnels that was also home to a being of primal earth energy, which has made you limber and flexible.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "dragonscaled-kobold",
+        "ancestryId": "kobold",
+        "name": "Dragonscaled Kobold",
+        "description": "Thanks to your warren's association with a dragon, your scales are sturdier than other kobolds'.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "elementheart-kobold",
+        "ancestryId": "kobold",
+        "name": "Elementheart Kobold",
+        "description": "When you hatched, you imprinted on a creature strongly associated with one of the Elemental Planes, such as an elemental or genie.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "heavenscribe-kobold",
+        "ancestryId": "kobold",
+        "name": "Heavenscribe Kobold",
+        "description": "Your connection to wise and celestial imperial dragons has led others to seek your advice.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "mightyfall-kobold",
+        "ancestryId": "kobold",
+        "name": "Mightyfall Kobold",
+        "description": "Your proximity to a mighty kaiju has caused you to grow strong and hardy.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "spellhorn-kobold",
+        "ancestryId": "kobold",
+        "name": "Spellhorn Kobold",
+        "description": "Since hatching in the vicinity of a powerful source of magic, a trace of it flows through your veins.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "strongjaw-kobold",
+        "ancestryId": "kobold",
+        "name": "Strongjaw Kobold",
+        "description": "Your warren is noted for their powerful jaws and sharp teeth, either to help protect against natural predators or due to reverence of a mighty beast.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "tunnelflood-kobold",
+        "ancestryId": "kobold",
+        "name": "Tunnelflood Kobold",
+        "description": "You grew up in a warren crisscrossed by underwater passages, whether natural or excavated, and were influenced by a powerful aquatic entity or being of primal water.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "venomtail-kobold",
+        "ancestryId": "kobold",
+        "name": "Venomtail Kobold",
+        "description": "Thanks to the proximity of a venomous creature to your warren, you were born with a vestigial spur in your tail that secretes deadly venom.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Every kobold instinctively understands the importance of power, and many are inclined to venerate those who have it, whether they be mighty dragons, cruel fiends, imperious fey, or even ancient artifacts."
+  },
+  {
+    "id": "leshy",
+    "name": "Leshy",
+    "hp": 8,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common",
+      "Fey"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Elven",
+      "Gnomish",
+      "Goblin",
+      "Halfling",
+      "Sakvroth"
+    ],
+    "traits": [
+      "leshy",
+      "plant"
+    ],
+    "heritages": [
+      {
+        "id": "cactus-leshy",
+        "ancestryId": "leshy",
+        "name": "Cactus Leshy",
+        "description": "Spines cover your body.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "chrysanthemum-leshy",
+        "ancestryId": "leshy",
+        "name": "Chrysanthemum Leshy",
+        "description": "You look like a human child, though with a grand crown of chrysanthemums growing from your head, ornate as an emperor's.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "fruit-leshy",
+        "ancestryId": "leshy",
+        "name": "Fruit Leshy",
+        "description": "Your body continually produces small fruits imbued with primal magic.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "fungus-leshy",
+        "ancestryId": "leshy",
+        "name": "Fungus Leshy",
+        "description": "Your body was made from fungi that grows in the shade of caves and trees, and you are at home in dark caverns and warrens.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "gourd-leshy",
+        "ancestryId": "leshy",
+        "name": "Gourd Leshy",
+        "description": "You have a large gourd for a skull, and since you don't have a physical brain, you can use the space inside your head.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "leaf-leshy",
+        "ancestryId": "leshy",
+        "name": "Leaf Leshy",
+        "description": "Your body is made mostly from natural foliage, and like a leaf tumbling from a tree, you land from falls with particular grace.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "lotus-leshy",
+        "ancestryId": "leshy",
+        "name": "Lotus Leshy",
+        "description": "You effortlessly float on the surface of water.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "peachchild-leshy",
+        "ancestryId": "leshy",
+        "name": "Peachchild Leshy",
+        "description": "Your leshy spirit took hold in a massive peach fruit before your body split forth from it, possibly emulating a past hero who was born in the same manner.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "pine-leshy",
+        "ancestryId": "leshy",
+        "name": "Pine Leshy",
+        "description": "You excrete a thick, sticky sap from your bark-like flesh, making it easier to climb and hold onto your gear.",
+        "source": "Pathfinder #176: Lost Mammoth Valley"
+      },
+      {
+        "id": "root-leshy",
+        "ancestryId": "leshy",
+        "name": "Root Leshy",
+        "description": "Your body is made from hardy roots that attach you firmly to the ground.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "seaweed-leshy",
+        "ancestryId": "leshy",
+        "name": "Seaweed Leshy",
+        "description": "Your body is made from woven seaweed, and you're just as comfortable underwater as on land.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "vine-leshy",
+        "ancestryId": "leshy",
+        "name": "Vine Leshy",
+        "description": "Your prehensile vines grant you unmatched skill at climbing.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "Guardians and emissaries of the environment, leshies are immortal spirits of nature temporarily granted a physical form."
+  },
+  {
+    "id": "lizardfolk",
+    "name": "Lizardfolk",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common",
+      "Iruxi"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Amurrun",
+      "Boggard",
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Jotun",
+      "Thalassic"
+    ],
+    "traits": [
+      "humanoid",
+      "lizardfolk"
+    ],
+    "heritages": [
+      {
+        "id": "bakuwa-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Bakuwa Lizardfolk",
+        "description": "Your body is covered in bony plates.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "cliffscale-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Cliffscale Lizardfolk",
+        "description": "Your toes are adapted for gripping and climbing.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "cloudleaper-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Cloudleaper Lizardfolk",
+        "description": "Your body is light with flaps of skin along your limbs that catch the air that passes beneath you.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "frilled-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Frilled Lizardfolk",
+        "description": "You can flare your neck frill and flex your dorsal spines, Demoralizing your foes.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "makari-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Makari Lizardfolk",
+        "description": "You have a trunk-like snout and a connection to the divine.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "sandstrider-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Sandstrider Lizardfolk",
+        "description": "Your thick scales help you retain water and combat the sun's glare.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "unseen-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Unseen Lizardfolk",
+        "description": "You can change your skin color to blend in with your surroundings, making minor shifts with a single action and dramatic changes over the course of an hour.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "wetlander-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Wetlander Lizardfolk",
+        "description": "Your family is descended from the most common lizardfolk heritage, and you are accustomed to aquatic environments.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "woodstalker-lizardfolk",
+        "ancestryId": "lizardfolk",
+        "name": "Woodstalker Lizardfolk",
+        "description": "You move easily through thick forest and jungle, using every branch or bush.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Lizardfolk are consummate survivors, heirs to empires considered ancient even by the elves."
+  },
+  {
+    "id": "merfolk",
+    "name": "Merfolk",
+    "hp": 8,
+    "size": "medium",
+    "speed": 5,
+    "boosts": [
+      "dex",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Common",
+      "Thalassic"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Azlanti",
+      "Draconic",
+      "Elven",
+      "Fey"
+    ],
+    "traits": [
+      "amphibious",
+      "humanoid",
+      "merfolk"
+    ],
+    "heritages": [
+      {
+        "id": "abyssal-merfolk",
+        "ancestryId": "merfolk",
+        "name": "Abyssal Merfolk",
+        "description": "You live far, far below the surface of the ocean.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "carcharodon-merfolk",
+        "ancestryId": "merfolk",
+        "name": "Carcharodon Merfolk",
+        "description": "As a fearsome shark merfolk, your lower body is similar to that of one of the apex predators of the ocean.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "pelagic-merfolk",
+        "ancestryId": "merfolk",
+        "name": "Pelagic Merfolk",
+        "description": "You're a merfolk of the open seas.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "reef-merfolk",
+        "ancestryId": "merfolk",
+        "name": "Reef Merfolk",
+        "description": "You were raised amid colorful corals and schools of tropical fish.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "sailfish-merfolk",
+        "ancestryId": "merfolk",
+        "name": "Sailfish Merfolk",
+        "description": "The lower half of your body resembles a powerful sailfish, complete with a large dorsal fin.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "Merfolk live in every ocean of Golarion, infinite in their variety and awe-inspiring in their majesty."
+  },
+  {
+    "id": "minotaur",
+    "name": "Minotaur",
+    "hp": 10,
+    "size": "large",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "con",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Common",
+      "Jotun"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Cyclops",
+      "Dwarven",
+      "Fey",
+      "Petran",
+      "Sakvroth"
+    ],
+    "traits": [
+      "beast",
+      "humanoid",
+      "minotaur"
+    ],
+    "heritages": [
+      {
+        "id": "ghost-bull-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Ghost Bull Minotaur",
+        "description": "Your fur is as pale as death, possibly from some connection you or your family has to the afterlife, which lets you supernaturally find your way.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "glacier-cavern-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Glacier Cavern Minotaur",
+        "description": "Your fur grows thick and warm, well suited to the frozen mountains in which you reside.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "littlehorn-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Littlehorn Minotaur",
+        "description": "Though no less powerful, your frame (and your horns) are smaller than those of most other minotaurs.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "roaming-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Roaming Minotaur",
+        "description": "Your hooves are broad and powerful, perfect for clearing away rubble as you step.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "slabsoul-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Slabsoul Minotaur",
+        "description": "Your deep connection with stone and walls allows you to conjure massive slabs of granite that collapse on your foes.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "stalker-minotaur",
+        "ancestryId": "minotaur",
+        "name": "Stalker Minotaur",
+        "description": "Despite your heavy frame, you walk on shaggy hooves that muffle your footfalls, allowing you to surprise your prey.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "Minotaurs stalk complex passageways, whether natural or artificial, and are masters of stone architecture."
+  },
+  {
+    "id": "nagaji",
+    "name": "Nagaji",
+    "hp": 10,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Nagaji"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Amurrun",
+      "Draconic",
+      "Empyrean",
+      "Shadowtongue",
+      "Tengu",
+      "Thalassic",
+      "Sakvroth",
+      "Vanara"
+    ],
+    "traits": [
+      "humanoid",
+      "nagaji"
+    ],
+    "heritages": [
+      {
+        "id": "hooded-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Hooded Nagaji",
+        "description": "You bear the hooded head of a spitting cobra, and like such cobras, you can shoot streams of venom from your mouth.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "sacred-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Sacred Nagaji",
+        "description": "You stand out from most nagaji, with the upper body of a beautiful human and the lower body of a green or white snake.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "shimmertongue-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Shimmertongue Nagaji",
+        "description": "You were born with a keen sense for magic, able to taste its unique effects in the air.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "titan-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Titan Nagaji",
+        "description": "You were raised to be a warrior or a bodyguard, and your specialized diet and bulging muscles have made your scales as strong as armored plates.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "venomshield-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Venomshield Nagaji",
+        "description": "Your intrinsic connection to nagas and mundane serpents grants you an innate resistance to toxins of every sort.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "whipfang-nagaji",
+        "ancestryId": "nagaji",
+        "name": "Whipfang Nagaji",
+        "description": "You have a long, flexible neck that can curl into a striking pose like that of a snake.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Impossible Lands",
+    "description": "With humanoid figures and serpentine heads, nagaji are heralds, companions, and servitors of powerful nagas."
+  },
+  {
+    "id": "orc",
+    "name": "Orc",
+    "hp": 10,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "free",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Orcish"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Goblin",
+      "Jotun",
+      "Petran",
+      "Sakvroth"
+    ],
+    "traits": [
+      "humanoid",
+      "orc"
+    ],
+    "heritages": [
+      {
+        "id": "badlands-orc",
+        "ancestryId": "orc",
+        "name": "Badlands Orc",
+        "description": "You come from sun-scorched badlands, where long legs and an ability to withstand the elements helped you thrive.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "battle-ready-orc",
+        "ancestryId": "orc",
+        "name": "Battle-Ready Orc",
+        "description": "You descend from a line of terrifying battlefield commanders.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "deep-orc",
+        "ancestryId": "orc",
+        "name": "Deep Orc",
+        "description": "Your calloused hands and red eyes speak to a life spent in the deep darkness of mountain caverns, where you learned to battle on rocky cliffs and survive with minimal resources.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "grave-orc",
+        "ancestryId": "orc",
+        "name": "Grave Orc",
+        "description": "You were exposed to powerful necromantic energies that should have killed you—but you survived.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "hold-scarred-orc",
+        "ancestryId": "orc",
+        "name": "Hold-Scarred Orc",
+        "description": "You are part of an orc community that participates in ritual scarification or tattooing.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "rainfall-orc",
+        "ancestryId": "orc",
+        "name": "Rainfall Orc",
+        "description": "You were born in a rain forest with only tangles of trees providing protection from torrential rainstorms and flash floods.",
+        "source": "Pathfinder Player Core"
+      },
+      {
+        "id": "winter-orc",
+        "ancestryId": "orc",
+        "name": "Winter Orc",
+        "description": "Your ancestors survived in cold climates.",
+        "source": "Pathfinder Player Core"
+      }
+    ],
+    "source": "Pathfinder Player Core",
+    "description": "Orcs are forged in the fires of violence and conflict, often from the moment they are born."
+  },
+  {
+    "id": "poppet",
+    "name": "Poppet",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "dex"
+    ],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Dwarven",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin"
+    ],
+    "traits": [
+      "construct",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "ghost-poppet",
+        "ancestryId": "poppet",
+        "name": "Ghost Poppet",
+        "description": "You awakened when a bit of another person's life force and a fragment of their soul-possibly, but not always, at the moment of their death-found its way into your constructed body.",
+        "source": "Pathfinder Lost Omens The Grand Bazaar"
+      },
+      {
+        "id": "stuffed-poppet",
+        "ancestryId": "poppet",
+        "name": "Stuffed Poppet",
+        "description": "You have little inside you other than cotton, sawdust, or dried leaves.",
+        "source": "Pathfinder Lost Omens The Grand Bazaar"
+      },
+      {
+        "id": "toy-poppet",
+        "ancestryId": "poppet",
+        "name": "Toy Poppet",
+        "description": "You have the form of a child's tiny toy or doll, but you don't let your small size impede your joy of life.",
+        "source": "Pathfinder Lost Omens The Grand Bazaar"
+      },
+      {
+        "id": "tsukumogami-poppet",
+        "ancestryId": "poppet",
+        "name": "Tsukumogami Poppet",
+        "description": "You have the form and memories of a common tool.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "windup-poppet",
+        "ancestryId": "poppet",
+        "name": "Windup Poppet",
+        "description": "You're made primarily of soft metals, such as tin or silver, and your life force dwells within an exceptional array of clockworks deep in your body.",
+        "source": "Pathfinder Lost Omens The Grand Bazaar"
+      },
+      {
+        "id": "wishborn-poppet",
+        "ancestryId": "poppet",
+        "name": "Wishborn Poppet",
+        "description": "You were wished to life, either by a powerful spellcaster or by the earnest desire of an innocent person who loved you very much.",
+        "source": "Pathfinder Lost Omens The Grand Bazaar"
+      }
+    ],
+    "source": "Pathfinder Lost Omens The Grand Bazaar",
+    "description": "Poppets are small, basic constructs that typically help their owners with simple tasks."
+  },
+  {
+    "id": "ratfolk",
+    "name": "Ratfolk",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "str"
+    ],
+    "languages": [
+      "Common",
+      "Ysoki"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Dwarven",
+      "Gnomish",
+      "Goblin",
+      "Halfling",
+      "Kholo",
+      "Orcish",
+      "Sakvroth"
+    ],
+    "traits": [
+      "humanoid",
+      "ratfolk"
+    ],
+    "heritages": [
+      {
+        "id": "deep-rat",
+        "ancestryId": "ratfolk",
+        "name": "Deep Rat",
+        "description": "Your ancestors lived deeper underground than other ratfolk, granting you the ability to see in the dark.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "desert-rat",
+        "ancestryId": "ratfolk",
+        "name": "Desert Rat",
+        "description": "You are native to arid plains and likely grew up traveling the roads.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "longsnout-rat",
+        "ancestryId": "ratfolk",
+        "name": "Longsnout Rat",
+        "description": "Your long snout gives you a keener sense of smell than most ratfolk.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "sewer-rat",
+        "ancestryId": "ratfolk",
+        "name": "Sewer Rat",
+        "description": "You come from a long line of ratfolk with a community based in the sewers beneath a large settlement.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "shadow-rat",
+        "ancestryId": "ratfolk",
+        "name": "Shadow Rat",
+        "description": "Your ancestors lived in dark spaces underground, granting you dark fur and a vaguely unnatural mien.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "snow-rat",
+        "ancestryId": "ratfolk",
+        "name": "Snow Rat",
+        "description": "You have a thicker coat and bulkier frame to defend against the cold, granting you cold resistance equal to half your level (minimum 1).",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "tunnel-rat",
+        "ancestryId": "ratfolk",
+        "name": "Tunnel Rat",
+        "description": "You can easily compress your body and squeeze through gaps.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Ysoki are beings that most surface-dwelling humanoids refer to as \"ratfolk.\" They are a communal people who prefer cramped conditions, with up to 100 individuals living in a given home."
+  },
+  {
+    "id": "samsaran",
+    "name": "Samsaran",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "cha"
+    ],
+    "languages": [
+      "Common",
+      "Samsaran"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Chthonian",
+      "Empyrean",
+      "Jotun",
+      "Petran",
+      "Pyric",
+      "Sussuran",
+      "Thalassic",
+      "Diabolic",
+      "Draconic"
+    ],
+    "traits": [
+      "humanoid",
+      "samsaran"
+    ],
+    "heritages": [
+      {
+        "id": "healer-samsaran",
+        "ancestryId": "samsaran",
+        "name": "Healer Samsaran",
+        "description": "In seeking enlightenment, your past incarnations have wandered away from the ancestral homelands of Zi Ha, exploring the different nations of Tian Xia and elsewhere in Golarion.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "mountaineer-samsaran",
+        "ancestryId": "samsaran",
+        "name": "Mountaineer Samsaran",
+        "description": "Your past incarnations dwelled in the caves on the snowcapped mountains of Tian Xia, so your body has become adept at surviving frigid storms.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "oracular-samsaran",
+        "ancestryId": "samsaran",
+        "name": "Oracular Samsaran",
+        "description": "Your past lives have provided heightened insight to the spiritual world and current and future events, as history repeats itself.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "sanctuary-samsaran",
+        "ancestryId": "samsaran",
+        "name": "Sanctuary Samsaran",
+        "description": "Your past incarnations were reborn in sanctuaries in northern Zi Ha, and you have recollections of being trained to concentrate and focus for long periods of time.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "wilderness-samsaran",
+        "ancestryId": "samsaran",
+        "name": "Wilderness Samsaran",
+        "description": "Your preceding lives have been reborn in various remote environments away from major settlements in Tian Xia and beyond.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Samsarans, as the tale goes, originated with a group of scholars in Zi Ha who ventured into the mountains to find the cure for an illness ravaging their village."
+  },
+  {
+    "id": "sarangay",
+    "name": "Sarangay",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "str",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Empyrean",
+      "Fey",
+      "Nagaji",
+      "Petran",
+      "Pyric",
+      "Sussuran",
+      "Thalassic",
+      "Yaksha"
+    ],
+    "traits": [
+      "humanoid",
+      "sarangay"
+    ],
+    "heritages": [
+      {
+        "id": "full-moon-sarangay",
+        "ancestryId": "sarangay",
+        "name": "Full Moon Sarangay",
+        "description": "You were raised in a shamanic tradition transcending a single sarangay community or heritage.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "half-moon-sarangay",
+        "ancestryId": "sarangay",
+        "name": "Half Moon Sarangay",
+        "description": "You come from one of many traveling communities that migrate seasonally along Tian Xia's vast rivers and mountains, bringing news and tidings to villages along their path.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "new-moon-sarangay",
+        "ancestryId": "sarangay",
+        "name": "New Moon Sarangay",
+        "description": "Some people call you a dwarf sarangay and your kind \"hiding ones.\" Others whisper you go out with the moon when the moon \"goes hunting\"—a common folk saying for when the new moon vanishes from the sky.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "waning-moon-sarangay",
+        "ancestryId": "sarangay",
+        "name": "Waning Moon Sarangay",
+        "description": "Your ancestors were named for the moon in transition, ever-changing and ephemeral.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "waxing-moon-sarangay",
+        "ancestryId": "sarangay",
+        "name": "Waxing Moon Sarangay",
+        "description": "Your ancestors dwelled in the swamps, fens, and flooded forests, where they contended with fierce predators and formed raiding parties to claim scarce resources.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Sarangay are carabao-headed people who have long survived deep in the forests across Tian Xia."
+  },
+  {
+    "id": "shisk",
+    "name": "Shisk",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "int",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Mwangi",
+      "Shisk"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Common",
+      "Draconic",
+      "Dwarven",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Halfling",
+      "Jotun",
+      "Orcish",
+      "Sakvroth"
+    ],
+    "traits": [
+      "humanoid",
+      "shisk"
+    ],
+    "heritages": [
+      {
+        "id": "lorekeeper-shisk",
+        "ancestryId": "shisk",
+        "name": "Lorekeeper Shisk",
+        "description": "You grew up surrounded by knowledge and secrets.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "quillcoat-shisk",
+        "ancestryId": "shisk",
+        "name": "Quillcoat Shisk",
+        "description": "Your body has adapted a defensive mechanism to break off your quills in an attacker, allowing you to defend yourself against aggressive predators, though it takes a while for the quills to grow back.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "spellkeeper-shisk",
+        "ancestryId": "shisk",
+        "name": "Spellkeeper Shisk",
+        "description": "Your magical knowledge allows you to cast simple spells.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "stonestep-shisk",
+        "ancestryId": "shisk",
+        "name": "Stonestep Shisk",
+        "description": "Navigating mountains and other rocky terrain is second nature to you.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      },
+      {
+        "id": "stronggut-shisk",
+        "ancestryId": "shisk",
+        "name": "Stronggut Shisk",
+        "description": "Your metabolism is slow, allowing you to go for days without food and process maladies at a slower rate.",
+        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+      }
+    ],
+    "source": "Pathfinder Lost Omens The Mwangi Expanse",
+    "description": "Shisks are secretive mountain-dwellers, bone-feathered humanoids who lurk underground in dark tunnels and caverns."
+  },
+  {
+    "id": "shoony",
+    "name": "Shoony",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "dex",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Common",
+      "Shoony"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Dwarven",
+      "Gnomish",
+      "Goblin",
+      "Halfling",
+      "Petran"
+    ],
+    "traits": [
+      "humanoid",
+      "shoony"
+    ],
+    "heritages": [
+      {
+        "id": "bloodhound-shoony",
+        "ancestryId": "shoony",
+        "name": "Bloodhound Shoony",
+        "description": "Your ancestors were famous trackers, and you carry in your blood that same gift of the hunt.",
+        "source": "Pathfinder #153: Life's Long Shadows"
+      },
+      {
+        "id": "fishseeker-shoony",
+        "ancestryId": "shoony",
+        "name": "Fishseeker Shoony",
+        "description": "You come from a long line of fisherfolk and have inherited the quick reflexes necessary to nab and reel in big game.",
+        "source": "Pathfinder #153: Life's Long Shadows"
+      },
+      {
+        "id": "paddler-shoony",
+        "ancestryId": "shoony",
+        "name": "Paddler Shoony",
+        "description": "You hail from shoonies who have lived long and successfully among the reeds and cattails of swamps and marshes, and have adapted to the challenges of living near waterlogged areas.",
+        "source": "Pathfinder #153: Life's Long Shadows"
+      },
+      {
+        "id": "thickcoat-shoony",
+        "ancestryId": "shoony",
+        "name": "Thickcoat Shoony",
+        "description": "You are a rare shoony who hails from colder climes.",
+        "source": "Pathfinder #153: Life's Long Shadows"
+      }
+    ],
+    "source": "Pathfinder #153: Life's Long Shadows",
+    "description": "Diminutive humanoids who resemble squat, bipedal dogs, shoonies are sometimes mistaken for weak and insular pacifists."
+  },
+  {
+    "id": "skeleton",
+    "name": "Skeleton",
+    "hp": 6,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common",
+      "Necril"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [],
+    "traits": [
+      "skeleton",
+      "undead"
+    ],
+    "heritages": [
+      {
+        "id": "compact-skeleton",
+        "ancestryId": "skeleton",
+        "name": "Compact Skeleton",
+        "description": "For tasks that require a lighter touch, gnome, goblin, and halfling remains are more suitable than a larger creature's.",
+        "source": "Pathfinder Book of the Dead"
+      },
+      {
+        "id": "fodder-skeleton",
+        "ancestryId": "skeleton",
+        "name": "Fodder Skeleton",
+        "description": "Humans, and those who are physically closest to them, are the favored material of necromancers.",
+        "source": "Pathfinder Book of the Dead"
+      },
+      {
+        "id": "monstrous-skeleton",
+        "ancestryId": "skeleton",
+        "name": "Monstrous Skeleton",
+        "description": "Inhuman skeletons are often created for both their deadly physical attacks and their terrifying appearances.",
+        "source": "Pathfinder Book of the Dead"
+      },
+      {
+        "id": "shifting-skeleton",
+        "ancestryId": "skeleton",
+        "name": "Shifting Skeleton",
+        "description": "Constructed from the bones of various shapechanging creatures, shifting skeletons retain a measure of reconfigurability, allowing them to shift forms.",
+        "source": "Pathfinder Wake the Dead #4"
+      },
+      {
+        "id": "sturdy-skeleton",
+        "ancestryId": "skeleton",
+        "name": "Sturdy Skeleton",
+        "description": "Certain hazardous conditions are not suitable for the average skeleton, so a necromancer might choose to reanimate the bones of a dwarf, orc, or other creature with a reputation for sturdiness.",
+        "source": "Pathfinder Book of the Dead"
+      }
+    ],
+    "source": "Pathfinder Book of the Dead",
+    "description": "Skeletons are considered among the lowest types of undead."
+  },
+  {
+    "id": "sprite",
+    "name": "Sprite",
+    "hp": 6,
+    "size": "tiny",
+    "speed": 20,
+    "boosts": [
+      "dex",
+      "int",
+      "free"
+    ],
+    "flaws": [
+      "str"
+    ],
+    "languages": [
+      "Common",
+      "Fey"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Draconic",
+      "Elven",
+      "Empyrean",
+      "Gnomish",
+      "Goblin",
+      "Jotun"
+    ],
+    "traits": [
+      "fey",
+      "sprite"
+    ],
+    "heritages": [
+      {
+        "id": "dijiang",
+        "ancestryId": "sprite",
+        "name": "Dijiang",
+        "description": "You have the form of a faceless, leathery ball with short fur, six legs, and a connection to primordial chaos.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "draxie",
+        "ancestryId": "sprite",
+        "name": "Draxie",
+        "description": "You are kin to faerie dragons, tracing your heritage back to the death of the mightiest faerie dragon in the First World.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "gandharva",
+        "ancestryId": "sprite",
+        "name": "Gandharva",
+        "description": "You're descended from the self-proclaimed musicians, poets, and dancers of the gods, with a body that's part humanoid and part horse or bird.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "grig",
+        "ancestryId": "sprite",
+        "name": "Grig",
+        "description": "You have the hindquarters of a cricket and adore art and music.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "kanchil",
+        "ancestryId": "sprite",
+        "name": "Kanchil",
+        "description": "You have the head of a mouse deer and hooves instead of feet, with a reputation for being clever and persuasive—able to get yourself out of sticky situations with wordplay and a bit of luck.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "leungli",
+        "ancestryId": "sprite",
+        "name": "Leungli",
+        "description": "You have the head of a goldfish or carp and scales that come in an auspicious combination of stark white, black, orange, red, and gold.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "luminous-sprite",
+        "ancestryId": "sprite",
+        "name": "Luminous Sprite",
+        "description": "You glow with magical luminance.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "melixie",
+        "ancestryId": "sprite",
+        "name": "Melixie",
+        "description": "You have the features of a bee, butterfly, or other insect that loves sweets.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "nyktera",
+        "ancestryId": "sprite",
+        "name": "Nyktera",
+        "description": "You have batlike features, an affinity for batkind, and hearing that is second to none.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "pixie",
+        "ancestryId": "sprite",
+        "name": "Pixie",
+        "description": "You are larger than other sprites.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Sprites are diminutive, whimsical, and exuberant creatures from the fey realm known as the First World."
+  },
+  {
+    "id": "strix",
+    "name": "Strix",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Strix"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Diabolic",
+      "Draconic",
+      "Gnomish",
+      "Jotun"
+    ],
+    "traits": [
+      "humanoid",
+      "strix"
+    ],
+    "heritages": [
+      {
+        "id": "nightglider-strix",
+        "ancestryId": "strix",
+        "name": "Nightglider Strix",
+        "description": "You are a dedicated nocturnal avian, keeping watch and predating in the most lightless environments.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "predator-strix",
+        "ancestryId": "strix",
+        "name": "Predator Strix",
+        "description": "You come from a line of strix with exceptionally broad wings and lengthy talons.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "scavenger-strix",
+        "ancestryId": "strix",
+        "name": "Scavenger Strix",
+        "description": "Your ancestors originated from a land where food was scarce and threats were many.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "shoreline-strix",
+        "ancestryId": "strix",
+        "name": "Shoreline Strix",
+        "description": "You're the descendant of strix who traveled to the coasts.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      },
+      {
+        "id": "songbird-strix",
+        "ancestryId": "strix",
+        "name": "Songbird Strix",
+        "description": "You descend from a talented line of strix storytellers.",
+        "source": "Pathfinder Lost Omens Ancestry Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "description": "Known as itarii in their own language, strix are reclusive avian humanoids devoted to their homelands and their tribes."
+  },
+  {
+    "id": "surki",
+    "name": "Surki",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Surki"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Elven",
+      "Fey",
+      "Sakvroth"
+    ],
+    "traits": [
+      "humanoid",
+      "surki"
+    ],
+    "heritages": [
+      {
+        "id": "breaker-surki",
+        "ancestryId": "surki",
+        "name": "Breaker Surki",
+        "description": "Your claws are especially hard and can break through earth and predators alike.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "elytron-surki",
+        "ancestryId": "surki",
+        "name": "Elytron Surki",
+        "description": "The top layer of your carapace is especially mobile, and you can unfurl it to catch the air gracefully as you fall.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "hardshell-surki",
+        "ancestryId": "surki",
+        "name": "Hardshell Surki",
+        "description": "Your carapace is much denser than that of other surkis, offering you a suit of your very own armor.",
+        "source": "Pathfinder Howl of the Wild"
+      },
+      {
+        "id": "lantern-surki",
+        "ancestryId": "surki",
+        "name": "Lantern Surki",
+        "description": "The nodes in your abdomen are particularly luminous.",
+        "source": "Pathfinder Howl of the Wild"
+      }
+    ],
+    "source": "Pathfinder Howl of the Wild",
+    "description": "Surkis are an insectile species who subsist on the latent magic in the world around them."
+  },
+  {
+    "id": "tanuki",
+    "name": "Tanuki",
+    "hp": 10,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "wis"
+    ],
+    "languages": [
+      "Common",
+      "Tanuki"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Kitsune",
+      "Tengu"
+    ],
+    "traits": [
+      "humanoid",
+      "tanuki"
+    ],
+    "heritages": [
+      {
+        "id": "ascetic-tanuki",
+        "ancestryId": "tanuki",
+        "name": "Ascetic Tanuki",
+        "description": "It's said your round form is the result of calmness and restraint, not indulgence.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "courageous-tanuki",
+        "ancestryId": "tanuki",
+        "name": "Courageous Tanuki",
+        "description": "Your heart beats with the courage of those who came before you, giving you the kind of bravery only a tanuki can demonstrate.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "even-tempered-tanuki",
+        "ancestryId": "tanuki",
+        "name": "Even-Tempered Tanuki",
+        "description": "You're possessed of a serenity uncommon to other tanuki, who always seem to be flying off the handle.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "steadfast-tanuki",
+        "ancestryId": "tanuki",
+        "name": "Steadfast Tanuki",
+        "description": "Your pride in your true tanuki form knows no bounds.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "virtuous-tanuki",
+        "ancestryId": "tanuki",
+        "name": "Virtuous Tanuki",
+        "description": "Many tanuki carry a gourd of alcohol to remind themselves to act with virtue, and by these standards, you're quite virtuous indeed.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Tian Xia is replete with magically gifted ancestries—such as tengu, kitsune, yakshas, and yaoguai—whose powers bring them high regard and who, in turn, use their gifts for responsible ends."
+  },
+  {
+    "id": "tengu",
+    "name": "Tengu",
+    "hp": 6,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Tengu"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Dwarven",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin",
+      "Halfling"
+    ],
+    "traits": [
+      "humanoid",
+      "tengu"
+    ],
+    "heritages": [
+      {
+        "id": "dogtooth-tengu",
+        "ancestryId": "tengu",
+        "name": "Dogtooth Tengu",
+        "description": "In addition to a beak, your mouth also features a number of vicious, pointed teeth.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "jinxed-tengu",
+        "ancestryId": "tengu",
+        "name": "Jinxed Tengu",
+        "description": "Your lineage has been exposed to curse after curse, and now they slide off your feathers like rain.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "mountainkeeper-tengu",
+        "ancestryId": "tengu",
+        "name": "Mountainkeeper Tengu",
+        "description": "You come from a line of tengu ascetics, leaving you with a link to the spirits of the world and the Great Beyond.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "skyborn-tengu",
+        "ancestryId": "tengu",
+        "name": "Skyborn Tengu",
+        "description": "Your bones may be especially light, you may be a rare tengu with wings, or your connection to the spirits of wind and sky might be stronger than most, slowing your descent through the air.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "stormtossed-tengu",
+        "ancestryId": "tengu",
+        "name": "Stormtossed Tengu",
+        "description": "Whether due to a blessing from Hei Feng or hatching from your egg during a squall, you are resistant to storms.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "taloned-tengu",
+        "ancestryId": "tengu",
+        "name": "Taloned Tengu",
+        "description": "Your talons are every bit as sharp and strong as your beak.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "wavediver-tengu",
+        "ancestryId": "tengu",
+        "name": "Wavediver Tengu",
+        "description": "You're one of the rare tengu who can cut through water like a bird through air, and you often lurk in rivers or oceans where few expect you.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Tengu are survivalists and conversationalists, equally at home living off the wilderness and finding a niche in dense cities."
+  },
+  {
+    "id": "tripkee",
+    "name": "Tripkee",
+    "hp": 6,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "wis",
+      "free"
+    ],
+    "flaws": [
+      "str"
+    ],
+    "languages": [
+      "Common",
+      "Grippli"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Boggard",
+      "Chthonian",
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Iruxi",
+      "Thalassic"
+    ],
+    "traits": [
+      "grippli",
+      "humanoid"
+    ],
+    "heritages": [
+      {
+        "id": "poisonhide-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Poisonhide Tripkee",
+        "description": "You may be small, but the poison glands concealed across your body hide a deadly defense.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "riverside-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Riverside Tripkee",
+        "description": "Your ancestors live in and on the water.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "snaptongue-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Snaptongue Tripkee",
+        "description": "Your tongue is especially long, and you can launch it with extraordinary range and precision.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "stickytoe-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Stickytoe Tripkee",
+        "description": "Your hands and feet exude a film that helps them adhere to surfaces.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "thickskin-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Thickskin Tripkee",
+        "description": "Your thick leathery skin resembles that of a toad.",
+        "source": "Pathfinder Player Core 2"
+      },
+      {
+        "id": "windweb-tripkee",
+        "ancestryId": "tripkee",
+        "name": "Windweb Tripkee",
+        "description": "Tough webbing along your hands and toes can slow any fall.",
+        "source": "Pathfinder Player Core 2"
+      }
+    ],
+    "source": "Pathfinder Player Core 2",
+    "description": "Tripkees are a shy and cautious people who generally seek to avoid being drawn into the affairs of others."
+  },
+  {
+    "id": "vanara",
+    "name": "Vanara",
+    "hp": 6,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Vanara"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Diabolic",
+      "Elven",
+      "Fey",
+      "Gnomish",
+      "Goblin"
+    ],
+    "traits": [
+      "humanoid",
+      "vanara"
+    ],
+    "heritages": [
+      {
+        "id": "bandaagee-vanara",
+        "ancestryId": "vanara",
+        "name": "Bandaagee Vanara",
+        "description": "Your family is one of many who claims to be descended from the regal vanara peacekeeping family called the Bandaagee.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "lahkgyan-vanara",
+        "ancestryId": "vanara",
+        "name": "Lahkgyan Vanara",
+        "description": "Your vanara ancestors might have been born in Ragdya's image, but they found survival only in service to his enemy: the red-faced Lahkgya.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "ragdyan-vanara",
+        "ancestryId": "vanara",
+        "name": "Ragdyan Vanara",
+        "description": "Keepers of traditions and tellers of ancient tales, your family traces its lineage to those born directly from Ragdya's whims.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "wajaghand-vanara",
+        "ancestryId": "vanara",
+        "name": "Wajaghand Vanara",
+        "description": "Your ancestors were forced into labor by the rakshasa immortal Ravana, the First and the Last.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Impossible Lands",
+    "description": "Vanaras are inquisitive and mischievous monkey-like humanoids with short, soft fur, expressive eyes, and long, prehensile tails."
+  },
+  {
+    "id": "vishkanya",
+    "name": "Vishkanya",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "free"
+    ],
+    "flaws": [],
+    "languages": [
+      "Common",
+      "Vishkanyan"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Elven",
+      "Goblin",
+      "Thalassic",
+      "Sakvroth",
+      "Vanara"
+    ],
+    "traits": [
+      "humanoid",
+      "vishkanya"
+    ],
+    "heritages": [
+      {
+        "id": "elusive-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Elusive Vishkanya",
+        "description": "Your flexible body seems unnaturally fluid to some, though they can rarely put a finger on what seems strange about you.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "keen-venom-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Keen-Venom Vishkanya",
+        "description": "You're practiced with using your venom in combat, allowing you to employ your venom at a moment's notice.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "old-blood-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Old-Blood Vishkanya",
+        "description": "You have a direct matrilineal line to the original group of vishkanyas upon the Vudrani ships that came to reclaim Jalmeray.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "prismatic-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Prismatic Vishkanya",
+        "description": "Your scales shimmer and catch the light in an intoxicating display of colors.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "scalekeeper-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Scalekeeper Vishkanya",
+        "description": "You are part of the family of vishkanyas in your community tasked with keeping records of the history and experiences of your people.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      },
+      {
+        "id": "venom-resistant-vishkanya",
+        "ancestryId": "vishkanya",
+        "name": "Venom-Resistant Vishkanya",
+        "description": "Your body contains not just venom but numerous antivenoms.",
+        "source": "Pathfinder Lost Omens Impossible Lands"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Impossible Lands",
+    "description": "Vishkanyas are ophidian humanoids who carry potent venom within their blood and saliva."
+  },
+  {
+    "id": "wayang",
+    "name": "Wayang",
+    "hp": 8,
+    "size": "small",
+    "speed": 25,
+    "boosts": [
+      "dex",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "con"
+    ],
+    "languages": [
+      "Common",
+      "Shadowtongue",
+      "Wayang"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Dziriak",
+      "Diabolic",
+      "Minaten",
+      "Nagaji",
+      "Thalassic",
+      "Vudrani",
+      "Yaksha"
+    ],
+    "traits": [
+      "humanoid",
+      "shadow",
+      "wayang"
+    ],
+    "heritages": [
+      {
+        "id": "shadow-of-the-courtier",
+        "ancestryId": "wayang",
+        "name": "Shadow of the Courtier",
+        "description": "Your shadow dances alongside you.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "shadow-of-the-hermit",
+        "ancestryId": "wayang",
+        "name": "Shadow of the Hermit",
+        "description": "Your shadow seems somehow full of secrets and mysteries—secrets that it shares with you.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "shadow-of-the-sailor",
+        "ancestryId": "wayang",
+        "name": "Shadow of the Sailor",
+        "description": "Your shadow flits across the surface of the water, and so do you.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "shadow-of-the-smith",
+        "ancestryId": "wayang",
+        "name": "Shadow of the Smith",
+        "description": "Your shadow is thick and liquid, like it could quench the finest ore.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "shadow-of-the-wanderer",
+        "ancestryId": "wayang",
+        "name": "Shadow of the Wanderer",
+        "description": "Your shadow blazes out ahead of you, clearing your path.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Wayangs are diasporic sojourners from the Netherworld where they lived and worked alongside their allies, lightweaving d'ziriaks."
+  },
+  {
+    "id": "yaksha",
+    "name": "Yaksha",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "con",
+      "cha",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common",
+      "Fey",
+      "Yaksha"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Diabolic",
+      "Empyrean",
+      "Nagaji",
+      "Tang",
+      "Tengu",
+      "Vudrani"
+    ],
+    "traits": [
+      "spirit",
+      "yaksha"
+    ],
+    "heritages": [
+      {
+        "id": "deny-lady-nanbyos-charity",
+        "ancestryId": "yaksha",
+        "name": "Deny Lady Nanbyo's Charity",
+        "description": "You swore a vow to release others from natural calamities.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "deny-the-firstborn-pursuit",
+        "ancestryId": "yaksha",
+        "name": "Deny the Firstborn Pursuit",
+        "description": "You swore a vow to shelter others from the First World's cruelties.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "deny-the-traitors-rebirth",
+        "ancestryId": "yaksha",
+        "name": "Deny the Traitor's Rebirth",
+        "description": "You swore a vow to deliver others from rakshasas and asuras, whom yaksha legends have condemned as corrupted kin.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "respite-of-a-thousand-roofs",
+        "ancestryId": "yaksha",
+        "name": "Respite of a Thousand Roofs",
+        "description": "You swore a vow to shelter and feed the poor.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "respite-of-cloudless-paths",
+        "ancestryId": "yaksha",
+        "name": "Respite of Cloudless Paths",
+        "description": "You swore a vow to protect the waylaid and the lost.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "respite-of-loam-and-leaf",
+        "ancestryId": "yaksha",
+        "name": "Respite of Loam and Leaf",
+        "description": "You swore a vow to preserve the very foundation of sanctuary: the great earth and all that grows upon it.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Away from shining citadels and opulent palaces, reticent yakshas shelter Tian Xia's rural hinterlands from natural disasters and otherworldly depredations."
+  },
+  {
+    "id": "yaoguai",
+    "name": "Yaoguai",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "boosts": [
+      "cha",
+      "con",
+      "free"
+    ],
+    "flaws": [
+      "int"
+    ],
+    "languages": [
+      "Common"
+    ],
+    "bonusLanguages": 0,
+    "bonusLanguageChoices": [
+      "Aklo",
+      "Draconic",
+      "Elven",
+      "Fey",
+      "Kitsune",
+      "Nagaji",
+      "Sakvroth",
+      "Tengu",
+      "Ysoki"
+    ],
+    "traits": [
+      "humanoid",
+      "yaoguai"
+    ],
+    "heritages": [
+      {
+        "id": "born-of-animal",
+        "ancestryId": "yaoguai",
+        "name": "Born of Animal",
+        "description": "You were a simple animal until the sun enlightened you.Humanoid Form Animals can sense the power of your presence.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "born-of-celestial",
+        "ancestryId": "yaoguai",
+        "name": "Born of Celestial",
+        "description": "You were once a powerful celestial before an escape or great punishment left you trapped in a mortal shell, with only vague memories and limited power.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "born-of-elements",
+        "ancestryId": "yaoguai",
+        "name": "Born of Elements",
+        "description": "You were an aspect of nature—the rain, the wind, a ray of light—until the wild essences gave you a soul.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "born-of-item",
+        "ancestryId": "yaoguai",
+        "name": "Born of Item",
+        "description": "You were an object until the moon breathed life into you.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      },
+      {
+        "id": "born-of-vegetation",
+        "ancestryId": "yaoguai",
+        "name": "Born of Vegetation",
+        "description": "You were a plant or fungi until the rain gifted you a mind.",
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+      }
+    ],
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "description": "Yaoguai usually begin as simple animals, plants, or objects before finding a way to awaken to sapience, becoming strange shapeshifting creatures in the process."
+  }
+]

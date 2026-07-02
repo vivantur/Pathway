@@ -1,0 +1,70 @@
+{
+  "class": {
+    "bard": [
+      { "featId": "lingering-composition", "reason": "Makes your inspiring music last longer — more help for your whole party." },
+      { "featId": "reach-spell", "reason": "Lets you cast from a safer distance instead of standing next to danger." }
+    ],
+    "cleric": [
+      { "featId": "healing-hands", "reason": "Your healing spells restore noticeably more HP — great for keeping allies up." },
+      { "featId": "domain-initiate", "reason": "Grants a signature divine power tied to your deity." }
+    ],
+    "druid": [
+      { "featId": "animal-companion", "reason": "A loyal animal that fights beside you — fun and powerful at low levels." },
+      { "featId": "reach-spell", "reason": "Cast your spells from farther away, keeping you out of harm's reach." }
+    ],
+    "fighter": [
+      { "featId": "power-attack", "reason": "A big, heavy swing for extra damage — simple and satisfying." },
+      { "featId": "sudden-charge", "reason": "Rush across the battlefield and hit something in one move." }
+    ],
+    "ranger": [
+      { "featId": "hunted-shot", "reason": "Fire two arrows at your prey in a single action." },
+      { "featId": "animal-companion", "reason": "A loyal animal ally that hunts alongside you." }
+    ],
+    "rogue": [
+      { "featId": "nimble-dodge", "reason": "React to dodge an incoming attack — a great low-level lifesaver." },
+      { "featId": "twin-feint", "reason": "Attack with two weapons so the second hit catches foes off guard." }
+    ],
+    "witch": [
+      { "featId": "cauldron", "reason": "Brew a few helpful potions each day for you and your friends." },
+      { "featId": "reach-spell", "reason": "Extend your spells' range so you can hex from safety." }
+    ],
+    "wizard": [
+      { "featId": "familiar", "reason": "A little magical companion that helps with your spellcasting." },
+      { "featId": "reach-spell", "reason": "Push your spells' range out so you can stay behind the front line." }
+    ]
+  },
+  "ancestry": {
+    "dwarf": [
+      { "featId": "dwarven-weapon-familiarity", "reason": "Wield classic dwarven weapons like the war axe with skill." },
+      { "featId": "rock-runner", "reason": "Move easily over rubble and rocky ground others struggle with." }
+    ],
+    "elf": [
+      { "featId": "otherworldly-magic", "reason": "A free at-will cantrip — handy magic for any elf." },
+      { "featId": "elven-weapon-familiarity", "reason": "Train with iconic elven bows and blades." }
+    ],
+    "gnome": [
+      { "featId": "first-world-magic", "reason": "A free fey cantrip to sprinkle a little magic into your day." },
+      { "featId": "animal-accomplice", "reason": "Gain a small companion to help you out." }
+    ],
+    "goblin": [
+      { "featId": "goblin-weapon-familiarity", "reason": "Use fun goblin weapons like the dogslicer." },
+      { "featId": "burn-it", "reason": "Love fire? Your fire effects hit harder." }
+    ],
+    "halfling": [
+      { "featId": "halfling-luck", "reason": "Once a day, reroll a bad result — pure clutch insurance." },
+      { "featId": "halfling-weapon-familiarity", "reason": "Train with slings and other classic halfling arms." }
+    ],
+    "human": [
+      { "featId": "natural-ambition", "reason": "An extra class feat at level 1 — more of what makes your class fun." },
+      { "featId": "natural-skill", "reason": "Train in two more skills, making you more well-rounded." }
+    ],
+    "leshy": [
+      { "featId": "seedpod", "reason": "A handy at-will ranged attack that can hamper enemies." },
+      { "featId": "leshy-lore", "reason": "Extra training in Nature and Stealth, plus herbalism know-how." }
+    ],
+    "orc": [
+      { "featId": "orc-ferocity", "reason": "Once a day, survive a hit that would drop you — stay in the fight." },
+      { "featId": "orc-weapon-familiarity", "reason": "Swing mighty orc weapons like the greataxe." }
+    ]
+  }
+}
