@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { validate } from '../rules';
 import { useBuilder } from '../store';
+import { CharacterOverview } from '../CharacterOverview';
 import { toPathbuilder } from '@/features/builder/pathbuilder';
 
 export function ReviewStep() {
@@ -49,9 +50,11 @@ export function ReviewStep() {
 
       {complete && (
         <div className="rounded-xl border border-green-400/30 bg-green-500/10 p-4 font-ui text-sm text-green-200">
-          Your level-1 character is complete and valid.
+          Your character is complete and valid.
         </div>
       )}
+
+      <CharacterOverview state={state} />
 
       <div className="flex flex-wrap gap-3">
         <button type="button" className="btn btn-primary" onClick={download}>
