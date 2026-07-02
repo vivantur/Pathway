@@ -4,9 +4,11 @@ import {
   findClass,
   findHeritage,
   findItem,
+  findSpell,
   getDataset,
   type AbilityKey,
 } from '@/features/builder/data';
+import { casterConfig } from './spellcasting';
 import { deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState } from '@/features/builder/types';
 
@@ -189,6 +191,32 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     })
     .map((e) => [findItem(e.itemId)?.name ?? e.itemId, e.qty] as [string, number]);
 
+  // Spellcasting → Pathbuilder spellCasters entry (spell lists by rank, cantrips at 0).
+  const caster = casterConfig(state.classId);
+  const sc = state.spellcasting;
+  const spellName = (id: string) => findSpell(id)?.name ?? id;
+  const spellCastersOut =
+    caster && sc
+      ? [
+          {
+            name: klass?.name ?? 'Spellcaster',
+            magicTradition: caster.tradition,
+            spellcastingType: caster.type,
+            ability: caster.keyAbility,
+            proficiency: 2, // trained at level 1
+            focusPoints: 0,
+            spells: [
+              { spellLevel: 0, list: (sc.cantrips ?? []).map(spellName) },
+              ...Object.entries(sc.spellsByRank ?? {})
+                .map(([rank, ids]) => ({ spellLevel: Number(rank), list: ids.map(spellName) }))
+                .filter((g) => g.list.length > 0),
+            ],
+            prepared: [],
+            blendedSpells: [],
+          },
+        ]
+      : [];
+
   const build: PathbuilderBuild = {
     name: state.name || 'Unnamed Adventurer',
     class: klass?.name ?? '',
@@ -223,7 +251,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     weapons: weaponsOut,
     money,
     armor: armorOut,
-    spellCasters: [],
+    spellCasters: spellCastersOut,
     focusPoints: 0,
     focus: {},
     formula: [],
@@ -239,6 +267,13 @@ function featName(id: string): string {
   return getDataset().feats.find((f) => f.id === id)?.name ?? id;
 }
 
+/** True when the stored build carries a full embedded BuilderState (built here). */
+export function hasEmbeddedBuild(data: unknown): boolean {
+  const build = (data as { build?: PathbuilderBuild })?.build ?? (data as PathbuilderBuild);
+  const embedded = (build as { _pathwayBuild?: unknown })?._pathwayBuild;
+  return Boolean(embedded && typeof embedded === 'object');
+}
+
 /**
  * Best-effort import: map a Pathbuilder build back onto our BuilderState by
  * matching names to dataset ids. Unknown fields are dropped (logged by caller).
@@ -246,6 +281,10 @@ function featName(id: string): string {
 export function fromPathbuilder(data: unknown): Partial<BuilderState> {
   const build = (data as { build?: PathbuilderBuild })?.build ?? (data as PathbuilderBuild);
   if (!build || typeof build !== 'object') return {};
+  // Lossless path: characters built here embed their full BuilderState, so
+  // re-opening for edit/level-up restores every choice exactly.
+  const embedded = (build as { _pathwayBuild?: BuilderState })._pathwayBuild;
+  if (embedded && typeof embedded === 'object' && embedded.name !== undefined) return embedded;
   const ds = getDataset();
   const byName = <T extends { id: string; name: string }>(list: T[], name?: string) =>
     list.find((x) => x.name.toLowerCase() === (name ?? '').toLowerCase())?.id;

@@ -53,14 +53,31 @@ export function CharacterPage() {
     );
   }
 
+  const editBase = `/vault/${rawCharKey}/edit`;
   return (
     <div className="space-y-4">
-      <Link
-        to="/vault"
-        className="inline-block text-sm text-silver/60 transition-colors hover:text-gold"
-      >
-        ← Character Vault
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/vault"
+          className="inline-block text-sm text-silver/60 transition-colors hover:text-gold"
+        >
+          ← Character Vault
+        </Link>
+        <div className="flex gap-2">
+          <Link
+            to={editBase}
+            className="rounded-md border border-gold/25 px-3 py-1.5 text-xs font-display uppercase tracking-widest text-silver/80 transition-colors hover:border-gold/50 hover:text-gold"
+          >
+            Edit in Builder
+          </Link>
+          <Link
+            to={`${editBase}?levelup=1`}
+            className="rounded-md border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-display uppercase tracking-widest text-gold transition-colors hover:bg-gold/20"
+          >
+            Level Up
+          </Link>
+        </div>
+      </div>
       <Sheet character={data} build={build} />
     </div>
   );

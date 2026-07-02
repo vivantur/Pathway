@@ -7,6 +7,7 @@ import {
   findHeritage,
 } from '@/features/builder/data';
 import { deriveCharacter } from './rules';
+import { spellStats } from './spellcasting';
 import { useBuilder } from './store';
 
 function StatBox({ label, value }: { label: string; value: string | number }) {
@@ -31,6 +32,10 @@ export function CharacterSummary() {
 
   const lineage = [heritage?.name, ancestry?.name].filter(Boolean).join(' ');
   const trained = d.skills.filter((s) => s.rank > 0);
+  const spells = spellStats(state);
+  const spellCount =
+    state.spellcasting.cantrips.length +
+    Object.values(state.spellcasting.spellsByRank).reduce((n, ids) => n + ids.length, 0);
 
   return (
     <aside className="panel sticky top-6 flex flex-col gap-4 p-5">
@@ -82,6 +87,14 @@ export function CharacterSummary() {
         <StatBox label="Speed" value={`${d.speed} ft`} />
         <StatBox label="Trained" value={trained.length} />
       </div>
+
+      {spells && (
+        <div className="grid grid-cols-3 gap-2">
+          <StatBox label="Spell Atk" value={sign(spells.attack)} />
+          <StatBox label="Spell DC" value={spells.dc} />
+          <StatBox label="Spells" value={spellCount} />
+        </div>
+      )}
 
       {d.weapons.length > 0 && (
         <div>

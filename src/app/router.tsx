@@ -49,6 +49,16 @@ export const router = createBrowserRouter([
         element: <CharacterBuilderPage />,
       },
       {
+        // Edit / level-up an existing character in the builder. Registered
+        // before :charKey so it wins the match.
+        path: 'vault/:charKey/edit',
+        element: (
+          <RequireAuth>
+            <CharacterBuilderPage />
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'vault/:charKey',
         element: (
           <RequireAuth>

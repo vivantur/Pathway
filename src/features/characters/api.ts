@@ -636,7 +636,9 @@ export interface UpdateCharacterFromBuildInput {
   userId: string;
   charKey: string;
   build: PathbuilderBuild;
-  pathbuilderId: number;
+  /** Only set when re-syncing from Pathbuilder; omitted for web edits so we
+   * don't overwrite an existing link with null. */
+  pathbuilderId?: number;
 }
 
 /**
@@ -663,7 +665,8 @@ export async function updateCharacterFromBuild(
 
   const updates = {
     pathbuilder_data: build,
-    pathbuilder_id: pathbuilderId,
+    // Only overwrite the Pathbuilder link when a new id is supplied.
+    ...(pathbuilderId != null ? { pathbuilder_id: pathbuilderId } : {}),
     name: (build.name ?? '').trim() || 'Unnamed Character',
     ancestry_name: build.ancestry ?? null,
     heritage_name: build.heritage ?? null,

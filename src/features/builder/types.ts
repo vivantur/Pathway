@@ -52,6 +52,12 @@ export interface BuilderState {
   inventory: InventoryEntry[];
   /** Coin on hand, in gold pieces (gp). */
   money: number;
+
+  /** Chosen spells for caster classes (dataset spell ids). */
+  spellcasting: {
+    cantrips: string[];
+    spellsByRank: Record<number, string[]>;
+  };
 }
 
 export interface InventoryEntry {
@@ -91,6 +97,7 @@ export function emptyBuilderState(): BuilderState {
     progression: {},
     inventory: [],
     money: 15,
+    spellcasting: { cantrips: [], spellsByRank: {} },
   };
 }
 
@@ -103,5 +110,6 @@ export type StepId =
   | 'skills'
   | 'feats'
   | 'advancement'
+  | 'spells'
   | 'equipment'
   | 'review';
