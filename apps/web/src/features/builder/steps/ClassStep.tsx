@@ -26,7 +26,7 @@ export function ClassStep() {
       <div>
         <h3 className="mb-1 font-display text-xl text-gold-400">Choose a Class</h3>
         <p className="font-ui text-sm text-parchment/70">
-          Your class is your calling — it sets your key ability, Hit Points, proficiencies, and
+          Your class is your calling — it sets your key attribute, Hit Points, proficiencies, and
           signature feats. Hover a class to see what it grants.
         </p>
       </div>
@@ -55,7 +55,7 @@ export function ClassStep() {
 
       {klass && klass.keyAbility.length > 1 && (
         <div className="panel p-5">
-          <h4 className="mb-2 font-display text-lg text-gold-400">Key Ability</h4>
+          <h4 className="mb-2 font-display text-lg text-gold-400">Key Attribute</h4>
           <div className="flex flex-wrap gap-2">
             {klass.keyAbility.map((k) => (
               <button

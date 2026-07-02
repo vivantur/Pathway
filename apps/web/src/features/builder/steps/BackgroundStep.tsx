@@ -21,7 +21,7 @@ export function BackgroundStep() {
       <div>
         <h3 className="mb-1 font-display text-xl text-gold-400">Choose a Background</h3>
         <p className="font-ui text-sm text-parchment/70">
-          Your background reflects your life before adventuring. It grants two ability boosts, a
+          Your background reflects your life before adventuring. It grants two attribute boosts, a
           trained skill, a Lore, and a skill feat. There are {backgrounds.length} to choose from.
         </p>
       </div>

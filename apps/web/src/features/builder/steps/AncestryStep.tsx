@@ -20,7 +20,7 @@ export function AncestryStep() {
       <div>
         <h3 className="mb-1 font-display text-xl text-gold-400">Choose an Ancestry</h3>
         <p className="font-ui text-sm text-parchment/70">
-          Your ancestry sets your Hit Points, Speed, size, and initial ability boosts. There are{' '}
+          Your ancestry sets your Hit Points, Speed, size, and initial attribute boosts. There are{' '}
           {ancestries.length} to choose from — next you’ll pick a heritage.
         </p>
       </div>

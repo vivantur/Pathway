@@ -76,8 +76,8 @@ function LevelCard({ level }: { level: number }) {
       <div className="mt-4 flex flex-col gap-6">
         {boostCount > 0 && (
           <SlotBlock
-            title={`Ability Boost${boostCount > 1 ? 's' : ''} (pick ${boostCount} different abilit${
-              boostCount > 1 ? 'ies' : 'y'
+            title={`Attribute Boost${boostCount > 1 ? 's' : ''} (pick ${boostCount} different attribut${
+              boostCount > 1 ? 'es' : 'e'
             })`}
           >
             <div className="flex flex-col gap-2">

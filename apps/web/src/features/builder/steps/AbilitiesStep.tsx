@@ -74,7 +74,7 @@ export function AbilitiesStep() {
   if (!ancestry || !background || !klass) {
     return (
       <p className="font-ui text-parchment/70">
-        Choose an ancestry, background, and class first — your ability boosts come from all three.
+        Choose an ancestry, background, and class first — your attribute boosts come from all three.
       </p>
     );
   }
@@ -86,10 +86,10 @@ export function AbilitiesStep() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h3 className="mb-1 font-display text-xl text-gold-400">Assign Ability Boosts</h3>
+        <h3 className="mb-1 font-display text-xl text-gold-400">Assign Attribute Boosts</h3>
         <p className="font-ui text-sm text-parchment/70">
-          Every character starts at 10 in each ability. A boost raises it by 2 (by 1 once above 18).
-          Boosts come from your ancestry, background, class key ability, and four free boosts.
+          Every character starts at 10 in each attribute. A boost raises it by 2 (by 1 once above 18).
+          Boosts come from your ancestry, background, class key attribute, and four free boosts.
         </p>
       </div>
 
@@ -149,7 +149,7 @@ export function AbilitiesStep() {
 
       {/* Class key ability */}
       <section className="panel p-5">
-        <h4 className="mb-3 font-display text-lg text-gold-400">Class Key Ability — {klass.name}</h4>
+        <h4 className="mb-3 font-display text-lg text-gold-400">Class Key Attribute — {klass.name}</h4>
         {klass.keyAbility.length > 1 ? (
           <AbilityButtons
             options={klass.keyAbility}

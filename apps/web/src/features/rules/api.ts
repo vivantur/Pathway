@@ -282,7 +282,6 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
         aonUrl: str(md.aon_url),
         meta: [
           str(r.creature_type) ? { label: 'Type', value: str(r.creature_type)! } : null,
-          str(r.alignment) ? { label: 'Alignment', value: str(r.alignment)! } : null,
           str(md.family) ? { label: 'Family', value: str(md.family)! } : null,
           str(md.source) ?? str(r.source)
             ? { label: 'Source', value: (str(md.source) ?? str(r.source))! }

@@ -372,7 +372,6 @@ function DeityBlockView({ block }: { block: DeityBlock }) {
   const devotee = [
     block.divineFont ? { label: 'Divine Font', value: block.divineFont } : null,
     block.sanctification ? { label: 'Sanctification', value: block.sanctification } : null,
-    block.alignment ? { label: 'Alignment', value: block.alignment } : null,
     block.divineSkill ? { label: 'Divine Skill', value: block.divineSkill } : null,
     block.divineAttributes.length
       ? { label: 'Divine Attribute', value: block.divineAttributes.join(' or ') }
@@ -410,9 +409,6 @@ function DeityBlockView({ block }: { block: DeityBlock }) {
           )}
           {block.areasOfConcern && (
             <SbLine label="Areas of Concern">{block.areasOfConcern}</SbLine>
-          )}
-          {block.followerAlignments.length > 0 && (
-            <SbLine label="Follower Alignments">{block.followerAlignments.join(', ')}</SbLine>
           )}
         </div>
       )}
