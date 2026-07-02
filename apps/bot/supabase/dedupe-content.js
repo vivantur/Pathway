@@ -64,7 +64,10 @@ function pickKeep(rows) {
 
 async function auditSpells(sb) {
   console.log('\n=== SPELLS ===');
-  const rows = await fetchAll(sb, 'spells', 'id, name, slug, source, spell_metadata');
+  // Only select columns guaranteed to exist. `slug`/`source` are optional in
+  // some schemas (source is also carried inside spell_metadata), so we read the
+  // metadata and fall back to it in spellDedupKey rather than selecting them.
+  const rows = await fetchAll(sb, 'spells', 'id, name, spell_metadata');
   console.log(`Total spell rows: ${rows.length}`);
 
   // Exact-identity duplicate groups (safe to auto-merge).
@@ -164,6 +167,7 @@ async function auditMonsters(sb) {
   if (TABLE === 'all' || TABLE === 'spells') await auditSpells(sb);
   if (TABLE === 'all' || TABLE === 'monsters') await auditMonsters(sb);
   console.log('\nDone.');
+  process.exit(0); // force a clean exit (Supabase client keep-alive can otherwise hang/assert on Windows)
 })().catch(err => {
   console.error(err.message || err);
   process.exit(1);
