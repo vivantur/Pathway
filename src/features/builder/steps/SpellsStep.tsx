@@ -30,12 +30,23 @@ function SpellSection({
   onToggle: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [hover, setHover] = useState<{ spell: Spell; top: number; left: number } | null>(null);
   const chosen = new Set(selected);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q ? candidates.filter((s) => s.name.toLowerCase().includes(q)) : candidates;
   }, [candidates, query]);
   const remaining = max - chosen.size;
+
+  const showTip = (spell: Spell, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const width = 320;
+    // Prefer the right of the row; flip to the left if it would overflow.
+    let left = r.right + 10;
+    if (left + width > window.innerWidth - 8) left = Math.max(8, r.left - width - 10);
+    const top = Math.max(8, Math.min(r.top, window.innerHeight - 240));
+    setHover({ spell, top, left });
+  };
 
   return (
     <section className="panel flex flex-col gap-3 p-5">
@@ -45,7 +56,7 @@ function SpellSection({
           {chosen.size}/{max} chosen
         </span>
       </div>
-      <p className="font-ui text-xs text-parchment/60">{hint}</p>
+      <p className="font-ui text-xs text-parchment/60">{hint} Hover a spell to read what it does.</p>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -62,6 +73,10 @@ function SpellSection({
               type="button"
               disabled={disabled}
               onClick={() => onToggle(s.id)}
+              onMouseEnter={(e) => showTip(s, e.currentTarget)}
+              onMouseLeave={() => setHover(null)}
+              onFocus={(e) => showTip(s, e.currentTarget)}
+              onBlur={() => setHover(null)}
               className="choice-card flex items-center justify-between gap-2 px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
               data-selected={isChosen}
             >
@@ -83,6 +98,41 @@ function SpellSection({
           <p className="font-ui text-sm text-parchment/50">No spells match your search.</p>
         )}
       </div>
+
+      {hover && (
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed z-50 w-80 rounded-xl border border-gold-500/40 bg-midnight-900/95 p-3 shadow-rune backdrop-blur"
+          style={{ top: hover.top, left: hover.left }}
+        >
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-display text-gold-400">{hover.spell.name}</span>
+            <span className="font-ui text-[10px] uppercase tracking-wider text-parchment/50">
+              {hover.spell.traits.includes('cantrip') ? 'Cantrip' : `Rank ${hover.spell.rank}`}
+            </span>
+          </div>
+          {hover.spell.traits.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {hover.spell.traits.slice(0, 6).map((t) => (
+                <span
+                  key={t}
+                  className="rounded bg-midnight-700/70 px-1.5 py-0.5 font-ui text-[10px] text-parchment/70"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+          {hover.spell.cast && (
+            <div className="mt-1 font-ui text-[10px] uppercase tracking-wider text-parchment/50">
+              Cast: {hover.spell.cast === 'reaction' ? 'reaction' : `${hover.spell.cast} action(s)`}
+            </div>
+          )}
+          <p className="mt-2 font-ui text-xs leading-relaxed text-parchment/85">
+            {hover.spell.description || 'No description available.'}
+          </p>
+        </div>
+      )}
     </section>
   );
 }
