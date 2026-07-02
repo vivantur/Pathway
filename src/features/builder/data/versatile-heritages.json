@@ -1,0 +1,138 @@
+[
+  {
+    "id": "aiuvarin",
+    "ancestryId": "",
+    "name": "Aiuvarin",
+    "description": "You have elves, or possibly other aiuvarins, in your family tree.",
+    "source": "Pathfinder Player Core",
+    "versatile": true
+  },
+  {
+    "id": "ardande",
+    "ancestryId": "",
+    "name": "Ardande",
+    "description": "You descend from wood elementals or have some other heritage influenced by the elemental Plane of Wood.",
+    "source": "Pathfinder Rage of Elements",
+    "versatile": true
+  },
+  {
+    "id": "beastkin",
+    "ancestryId": "",
+    "name": "Beastkin",
+    "description": "The blood of a beast flows through your veins, granting you the ferocity and might of animals.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  },
+  {
+    "id": "changeling",
+    "ancestryId": "",
+    "name": "Changeling",
+    "description": "Your mother was a hag.",
+    "source": "Pathfinder Player Core",
+    "versatile": true
+  },
+  {
+    "id": "dhampir",
+    "ancestryId": "",
+    "name": "Dhampir",
+    "description": "You are the scion of a vampire, half living and half undead, gifted with uncanny charm and grace, a bloodless pallor, and elongated incisors.",
+    "source": "Pathfinder Player Core 2",
+    "versatile": true
+  },
+  {
+    "id": "dragonblood",
+    "ancestryId": "",
+    "name": "Dragonblood",
+    "description": "You're descended in some way from a dragon.",
+    "source": "Pathfinder Player Core 2",
+    "versatile": true
+  },
+  {
+    "id": "dromaar",
+    "ancestryId": "",
+    "name": "Dromaar",
+    "description": "Orcish strength emboldens your bloodline.",
+    "source": "Pathfinder Player Core",
+    "versatile": true
+  },
+  {
+    "id": "duskwalker",
+    "ancestryId": "",
+    "name": "Duskwalker",
+    "description": "Thanks to an ancient bargain, your soul has been reborn as a duskwalker, a planar scion with a connection to psychopomps and the Boneyard.",
+    "source": "Pathfinder Player Core 2",
+    "versatile": true
+  },
+  {
+    "id": "hungerseed",
+    "ancestryId": "",
+    "name": "Hungerseed",
+    "description": "One of your parents was an oni or a hungerseed.",
+    "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+    "versatile": true
+  },
+  {
+    "id": "naari",
+    "ancestryId": "",
+    "name": "Naari",
+    "description": "You descend from fire elementals or bear the mark of the Inner Spheres, and your features illustrate the influence that elemental fire has over you.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  },
+  {
+    "id": "nephilim",
+    "ancestryId": "",
+    "name": "Nephilim",
+    "description": "Your nature is influenced by celestials, fiends, or monitors.",
+    "source": "Pathfinder Player Core",
+    "versatile": true
+  },
+  {
+    "id": "oread",
+    "ancestryId": "",
+    "name": "Oread",
+    "description": "An earth elemental ancestor has influenced your bloodline, and your features highlight this elemental planar connection.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  },
+  {
+    "id": "reflection",
+    "ancestryId": "",
+    "name": "Reflection",
+    "description": "You were created as a duplicate of another creature, intentionally or accidentally, though you might not know of your origins.",
+    "source": "Pathfinder Dark Archive",
+    "versatile": true
+  },
+  {
+    "id": "suli",
+    "ancestryId": "",
+    "name": "Suli",
+    "description": "You are descended from a janni or otherwise embody a dichotomy of opposing elemental planar forces.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  },
+  {
+    "id": "sylph",
+    "ancestryId": "",
+    "name": "Sylph",
+    "description": "You are descended from air elementals or were born under the element's influence.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  },
+  {
+    "id": "talos",
+    "ancestryId": "",
+    "name": "Talos",
+    "description": "Your physical features reflect the influence a zuhra or other metal elemental has had over your bloodline.",
+    "source": "Pathfinder Rage of Elements",
+    "versatile": true
+  },
+  {
+    "id": "undine",
+    "ancestryId": "",
+    "name": "Undine",
+    "description": "A water elemental ancestor influences your bloodline.",
+    "source": "Pathfinder Lost Omens Ancestry Guide",
+    "versatile": true
+  }
+]

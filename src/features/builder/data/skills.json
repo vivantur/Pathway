@@ -1,0 +1,18 @@
+[
+  { "id": "acrobatics", "name": "Acrobatics", "ability": "dex" },
+  { "id": "arcana", "name": "Arcana", "ability": "int" },
+  { "id": "athletics", "name": "Athletics", "ability": "str" },
+  { "id": "crafting", "name": "Crafting", "ability": "int" },
+  { "id": "deception", "name": "Deception", "ability": "cha" },
+  { "id": "diplomacy", "name": "Diplomacy", "ability": "cha" },
+  { "id": "intimidation", "name": "Intimidation", "ability": "cha" },
+  { "id": "medicine", "name": "Medicine", "ability": "wis" },
+  { "id": "nature", "name": "Nature", "ability": "wis" },
+  { "id": "occultism", "name": "Occultism", "ability": "int" },
+  { "id": "performance", "name": "Performance", "ability": "cha" },
+  { "id": "religion", "name": "Religion", "ability": "wis" },
+  { "id": "society", "name": "Society", "ability": "int" },
+  { "id": "stealth", "name": "Stealth", "ability": "dex" },
+  { "id": "survival", "name": "Survival", "ability": "wis" },
+  { "id": "thievery", "name": "Thievery", "ability": "dex" }
+]
