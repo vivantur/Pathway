@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { emptyBuilderState } from './types';
 import { STEPS, useBuilder } from './store';
 import { validate } from './rules';
+import { clearDraft, isEmptyState, loadDraft, saveDraft, type BuilderDraft } from './drafts';
 import { CharacterSummary } from './CharacterSummary';
 import { BeginnerNote } from './BeginnerNote';
 import { PortraitPicker } from './PortraitPicker';
@@ -72,6 +73,8 @@ export function BuilderApp() {
   const setCurrentId = useApp((s) => s.setCurrentCharacterId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [resumeDraft, setResumeDraft] = useState<BuilderDraft | null>(() => loadDraft());
   const navigate = useNavigate();
   const { user } = useAuth();
   const save = useSaveBuild();
@@ -81,9 +84,28 @@ export function BuilderApp() {
   const problems = validate(state);
   const complete = problems.length === 0;
 
+  const onSaveDraft = () => {
+    saveDraft(state);
+    setResumeDraft(null); // this build IS the draft now; no stale resume prompt
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 1500);
+  };
+
+  const onResumeDraft = () => {
+    if (resumeDraft) replace({ ...emptyBuilderState(), ...resumeDraft.state });
+    setResumeDraft(null);
+    setStep('ancestry');
+  };
+
+  const onDiscardDraft = () => {
+    clearDraft();
+    setResumeDraft(null);
+  };
+
   const onSave = () => {
     save.mutate(state, {
       onSuccess: (result) => {
+        clearDraft(); // character is saved for real; drop the draft
         setCurrentId(result.id);
         navigate(`/vault/${result.char_key}`);
       },
@@ -133,6 +155,14 @@ export function BuilderApp() {
             <BeginnerToggle />
             <button
               type="button"
+              className="btn"
+              onClick={onSaveDraft}
+              title="Save your progress on this device and finish later — no sign-in needed, even if the character isn't complete."
+            >
+              {draftSaved ? 'Draft saved ✓' : 'Save Draft'}
+            </button>
+            <button
+              type="button"
               className="btn btn-primary"
               disabled={!user || !complete || save.isPending}
               title={saveTitle}
@@ -148,6 +178,23 @@ export function BuilderApp() {
             </button>
           </div>
         </div>
+
+        {resumeDraft && isEmptyState(state) && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/10 p-3">
+            <span className="font-ui text-sm text-parchment/85">
+              You have an unfinished character saved on this device
+              <span className="text-parchment/50"> ({new Date(resumeDraft.updatedAt).toLocaleString()})</span>.
+            </span>
+            <span className="flex gap-2">
+              <button type="button" className="btn btn-primary py-1 text-xs" onClick={onResumeDraft}>
+                Resume draft
+              </button>
+              <button type="button" className="btn py-1 text-xs" onClick={onDiscardDraft}>
+                Discard
+              </button>
+            </span>
+          </div>
+        )}
 
         {save.isError && (
           <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 font-ui text-sm text-red-200">
