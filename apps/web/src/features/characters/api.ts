@@ -610,16 +610,19 @@ export interface ExistingCharacterMatch {
 /**
  * Check if the signed-in user already imported this exact Pathbuilder id.
  * Used by the /vault/new page to offer "Update existing" instead of
- * silently creating a duplicate. RLS scopes to the current user so the
- * uniqueness only checks their own row set.
+ * silently creating a duplicate. Scoped to `user_id` EXPLICITLY (not RLS
+ * alone): the public-share policy makes another user's public row with the
+ * same pathbuilder_id readable, which would show a false "existing match".
  */
 export async function findCharacterByPathbuilderId(
+  userId: string,
   pathbuilderId: number,
 ): Promise<ExistingCharacterMatch | null> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('characters')
     .select('id, char_key, name, updated_at')
+    .eq('user_id', userId)
     .eq('pathbuilder_id', pathbuilderId)
     .order('updated_at', { ascending: false })
     .limit(1);

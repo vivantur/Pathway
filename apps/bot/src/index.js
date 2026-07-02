@@ -1342,6 +1342,7 @@ function formatSpellHeightened(heightened, baseLevel = null) {
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
 
+  try {
   // Phase 2: subscribe state modules to Supabase Realtime BEFORE restore.
   // Subscribe-then-restore ordering guarantees no gap where a web write
   // could land undetected between restore's snapshot and the subscription
@@ -1418,6 +1419,10 @@ client.once('clientReady', async () => {
   // Subscribe to live homebrew changes so entries added/removed via the
   // web UI take effect immediately without a bot restart.
   setupHomebrewRealtimeSync({ bestiaryDatabase, spellDatabase, itemDatabase });
+  } catch (err) {
+    console.error('FATAL: bot startup (clientReady) failed — cannot serve commands reliably. Exiting so the host restarts the process.', err);
+    process.exit(1);
+  }
 });
 
 // ── Interaction handler ───────────────────────────────────────────────────────
@@ -1738,7 +1743,13 @@ client.on('interactionCreate', async (interaction) => {
         // /char misc modal: gender, age, size, alignment, keyability
       } catch (err) {
         console.error('Modal submit error:', err);
-        try { await interaction.editReply('❌ Something went wrong saving your edits. Try again.'); } catch {}
+        try {
+          if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ Something went wrong saving your edits. Try again.', ephemeral: true });
+          } else if (interaction.deferred && !interaction.replied) {
+            await interaction.editReply('❌ Something went wrong saving your edits. Try again.');
+          }
+        } catch {}
       }
       return;
     }

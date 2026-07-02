@@ -85,7 +85,7 @@ export function AddCharacterPage() {
 
     let existing: ExistingCharacterMatch | null;
     try {
-      existing = await findCharacterByPathbuilderId(id);
+      existing = await findCharacterByPathbuilderId(user.id, id);
     } catch (err) {
       setStage({ kind: 'error', message: errorMessage(err) });
       return;
