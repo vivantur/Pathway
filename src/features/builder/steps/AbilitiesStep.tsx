@@ -157,7 +157,7 @@ export function AbilitiesStep() {
             onPick={(k) => update({ keyAbility: k })}
           />
         ) : (
-          <LockedChip label={ABILITY_NAMES[klass.keyAbility[0]]} />
+          <LockedChip label={ABILITY_NAMES[state.keyAbility ?? klass.keyAbility[0]]} />
         )}
       </section>
 

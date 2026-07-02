@@ -1,6 +1,7 @@
 import { findClass, getDataset, type AbilityKey, type Spell } from '@/features/builder/data';
 import { abilityModifier, computeAbilityScores, proficiencyBonus, opt } from './rules';
 import { OPT } from './options/config';
+import { subclassTradition } from './subclassEffects';
 import type { BuilderState } from './types';
 
 export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
@@ -31,8 +32,15 @@ const CASTERS: Record<string, CasterConfig> = {
   psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5 },
 };
 
-export function casterConfig(classId: string | undefined): CasterConfig | undefined {
-  return classId ? CASTERS[classId] : undefined;
+export function casterConfig(
+  classId: string | undefined,
+  subclassId?: string,
+): CasterConfig | undefined {
+  const base = classId ? CASTERS[classId] : undefined;
+  if (!base) return undefined;
+  // Sorcerer bloodline / witch patron determine the tradition.
+  const t = subclassTradition(classId, subclassId);
+  return t ? { ...base, tradition: t } : base;
 }
 
 export function isCaster(classId: string | undefined): boolean {
@@ -58,7 +66,7 @@ export function slotsForRank(level: number, rank: number): number {
 
 /** Spell attack modifier and spell DC (trained at L1 → rank 1). */
 export function spellStats(state: BuilderState): { attack: number; dc: number; ability: AbilityKey } | null {
-  const cfg = casterConfig(state.classId);
+  const cfg = casterConfig(state.classId, state.subclassId);
   if (!cfg) return null;
   const level = state.level || 1;
   const mods = computeAbilityScores(state);

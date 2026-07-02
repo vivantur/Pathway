@@ -1,5 +1,6 @@
 import { ABILITY_NAMES, getDataset, findClass } from '@/features/builder/data';
 import { useBuilder } from '../store';
+import { rogueRacketAbility } from '../subclassEffects';
 import { ChoiceGrid } from './ChoiceGrid';
 
 export function ClassStep() {
@@ -53,7 +54,11 @@ export function ClassStep() {
           <ChoiceGrid
             items={klass.subclasses.map((s) => ({ id: s.id, name: s.name, description: s.description }))}
             selectedId={subclassId}
-            onSelect={(id) => update({ subclassId: id })}
+            onSelect={(id) => {
+              // A rogue's racket sets their key ability (Ruffian=Str, Thief=Dex, …).
+              const racket = klass?.id === 'rogue' ? rogueRacketAbility(id) : undefined;
+              update(racket ? { subclassId: id, keyAbility: racket } : { subclassId: id });
+            }}
           />
         </div>
       ) : null}

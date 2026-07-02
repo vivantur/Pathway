@@ -9,6 +9,7 @@ import {
   type AbilityKey,
 } from '@/features/builder/data';
 import { casterConfig } from './spellcasting';
+import { focusPoints } from './subclassEffects';
 import { deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState } from '@/features/builder/types';
 
@@ -192,7 +193,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     .map((e) => [findItem(e.itemId)?.name ?? e.itemId, e.qty] as [string, number]);
 
   // Spellcasting → Pathbuilder spellCasters entry (spell lists by rank, cantrips at 0).
-  const caster = casterConfig(state.classId);
+  const caster = casterConfig(state.classId, state.subclassId);
   const sc = state.spellcasting;
   const spellName = (id: string) => findSpell(id)?.name ?? id;
   const spellCastersOut =
@@ -252,7 +253,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     money,
     armor: armorOut,
     spellCasters: spellCastersOut,
-    focusPoints: 0,
+    focusPoints: focusPoints(state),
     focus: {},
     formula: [],
     pets: [],

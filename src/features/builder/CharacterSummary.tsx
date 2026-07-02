@@ -96,6 +96,12 @@ export function CharacterSummary() {
         </div>
       )}
 
+      {d.focusPoints > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <StatBox label="Focus Pts" value={d.focusPoints} />
+        </div>
+      )}
+
       {d.weapons.length > 0 && (
         <div>
           <div className="mb-1 font-ui text-[10px] uppercase tracking-widest text-parchment/60">

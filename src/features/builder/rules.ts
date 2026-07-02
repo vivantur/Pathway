@@ -13,6 +13,7 @@ import {
   type Weapon,
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
+import { focusPoints } from './subclassEffects';
 import type { BuilderState } from './types';
 
 export type AbilityScores = Record<AbilityKey, number>;
@@ -289,6 +290,8 @@ export interface DerivedCharacter {
   saves: { fortitude: number; reflex: number; will: number };
   classDc: number;
   speed: number;
+  /** Focus points from the level-1 subclass (0 or 1 for now). */
+  focusPoints: number;
   skills: SkillProficiency[];
   weapons: EquippedWeapon[];
   ranks: {
@@ -405,6 +408,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     },
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,
+    focusPoints: focusPoints(state),
     skills,
     weapons,
     ranks: {

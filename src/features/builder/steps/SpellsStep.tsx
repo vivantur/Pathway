@@ -145,7 +145,7 @@ export function SpellsStep() {
   const toggleCantrip = useBuilder((s) => s.toggleCantrip);
   const toggleSpell = useBuilder((s) => s.toggleSpell);
 
-  const cfg = casterConfig(state.classId);
+  const cfg = casterConfig(state.classId, state.subclassId);
   const klass = state.classId ? findClass(state.classId) : undefined;
 
   if (!cfg) {
