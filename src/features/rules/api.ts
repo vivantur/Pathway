@@ -32,6 +32,14 @@ const str = (v: unknown): string | null =>
 const arr = (v: unknown): string[] =>
   Array.isArray(v) ? v.map(String).filter((s) => s.trim().length > 0) : [];
 
+/** Like `arr`, but also accepts a plain string (wrapped as a single item). */
+const list = (v: unknown): string[] =>
+  Array.isArray(v)
+    ? v.map(String).map((s) => s.trim()).filter(Boolean)
+    : typeof v === 'string' && v.trim().length > 0
+      ? [v.trim()]
+      : [];
+
 const num = (v: unknown): number | null =>
   typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null;
 
@@ -382,7 +390,7 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
   { id: 'rituals', label: 'Rituals', table: 'gamedata', gamedataCategory: 'rituals', hasLevel: false, map: gamedataMap('rituals') },
   { id: 'hazards', label: 'Hazards', table: 'gamedata', gamedataCategory: 'hazards', hasLevel: false, map: gamedataMap('hazards') },
   { id: 'afflictions', label: 'Afflictions', table: 'gamedata', gamedataCategory: 'afflictions', hasLevel: false, map: gamedataMap('afflictions') },
-  { id: 'deities', label: 'Deities', table: 'gamedata', gamedataCategory: 'deities', hasLevel: false, map: gamedataMap('deities') },
+  { id: 'deities', label: 'Deities', table: 'gamedata', gamedataCategory: 'deities', hasLevel: false, map: deityMap },
   { id: 'domains', label: 'Domains', table: 'gamedata', gamedataCategory: 'domains', hasLevel: false, map: gamedataMap('domains') },
   { id: 'familiars', label: 'Familiars', table: 'gamedata', gamedataCategory: 'familiars', hasLevel: false, map: gamedataMap('familiars') },
   { id: 'relics', label: 'Relics', table: 'gamedata', gamedataCategory: 'relics', hasLevel: false, map: gamedataMap('relics') },
@@ -421,6 +429,45 @@ function gamedataMap(category: RuleCategoryId): CategoryConfig['map'] {
         str(d.source) ? { label: 'Source', value: str(d.source)! } : null,
       ].filter(Boolean) as RuleEntry['meta'],
     };
+  };
+}
+
+/** Deity mapper — surfaces the structured devotee fields as a deityBlock. */
+function deityMap(row: Record<string, unknown>): RuleEntry {
+  const d = asObj(row.data);
+  return {
+    id: String(row.id),
+    name: str(row.name) ?? str(d.name) ?? 'Unknown',
+    category: 'deities',
+    level: num(d.level),
+    rarity: str(d.rarity),
+    traits: arr(d.traits),
+    actionCost: null,
+    prerequisites: null,
+    trigger: null,
+    description: str(d.description) ?? str(d.summary),
+    aonUrl: str(d.aon_url),
+    meta: [
+      str(d.epithet) ? { label: 'Epithet', value: str(d.epithet)! } : null,
+      list(d.pantheons).length ? { label: 'Pantheon', value: list(d.pantheons).join(', ') } : null,
+      str(d.source) ? { label: 'Source', value: str(d.source)! } : null,
+    ].filter(Boolean) as RuleEntry['meta'],
+    deityBlock: {
+      imageUrl: str(d.image),
+      edicts: list(d.edicts),
+      anathema: list(d.anathemas),
+      areasOfConcern: list(d.areas_of_concern).join(', ') || null,
+      followerAlignments: list(d.follower_alignments),
+      alignment: str(d.alignment),
+      sanctification: str(d.sanctification),
+      divineFont: str(d.divine_font),
+      divineSkill: str(d.divine_skill),
+      divineAttributes: list(d.attributes),
+      favoredWeapon: str(d.favored_weapon),
+      domains: list(d.domains),
+      alternateDomains: list(d.alternate_domains),
+      clericSpells: list(d.cleric_spells).join(', ') || null,
+    },
   };
 }
 

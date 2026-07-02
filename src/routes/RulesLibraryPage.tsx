@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
 import { RULE_CATEGORIES, RULE_CATEGORY_GROUPS, categoryById } from '@/features/rules/api';
 import { useRulesSearch } from '@/features/rules/useRulesSearch';
-import type { MonsterStatBlock, RuleCategoryId, RuleEntry } from '@/features/rules/types';
+import type { DeityBlock, MonsterStatBlock, RuleCategoryId, RuleEntry } from '@/features/rules/types';
 
 /** Categories whose descriptions are long AoN lore prose worth sectioning. */
 const structuredCategories = new Set<RuleCategoryId>([
@@ -15,6 +15,7 @@ const structuredCategories = new Set<RuleCategoryId>([
   'archetypes',
   'deities',
   'rules',
+  'hazards',
 ]);
 
 /**
@@ -179,6 +180,7 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
           )}
 
           {entry.statBlock && <StatBlock block={entry.statBlock} />}
+          {entry.deityBlock && <DeityBlockView block={entry.deityBlock} />}
 
           {entry.meta.length > 0 && (
             <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
@@ -335,6 +337,84 @@ function StatBlock({ block }: { block: MonsterStatBlock }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function DeityBlockView({ block }: { block: DeityBlock }) {
+  const devotee = [
+    block.divineFont ? { label: 'Divine Font', value: block.divineFont } : null,
+    block.sanctification ? { label: 'Sanctification', value: block.sanctification } : null,
+    block.alignment ? { label: 'Alignment', value: block.alignment } : null,
+    block.divineSkill ? { label: 'Divine Skill', value: block.divineSkill } : null,
+    block.divineAttributes.length
+      ? { label: 'Divine Attribute', value: block.divineAttributes.join(' or ') }
+      : null,
+    block.favoredWeapon ? { label: 'Favored Weapon', value: block.favoredWeapon } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+  const domains = [...block.domains];
+  const domainsLabel =
+    domains.join(', ') +
+    (block.alternateDomains.length ? ` (alternate: ${block.alternateDomains.join(', ')})` : '');
+
+  return (
+    <div className="mb-3 space-y-3 rounded-md border border-gold/25 bg-midnight-900/50 p-4">
+      {block.imageUrl && (
+        <img
+          src={block.imageUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="mx-auto max-h-48 w-auto rounded border border-gold/25 object-contain"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
+
+      {(block.edicts.length > 0 || block.anathema.length > 0 || block.areasOfConcern) && (
+        <div className="space-y-1 text-sm">
+          {block.edicts.length > 0 && (
+            <SbLine label="Edicts">{block.edicts.join('; ')}</SbLine>
+          )}
+          {block.anathema.length > 0 && (
+            <SbLine label="Anathema">{block.anathema.join('; ')}</SbLine>
+          )}
+          {block.areasOfConcern && (
+            <SbLine label="Areas of Concern">{block.areasOfConcern}</SbLine>
+          )}
+          {block.followerAlignments.length > 0 && (
+            <SbLine label="Follower Alignments">{block.followerAlignments.join(', ')}</SbLine>
+          )}
+        </div>
+      )}
+
+      {devotee.length > 0 && (
+        <>
+          <SbRule />
+          <div className="space-y-1 text-sm">
+            <div className="text-[0.6rem] uppercase tracking-widest text-gold/70">
+              Devotee Benefits
+            </div>
+            {devotee.map((d) => (
+              <SbLine key={d.label} label={d.label}>
+                {d.value}
+              </SbLine>
+            ))}
+          </div>
+        </>
+      )}
+
+      {(domains.length > 0 || block.clericSpells) && (
+        <>
+          <SbRule />
+          <div className="space-y-1 text-sm">
+            {domains.length > 0 && <SbLine label="Domains">{domainsLabel}</SbLine>}
+            {block.clericSpells && <SbLine label="Cleric Spells">{block.clericSpells}</SbLine>}
+          </div>
+        </>
+      )}
     </div>
   );
 }

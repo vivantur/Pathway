@@ -20,6 +20,26 @@ export interface RuleEntry {
   meta: Array<{ label: string; value: string }>;
   /** Present for monsters — renders as a PF2e stat-block grid. */
   statBlock?: MonsterStatBlock;
+  /** Present for deities — renders as a devotee block. */
+  deityBlock?: DeityBlock;
+}
+
+/** Structured devotee facts for a deity entry. */
+export interface DeityBlock {
+  imageUrl: string | null;
+  edicts: string[];
+  anathema: string[];
+  areasOfConcern: string | null;
+  followerAlignments: string[];
+  alignment: string | null;
+  sanctification: string | null;
+  divineFont: string | null;
+  divineSkill: string | null;
+  divineAttributes: string[];
+  favoredWeapon: string | null;
+  domains: string[];
+  alternateDomains: string[];
+  clericSpells: string | null;
 }
 
 export interface MonsterAttack {
