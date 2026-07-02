@@ -124,6 +124,8 @@ export interface CharacterClass {
   /** e.g. "Doctrine", "Muse", "Hunter's Edge" — the level-1 subclass choice label. */
   subclassLabel?: string;
   subclasses?: Subclass[];
+  /** Named class features granted automatically at level 1. */
+  features?: string[];
   source: string;
   description: string;
 }

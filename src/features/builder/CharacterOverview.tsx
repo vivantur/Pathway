@@ -8,6 +8,7 @@ import {
   findFeat,
   findHeritage,
   findItem,
+  findSkill,
   findSpell,
 } from '@/features/builder/data';
 import { deriveCharacter } from './rules';
@@ -92,6 +93,39 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
               {background ? ` · ${background.name}` : ''}
             </div>
           </div>
+        </div>
+      </Section>
+
+      <Section title="Gained for Free">
+        <div className="flex flex-col gap-2 font-ui text-sm text-parchment/85">
+          {klass?.features?.length ? (
+            <div>
+              <span className="text-gold-400">{klass.name} features:</span> {klass.features.join(', ')}
+            </div>
+          ) : null}
+          {ancestry && (
+            <div>
+              <span className="text-gold-400">{ancestry.name}:</span> {ancestry.hp} HP · {ancestry.size}{' '}
+              · {ancestry.speed} ft Speed
+              {ancestry.traits?.length ? ` · ${ancestry.traits.join(', ')}` : ''}
+            </div>
+          )}
+          {heritage && (
+            <div>
+              <span className="text-gold-400">{heritage.name}:</span> {heritage.description}
+            </div>
+          )}
+          {background && (
+            <div>
+              <span className="text-gold-400">{background.name}:</span> trained in{' '}
+              {findSkill(background.trainedSkill)?.name ?? background.trainedSkill} and{' '}
+              {background.loreSkill}
+              {background.skillFeat ? `; ${findFeat(background.skillFeat)?.name ?? ''} feat` : ''}
+            </div>
+          )}
+          {!klass && !ancestry && (
+            <p className="text-parchment/50">Choose an ancestry and class to see their grants.</p>
+          )}
         </div>
       </Section>
 

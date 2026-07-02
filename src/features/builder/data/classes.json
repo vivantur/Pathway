@@ -54,6 +54,10 @@
         "name": "Toxicologist",
         "description": "A master of poisons who crafts and applies deadly toxins."
       }
+    ],
+    "features": [
+      "Alchemy",
+      "Research Field"
     ]
   },
   {
@@ -88,7 +92,12 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "features": [
+      "Apparition Attunement",
+      "Animistic Practice",
+      "Animist & Apparition Spellcasting"
+    ]
   },
   {
     "id": "barbarian",
@@ -150,6 +159,11 @@
         "name": "Spirit Instinct",
         "description": "Channel ancestral spirits, dealing void or vitality damage."
       }
+    ],
+    "features": [
+      "Instinct",
+      "Rage",
+      "Quick-Tempered"
     ]
   },
   {
@@ -208,6 +222,12 @@
         "name": "Warrior",
         "description": "A muse of battle; grants a martial weapon proficiency and the Martial Performance feat."
       }
+    ],
+    "features": [
+      "Spell Repertoire",
+      "Composition Spells",
+      "Muses",
+      "Occult Spellcasting"
     ]
   },
   {
@@ -243,7 +263,13 @@
         "medium": 1,
         "heavy": 1
       }
-    }
+    },
+    "features": [
+      "Deity (Champion)",
+      "Cause",
+      "Devotion Spells",
+      "Shield Block"
+    ]
   },
   {
     "id": "cleric",
@@ -290,6 +316,13 @@
         "name": "Warpriest",
         "description": "A martial servant; grants better armor and weapon training and a Battle Medicine-style resilience."
       }
+    ],
+    "features": [
+      "Deity",
+      "Cleric Spellcasting",
+      "Doctrine",
+      "First Doctrine",
+      "Divine Font"
     ]
   },
   {
@@ -347,6 +380,14 @@
         "name": "Untamed",
         "description": "Grants the Untamed Form (wild shape) feat and shapeshifting focus magic."
       }
+    ],
+    "features": [
+      "Anathema (Druid)",
+      "Druid Spellcasting",
+      "Druidic Order",
+      "Wildsong",
+      "Shield Block",
+      "Voice of Nature"
     ]
   },
   {
@@ -382,7 +423,12 @@
         "medium": 1,
         "heavy": 0
       }
-    }
+    },
+    "features": [
+      "Shield Block",
+      "Humble Strikes",
+      "Divine Spark and Ikons"
+    ]
   },
   {
     "id": "fighter",
@@ -415,7 +461,11 @@
         "medium": 1,
         "heavy": 1
       }
-    }
+    },
+    "features": [
+      "Reactive Strike",
+      "Shield Block"
+    ]
   },
   {
     "id": "gunslinger",
@@ -470,6 +520,10 @@
         "name": "Vanguard",
         "description": "A frontline gunner using heavy firearms and area attacks."
       }
+    ],
+    "features": [
+      "Gunslinger's Way",
+      "Slinger's Precision"
     ]
   },
   {
@@ -522,6 +576,13 @@
         "name": "Weapon Innovation",
         "description": "A signature weapon packed with experimental upgrades."
       }
+    ],
+    "features": [
+      "Peerless Inventor",
+      "Shield Block",
+      "Explode",
+      "Overdrive",
+      "Innovation"
     ]
   },
   {
@@ -579,6 +640,12 @@
         "name": "Interrogation",
         "description": "Read people and pursue leads through conversation."
       }
+    ],
+    "features": [
+      "On the Case",
+      "Methodology",
+      "Devise a Stratagem",
+      "Strategic Strike"
     ]
   },
   {
@@ -646,6 +713,11 @@
         "name": "Wood",
         "description": "Channel living wood — protective, sustaining impulses."
       }
+    ],
+    "features": [
+      "Kinetic Aura",
+      "Kinetic Gate",
+      "Impulses"
     ]
   },
   {
@@ -709,6 +781,13 @@
         "name": "Twisting Tree",
         "description": "Master a staff, blending reach and versatility."
       }
+    ],
+    "features": [
+      "Arcane Spellcasting (Magus)",
+      "Arcane Cascade",
+      "Spellstrike",
+      "Hybrid Study",
+      "Conflux Spells"
     ]
   },
   {
@@ -742,7 +821,11 @@
         "medium": 0,
         "heavy": 0
       }
-    }
+    },
+    "features": [
+      "Flurry of Blows",
+      "Powerful Fist"
+    ]
   },
   {
     "id": "oracle",
@@ -819,6 +902,13 @@
         "name": "Tempest",
         "description": "Command storms, wind, and water."
       }
+    ],
+    "features": [
+      "Oracle Spellcasting",
+      "Mystery",
+      "Oracular Curse",
+      "Revelation Spells",
+      "Spell Repertoire"
     ]
   },
   {
@@ -884,6 +974,14 @@
         "name": "The Tangible Dream",
         "description": "Shape illusions into something real."
       }
+    ],
+    "features": [
+      "Psychic Spellcasting",
+      "Psi Cantrips and Amps",
+      "Unleash Psyche",
+      "Subconscious Mind",
+      "Conscious Mind",
+      "Spell Repertoire"
     ]
   },
   {
@@ -937,6 +1035,10 @@
         "name": "Outwit",
         "description": "Gain bonuses to skills and AC against your hunted prey."
       }
+    ],
+    "features": [
+      "Hunter's Edge",
+      "Hunt Prey"
     ]
   },
   {
@@ -994,6 +1096,11 @@
         "name": "Mastermind",
         "description": "Cunning tactician; Recall Knowledge to make foes flat-footed."
       }
+    ],
+    "features": [
+      "Rogue's Racket",
+      "Sneak Attack",
+      "Surprise Attack"
     ]
   },
   {
@@ -1079,6 +1186,13 @@
         "name": "Undead",
         "description": "The chill of undeath — divine magic."
       }
+    ],
+    "features": [
+      "Spell Repertoire",
+      "Sorcerous Potency",
+      "Sorcerer Spellcasting",
+      "Bloodline",
+      "Bloodline Spells"
     ]
   },
   {
@@ -1164,6 +1278,13 @@
         "name": "Undead Eidolon",
         "description": "A restless undead companion."
       }
+    ],
+    "features": [
+      "Eidolon",
+      "Evolution Feat",
+      "Summoner Spellcasting",
+      "Spell Repertoire",
+      "Link Spells"
     ]
   },
   {
@@ -1226,6 +1347,13 @@
         "name": "Wit",
         "description": "Gain panache with Bon Mot — clever and charming."
       }
+    ],
+    "features": [
+      "Panache",
+      "Precise Strike",
+      "Confident Finisher",
+      "Swashbuckler's Style",
+      "Stylish Combatant"
     ]
   },
   {
@@ -1311,6 +1439,12 @@
         "name": "Weapon",
         "description": "A martial implement for the front line."
       }
+    ],
+    "features": [
+      "First Implement and Esoterica",
+      "Esoteric Lore",
+      "Implement's Empowerment",
+      "Exploit Vulnerability"
     ]
   },
   {
@@ -1381,6 +1515,12 @@
         "name": "Wilding Steward",
         "description": "A primal patron of the wild; grants the primal tradition and a nature-themed hex."
       }
+    ],
+    "features": [
+      "Witch Spellcasting",
+      "Familiar (Witch)",
+      "Hexes",
+      "Patron"
     ]
   },
   {
@@ -1438,6 +1578,12 @@
         "name": "Spell Substitution",
         "description": "Swap prepared spells for others during the day with a short study."
       }
+    ],
+    "features": [
+      "Wizard Spellcasting",
+      "Arcane School",
+      "Arcane Bond",
+      "Arcane Thesis"
     ]
   }
 ]
