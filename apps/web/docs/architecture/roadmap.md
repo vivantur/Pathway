@@ -21,10 +21,18 @@ with a gate before the next phase.
 > W7+ item "extract shared PF2e rules logic into a package both clients consume"
 > has **landed for the web client**: the derived-stat engine, content schema, and
 > character model now live in **`@pathway/core`** (see the root `CLAUDE.md`), which
-> `apps/web` consumes — no rules value is computed in the app. Remaining builder
-> gaps are content/rules-sourced: partial casters, exact spell-slot tables,
-> archetype content, and class-feature automation. The bot has not yet been moved
-> onto `@pathway/core`.
+> `apps/web` consumes — no rules value is computed in the app.
+>
+> Rules coverage has since been filled out from the Foundry `pf2e` dataset
+> (mechanics only): **per-class proficiency advancement** (saves, Perception,
+> class DC, weapon/armor, and spell attack/DC now scale to legendary by level
+> instead of being frozen at level 1), **partial casters** (magus, summoner) with
+> their reduced slot table, **cleric doctrine** (subclass-gated) spell/save
+> advancement, the verified full-caster slot table, and **Free Archetype**
+> dedication-first gating over the 1,857 archetype feats already in the dataset.
+> The remaining gap is **per-feature mechanical automation** (rage damage, sneak
+> attack dice, etc.), which is open-ended and not required for the derived sheet.
+> The bot has not yet been moved onto `@pathway/core`.
 
 ## Phase W0 — Reconcile with the live backend *(do this first)*
 
