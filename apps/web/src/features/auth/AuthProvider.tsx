@@ -21,15 +21,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let active = true;
+    // Once any auth event has been seen, its session is newer than the initial
+    // getSession() we kicked off — don't let that slower promise resolve later
+    // and clobber the fresher state (e.g. a SIGNED_OUT arriving mid-flight).
+    let sawEvent = false;
 
     supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
+      if (!active || sawEvent) return;
       setSession(data.session);
       setLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      sawEvent = true;
       setSession(next);
+      setLoading(false);
     });
 
     return () => {

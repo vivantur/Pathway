@@ -28,6 +28,17 @@ function decodeJwtRole(token: string): string | undefined {
   }
 }
 
+/**
+ * Whether a key is a service-role / secret key that must never reach the
+ * browser. Covers BOTH key formats:
+ *   - legacy JWT keys, whose payload carries `role: 'service_role'`
+ *   - the current opaque secret keys, prefixed `sb_secret_` (non-JWT, so the
+ *     JWT decode above returns undefined and would otherwise slip through).
+ */
+function isSecretKey(token: string): boolean {
+  return token.startsWith('sb_secret_') || decodeJwtRole(token) === 'service_role';
+}
+
 function readEnv(): PathwayEnv {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? '';
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? '';
@@ -35,10 +46,10 @@ function readEnv(): PathwayEnv {
   // Loud failure: a service-role key in the browser would bypass RLS for every
   // user. This is the single most dangerous misconfiguration for a second
   // client on a shared backend.
-  if (supabaseAnonKey && decodeJwtRole(supabaseAnonKey) === 'service_role') {
+  if (supabaseAnonKey && isSecretKey(supabaseAnonKey)) {
     throw new Error(
-      'VITE_SUPABASE_ANON_KEY is a service-role key. The website must use the ' +
-        'anon/publishable key under RLS — never the service-role key. Refusing to start.',
+      'VITE_SUPABASE_ANON_KEY is a service-role / secret key. The website must use ' +
+        'the anon/publishable key under RLS — never the service-role key. Refusing to start.',
     );
   }
 

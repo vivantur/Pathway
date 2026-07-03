@@ -153,6 +153,13 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
           <Chip>Speed {d.speed} ft</Chip>
           {d.focusPoints > 0 && <Chip>Focus {d.focusPoints}</Chip>}
         </div>
+        {state.level > 1 && (
+          <p className="mt-2 font-ui text-xs text-parchment/50">
+            Saves, Perception, AC, class DC, and spell DC use your level-1 proficiency
+            ranks. Class-based proficiency increases at higher levels aren&apos;t modeled
+            yet, so these can read low above roughly 5th level.
+          </p>
+        )}
       </Section>
 
       {trained.length > 0 && (

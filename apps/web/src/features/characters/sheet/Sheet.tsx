@@ -124,7 +124,8 @@ export function Sheet({
   const edit: EditControls = {
     enabled: !readOnly,
     update: (patch) => stateMutation.mutate(patch),
-    updateOverlay: (next) => overlayMutation.mutate(next),
+    updateWith: (resolve) => stateMutation.mutate({ resolve }),
+    updateOverlay: (mutate) => overlayMutation.mutate(mutate),
     isPending: stateMutation.isPending || overlayMutation.isPending,
   };
 
@@ -161,13 +162,20 @@ export function Sheet({
  */
 export interface EditControls {
   enabled: boolean;
+  /** Write absolute live-state values (text entry, currency). */
   update: (patch: CharacterStatePatch) => void;
   /**
-   * Read-modify-write the `overlay` blob. Pass the FULL new overlay (computed
-   * from `character.overlay`) — the bot owns the shape, so we never replace it
-   * blindly. Used for overlay-resident live counters (focus points, etc.).
+   * Write live state derived from the freshest row. Steppers use this so a fast
+   * double-tap composes (each click sees the previous optimistic result)
+   * instead of sending the same absolute value twice and dropping a step.
    */
-  updateOverlay: (next: CharacterOverlay) => void;
+  updateWith: (resolve: (prev: CharacterRow | undefined) => CharacterStatePatch) => void;
+  /**
+   * Read-modify-write the `overlay` blob via a MUTATOR that touches only its
+   * own slice. The mutator is applied to the freshest overlay under
+   * compare-and-swap, so a concurrent bot write (xp, xpLog) is never clobbered.
+   */
+  updateOverlay: (mutate: (current: CharacterOverlay) => CharacterOverlay) => void;
   isPending: boolean;
 }
 
@@ -1181,6 +1189,9 @@ function HpCard({
 
   const clamp = (n: number) => Math.max(0, max != null ? Math.min(n, max) : n);
   const setHp = (n: number) => edit.update({ current_hp: clamp(n) });
+  // Deltas resolve against the freshest row so rapid taps compose (see updateWith).
+  const stepHp = (delta: number) =>
+    edit.updateWith((prev) => ({ current_hp: clamp((prev?.current_hp ?? current ?? 0) + delta) }));
 
   const commit = () => {
     const n = Number(draft);
@@ -1227,8 +1238,8 @@ function HpCard({
 
       {edit.enabled && !editing && (
         <div className="mt-1 flex items-center justify-center gap-1">
-          <StepBtn label="−" onClick={() => setHp((current ?? 0) - 1)} />
-          <StepBtn label="+" onClick={() => setHp((current ?? 0) + 1)} />
+          <StepBtn label="−" onClick={() => stepHp(-1)} />
+          <StepBtn label="+" onClick={() => stepHp(1)} />
         </div>
       )}
     </div>
@@ -1329,8 +1340,12 @@ function HeroPointsCard({ value, edit }: { value: number; edit: EditControls }) 
   // Clicking pip i sets hero points to i+1; clicking the current top pip
   // toggles it back down by one.
   const setPip = (i: number) => {
-    const next = value === i + 1 ? i : i + 1;
-    edit.update({ hero_points: next });
+    // Resolve against the freshest row so a fast re-tap toggles from the real
+    // current value rather than a stale captured prop.
+    edit.updateWith((prev) => {
+      const v = prev?.hero_points ?? value;
+      return { hero_points: v === i + 1 ? i : i + 1 };
+    });
   };
   return (
     <div className="relative rounded-md border border-gold/30 bg-midnight-900/70 px-3 py-3 text-center shadow-gilded">
@@ -1375,30 +1390,28 @@ function ConditionsBlock({
 }) {
   const webConditions = character.overlay?.web_edits?.conditions ?? [];
 
-  // Read-modify-write the web-owned conditions list, preserving the rest of
-  // the overlay (including web_edits.spells).
-  const writeConditions = (conditions: ActiveCondition[]) => {
-    const prev = character.overlay ?? {};
-    const next: CharacterOverlay = {
-      ...prev,
-      web_edits: { ...(prev.web_edits ?? {}), conditions },
-    };
-    edit.updateOverlay(next);
-  };
-  const others = (name: string) =>
-    webConditions.filter((c) => c.name.toLowerCase() !== name.toLowerCase());
-  const addCondition = (name: string) => {
-    if (webConditions.some((c) => c.name.toLowerCase() === name.toLowerCase())) return;
-    writeConditions([...webConditions, isValuedCondition(name) ? { name, value: 1 } : { name }]);
-  };
-  const removeCondition = (name: string) => writeConditions(others(name));
-  const setConditionValue = (name: string, value: number) => {
-    if (value <= 0) {
-      writeConditions(others(name));
-      return;
-    }
-    writeConditions([...others(name), { name, value }]);
-  };
+  // Transform the web-owned conditions list inside an overlay mutator: the
+  // transform runs against the FRESHEST overlay (not this render's stale prop),
+  // so concurrent bot writes and rapid edits both survive. Only web_edits is
+  // touched; the rest of the overlay is preserved.
+  const transformConditions = (fn: (conds: ActiveCondition[]) => ActiveCondition[]) =>
+    edit.updateOverlay((o) => ({
+      ...o,
+      web_edits: { ...(o.web_edits ?? {}), conditions: fn(o.web_edits?.conditions ?? []) },
+    }));
+  const without = (conds: ActiveCondition[], name: string) =>
+    conds.filter((c) => c.name.toLowerCase() !== name.toLowerCase());
+  const addCondition = (name: string) =>
+    transformConditions((conds) =>
+      conds.some((c) => c.name.toLowerCase() === name.toLowerCase())
+        ? conds
+        : [...conds, isValuedCondition(name) ? { name, value: 1 } : { name }],
+    );
+  const removeCondition = (name: string) => transformConditions((conds) => without(conds, name));
+  const setConditionValue = (name: string, value: number) =>
+    transformConditions((conds) =>
+      value <= 0 ? without(conds, name) : [...without(conds, name), { name, value }],
+    );
 
   if (!edit.enabled) {
     const active = renderConditions(character, webConditions);
@@ -1470,18 +1483,16 @@ function CountersBlock({
   const entries = Object.entries(counters).filter(([, v]) => v && (v.max ?? 0) > 0);
   if (entries.length === 0) return null;
 
-  const setCurrent = (key: string, current: number) => {
-    const prev = character.overlay ?? {};
-    const all = prev.counters ?? {};
-    const c = all[key];
-    if (!c) return;
-    const clamped = Math.max(0, Math.min(c.max ?? 0, current));
-    const next: CharacterOverlay = {
-      ...prev,
-      counters: { ...all, [key]: { ...c, current: clamped } },
-    };
-    edit.updateOverlay(next);
-  };
+  // Adjust by a delta computed against the FRESHEST counter value inside the
+  // mutator, so rapid taps compose and a concurrent bot write isn't clobbered.
+  const changeCurrent = (key: string, delta: number) =>
+    edit.updateOverlay((o) => {
+      const all = o.counters ?? {};
+      const c = all[key];
+      if (!c) return o;
+      const clamped = Math.max(0, Math.min(c.max ?? 0, (c.current ?? 0) + delta));
+      return { ...o, counters: { ...all, [key]: { ...c, current: clamped } } };
+    });
 
   return (
     <FramedBlock title="Counters">
@@ -1500,8 +1511,8 @@ function CountersBlock({
               </span>
               {edit.enabled && (
                 <span className="flex items-center gap-1">
-                  <StepBtn label="−" onClick={() => setCurrent(key, current - 1)} />
-                  <StepBtn label="+" onClick={() => setCurrent(key, current + 1)} />
+                  <StepBtn label="−" onClick={() => changeCurrent(key, -1)} />
+                  <StepBtn label="+" onClick={() => changeCurrent(key, 1)} />
                 </span>
               )}
             </div>
@@ -1877,21 +1888,25 @@ function FocusPool({
   const spent = Math.max(0, Math.min(max, character.overlay?.daily?.focus_spent ?? 0));
   const current = max - spent;
 
-  const setSpent = (nextSpent: number) => {
-    const clamped = Math.max(0, Math.min(max, nextSpent));
-    const prev = character.overlay ?? {};
-    const next: CharacterOverlay = {
-      ...prev,
-      daily: { ...(prev.daily ?? {}), focus_spent: clamped },
-    };
-    edit.updateOverlay(next);
-  };
+  const setSpent = (nextSpent: number) =>
+    edit.updateOverlay((o) => ({
+      ...o,
+      daily: { ...(o.daily ?? {}), focus_spent: Math.max(0, Math.min(max, nextSpent)) },
+    }));
 
-  // Clicking pip i sets remaining to i+1; clicking the current top pip spends one.
-  const setPip = (i: number) => {
-    const nextCurrent = current === i + 1 ? i : i + 1;
-    setSpent(max - nextCurrent);
-  };
+  // Clicking pip i sets remaining to i+1; clicking the current top pip spends
+  // one. Resolve the toggle against the freshest overlay so a re-tap works off
+  // the real value, not this render's stale prop.
+  const setPip = (i: number) =>
+    edit.updateOverlay((o) => {
+      const curSpent = Math.max(0, Math.min(max, o.daily?.focus_spent ?? 0));
+      const curCurrent = max - curSpent;
+      const nextCurrent = curCurrent === i + 1 ? i : i + 1;
+      return {
+        ...o,
+        daily: { ...(o.daily ?? {}), focus_spent: Math.max(0, Math.min(max, max - nextCurrent)) },
+      };
+    });
 
   return (
     <div className="relative rounded-md border border-arcane/30 bg-midnight-900/60 px-3 py-3 text-center">

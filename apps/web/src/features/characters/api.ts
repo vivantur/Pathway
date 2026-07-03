@@ -565,24 +565,64 @@ export async function updateCharacterState(input: {
 }
 
 /**
- * Write the FULL `overlay` blob for one owned character. The bot owns the
- * overlay's shape (xp log, counters, bot-side edits), so callers MUST do
- * read-modify-write — compute the new overlay from the current one and pass
- * the whole thing here — rather than replacing it wholesale. Used for
- * player-editable live counters that live in the overlay (focus points, etc.).
+ * Read-modify-write one owned character's `overlay` blob with optimistic
+ * concurrency (compare-and-swap on `updated_at`).
+ *
+ * The overlay is a single JSONB column that BOTH clients write: the bot owns
+ * `pathway_bot_state` (xp, xpLog, counters) while the web owns `web_edits`
+ * (added spells, conditions) and adjusts focus/counters. A naive "write the
+ * whole blob computed from a cached copy" loses data: if the bot awards XP
+ * between the web's read and its write, the web's stale blob overwrites the
+ * bot's award.
+ *
+ * To make that safe, the caller passes a `mutate` function instead of a final
+ * blob. We fetch the FRESHEST overlay, apply `mutate` to it (so the caller's
+ * change merges onto whatever the bot just wrote), and write conditionally on
+ * the `updated_at` we read. If another writer slipped in between, the update
+ * matches zero rows and we retry against the new state. Because `mutate` only
+ * rewrites its own sub-tree of the fresh overlay, concurrent writes to other
+ * sub-trees survive.
  */
 export async function updateCharacterOverlay(input: {
   userId: string;
   charKey: string;
-  overlay: CharacterOverlay;
-}): Promise<void> {
+  mutate: (current: CharacterOverlay) => CharacterOverlay;
+}): Promise<CharacterOverlay> {
   const supabase = requireSupabase();
-  const { error } = await supabase
-    .from('characters')
-    .update({ overlay: input.overlay, updated_at: new Date().toISOString() })
-    .eq('user_id', input.userId)
-    .eq('char_key', input.charKey);
-  if (error) throw error;
+  const { userId, charKey, mutate } = input;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: fresh, error: readError } = await supabase
+      .from('characters')
+      .select('overlay, updated_at')
+      .eq('user_id', userId)
+      .eq('char_key', charKey)
+      .single();
+    if (readError) throw readError;
+
+    const row = fresh as { overlay: CharacterOverlay | null; updated_at: string | null };
+    const current = (row.overlay ?? {}) as CharacterOverlay;
+    const next = mutate(current);
+
+    let write = supabase
+      .from('characters')
+      .update({ overlay: next, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('char_key', charKey);
+    // CAS guard: only commit if nobody has bumped updated_at since our read.
+    write = row.updated_at == null ? write.is('updated_at', null) : write.eq('updated_at', row.updated_at);
+
+    const { data: written, error: writeError } = await write.select('overlay');
+    if (writeError) throw writeError;
+    if (written && written.length > 0) {
+      return (written[0] as { overlay: CharacterOverlay }).overlay;
+    }
+    // Zero rows updated → a concurrent write changed updated_at; loop and retry.
+  }
+
+  throw new Error(
+    'Could not save your change — the character was being updated somewhere else. Please try again.',
+  );
 }
 
 // -------------------------------------------------------------------------
