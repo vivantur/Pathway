@@ -1,4 +1,5 @@
 import { findClass, getDataset, type AbilityKey, type Spell } from '@/features/builder/data';
+import { proficiencyRankAtLevel } from '@pathway/core';
 import { abilityModifier, computeAbilityScores, proficiencyBonus, opt } from './rules';
 import { OPT } from './options/config';
 import { subclassTradition } from './subclassEffects';
@@ -65,13 +66,10 @@ export function slotsForRank(level: number, rank: number): number {
 }
 
 /**
- * Spell attack modifier and spell DC.
- *
- * KNOWN LIMITATION: spellcasting proficiency is pinned at trained (rank 1). Its
- * advancement to expert/master/legendary is class- and level-specific and not
- * in the dataset; per the rules-from-source rule we don't hardcode it from
- * memory, so these under-report at higher levels (see deriveCharacter's note
- * and the CharacterOverview caveat).
+ * Spell attack modifier and spell DC. Spellcasting proficiency advances by the
+ * class progression table in `@pathway/core` (trained → expert → master →
+ * legendary at class-specific levels); full casters start trained, so we floor
+ * at rank 1 for a class flagged as a caster by `casterConfig`.
  */
 export function spellStats(state: BuilderState): { attack: number; dc: number; ability: AbilityKey } | null {
   const cfg = casterConfig(state.classId, state.subclassId);
@@ -80,7 +78,8 @@ export function spellStats(state: BuilderState): { attack: number; dc: number; a
   const mods = computeAbilityScores(state);
   const abilityMod = abilityModifier(mods[cfg.keyAbility]);
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const bonus = proficiencyBonus(1, level, pwl); // trained (see limitation above)
+  const rank = Math.max(1, state.classId ? proficiencyRankAtLevel(state.classId, 'spellcasting', level) : 1);
+  const bonus = proficiencyBonus(rank as 1 | 2 | 3 | 4, level, pwl);
   return { attack: bonus + abilityMod, dc: 10 + bonus + abilityMod, ability: cfg.keyAbility };
 }
 

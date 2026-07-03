@@ -10,3 +10,7 @@
 // worked examples. Nothing rules-shaped should be computed outside this package.
 
 export const CORE_PLACEHOLDER = true as const;
+
+// PF2e class proficiency progression (the first real slice of the derived-stat
+// engine to live in core). Consumed by apps/web's character builder.
+export * from './proficiency';
