@@ -67,10 +67,16 @@ export function maxSpellRank(level: number): number {
 }
 
 /**
- * Approximate spells to pick at a given rank for a full caster (mirrors the
- * standard spells-per-day table): a newly-gained rank offers 2, matured ranks
- * offer 3, and 10th rank is capped at 1. Good enough to guide selection; exact
- * per-class nuances (e.g. wizard spellbook size) are a later refinement.
+ * Full-caster spell slots per rank at a given character level — the standard
+ * Player Core "Spells per Day" table: a newly-gained rank offers 2 slots, each
+ * matures to 3 slots at the next level (level ≥ 2 × rank), and 10th rank is
+ * always a single slot. Verified against the Player Core table and Foundry's
+ * `maxSpellRank = ceil(level / 2)`.
+ *
+ * This is the *slot* count (also the spontaneous repertoire size, closely
+ * enough for build-time selection). It does NOT include bonus slots (wizard
+ * curriculum, cleric divine font) or the partial-caster tables (magus/summoner),
+ * which are out of scope here.
  */
 export function slotsForRank(level: number, rank: number): number {
   if (rank < 1 || rank > maxSpellRank(level)) return 0;

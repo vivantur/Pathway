@@ -8,7 +8,7 @@ import {
   proficiencyBonus,
   validate,
 } from './index';
-import { spellStats } from './spellcasting';
+import { spellStats, maxSpellRank, slotsForRank } from './spellcasting';
 import { emptyBuilderState } from './character';
 import { testDataset, fighterState } from './testFixtures';
 
@@ -159,6 +159,28 @@ describe('spellStats — wizard', () => {
     const stats = spellStats(testDataset, s)!;
     expect(stats.dc).toBe(25); // 10 + expert pb(2,7)=11 + Int(4)
     expect(stats.attack).toBe(15); // 11 + 4
+  });
+});
+
+describe('full-caster spell slots', () => {
+  const row = (lvl: number) => Array.from({ length: 10 }, (_, i) => slotsForRank(lvl, i + 1));
+
+  it('highest castable rank is ceil(level / 2)', () => {
+    expect(maxSpellRank(1)).toBe(1);
+    expect(maxSpellRank(2)).toBe(1);
+    expect(maxSpellRank(3)).toBe(2);
+    expect(maxSpellRank(17)).toBe(9);
+    expect(maxSpellRank(19)).toBe(10);
+  });
+
+  it('matches the Player Core Spells-per-Day table', () => {
+    // ranks 1..10
+    expect(row(1)).toEqual([2, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(row(3)).toEqual([3, 2, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(row(5)).toEqual([3, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+    expect(row(9)).toEqual([3, 3, 3, 3, 2, 0, 0, 0, 0, 0]);
+    expect(row(17)).toEqual([3, 3, 3, 3, 3, 3, 3, 3, 2, 0]);
+    expect(row(20)).toEqual([3, 3, 3, 3, 3, 3, 3, 3, 3, 1]);
   });
 });
 
