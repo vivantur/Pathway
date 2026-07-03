@@ -132,13 +132,6 @@ export const classInitialProficienciesSchema = z.object({
 });
 export type ClassInitialProficiencies = z.infer<typeof classInitialProficienciesSchema>;
 
-export const subclassSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-});
-export type Subclass = z.infer<typeof subclassSchema>;
-
 /**
  * A stat whose proficiency rank advances with level. Saves/perception/class DC
  * and 'spell' (spell attack & DC) are single keys; weapons and armor are keyed
@@ -169,6 +162,19 @@ export const proficiencyIncreaseSchema = z.object({
   rank: proficiencyRankSchema,
 });
 export type ProficiencyIncrease = z.infer<typeof proficiencyIncreaseSchema>;
+
+export const subclassSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  /**
+   * Proficiency increases gated behind this subclass choice (e.g. a cleric's
+   * doctrine advancing its spellcasting / Fortitude / weapons). Merged with the
+   * class's own increases by the engine.
+   */
+  proficiencyIncreases: z.array(proficiencyIncreaseSchema).optional(),
+});
+export type Subclass = z.infer<typeof subclassSchema>;
 
 export const characterClassSchema = z.object({
   id: z.string(),

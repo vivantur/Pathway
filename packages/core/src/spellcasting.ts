@@ -140,10 +140,10 @@ export function spellStats(
   const abilityMod = abilityModifier(scores[cfg.keyAbility]);
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
   // Spellcasting proficiency starts trained and advances to expert/master/
-  // legendary by level (from the class's proficiencyIncreases). Cleric's is
-  // doctrine-gated and not yet modeled, so it stays trained for now.
+  // legendary by level (from the class's proficiencyIncreases, plus any gated
+  // behind the chosen subclass — e.g. a cleric's doctrine).
   const klass = dataset.classes.find((c) => c.id === state.classId);
-  const spellRank = classProficiency(klass, 'spell', level, 1);
+  const spellRank = classProficiency(klass, 'spell', level, 1, state.subclassId);
   const bonus = proficiencyBonus(spellRank, level, pwl);
   return { attack: bonus + abilityMod, dc: 10 + bonus + abilityMod, ability: cfg.keyAbility };
 }

@@ -192,6 +192,74 @@ describe('full-caster spell slots', () => {
   });
 });
 
+describe('subclass-gated advancement (cleric doctrine)', () => {
+  const clericState = (level: number, doctrine: string) => ({
+    ...emptyBuilderState(),
+    level,
+    ancestryId: 'testfolk',
+    backgroundId: 'warrior-bg',
+    classId: 'cleric',
+    subclassId: doctrine,
+    keyAbility: 'wis' as const,
+    ancestryBoostChoices: ['wis' as const],
+    backgroundBoostChoices: ['str' as const, 'wis' as const],
+    freeBoosts: ['wis' as const, 'con' as const, 'dex' as const, 'int' as const],
+  });
+
+  // The fixture has no cleric class, so add one with the doctrine subclasses.
+  const dataset = {
+    ...testDataset,
+    classes: [
+      ...testDataset.classes,
+      {
+        id: 'cleric',
+        name: 'Cleric',
+        keyAbility: ['wis' as const],
+        hp: 8,
+        initialProficiencies: {
+          perception: 1, fortitude: 1, reflex: 1, will: 2, classDC: 1,
+          trainedSkillCount: 2, trainedSkills: [],
+          attacks: { unarmed: 1, simple: 1, martial: 0, advanced: 0, unarmored: 1 },
+          defenses: { unarmored: 1, light: 0, medium: 0, heavy: 0 },
+        },
+        proficiencyIncreases: [{ level: 1, target: 'spell' as const, rank: 1 as const }],
+        subclasses: [
+          {
+            id: 'cloistered-cleric', name: 'Cloistered Cleric', description: '',
+            proficiencyIncreases: [
+              { level: 7, target: 'spell' as const, rank: 2 as const },
+              { level: 19, target: 'spell' as const, rank: 4 as const },
+            ],
+          },
+          {
+            id: 'warpriest', name: 'Warpriest', description: '',
+            proficiencyIncreases: [{ level: 15, target: 'fortitude' as const, rank: 3 as const }],
+          },
+        ],
+        source: 'test', description: '',
+      },
+    ],
+  };
+
+  it('spell proficiency advances by doctrine (isolated vs a doctrine that does not)', () => {
+    // Warpriest fixture has no spell increase, so it stays trained — the DC gap
+    // is exactly the proficiency-rank difference, isolating the doctrine effect.
+    const cloistered7 = spellStats(dataset, clericState(7, 'cloistered-cleric'))!;
+    const warpriest7 = spellStats(dataset, clericState(7, 'warpriest'))!;
+    expect(cloistered7.dc - warpriest7.dc).toBe(2); // expert pb(2,7)=11 vs trained pb(1,7)=9
+
+    const cloistered19 = spellStats(dataset, clericState(19, 'cloistered-cleric'))!;
+    const warpriest19 = spellStats(dataset, clericState(19, 'warpriest'))!;
+    expect(cloistered19.dc - warpriest19.dc).toBe(6); // legendary pb(4,19)=27 vs trained pb(1,19)=21
+  });
+
+  it('warpriest Fortitude reaches master at 15 via its doctrine', () => {
+    expect(deriveCharacter(dataset, clericState(15, 'warpriest')).ranks.fortitude).toBe(3);
+    // cloistered does NOT get that Fortitude bump
+    expect(deriveCharacter(dataset, clericState(15, 'cloistered-cleric')).ranks.fortitude).toBe(1);
+  });
+});
+
 describe('partial casters (magus, summoner)', () => {
   it('are recognized casters with the right config', () => {
     expect(isCaster('magus')).toBe(true);

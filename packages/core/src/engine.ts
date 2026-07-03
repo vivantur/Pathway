@@ -57,7 +57,8 @@ export function abilityModifier(score: number): number {
 
 /**
  * Effective proficiency rank for a target at a given character level: the
- * class's base rank raised by any `proficiencyIncreases` reached by that level.
+ * class's base rank raised by any `proficiencyIncreases` reached by that level,
+ * including those gated behind the chosen subclass (e.g. a cleric's doctrine).
  * Proficiency only ever increases, so this is the max of the base and every
  * applicable increase. This is what makes a level-20 fighter legendary with
  * martial weapons instead of frozen at its level-1 rank.
@@ -67,11 +68,17 @@ export function classProficiency(
   target: ProficiencyTarget,
   level: number,
   base: ProficiencyRank,
+  subclassId?: string,
 ): ProficiencyRank {
   let rank: ProficiencyRank = base;
-  for (const inc of klass?.proficiencyIncreases ?? []) {
-    if (inc.target === target && inc.level <= level && inc.rank > rank) rank = inc.rank;
-  }
+  const subclass = subclassId ? klass?.subclasses?.find((s) => s.id === subclassId) : undefined;
+  const apply = (increases: readonly { target: ProficiencyTarget; level: number; rank: ProficiencyRank }[] | undefined) => {
+    for (const inc of increases ?? []) {
+      if (inc.target === target && inc.level <= level && inc.rank > rank) rank = inc.rank;
+    }
+  };
+  apply(klass?.proficiencyIncreases);
+  apply(subclass?.proficiencyIncreases);
   return rank;
 }
 
@@ -374,7 +381,7 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
     ip?.defenses[armorCategory] ?? 0,
     subclassArmorRank(state, armorCategory),
   ) as ProficiencyRank;
-  const defenseRank = classProficiency(klass, `defenses.${armorCategory}`, level, defenseBase);
+  const defenseRank = classProficiency(klass, `defenses.${armorCategory}`, level, defenseBase, state.subclassId);
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =
@@ -384,6 +391,7 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
     'defenses.unarmored',
     level,
     (ip?.defenses.unarmored ?? 0) as ProficiencyRank,
+    state.subclassId,
   );
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
@@ -391,13 +399,14 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
-  const perceptionRank = classProficiency(klass, 'perception', level, (ip?.perception ?? 0) as ProficiencyRank);
+  const sc = state.subclassId;
+  const perceptionRank = classProficiency(klass, 'perception', level, (ip?.perception ?? 0) as ProficiencyRank, sc);
   const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
 
-  const fortRank = classProficiency(klass, 'fortitude', level, (ip?.fortitude ?? 0) as ProficiencyRank);
-  const refRank = classProficiency(klass, 'reflex', level, (ip?.reflex ?? 0) as ProficiencyRank);
-  const willRank = classProficiency(klass, 'will', level, (ip?.will ?? 0) as ProficiencyRank);
-  const classDCRank = classProficiency(klass, 'classDC', level, (ip?.classDC ?? 0) as ProficiencyRank);
+  const fortRank = classProficiency(klass, 'fortitude', level, (ip?.fortitude ?? 0) as ProficiencyRank, sc);
+  const refRank = classProficiency(klass, 'reflex', level, (ip?.reflex ?? 0) as ProficiencyRank, sc);
+  const willRank = classProficiency(klass, 'will', level, (ip?.will ?? 0) as ProficiencyRank, sc);
+  const classDCRank = classProficiency(klass, 'classDC', level, (ip?.classDC ?? 0) as ProficiencyRank, sc);
 
   const ranks = skillRankMap(dataset, state);
   const skills: SkillProficiency[] = dataset.skills.map((s) => {
@@ -419,6 +428,7 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
       `attacks.${w.category}`,
       level,
       (ip?.attacks[w.category] ?? 0) as ProficiencyRank,
+      state.subclassId,
     );
     const finesse = w.traits.includes('finesse');
     const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;

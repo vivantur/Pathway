@@ -769,12 +769,106 @@
       {
         "id": "cloistered-cleric",
         "name": "Cloistered Cleric",
-        "description": "A scholarly servant; grants a domain and, later, expanded spell access with lighter combat training."
+        "description": "A scholarly servant; grants a domain and, later, expanded spell access with lighter combat training.",
+        "proficiencyIncreases": [
+          {
+            "level": 3,
+            "target": "fortitude",
+            "rank": 2
+          },
+          {
+            "level": 7,
+            "target": "spell",
+            "rank": 2
+          },
+          {
+            "level": 11,
+            "target": "attacks.simple",
+            "rank": 2
+          },
+          {
+            "level": 11,
+            "target": "attacks.unarmed",
+            "rank": 2
+          },
+          {
+            "level": 15,
+            "target": "spell",
+            "rank": 3
+          },
+          {
+            "level": 19,
+            "target": "spell",
+            "rank": 4
+          }
+        ]
       },
       {
         "id": "warpriest",
         "name": "Warpriest",
-        "description": "A martial servant; grants better armor and weapon training and a Battle Medicine-style resilience."
+        "description": "A martial servant; grants better armor and weapon training and a Battle Medicine-style resilience.",
+        "proficiencyIncreases": [
+          {
+            "level": 1,
+            "target": "defenses.light",
+            "rank": 1
+          },
+          {
+            "level": 1,
+            "target": "defenses.medium",
+            "rank": 1
+          },
+          {
+            "level": 1,
+            "target": "fortitude",
+            "rank": 2
+          },
+          {
+            "level": 3,
+            "target": "attacks.martial",
+            "rank": 1
+          },
+          {
+            "level": 7,
+            "target": "attacks.martial",
+            "rank": 2
+          },
+          {
+            "level": 7,
+            "target": "attacks.simple",
+            "rank": 2
+          },
+          {
+            "level": 7,
+            "target": "attacks.unarmed",
+            "rank": 2
+          },
+          {
+            "level": 11,
+            "target": "spell",
+            "rank": 2
+          },
+          {
+            "level": 13,
+            "target": "defenses.light",
+            "rank": 2
+          },
+          {
+            "level": 13,
+            "target": "defenses.medium",
+            "rank": 2
+          },
+          {
+            "level": 15,
+            "target": "fortitude",
+            "rank": 3
+          },
+          {
+            "level": 19,
+            "target": "spell",
+            "rank": 3
+          }
+        ]
       }
     ],
     "features": [
