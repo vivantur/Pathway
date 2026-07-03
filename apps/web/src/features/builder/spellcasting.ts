@@ -64,7 +64,15 @@ export function slotsForRank(level: number, rank: number): number {
   return level >= 2 * rank ? 3 : 2;
 }
 
-/** Spell attack modifier and spell DC (trained at L1 → rank 1). */
+/**
+ * Spell attack modifier and spell DC.
+ *
+ * KNOWN LIMITATION: spellcasting proficiency is pinned at trained (rank 1). Its
+ * advancement to expert/master/legendary is class- and level-specific and not
+ * in the dataset; per the rules-from-source rule we don't hardcode it from
+ * memory, so these under-report at higher levels (see deriveCharacter's note
+ * and the CharacterOverview caveat).
+ */
 export function spellStats(state: BuilderState): { attack: number; dc: number; ability: AbilityKey } | null {
   const cfg = casterConfig(state.classId, state.subclassId);
   if (!cfg) return null;
@@ -72,7 +80,7 @@ export function spellStats(state: BuilderState): { attack: number; dc: number; a
   const mods = computeAbilityScores(state);
   const abilityMod = abilityModifier(mods[cfg.keyAbility]);
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const bonus = proficiencyBonus(1, level, pwl); // trained
+  const bonus = proficiencyBonus(1, level, pwl); // trained (see limitation above)
   return { attack: bonus + abilityMod, dc: 10 + bonus + abilityMod, ability: cfg.keyAbility };
 }
 

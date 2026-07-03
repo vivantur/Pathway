@@ -148,7 +148,14 @@ function resolveBoosts(boosts: Boost[], choices: (AbilityKey | null)[]): (Abilit
   });
 }
 
-export function computeAbilityScores(state: BuilderState): AbilityScores {
+/**
+ * Ability scores from character-CREATION choices only (ancestry, background,
+ * class key ability, and the four free boosts) — i.e. the level-1 array before
+ * any level-up ability boosts. Things fixed at level 1, like the number of
+ * Intelligence-granted trained skills, must read from here, not the current
+ * (post-level-up) scores.
+ */
+function creationAbilityScores(state: BuilderState): AbilityScores {
   const applied: Applied[] = [];
   const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
   const background = state.backgroundId ? findBackground(state.backgroundId) : undefined;
@@ -169,13 +176,32 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
 
   for (const a of state.freeBoosts) if (a) applied.push({ ability: a, kind: 'boost' });
 
-  // Ability boosts gained at levels 5/10/15/20, up to the character's level.
-  for (const [lvlStr, gains] of Object.entries(state.progression)) {
-    if (Number(lvlStr) > (state.level || 1)) continue;
-    for (const a of gains.boosts) if (a) applied.push({ ability: a, kind: 'boost' });
+  return applyAll(applied);
+}
+
+export function computeAbilityScores(state: BuilderState): AbilityScores {
+  const scores = creationAbilityScores(state);
+
+  // Apply level-up ability boosts (levels 5/10/15/20, or the Gradual cadence)
+  // in ascending level order so the "+1 instead of +2 above 18" rule is
+  // deterministic. Only count a level's stored boosts if the CURRENT variant
+  // options actually grant a boost there, and only as many as granted —
+  // otherwise choices left over from a previous option config (e.g. 4 boosts
+  // assigned at L5, then Gradual Ability Boosts enabled, which makes L5 grant
+  // just 1) would silently inflate the scores.
+  const levels = Object.keys(state.progression)
+    .map(Number)
+    .filter((lvl) => lvl <= (state.level || 1))
+    .sort((a, b) => a - b);
+  for (const lvl of levels) {
+    const grant = gainsForLevel(lvl, state.options).boostCount;
+    if (grant <= 0) continue;
+    for (const a of (state.progression[lvl]?.boosts ?? []).slice(0, grant)) {
+      if (a) scores[a] += scores[a] >= 18 ? 1 : 2;
+    }
   }
 
-  return applyAll(applied);
+  return scores;
 }
 
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
@@ -238,11 +264,13 @@ export function chosenFeatIds(state: BuilderState): Set<string> {
   return ids;
 }
 
-/** Total number of free skills the player may pick (class count + Int bonus). */
+/** Total number of free skills the player may pick (class count + Int bonus).
+ *  The Intelligence bonus is fixed at level 1: a later Int boost does NOT grant
+ *  additional trained skills, so this reads creation-level Int, not current. */
 export function freeSkillCount(state: BuilderState): number {
   const klass = state.classId ? findClass(state.classId) : undefined;
   if (!klass) return 0;
-  const scores = computeAbilityScores(state);
+  const scores = creationAbilityScores(state);
   const intMod = abilityModifier(scores.int);
   return klass.initialProficiencies.trainedSkillCount + Math.max(0, intMod);
 }
@@ -306,6 +334,19 @@ export interface DerivedCharacter {
   };
 }
 
+/**
+ * KNOWN LIMITATION — proficiency advancement is level-1 only.
+ *
+ * Saves, Perception, AC (defense), class DC, and weapon attack ranks below all
+ * come from the class's `initialProficiencies` (its level-1 ranks). PF2e's
+ * increases to expert/master/legendary happen at class- and level-specific
+ * points ("Fighter Weapon Mastery" at 5, "Evasion" at 7, etc.) that are NOT in
+ * the dataset. We deliberately do NOT hardcode those tables here: per the
+ * project's rules-from-source rule, PF2e rules must be implemented from
+ * provided source data, not from memory. Until the dataset carries a
+ * per-class advancement table, high-level derived numbers can under-report;
+ * the builder surfaces a visible caveat (see CharacterOverview).
+ */
 export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const level = state.level || 1;
   const scores = computeAbilityScores(state);
@@ -383,9 +424,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;
     const propulsive = w.traits.includes('propulsive');
     const thrown = w.traits.includes('thrown');
+    // Propulsive: add half your Strength modifier if positive, your FULL
+    // modifier if negative. Thrown adds full Strength; other ranged adds none.
     const damageMod = w.ranged
       ? propulsive
-        ? Math.max(0, Math.floor(mods.str / 2))
+        ? mods.str >= 0
+          ? Math.floor(mods.str / 2)
+          : mods.str
         : thrown
           ? mods.str
           : 0

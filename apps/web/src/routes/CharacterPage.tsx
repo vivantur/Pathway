@@ -54,7 +54,10 @@ export function CharacterPage() {
     );
   }
 
-  const editBase = `/vault/${rawCharKey}/edit`;
+  // Encode the key: char_keys can contain `/` (e.g. "seika/sekhmet"), which
+  // would otherwise split into extra path segments and miss the single-segment
+  // /vault/:charKey/edit route. Use the decoded key so we encode exactly once.
+  const editBase = `/vault/${encodeURIComponent(charKey ?? '')}/edit`;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">

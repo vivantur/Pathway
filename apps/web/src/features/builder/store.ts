@@ -144,10 +144,12 @@ export const useBuilder = create<BuilderStore>((set) => ({
 
   addItem: (itemId) =>
     set((s) => {
-      const inv = [...s.state.inventory];
-      const existing = inv.find((e) => e.itemId === itemId);
-      if (existing) existing.qty += 1;
-      else inv.push({ itemId, qty: 1 });
+      const existing = s.state.inventory.find((e) => e.itemId === itemId);
+      // Immutable update: replace the matched entry with a new object rather
+      // than mutating one still referenced by the previous state snapshot.
+      const inv = existing
+        ? s.state.inventory.map((e) => (e.itemId === itemId ? { ...e, qty: e.qty + 1 } : e))
+        : [...s.state.inventory, { itemId, qty: 1 }];
       return { state: { ...s.state, inventory: inv } };
     }),
 

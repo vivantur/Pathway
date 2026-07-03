@@ -11,7 +11,6 @@ import {
 } from '@/features/characters/pathbuilder';
 import type {
   AddedSpell,
-  CharacterOverlay,
   CharacterRow,
   SpellRow,
 } from '@/features/characters/types';
@@ -85,22 +84,22 @@ export function SpellsTab({
   const innateCasters = casters.filter((c) => c.innate && hasAnyContent(c));
   const focusEntries = flattenFocus(focus);
 
-  // Read-modify-write the web-owned spell list, preserving the rest of overlay.
-  const writeAdded = (spells: AddedSpell[]) => {
-    const prev = character.overlay ?? {};
-    const next: CharacterOverlay = {
-      ...prev,
-      web_edits: { ...(prev.web_edits ?? {}), spells },
-    };
-    edit.updateOverlay(next);
-  };
-  const addSpell = (name: string, rank: number) => {
-    if (added.some((s) => s.name.toLowerCase() === name.toLowerCase())) return;
-    writeAdded([...added, { name, rank }]);
-  };
-  const removeSpell = (name: string) => {
-    writeAdded(added.filter((s) => s.name.toLowerCase() !== name.toLowerCase()));
-  };
+  // Transform the web-owned spell list inside an overlay mutator so it runs
+  // against the freshest overlay (concurrent bot writes survive) and only
+  // web_edits.spells is touched.
+  const transformAdded = (fn: (spells: AddedSpell[]) => AddedSpell[]) =>
+    edit.updateOverlay((o) => ({
+      ...o,
+      web_edits: { ...(o.web_edits ?? {}), spells: fn(o.web_edits?.spells ?? []) },
+    }));
+  const addSpell = (name: string, rank: number) =>
+    transformAdded((spells) =>
+      spells.some((s) => s.name.toLowerCase() === name.toLowerCase())
+        ? spells
+        : [...spells, { name, rank }],
+    );
+  const removeSpell = (name: string) =>
+    transformAdded((spells) => spells.filter((s) => s.name.toLowerCase() !== name.toLowerCase()));
 
   const hasBuildSpells =
     mainCasters.length > 0 || innateCasters.length > 0 || focusEntries.length > 0;
