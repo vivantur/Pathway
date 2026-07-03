@@ -15,7 +15,16 @@ Per the [Master Specification](../../PATHWAY_MASTER_SPEC.md), each phase still
 moves through **Design → Review → Approve → Build → Test → Refactor → Release**,
 with a gate before the next phase.
 
----
+> **Status update (out of original sequence):** the **character builder (W3)** is
+> already built — all 11 steps (ancestry → review), levels 1–20, six variant
+> rules, save/level-up to Supabase, drafts, and Pathbuilder import/export. And the
+> W7+ item "extract shared PF2e rules logic into a package both clients consume"
+> has **landed for the web client**: the derived-stat engine, content schema, and
+> character model now live in **`@pathway/core`** (see the root `CLAUDE.md`), which
+> `apps/web` consumes — no rules value is computed in the app. Remaining builder
+> gaps are content/rules-sourced: partial casters, exact spell-slot tables,
+> archetype content, and class-feature automation. The bot has not yet been moved
+> onto `@pathway/core`.
 
 ## Phase W0 — Reconcile with the live backend *(do this first)*
 

@@ -23,10 +23,13 @@ The repo is an **npm-workspaces monorepo** (root `package.json` → `workspaces`
 packages/
   core/   ← pure PF2e domain: content schema + character model + derived-stat
             engine. NO I/O, NO database, NO network. Trivially unit-testable
-            (Vitest). The heart of the project. Currently a SKELETON.
+            (Vitest). The heart of the project. BUILT: Zod content schema,
+            character model, and the derived-stat engine (dataset-parameterized,
+            so it stays I/O-free), locked by worked-example tests.
   db/     ← Supabase client, generated DB types, queries. Depends on core;
             validation happens here at the edges using core's Zod schemas.
-            Currently a SKELETON.
+            Currently a SKELETON (web talks to Supabase directly for now, in
+            apps/web/src/features/characters/api.ts).
 apps/
   web/    ← the Vite + React + React Router + React Query web app (was web/).
             Depends on core + db (once wired). Keep Vite — do NOT rebuild on Next.js.
@@ -38,13 +41,19 @@ apps/
 - ✅ **Structure** — monorepo layout + npm workspaces in place; `apps/bot` and
   `apps/web` moved; `packages/core` and `packages/db` scaffolded (placeholder +
   passing test). Bot syntax, web build, and core tests all pass.
-- ⬜ **Build core** — implement the content schema (Zod) + derived-stat engine in
-  `packages/core`, from pasted rules text, locked by tests (kickstart Prompts 1–2).
-- ⬜ **Point web at core** — replace `apps/web`'s local rules math with imports from
-  `packages/core`, one derived value at a time, deleting the local copy as each is
-  verified. Same for its data access via `packages/db`.
+- ✅ **Build core** — content schema (Zod) + character model + derived-stat engine
+  live in `packages/core`, ported from the web builder's proven implementation and
+  locked by worked-example tests (`packages/core/src/engine.test.ts`). Engine
+  functions take a `Dataset` argument so core imports no data and stays I/O-free.
+- ◐ **Point web at core** — `apps/web`'s rules math now comes from `packages/core`:
+  `rules.ts` / `spellcasting.ts` / `subclassEffects.ts` / `types.ts` are thin
+  re-export shims that bind the engine to the app's bundled dataset, and the local
+  schema/engine copies are deleted. No rules value is computed in `apps/web`.
+  Still ⬜: data access via `packages/db` (web still uses Supabase directly), and
+  migrating the bundled JSON dataset into a schema-validated pipeline.
 - ⬜ **Migrate bot** — later, move `apps/bot` onto `packages/core` too. Until then it
-  stays CommonJS and self-contained.
+  stays CommonJS and self-contained (and keeps its own rules engine — the one
+  remaining place PF2e math is duplicated).
 
 `apps/bot` is otherwise **frozen for architecture**: don't restructure it or add new
 rules logic to it. Carve-out: targeted hotfixes to live bugs (crashes, wrong rules,

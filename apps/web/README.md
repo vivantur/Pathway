@@ -10,10 +10,12 @@ are **equal citizens** of the platform.
 This repository is the **`web/` companion app** to the Pathway Discord bot
 (`vivantur/pathway`). The bot and its Supabase backend **already exist and run in
 production**; this website is a **second client on that same backend**, and its
-first job is to **stay in sync** with the bot. The repo currently holds the
-**planning and architecture documents** — application code comes next, per the
+first job is to **stay in sync** with the bot. The app is live (auth, vault, rules
+library, and a working character **builder**); the architecture documents here
+capture the plan it's being built against, per the
 [Master Specification](./PATHWAY_MASTER_SPEC.md)'s
-*Design → Review → Approve → Build → Test → Refactor → Release* workflow.
+*Design → Review → Approve → Build → Test → Refactor → Release* workflow. The
+builder's PF2e rules math lives in `@pathway/core`, not in this app.
 
 > ⚠️ **Read the architecture docs before writing any code that touches Supabase.**
 > The website must conform to the bot's existing schema and the sync contract, or
