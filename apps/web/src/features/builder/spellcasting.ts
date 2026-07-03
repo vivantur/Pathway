@@ -4,8 +4,15 @@
  * app's bundled dataset via `./engine`.
  */
 
-export { casterConfig, isCaster, maxSpellRank, slotsForRank } from '@pathway/core';
-export type { Tradition, CasterType, CasterConfig } from '@pathway/core';
+export {
+  casterConfig,
+  isCaster,
+  maxSpellRank,
+  slotsForRank,
+  maxSpellRankFor,
+  slotsForRankOf,
+} from '@pathway/core';
+export type { Tradition, CasterType, CasterConfig, CasterProgression } from '@pathway/core';
 
 import { engine } from './engine';
 

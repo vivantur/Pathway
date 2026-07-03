@@ -21,29 +21,42 @@ import { subclassTradition, type Tradition } from './subclass';
 export type { Tradition } from './subclass';
 export type CasterType = 'prepared' | 'spontaneous';
 
+/**
+ * 'full' casters follow the standard Spells-per-Day table (up to 10th rank).
+ * 'partial' casters (magus, summoner) reach 9th rank and keep only their top
+ * two ranks of slots (see `partialSlotsForRank`).
+ */
+export type CasterProgression = 'full' | 'partial';
+
 export interface CasterConfig {
   tradition: Tradition;
   type: CasterType;
+  /** The ability that powers spell attacks/DCs (a magus casts on Int even
+   * though its class key ability is Str/Dex). */
   keyAbility: AbilityKey;
-  /** Cantrips known/prepared (most full casters: 5). */
+  /** Cantrips known/prepared (most casters: 5). */
   cantrips: number;
+  progression: CasterProgression;
 }
 
 /**
- * Curated spellcasting config for the full casters. A few classes have a
- * tradition that depends on a sub-choice (sorcerer bloodline, witch patron); we
- * use a sensible default and note it in the UI. Partial casters (magus,
- * summoner) are out of scope for this pass.
+ * Curated spellcasting config. A few classes have a tradition that depends on a
+ * sub-choice (sorcerer bloodline, witch patron, summoner eidolon); the default
+ * here is refined by `subclassTradition`. Magus and summoner are partial casters
+ * with a reduced slot table.
  */
 const CASTERS: Record<string, CasterConfig> = {
-  wizard: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5 },
-  cleric: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5 },
-  druid: { tradition: 'primal', type: 'prepared', keyAbility: 'wis', cantrips: 5 },
-  witch: { tradition: 'occult', type: 'prepared', keyAbility: 'int', cantrips: 5 },
-  bard: { tradition: 'occult', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  sorcerer: { tradition: 'arcane', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  oracle: { tradition: 'divine', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5 },
+  wizard: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  cleric: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  druid: { tradition: 'primal', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  witch: { tradition: 'occult', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  bard: { tradition: 'occult', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  sorcerer: { tradition: 'arcane', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  oracle: { tradition: 'divine', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  // Partial casters (Player Core 2): fewer slots, 9th-rank max.
+  magus: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'partial' },
+  summoner: { tradition: 'arcane', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'partial' },
 };
 
 export function casterConfig(
@@ -82,6 +95,37 @@ export function slotsForRank(level: number, rank: number): number {
   if (rank < 1 || rank > maxSpellRank(level)) return 0;
   if (rank === 10) return 1;
   return level >= 2 * rank ? 3 : 2;
+}
+
+/**
+ * Partial-caster (magus, summoner) slots per rank. Player Core 2: at most two
+ * slots of your highest rank and two of the rank below it, nothing lower, with
+ * the highest rank starting at a single slot the level you gain it. Reaches 9th
+ * rank at 17 and never 10th. Matches both the magus ("two highest, two next")
+ * and summoner ("four max, top two ranks, lose lower from 5th") tables.
+ */
+export function maxPartialSpellRank(level: number): number {
+  return Math.min(9, Math.ceil(level / 2));
+}
+
+export function partialSlotsForRank(level: number, rank: number): number {
+  const m = maxPartialSpellRank(level);
+  if (rank < 1 || rank > m) return 0;
+  if (rank === m) return level >= 2 * m ? 2 : 1; // 1 the level it's gained, then 2
+  if (rank === m - 1) return 2;
+  return 0;
+}
+
+/** Highest castable rank for a caster config (full → 10th, partial → 9th). */
+export function maxSpellRankFor(cfg: CasterConfig, level: number): number {
+  return cfg.progression === 'partial' ? maxPartialSpellRank(level) : maxSpellRank(level);
+}
+
+/** Slots at a rank for a caster config (dispatches full vs partial table). */
+export function slotsForRankOf(cfg: CasterConfig, level: number, rank: number): number {
+  return cfg.progression === 'partial'
+    ? partialSlotsForRank(level, rank)
+    : slotsForRank(level, rank);
 }
 
 /** Spell attack modifier and spell DC (trained at L1 → rank 1). */

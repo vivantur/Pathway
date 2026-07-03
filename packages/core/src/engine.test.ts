@@ -8,7 +8,15 @@ import {
   proficiencyBonus,
   validate,
 } from './index';
-import { spellStats, maxSpellRank, slotsForRank } from './spellcasting';
+import {
+  spellStats,
+  maxSpellRank,
+  slotsForRank,
+  casterConfig,
+  isCaster,
+  maxSpellRankFor,
+  partialSlotsForRank,
+} from './spellcasting';
 import { emptyBuilderState } from './character';
 import { testDataset, fighterState } from './testFixtures';
 
@@ -181,6 +189,50 @@ describe('full-caster spell slots', () => {
     expect(row(9)).toEqual([3, 3, 3, 3, 2, 0, 0, 0, 0, 0]);
     expect(row(17)).toEqual([3, 3, 3, 3, 3, 3, 3, 3, 2, 0]);
     expect(row(20)).toEqual([3, 3, 3, 3, 3, 3, 3, 3, 3, 1]);
+  });
+});
+
+describe('partial casters (magus, summoner)', () => {
+  it('are recognized casters with the right config', () => {
+    expect(isCaster('magus')).toBe(true);
+    const magus = casterConfig('magus')!;
+    expect(magus.progression).toBe('partial');
+    expect(magus.type).toBe('prepared');
+    expect(magus.keyAbility).toBe('int'); // casts on Int despite Str/Dex class key
+    expect(magus.tradition).toBe('arcane');
+
+    const summoner = casterConfig('summoner', 'beast')!;
+    expect(summoner.progression).toBe('partial');
+    expect(summoner.type).toBe('spontaneous');
+    expect(summoner.keyAbility).toBe('cha');
+    expect(summoner.tradition).toBe('primal'); // from the beast eidolon
+  });
+
+  it('use the reduced slot table (top two ranks only, 9th-rank max)', () => {
+    const row = (lvl: number) => Array.from({ length: 10 }, (_, i) => partialSlotsForRank(lvl, i + 1));
+    expect(row(1)).toEqual([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(row(4)).toEqual([2, 2, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(row(5)).toEqual([0, 2, 1, 0, 0, 0, 0, 0, 0, 0]); // lost 1st-rank slots
+    expect(row(20)).toEqual([0, 0, 0, 0, 0, 0, 0, 2, 2, 0]); // never 10th rank
+    expect(maxSpellRankFor(casterConfig('magus')!, 20)).toBe(9);
+  });
+
+  it('a magus spell DC advances on Int at partial proficiency', () => {
+    const s = {
+      ...emptyBuilderState(),
+      level: 9,
+      ancestryId: 'testfolk',
+      backgroundId: 'warrior-bg',
+      classId: 'magus',
+      keyAbility: 'str' as const, // class key ability
+      ancestryBoostChoices: ['int' as const],
+      backgroundBoostChoices: ['str' as const, 'int' as const],
+      freeBoosts: ['int' as const, 'str' as const, 'con' as const, 'dex' as const],
+    };
+    const stats = spellStats(testDataset, s)!;
+    expect(stats.ability).toBe('int');
+    // Int here: 10 +2(ancestry) +2(bg) +2(free) = 16 → mod 3; expert pb(2,9)=13.
+    expect(stats.dc).toBe(26); // 10 + 13 + 3
   });
 });
 

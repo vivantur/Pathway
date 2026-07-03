@@ -5,8 +5,8 @@ import { useBuilder } from '../store';
 import {
   casterConfig,
   cantripsFor,
-  maxSpellRank,
-  slotsForRank,
+  maxSpellRankFor,
+  slotsForRankOf,
   spellStats,
   spellsForRank,
   subclassNote,
@@ -163,7 +163,7 @@ export function SpellsStep() {
   }
 
   const stats = spellStats(state);
-  const maxRank = maxSpellRank(state.level || 1);
+  const maxRank = maxSpellRankFor(cfg, state.level || 1);
   const ranks = Array.from({ length: maxRank }, (_, i) => i + 1);
   const sub = subclassNote(state);
 
@@ -208,7 +208,7 @@ export function SpellsStep() {
       />
 
       {ranks.map((rank) => {
-        const max = slotsForRank(state.level || 1, rank);
+        const max = slotsForRankOf(cfg, state.level || 1, rank);
         return (
           <SpellSection
             key={rank}

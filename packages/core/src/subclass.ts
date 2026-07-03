@@ -42,6 +42,20 @@ const WITCH_TRADITION: Record<string, Tradition> = {
   'wilding-steward': 'primal',
 };
 
+// A summoner's spell tradition follows their eidolon's essence (Player Core 2).
+const SUMMONER_TRADITION: Record<string, Tradition> = {
+  angel: 'divine',
+  beast: 'primal',
+  construct: 'arcane',
+  dragon: 'arcane',
+  elemental: 'primal',
+  fey: 'primal',
+  fiend: 'divine',
+  plant: 'primal',
+  psychopomp: 'divine',
+  undead: 'divine',
+};
+
 export const ROGUE_RACKET_ABILITY: Record<string, AbilityKey> = {
   ruffian: 'str',
   scoundrel: 'cha',
@@ -57,6 +71,7 @@ export function subclassTradition(classId?: string, subclassId?: string): Tradit
   if (!subclassId) return undefined;
   if (classId === 'sorcerer') return SORCERER_TRADITION[subclassId];
   if (classId === 'witch') return WITCH_TRADITION[subclassId];
+  if (classId === 'summoner') return SUMMONER_TRADITION[subclassId];
   return undefined;
 }
 

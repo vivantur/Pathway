@@ -85,6 +85,31 @@ export const testDataset: Dataset = {
       source: 'test',
       description: '',
     },
+    {
+      // Partial caster: class key ability is Str/Dex, but it casts on Int.
+      id: 'magus',
+      name: 'Magus',
+      keyAbility: ['str', 'dex'],
+      hp: 8,
+      initialProficiencies: {
+        perception: 1,
+        fortitude: 1,
+        reflex: 2,
+        will: 1,
+        classDC: 1,
+        trainedSkillCount: 2,
+        trainedSkills: ['arcana'],
+        attacks: { unarmed: 1, simple: 1, martial: 1, advanced: 0, unarmored: 1 },
+        defenses: { unarmored: 1, light: 1, medium: 1, heavy: 0 },
+      },
+      proficiencyIncreases: [
+        { level: 1, target: 'spell', rank: 1 },
+        { level: 9, target: 'spell', rank: 2 },
+        { level: 17, target: 'spell', rank: 3 },
+      ],
+      source: 'test',
+      description: '',
+    },
   ],
   skills: [
     { id: 'athletics', name: 'Athletics', ability: 'str' },
