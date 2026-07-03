@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   abilityModifier,
+  classProficiency,
   computeAbilityScores,
   createEngine,
   deriveCharacter,
@@ -101,6 +102,29 @@ describe('variant rules', () => {
   });
 });
 
+describe('proficiency advancement by level', () => {
+  const fighter = testDataset.classes.find((c) => c.id === 'fighter');
+
+  it('classProficiency raises the base rank once the level is reached', () => {
+    // fighter martial: base expert(2), → master(3) at level 5.
+    expect(classProficiency(fighter, 'attacks.martial', 4, 2)).toBe(2);
+    expect(classProficiency(fighter, 'attacks.martial', 5, 2)).toBe(3);
+    // never lowers below the base
+    expect(classProficiency(fighter, 'attacks.martial', 20, 4)).toBe(4);
+  });
+
+  it('a level-5 fighter attacks at master proficiency', () => {
+    const w = deriveCharacter(testDataset, { ...fighterState(), level: 5 }).weapons[0]!;
+    expect(w.attack).toBe(14); // master pb(3,5)=11 + Str(3)
+  });
+
+  it('a fighter Will save advances to expert at level 9', () => {
+    const d = deriveCharacter(testDataset, { ...fighterState(), level: 9 });
+    expect(d.ranks.will).toBe(2);
+    expect(d.saves.will).toBe(14); // expert pb(2,9)=13 + Wis(1)
+  });
+});
+
 describe('spellStats — wizard', () => {
   it('spell attack and DC use the key ability at trained proficiency', () => {
     const s = {
@@ -118,6 +142,23 @@ describe('spellStats — wizard', () => {
     expect(stats!.ability).toBe('int');
     expect(stats!.attack).toBe(7); // trained(3) + Int(4)
     expect(stats!.dc).toBe(17); // 10 + 3 + 4
+  });
+
+  it('spell proficiency advances to expert at level 7', () => {
+    const s = {
+      ...emptyBuilderState(),
+      level: 7,
+      ancestryId: 'testfolk',
+      backgroundId: 'warrior-bg',
+      classId: 'wizard',
+      keyAbility: 'int' as const,
+      ancestryBoostChoices: ['int' as const],
+      backgroundBoostChoices: ['con' as const, 'int' as const],
+      freeBoosts: ['int' as const, 'dex' as const, 'con' as const, 'wis' as const],
+    };
+    const stats = spellStats(testDataset, s)!;
+    expect(stats.dc).toBe(25); // 10 + expert pb(2,7)=11 + Int(4)
+    expect(stats.attack).toBe(15); // 11 + 4
   });
 });
 

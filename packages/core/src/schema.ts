@@ -139,6 +139,37 @@ export const subclassSchema = z.object({
 });
 export type Subclass = z.infer<typeof subclassSchema>;
 
+/**
+ * A stat whose proficiency rank advances with level. Saves/perception/class DC
+ * and 'spell' (spell attack & DC) are single keys; weapons and armor are keyed
+ * by category so a class can advance each independently.
+ */
+export const proficiencyTargetSchema = z.enum([
+  'perception',
+  'fortitude',
+  'reflex',
+  'will',
+  'classDC',
+  'spell',
+  'attacks.unarmed',
+  'attacks.simple',
+  'attacks.martial',
+  'attacks.advanced',
+  'defenses.unarmored',
+  'defenses.light',
+  'defenses.medium',
+  'defenses.heavy',
+]);
+export type ProficiencyTarget = z.infer<typeof proficiencyTargetSchema>;
+
+/** A class raising one proficiency to `rank` at `level` (expert/master/legendary). */
+export const proficiencyIncreaseSchema = z.object({
+  level: z.number(),
+  target: proficiencyTargetSchema,
+  rank: proficiencyRankSchema,
+});
+export type ProficiencyIncrease = z.infer<typeof proficiencyIncreaseSchema>;
+
 export const characterClassSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -152,6 +183,12 @@ export const characterClassSchema = z.object({
   subclasses: z.array(subclassSchema).optional(),
   /** Named class features granted automatically at level 1. */
   features: z.array(z.string()).optional(),
+  /**
+   * Proficiency rank increases gained by level (expert/master/legendary in
+   * saves, perception, class DC, spellcasting, weapon categories, armor
+   * categories). When absent, only the level-1 `initialProficiencies` apply.
+   */
+  proficiencyIncreases: z.array(proficiencyIncreaseSchema).optional(),
   source: z.string(),
   description: z.string(),
 });

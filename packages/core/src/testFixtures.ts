@@ -55,6 +55,10 @@ export const testDataset: Dataset = {
         attacks: { unarmed: 2, simple: 2, martial: 2, advanced: 1, unarmored: 2 },
         defenses: { unarmored: 1, light: 1, medium: 1, heavy: 1 },
       },
+      proficiencyIncreases: [
+        { level: 5, target: 'attacks.martial', rank: 3 },
+        { level: 9, target: 'will', rank: 2 },
+      ],
       source: 'test',
       description: '',
     },
@@ -74,6 +78,10 @@ export const testDataset: Dataset = {
         attacks: { unarmed: 1, simple: 1, martial: 0, advanced: 0, unarmored: 1 },
         defenses: { unarmored: 1, light: 0, medium: 0, heavy: 0 },
       },
+      proficiencyIncreases: [
+        { level: 1, target: 'spell', rank: 1 },
+        { level: 7, target: 'spell', rank: 2 },
+      ],
       source: 'test',
       description: '',
     },

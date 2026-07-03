@@ -9,7 +9,13 @@
 import { type AbilityKey, type Dataset, type Spell } from './schema';
 import type { BuilderState } from './character';
 import { OPT } from './options';
-import { abilityModifier, computeAbilityScores, opt, proficiencyBonus } from './engine';
+import {
+  abilityModifier,
+  classProficiency,
+  computeAbilityScores,
+  opt,
+  proficiencyBonus,
+} from './engine';
 import { subclassTradition, type Tradition } from './subclass';
 
 export type { Tradition } from './subclass';
@@ -83,7 +89,12 @@ export function spellStats(
   const scores = computeAbilityScores(dataset, state);
   const abilityMod = abilityModifier(scores[cfg.keyAbility]);
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const bonus = proficiencyBonus(1, level, pwl); // trained
+  // Spellcasting proficiency starts trained and advances to expert/master/
+  // legendary by level (from the class's proficiencyIncreases). Cleric's is
+  // doctrine-gated and not yet modeled, so it stays trained for now.
+  const klass = dataset.classes.find((c) => c.id === state.classId);
+  const spellRank = classProficiency(klass, 'spell', level, 1);
+  const bonus = proficiencyBonus(spellRank, level, pwl);
   return { attack: bonus + abilityMod, dc: 10 + bonus + abilityMod, ability: cfg.keyAbility };
 }
 

@@ -15,8 +15,10 @@ import {
   type AbilityKey,
   type Armor,
   type Boost,
+  type CharacterClass,
   type Dataset,
   type ProficiencyRank,
+  type ProficiencyTarget,
   type Shield,
   type Weapon,
 } from './schema';
@@ -51,6 +53,26 @@ export function proficiencyBonus(
 
 export function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
+}
+
+/**
+ * Effective proficiency rank for a target at a given character level: the
+ * class's base rank raised by any `proficiencyIncreases` reached by that level.
+ * Proficiency only ever increases, so this is the max of the base and every
+ * applicable increase. This is what makes a level-20 fighter legendary with
+ * martial weapons instead of frozen at its level-1 rank.
+ */
+export function classProficiency(
+  klass: CharacterClass | undefined,
+  target: ProficiencyTarget,
+  level: number,
+  base: ProficiencyRank,
+): ProficiencyRank {
+  let rank: ProficiencyRank = base;
+  for (const inc of klass?.proficiencyIncreases ?? []) {
+    if (inc.target === target && inc.level <= level && inc.rank > rank) rank = inc.rank;
+  }
+  return rank;
 }
 
 export const RANK_LABEL: Record<ProficiencyRank, string> = {
@@ -348,28 +370,34 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
 
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
   const armorCategory = armor?.category ?? 'unarmored';
-  const defenseRank = Math.max(
+  const defenseBase = Math.max(
     ip?.defenses[armorCategory] ?? 0,
     subclassArmorRank(state, armorCategory),
   ) as ProficiencyRank;
+  const defenseRank = classProficiency(klass, `defenses.${armorCategory}`, level, defenseBase);
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =
     10 + pb(defenseRank) + dexForAc + (armor?.acBonus ?? 0) + (abp ? abpDefense(level) : 0);
-  const unarmoredDefense = (ip?.defenses.unarmored ?? 0) as ProficiencyRank;
+  const unarmoredDefense = classProficiency(
+    klass,
+    'defenses.unarmored',
+    level,
+    (ip?.defenses.unarmored ?? 0) as ProficiencyRank,
+  );
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
   const meetsStr = !armor || scores.str >= armor.strength;
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
-  const perceptionRank = (ip?.perception ?? 0) as ProficiencyRank;
+  const perceptionRank = classProficiency(klass, 'perception', level, (ip?.perception ?? 0) as ProficiencyRank);
   const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
 
-  const fortRank = (ip?.fortitude ?? 0) as ProficiencyRank;
-  const refRank = (ip?.reflex ?? 0) as ProficiencyRank;
-  const willRank = (ip?.will ?? 0) as ProficiencyRank;
-  const classDCRank = (ip?.classDC ?? 0) as ProficiencyRank;
+  const fortRank = classProficiency(klass, 'fortitude', level, (ip?.fortitude ?? 0) as ProficiencyRank);
+  const refRank = classProficiency(klass, 'reflex', level, (ip?.reflex ?? 0) as ProficiencyRank);
+  const willRank = classProficiency(klass, 'will', level, (ip?.will ?? 0) as ProficiencyRank);
+  const classDCRank = classProficiency(klass, 'classDC', level, (ip?.classDC ?? 0) as ProficiencyRank);
 
   const ranks = skillRankMap(dataset, state);
   const skills: SkillProficiency[] = dataset.skills.map((s) => {
@@ -386,7 +414,12 @@ export function deriveCharacter(dataset: Dataset, state: BuilderState): DerivedC
   });
 
   const weapons: EquippedWeapon[] = equippedWeapons.map((w) => {
-    const catRank = (ip?.attacks[w.category] ?? 0) as ProficiencyRank;
+    const catRank = classProficiency(
+      klass,
+      `attacks.${w.category}`,
+      level,
+      (ip?.attacks[w.category] ?? 0) as ProficiencyRank,
+    );
     const finesse = w.traits.includes('finesse');
     const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;
     const propulsive = w.traits.includes('propulsive');

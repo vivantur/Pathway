@@ -58,6 +58,88 @@
     "features": [
       "Alchemy",
       "Research Field"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 7,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "will",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -97,6 +179,73 @@
       "Apparition Attunement",
       "Animistic Practice",
       "Animist & Apparition Spellcasting"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -164,6 +313,108 @@
       "Instinct",
       "Rage",
       "Quick-Tempered"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "fortitude",
+        "rank": 4
+      },
+      {
+        "level": 15,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.heavy",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -228,6 +479,78 @@
       "Composition Spells",
       "Muses",
       "Occult Spellcasting"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -269,6 +592,143 @@
       "Cause",
       "Devotion Spells",
       "Shield Block"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "defenses.heavy",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.heavy",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.heavy",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "defenses.light",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "defenses.medium",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "defenses.unarmored",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "spell",
+        "rank": 3
+      }
     ]
   },
   {
@@ -323,6 +783,33 @@
       "Doctrine",
       "First Doctrine",
       "Divine Font"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 11,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      }
     ]
   },
   {
@@ -388,6 +875,78 @@
       "Wildsong",
       "Shield Block",
       "Voice of Nature"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 3,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -428,6 +987,108 @@
       "Shield Block",
       "Humble Strikes",
       "Divine Spark and Ikons"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 15,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -465,6 +1126,138 @@
     "features": [
       "Reactive Strike",
       "Shield Block"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "will",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.advanced",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 7,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 11,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.heavy",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.advanced",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 4
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 4
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 4
+      },
+      {
+        "level": 15,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.heavy",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.unarmored",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "attacks.advanced",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "attacks.martial",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "attacks.simple",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "attacks.unarmed",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 3
+      }
     ]
   },
   {
@@ -524,6 +1317,108 @@
     "features": [
       "Gunslinger's Way",
       "Slinger's Precision"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "will",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.advanced",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "perception",
+        "rank": 4
+      }
     ]
   },
   {
@@ -583,6 +1478,98 @@
       "Explode",
       "Overdrive",
       "Innovation"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -646,6 +1633,78 @@
       "Methodology",
       "Devise a Stratagem",
       "Strategic Strike"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 3
+      }
     ]
   },
   {
@@ -718,6 +1777,83 @@
       "Kinetic Aura",
       "Kinetic Gate",
       "Impulses"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "will",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "fortitude",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -788,6 +1924,98 @@
       "Spellstrike",
       "Hybrid Study",
       "Conflux Spells"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.unarmored",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "spell",
+        "rank": 3
+      }
     ]
   },
   {
@@ -825,6 +2053,63 @@
     "features": [
       "Flurry of Blows",
       "Powerful Fist"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "defenses.unarmored",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "spell",
+        "rank": 3
+      }
     ]
   },
   {
@@ -909,6 +2194,78 @@
       "Oracular Curse",
       "Revelation Spells",
       "Spell Repertoire"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -982,6 +2339,73 @@
       "Subconscious Mind",
       "Conscious Mind",
       "Spell Repertoire"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -1039,6 +2463,113 @@
     "features": [
       "Hunter's Edge",
       "Hunt Prey"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "will",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 7,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 15,
+        "target": "perception",
+        "rank": 4
+      },
+      {
+        "level": 15,
+        "target": "reflex",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -1101,6 +2632,83 @@
       "Rogue's Racket",
       "Sneak Attack",
       "Surprise Attack"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 7,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 7,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "perception",
+        "rank": 4
+      },
+      {
+        "level": 13,
+        "target": "reflex",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -1193,6 +2801,68 @@
       "Sorcerer Spellcasting",
       "Bloodline",
       "Bloodline Spells"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -1285,6 +2955,78 @@
       "Summoner Spellcasting",
       "Spell Repertoire",
       "Link Spells"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -1354,6 +3096,88 @@
       "Confident Finisher",
       "Swashbuckler's Style",
       "Stylish Combatant"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "reflex",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "reflex",
+        "rank": 4
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -1445,6 +3269,103 @@
       "Esoteric Lore",
       "Implement's Empowerment",
       "Exploit Vulnerability"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 3,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 9,
+        "target": "classDC",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "perception",
+        "rank": 3
+      },
+      {
+        "level": 11,
+        "target": "defenses.light",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.medium",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "attacks.martial",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.simple",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "attacks.unarmed",
+        "rank": 3
+      },
+      {
+        "level": 13,
+        "target": "will",
+        "rank": 4
+      },
+      {
+        "level": 15,
+        "target": "fortitude",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "classDC",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.light",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.medium",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "defenses.unarmored",
+        "rank": 3
+      }
     ]
   },
   {
@@ -1521,6 +3442,68 @@
       "Familiar (Witch)",
       "Hexes",
       "Patron"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   },
   {
@@ -1584,6 +3567,68 @@
       "Arcane School",
       "Arcane Bond",
       "Arcane Thesis"
+    ],
+    "proficiencyIncreases": [
+      {
+        "level": 1,
+        "target": "spell",
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "target": "reflex",
+        "rank": 2
+      },
+      {
+        "level": 7,
+        "target": "spell",
+        "rank": 2
+      },
+      {
+        "level": 9,
+        "target": "fortitude",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.martial",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.simple",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "attacks.unarmed",
+        "rank": 2
+      },
+      {
+        "level": 11,
+        "target": "perception",
+        "rank": 2
+      },
+      {
+        "level": 13,
+        "target": "defenses.unarmored",
+        "rank": 2
+      },
+      {
+        "level": 15,
+        "target": "spell",
+        "rank": 3
+      },
+      {
+        "level": 17,
+        "target": "will",
+        "rank": 3
+      },
+      {
+        "level": 19,
+        "target": "spell",
+        "rank": 4
+      }
     ]
   }
 ]
