@@ -516,7 +516,9 @@ export async function searchRules(input: {
         .select('id, category, slug, name, data')
         .eq('category', cfg.gamedataCategory)
     : supabase.from(cfg.table).select('*');
-  if (q.length > 0) builder = builder.ilike('name', `%${q}%`);
+  // Escape LIKE wildcards (% _ \) in the user's query so they match literally
+  // instead of acting as pattern metacharacters.
+  if (q.length > 0) builder = builder.ilike('name', `%${q.replace(/[\\%_]/g, '\\$&')}%`);
   // gamedata keeps `level` inside the jsonb payload, so we can only order by
   // the top-level name column there; typed tables can also sort by level.
   if (cfg.hasLevel && !cfg.gamedataCategory) builder = builder.order('level', { ascending: true });

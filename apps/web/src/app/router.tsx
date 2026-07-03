@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { RouteError } from '@/components/RouteError';
 import { RequireAuth } from '@/components/RequireAuth';
 import { LandingPage } from '@/routes/LandingPage';
 import { AboutPage } from '@/routes/AboutPage';
@@ -16,6 +17,7 @@ import { NotFoundPage } from '@/routes/NotFoundPage';
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <LandingPage /> },
       { path: 'about', element: <AboutPage /> },

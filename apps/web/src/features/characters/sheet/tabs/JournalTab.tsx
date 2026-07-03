@@ -55,7 +55,7 @@ export function JournalTab({
         ) : (
           <ol className="space-y-2">
             {[...xpLog].sort(byNewestFirst).map((entry, i) => (
-              <XpLogRow key={i} entry={entry} />
+              <XpLogRow key={`${entry.at ?? ''}:${entry.amount ?? ''}:${i}`} entry={entry} />
             ))}
           </ol>
         )}
