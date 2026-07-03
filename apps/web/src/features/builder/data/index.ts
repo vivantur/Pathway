@@ -9,7 +9,7 @@ import type {
   RecommendationSet,
   Skill,
   Spell,
-} from './schema';
+} from '@pathway/core';
 
 import ancestries from './ancestries.json';
 import versatileHeritages from './versatile-heritages.json';
@@ -21,7 +21,36 @@ import items from './items.json';
 import spells from './spells.json';
 import recommendations from './recommendations.json';
 
-export * from './schema';
+// The content schema now lives in @pathway/core; re-export its surface so
+// existing `from '@/features/builder/data'` type imports keep resolving.
+export type {
+  AbilityKey,
+  ProficiencyRank,
+  Size,
+  Boost,
+  Heritage,
+  Ancestry,
+  Background,
+  ClassInitialProficiencies,
+  Subclass,
+  CharacterClass,
+  Skill,
+  FeatType,
+  Feat,
+  Recommendation,
+  RecommendationSet,
+  WeaponCategory,
+  ArmorCategory,
+  DamageType,
+  Weapon,
+  Armor,
+  Shield,
+  Gear,
+  Item,
+  Spell,
+  Dataset,
+} from '@pathway/core';
+export { ABILITY_KEYS, ABILITY_NAMES } from '@pathway/core';
 
 const ATTRIBUTION =
   'Pathfinder Second Edition content © Paizo Inc., used under the Community Use Policy / ORC License. ' +

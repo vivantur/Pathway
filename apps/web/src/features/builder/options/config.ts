@@ -70,14 +70,6 @@ export const OPTION_GROUPS: OptionGroup[] = [
   },
 ];
 
-/** Option ids the rules engine reads (kept here so string ids stay canonical). */
-export const OPT = {
-  freeArchetype: 'freeArchetype',
-  ancestryParagon: 'ancestryParagon',
-  proficiencyWithoutLevel: 'proficiencyWithoutLevel',
-  gradualAbilityBoosts: 'gradualAbilityBoosts',
-  automaticBonusProgression: 'automaticBonusProgression',
-  legacyStamina: 'legacyStamina',
-  autosave: 'autosave',
-  disableAllAutosaving: 'disableAllAutosaving',
-} as const;
+// The canonical option ids the rules engine reads live in @pathway/core; the
+// OPTION_GROUPS above are the app's presentation of them.
+export { OPT } from '@pathway/core';

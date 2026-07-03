@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { CORE_PLACEHOLDER } from './index';
+import * as core from './index';
 
-// Placeholder test proving the Vitest harness runs. Replace with real
-// derived-stat engine tests (written from worked examples) as core is built.
-describe('@pathway/core scaffold', () => {
-  it('is wired up', () => {
-    expect(CORE_PLACEHOLDER).toBe(true);
+// Smoke test: the public surface the apps depend on is exported. The real rules
+// coverage lives in engine.test.ts (worked examples).
+describe('@pathway/core public API', () => {
+  it('exports the schema, character model, and engine', () => {
+    expect(core.ABILITY_KEYS).toHaveLength(6);
+    expect(typeof core.datasetSchema.parse).toBe('function');
+    expect(typeof core.emptyBuilderState).toBe('function');
+    expect(typeof core.deriveCharacter).toBe('function');
+    expect(typeof core.createEngine).toBe('function');
+    expect(core.OPT.proficiencyWithoutLevel).toBe('proficiencyWithoutLevel');
   });
 });

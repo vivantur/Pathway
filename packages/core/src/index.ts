@@ -5,8 +5,26 @@
 // The bot (apps/bot) and the web app (apps/web) both consume it so they can
 // never disagree on a rules value. See root CLAUDE.md, "Architecture".
 //
-// TODO (kickstart Prompts 1–2): content schemas + derived-stat engine, each
-// implemented from pasted rules text and locked by tests against human-verified
-// worked examples. Nothing rules-shaped should be computed outside this package.
+// Every function that needs game content takes a `Dataset` argument, so the app
+// holding the bundled JSON passes it in; `createEngine(dataset)` binds it once.
 
-export const CORE_PLACEHOLDER = true as const;
+// Content schema (Zod schemas + inferred types) + ability constants.
+export * from './schema';
+
+// The character model — the player's raw choices.
+export * from './character';
+
+// Canonical option ids the engine reads.
+export * from './options';
+
+// Subclass rules (traditions, racket ability, focus points, armor).
+export * from './subclass';
+
+// The derived-stat engine (dataset-parameterized).
+export * from './engine';
+
+// Spellcasting math for full casters.
+export * from './spellcasting';
+
+// createEngine(dataset): bind the engine to one dataset.
+export * from './factory';
