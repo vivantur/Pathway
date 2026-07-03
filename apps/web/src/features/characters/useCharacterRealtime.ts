@@ -72,7 +72,10 @@ export function useCharacterRealtime(input: {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [enabled, characterId, charKey, user, qc]);
+    // Depend on user?.id, NOT the whole `user` object — Supabase hands back a
+    // new user reference on every token refresh, which would otherwise tear down
+    // and re-create the Realtime channel (dropping events) roughly hourly.
+  }, [enabled, characterId, charKey, user?.id, qc]);
 
   return { status, lastUpdateAt };
 }

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { safeHttpUrl } from "@/lib/safeUrl";
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { useSpellsByNames } from '@/features/characters/useSpellsByNames';
 import { useSpellSearch } from '@/features/characters/useSpellSearch';
@@ -598,7 +599,7 @@ function SpellDetailCard({ name, row }: { name: string; row?: SpellRow }) {
         </div>
         {row.aon_url && (
           <a
-            href={row.aon_url}
+            href={safeHttpUrl(row.aon_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"

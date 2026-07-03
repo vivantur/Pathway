@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { safeHttpUrl } from "@/lib/safeUrl";
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/features/characters/errorMessage';
@@ -121,7 +122,7 @@ function AncestryOverview({ ancestry }: { ancestry: AncestryRow }) {
         )}
         {ancestry.aon_url && (
           <a
-            href={ancestry.aon_url}
+            href={safeHttpUrl(ancestry.aon_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded border border-gold/25 px-2 py-0.5 text-[0.65rem] uppercase tracking-widest text-arcane hover:border-arcane/60 hover:text-arcane-soft"
@@ -319,7 +320,7 @@ function FeatCard({ feat }: { feat: FeatRow }) {
         </div>
         {feat.aon_url && (
           <a
-            href={feat.aon_url}
+            href={safeHttpUrl(feat.aon_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"

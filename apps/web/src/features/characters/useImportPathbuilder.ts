@@ -24,8 +24,10 @@ export function useImportPathbuilder() {
       });
     },
     onSuccess: () => {
+      // Only the vault LIST needs refreshing; a brand-new character has no
+      // cached ['character', …] detail entry. Invalidating ['character'] would
+      // prefix-match and needlessly refetch every other open character sheet.
       qc.invalidateQueries({ queryKey: ['characters'] });
-      qc.invalidateQueries({ queryKey: ['character'] });
     },
   });
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { safeHttpUrl } from "@/lib/safeUrl";
 import { useState, type ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
@@ -347,7 +348,7 @@ function CharacterTile({
         {/* Art fills the whole tile; missing art falls back to initials */}
         {showArt && character.art ? (
           <img
-            src={character.art}
+            src={safeHttpUrl(character.art)}
             alt={character.name}
             loading="lazy"
             referrerPolicy="no-referrer"

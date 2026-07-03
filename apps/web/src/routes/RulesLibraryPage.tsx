@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeHttpUrl } from "@/lib/safeUrl";
 import { useSearchParams } from 'react-router-dom';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
@@ -247,7 +248,7 @@ function RuleCard({ entry }: { entry: RuleEntry }) {
 
           {entry.aonUrl && (
             <a
-              href={entry.aonUrl}
+              href={safeHttpUrl(entry.aonUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 inline-block text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"
@@ -266,7 +267,7 @@ function StatBlock({ block }: { block: MonsterStatBlock }) {
     <div className="mb-3 space-y-3 rounded-md border border-gold/25 bg-midnight-900/50 p-4">
       {block.imageUrl && (
         <img
-          src={block.imageUrl}
+          src={safeHttpUrl(block.imageUrl)}
           alt=""
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -388,7 +389,7 @@ function DeityBlockView({ block }: { block: DeityBlock }) {
     <div className="mb-3 space-y-3 rounded-md border border-gold/25 bg-midnight-900/50 p-4">
       {block.imageUrl && (
         <img
-          src={block.imageUrl}
+          src={safeHttpUrl(block.imageUrl)}
           alt=""
           loading="lazy"
           referrerPolicy="no-referrer"

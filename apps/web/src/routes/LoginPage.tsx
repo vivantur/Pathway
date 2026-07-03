@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { ConfigNotice } from '@/components/ConfigNotice';
 import { useAuth } from '@/features/auth/useAuth';
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 
 export function LoginPage() {
   const { user, signInWithEmail, signInWithDiscord } = useAuth();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,10 @@ export function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to="/vault" replace />;
+    // Return the user to the page they were sent here from (RequireAuth passes
+    // it in location.state.from), falling back to the vault.
+    const from = (location.state as { from?: string } | null)?.from;
+    return <Navigate to={from ?? '/vault'} replace />;
   }
 
   async function onEmailSubmit(e: FormEvent) {

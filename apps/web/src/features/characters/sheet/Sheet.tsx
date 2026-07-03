@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { safeHttpUrl } from "@/lib/safeUrl";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { errorMessage } from '@/features/characters/errorMessage';
@@ -1000,7 +1001,7 @@ function Portrait({
         <div className="absolute inset-0 overflow-hidden rounded-full border-2 border-gold/40 bg-gradient-to-br from-midnight-700 to-midnight-900 shadow-gilded">
           {art ? (
             <img
-              src={art}
+              src={safeHttpUrl(art)}
               alt={name ?? 'Character portrait'}
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"

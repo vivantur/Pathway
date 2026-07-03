@@ -29,6 +29,24 @@ const FULL_COLUMNS = [
   'updated_at',
 ].join(', ');
 
+// Columns safe to expose over a PUBLIC share link. Deliberately EXCLUDES
+// `user_id` (owner identity), `notes` (private bio), `pathbuilder_id`, `status`,
+// and `overlay` — the overlay carries bot state including the XP log with
+// Discord IDs. A public viewer gets the character showcase, not the owner's
+// private/live data. (Ideal long-term: a server-side view/RPC so the column
+// filter is enforced by the database, not just this query string.)
+const PUBLIC_SHARE_COLUMNS = [
+  'id', 'char_key', 'name', 'source',
+  'pathbuilder_data',
+  'ancestry_name', 'heritage_name', 'class_name', 'background_name', 'level',
+  'current_hp', 'hero_points', 'dying', 'wounded', 'experience',
+  'currency', 'art',
+  'is_public', 'public_share_id',
+  'updated_at',
+].join(', ');
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Fetch the signed-in user's characters.
  *
@@ -585,10 +603,13 @@ export async function updateCharacterOverlay(input: {
 export async function fetchPublicCharacterByShareId(
   shareId: string,
 ): Promise<CharacterRow | null> {
+  // A malformed share id (hand-typed /share/<garbage>) isn't a valid UUID; short-
+  // circuit to a clean "not shared" null instead of a Postgres 22P02 error panel.
+  if (!UUID_RE.test(shareId)) return null;
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('characters')
-    .select(FULL_COLUMNS)
+    .select(PUBLIC_SHARE_COLUMNS) // NOT FULL_COLUMNS — never ship private columns to anon viewers.
     .eq('public_share_id', shareId)
     .eq('is_public', true)
     .maybeSingle();
