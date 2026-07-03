@@ -187,11 +187,16 @@ In `src/commands/` there are some `.js` files at top level (not folders) that ar
 
 ```
 commands/
-  calendar-cmd.js, combatV2.js, condition.js, deploy-downtime.js,
-  downtime.js, encounters.js, weather-cmd.js
+  calendar-cmd.js, downtime.js, encounters.js, weather-cmd.js
 ```
 
 These were already "extracted" in some form pre-Phase-3 but don't conform to the new feature-folder shape. **Don't refactor these speculatively** — only touch them when extracting a slash command that depends on them. For example, when extracting `/calendar` you'll want to fold `calendar-cmd.js` into `commands/calendar/`.
+
+> Removed in cleanup: `combatV2.js`, `condition.js` (superseded by the wired
+> `commands/condition/` folder), and `deploy-downtime.js` (a one-off registration
+> script, superseded by `deploy.js`) were orphaned — never `require`d from any
+> entry point — and have been deleted. `src/rules/covertspells.js` (a broken,
+> unreferenced data-scraping script) was removed too.
 
 ### Outstanding helper mining candidates (called out in CLAUDE.md)
 
@@ -288,7 +293,7 @@ The reference data (bestiary, spells, items, gamedata) lives in Supabase tables 
 ### `.env` vs `.env.example`
 `.env.example` is committed and shows the required variable names. `.env` carries real secrets and is gitignored. Viv will need her own `.env` with:
 - `TOKEN` or `DISCORD_TOKEN`
-- `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` (service key bypasses RLS — never expose to clients)
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (service key bypasses RLS — never expose to clients)
 - `CLIENT_ID` (Discord application ID)
 - `BOT_OWNER_ID`, `DEV_GUILD_ID` (for `npm run deploy:guild`)
 

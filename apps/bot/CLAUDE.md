@@ -229,7 +229,7 @@ Reads come from the in-memory cache (synchronous, fast). Writes go through state
 ```
 TOKEN or DISCORD_TOKEN   — Discord bot token
 SUPABASE_URL             — Supabase project URL
-SUPABASE_SERVICE_KEY     — Service role key (bypasses RLS — never expose to clients)
+SUPABASE_SERVICE_ROLE_KEY — Service role key (bypasses RLS — never expose to clients)
 CLIENT_ID                — Discord application ID
 BOT_OWNER_ID             — Discord user ID with admin commands
 DEV_GUILD_ID             — Guild for `npm run deploy:guild` testing
