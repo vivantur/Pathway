@@ -15,6 +15,7 @@ export {
   gainsForLevel,
   choiceSlots,
   unmetAtLevel,
+  isDedication,
 } from '@pathway/core';
 export type {
   AbilityScores,
@@ -33,3 +34,4 @@ export const chosenFeatIds = engine.chosenFeatIds;
 export const freeSkillCount = engine.freeSkillCount;
 export const deriveCharacter = engine.deriveCharacter;
 export const validate = engine.validate;
+export const archetypeFeatOptions = engine.archetypeFeatOptions;

@@ -17,6 +17,7 @@ import {
   type Boost,
   type CharacterClass,
   type Dataset,
+  type Feat,
   type ProficiencyRank,
   type ProficiencyTarget,
   type Shield,
@@ -278,6 +279,28 @@ export function chosenFeatIds(dataset: Dataset, state: BuilderState): Set<string
     add(g.archetypeFeatId);
   }
   return ids;
+}
+
+/** A dedication feat begins an archetype (PF2e: it carries the `dedication` trait). */
+export function isDedication(feat: Feat): boolean {
+  return feat.traits.includes('dedication');
+}
+
+/**
+ * Archetype feats a character may take at `level`. Free Archetype: you must
+ * begin an archetype with its Dedication feat, so until any dedication has been
+ * chosen only dedications are offered; afterwards all archetype feats of an
+ * appropriate level are available. (The finer "two archetype feats before a new
+ * dedication" rule is not yet enforced.)
+ */
+export function archetypeFeatOptions(dataset: Dataset, state: BuilderState, level: number): Feat[] {
+  const chosen = chosenFeatIds(dataset, state);
+  const hasDedication = [...chosen]
+    .map((id) => dataset.feats.find((f) => f.id === id))
+    .some((f): f is Feat => !!f && f.type === 'archetype' && isDedication(f));
+  return dataset.feats.filter(
+    (f) => f.type === 'archetype' && f.level <= level && (hasDedication || isDedication(f)),
+  );
 }
 
 /** Total number of free skills the player may pick (class count + Int bonus). */
@@ -544,8 +567,9 @@ export function unmetAtLevel(state: BuilderState, level: number): string[] {
   if (slots.skillFeat && !gains?.skillFeatId) out.push('choose a skill feat');
   if (slots.generalFeat && !gains?.generalFeatId) out.push('choose a general feat');
   if (slots.skillIncrease && !gains?.skillIncreases.length) out.push('choose a skill to increase');
-  // Archetype feats are optional in validation until archetype content exists,
-  // so Free Archetype never blocks completing a build.
+  // Archetype feats are intentionally optional in validation: the picker offers
+  // real archetype content (dedications first, see archetypeFeatOptions), but a
+  // partially-planned Free Archetype build shouldn't be blocked from saving.
   if (slots.boostCount > 0) {
     const boosts = (gains?.boosts ?? []).filter(Boolean);
     if (boosts.length < slots.boostCount)

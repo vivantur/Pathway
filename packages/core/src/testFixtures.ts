@@ -118,7 +118,10 @@ export const testDataset: Dataset = {
     { id: 'intimidation', name: 'Intimidation', ability: 'cha' },
     { id: 'medicine', name: 'Medicine', ability: 'wis' },
   ],
-  feats: [],
+  feats: [
+    { id: 'acrobat-dedication', name: 'Acrobat Dedication', level: 2, type: 'archetype', traits: ['archetype', 'dedication'], source: 'test', description: '' },
+    { id: 'quick-jump', name: 'Quick Jump', level: 4, type: 'archetype', traits: ['archetype'], source: 'test', description: '' },
+  ],
   items: [
     {
       id: 'longsword',

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   abilityModifier,
+  archetypeFeatOptions,
   classProficiency,
   computeAbilityScores,
   createEngine,
@@ -301,6 +302,20 @@ describe('partial casters (magus, summoner)', () => {
     expect(stats.ability).toBe('int');
     // Int here: 10 +2(ancestry) +2(bg) +2(free) = 16 → mod 3; expert pb(2,9)=13.
     expect(stats.dc).toBe(26); // 10 + 13 + 3
+  });
+});
+
+describe('Free Archetype — dedication first', () => {
+  it('offers only dedications until one is taken, then opens the rest', () => {
+    const before = archetypeFeatOptions(testDataset, emptyBuilderState(), 4);
+    expect(before.map((f) => f.id)).toEqual(['acrobat-dedication']); // Quick Jump gated
+
+    const withDedication = {
+      ...emptyBuilderState(),
+      progression: { 2: { skillIncreases: [], boosts: [], archetypeFeatId: 'acrobat-dedication' } },
+    };
+    const after = archetypeFeatOptions(testDataset, withDedication, 4).map((f) => f.id).sort();
+    expect(after).toEqual(['acrobat-dedication', 'quick-jump']);
   });
 });
 

@@ -10,6 +10,7 @@
 import type { Dataset } from './schema';
 import type { BuilderState } from './character';
 import {
+  archetypeFeatOptions,
   chosenFeatIds,
   computeAbilityScores,
   deriveCharacter,
@@ -36,6 +37,7 @@ export interface Engine {
   deriveCharacter(state: BuilderState): ReturnType<typeof deriveCharacter>;
   validate(state: BuilderState): ReturnType<typeof validate>;
   unmetAtLevel(state: BuilderState, level: number): ReturnType<typeof unmetAtLevel>;
+  archetypeFeatOptions(state: BuilderState, level: number): ReturnType<typeof archetypeFeatOptions>;
   spellStats(state: BuilderState): ReturnType<typeof spellStats>;
   cantripsFor(tradition: Tradition): ReturnType<typeof cantripsFor>;
   spellsForRank(tradition: Tradition, rank: number): ReturnType<typeof spellsForRank>;
@@ -52,6 +54,7 @@ export function createEngine(dataset: Dataset): Engine {
     deriveCharacter: (state) => deriveCharacter(dataset, state),
     validate: (state) => validate(dataset, state),
     unmetAtLevel: (state, level) => unmetAtLevel(state, level),
+    archetypeFeatOptions: (state, level) => archetypeFeatOptions(dataset, state, level),
     spellStats: (state) => spellStats(dataset, state),
     cantripsFor: (tradition) => cantripsFor(dataset, tradition),
     spellsForRank: (tradition, rank) => spellsForRank(dataset, tradition, rank),

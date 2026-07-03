@@ -11,7 +11,14 @@ import {
   type AbilityKey,
 } from '@/features/builder/data';
 import { MAX_LEVEL, useBuilder } from '../store';
-import { chosenFeatIds, gainsForLevel, skillRankMap, unmetAtLevel, RANK_LABEL } from '../rules';
+import {
+  archetypeFeatOptions,
+  chosenFeatIds,
+  gainsForLevel,
+  skillRankMap,
+  unmetAtLevel,
+  RANK_LABEL,
+} from '../rules';
 import { emptyLevelGains } from '../types';
 import { FeatPicker } from '../FeatPicker';
 
@@ -46,7 +53,9 @@ function LevelCard({ level }: { level: number }) {
   const generalFeats = feats.filter(
     (f) => (f.type === 'general' || f.type === 'skill') && f.level <= level,
   );
-  const archetypeFeats = feats.filter((f) => f.type === 'archetype' && f.level <= level);
+  // Free Archetype: only Dedication feats until you've taken one (you must begin
+  // an archetype with its Dedication), then the archetype's other feats open up.
+  const archetypeFeats = archetypeFeatOptions(state, level);
 
   const boostCount = slots.boostCount;
   const boosts =
