@@ -20,6 +20,9 @@ export function useUpdateCharacterOverlay(charKey: string) {
   const key = characterKey(user?.id, charKey);
 
   return useMutation<void, Error, CharacterOverlay, { prev?: CharacterRow }>({
+    // Serialize overlay writes to the same character so concurrent focus/
+    // condition/counter edits apply in order rather than clobbering each other.
+    scope: { id: `char-overlay:${key.join(':')}` },
     mutationFn: (overlay) => {
       if (!user) throw new Error('You need to be signed in.');
       return updateCharacterOverlay({ userId: user.id, charKey, overlay });

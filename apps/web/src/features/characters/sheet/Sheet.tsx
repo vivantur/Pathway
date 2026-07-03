@@ -1148,7 +1148,7 @@ function StatRow({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       <HpCard current={character.current_hp} max={max ?? null} edit={edit} />
-      <AcCard build={build} edit={edit} />
+      <AcCard key={character.id} build={build} edit={edit} />
       <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude'))} />
       <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
       <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />

@@ -329,8 +329,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     .filter((e) => e.equipped)
     .map((e) => findItem(e.itemId))
     .filter((i): i is NonNullable<typeof i> => Boolean(i));
-  const armor = equipped.find((i): i is Armor => i.kind === 'armor');
-  const shield = equipped.find((i): i is Shield => i.kind === 'shield');
+  // Nothing enforces one-armor/one-shield at equip time, so if the player has
+  // several equipped, pick the highest-AC one deterministically instead of
+  // relying on inventory order (which produced a silently wrong, order-dependent AC).
+  const bestByAc = <T extends { acBonus?: number }>(list: T[]): T | undefined =>
+    list.length ? list.reduce((b, i) => ((i.acBonus ?? 0) > (b.acBonus ?? 0) ? i : b)) : undefined;
+  const armor = bestByAc(equipped.filter((i): i is Armor => i.kind === 'armor'));
+  const shield = bestByAc(equipped.filter((i): i is Shield => i.kind === 'shield'));
   const equippedWeapons = equipped.filter((i): i is Weapon => i.kind === 'weapon');
 
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
@@ -470,6 +475,11 @@ export function validate(state: BuilderState): string[] {
   const freePicks = freeSkillCount(state);
   const chosen = state.skillChoices.length;
   if (chosen < freePicks) problems.push(`Choose ${freePicks - chosen} more trained skill(s).`);
+  // Also flag TOO MANY — e.g. picked at Int +3 then a boost moved off Int, so the
+  // free-skill count shrank but the extra picks weren't trimmed. Without this the
+  // build validates as complete and exports an illegal extra trained skill.
+  if (chosen > freePicks)
+    problems.push(`Deselect ${chosen - freePicks} trained skill(s) — more than your free skills allow (an Intelligence change likely reduced them).`);
 
   for (let lvl = 2; lvl <= (state.level || 1); lvl += 1) {
     for (const msg of unmetAtLevel(state, lvl)) problems.push(`Level ${lvl}: ${msg}`);

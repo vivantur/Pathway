@@ -48,6 +48,10 @@ export function EquipmentStep() {
   }, [items, cat, query]);
 
   const buy = (item: Item) => {
+    // Block unaffordable purchases: setMoney clamps at 0, so without this an
+    // overspend would grant the item "free" and a later sell would refund from
+    // the clamped baseline — minting gp from nothing.
+    if (state.money < item.price) return;
     addItem(item.id);
     setMoney(state.money - item.price);
   };

@@ -19,6 +19,9 @@ export function useUpdateCharacterState(charKey: string) {
   const key = characterKey(user?.id, charKey);
 
   return useMutation<void, Error, CharacterStatePatch, { prev?: CharacterRow }>({
+    // Serialize writes to the same character so overlapping optimistic updates
+    // apply/roll back in order instead of clobbering each other's cache.
+    scope: { id: `char-state:${key.join(':')}` },
     mutationFn: (patch) => {
       if (!user) throw new Error('You need to be signed in.');
       return updateCharacterState({ userId: user.id, charKey, patch });
