@@ -34,3 +34,4 @@ supabase/.temp/
 
 # Coverage
 coverage/
+package-lock.json
