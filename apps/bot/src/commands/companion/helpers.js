@@ -254,10 +254,38 @@ function importedCompanionToTrackedCompanion(parsed, { displayName, form } = {})
 }
 
 
+// Which kind of companion a tracked row is. The website writes
+// custom_stats.kind ('animal' | 'mount' | 'familiar' | 'eidolon' | 'custom');
+// rows created before that field exists are animal-companion-shaped.
+function companionKind(comp) {
+  return comp.webStats?.kind ?? (comp.baseType === 'custom' ? 'custom' : 'animal');
+}
+
+// "touch-telepathy" → "Touch Telepathy" (display for web-stored ability slugs).
+function titleCaseSlug(slug) {
+  return String(slug ?? '')
+    .split('-')
+    .map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+}
+
 // Scale a companion's combat stats by character level + form.
 function scaleCompanion(comp, char) {
   const lvl = char.level ?? 1;
   const form = comp.form ?? 'young';
+
+  // Familiars don't scale like animal companions: HP is 5 × the master's
+  // level, Speed 25 feet, and AC/saves use the master's own modifiers. The
+  // sheet embed renders those as "as master"; only maxHp matters here (it
+  // seeds currentHp).
+  if (companionKind(comp) === 'familiar') {
+    return {
+      maxHp: 5 * lvl, ac: null, attackBonus: null, damageDice: null, damageType: '',
+      damageBonus: 0, saves: {}, form, size: 'Tiny', speed: '25 feet',
+      primaryAttack: null, abilities: {}, attacks: [], perception: null,
+      overriddenFields: [], kind: 'familiar',
+    };
+  }
   let baseHp, abilities, attacks, size, speed;
   if (comp.baseType === 'custom' && comp.customStats) {
     // Use a per-level HP base (default 6, or customStats.hpPerLevel if set).
@@ -362,12 +390,67 @@ function scaleCompanion(comp, char) {
   return result;
 }
 
+// Familiar sheet — the website stores the chosen abilities as slugs in
+// custom_stats.familiar.abilities; stats follow the familiar rules (HP 5×level,
+// Speed 25 ft, AC/saves as the master's).
+function buildFamiliarSheetEmbed(comp, scaled, char, charEntry, isActive) {
+  const embed = new EmbedBuilder()
+    .setColor(isActive ? 0xf39c12 : 0x9b59b6)
+    .setTitle(`🦉 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
+    .setDescription(`*${char.name}'s familiar*`);
+  if (comp.art) embed.setThumbnail(comp.art);
+  else if (charEntry.art) embed.setThumbnail(charEntry.art);
+
+  const hp = comp.currentHp ?? scaled.maxHp;
+  embed.addFields({
+    name: '🛡️ Stats',
+    value: `**HP** ${hp}/${scaled.maxHp} · **Speed** 25 feet · **AC & saves** as ${char.name}'s`,
+    inline: false,
+  });
+
+  const slugs = comp.webStats?.familiar?.abilities ?? [];
+  embed.addFields({
+    name: `✨ Familiar Abilities (${slugs.length})`,
+    value: slugs.length
+      ? slugs.map(s => `• ${titleCaseSlug(s)}`).join('\n').slice(0, 1020)
+      : '*None selected — pick them on the website or with your daily preparations.*',
+    inline: false,
+  });
+
+  if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
+  embed.setFooter({ text: `Character: ${char.name} · managed on the Pathway website` });
+  return embed;
+}
+
+// Eidolon sheet — the website stores the subtype in custom_stats.eidolon.type.
+// Full eidolon stat scaling isn't modeled yet; show identity + notes.
+function buildEidolonSheetEmbed(comp, char, charEntry, isActive) {
+  const subtype = titleCaseSlug(comp.webStats?.eidolon?.type ?? '') || 'Eidolon';
+  const embed = new EmbedBuilder()
+    .setColor(isActive ? 0xf39c12 : 0x1abc9c)
+    .setTitle(`👁️ ${comp.displayName}${isActive ? ' ⭐' : ''}`)
+    .setDescription(`*${char.name}'s ${subtype} eidolon — shares ${char.name}'s level (${char.level ?? 1}) and actions*`);
+  if (comp.art) embed.setThumbnail(comp.art);
+  else if (charEntry.art) embed.setThumbnail(charEntry.art);
+  if (comp.currentHp != null) {
+    embed.addFields({ name: '🛡️ HP', value: `${comp.currentHp}`, inline: false });
+  }
+  if (comp.notes) embed.addFields({ name: '📝 Notes', value: comp.notes.slice(0, 1020), inline: false });
+  embed.setFooter({ text: `Character: ${char.name} · managed on the Pathway website` });
+  return embed;
+}
+
 function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
+  const kind = companionKind(comp);
+  if (kind === 'familiar') return buildFamiliarSheetEmbed(comp, scaled, char, charEntry, isActive);
+  if (kind === 'eidolon') return buildEidolonSheetEmbed(comp, char, charEntry, isActive);
+
   const customLabel = comp.customStats?.fromBestiary ?? comp.customStats?.sourceName ?? 'custom';
+  const kindWord = kind === 'mount' ? 'mount' : 'companion';
   const embed = new EmbedBuilder()
     .setColor(isActive ? 0xf39c12 : 0x7289DA)
     .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
-    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? customLabel : comp.baseType} companion*`);
+    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? customLabel : comp.baseType} ${kindWord}*`);
 
   // Show portrait if set. Prefer companion.art, fall back to character art.
   if (comp.art) embed.setThumbnail(comp.art);
@@ -434,6 +517,7 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
 
 module.exports = {
   findCompanion,
+  companionKind,
   buildCompanionEmbed,
   buildCompanionListEmbed,
   importedCompanionToTrackedCompanion,

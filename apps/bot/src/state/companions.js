@@ -99,21 +99,25 @@ function _applyEvent(payload, charactersCache) {
       return;
     }
 
-    // INSERT or UPDATE — splice in/replace.
+    // INSERT or UPDATE — splice in/replace. Envelope keys the bot doesn't
+    // manage (kind, familiar, eidolon, custom, …) are web-managed: keep them
+    // in webStats so the bot's next upsert round-trips them intact.
     if (!charEntry.companions) charEntry.companions = {};
     const cs = row.custom_stats ?? {};
+    const { customStats, art, skills, customAbilities, customAttacks, overrides, ...webStats } = cs;
     charEntry.companions[row.comp_key] = {
       displayName:     row.display_name,
       baseType:        row.base_type,
       form:            row.form ?? 'young',
       notes:           row.notes ?? '',
       currentHp:       row.current_hp ?? null,
-      customStats:     cs.customStats     ?? null,
-      art:             cs.art             ?? null,
-      skills:          cs.skills          ?? null,
-      customAbilities: cs.customAbilities ?? null,
-      customAttacks:   cs.customAttacks   ?? null,
-      overrides:       cs.overrides       ?? null,
+      customStats:     customStats     ?? null,
+      art:             art             ?? null,
+      skills:          skills          ?? null,
+      customAbilities: customAbilities ?? null,
+      customAttacks:   customAttacks   ?? null,
+      overrides:       overrides       ?? null,
+      webStats:        Object.keys(webStats).length ? webStats : null,
     };
     if (row.is_active) charEntry.activeCompanion = row.comp_key;
     else if (charEntry.activeCompanion === row.comp_key) delete charEntry.activeCompanion;
@@ -148,6 +152,9 @@ async function syncCompanionToSupabase(discordId, charKey, compKey, comp, isActi
       current_hp:   comp.currentHp ?? comp.hp ?? null,
       is_active:    !!isActive,
       custom_stats: {
+        // Web-managed keys first (kind, familiar, eidolon, custom, …) so the
+        // bot never clobbers what the website stored; bot-owned keys follow.
+        ...(comp.webStats ?? {}),
         customStats:     comp.customStats     ?? null,
         art:             comp.art             ?? null,
         skills:          comp.skills          ?? null,
@@ -222,6 +229,7 @@ async function syncAllCompanionsToSupabase(characters) {
             current_hp:   comp.currentHp ?? comp.hp ?? null,
             is_active:    charEntry.activeCompanion === compKey,
             custom_stats: {
+              ...(comp.webStats ?? {}),
               customStats:     comp.customStats     ?? null,
               art:             comp.art             ?? null,
               skills:          comp.skills          ?? null,

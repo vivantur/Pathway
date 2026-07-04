@@ -522,18 +522,23 @@ async function restore(sb, { bySupabaseId, userRows }) {
     if (!charEntry) continue;
     if (!charEntry.companions) charEntry.companions = {};
     const cs = row.custom_stats ?? {};
+    // Web-managed envelope keys (kind, familiar, eidolon, custom, …) ride along
+    // in webStats so the bot's next write doesn't drop them (the website is the
+    // other writer of this envelope — see state/companions sync helpers).
+    const { customStats, art, skills, customAbilities, customAttacks, overrides, ...webStats } = cs;
     charEntry.companions[row.comp_key] = {
       displayName:     row.display_name,
       baseType:        row.base_type,
       form:            row.form ?? 'young',
       notes:           row.notes ?? '',
       currentHp:       row.current_hp ?? null,
-      customStats:     cs.customStats     ?? null,
-      art:             cs.art             ?? null,
-      skills:          cs.skills          ?? null,
-      customAbilities: cs.customAbilities ?? null,
-      customAttacks:   cs.customAttacks   ?? null,
-      overrides:       cs.overrides       ?? null,
+      customStats:     customStats     ?? null,
+      art:             art             ?? null,
+      skills:          skills          ?? null,
+      customAbilities: customAbilities ?? null,
+      customAttacks:   customAttacks   ?? null,
+      overrides:       overrides       ?? null,
+      webStats:        Object.keys(webStats).length ? webStats : null,
     };
     if (row.is_active) charEntry.activeCompanion = row.comp_key;
   }
