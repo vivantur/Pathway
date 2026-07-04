@@ -125,6 +125,81 @@ export function noteText(n: CharacterNoteEntry): string {
   return String(n.text ?? n.body ?? n.title ?? '').trim();
 }
 
+/** The whole `character_notes` book for one character: the note list + the
+ *  monotonic id counter the bot uses to assign new note ids. */
+export interface CharacterNoteBook {
+  nextId: number;
+  notes: CharacterNoteEntry[];
+}
+
+/**
+ * Read-modify-write one character's `character_notes` book with the same
+ * compare-and-swap discipline as the overlay: the bot writes this row too
+ * (adding notes from Discord), so a blind full-list write from a stale copy
+ * would erase a concurrent bot note. We re-read the freshest book, apply the
+ * caller's `mutate`, and write conditionally on `updated_at`, retrying if
+ * another writer slipped in. The row may not exist yet (a character with no
+ * notes), so we insert on the first write.
+ *
+ * `char_key` is the natural key here (the table predates character UUIDs); RLS
+ * scopes the row to the owner, and we pass `user_id` explicitly on insert.
+ */
+export async function updateCharacterNotes(input: {
+  userId: string;
+  charKey: string;
+  mutate: (book: CharacterNoteBook) => CharacterNoteBook;
+}): Promise<CharacterNoteBook> {
+  const supabase = requireSupabase();
+  const { userId, charKey, mutate } = input;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: fresh, error: readError } = await supabase
+      .from('character_notes')
+      .select('next_id, notes, updated_at')
+      .eq('char_key', charKey)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    const row = fresh as { next_id: number | null; notes: unknown; updated_at: string | null } | null;
+    const current: CharacterNoteBook = {
+      nextId: row?.next_id ?? 1,
+      notes: Array.isArray(row?.notes) ? (row!.notes as CharacterNoteEntry[]) : [],
+    };
+    const next = mutate(current);
+    const payload = {
+      user_id: userId,
+      char_key: charKey,
+      next_id: next.nextId,
+      notes: next.notes,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!row) {
+      // No book yet — insert. A concurrent insert loses the unique-key race
+      // (23505); loop and fall through to the update path on the next attempt.
+      const { error: insertError } = await supabase.from('character_notes').insert(payload);
+      if (!insertError) return next;
+      if ((insertError as { code?: string }).code !== '23505') throw insertError;
+      continue;
+    }
+
+    let write = supabase
+      .from('character_notes')
+      .update(payload)
+      .eq('user_id', userId)
+      .eq('char_key', charKey);
+    write = row.updated_at == null ? write.is('updated_at', null) : write.eq('updated_at', row.updated_at);
+    const { data: written, error: writeError } = await write.select('char_key');
+    if (writeError) throw writeError;
+    if (written && written.length > 0) return next;
+    // Zero rows updated → a concurrent write changed updated_at; retry.
+  }
+
+  throw new Error(
+    'Could not save your note — the character was being updated somewhere else. Please try again.',
+  );
+}
+
 /** The storage bucket that holds player-uploaded portraits. */
 const PORTRAIT_BUCKET = 'portraits';
 
