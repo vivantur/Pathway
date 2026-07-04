@@ -230,6 +230,25 @@ export interface CharacterNoteEntry {
   [key: string]: unknown;
 }
 
+/** One entry in a character's downtime audit log (matches the bot's shape). */
+export interface DowntimeLogEntry {
+  ts: string;
+  kind: 'accrual' | 'spend' | 'grant';
+  delta: number;
+  /** Bank balance immediately after this entry. */
+  balance: number;
+  /** User id who made the change, or null for automatic accrual. */
+  by: string | null;
+  reason: string;
+}
+
+/** A character's downtime bank: spendable days, last accrual, and audit log. */
+export interface DowntimeRecord {
+  bank: number;
+  lastAccrualDate: string | null;
+  log: DowntimeLogEntry[];
+}
+
 export interface CharacterRow {
   id: string;
   user_id: string;

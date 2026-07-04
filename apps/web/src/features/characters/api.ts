@@ -9,6 +9,8 @@ import type {
   CharacterRow,
   CharacterSummary,
   ClassFeatureRow,
+  DowntimeLogEntry,
+  DowntimeRecord,
   ClassGamedata,
   FeatRow,
   HeritageRow,
@@ -257,6 +259,99 @@ export async function uploadCharacterPortrait(input: {
   if (updateError) throw updateError;
 
   return publicUrl;
+}
+
+// -------------------------------------------------------------------------
+// Downtime bank: spendable days + audit log (bot-managed `downtime` table)
+// -------------------------------------------------------------------------
+
+/** Hard cap on banked downtime days — mirrors the bot's `/downtime` rules. */
+export const DOWNTIME_MAX_BANK = 200;
+
+/**
+ * Load one character's downtime bank. Keyed by `char_key` (the table predates
+ * character UUIDs); RLS scopes it to the owner. Returns an empty bank when no
+ * row exists yet.
+ */
+export async function fetchCharacterDowntime(charKey: string): Promise<DowntimeRecord> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('downtime')
+    .select('bank, last_accrual_date, log')
+    .eq('char_key', charKey)
+    .maybeSingle();
+  if (error) throw error;
+  const row = data as { bank: number | null; last_accrual_date: string | null; log: unknown } | null;
+  return {
+    bank: row?.bank ?? 0,
+    lastAccrualDate: row?.last_accrual_date ?? null,
+    log: Array.isArray(row?.log) ? (row!.log as DowntimeLogEntry[]) : [],
+  };
+}
+
+/**
+ * Read-modify-write a character's downtime row with compare-and-swap (same
+ * anti-clobber discipline as the overlay/notes): the bot grants/spends/accrues
+ * downtime too, so we re-read the freshest bank, apply the caller's `mutate`,
+ * and write conditionally on `updated_at`, retrying on conflict. Inserts the
+ * row on first write.
+ */
+export async function updateCharacterDowntime(input: {
+  userId: string;
+  charKey: string;
+  mutate: (record: DowntimeRecord) => DowntimeRecord;
+}): Promise<DowntimeRecord> {
+  const supabase = requireSupabase();
+  const { userId, charKey, mutate } = input;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: fresh, error: readError } = await supabase
+      .from('downtime')
+      .select('bank, last_accrual_date, log, updated_at')
+      .eq('char_key', charKey)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    const row = fresh as
+      | { bank: number | null; last_accrual_date: string | null; log: unknown; updated_at: string | null }
+      | null;
+    const current: DowntimeRecord = {
+      bank: row?.bank ?? 0,
+      lastAccrualDate: row?.last_accrual_date ?? null,
+      log: Array.isArray(row?.log) ? (row!.log as DowntimeLogEntry[]) : [],
+    };
+    const next = mutate(current);
+    const payload = {
+      user_id: userId,
+      char_key: charKey,
+      bank: next.bank,
+      last_accrual_date: next.lastAccrualDate,
+      log: next.log,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!row) {
+      const { error: insertError } = await supabase.from('downtime').insert(payload);
+      if (!insertError) return next;
+      if ((insertError as { code?: string }).code !== '23505') throw insertError;
+      continue;
+    }
+
+    let write = supabase
+      .from('downtime')
+      .update(payload)
+      .eq('user_id', userId)
+      .eq('char_key', charKey);
+    write = row.updated_at == null ? write.is('updated_at', null) : write.eq('updated_at', row.updated_at);
+    const { data: written, error: writeError } = await write.select('char_key');
+    if (writeError) throw writeError;
+    if (written && written.length > 0) return next;
+    // Zero rows updated → a concurrent write changed updated_at; retry.
+  }
+
+  throw new Error(
+    'Could not update downtime — the character was being updated somewhere else. Please try again.',
+  );
 }
 
 // -------------------------------------------------------------------------
