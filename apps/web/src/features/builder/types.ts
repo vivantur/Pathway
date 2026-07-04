@@ -138,4 +138,5 @@ export type StepId =
   | 'advancement'
   | 'spells'
   | 'equipment'
+  | 'companions'
   | 'review';

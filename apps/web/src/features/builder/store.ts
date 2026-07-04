@@ -21,6 +21,7 @@ export const STEPS: { id: StepId; label: string }[] = [
   { id: 'advancement', label: 'Advancement' },
   { id: 'spells', label: 'Spells' },
   { id: 'equipment', label: 'Equipment' },
+  { id: 'companions', label: 'Companions' },
   { id: 'review', label: 'Review' },
 ];
 

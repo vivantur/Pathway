@@ -1,5 +1,11 @@
 import { requireSupabase } from '@/lib/supabase';
-import type { CompanionCustomStats, CompanionForm, CompanionRow } from './types';
+import type {
+  CompanionCustomStats,
+  CompanionForm,
+  CompanionKind,
+  CompanionRow,
+  CustomCompanionStats,
+} from './types';
 
 const COLUMNS =
   'user_id, char_key, comp_key, display_name, base_type, form, notes, current_hp, is_active, custom_stats, updated_at';
@@ -48,12 +54,19 @@ export interface SaveCompanionInput {
   charKey: string;
   /** Set when editing an existing companion; otherwise a comp_key is derived. */
   compKey?: string;
+  kind: CompanionKind;
   displayName: string;
-  /** Catalog slug (e.g. "wolf") or "custom". */
+  /** Catalog slug (e.g. "wolf") for animal/mount; else "familiar"/"eidolon"/"custom". */
   baseType: string;
   form: CompanionForm;
   notes?: string | null;
   art?: string | null;
+  /** Familiar: ability slugs. */
+  familiarAbilities?: string[];
+  /** Eidolon: subtype slug. */
+  eidolonType?: string;
+  /** Custom companion: a hand-entered stat block. */
+  custom?: CustomCompanionStats;
 }
 
 /**
@@ -69,11 +82,15 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     ? await fetchExisting(input.userId, input.charKey, compKey)
     : null;
 
+  // Read-modify-write: preserve any keys the bot manages, set the ones we own.
   const customStats: CompanionCustomStats = {
     ...(existing?.custom_stats ?? {}),
-    // The website only owns `art` here; everything else is preserved as-is.
+    kind: input.kind,
     art: input.art ?? existing?.custom_stats?.art ?? null,
   };
+  if (input.kind === 'familiar') customStats.familiar = { abilities: input.familiarAbilities ?? [] };
+  if (input.kind === 'eidolon') customStats.eidolon = { type: input.eidolonType ?? '' };
+  if (input.kind === 'custom') customStats.custom = input.custom ?? existing?.custom_stats?.custom ?? {};
 
   const row = {
     user_id: input.userId,

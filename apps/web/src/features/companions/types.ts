@@ -1,14 +1,36 @@
-import type { CompanionForm } from './engine';
+import type { CompanionAbilityMods, CompanionForm, CompanionKind } from './engine';
 
-export type { CompanionForm };
+export type { CompanionForm, CompanionKind };
+
+/** Freeform stat block for a custom companion (all fields optional). */
+export interface CustomCompanionStats {
+  size?: string;
+  hp?: number;
+  ac?: number;
+  perception?: number;
+  speed?: string;
+  senses?: string[];
+  abilityMods?: Partial<CompanionAbilityMods>;
+  attacks?: Array<{
+    name: string;
+    attack?: number;
+    damage?: string;
+    damageType?: string;
+    traits?: string[];
+  }>;
+  saves?: { fortitude?: number; reflex?: number; will?: number };
+}
 
 /**
- * The `companions.custom_stats` JSONB envelope, exactly as the bot reads/writes
- * it (apps/bot/src/state/companions.js). The website must preserve every nested
- * key it doesn't manage, or the bot drops them on its next Realtime patch.
+ * The `companions.custom_stats` JSONB envelope. The bot reads/writes the keys it
+ * knows (apps/bot/src/state/companions.js); the website adds `kind` and the
+ * per-kind payloads below. Both sides must preserve keys they don't manage, or
+ * the other drops them on its next sync — so writes are read-modify-write.
  */
 export interface CompanionCustomStats {
-  /** Bestiary/PDF-derived base block for custom companions (null for catalog). */
+  /** Which kind of companion this row is (the website's discriminator). */
+  kind?: CompanionKind;
+  /** Bestiary/PDF-derived base block for custom companions (bot). */
   customStats?: unknown;
   art?: string | null;
   skills?: Record<string, number>;
@@ -21,6 +43,12 @@ export interface CompanionCustomStats {
     traits?: string[];
   }>;
   overrides?: Record<string, unknown>;
+  /** Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES). */
+  familiar?: { abilities: string[] };
+  /** Eidolon: its subtype slug (into EIDOLON_TYPES). */
+  eidolon?: { type: string };
+  /** Custom companion: a hand-entered stat block. */
+  custom?: CustomCompanionStats;
 }
 
 /** A row of the `companions` table (the bot's canonical companion store). */
@@ -29,7 +57,7 @@ export interface CompanionRow {
   char_key: string;
   comp_key: string;
   display_name: string;
-  /** Catalog slug (e.g. "wolf") or "custom". */
+  /** Catalog slug (e.g. "wolf") for animal/mount; else "familiar"/"eidolon"/"custom". */
   base_type: string;
   form: CompanionForm;
   notes: string | null;
@@ -37,4 +65,9 @@ export interface CompanionRow {
   is_active: boolean;
   custom_stats: CompanionCustomStats;
   updated_at?: string;
+}
+
+/** Read a row's kind, inferring 'animal' for legacy rows without an explicit kind. */
+export function companionKind(row: Pick<CompanionRow, 'base_type' | 'custom_stats'>): CompanionKind {
+  return row.custom_stats?.kind ?? 'animal';
 }

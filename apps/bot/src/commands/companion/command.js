@@ -22,6 +22,7 @@ const { findMonster } = require('../monster/lookup');
 const { buildRollEmbed, formatRollBreakdown } = require('../../discord/rollEmbeds');
 const {
   findCompanion,
+  companionKind,
   buildCompanionEmbed,
   buildCompanionListEmbed,
   importedCompanionToTrackedCompanion,
@@ -176,7 +177,13 @@ async function execute(interaction) {
     const lines = mine.map(([k, c]) => {
       const active = k === activeKey ? ' ⭐ *(active)*' : '';
       const customTag = c.baseType === 'custom' && c.customStats?.fromBestiary ? ` *(custom: ${c.customStats.fromBestiary})*` : '';
-      return `• **${c.displayName}** — ${c.form}${customTag}${active}`;
+      // Kind-aware line: familiars/eidolons (built on the website) aren't
+      // form-scaled animals, so show what they are instead of "young".
+      const kind = companionKind(c);
+      if (kind === 'familiar') return `• 🦉 **${c.displayName}** — familiar${active}`;
+      if (kind === 'eidolon') return `• 👁️ **${c.displayName}** — eidolon${active}`;
+      const mountTag = kind === 'mount' ? ' *(mount)*' : '';
+      return `• **${c.displayName}** — ${c.form}${customTag}${mountTag}${active}`;
     });
     const embed = new EmbedBuilder().setColor(0x2ecc71).setTitle(`🐾 ${char.name}'s Companions`).setDescription(lines.join('\n'));
     if (charEntry.art) embed.setThumbnail(charEntry.art);
@@ -250,7 +257,7 @@ async function execute(interaction) {
       companionOf: char.name,
       effects: [],
     });
-    await interaction.reply(`🐾 **${comp.displayName}** (${char.name}'s ${comp.form} companion) joins initiative at **${r.total}** (rolled ${r.roll} ${fmt(r.mod)}). HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac}`);
+    await interaction.reply(`🐾 **${comp.displayName}** (${char.name}'s ${comp.form} companion) joins initiative at **${r.total}** (rolled ${r.roll} ${fmt(r.mod)}). HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac ?? '—'}`);
     await updateSummary(interaction.channel, enc);
     return;
   }

@@ -61,3 +61,39 @@ describe('scaleCompanion — item AC bonus (barding) is capped at +3', () => {
     expect(c.ac).toBe(19); // 16 + min(3,5)
   });
 });
+
+import {
+  COMPANION_KINDS,
+  FAMILIAR_ABILITIES,
+  EIDOLON_TYPES,
+  familiarBaseStats,
+  findFamiliarAbility,
+} from './companion';
+
+describe('companion kinds + familiars + eidolons', () => {
+  it('exposes all five companion kinds', () => {
+    expect(COMPANION_KINDS).toEqual(['animal', 'mount', 'familiar', 'eidolon', 'custom']);
+  });
+
+  it('has a familiar ability catalog with master abilities flagged', () => {
+    expect(FAMILIAR_ABILITIES.length).toBeGreaterThan(40);
+    expect(FAMILIAR_ABILITIES.some((a) => a.master)).toBe(true);
+    expect(FAMILIAR_ABILITIES.every((a) => a.slug && a.name && a.description)).toBe(true);
+  });
+
+  it('looks up a familiar ability by slug', () => {
+    const found = FAMILIAR_ABILITIES[0];
+    expect(findFamiliarAbility(found.slug)).toEqual(found);
+    expect(findFamiliarAbility('nope')).toBeUndefined();
+  });
+
+  it('familiar HP is 5 per level; speed 25', () => {
+    expect(familiarBaseStats(1)).toEqual({ hp: 5, speed: 25 });
+    expect(familiarBaseStats(8)).toEqual({ hp: 40, speed: 25 });
+  });
+
+  it('offers eidolon subtypes', () => {
+    expect(EIDOLON_TYPES.length).toBe(12);
+    expect(EIDOLON_TYPES.map((e) => e.slug)).toContain('dragon');
+  });
+});
