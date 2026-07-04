@@ -17,7 +17,10 @@
 --       { customStats, art, skills, customAbilities, customAttacks, overrides }
 --   * RLS/Realtime invariants per data-model.md §6.
 
+-- Column shapes below mirror the live `companions` table (verified 2026-07-04):
+-- an `id` UUID PK, NOT NULL `notes` defaulting to '', nullable `custom_stats`.
 CREATE TABLE IF NOT EXISTS public.companions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   char_key TEXT NOT NULL,
   comp_key TEXT NOT NULL,
@@ -25,10 +28,10 @@ CREATE TABLE IF NOT EXISTS public.companions (
   base_type TEXT NOT NULL DEFAULT 'custom',
   form TEXT NOT NULL DEFAULT 'young'
     CHECK (form IN ('young', 'mature', 'nimble', 'savage')),
-  notes TEXT,
+  notes TEXT NOT NULL DEFAULT '',
   current_hp INTEGER,
   is_active BOOLEAN NOT NULL DEFAULT false,
-  custom_stats JSONB NOT NULL DEFAULT '{}'::jsonb,
+  custom_stats JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -37,10 +40,10 @@ CREATE TABLE IF NOT EXISTS public.companions (
 -- predates them (additive, no-op when already present).
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS base_type TEXT NOT NULL DEFAULT 'custom';
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS form TEXT NOT NULL DEFAULT 'young';
-ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT '';
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS current_hp INTEGER;
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS custom_stats JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS custom_stats JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 ALTER TABLE public.companions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 

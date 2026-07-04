@@ -82,7 +82,8 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     display_name: input.displayName,
     base_type: input.baseType,
     form: input.form,
-    notes: input.notes ?? existing?.notes ?? null,
+    // `notes` is NOT NULL in the live table (defaults to ''), so never send null.
+    notes: input.notes ?? existing?.notes ?? '',
     custom_stats: customStats,
     updated_at: new Date().toISOString(),
   };
