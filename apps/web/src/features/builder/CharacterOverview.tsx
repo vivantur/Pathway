@@ -155,9 +155,9 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
         </div>
         {state.level > 1 && (
           <p className="mt-2 font-ui text-xs text-parchment/50">
-            Saves, Perception, AC, class DC, and spell DC use your level-1 proficiency
-            ranks. Class-based proficiency increases at higher levels aren&apos;t modeled
-            yet, so these can read low above roughly 5th level.
+            Weapon attack bonuses use your level-1 weapon proficiency; class-based
+            weapon-mastery increases (which depend on your chosen weapon group)
+            aren&apos;t modeled, so strikes can read low at high levels.
           </p>
         )}
       </Section>

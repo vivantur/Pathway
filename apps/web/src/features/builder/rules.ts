@@ -13,6 +13,7 @@ import {
   type Weapon,
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
+import { proficiencyRankAtLevel, type ProficiencyTrack } from '@pathway/core';
 import { focusPoints, subclassArmorRank } from './subclassEffects';
 import type { BuilderState } from './types';
 
@@ -335,18 +336,28 @@ export interface DerivedCharacter {
 }
 
 /**
- * KNOWN LIMITATION — proficiency advancement is level-1 only.
+ * Highest proficiency rank a class has in `track` at the character's level,
+ * combining the level-1 `initial` rank (from the dataset / subclass) with the
+ * class progression table in `@pathway/core`. Ranks only ever rise, so we take
+ * the max.
  *
- * Saves, Perception, AC (defense), class DC, and weapon attack ranks below all
- * come from the class's `initialProficiencies` (its level-1 ranks). PF2e's
- * increases to expert/master/legendary happen at class- and level-specific
- * points ("Fighter Weapon Mastery" at 5, "Evasion" at 7, etc.) that are NOT in
- * the dataset. We deliberately do NOT hardcode those tables here: per the
- * project's rules-from-source rule, PF2e rules must be implemented from
- * provided source data, not from memory. Until the dataset carries a
- * per-class advancement table, high-level derived numbers can under-report;
- * the builder surfaces a visible caveat (see CharacterOverview).
+ * Covered tracks: perception, saves, class DC, spellcasting, and armor
+ * (defense) categories. NOT covered — weapon/attack proficiency past level 1:
+ * PF2e's weapon increases are weapon-group/choice-scoped (e.g. Fighter Weapon
+ * Mastery applies only to a chosen group), so a class-wide attack progression
+ * would be wrong; attack ranks stay at the class's level-1 value. Monk's
+ * choice-based save increases (Path to Perfection) are likewise unmodeled.
  */
+function progressionRank(
+  state: BuilderState,
+  track: ProficiencyTrack,
+  initial: number,
+): ProficiencyRank {
+  const level = state.level || 1;
+  const fromClass = state.classId ? proficiencyRankAtLevel(state.classId, track, level) : 0;
+  return Math.max(initial, fromClass) as ProficiencyRank;
+}
+
 export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const level = state.level || 1;
   const scores = computeAbilityScores(state);
@@ -381,28 +392,29 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
 
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
   const armorCategory = armor?.category ?? 'unarmored';
-  const defenseRank = Math.max(
-    ip?.defenses[armorCategory] ?? 0,
-    subclassArmorRank(state, armorCategory),
-  ) as ProficiencyRank;
+  const defenseRank = progressionRank(
+    state,
+    armorCategory as ProficiencyTrack,
+    Math.max(ip?.defenses[armorCategory] ?? 0, subclassArmorRank(state, armorCategory)),
+  );
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =
     10 + pb(defenseRank) + dexForAc + (armor?.acBonus ?? 0) + (abp ? abpDefense(level) : 0);
-  const unarmoredDefense = (ip?.defenses.unarmored ?? 0) as ProficiencyRank;
+  const unarmoredDefense = progressionRank(state, 'unarmored', ip?.defenses.unarmored ?? 0);
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
   const meetsStr = !armor || scores.str >= armor.strength;
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
-  const perceptionRank = (ip?.perception ?? 0) as ProficiencyRank;
+  const perceptionRank = progressionRank(state, 'perception', ip?.perception ?? 0);
   const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
 
-  const fortRank = (ip?.fortitude ?? 0) as ProficiencyRank;
-  const refRank = (ip?.reflex ?? 0) as ProficiencyRank;
-  const willRank = (ip?.will ?? 0) as ProficiencyRank;
-  const classDCRank = (ip?.classDC ?? 0) as ProficiencyRank;
+  const fortRank = progressionRank(state, 'fortitude', ip?.fortitude ?? 0);
+  const refRank = progressionRank(state, 'reflex', ip?.reflex ?? 0);
+  const willRank = progressionRank(state, 'will', ip?.will ?? 0);
+  const classDCRank = progressionRank(state, 'classDC', ip?.classDC ?? 0);
 
   const ranks = skillRankMap(state);
   const skills: SkillProficiency[] = getDataset().skills.map((s) => {
