@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { noteText } from '@/features/characters/api';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
-import type { CharacterRow, XpLogEntry } from '@/features/characters/types';
+import { useUpdateCharacterNotes } from '@/features/characters/useUpdateCharacterNotes';
+import type { CharacterNoteEntry, CharacterRow, XpLogEntry } from '@/features/characters/types';
 import { Panel, type EditControls } from '../Sheet';
 import { NoteIcon, StarIcon } from '../icons';
 
@@ -20,31 +21,17 @@ export function JournalTab({
 }) {
   const { data: notes, isLoading: notesLoading } = useCharacterNotes(character.char_key);
   const xpLog = character.overlay?.pathway_bot_state?.xpLog ?? [];
-  const noteEntries = (notes ?? []).filter((n) => noteText(n).length > 0);
 
   return (
     <div className="space-y-4">
       <BioPanel bio={character.notes ?? null} edit={edit} />
 
-      <Panel title={`Notes${noteEntries.length ? ` (${noteEntries.length})` : ''}`} icon={<NoteIcon />}>
-        {notesLoading ? (
-          <p className="text-sm text-silver/40">Loading notes…</p>
-        ) : noteEntries.length === 0 ? (
-          <EmptyBlock>
-            No notes yet. Add them from Discord with the bot — they&apos;ll show up here.
-          </EmptyBlock>
-        ) : (
-          <ul className="space-y-3">
-            {noteEntries.map((n, i) => (
-              <li key={i} className="border-l-2 border-gold/30 pl-3">
-                <p className="whitespace-pre-line text-sm leading-relaxed text-silver/90">
-                  {noteText(n)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+      <NotesPanel
+        charKey={character.char_key}
+        notes={notes ?? []}
+        loading={notesLoading}
+        canEdit={edit.enabled}
+      />
 
       <Panel title={`XP History${xpLog.length ? ` (${xpLog.length})` : ''}`} icon={<StarIcon />}>
         {xpLog.length === 0 ? (
@@ -128,6 +115,163 @@ function BioPanel({ bio, edit }: { bio: string | null; edit: EditControls }) {
         </>
       )}
     </Panel>
+  );
+}
+
+/** Notes panel: the character_notes book, add/edit/delete in edit mode. */
+function NotesPanel({
+  charKey,
+  notes,
+  loading,
+  canEdit,
+}: {
+  charKey: string;
+  notes: CharacterNoteEntry[];
+  loading: boolean;
+  canEdit: boolean;
+}) {
+  const { addNote, editNote, deleteNote, isPending } = useUpdateCharacterNotes(charKey);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+
+  const entries = notes.filter((n) => noteText(n).length > 0);
+
+  const commitAdd = () => {
+    const text = draft.trim();
+    if (text) addNote(text);
+    setDraft('');
+    setAdding(false);
+  };
+  const startEdit = (n: CharacterNoteEntry) => {
+    setEditingId(Number(n.id));
+    setEditDraft(noteText(n));
+  };
+  const commitEdit = () => {
+    if (editingId != null) {
+      const text = editDraft.trim();
+      if (text) editNote(editingId, text);
+      else deleteNote(editingId); // clearing a note removes it
+    }
+    setEditingId(null);
+    setEditDraft('');
+  };
+
+  return (
+    <Panel title={`Notes${entries.length ? ` (${entries.length})` : ''}`} icon={<NoteIcon />}>
+      {loading ? (
+        <p className="text-sm text-silver/40">Loading notes…</p>
+      ) : entries.length === 0 && !adding ? (
+        <EmptyBlock>
+          {canEdit
+            ? 'No notes yet. Add one here, or from Discord with the bot — they stay in sync.'
+            : 'No notes yet.'}
+        </EmptyBlock>
+      ) : (
+        <ul className="space-y-3">
+          {entries.map((n) => {
+            const id = Number(n.id);
+            return (
+              <li key={id} className="group border-l-2 border-gold/30 pl-3">
+                {editingId === id ? (
+                  <NoteEditor
+                    value={editDraft}
+                    onChange={setEditDraft}
+                    onCommit={commitEdit}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-silver/90">
+                      {noteText(n)}
+                    </p>
+                    {canEdit && (
+                      <span className="flex shrink-0 gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(n)}
+                          className="text-[0.6rem] uppercase tracking-widest text-arcane hover:text-arcane-soft"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteNote(id)}
+                          className="text-[0.6rem] uppercase tracking-widest text-red-300/80 hover:text-red-300"
+                        >
+                          Delete
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {canEdit &&
+        (adding ? (
+          <div className="mt-3">
+            <NoteEditor value={draft} onChange={setDraft} onCommit={commitAdd} onCancel={() => setAdding(false)} autoFocus />
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => setAdding(true)}
+            className="mt-3 text-[0.65rem] uppercase tracking-widest text-arcane hover:text-arcane-soft disabled:opacity-50"
+          >
+            + Add a note
+          </button>
+        ))}
+    </Panel>
+  );
+}
+
+/** Shared textarea + Save/Cancel used for adding and editing a note. */
+function NoteEditor({
+  value,
+  onChange,
+  onCommit,
+  onCancel,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+  autoFocus?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <textarea
+        autoFocus={autoFocus}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        placeholder="Write a note…"
+        className="w-full rounded border border-gold/30 bg-midnight-800/80 p-2 text-sm text-silver focus:border-gold/60 focus:outline-none"
+      />
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs uppercase tracking-widest text-silver/60 hover:text-gold"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onCommit}
+          className="rounded border border-gold/40 bg-gold/10 px-2 py-1 text-xs uppercase tracking-widest text-gold hover:bg-gold/20"
+        >
+          Save
+        </button>
+      </div>
+    </div>
   );
 }
 
