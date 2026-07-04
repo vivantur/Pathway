@@ -45,8 +45,8 @@ const phases: Array<{
   },
   {
     id: 'W3',
-    title: 'Phase W3 — Character vault & sheet',
-    status: 'in-progress',
+    title: 'Phase W3 — Character vault, sheet & builder',
+    status: 'done',
     bullets: [
       { text: 'Import a character from Pathbuilder by ID', done: true },
       {
@@ -55,14 +55,27 @@ const phases: Array<{
       },
       { text: 'Spell and feat descriptions with full rules text', done: true },
       { text: 'Portrait uploads, update-from-Pathbuilder, delete, and public share links', done: true },
-      { text: 'Light/dark theme and a mobile-responsive layout', done: true },
+      { text: 'PDF character-sheet export and a light/dark, mobile-responsive layout', done: true },
       {
         text: 'In-browser editing of live state — HP, hero points, dying/wounded, XP, currency, focus points, and bio — live-synced to the bot',
         done: true,
       },
-      { text: 'Guided builder with Beginner and Learning modes', done: false },
-      { text: 'Full build editing (feats, abilities, gear) with automatic calculation and manual overrides', done: false },
-      { text: 'PDF export and variant rules (Free Archetype, ABP, Ancestry Paragon, Gradual Boosts)', done: false },
+      { text: 'Guided step-by-step builder with Beginner Mode guidance and auto-calculation', done: true },
+      { text: 'Build, level up, and edit characters straight into your vault — the bot reads them back', done: true },
+      { text: 'Variant rules: Free Archetype, Automatic Bonus Progression, Ancestry Paragon, Gradual Boosts', done: true },
+      { text: 'Level-accurate proficiency for saves, Perception, class DC, spell DC, and AC', done: true },
+    ],
+  },
+  {
+    id: 'W4',
+    title: 'Phase W4 — Companions, inventory, notes',
+    status: 'next',
+    bullets: [
+      { text: 'Inventory, currency, and notes shown on the sheet', done: true },
+      { text: 'Companions tab showing build-imported companions', done: true },
+      { text: 'Companion creator — animal companions, familiars, eidolons, mounts, and custom, each with their own sheet and bot sync', done: false },
+      { text: 'Editable bags, downtime, and per-character notes', done: false },
+      { text: 'All live-synced with the Discord bot', done: false },
     ],
   },
   {
@@ -77,18 +90,6 @@ const phases: Array<{
       { text: 'Full-text search across descriptions', done: false },
       { text: 'Authoring tools for classes, ancestries, items, and monsters', done: false },
       { text: 'Publish private, to a campaign, an organization, or the public', done: false },
-    ],
-  },
-  {
-    id: 'W4',
-    title: 'Phase W4 — Companions, inventory, notes',
-    status: 'next',
-    bullets: [
-      { text: 'Inventory, currency, and notes shown on the sheet', done: true },
-      { text: 'Companions tab showing build-imported companions', done: true },
-      { text: 'Companion creator — animal companions, familiars, eidolons, mounts, and custom, each with their own sheet and bot sync', done: false },
-      { text: 'Editable bags, downtime, and per-character notes', done: false },
-      { text: 'All live-synced with the Discord bot', done: false },
     ],
   },
   {

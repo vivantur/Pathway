@@ -15,6 +15,11 @@ Per the [Master Specification](../../PATHWAY_MASTER_SPEC.md), each phase still
 moves through **Design → Review → Approve → Build → Test → Refactor → Release**,
 with a gate before the next phase.
 
+> **Current status:** W0–W3 complete (foundations, identity, live sync,
+> character vault + builder). **W4 (companions, editable inventory/notes) is
+> next.** W5 (rules library) is partially shipped — searchable archive + monster
+> stat blocks are live; traits, full-text search, and homebrew authoring remain.
+
 ---
 
 ## Phase W0 — Reconcile with the live backend *(do this first)*
@@ -65,16 +70,27 @@ vice-versa, with no clobbering in either direction. This satisfies the
 
 ---
 
-## Phase W3 — Character builder / editor (write-heavy)
+## Phase W3 — Character builder / editor (write-heavy) — ✅ complete
 
-- Guided builder with Beginner/Learning modes, tooltips, auto-calculation +
-  manual overrides, producing valid `pathbuilder_data`.
-- Level history & audit (`character_xp_log` already exists; extend as needed).
-- Portraits/tokens/banners via Supabase Storage.
-- Pathbuilder JSON + PDF export from `pathbuilder_data`.
+- ✅ Guided step-by-step builder with Beginner Mode, tooltips, and
+  auto-calculation, producing valid `pathbuilder_data` (`features/builder`).
+- ✅ Save / level-up / edit straight into the vault (`useSaveBuild` →
+  `createCharacterFromBuild` / `updateCharacterFromBuild`); the bot reads the
+  stored build back (`stored?.build ?? stored`).
+- ✅ Variant rules from creation: Free Archetype, Automatic Bonus Progression,
+  Ancestry Paragon, Gradual Ability Boosts.
+- ✅ Level-accurate proficiency for saves, Perception, class DC, spell DC, and
+  AC — driven by the class progression table now living in `packages/core`
+  (`proficiencyRankAtLevel`), the builder being core's first consumer.
+- ✅ Portraits via Supabase Storage; Pathbuilder JSON + PDF sheet export.
 
-**Gate to W4:** a user builds/levels/exports a character on the web that the bot
-reads back correctly.
+**Gate to W4 — met:** a user builds/levels/exports a character on the web whose
+`pathbuilder_data` the bot reads back correctly (standard Pathbuilder shape).
+
+_Remaining polish (tracked, not blocking): a distinct "Learning Mode", PDF
+export directly from the builder (currently from the saved sheet), and
+weapon-attack proficiency progression (deferred — it is weapon-group/choice
+scoped; see `packages/core/src/proficiency.ts`)._
 
 ---
 

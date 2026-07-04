@@ -65,9 +65,9 @@ export function ReviewStep() {
         </button>
       </div>
       <p className="font-ui text-xs text-parchment/50">
-        Saving straight to your vault (and syncing to the Discord bot) is wired in the next
-        integration step. For now, download or copy this Pathbuilder JSON and import it via the bot
-        or the Add‑Character flow.
+        Use <span className="text-gold-400">Save to Vault</span> at the top to store this character
+        and sync it to the Discord bot — then download a PDF from its sheet. The JSON here is for
+        Pathbuilder round-tripping or a manual backup.
       </p>
 
       <details className="panel p-5">
