@@ -74,7 +74,7 @@ const phases: Array<{
       { text: 'Inventory, currency, and companions shown on the sheet', done: true },
       { text: 'Editable per-character notes, live-synced with the bot', done: true },
       { text: 'Editable downtime bank — grant and spend days with an audit log, live-synced', done: true },
-      { text: 'Editable bags / loot inventory', done: false },
+      { text: 'Editable bags / loot inventory with archive item search, live-synced', done: true },
       { text: 'Companion creator — animal companions, familiars, eidolons, mounts, and custom, each with their own sheet and bot sync', done: false },
     ],
   },
