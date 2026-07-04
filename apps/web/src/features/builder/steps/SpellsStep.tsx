@@ -5,13 +5,18 @@ import { useBuilder } from '../store';
 import {
   casterConfig,
   cantripsFor,
+  focusCantripsFor,
+  focusConfig,
+  focusPoolSize,
+  focusSpellsFor,
+  focusStats,
+  focusTraditionFor,
   maxSpellRank,
   slotsForRank,
   spellStats,
   spellsForRank,
   subclassNote,
 } from '../spellcasting';
-import { grantedFocusSpell } from '../subclassEffects';
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][n % 10 > 3 || (n >= 11 && n <= 13) ? 0 : n % 10]}`;
@@ -28,7 +33,8 @@ function SpellSection({
   hint: string;
   candidates: Spell[];
   selected: string[];
-  max: number;
+  /** Selection cap; omit for no limit (focus spells aren't slot-limited). */
+  max?: number;
   onToggle: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
@@ -38,7 +44,9 @@ function SpellSection({
     const q = query.trim().toLowerCase();
     return q ? candidates.filter((s) => s.name.toLowerCase().includes(q)) : candidates;
   }, [candidates, query]);
-  const remaining = max - chosen.size;
+  const capped = max != null;
+  const remaining = capped ? max - chosen.size : Infinity;
+  const atLimit = capped && remaining <= 0;
 
   const showTip = (spell: Spell, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
@@ -54,8 +62,9 @@ function SpellSection({
     <section className="panel flex flex-col gap-3 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="font-display text-lg text-gold-400">{title}</h4>
-        <span className={`font-ui text-xs ${remaining === 0 ? 'text-green-300' : 'text-parchment/60'}`}>
-          {chosen.size}/{max} chosen
+        <span className={`font-ui text-xs ${atLimit ? 'text-green-300' : 'text-parchment/60'}`}>
+          {chosen.size}
+          {capped ? `/${max}` : ''} chosen
         </span>
       </div>
       <p className="font-ui text-xs text-parchment/60">{hint} Hover a spell to read what it does.</p>
@@ -68,7 +77,7 @@ function SpellSection({
       <div className="flex max-h-72 flex-col gap-1.5 overflow-y-auto pr-1">
         {filtered.map((s) => {
           const isChosen = chosen.has(s.id);
-          const disabled = !isChosen && remaining === 0;
+          const disabled = !isChosen && atLimit;
           return (
             <button
               key={s.id}
@@ -141,15 +150,104 @@ function SpellSection({
   );
 }
 
+function FocusSpellsSection() {
+  const state = useBuilder((s) => s.state);
+  const toggleFocusSpell = useBuilder((s) => s.toggleFocusSpell);
+  const toggleFocusCantrip = useBuilder((s) => s.toggleFocusCantrip);
+  const setFocusTradition = useBuilder((s) => s.setFocusTradition);
+
+  const cfg = focusConfig(state.classId, state.subclassId);
+  if (!cfg) return null;
+
+  const stats = focusStats(state);
+  const tradition = focusTraditionFor(state);
+  const spells = focusSpellsFor(state.classId);
+  const cantrips = focusCantripsFor(state.classId);
+  const pool = focusPoolSize(state);
+
+  return (
+    <section className="flex flex-col gap-4 rounded-2xl border border-arcane-400/25 bg-arcane-500/5 p-5">
+      <div>
+        <h4 className="font-display text-lg text-arcane-400">Focus Spells</h4>
+        <p className="mt-1 font-ui text-sm text-parchment/70">
+          Focus spells are cast from a special pool of Focus Points (max 3), refreshed with the
+          10‑minute Refocus activity. You gain them from class features and feats — pick the ones your
+          build grants.
+        </p>
+        {cfg.traditionChoices && (
+          <label className="mt-3 flex flex-wrap items-center gap-2 font-ui text-sm text-parchment/80">
+            Tradition:
+            <select
+              value={tradition ?? ''}
+              onChange={(e) => setFocusTradition(e.target.value)}
+              className="rounded-lg border border-arcane-400/30 bg-midnight-950/50 px-2 py-1 text-parchment focus:border-arcane-400/60 focus:outline-none"
+            >
+              {cfg.traditionChoices.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2 font-ui text-sm">
+          <span className="rounded-lg border border-arcane-400/25 bg-midnight-800/60 px-3 py-1.5 text-parchment">
+            Focus pool <span className="text-arcane-400">{pool}</span>
+          </span>
+          {stats && (
+            <>
+              <span className="rounded-lg border border-arcane-400/25 bg-midnight-800/60 px-3 py-1.5 text-parchment">
+                Focus attack <span className="text-arcane-400">{sign(stats.attack)}</span>
+              </span>
+              <span className="rounded-lg border border-arcane-400/25 bg-midnight-800/60 px-3 py-1.5 text-parchment">
+                Focus DC <span className="text-arcane-400">{stats.dc}</span>
+              </span>
+              <span className="rounded-lg border border-arcane-400/25 bg-midnight-800/60 px-3 py-1.5 text-parchment">
+                Tradition <span className="text-arcane-400">{stats.tradition}</span>
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {cantrips.length > 0 && (
+        <SpellSection
+          title="Focus Cantrips"
+          hint="Focus cantrips your class grants."
+          candidates={cantrips}
+          selected={state.spellcasting.focusCantrips ?? []}
+          onToggle={toggleFocusCantrip}
+        />
+      )}
+
+      {spells.length > 0 ? (
+        <SpellSection
+          title="Focus Spells"
+          hint="Each is granted by a specific class feature or feat; select those your build has."
+          candidates={spells}
+          selected={state.spellcasting.focusSpells ?? []}
+          onToggle={toggleFocusSpell}
+        />
+      ) : (
+        <p className="font-ui text-sm text-parchment/50">
+          No focus spells for this class are in the current data set.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function SpellsStep() {
   const state = useBuilder((s) => s.state);
   const toggleCantrip = useBuilder((s) => s.toggleCantrip);
   const toggleSpell = useBuilder((s) => s.toggleSpell);
 
   const cfg = casterConfig(state.classId, state.subclassId);
+  const focus = focusConfig(state.classId, state.subclassId);
   const klass = state.classId ? findClass(state.classId) : undefined;
 
-  if (!cfg) {
+  // Neither slot spellcasting nor focus spells — nothing to do here.
+  if (!cfg && !focus) {
     return (
       <div className="flex flex-col gap-3">
         <h3 className="font-display text-xl text-gold-400">Spells</h3>
@@ -162,7 +260,7 @@ export function SpellsStep() {
     );
   }
 
-  const stats = spellStats(state);
+  const stats = cfg ? spellStats(state) : null;
   const maxRank = maxSpellRank(state.level || 1);
   const ranks = Array.from({ length: maxRank }, (_, i) => i + 1);
   const sub = subclassNote(state);
@@ -171,14 +269,20 @@ export function SpellsStep() {
     <div className="flex flex-col gap-6">
       <div>
         <h3 className="mb-1 font-display text-xl text-gold-400">Spells</h3>
-        <p className="font-ui text-sm text-parchment/70">
-          As a{' '}
-          <span className="text-parchment">
-            {cfg.type} {cfg.tradition}
-          </span>{' '}
-          caster, you cast {cfg.tradition} spells using {cfg.keyAbility.toUpperCase()}.
-          {sub ? ` (${sub})` : ''}
-        </p>
+        {cfg ? (
+          <p className="font-ui text-sm text-parchment/70">
+            As a{' '}
+            <span className="text-parchment">
+              {cfg.type} {cfg.tradition}
+            </span>{' '}
+            caster, you cast {cfg.tradition} spells using {cfg.keyAbility.toUpperCase()}.
+            {sub ? ` (${sub})` : ''}
+          </p>
+        ) : (
+          <p className="font-ui text-sm text-parchment/70">
+            The {klass?.name} doesn’t cast spells from slots, but it draws on focus spells.
+          </p>
+        )}
         {stats && (
           <div className="mt-3 flex flex-wrap gap-2 font-ui text-sm">
             <span className="rounded-lg border border-gold-500/25 bg-midnight-800/60 px-3 py-1.5 text-parchment">
@@ -189,42 +293,41 @@ export function SpellsStep() {
             </span>
           </div>
         )}
-        {grantedFocusSpell(state.classId, state.subclassId) && (
-          <p className="mt-3 rounded-lg border border-arcane-400/25 bg-arcane-500/10 px-3 py-2 font-ui text-sm text-parchment/85">
-            <span className="text-arcane-400">Focus spell{sub ? ` (${sub})` : ''}:</span>{' '}
-            {grantedFocusSpell(state.classId, state.subclassId)} — cast it using your focus point,
-            refreshed on a 10‑minute rest.
-          </p>
-        )}
       </div>
 
-      <SpellSection
-        title="Cantrips"
-        hint="At-will spells you can cast any number of times. They automatically scale with your level."
-        candidates={cantripsFor(cfg.tradition)}
-        selected={state.spellcasting.cantrips}
-        max={cfg.cantrips}
-        onToggle={(id) => toggleCantrip(id, cfg.cantrips)}
-      />
-
-      {ranks.map((rank) => {
-        const max = slotsForRank(state.level || 1, rank);
-        return (
+      {cfg && (
+        <>
           <SpellSection
-            key={rank}
-            title={`${ordinal(rank)}-Rank Spells`}
-            hint={
-              cfg.type === 'spontaneous'
-                ? 'Spells in your repertoire — you can cast any of them using a slot of this rank.'
-                : 'Spells you can prepare in your slots of this rank each day.'
-            }
-            candidates={spellsForRank(cfg.tradition, rank)}
-            selected={state.spellcasting.spellsByRank[rank] ?? []}
-            max={max}
-            onToggle={(id) => toggleSpell(rank, id, max)}
+            title="Cantrips"
+            hint="At-will spells you can cast any number of times. They automatically scale with your level."
+            candidates={cantripsFor(cfg.tradition)}
+            selected={state.spellcasting.cantrips}
+            max={cfg.cantrips}
+            onToggle={(id) => toggleCantrip(id, cfg.cantrips)}
           />
-        );
-      })}
+
+          {ranks.map((rank) => {
+            const max = slotsForRank(state.level || 1, rank);
+            return (
+              <SpellSection
+                key={rank}
+                title={`${ordinal(rank)}-Rank Spells`}
+                hint={
+                  cfg.type === 'spontaneous'
+                    ? 'Spells in your repertoire — you can cast any of them using a slot of this rank.'
+                    : 'Spells you can prepare in your slots of this rank each day.'
+                }
+                candidates={spellsForRank(cfg.tradition, rank)}
+                selected={state.spellcasting.spellsByRank[rank] ?? []}
+                max={max}
+                onToggle={(id) => toggleSpell(rank, id, max)}
+              />
+            );
+          })}
+        </>
+      )}
+
+      {focus && <FocusSpellsSection />}
     </div>
   );
 }

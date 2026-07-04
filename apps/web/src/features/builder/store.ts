@@ -46,6 +46,9 @@ interface BuilderStore {
 
   toggleCantrip: (id: string, max: number) => void;
   toggleSpell: (rank: number, id: string, max: number) => void;
+  toggleFocusSpell: (id: string) => void;
+  toggleFocusCantrip: (id: string) => void;
+  setFocusTradition: (tradition: string) => void;
 }
 
 export const useBuilder = create<BuilderStore>((set) => ({
@@ -197,4 +200,27 @@ export const useBuilder = create<BuilderStore>((set) => ({
       byRank[rank] = [...chosen];
       return { state: { ...s.state, spellcasting: { ...s.state.spellcasting, spellsByRank: byRank } } };
     }),
+
+  // Focus spells aren't slot-limited: you can know more focus spells than your
+  // pool has points (the pool just caps at 3). So toggling is free add/remove.
+  toggleFocusSpell: (id) =>
+    set((s) => {
+      const chosen = new Set(s.state.spellcasting.focusSpells ?? []);
+      if (chosen.has(id)) chosen.delete(id);
+      else chosen.add(id);
+      return { state: { ...s.state, spellcasting: { ...s.state.spellcasting, focusSpells: [...chosen] } } };
+    }),
+
+  toggleFocusCantrip: (id) =>
+    set((s) => {
+      const chosen = new Set(s.state.spellcasting.focusCantrips ?? []);
+      if (chosen.has(id)) chosen.delete(id);
+      else chosen.add(id);
+      return { state: { ...s.state, spellcasting: { ...s.state.spellcasting, focusCantrips: [...chosen] } } };
+    }),
+
+  setFocusTradition: (tradition) =>
+    set((s) => ({
+      state: { ...s.state, spellcasting: { ...s.state.spellcasting, focusTradition: tradition } },
+    })),
 }));

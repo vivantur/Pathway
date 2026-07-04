@@ -8,9 +8,15 @@ import {
   getDataset,
   type AbilityKey,
 } from '@/features/builder/data';
-import { casterConfig } from './spellcasting';
+import {
+  casterConfig,
+  focusConfig,
+  focusPoolSize,
+  focusRank,
+  focusTraditionFor,
+} from './spellcasting';
 import { focusPoints } from './subclassEffects';
-import { deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
+import { abilityModifier, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState } from '@/features/builder/types';
 
 /**
@@ -218,6 +224,30 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
         ]
       : [];
 
+  // Focus spells → Pathbuilder `focus` map: tradition → ability → pool. The
+  // sheet computes focus attack/DC as level + proficiency + abilityBonus, so we
+  // store proficiency as 2×rank (Pathbuilder convention) and the ability mod.
+  const focusCfg = focusConfig(state.classId, state.subclassId);
+  const focusTradition = focusTraditionFor(state);
+  const focusOut: Record<
+    string,
+    Record<string, { focusSpells: string[]; focusCantrips: string[]; proficiency: number; abilityBonus: number }>
+  > = {};
+  if (focusCfg && focusTradition) {
+    const fSpells = (sc.focusSpells ?? []).map(spellName);
+    const fCantrips = (sc.focusCantrips ?? []).map(spellName);
+    if (fSpells.length || fCantrips.length) {
+      focusOut[focusTradition] = {
+        [focusCfg.keyAbility]: {
+          focusSpells: fSpells,
+          focusCantrips: fCantrips,
+          proficiency: p(focusRank(state)),
+          abilityBonus: abilityModifier(derived.scores[focusCfg.keyAbility]),
+        },
+      };
+    }
+  }
+
   const build: PathbuilderBuild = {
     name: state.name || 'Unnamed Adventurer',
     class: klass?.name ?? '',
@@ -253,8 +283,9 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     money,
     armor: armorOut,
     spellCasters: spellCastersOut,
-    focusPoints: focusPoints(state),
-    focus: {},
+    // Pool size = focus spells known (max 3); keep any subclass-granted point too.
+    focusPoints: Math.max(focusPoolSize(state), focusPoints(state)),
+    focus: focusOut,
     formula: [],
     pets: [],
     familiars: [],
@@ -297,6 +328,36 @@ export function fromPathbuilder(data: unknown): Partial<BuilderState> {
     ancestry?.heritages.find((h) => h.name.toLowerCase() === heritageName)?.id ??
     ds.versatileHeritages.find((h) => h.name.toLowerCase() === heritageName)?.id;
 
+  // Best-effort focus-spell import (names → dataset ids) for external Pathbuilder
+  // JSON. Characters built here round-trip losslessly via `_pathwayBuild` above.
+  const focusData = (
+    build as { focus?: Record<string, Record<string, { focusSpells?: string[]; focusCantrips?: string[] }>> }
+  ).focus;
+  let spellcasting: BuilderState['spellcasting'] | undefined;
+  if (focusData && typeof focusData === 'object') {
+    const idByName = (name: string) =>
+      ds.spells.find((s) => s.name.toLowerCase() === name.toLowerCase())?.id;
+    const focusSpells: string[] = [];
+    const focusCantrips: string[] = [];
+    let focusTradition: string | undefined;
+    for (const [tradition, byAbility] of Object.entries(focusData)) {
+      for (const pool of Object.values(byAbility)) {
+        for (const n of pool.focusSpells ?? []) {
+          const id = idByName(n);
+          if (id) focusSpells.push(id);
+        }
+        for (const n of pool.focusCantrips ?? []) {
+          const id = idByName(n);
+          if (id) focusCantrips.push(id);
+        }
+        if (!focusTradition && ((pool.focusSpells?.length ?? 0) || (pool.focusCantrips?.length ?? 0)))
+          focusTradition = tradition;
+      }
+    }
+    if (focusSpells.length || focusCantrips.length)
+      spellcasting = { cantrips: [], spellsByRank: {}, focusSpells, focusCantrips, focusTradition };
+  }
+
   return {
     name: build.name ?? '',
     level: build.level ?? 1,
@@ -305,5 +366,6 @@ export function fromPathbuilder(data: unknown): Partial<BuilderState> {
     backgroundId: byName(ds.backgrounds, build.background),
     classId: byName(ds.classes, build.class),
     keyAbility: (build.keyability || undefined) as AbilityKey | undefined,
+    ...(spellcasting ? { spellcasting } : {}),
   };
 }

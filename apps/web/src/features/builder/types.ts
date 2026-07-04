@@ -57,6 +57,15 @@ export interface BuilderState {
   spellcasting: {
     cantrips: string[];
     spellsByRank: Record<number, string[]>;
+    /** Chosen focus spells (dataset spell ids); available to any focus-using class. */
+    focusSpells: string[];
+    /** Chosen focus cantrips (dataset spell ids). */
+    focusCantrips: string[];
+    /**
+     * For classes whose focus tradition is a player choice (monk: divine/occult;
+     * summoner: the eidolon's tradition). Fixed-tradition classes ignore this.
+     */
+    focusTradition?: string;
   };
 }
 
@@ -97,7 +106,7 @@ export function emptyBuilderState(): BuilderState {
     progression: {},
     inventory: [],
     money: 15,
-    spellcasting: { cantrips: [], spellsByRank: {} },
+    spellcasting: { cantrips: [], spellsByRank: {}, focusSpells: [], focusCantrips: [] },
   };
 }
 
