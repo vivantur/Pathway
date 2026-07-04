@@ -1,5 +1,5 @@
 import { findClass, getDataset, type AbilityKey, type Spell } from '@/features/builder/data';
-import { proficiencyRankAtLevel } from '@pathway/core';
+import { proficiencyRankAtLevel } from './data/proficiency';
 import { abilityModifier, computeAbilityScores, proficiencyBonus, opt } from './rules';
 import { OPT } from './options/config';
 import { subclassTradition } from './subclassEffects';

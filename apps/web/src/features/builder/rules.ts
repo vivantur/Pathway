@@ -13,7 +13,7 @@ import {
   type Weapon,
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
-import { proficiencyRankAtLevel, type ProficiencyTrack } from '@pathway/core';
+import { proficiencyRankAtLevel, type ProficiencyTrack } from './data/proficiency';
 import { focusPoints, subclassArmorRank } from './subclassEffects';
 import type { BuilderState } from './types';
 
