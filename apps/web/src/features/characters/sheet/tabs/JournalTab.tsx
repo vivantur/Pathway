@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { noteText } from '@/features/characters/api';
 import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { useUpdateCharacterNotes } from '@/features/characters/useUpdateCharacterNotes';
-import type { CharacterNoteEntry, CharacterRow, XpLogEntry } from '@/features/characters/types';
+import { useCharacterDowntime } from '@/features/characters/useCharacterDowntime';
+import { useUpdateCharacterDowntime } from '@/features/characters/useUpdateCharacterDowntime';
+import type {
+  CharacterNoteEntry,
+  CharacterRow,
+  DowntimeLogEntry,
+  XpLogEntry,
+} from '@/features/characters/types';
 import { Panel, type EditControls } from '../Sheet';
 import { NoteIcon, StarIcon } from '../icons';
 
@@ -32,6 +39,8 @@ export function JournalTab({
         loading={notesLoading}
         canEdit={edit.enabled}
       />
+
+      <DowntimePanel charKey={character.char_key} canEdit={edit.enabled} />
 
       <Panel title={`XP History${xpLog.length ? ` (${xpLog.length})` : ''}`} icon={<StarIcon />}>
         {xpLog.length === 0 ? (
@@ -272,6 +281,109 @@ function NoteEditor({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Downtime bank: spendable days + audit log, with grant/spend in edit mode. */
+function DowntimePanel({ charKey, canEdit }: { charKey: string; canEdit: boolean }) {
+  const { data, isLoading } = useCharacterDowntime(charKey);
+  const { grant, spend, isPending } = useUpdateCharacterDowntime(charKey);
+  const [days, setDays] = useState('');
+  const [reason, setReason] = useState('');
+
+  const bank = data?.bank ?? 0;
+  const log = data?.log ?? [];
+  const recent = [...log].reverse().slice(0, 8);
+
+  const submit = (kind: 'grant' | 'spend') => {
+    const n = Number(days);
+    if (!Number.isFinite(n) || n <= 0) return;
+    if (kind === 'grant') grant(n, reason);
+    else spend(n, reason);
+    setDays('');
+    setReason('');
+  };
+
+  // Hide entirely for viewers when there's no downtime to show.
+  if (!canEdit && !isLoading && bank === 0 && log.length === 0) return null;
+
+  return (
+    <Panel title="Downtime" icon={<StarIcon />}>
+      {isLoading ? (
+        <p className="text-sm text-silver/40">Loading downtime…</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-2xl text-gold tabular-nums">{bank}</span>
+            <span className="text-xs uppercase tracking-widest text-silver/60">days banked</span>
+          </div>
+
+          {canEdit && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                value={days}
+                onChange={(e) => setDays(e.target.value)}
+                placeholder="Days"
+                className="w-20 rounded border border-gold/30 bg-midnight-800/80 px-2 py-1 text-sm text-silver focus:border-gold/60 focus:outline-none"
+              />
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason (optional)"
+                className="min-w-0 flex-1 rounded border border-gold/30 bg-midnight-800/80 px-2 py-1 text-sm text-silver focus:border-gold/60 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => submit('grant')}
+                className="rounded border border-emerald/40 bg-emerald/10 px-2 py-1 text-xs uppercase tracking-widest text-emerald-soft hover:bg-emerald/20 disabled:opacity-50"
+              >
+                Grant
+              </button>
+              <button
+                type="button"
+                disabled={isPending || bank === 0}
+                onClick={() => submit('spend')}
+                className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-xs uppercase tracking-widest text-red-200 hover:bg-red-500/20 disabled:opacity-50"
+              >
+                Spend
+              </button>
+            </div>
+          )}
+
+          {recent.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {recent.map((e, i) => (
+                <DowntimeLogRow key={`${e.ts}:${i}`} entry={e} />
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </Panel>
+  );
+}
+
+function DowntimeLogRow({ entry }: { entry: DowntimeLogEntry }) {
+  const date = entry.ts ? new Date(entry.ts) : null;
+  const dateOk = date && !Number.isNaN(date.getTime());
+  const positive = entry.delta >= 0;
+  return (
+    <li className="flex items-baseline justify-between gap-2 text-xs">
+      <span className="flex items-baseline gap-2">
+        <span className={`font-display tabular-nums ${positive ? 'text-emerald-soft' : 'text-red-300'}`}>
+          {positive ? '+' : ''}
+          {entry.delta}
+        </span>
+        <span className="text-silver/50 capitalize">{entry.kind}</span>
+        {entry.reason && <span className="text-silver/75">— {entry.reason}</span>}
+      </span>
+      <span className="shrink-0 text-silver/40">
+        {dateOk ? date!.toLocaleDateString() : ''} · {entry.balance}d
+      </span>
+    </li>
   );
 }
 

@@ -69,13 +69,13 @@ const phases: Array<{
   {
     id: 'W4',
     title: 'Phase W4 — Companions, inventory, notes',
-    status: 'next',
+    status: 'in-progress',
     bullets: [
-      { text: 'Inventory, currency, and notes shown on the sheet', done: true },
-      { text: 'Companions tab showing build-imported companions', done: true },
+      { text: 'Inventory, currency, and companions shown on the sheet', done: true },
+      { text: 'Editable per-character notes, live-synced with the bot', done: true },
+      { text: 'Editable downtime bank — grant and spend days with an audit log, live-synced', done: true },
+      { text: 'Editable bags / loot inventory', done: false },
       { text: 'Companion creator — animal companions, familiars, eidolons, mounts, and custom, each with their own sheet and bot sync', done: false },
-      { text: 'Editable bags, downtime, and per-character notes', done: false },
-      { text: 'All live-synced with the Discord bot', done: false },
     ],
   },
   {
