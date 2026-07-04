@@ -43,6 +43,10 @@ const HELP: Record<StepId, { title: string; body: string }> = {
     title: 'How do spells work?',
     body: 'If your class casts spells, pick your cantrips (at-will spells you can cast any number of times) and your leveled spells. Prepared casters (wizards, clerics) choose spells to have ready; spontaneous casters (bards, sorcerers) build a repertoire they cast freely. Your Spell attack and Spell DC — how hard your spells are to resist — show up top. Not a caster? Just skip this step.',
   },
+  companions: {
+    title: 'What are companions?',
+    body: 'Some characters fight alongside an ally: an animal companion or mount (a loyal beast with its own stat block), a familiar (a tiny magical helper you grant abilities to), or an eidolon (a summoner’s manifested partner). You can also add a fully custom ally. Companions save to your vault and sync to the Discord bot. This step needs a saved character, so save first if you’re building a brand-new one.',
+  },
   review: {
     title: 'You’re almost done!',
     body: 'This page checks your character is complete and lets you save it or export it. “Download JSON” gives you a file your Pathway Discord bot can read. Anything still missing is listed in red so you know what to finish.',

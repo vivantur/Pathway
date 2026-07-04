@@ -24,6 +24,7 @@ import { FeatsStep } from './steps/FeatsStep';
 import { AdvancementStep } from './steps/AdvancementStep';
 import { SpellsStep } from './steps/SpellsStep';
 import { EquipmentStep } from './steps/EquipmentStep';
+import { CompanionsStep } from './steps/CompanionsStep';
 import { ReviewStep } from './steps/ReviewStep';
 
 const STEP_CONTENT = {
@@ -37,6 +38,7 @@ const STEP_CONTENT = {
   advancement: AdvancementStep,
   spells: SpellsStep,
   equipment: EquipmentStep,
+  companions: CompanionsStep,
   review: ReviewStep,
 } as const;
 
