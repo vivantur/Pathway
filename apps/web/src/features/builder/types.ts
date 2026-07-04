@@ -57,7 +57,32 @@ export interface BuilderState {
   spellcasting: {
     cantrips: string[];
     spellsByRank: Record<number, string[]>;
+    /** Chosen focus spells (dataset spell ids); available to any focus-using class. */
+    focusSpells: string[];
+    /** Chosen focus cantrips (dataset spell ids). */
+    focusCantrips: string[];
+    /**
+     * For classes whose focus tradition is a player choice (monk: divine/occult;
+     * summoner: the eidolon's tradition). Fixed-tradition classes ignore this.
+     */
+    focusTradition?: string;
   };
+
+  /**
+   * Innate spells the character has from ancestry, heritage, feats, or magic
+   * items. These aren't tied to a spellcasting class, so any character can have
+   * them; the player records what their build grants (dataset spell ids).
+   */
+  innateSpells: InnateSpellEntry[];
+}
+
+export type SpellTradition = 'arcane' | 'divine' | 'occult' | 'primal';
+
+export interface InnateSpellEntry {
+  spellId: string;
+  tradition: SpellTradition;
+  /** Times per day the innate spell can be cast (cantrips are effectively at-will). */
+  perDay: number;
 }
 
 export interface InventoryEntry {
@@ -97,7 +122,8 @@ export function emptyBuilderState(): BuilderState {
     progression: {},
     inventory: [],
     money: 15,
-    spellcasting: { cantrips: [], spellsByRank: {} },
+    spellcasting: { cantrips: [], spellsByRank: {}, focusSpells: [], focusCantrips: [] },
+    innateSpells: [],
   };
 }
 

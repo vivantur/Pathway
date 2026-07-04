@@ -219,7 +219,7 @@ function TabContent({
     case 'spells':
       return <SpellsTab build={build} character={character} edit={edit} />;
     case 'companions':
-      return <CompanionsTab build={build} />;
+      return <CompanionsTab build={build} character={character} readOnly={readOnly} />;
     case 'equipment':
       return <EquipmentTab character={character} build={build} edit={edit} />;
     case 'journal':

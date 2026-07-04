@@ -8,10 +8,19 @@ import {
   getDataset,
   type AbilityKey,
 } from '@/features/builder/data';
-import { casterConfig } from './spellcasting';
+import {
+  casterConfig,
+  focusConfig,
+  focusPoolSize,
+  focusRank,
+  focusTraditionFor,
+  resolveCasterTradition,
+} from './spellcasting';
 import { focusPoints } from './subclassEffects';
-import { deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
-import type { BuilderState } from '@/features/builder/types';
+import { abilityModifier, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
+import type { BuilderState, InnateSpellEntry, SpellTradition } from '@/features/builder/types';
+
+const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
 
 /**
  * Pathbuilder v2 export shape. The Pathway bot reads
@@ -201,7 +210,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       ? [
           {
             name: klass?.name ?? 'Spellcaster',
-            magicTradition: caster.tradition,
+            magicTradition: resolveCasterTradition(state) ?? caster.tradition ?? 'arcane',
             spellcastingType: caster.type,
             ability: caster.keyAbility,
             proficiency: 2, // trained at level 1
@@ -217,6 +226,66 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
           },
         ]
       : [];
+
+  // Focus spells → Pathbuilder `focus` map: tradition → ability → pool. The
+  // sheet computes focus attack/DC as level + proficiency + abilityBonus, so we
+  // store proficiency as 2×rank (Pathbuilder convention) and the ability mod.
+  const focusCfg = focusConfig(state.classId, state.subclassId);
+  const focusTradition = focusTraditionFor(state);
+  const focusOut: Record<
+    string,
+    Record<string, { focusSpells: string[]; focusCantrips: string[]; proficiency: number; abilityBonus: number }>
+  > = {};
+  if (focusCfg && focusTradition) {
+    const fSpells = (sc.focusSpells ?? []).map(spellName);
+    const fCantrips = (sc.focusCantrips ?? []).map(spellName);
+    if (fSpells.length || fCantrips.length) {
+      focusOut[focusTradition] = {
+        [focusCfg.keyAbility]: {
+          focusSpells: fSpells,
+          focusCantrips: fCantrips,
+          proficiency: p(focusRank(state)),
+          abilityBonus: abilityModifier(derived.scores[focusCfg.keyAbility]),
+        },
+      };
+    }
+  }
+
+  // Innate spells → one Pathbuilder spellCasters entry per tradition, flagged
+  // `innate` so the sheet's Innate Spells panel renders them (names grouped by
+  // rank; perDay indexed by rank). Innate spells default to Charisma, trained.
+  const innateByTradition = new Map<string, InnateSpellEntry[]>();
+  for (const e of state.innateSpells ?? []) {
+    const arr = innateByTradition.get(e.tradition) ?? [];
+    arr.push(e);
+    innateByTradition.set(e.tradition, arr);
+  }
+  const innateCastersOut = [...innateByTradition.entries()].map(([tradition, entries]) => {
+    const byRank = new Map<number, string[]>();
+    const perDay: number[] = [];
+    for (const e of entries) {
+      const spell = findSpell(e.spellId);
+      if (!spell) continue;
+      const rank = spell.traits.includes('cantrip') ? 0 : spell.rank;
+      const list = byRank.get(rank) ?? [];
+      list.push(spell.name);
+      byRank.set(rank, list);
+      perDay[rank] = Math.max(perDay[rank] ?? 0, e.perDay);
+    }
+    return {
+      name: 'Innate Spells',
+      innate: true,
+      magicTradition: tradition,
+      spellcastingType: 'innate',
+      ability: 'cha',
+      proficiency: 2,
+      focusPoints: 0,
+      perDay,
+      spells: [...byRank.entries()].map(([spellLevel, list]) => ({ spellLevel, list })),
+      prepared: [],
+      blendedSpells: [],
+    };
+  });
 
   const build: PathbuilderBuild = {
     name: state.name || 'Unnamed Adventurer',
@@ -252,9 +321,10 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     weapons: weaponsOut,
     money,
     armor: armorOut,
-    spellCasters: spellCastersOut,
-    focusPoints: focusPoints(state),
-    focus: {},
+    spellCasters: [...spellCastersOut, ...innateCastersOut],
+    // Pool size = focus spells known (max 3); keep any subclass-granted point too.
+    focusPoints: Math.max(focusPoolSize(state), focusPoints(state)),
+    focus: focusOut,
     formula: [],
     pets: [],
     familiars: [],
@@ -289,6 +359,8 @@ export function fromPathbuilder(data: unknown): Partial<BuilderState> {
   const ds = getDataset();
   const byName = <T extends { id: string; name: string }>(list: T[], name?: string) =>
     list.find((x) => x.name.toLowerCase() === (name ?? '').toLowerCase())?.id;
+  const spellIdByName = (name: string) =>
+    ds.spells.find((s) => s.name.toLowerCase() === name.toLowerCase())?.id;
 
   const ancestryId = byName(ds.ancestries, build.ancestry);
   const ancestry = ancestryId ? findAncestry(ancestryId) : undefined;
@@ -296,6 +368,60 @@ export function fromPathbuilder(data: unknown): Partial<BuilderState> {
   const heritageId =
     ancestry?.heritages.find((h) => h.name.toLowerCase() === heritageName)?.id ??
     ds.versatileHeritages.find((h) => h.name.toLowerCase() === heritageName)?.id;
+
+  // Best-effort focus-spell import (names → dataset ids) for external Pathbuilder
+  // JSON. Characters built here round-trip losslessly via `_pathwayBuild` above.
+  const focusData = (
+    build as { focus?: Record<string, Record<string, { focusSpells?: string[]; focusCantrips?: string[] }>> }
+  ).focus;
+  let spellcasting: BuilderState['spellcasting'] | undefined;
+  if (focusData && typeof focusData === 'object') {
+    const focusSpells: string[] = [];
+    const focusCantrips: string[] = [];
+    let focusTradition: string | undefined;
+    for (const [tradition, byAbility] of Object.entries(focusData)) {
+      for (const pool of Object.values(byAbility)) {
+        for (const n of pool.focusSpells ?? []) {
+          const id = spellIdByName(n);
+          if (id) focusSpells.push(id);
+        }
+        for (const n of pool.focusCantrips ?? []) {
+          const id = spellIdByName(n);
+          if (id) focusCantrips.push(id);
+        }
+        if (!focusTradition && ((pool.focusSpells?.length ?? 0) || (pool.focusCantrips?.length ?? 0)))
+          focusTradition = tradition;
+      }
+    }
+    if (focusSpells.length || focusCantrips.length)
+      spellcasting = { cantrips: [], spellsByRank: {}, focusSpells, focusCantrips, focusTradition };
+  }
+
+  // Best-effort innate-spell import from the `innate: true` spellCasters entries.
+  const innateSpells: InnateSpellEntry[] = [];
+  const casters = (build as { spellCasters?: unknown }).spellCasters;
+  if (Array.isArray(casters)) {
+    for (const c of casters as Array<{
+      innate?: boolean;
+      magicTradition?: string;
+      perDay?: number[];
+      spells?: Array<{ spellLevel?: number; list?: string[] }>;
+    }>) {
+      if (!c?.innate) continue;
+      const tradition = (
+        TRADITIONS.includes(c.magicTradition as SpellTradition) ? c.magicTradition : 'arcane'
+      ) as SpellTradition;
+      for (const sl of c.spells ?? []) {
+        const rank = sl.spellLevel ?? 0;
+        const perDay = c.perDay?.[rank] ?? 1;
+        for (const name of sl.list ?? []) {
+          const id = spellIdByName(name);
+          if (id && !innateSpells.some((e) => e.spellId === id))
+            innateSpells.push({ spellId: id, tradition, perDay });
+        }
+      }
+    }
+  }
 
   return {
     name: build.name ?? '',
@@ -305,5 +431,7 @@ export function fromPathbuilder(data: unknown): Partial<BuilderState> {
     backgroundId: byName(ds.backgrounds, build.background),
     classId: byName(ds.classes, build.class),
     keyAbility: (build.keyability || undefined) as AbilityKey | undefined,
+    ...(spellcasting ? { spellcasting } : {}),
+    ...(innateSpells.length ? { innateSpells } : {}),
   };
 }
