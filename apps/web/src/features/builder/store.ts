@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { findAncestry, findBackground, findClass } from '@/features/builder/data';
-import { emptyBuilderState, emptyLevelGains, type BuilderState, type LevelGains, type StepId } from './types';
+import {
+  emptyBuilderState,
+  emptyLevelGains,
+  type BuilderState,
+  type LevelGains,
+  type SpellTradition,
+  type StepId,
+} from './types';
 import { choiceSlots } from './rules';
 
 export const STEPS: { id: StepId; label: string }[] = [
@@ -49,6 +56,11 @@ interface BuilderStore {
   toggleFocusSpell: (id: string) => void;
   toggleFocusCantrip: (id: string) => void;
   setFocusTradition: (tradition: string) => void;
+
+  addInnateSpell: (spellId: string, tradition: SpellTradition) => void;
+  removeInnateSpell: (spellId: string) => void;
+  setInnatePerDay: (spellId: string, perDay: number) => void;
+  setInnateTradition: (spellId: string, tradition: SpellTradition) => void;
 }
 
 export const useBuilder = create<BuilderStore>((set) => ({
@@ -222,5 +234,37 @@ export const useBuilder = create<BuilderStore>((set) => ({
   setFocusTradition: (tradition) =>
     set((s) => ({
       state: { ...s.state, spellcasting: { ...s.state.spellcasting, focusTradition: tradition } },
+    })),
+
+  addInnateSpell: (spellId, tradition) =>
+    set((s) => {
+      const list = s.state.innateSpells ?? [];
+      if (list.some((e) => e.spellId === spellId)) return s;
+      return { state: { ...s.state, innateSpells: [...list, { spellId, tradition, perDay: 1 }] } };
+    }),
+
+  removeInnateSpell: (spellId) =>
+    set((s) => ({
+      state: { ...s.state, innateSpells: (s.state.innateSpells ?? []).filter((e) => e.spellId !== spellId) },
+    })),
+
+  setInnatePerDay: (spellId, perDay) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        innateSpells: (s.state.innateSpells ?? []).map((e) =>
+          e.spellId === spellId ? { ...e, perDay: Math.max(1, Math.round(perDay)) } : e,
+        ),
+      },
+    })),
+
+  setInnateTradition: (spellId, tradition) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        innateSpells: (s.state.innateSpells ?? []).map((e) =>
+          e.spellId === spellId ? { ...e, tradition } : e,
+        ),
+      },
     })),
 }));

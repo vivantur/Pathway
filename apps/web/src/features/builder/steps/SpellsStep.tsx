@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { findClass, type Spell } from '@/features/builder/data';
+import { findClass, findSpell, getDataset, type Spell } from '@/features/builder/data';
 import { useBuilder } from '../store';
+import type { SpellTradition } from '../types';
 import {
   casterConfig,
   cantripsFor,
@@ -242,6 +243,136 @@ function FocusSpellsSection() {
   );
 }
 
+const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
+const spellRankLabel = (s: Spell) => (s.traits.includes('cantrip') ? 'Cantrip' : `Rank ${s.rank}`);
+
+/**
+ * Innate spells come from ancestry, heritage, feats, or magic items — not a
+ * spellcasting class — so this is shown for every character. Since the dataset
+ * doesn't encode which source grants which innate spell, the player records the
+ * ones their build has (the same "guide, don't over-constrain" approach as
+ * focus spells), choosing each spell's tradition and how many times per day.
+ */
+function InnateSpellsSection() {
+  const state = useBuilder((s) => s.state);
+  const addInnate = useBuilder((s) => s.addInnateSpell);
+  const removeInnate = useBuilder((s) => s.removeInnateSpell);
+  const setPerDay = useBuilder((s) => s.setInnatePerDay);
+  const setTradition = useBuilder((s) => s.setInnateTradition);
+  const [query, setQuery] = useState('');
+
+  const innate = state.innateSpells ?? [];
+  const defaultTradition = (resolveCasterTradition(state) ??
+    focusTraditionFor(state) ??
+    'arcane') as SpellTradition;
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const chosen = new Set(innate.map((e) => e.spellId));
+    return getDataset()
+      .spells.filter((s) => s.name.toLowerCase().includes(q) && !chosen.has(s.id))
+      .slice(0, 24);
+  }, [query, innate]);
+
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl border border-gold-500/20 bg-midnight-800/40 p-5">
+      <div>
+        <h4 className="font-display text-lg text-gold-400">Innate Spells</h4>
+        <p className="mt-1 font-ui text-sm text-parchment/70">
+          Innate spells come from your ancestry, heritage, feats, or magic items. Add any your build
+          grants and set each spell’s tradition and how often you can cast it.
+        </p>
+      </div>
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search any spell to add…"
+        className="rounded-lg border border-gold-500/25 bg-midnight-950/50 px-3 py-2 font-ui text-sm text-parchment placeholder:text-parchment/40 focus:border-gold-400/60 focus:outline-none"
+      />
+      {results.length > 0 && (
+        <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto pr-1">
+          {results.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                addInnate(s.id, defaultTradition);
+                setQuery('');
+              }}
+              className="choice-card flex items-center justify-between gap-2 px-3 py-2 text-left"
+            >
+              <span className="font-display text-parchment">{s.name}</span>
+              <span className="font-ui text-[11px] text-parchment/50">{spellRankLabel(s)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {innate.length > 0 ? (
+        <ul className="flex flex-col gap-2">
+          {innate.map((e) => {
+            const spell = findSpell(e.spellId);
+            if (!spell) return null;
+            return (
+              <li
+                key={e.spellId}
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-gold-500/20 bg-midnight-900/50 px-3 py-2"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="font-display text-parchment">{spell.name}</span>
+                  <span className="ml-2 font-ui text-[11px] text-parchment/50">{spellRankLabel(spell)}</span>
+                </span>
+                <select
+                  value={e.tradition}
+                  onChange={(ev) => setTradition(e.spellId, ev.target.value as SpellTradition)}
+                  className="rounded-lg border border-gold-500/25 bg-midnight-950/50 px-2 py-1 font-ui text-xs text-parchment focus:border-gold-400/60 focus:outline-none"
+                  aria-label={`Tradition for ${spell.name}`}
+                >
+                  {TRADITIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <span className="flex items-center gap-1 font-ui text-xs text-parchment/70">
+                  <button
+                    type="button"
+                    className="btn px-2 py-0.5"
+                    onClick={() => setPerDay(e.spellId, e.perDay - 1)}
+                    aria-label="Fewer per day"
+                  >
+                    −
+                  </button>
+                  {e.perDay}/day
+                  <button
+                    type="button"
+                    className="btn px-2 py-0.5"
+                    onClick={() => setPerDay(e.spellId, e.perDay + 1)}
+                    aria-label="More per day"
+                  >
+                    +
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  className="btn px-2 py-0.5 text-xs"
+                  onClick={() => removeInnate(e.spellId)}
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="font-ui text-xs text-parchment/50">No innate spells added.</p>
+      )}
+    </section>
+  );
+}
+
 export function SpellsStep() {
   const state = useBuilder((s) => s.state);
   const toggleCantrip = useBuilder((s) => s.toggleCantrip);
@@ -251,20 +382,6 @@ export function SpellsStep() {
   const cfg = casterConfig(state.classId, state.subclassId);
   const focus = focusConfig(state.classId, state.subclassId);
   const klass = state.classId ? findClass(state.classId) : undefined;
-
-  // Neither slot spellcasting nor focus spells — nothing to do here.
-  if (!cfg && !focus) {
-    return (
-      <div className="flex flex-col gap-3">
-        <h3 className="font-display text-xl text-gold-400">Spells</h3>
-        <p className="font-ui text-sm text-parchment/70">
-          {klass ? `The ${klass.name} isn’t a spellcasting class` : 'Choose a class first'} — you can
-          skip this step. (Some classes gain spells later through feats or archetypes; those aren’t
-          shown here yet.)
-        </p>
-      </div>
-    );
-  }
 
   const stats = cfg ? spellStats(state) : null;
   const tradition = resolveCasterTradition(state);
@@ -289,9 +406,14 @@ export function SpellsStep() {
                 ? ' Every spell you know is a signature spell.'
                 : ' You also gain Studious Spells slots (restricted to specific spells) not shown here.')}
           </p>
-        ) : (
+        ) : focus ? (
           <p className="font-ui text-sm text-parchment/70">
             The {klass?.name} doesn’t cast spells from slots, but it draws on focus spells.
+          </p>
+        ) : (
+          <p className="font-ui text-sm text-parchment/70">
+            {klass ? `The ${klass.name} isn’t a spellcasting class` : 'Choose a class first'} — but any
+            character can gain innate spells from their ancestry, feats, or magic items.
           </p>
         )}
         {cfg?.traditionChoices && (
@@ -355,6 +477,8 @@ export function SpellsStep() {
       )}
 
       {focus && <FocusSpellsSection />}
+
+      <InnateSpellsSection />
     </div>
   );
 }
