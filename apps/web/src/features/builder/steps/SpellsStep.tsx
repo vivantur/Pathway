@@ -12,6 +12,7 @@ import {
   focusStats,
   focusTraditionFor,
   maxSpellRank,
+  resolveCasterTradition,
   slotsForRank,
   spellStats,
   spellsForRank,
@@ -164,6 +165,10 @@ function FocusSpellsSection() {
   const spells = focusSpellsFor(state.classId);
   const cantrips = focusCantripsFor(state.classId);
   const pool = focusPoolSize(state);
+  // Summoner picks one eidolon tradition for BOTH its slots and its focus
+  // spells; the slot section already shows that selector, so don't duplicate it.
+  const casterHasChoice = Boolean(casterConfig(state.classId, state.subclassId)?.traditionChoices);
+  const showTraditionSelect = Boolean(cfg.traditionChoices) && !casterHasChoice;
 
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-arcane-400/25 bg-arcane-500/5 p-5">
@@ -174,7 +179,7 @@ function FocusSpellsSection() {
           10‑minute Refocus activity. You gain them from class features and feats — pick the ones your
           build grants.
         </p>
-        {cfg.traditionChoices && (
+        {showTraditionSelect && cfg.traditionChoices && (
           <label className="mt-3 flex flex-wrap items-center gap-2 font-ui text-sm text-parchment/80">
             Tradition:
             <select
@@ -241,6 +246,7 @@ export function SpellsStep() {
   const state = useBuilder((s) => s.state);
   const toggleCantrip = useBuilder((s) => s.toggleCantrip);
   const toggleSpell = useBuilder((s) => s.toggleSpell);
+  const setFocusTradition = useBuilder((s) => s.setFocusTradition);
 
   const cfg = casterConfig(state.classId, state.subclassId);
   const focus = focusConfig(state.classId, state.subclassId);
@@ -261,7 +267,8 @@ export function SpellsStep() {
   }
 
   const stats = cfg ? spellStats(state) : null;
-  const maxRank = maxSpellRank(state.level || 1);
+  const tradition = resolveCasterTradition(state);
+  const maxRank = maxSpellRank(state.level || 1, cfg?.progression);
   const ranks = Array.from({ length: maxRank }, (_, i) => i + 1);
   const sub = subclassNote(state);
 
@@ -273,15 +280,35 @@ export function SpellsStep() {
           <p className="font-ui text-sm text-parchment/70">
             As a{' '}
             <span className="text-parchment">
-              {cfg.type} {cfg.tradition}
+              {cfg.type} {tradition}
             </span>{' '}
-            caster, you cast {cfg.tradition} spells using {cfg.keyAbility.toUpperCase()}.
+            caster, you cast {tradition} spells using {cfg.keyAbility.toUpperCase()}.
             {sub ? ` (${sub})` : ''}
+            {cfg.progression === 'bounded' &&
+              (cfg.type === 'spontaneous'
+                ? ' Every spell you know is a signature spell.'
+                : ' You also gain Studious Spells slots (restricted to specific spells) not shown here.')}
           </p>
         ) : (
           <p className="font-ui text-sm text-parchment/70">
             The {klass?.name} doesn’t cast spells from slots, but it draws on focus spells.
           </p>
+        )}
+        {cfg?.traditionChoices && (
+          <label className="mt-3 flex flex-wrap items-center gap-2 font-ui text-sm text-parchment/80">
+            Tradition (from your eidolon):
+            <select
+              value={tradition ?? ''}
+              onChange={(e) => setFocusTradition(e.target.value)}
+              className="rounded-lg border border-gold-500/30 bg-midnight-950/50 px-2 py-1 text-parchment focus:border-gold-400/60 focus:outline-none"
+            >
+              {cfg.traditionChoices.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
         {stats && (
           <div className="mt-3 flex flex-wrap gap-2 font-ui text-sm">
@@ -295,19 +322,19 @@ export function SpellsStep() {
         )}
       </div>
 
-      {cfg && (
+      {cfg && tradition && (
         <>
           <SpellSection
             title="Cantrips"
             hint="At-will spells you can cast any number of times. They automatically scale with your level."
-            candidates={cantripsFor(cfg.tradition)}
+            candidates={cantripsFor(tradition)}
             selected={state.spellcasting.cantrips}
             max={cfg.cantrips}
             onToggle={(id) => toggleCantrip(id, cfg.cantrips)}
           />
 
           {ranks.map((rank) => {
-            const max = slotsForRank(state.level || 1, rank);
+            const max = slotsForRank(state.level || 1, rank, cfg.progression);
             return (
               <SpellSection
                 key={rank}
@@ -317,7 +344,7 @@ export function SpellsStep() {
                     ? 'Spells in your repertoire — you can cast any of them using a slot of this rank.'
                     : 'Spells you can prepare in your slots of this rank each day.'
                 }
-                candidates={spellsForRank(cfg.tradition, rank)}
+                candidates={spellsForRank(tradition, rank)}
                 selected={state.spellcasting.spellsByRank[rank] ?? []}
                 max={max}
                 onToggle={(id) => toggleSpell(rank, id, max)}

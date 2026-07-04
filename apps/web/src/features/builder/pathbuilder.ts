@@ -14,6 +14,7 @@ import {
   focusPoolSize,
   focusRank,
   focusTraditionFor,
+  resolveCasterTradition,
 } from './spellcasting';
 import { focusPoints } from './subclassEffects';
 import { abilityModifier, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
@@ -207,7 +208,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       ? [
           {
             name: klass?.name ?? 'Spellcaster',
-            magicTradition: caster.tradition,
+            magicTradition: resolveCasterTradition(state) ?? caster.tradition ?? 'arcane',
             spellcastingType: caster.type,
             ability: caster.keyAbility,
             proficiency: 2, // trained at level 1

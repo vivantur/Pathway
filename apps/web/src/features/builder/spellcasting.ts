@@ -7,30 +7,49 @@ import type { BuilderState } from './types';
 
 export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
 export type CasterType = 'prepared' | 'spontaneous';
+/** Slot progression: 'full' (10th-rank casters) vs 'bounded' (magus, summoner). */
+export type CasterProgression = 'full' | 'bounded';
 
 export interface CasterConfig {
-  tradition: Tradition;
+  /** Fixed tradition; omitted when the tradition is a player choice. */
+  tradition?: Tradition;
+  /** Traditions to choose from (summoner: the eidolon's tradition). */
+  traditionChoices?: Tradition[];
   type: CasterType;
   keyAbility: AbilityKey;
-  /** Cantrips known/prepared (most full casters: 5). */
+  /** Cantrips known/prepared (most casters: 5). */
   cantrips: number;
+  progression: CasterProgression;
 }
 
 /**
- * Curated spellcasting config for the full casters. A few classes have a
- * tradition that depends on a sub-choice (sorcerer bloodline, witch patron); we
- * use a sensible default and note it in the UI. Partial casters (magus,
- * summoner) are out of scope for this pass.
+ * Curated spellcasting config. Traditions that depend on a sub-choice (sorcerer
+ * bloodline, witch patron) are resolved from the subclass; the summoner's is the
+ * eidolon's tradition (a player choice). Slot progressions: full casters use the
+ * standard table; magus and summoner are bounded (four slots across the two
+ * highest ranks) — those exact per-level tables come from the Magus/Summoner
+ * "Spells per Day" tables (Pf2eTools machine-readable class data), not memory.
+ * Animist is a full divine caster reaching 10th rank (its apparition-granted
+ * spontaneous slots are a bonus mechanic not modeled here).
  */
 const CASTERS: Record<string, CasterConfig> = {
-  wizard: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5 },
-  cleric: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5 },
-  druid: { tradition: 'primal', type: 'prepared', keyAbility: 'wis', cantrips: 5 },
-  witch: { tradition: 'occult', type: 'prepared', keyAbility: 'int', cantrips: 5 },
-  bard: { tradition: 'occult', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  sorcerer: { tradition: 'arcane', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  oracle: { tradition: 'divine', type: 'spontaneous', keyAbility: 'cha', cantrips: 5 },
-  psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5 },
+  wizard: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  cleric: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  druid: { tradition: 'primal', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  witch: { tradition: 'occult', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  bard: { tradition: 'occult', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  sorcerer: { tradition: 'arcane', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  oracle: { tradition: 'divine', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
+  psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5, progression: 'full' },
+  animist: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  magus: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'bounded' },
+  summoner: {
+    traditionChoices: ['arcane', 'divine', 'occult', 'primal'],
+    type: 'spontaneous',
+    keyAbility: 'cha',
+    cantrips: 5,
+    progression: 'bounded',
+  },
 };
 
 export function casterConfig(
@@ -48,18 +67,53 @@ export function isCaster(classId: string | undefined): boolean {
   return Boolean(casterConfig(classId));
 }
 
-/** Highest spell rank a full caster can cast at a given level. */
-export function maxSpellRank(level: number): number {
-  return Math.min(10, Math.ceil(level / 2));
+/**
+ * The tradition a caster casts from, resolving the summoner's eidolon choice
+ * (stored in `spellcasting.focusTradition`, shared with its focus spells).
+ */
+export function resolveCasterTradition(state: BuilderState): Tradition | undefined {
+  const cfg = casterConfig(state.classId, state.subclassId);
+  if (!cfg) return undefined;
+  if (cfg.tradition) return cfg.tradition;
+  const chosen = state.spellcasting?.focusTradition as Tradition | undefined;
+  return chosen && cfg.traditionChoices?.includes(chosen) ? chosen : cfg.traditionChoices?.[0];
+}
+
+/** Highest spell rank castable at a level (bounded casters cap at 9th). */
+export function maxSpellRank(level: number, progression: CasterProgression = 'full'): number {
+  return Math.min(progression === 'bounded' ? 9 : 10, Math.ceil(level / 2));
 }
 
 /**
- * Approximate spells to pick at a given rank for a full caster (mirrors the
- * standard spells-per-day table): a newly-gained rank offers 2, matured ranks
- * offer 3, and 10th rank is capped at 1. Good enough to guide selection; exact
- * per-class nuances (e.g. wizard spellbook size) are a later refinement.
+ * Bounded (limited) caster slots — magus & summoner. Exact per-level counts from
+ * the Magus/Summoner "Spells per Day" tables: a 1→2 ramp at the lowest ranks,
+ * then four regular slots split as 2+2 across the two highest ranks. (Magus also
+ * has Studious Spells slots restricted to specific spells — not modeled here.)
  */
-export function slotsForRank(level: number, rank: number): number {
+function boundedSlotsForRank(level: number, rank: number): number {
+  const ramp: Record<number, Record<number, number>> = {
+    1: { 1: 1 },
+    2: { 1: 2 },
+    3: { 1: 2, 2: 1 },
+    4: { 1: 2, 2: 2 },
+  };
+  if (level <= 4) return ramp[level]?.[rank] ?? 0;
+  const top = Math.min(9, Math.ceil(level / 2));
+  return rank === top || rank === top - 1 ? 2 : 0;
+}
+
+/**
+ * Spells to pick at a given rank. Full casters mirror the standard spells-per-day
+ * table (new rank offers 2, matured 3, 10th capped at 1); bounded casters use the
+ * magus/summoner table. Good enough to guide selection; exact per-class nuances
+ * (e.g. wizard spellbook size) are a later refinement.
+ */
+export function slotsForRank(
+  level: number,
+  rank: number,
+  progression: CasterProgression = 'full',
+): number {
+  if (progression === 'bounded') return boundedSlotsForRank(level, rank);
   if (rank < 1 || rank > maxSpellRank(level)) return 0;
   if (rank === 10) return 1;
   return level >= 2 * rank ? 3 : 2;
@@ -115,20 +169,26 @@ export interface FocusConfig {
   traditionChoices?: Tradition[];
 }
 
-/** Focus-using classes that are NOT among the eight full casters. */
+/**
+ * Focus-using classes that grant no slot spellcasting (so they aren't in
+ * CASTERS). Magus, summoner, and animist DO cast from slots, so their focus
+ * config is derived from their CasterConfig instead.
+ */
 const FOCUS_ONLY: Record<string, FocusConfig> = {
   monk: { keyAbility: 'wis', traditionChoices: ['divine', 'occult'] },
   champion: { keyAbility: 'cha', tradition: 'divine' },
   ranger: { keyAbility: 'wis', tradition: 'primal' },
-  magus: { keyAbility: 'int', tradition: 'arcane' },
-  summoner: { keyAbility: 'cha', traditionChoices: ['arcane', 'divine', 'occult', 'primal'] },
-  animist: { keyAbility: 'wis', tradition: 'divine' },
 };
 
 /** The focus config for a class, if it can have focus spells at all. */
 export function focusConfig(classId?: string, subclassId?: string): FocusConfig | undefined {
   const caster = casterConfig(classId, subclassId);
-  if (caster) return { keyAbility: caster.keyAbility, tradition: caster.tradition };
+  if (caster)
+    return {
+      keyAbility: caster.keyAbility,
+      tradition: caster.tradition,
+      traditionChoices: caster.traditionChoices,
+    };
   return classId ? FOCUS_ONLY[classId] : undefined;
 }
 
