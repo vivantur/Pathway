@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "//": "Root Directory is apps/web, but this app depends on the workspace package @pathway/core. Install from the monorepo root so npm links the local package instead of resolving it from the registry (which 404s).",
   "installCommand": "npm install --prefix ../..",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
