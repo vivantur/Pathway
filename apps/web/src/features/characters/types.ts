@@ -249,6 +249,21 @@ export interface DowntimeRecord {
   log: DowntimeLogEntry[];
 }
 
+/** One row in a character's loot bag (the bot's `bag_items` table). */
+export interface BagItem {
+  /** bag_items primary key (uuid or bigint — used to target updates/deletes). */
+  id: string | number;
+  category: string;
+  displayName: string;
+  quantity: number;
+}
+
+/** A character's loot bag: its name and the items in it. */
+export interface CharacterBag {
+  bagName: string;
+  items: BagItem[];
+}
+
 export interface CharacterRow {
   id: string;
   user_id: string;

@@ -4,6 +4,8 @@ import { maxHp } from './pathbuilder';
 import { preferRemaster } from './pf2eData/sourcePreference';
 import type {
   AncestryRow,
+  BagItem,
+  CharacterBag,
   CharacterNoteEntry,
   CharacterOverlay,
   CharacterRow,
@@ -352,6 +354,146 @@ export async function updateCharacterDowntime(input: {
   throw new Error(
     'Could not update downtime — the character was being updated somewhere else. Please try again.',
   );
+}
+
+// -------------------------------------------------------------------------
+// Loot bag: the bot's normalized bags + bag_items (per character)
+// -------------------------------------------------------------------------
+
+/** Escape LIKE/ILIKE wildcards so a user's `%`/`_` are matched literally. */
+function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, '\\$&');
+}
+
+/** One match in the "add an item" picker. */
+export interface ItemPickResult {
+  id: string | number;
+  name: string;
+}
+
+/**
+ * Load one character's loot bag (bag name + items), keyed by `char_key` — the
+ * bot keys modern per-character bags this way (`makeBagKey(userId, charKey)`).
+ * RLS scopes both tables to the owner. Legacy per-user bags (the bot's
+ * `__legacy__` char_key) are intentionally not surfaced on a character sheet.
+ */
+export async function fetchCharacterBag(charKey: string): Promise<CharacterBag> {
+  const supabase = requireSupabase();
+  const [{ data: bagRow, error: bagErr }, { data: itemRows, error: itemErr }] = await Promise.all([
+    supabase.from('bags').select('bag_name').eq('char_key', charKey).maybeSingle(),
+    supabase
+      .from('bag_items')
+      .select('id, category, display_name, quantity, sort_order')
+      .eq('char_key', charKey)
+      .order('sort_order', { ascending: true }),
+  ]);
+  if (bagErr) throw bagErr;
+  if (itemErr) throw itemErr;
+
+  const items: BagItem[] = ((itemRows ?? []) as Array<{
+    id: string | number;
+    category: string | null;
+    display_name: string | null;
+    quantity: number | null;
+  }>).map((r) => ({
+    id: r.id,
+    category: r.category ?? 'General',
+    displayName: r.display_name ?? '',
+    quantity: r.quantity ?? 1,
+  }));
+
+  return { bagName: (bagRow as { bag_name: string | null } | null)?.bag_name ?? 'Bag', items };
+}
+
+/** Case-insensitive item-name search for the "add to bag" picker. */
+export async function searchItemsForPicker(query: string): Promise<ItemPickResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('items')
+    .select('id, name')
+    .ilike('name', `%${escapeLike(q)}%`)
+    .order('name')
+    .limit(30);
+  if (error) throw error;
+
+  const seen = new Set<string>();
+  const out: ItemPickResult[] = [];
+  for (const r of (data ?? []) as Array<{ id: string | number; name: string }>) {
+    const k = r.name.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ id: r.id, name: r.name });
+  }
+  return out;
+}
+
+/**
+ * Add an item to a character's bag. Ensures the `bags` row exists first (so the
+ * bot lists the bag) WITHOUT overwriting an existing bag name, then inserts one
+ * `bag_items` row — linking `item_id` when the item came from the archive, or
+ * storing a `custom_name` for free-text entries, matching the bot's shape.
+ */
+export async function addBagItem(input: {
+  userId: string;
+  charKey: string;
+  category: string;
+  name: string;
+  itemId?: string | number | null;
+  quantity: number;
+}): Promise<void> {
+  const supabase = requireSupabase();
+  const { userId, charKey } = input;
+  const name = input.name.trim();
+  if (!name) throw new Error('Give the item a name.');
+
+  // Insert the bag row only if absent — never clobber a renamed bag.
+  const { error: bagError } = await supabase.from('bags').upsert(
+    { user_id: userId, char_key: charKey, bag_name: 'Bag', categories: {} },
+    { onConflict: 'user_id,char_key', ignoreDuplicates: true },
+  );
+  if (bagError) throw bagError;
+
+  const { count } = await supabase
+    .from('bag_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('char_key', charKey);
+
+  const { error } = await supabase.from('bag_items').insert({
+    user_id: userId,
+    char_key: charKey,
+    category: input.category.trim() || 'General',
+    item_id: input.itemId ?? null,
+    homebrew_id: null,
+    custom_name: input.itemId ? null : name,
+    display_name: name,
+    quantity: Math.max(1, Math.floor(input.quantity) || 1),
+    sort_order: count ?? 0,
+  });
+  if (error) throw error;
+}
+
+/** Set a bag item's quantity, or remove the row when it drops to zero. */
+export async function setBagItemQuantity(input: {
+  rowId: string | number;
+  quantity: number;
+}): Promise<void> {
+  if (input.quantity <= 0) return removeBagItem({ rowId: input.rowId });
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('bag_items')
+    .update({ quantity: Math.floor(input.quantity) })
+    .eq('id', input.rowId);
+  if (error) throw error;
+}
+
+/** Remove one item row from a bag. RLS scopes the delete to the owner. */
+export async function removeBagItem(input: { rowId: string | number }): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('bag_items').delete().eq('id', input.rowId);
+  if (error) throw error;
 }
 
 // -------------------------------------------------------------------------
