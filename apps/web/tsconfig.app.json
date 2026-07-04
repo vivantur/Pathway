@@ -26,8 +26,9 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@pathway/core": ["../../packages/core/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../packages/core/src"]
 }
