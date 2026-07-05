@@ -65,6 +65,10 @@ export interface SaveCompanionInput {
   familiarAbilities?: string[];
   /** Eidolon: subtype slug. */
   eidolonType?: string;
+  /** Eidolon extras: chosen build (ability array) + primary unarmed attack. */
+  eidolonBuild?: number;
+  eidolonPrimaryName?: string;
+  eidolonPrimaryDie?: string;
   /** Custom companion: a hand-entered stat block. */
   custom?: CustomCompanionStats;
 }
@@ -89,7 +93,13 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     art: input.art ?? existing?.custom_stats?.art ?? null,
   };
   if (input.kind === 'familiar') customStats.familiar = { abilities: input.familiarAbilities ?? [] };
-  if (input.kind === 'eidolon') customStats.eidolon = { type: input.eidolonType ?? '' };
+  if (input.kind === 'eidolon')
+    customStats.eidolon = {
+      type: input.eidolonType ?? '',
+      build: input.eidolonBuild ?? 0,
+      primaryName: input.eidolonPrimaryName,
+      primaryDie: input.eidolonPrimaryDie,
+    };
   if (input.kind === 'custom') customStats.custom = input.custom ?? existing?.custom_stats?.custom ?? {};
 
   const row = {

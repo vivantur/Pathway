@@ -65,7 +65,16 @@ function draftToRow(draft: CompanionDraft, index: number): CompanionRow {
     custom_stats: {
       kind: draft.kind,
       ...(draft.kind === 'familiar' ? { familiar: { abilities: draft.familiarAbilities ?? [] } } : {}),
-      ...(draft.kind === 'eidolon' ? { eidolon: { type: draft.eidolonType ?? '' } } : {}),
+      ...(draft.kind === 'eidolon'
+        ? {
+            eidolon: {
+              type: draft.eidolonType ?? '',
+              build: draft.eidolonBuild ?? 0,
+              primaryName: draft.eidolonPrimaryName,
+              primaryDie: draft.eidolonPrimaryDie,
+            },
+          }
+        : {}),
       ...(draft.kind === 'custom' ? { custom: draft.custom ?? {} } : {}),
     },
   };

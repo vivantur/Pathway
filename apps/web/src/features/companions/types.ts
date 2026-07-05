@@ -45,8 +45,11 @@ export interface CompanionCustomStats {
   overrides?: Record<string, unknown>;
   /** Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES). */
   familiar?: { abilities: string[] };
-  /** Eidolon: its subtype slug (into EIDOLON_TYPES). */
-  eidolon?: { type: string };
+  /**
+   * Eidolon: subtype slug (into EIDOLON_TYPES), which of its builds (ability
+   * array) was chosen, and the player-chosen primary unarmed attack.
+   */
+  eidolon?: { type: string; build?: number; primaryName?: string; primaryDie?: string };
   /** Custom companion: a hand-entered stat block. */
   custom?: CustomCompanionStats;
 }

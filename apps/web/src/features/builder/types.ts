@@ -93,6 +93,9 @@ export interface CompanionDraft {
   notes?: string | null;
   familiarAbilities?: string[];
   eidolonType?: string;
+  eidolonBuild?: number;
+  eidolonPrimaryName?: string;
+  eidolonPrimaryDie?: string;
   custom?: Record<string, unknown>;
 }
 

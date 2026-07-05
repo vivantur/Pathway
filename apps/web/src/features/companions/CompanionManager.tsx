@@ -7,8 +7,10 @@ import {
   FAMILIAR_ABILITIES,
   familiarBaseStats,
   findCompanionType,
+  findEidolonType,
   findFamiliarAbility,
   scaleCompanion,
+  scaleEidolon,
   type CompanionForm,
   type CompanionKind,
 } from './engine';
@@ -280,13 +282,60 @@ function FamiliarBlock({ companion, level }: { companion: CompanionRow; level: n
 }
 
 function EidolonBlock({ companion, level }: { companion: CompanionRow; level: number }) {
-  const type = EIDOLON_TYPES.find((e) => e.slug === companion.custom_stats.eidolon?.type);
+  const cfg = companion.custom_stats.eidolon;
+  const type = cfg ? findEidolonType(cfg.type) : undefined;
+  if (!type) {
+    return (
+      <p className="text-xs text-silver/60">Eidolon subtype not recognized — edit to pick one.</p>
+    );
+  }
+  const s = scaleEidolon(type, cfg?.build ?? 0, level);
+  const primaryName = cfg?.primaryName || 'primary attack';
+  const primaryDie = cfg?.primaryDie || '—';
   return (
-    <div className="text-xs text-silver/70">
-      <span className="font-display text-gold/90">{type?.name ?? 'Eidolon'}</span> · shares your
-      actions and scales with your level ({level}). Its full stat block tracks the summoner — manage
-      details on Discord for now.
-    </div>
+    <>
+      <div className="mb-1 text-xs text-silver/60">
+        {s.buildName} {type.name} eidolon · {cap(s.size)} · {cap(s.tradition)} · Lvl {level}
+      </div>
+      <StatGrid
+        items={[
+          ['HP', 'shared'],
+          ['AC', s.ac],
+          ['Perception', sign(s.perception)],
+          ['Speed', s.speed],
+          ['Fort', sign(s.saves.fortitude)],
+          ['Ref', sign(s.saves.reflex)],
+          ['Will', sign(s.saves.will)],
+          ['Spec. dmg', s.specializationDamage ? `+${s.specializationDamage}` : '—'],
+        ]}
+      />
+      <div className="mt-2 space-y-1 text-xs text-silver/80">
+        <div>
+          <span className="font-display text-gold/90">{cap(primaryName)}</span> {sign(s.attack)} ·{' '}
+          {primaryDie}
+          {s.specializationDamage ? `+${s.specializationDamage}` : ''}{' '}
+          <span className="text-silver/50">(die per your eidolon’s entry)</span>
+        </div>
+        <div>
+          <span className="font-display text-gold/90">Secondary</span> {sign(s.attackFinesse)} ·{' '}
+          {s.secondary.damageDie}
+          {s.specializationDamage ? `+${s.specializationDamage}` : ''}{' '}
+          <span className="text-silver/50">({s.secondary.traits.join(', ')})</span>
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-silver/60">
+        <span className="text-silver/40">Skills:</span> {s.skills.join(', ') || '—'}
+        {s.senses.length > 0 && (
+          <>
+            {' '}
+            · <span className="text-silver/40">Senses:</span> {s.senses.join(', ')}
+          </>
+        )}
+      </p>
+      <p className="mt-1 text-xs italic text-silver/50">
+        Shares your HP pool, actions, and multiple attack penalty.
+      </p>
+    </>
   );
 }
 
@@ -334,6 +383,9 @@ export interface CompanionFormOutput {
   notes?: string | null;
   familiarAbilities?: string[];
   eidolonType?: string;
+  eidolonBuild?: number;
+  eidolonPrimaryName?: string;
+  eidolonPrimaryDie?: string;
   custom?: CustomCompanionStats;
 }
 
@@ -374,6 +426,13 @@ export function CompanionEditorForm({
   const [eidolonType, setEidolonType] = useState(
     existing?.custom_stats.eidolon?.type ?? EIDOLON_TYPES[0].slug,
   );
+  const [eidolonBuild, setEidolonBuild] = useState(existing?.custom_stats.eidolon?.build ?? 0);
+  const [eidolonPrimaryName, setEidolonPrimaryName] = useState(
+    existing?.custom_stats.eidolon?.primaryName ?? '',
+  );
+  const [eidolonPrimaryDie, setEidolonPrimaryDie] = useState(
+    existing?.custom_stats.eidolon?.primaryDie ?? '',
+  );
   // custom
   const [custom, setCustom] = useState<CustomCompanionStats>(existing?.custom_stats.custom ?? {});
 
@@ -400,6 +459,9 @@ export function CompanionEditorForm({
       notes: notes.trim() || null,
       familiarAbilities: kind === 'familiar' ? familiarAbilities : undefined,
       eidolonType: kind === 'eidolon' ? eidolonType : undefined,
+      eidolonBuild: kind === 'eidolon' ? eidolonBuild : undefined,
+      eidolonPrimaryName: kind === 'eidolon' ? eidolonPrimaryName || undefined : undefined,
+      eidolonPrimaryDie: kind === 'eidolon' ? eidolonPrimaryDie || undefined : undefined,
       custom: kind === 'custom' ? custom : undefined,
     };
     if (onSubmitDraft) {
@@ -499,16 +561,20 @@ export function CompanionEditorForm({
       )}
 
       {kind === 'eidolon' && (
-        <label className="mt-3 flex flex-col gap-1 text-xs text-silver/70">
-          Eidolon subtype
-          <select value={eidolonType} onChange={(e) => setEidolonType(e.target.value)} className={inputCls}>
-            {EIDOLON_TYPES.map((e) => (
-              <option key={e.slug} value={e.slug}>
-                {e.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <EidolonFields
+          type={eidolonType}
+          build={eidolonBuild}
+          primaryName={eidolonPrimaryName}
+          primaryDie={eidolonPrimaryDie}
+          level={level}
+          onType={(t) => {
+            setEidolonType(t);
+            setEidolonBuild(0);
+          }}
+          onBuild={setEidolonBuild}
+          onPrimaryName={setEidolonPrimaryName}
+          onPrimaryDie={setEidolonPrimaryDie}
+        />
       )}
 
       {kind === 'custom' && <CustomStatFields value={custom} onChange={setCustom} />}
@@ -539,6 +605,87 @@ export function CompanionEditorForm({
           Cancel
         </button>
       </div>
+    </div>
+  );
+}
+
+const PRIMARY_DICE = ['1d4', '1d6', '1d8', '1d10', '1d12'];
+
+function EidolonFields({
+  type,
+  build,
+  primaryName,
+  primaryDie,
+  level,
+  onType,
+  onBuild,
+  onPrimaryName,
+  onPrimaryDie,
+}: {
+  type: string;
+  build: number;
+  primaryName: string;
+  primaryDie: string;
+  level: number;
+  onType: (t: string) => void;
+  onBuild: (b: number) => void;
+  onPrimaryName: (n: string) => void;
+  onPrimaryDie: (d: string) => void;
+}) {
+  const t = findEidolonType(type);
+  const preview = t ? scaleEidolon(t, build, level) : null;
+  return (
+    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <label className="flex flex-col gap-1 text-xs text-silver/70">
+        Eidolon subtype
+        <select value={type} onChange={(e) => onType(e.target.value)} className={inputCls}>
+          {EIDOLON_TYPES.map((e) => (
+            <option key={e.slug} value={e.slug}>
+              {e.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {t && t.builds.length > 1 && (
+        <label className="flex flex-col gap-1 text-xs text-silver/70">
+          Build (ability array)
+          <select value={build} onChange={(e) => onBuild(Number(e.target.value))} className={inputCls}>
+            {t.builds.map((b, i) => (
+              <option key={b.name} value={i}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className="flex flex-col gap-1 text-xs text-silver/70">
+        Primary attack name
+        <input
+          value={primaryName}
+          onChange={(e) => onPrimaryName(e.target.value)}
+          placeholder={t?.suggestedAttacks || 'claw, jaws, …'}
+          className={inputCls}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-silver/70">
+        Primary attack die (per your eidolon’s entry)
+        <select value={primaryDie} onChange={(e) => onPrimaryDie(e.target.value)} className={inputCls}>
+          <option value="">— choose —</option>
+          {PRIMARY_DICE.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </label>
+      {preview && (
+        <div className="sm:col-span-2 rounded border border-gold/10 bg-midnight-950/40 p-2 text-xs text-silver/80">
+          <span className="text-silver/50">Preview (lvl {level}, {preview.buildName}): </span>
+          HP shared · AC {preview.ac} · Per {sign(preview.perception)} · Fort {sign(preview.saves.fortitude)} / Ref{' '}
+          {sign(preview.saves.reflex)} / Will {sign(preview.saves.will)} · Attack {sign(preview.attack)}
+          {preview.specializationDamage ? ` · Spec +${preview.specializationDamage}` : ''}
+        </div>
+      )}
     </div>
   );
 }

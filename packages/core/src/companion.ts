@@ -28,6 +28,8 @@
 // the website (these correct values) and Discord. The stored sync DATA
 // (base type, form, overrides) is identical either way.
 
+import { proficiencyRankAtLevel, type ProficiencyRank } from "./proficiency";
+
 export type CompanionForm = 'young' | 'mature' | 'nimble' | 'savage';
 export const COMPANION_FORMS: readonly CompanionForm[] = ['young', 'mature', 'nimble', 'savage'];
 
@@ -731,7 +733,7 @@ function growSize(size: string, steps: number): string {
   if (i < 0 || steps <= 0) return size;
   // Only Medium or smaller grow (per the maturation rules).
   if (i > SIZE_ORDER.indexOf('medium')) return size;
-  return SIZE_ORDER[Math.min(SIZE_ORDER.length - 1, i + steps)];
+  return SIZE_ORDER[Math.min(SIZE_ORDER.length - 1, i + steps)] ?? size;
 }
 
 /** "1d8" → "2d8" (double the dice count). */
@@ -923,22 +925,278 @@ export function familiarBaseStats(level: number): { hp: number; speed: number } 
 // these are the selectable subtypes for now.
 // --------------------------------------------------------------------------
 
+// Eidolon subtypes with their base forms, extracted from machine-readable
+// rules data. Each subtype offers one or two "builds" (ability arrays + armor);
+// stats scale off the SUMMONER: shared HP pool and actions, save/Perception/
+// unarmored ranks in lockstep with the summoner class progression (the Shared
+// Vigilance/Reflexes/Resolve and Eidolon Defensive Expertise/Mastery class
+// features), and an eidolon-specific unarmed-attack track (trained, expert at
+// 5th via Eidolon Unarmed Expertise, master at 13th via Eidolon Unarmed
+// Mastery). The secondary unarmed attack is always 1d6 with agile + finesse;
+// the primary attack form and die come from the eidolon entry (player choice).
+export interface EidolonBuild {
+  name: string;
+  abilityMods: CompanionAbilityMods;
+  /** Armor bonus the build grants, plus its Dex cap for AC. */
+  acBonus: number;
+  dexCap: number;
+}
+
 export interface EidolonType {
   slug: string;
   name: string;
+  tradition: string;
+  size: string;
+  speed: string;
+  skills: string[];
+  senses: string[];
+  suggestedAttacks: string;
+  builds: EidolonBuild[];
+  source: string;
 }
 
 export const EIDOLON_TYPES: EidolonType[] = [
-  { slug: 'beast', name: 'Beast' },
-  { slug: 'construct', name: 'Construct' },
-  { slug: 'dragon', name: 'Dragon' },
-  { slug: 'elemental', name: 'Elemental' },
-  { slug: 'fey', name: 'Fey' },
-  { slug: 'plant', name: 'Plant' },
-  { slug: 'undead', name: 'Undead' },
-  { slug: 'angel', name: 'Angel' },
-  { slug: 'demon', name: 'Demon' },
-  { slug: 'psychopomp', name: 'Psychopomp' },
-  { slug: 'anger-phantom', name: 'Anger Phantom' },
-  { slug: 'devotion-phantom', name: 'Devotion Phantom' },
+  {
+    slug: "elemental",
+    name: "Elemental",
+    tradition: "primal",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Nature","Survival"],
+    senses: ["darkvision"],
+    suggestedAttacks: "branch (bludgeoning); fist (bludgeoning); spike (piercing); tendril (bludgeoning); wave (bludgeoning)",
+    builds: [{ name: "Adaptable Elemental", abilityMods: { str: 1, dex: 4, con: 3, int: 0, wis: 1, cha: 0 }, acBonus: 1, dexCap: 4 }, { name: "Primordial Elemental", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 2, dexCap: 3 }],
+    source: "RoE",
+  },
+  {
+    slug: "undead",
+    name: "Undead",
+    tradition: "divine",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Intimidation","Religion"],
+    senses: ["darkvision"],
+    suggestedAttacks: "claw (slashing), fist (bludgeoning), jaws (piercing)",
+    builds: [{ name: "Undead Brute", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 0, cha: 1 }, acBonus: 2, dexCap: 3 }, { name: "Undead Stalker", abilityMods: { str: 2, dex: 4, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 1, dexCap: 4 }],
+    source: "BotD",
+  },
+  {
+    slug: "angel",
+    name: "Angel",
+    tradition: "divine",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Diplomacy","Religion"],
+    senses: ["darkvision"],
+    suggestedAttacks: "fist (bludgeoning), wing (bludgeoning), unarmed attacks shaped like a weapon",
+    builds: [{ name: "Angelic Avenger", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 2, dexCap: 3 }, { name: "Angelic Emissary", abilityMods: { str: 1, dex: 4, con: 1, int: 0, wis: 1, cha: 2 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "anger-phantom",
+    name: "Anger Phantom",
+    tradition: "occult",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Intimidation","Occultism"],
+    senses: ["darkvision"],
+    suggestedAttacks: "fist (bludgeoning), tendril (bludgeoning), unarmed attacks shaped like a weapon",
+    builds: [{ name: "Wrathful Berserker", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 0, cha: 1 }, acBonus: 2, dexCap: 3 }, { name: "Enraged Assassin", abilityMods: { str: 2, dex: 4, con: 3, int: 0, wis: -1, cha: 1 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "beast",
+    name: "Beast",
+    tradition: "primal",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Intimidation","Nature"],
+    senses: ["low-light vision"],
+    suggestedAttacks: "claw (slashing), jaws (piercing), fangs (piercing), hoof (bludgeoning), horn (piercing)",
+    builds: [{ name: "Brutal Beast", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 2, dexCap: 3 }, { name: "Fleet Beast", abilityMods: { str: 2, dex: 4, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "construct",
+    name: "Construct",
+    tradition: "arcane",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Arcana","Crafting"],
+    senses: ["darkvision"],
+    suggestedAttacks: "fist (bludgeoning)",
+    builds: [{ name: "Warrior Construct", abilityMods: { str: 4, dex: 2, con: 3, int: 1, wis: 0, cha: -1 }, acBonus: 2, dexCap: 3 }, { name: "Scout Construct", abilityMods: { str: 2, dex: 4, con: 3, int: 1, wis: 0, cha: -1 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "demon",
+    name: "Demon",
+    tradition: "divine",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Intimidation","Religion"],
+    senses: ["darkvision"],
+    suggestedAttacks: "claw (slashing), jaws (piercing), horn (piercing), tail (bludgeoning), tentacle (bludgeoning), wing (bludgeoning)",
+    builds: [{ name: "Wrecker Demon", abilityMods: { str: 4, dex: 2, con: 3, int: 0, wis: -1, cha: 1 }, acBonus: 2, dexCap: 3 }, { name: "Tempter Demon", abilityMods: { str: 1, dex: 4, con: 1, int: 0, wis: 0, cha: 3 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "devotion-phantom",
+    name: "Devotion Phantom",
+    tradition: "occult",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Medicine","Occultism"],
+    senses: ["darkvision"],
+    suggestedAttacks: "fist (bludgeoning), tendril (bludgeoning), unarmed attacks shaped like a weapon",
+    builds: [{ name: "Stalwart Guardian", abilityMods: { str: 4, dex: 2, con: 3, int: 0, wis: 0, cha: 0 }, acBonus: 2, dexCap: 3 }, { name: "Swift Protector", abilityMods: { str: 2, dex: 4, con: 3, int: 0, wis: 0, cha: 0 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "dragon",
+    name: "Dragon",
+    tradition: "arcane",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Arcana","Intimidation"],
+    senses: ["darkvision"],
+    suggestedAttacks: "claw (slashing), jaws (piercing), horn (piercing), tail (bludgeoning), wing (bludgeoning)",
+    builds: [{ name: "Marauding Dragon", abilityMods: { str: 4, dex: 2, con: 3, int: 0, wis: 0, cha: 0 }, acBonus: 2, dexCap: 3 }, { name: "Cunning Dragon", abilityMods: { str: 1, dex: 4, con: 1, int: 2, wis: 0, cha: 1 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "fey",
+    name: "Fey",
+    tradition: "primal",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Deception","Nature"],
+    senses: ["low-light vision"],
+    suggestedAttacks: "fist (bludgeoning), wing (bludgeoning), attacks shaped like a weapon",
+    builds: [{ name: "Skirmisher Fey", abilityMods: { str: 2, dex: 4, con: 2, int: 0, wis: 0, cha: 1 }, acBonus: 1, dexCap: 4 }, { name: "Trickster Dragon", abilityMods: { str: 1, dex: 4, con: 1, int: 1, wis: -1, cha: 3 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "plant",
+    name: "Plant",
+    tradition: "primal",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Nature","Survival"],
+    senses: ["low-light vision"],
+    suggestedAttacks: "vine (bludgeoning), branch (bludgeoning), root (bludgeoning)",
+    builds: [{ name: "Guardian Plant", abilityMods: { str: 4, dex: 2, con: 3, int: -1, wis: 1, cha: 0 }, acBonus: 2, dexCap: 3 }, { name: "Creeping Plant", abilityMods: { str: 1, dex: 4, con: 3, int: -1, wis: 2, cha: 0 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
+  {
+    slug: "psychopomp",
+    name: "Psychopomp",
+    tradition: "divine",
+    size: "medium",
+    speed: "walk 25 feet",
+    skills: ["Intimidation","Religion"],
+    senses: ["darkvision"],
+    suggestedAttacks: "beak (piercing), claw (slashing), fist (bludgeoning), jaws (piercing), unarmed attacks shaped like a weapon",
+    builds: [{ name: "Soul Guardian", abilityMods: { str: 4, dex: 2, con: 3, int: 0, wis: 1, cha: -1 }, acBonus: 2, dexCap: 3 }, { name: "Scribe of the Dead", abilityMods: { str: 1, dex: 4, con: 3, int: -1, wis: 2, cha: 0 }, acBonus: 1, dexCap: 4 }],
+    source: "SoM",
+  },
 ];
+
+export function findEidolonType(slug: string): EidolonType | undefined {
+  const s = slug.toLowerCase();
+  return EIDOLON_TYPES.find((t) => t.slug === s);
+}
+
+/** Eidolon unarmed-attack proficiency: trained → expert (5th) → master (13th). */
+function eidolonAttackRank(level: number): ProficiencyRank {
+  if (level >= 13) return 3;
+  if (level >= 5) return 2;
+  return 1;
+}
+
+/**
+ * Eidolon weapon specialization: +2 damage once its attack proficiency is
+ * expert, +3 at master (7th-level feature); doubled to 4/6 by Greater Eidolon
+ * Specialization at 15th.
+ */
+function eidolonSpecialization(level: number): number {
+  if (level < 7) return 0;
+  const rank = eidolonAttackRank(level);
+  const base = rank >= 3 ? 3 : 2;
+  return level >= 15 ? base * 2 : base;
+}
+
+export interface ScaledEidolon {
+  slug: string;
+  name: string;
+  buildName: string;
+  level: number;
+  size: string;
+  speed: string;
+  tradition: string;
+  abilityMods: CompanionAbilityMods;
+  /** Eidolons share the summoner's HP pool — they have no HP of their own. */
+  sharesHp: true;
+  ac: number;
+  perception: number;
+  saves: { fortitude: number; reflex: number; will: number };
+  /** Modifier for its unarmed Strikes (primary uses str; finesse may use dex). */
+  attack: number;
+  attackFinesse: number;
+  /** Flat damage added to Strikes from weapon specialization. */
+  specializationDamage: number;
+  /** The secondary unarmed attack is fixed: 1d6, agile + finesse. */
+  secondary: { damageDie: string; traits: string[] };
+  skills: string[];
+  senses: string[];
+  suggestedAttacks: string;
+}
+
+/**
+ * Derive an eidolon's statistics at the summoner's level. Save, Perception,
+ * and unarmored ranks mirror the summoner class progression; the attack track
+ * is eidolon-specific. `pwl` removes level from proficiency (variant rule).
+ */
+export function scaleEidolon(
+  type: EidolonType,
+  buildIndex: number,
+  level: number,
+  pwl = false,
+): ScaledEidolon {
+  const lvl = Math.max(1, Math.min(20, Math.round(level)));
+  const build =
+    type.builds[Math.max(0, Math.min(type.builds.length - 1, buildIndex))] ?? type.builds[0];
+  if (!build) throw new Error(`eidolon type ${type.slug} has no builds`);
+  const mods = build.abilityMods;
+  const prof = (rank: number) => (rank === 0 ? 0 : (pwl ? 0 : lvl) + 2 * rank);
+  const track = (t: 'perception' | 'fortitude' | 'reflex' | 'will' | 'unarmored') =>
+    proficiencyRankAtLevel('summoner', t, lvl);
+
+  const ac = 10 + prof(track('unarmored')) + Math.min(mods.dex, build.dexCap) + build.acBonus;
+  const atkProf = prof(eidolonAttackRank(lvl));
+  return {
+    slug: type.slug,
+    name: type.name,
+    buildName: build.name,
+    level: lvl,
+    size: type.size,
+    speed: type.speed,
+    tradition: type.tradition,
+    abilityMods: mods,
+    sharesHp: true,
+    ac,
+    perception: prof(track('perception')) + mods.wis,
+    saves: {
+      fortitude: prof(track('fortitude')) + mods.con,
+      reflex: prof(track('reflex')) + mods.dex,
+      will: prof(track('will')) + mods.wis,
+    },
+    attack: atkProf + mods.str,
+    attackFinesse: atkProf + Math.max(mods.str, mods.dex),
+    specializationDamage: eidolonSpecialization(lvl),
+    secondary: { damageDie: '1d6', traits: ['agile', 'finesse'] },
+    skills: type.skills,
+    senses: type.senses,
+    suggestedAttacks: type.suggestedAttacks,
+  };
+}

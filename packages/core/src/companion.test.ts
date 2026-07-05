@@ -83,7 +83,7 @@ describe('companion kinds + familiars + eidolons', () => {
   });
 
   it('looks up a familiar ability by slug', () => {
-    const found = FAMILIAR_ABILITIES[0];
+    const found = FAMILIAR_ABILITIES[0]!;
     expect(findFamiliarAbility(found.slug)).toEqual(found);
     expect(findFamiliarAbility('nope')).toBeUndefined();
   });
@@ -102,5 +102,45 @@ describe('companion kinds + familiars + eidolons', () => {
   it('offers eidolon subtypes', () => {
     expect(EIDOLON_TYPES.length).toBe(12);
     expect(EIDOLON_TYPES.map((e) => e.slug)).toContain('dragon');
+  });
+});
+
+import { findEidolonType, scaleEidolon } from './companion';
+
+describe('scaleEidolon — Dragon (Marauding build)', () => {
+  const dragon = findEidolonType('dragon')!;
+  it('exposes builds with armor data', () => {
+    expect(dragon.builds.length).toBe(2);
+    expect(dragon.builds[0]).toMatchObject({ abilityMods: { str: 4, dex: 2, con: 3 }, acBonus: 2, dexCap: 3 });
+  });
+
+  it('level 1: trained everything, summoner-mirrored saves', () => {
+    const s = scaleEidolon(dragon, 0, 1);
+    // AC = 10 + (1+2 trained unarmored) + min(dex 2, cap 3) + acBonus 2
+    expect(s.ac).toBe(17);
+    // Perception trained: (1+2) + wis 0
+    expect(s.perception).toBe(3);
+    // fort expert (summoner base 2): (1+4)+3 ; ref trained: (1+2)+2 ; will expert: (1+4)+0
+    expect(s.saves).toEqual({ fortitude: 8, reflex: 5, will: 5 });
+    // attack trained: (1+2) + str 4
+    expect(s.attack).toBe(7);
+    expect(s.specializationDamage).toBe(0);
+    expect(s.sharesHp).toBe(true);
+    expect(s.secondary).toEqual({ damageDie: '1d6', traits: ['agile', 'finesse'] });
+  });
+
+  it('level 13: master attacks (Eidolon Unarmed Mastery), expert unarmored @11, spec +3', () => {
+    const s = scaleEidolon(dragon, 0, 13);
+    expect(s.attack).toBe(13 + 6 + 4); // level + master(6) + str
+    expect(s.ac).toBe(10 + 13 + 4 + 2 + 2); // 10 + level + expert(4) + min(dex,cap)=2 + acBonus 2
+    expect(s.specializationDamage).toBe(3); // master rank, pre-15th
+  });
+
+  it('level 15: Greater Eidolon Specialization doubles to 6', () => {
+    expect(scaleEidolon(dragon, 0, 15).specializationDamage).toBe(6);
+  });
+
+  it('clamps a bad build index', () => {
+    expect(scaleEidolon(dragon, 99, 1).buildName).toBe(dragon.builds[1]!.name);
   });
 });
