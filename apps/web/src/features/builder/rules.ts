@@ -394,6 +394,15 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const shield = bestByAc(equipped.filter((i): i is Shield => i.kind === 'shield'));
   const equippedWeapons = equipped.filter((i): i is Weapon => i.kind === 'weapon');
 
+  // Fundamental runes on equipped gear (potency/striking/resilient). With the
+  // Automatic Bonus Progression variant on, these runes don't exist — ABP's
+  // level-based bonuses replace them entirely.
+  const runesFor = (itemId: string) =>
+    (state.inventory ?? []).find((e) => e.equipped && e.itemId === itemId)?.runes;
+  const armorRunes = armor ? runesFor(armor.id) : undefined;
+  const armorPotency = abp ? 0 : Math.max(0, Math.min(3, armorRunes?.potency ?? 0));
+  const resilient = abp ? 0 : Math.max(0, Math.min(3, armorRunes?.resilient ?? 0));
+
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
   const armorCategory = armor?.category ?? 'unarmored';
   const defenseRank = progressionRank(
@@ -404,7 +413,12 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =
-    10 + pb(defenseRank) + dexForAc + (armor?.acBonus ?? 0) + (abp ? abpDefense(level) : 0);
+    10 +
+    pb(defenseRank) +
+    dexForAc +
+    (armor?.acBonus ?? 0) +
+    armorPotency +
+    (abp ? abpDefense(level) : 0);
   const unarmoredDefense = progressionRank(state, 'unarmored', ip?.defenses.unarmored ?? 0);
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
@@ -466,11 +480,14 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
           ? mods.str
           : 0
       : mods.str;
+    const wRunes = runesFor(w.id);
+    const potency = abp ? 0 : Math.max(0, Math.min(3, wRunes?.potency ?? 0));
+    const striking = abp ? 0 : Math.max(0, Math.min(3, wRunes?.striking ?? 0));
     return {
       id: w.id,
       name: w.name,
-      attack: pb(catRank) + attackMod + (abp ? abpAttack(level) : 0),
-      dice: abp ? abpDamageDice(level) : 1,
+      attack: pb(catRank) + attackMod + potency + (abp ? abpAttack(level) : 0),
+      dice: abp ? abpDamageDice(level) : 1 + striking,
       damageDie: w.damageDie,
       damageMod,
       damageType: w.damageType,
@@ -488,9 +505,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     shieldBonus: shield?.acBonus ?? 0,
     perception,
     saves: {
-      fortitude: pb(fortRank) + mods.con + (abp ? abpResilience(level) : 0),
-      reflex: pb(refRank) + mods.dex + (abp ? abpResilience(level) : 0),
-      will: pb(willRank) + mods.wis + (abp ? abpResilience(level) : 0),
+      fortitude: pb(fortRank) + mods.con + (abp ? abpResilience(level) : resilient),
+      reflex: pb(refRank) + mods.dex + (abp ? abpResilience(level) : resilient),
+      will: pb(willRank) + mods.wis + (abp ? abpResilience(level) : resilient),
     },
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,

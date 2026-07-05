@@ -174,8 +174,14 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   };
 
   // Equipped weapons (with attack/damage) and armor; the rest go in equipment.
+  const STRIKING_NAMES = ['', 'striking', 'greaterStriking', 'majorStriking'];
+  const RESILIENT_NAMES = ['', 'resilient', 'greaterResilient', 'majorResilient'];
+  const runesOf = (itemId: string) =>
+    (state.inventory ?? []).find((e) => e.equipped && e.itemId === itemId)?.runes;
   const weaponsOut = derived.weapons.map((w) => {
     const item = findItem(w.id);
+    const r = runesOf(w.id);
+    const striking = Math.max(0, Math.min(3, r?.striking ?? 0));
     return {
       name: w.name,
       qty: 1,
@@ -184,15 +190,27 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       damageType: w.damageType,
       attack: w.attack,
       damageBonus: w.damageMod,
+      pot: Math.max(0, Math.min(3, r?.potency ?? 0)),
+      runes: striking ? [STRIKING_NAMES[striking]] : [],
       display: w.name,
     };
   });
   const equippedArmor = (state.inventory ?? [])
     .map((e) => (e.equipped ? findItem(e.itemId) : undefined))
     .find((i) => i?.kind === 'armor');
+  const armorRunes = equippedArmor ? runesOf(equippedArmor.id) : undefined;
+  const armorResilient = Math.max(0, Math.min(3, armorRunes?.resilient ?? 0));
   const armorOut =
     equippedArmor && equippedArmor.kind === 'armor'
-      ? [{ name: equippedArmor.name, qty: 1, prof: equippedArmor.category, worn: true, display: equippedArmor.name }]
+      ? [{
+          name: equippedArmor.name,
+          qty: 1,
+          prof: equippedArmor.category,
+          worn: true,
+          pot: Math.max(0, Math.min(3, armorRunes?.potency ?? 0)),
+          res: armorResilient ? RESILIENT_NAMES[armorResilient] : '',
+          display: equippedArmor.name,
+        }]
       : [];
   const equipmentOut = (state.inventory ?? [])
     .filter((e) => {

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { getDataset, findItem, type Item } from '@/features/builder/data';
+import { OPT } from '@/features/builder/options/config';
+import { opt } from '../rules';
 import { useBuilder } from '../store';
 
 type Category = 'All' | 'Weapons' | 'Armor' | 'Shields' | 'Gear';
@@ -35,9 +37,11 @@ const canEquip = (item: Item) =>
 
 export function EquipmentStep() {
   const state = useBuilder((s) => s.state);
-  const { addItem, removeItem, setItemQty, toggleEquip, setMoney } = useBuilder();
+  const { addItem, removeItem, setItemQty, toggleEquip, setItemRunes, setMoney } = useBuilder();
   const [cat, setCat] = useState<Category>('All');
   const [query, setQuery] = useState('');
+  // With Automatic Bonus Progression on, fundamental runes don't exist.
+  const abpOn = opt(state, OPT.automaticBonusProgression);
 
   const items = getDataset().items;
   const filtered = useMemo(() => {
@@ -143,14 +147,61 @@ export function EquipmentStep() {
               {state.inventory.map((entry) => {
                 const item = findItem(entry.itemId);
                 if (!item) return null;
+                const showRunes =
+                  entry.equipped && (item.kind === 'weapon' || item.kind === 'armor') && !abpOn;
                 return (
                   <div
                     key={entry.itemId}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-gold-500/15 bg-midnight-800/50 p-3"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold-500/15 bg-midnight-800/50 p-3"
                   >
                     <div className="min-w-0">
                       <div className="font-display text-parchment">{item.name}</div>
                       <div className="truncate font-ui text-xs text-parchment/60">{itemStats(item)}</div>
+                      {showRunes && (
+                        <div className="mt-1 flex flex-wrap items-center gap-2 font-ui text-[11px] text-parchment/60">
+                          <label className="flex items-center gap-1">
+                            Potency
+                            <select
+                              value={entry.runes?.potency ?? 0}
+                              onChange={(e) => setItemRunes(entry.itemId, { potency: Number(e.target.value) })}
+                              className="rounded border border-gold-500/25 bg-midnight-950/60 px-1 py-0.5 text-parchment"
+                            >
+                              {[0, 1, 2, 3].map((n) => (
+                                <option key={n} value={n}>{n === 0 ? '—' : `+${n}`}</option>
+                              ))}
+                            </select>
+                          </label>
+                          {item.kind === 'weapon' ? (
+                            <label className="flex items-center gap-1">
+                              Striking
+                              <select
+                                value={entry.runes?.striking ?? 0}
+                                onChange={(e) => setItemRunes(entry.itemId, { striking: Number(e.target.value) })}
+                                className="rounded border border-gold-500/25 bg-midnight-950/60 px-1 py-0.5 text-parchment"
+                              >
+                                <option value={0}>—</option>
+                                <option value={1}>Striking</option>
+                                <option value={2}>Greater</option>
+                                <option value={3}>Major</option>
+                              </select>
+                            </label>
+                          ) : (
+                            <label className="flex items-center gap-1">
+                              Resilient
+                              <select
+                                value={entry.runes?.resilient ?? 0}
+                                onChange={(e) => setItemRunes(entry.itemId, { resilient: Number(e.target.value) })}
+                                className="rounded border border-gold-500/25 bg-midnight-950/60 px-1 py-0.5 text-parchment"
+                              >
+                                <option value={0}>—</option>
+                                <option value={1}>Resilient</option>
+                                <option value={2}>Greater</option>
+                                <option value={3}>Major</option>
+                              </select>
+                            </label>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <button

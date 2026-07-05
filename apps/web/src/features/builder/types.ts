@@ -118,6 +118,13 @@ export interface InventoryEntry {
   qty: number;
   /** For armor/shield/weapons: whether it's currently worn/wielded. */
   equipped?: boolean;
+  /**
+   * Fundamental runes etched on this item. Weapons: potency (+1..+3 to attack)
+   * and striking (1..3 = striking/greater/major → 2..4 damage dice). Armor:
+   * potency (+1..+3 AC) and resilient (+1..+3 saves). Ignored when the
+   * Automatic Bonus Progression variant is on (ABP replaces these runes).
+   */
+  runes?: { potency?: number; striking?: number; resilient?: number };
 }
 
 /** The choices a character makes at a single level above 1. */

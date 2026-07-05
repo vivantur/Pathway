@@ -5,6 +5,7 @@ import {
   emptyLevelGains,
   type BuilderState,
   type CompanionDraft,
+  type InventoryEntry,
   type LevelGains,
   type SpellTradition,
   type StepId,
@@ -51,6 +52,7 @@ interface BuilderStore {
   removeItem: (itemId: string) => void;
   setItemQty: (itemId: string, qty: number) => void;
   toggleEquip: (itemId: string) => void;
+  setItemRunes: (itemId: string, runes: Partial<NonNullable<InventoryEntry['runes']>>) => void;
   setMoney: (gp: number) => void;
 
   toggleCantrip: (id: string, max: number) => void;
@@ -195,6 +197,16 @@ export const useBuilder = create<BuilderStore>((set) => ({
         ...s.state,
         inventory: s.state.inventory.map((e) =>
           e.itemId === itemId ? { ...e, equipped: !e.equipped } : e,
+        ),
+      },
+    })),
+
+  setItemRunes: (itemId, runes) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        inventory: s.state.inventory.map((e) =>
+          e.itemId === itemId ? { ...e, runes: { ...e.runes, ...runes } } : e,
         ),
       },
     })),
