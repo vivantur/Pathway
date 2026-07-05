@@ -282,6 +282,22 @@ export const PROFICIENCY_PROGRESSION: Record<string, ClassProgression> = {
     medium: { base: 0, bumps: [] },
     heavy: { base: 0, bumps: [] },
   },
+  // Impossible Playtest runesmith: Fort expert@1 master@11 (Smith's
+  // Endurance), Will expert@1, Reflex expert@7, Perception expert@13, class DC
+  // expert@7 master@15 legendary@19 (Expert/Masterful/Legendary Runes),
+  // light+medium+unarmored expert@13 master@19.
+  runesmith: {
+    perception: { base: 1, bumps: [[13,2]] },
+    fortitude: { base: 2, bumps: [[11,3]] },
+    reflex: { base: 1, bumps: [[7,2]] },
+    will: { base: 2, bumps: [] },
+    classDC: { base: 1, bumps: [[7,2], [15,3], [19,4]] },
+    spellcasting: { base: 0, bumps: [] },
+    unarmored: { base: 1, bumps: [[13,2], [19,3]] },
+    light: { base: 1, bumps: [[13,2], [19,3]] },
+    medium: { base: 1, bumps: [[13,2], [19,3]] },
+    heavy: { base: 0, bumps: [] },
+  },
   sorcerer: {
     perception: { base: 1, bumps: [[11,2]] },
     fortitude: { base: 1, bumps: [[5,2]] },
@@ -481,6 +497,8 @@ export const ATTACK_PROGRESSION: Record<string, AttackProgression> = {
   oracle: { simple: E11, unarmed: E11 },
   // Weapon Expertise (11).
   psychic: { simple: E11, unarmed: E11 },
+  // Smith's Weapon Expertise (5), Smith's Weapon Mastery (13) — Impossible Playtest.
+  runesmith: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
   // Weapon Expertise (5), Weapon Mastery (13).
   ranger: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
   // Weapon Tricks (5), Master Tricks (13): simple + unarmed + a named list.

@@ -72102,5 +72102,481 @@
   "classIds": [
    "necromancer"
   ]
+ },
+ {
+  "id": "runesmith-backup-runic-enhancement",
+  "name": "Backup Runic Enhancement",
+  "level": 1,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 1 Your body is toughened by long days immersed in crafting, without break for food or drink.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-runic-tattoo",
+  "name": "Runic Tattoo",
+  "level": 2,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Drawing your favorite rune in your flesh, you know you’ll never be without it.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-engraving-strike",
+  "name": "Engraving Strike",
+  "level": 1,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 1 You are wielding a melee weapon.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-smithing-weapons-familiarity",
+  "name": "Smithing Weapons Familiarity",
+  "level": 2,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Though you are an artisan, you are well versed in using the tools of your trade to fend off enemies.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-remote-detonation",
+  "name": "Remote Detonation",
+  "level": 1,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 1 You whisper an invocation over an arrow or sling bullet as you fire it, and the hissing of the missile through the air sounds just like your murmured voice.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-artist-s-attendance",
+  "name": "Artist’s Attendance",
+  "level": 4,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 4 Your runes call you to better attend to your art.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-rune-singer",
+  "name": "Rune-Singer",
+  "level": 1,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "You practice the lost art of using music to guide the act of carving your runes, singing them into existence as much as crafting them.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-ghostly-resonance",
+  "name": "Ghostly Resonance",
+  "level": 4,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Your runes can not only draw power from the world of the spirits, but they can let even the most mundane objects harm spiritual beings as well.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-fortifying-knock",
+  "name": "Fortifying Knock",
+  "level": 2,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 2 RUNIC TATTOO FEAT 2 Drawing your favorite rune in your flesh, you know you’ll never be without it.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-terrifying-invocation",
+  "name": "Terrifying Invocation",
+  "level": 4,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 4 You are wielding a shield.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-invisible-ink",
+  "name": "Invisible Ink",
+  "level": 2,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 2 After your rune is drawn, it flares once and then fades, leaving only the barest mark.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-transpose-etching",
+  "name": "Transpose Etching",
+  "level": 4,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 4 With a pinching gesture, you pick up a word and move it elsewhere.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-runic-reprisal",
+  "name": "Runic Reprisal",
+  "level": 6,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Prerequisites Fortifying Knock When you raise your shield, you bury a runic trap into it, to be set off by the clash of an enemy weapon.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-elemental-revision",
+  "name": "Elemental Revision",
+  "level": 8,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 8 You can scratch out and rewrite part of an elemental rune to temporarily change the type of power it channels.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-tracing-trance",
+  "name": "Tracing Trance",
+  "level": 6,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 6 Your turn begins.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-read-the-bones",
+  "name": "Read The Bones",
+  "level": 8,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Using ancient scripts, you carve a question into bone before casting it into fire, where it cracks.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-vital-composite-invocation",
+  "name": "Vital Composite Invocation",
+  "level": 6,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 6 HEALING As you invoke runes from traditions that manipulate vital energy, you can release that energy to restore flesh.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-chain-of-words",
+  "name": "Chain Of Words",
+  "level": 10,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 10 You see the thin lines of magic between your creations.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-fly-free",
+  "name": "Fly Free",
+  "level": 6,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 6 Prerequisites Runic Tattoo Your Runic Tattoo is not faded.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-clashing-composite-invocation",
+  "name": "Clashing Composite Invocation",
+  "level": 10,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 10 As you invoke runes from disparate traditions of magic, their diametrically opposed effects repel each other in a destructive backlash.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-drawn-in-red",
+  "name": "Drawn In Red",
+  "level": 8,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 8 Your last action was a successful melee Strike that dealt physical damage.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-define-the-canvas",
+  "name": "Define The Canvas",
+  "level": 14,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 14 You produce four rune-inscribed stones, which whirl in the air once before darting away to the perimeter of a 20-foot burst centered on your square.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-overloaded-ammunition",
+  "name": "Overloaded Ammunition",
+  "level": 10,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "You can bind power into arrows or sling stones to transform them into explosive missiles.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-henge-gate",
+  "name": "Henge Gate",
+  "level": 14,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 14 Once per 10 minutes You hold a rune in your heart and strike the earth, causing two standing stones to rise nearby, your chosen rune carved upon their surfaces and blazing in the air above them.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-astral-composite-invocation",
+  "name": "Astral Composite Invocation",
+  "level": 12,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 12 Invoking runes from two schools of magic that both manipulate the intangible realm of thought results in waves of mental interference that stagger your foes.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-by-your-name",
+  "name": "By Your Name",
+  "level": 16,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 16 You must know the target’s name.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-distant-invocation",
+  "name": "Distant Invocation",
+  "level": 12,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Your connection to your runes stretches over even greater distances.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-expanded-glossary",
+  "name": "Expanded Glossary",
+  "level": 12,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "You have memorized more runes than many in your craft.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-dance-of-bloody-ink",
+  "name": "Dance Of Bloody Ink",
+  "level": 14,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 14 As you lash out, your weapon is your brush, wounds forming words of power in your target’s flesh.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-return-unto-runes",
+  "name": "Return Unto Runes",
+  "level": 16,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "FEAT 16 You are targeted by a ranged spell attack.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-annihilating-composite-invocation",
+  "name": "Annihilating Composite Invocation",
+  "level": 18,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Each tradition of magic holds sway over two of the four essences that make up all of creation, and so by invoking runes from each tradition at once, you can pull from the four corners of magic to unravel anything.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-living-lexicon",
+  "name": "Living Lexicon",
+  "level": 18,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Your knowledge of runes knows no bounds.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-forge-new-word",
+  "name": "Forge New Word",
+  "level": 20,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "At the pinnacle of your art, you have forged a new great rune of power, a new ideal expression or utterance to be added to the craft.",
+  "classIds": [
+   "runesmith"
+  ]
+ },
+ {
+  "id": "runesmith-shades-of-meaning",
+  "name": "Shades Of Meaning",
+  "level": 20,
+  "type": "class",
+  "traits": [
+   "runesmith"
+  ],
+  "source": "Impossible Playtest",
+  "description": "Prerequisites You know one or more diacritic runes.",
+  "classIds": [
+   "runesmith"
+  ]
  }
 ]

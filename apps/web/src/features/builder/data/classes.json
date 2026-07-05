@@ -1645,5 +1645,49 @@
    "Mastery of Life and Death",
    "Undead Lore"
   ]
+ },
+ {
+  "id": "runesmith",
+  "name": "Runesmith",
+  "keyAbility": [
+   "int"
+  ],
+  "hp": 8,
+  "source": "Impossible Playtest",
+  "description": "Equal parts scholar and artist, you etch and trace mystic runes to empower allies and punish foes, invoking their true names to unleash their magic. Not a spellcaster — runes are applied and invoked in play.",
+  "initialProficiencies": {
+   "perception": 1,
+   "fortitude": 2,
+   "reflex": 1,
+   "will": 2,
+   "classDC": 1,
+   "trainedSkillCount": 4,
+   "trainedSkills": [
+    "crafting"
+   ],
+   "attacks": {
+    "unarmed": 1,
+    "simple": 1,
+    "martial": 1,
+    "advanced": 0,
+    "unarmored": 1
+   },
+   "defenses": {
+    "unarmored": 1,
+    "light": 1,
+    "medium": 1,
+    "heavy": 0
+   }
+  },
+  "subclassLabel": "",
+  "subclasses": [],
+  "features": [
+   "Runes",
+   "Runic Repertoire",
+   "Shield Block",
+   "Trace Rune",
+   "Etch Rune",
+   "Invoke Rune"
+  ]
  }
 ]
