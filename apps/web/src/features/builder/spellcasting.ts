@@ -7,8 +7,12 @@ import type { BuilderState } from './types';
 
 export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
 export type CasterType = 'prepared' | 'spontaneous';
-/** Slot progression: 'full' (10th-rank casters) vs 'bounded' (magus, summoner). */
-export type CasterProgression = 'full' | 'bounded';
+/**
+ * Slot progression: 'full' (10th-rank casters), 'bounded' (magus, summoner),
+ * or 'necromancer' (Impossible Playtest: 1 slot at a new rank, 2 once matured,
+ * plus a special 10th-rank slot at 19th via Epitaph).
+ */
+export type CasterProgression = 'full' | 'bounded' | 'necromancer';
 
 export interface CasterConfig {
   /** Fixed tradition; omitted when the tradition is a player choice. */
@@ -42,6 +46,8 @@ const CASTERS: Record<string, CasterConfig> = {
   oracle: { tradition: 'divine', type: 'spontaneous', keyAbility: 'cha', cantrips: 5, progression: 'full' },
   psychic: { tradition: 'occult', type: 'spontaneous', keyAbility: 'int', cantrips: 5, progression: 'full' },
   animist: { tradition: 'divine', type: 'prepared', keyAbility: 'wis', cantrips: 5, progression: 'full' },
+  // Impossible Playtest: prepared occult caster with its own slots table.
+  necromancer: { tradition: 'occult', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'necromancer' },
   magus: { tradition: 'arcane', type: 'prepared', keyAbility: 'int', cantrips: 5, progression: 'bounded' },
   summoner: {
     traditionChoices: ['arcane', 'divine', 'occult', 'primal'],
@@ -81,6 +87,10 @@ export function resolveCasterTradition(state: BuilderState): Tradition | undefin
 
 /** Highest spell rank castable at a level (bounded casters cap at 9th). */
 export function maxSpellRank(level: number, progression: CasterProgression = 'full'): number {
+  if (progression === 'necromancer') {
+    // 9th rank at 17; the Epitaph feature adds a single 10th-rank slot at 19.
+    return level >= 19 ? 10 : Math.min(9, Math.ceil(level / 2));
+  }
   return Math.min(progression === 'bounded' ? 9 : 10, Math.ceil(level / 2));
 }
 
@@ -114,6 +124,14 @@ export function slotsForRank(
   progression: CasterProgression = 'full',
 ): number {
   if (progression === 'bounded') return boundedSlotsForRank(level, rank);
+  if (progression === 'necromancer') {
+    // Necromancer Spells per Day (Impossible Playtest): a new rank opens with
+    // 1 slot at odd levels and matures to 2 the level after; 10th rank is the
+    // single Epitaph slot at 19th.
+    if (rank < 1 || rank > maxSpellRank(level, progression)) return 0;
+    if (rank === 10) return level >= 19 ? 1 : 0;
+    return level >= 2 * rank ? 2 : 1;
+  }
   if (rank < 1 || rank > maxSpellRank(level)) return 0;
   if (rank === 10) return 1;
   return level >= 2 * rank ? 3 : 2;

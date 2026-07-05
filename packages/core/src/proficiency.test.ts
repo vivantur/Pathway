@@ -81,8 +81,8 @@ describe('proficiencyRankAtLevel', () => {
     }
   });
 
-  it('covers all 25 builder classes with all ten tracks', () => {
-    expect(Object.keys(PROFICIENCY_PROGRESSION)).toHaveLength(25);
+  it('covers all 26 builder classes with all ten tracks', () => {
+    expect(Object.keys(PROFICIENCY_PROGRESSION)).toHaveLength(26); // incl. playtest necromancer
     const tracks: ProficiencyTrack[] = [
       'perception', 'fortitude', 'reflex', 'will', 'classDC',
       'spellcasting', 'unarmored', 'light', 'medium', 'heavy',

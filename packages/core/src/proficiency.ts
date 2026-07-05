@@ -205,6 +205,23 @@ export const PROFICIENCY_PROGRESSION: Record<string, ClassProgression> = {
     medium: { base: 1, bumps: [[11,2], [17,3]] },
     heavy: { base: 0, bumps: [] },
   },
+  // Impossible Playtest necromancer: Fort expert@1 master@11 legendary@17
+  // (Unnatural Fortitude / Undying Resilience), Will expert@3 (Grim Wards),
+  // Reflex expert@5, Perception expert@7, occult spells expert@7 master@15
+  // legendary@19 (Expert/Master/Legendary Necromancy), light+unarmored
+  // expert@13 (Light Armor Expertise).
+  necromancer: {
+    perception: { base: 1, bumps: [[7,2]] },
+    fortitude: { base: 2, bumps: [[11,3], [17,4]] },
+    reflex: { base: 1, bumps: [[5,2]] },
+    will: { base: 1, bumps: [[3,2]] },
+    classDC: { base: 1, bumps: [] },
+    spellcasting: { base: 1, bumps: [[7,2], [15,3], [19,4]] },
+    unarmored: { base: 1, bumps: [[13,2]] },
+    light: { base: 1, bumps: [[13,2]] },
+    medium: { base: 0, bumps: [] },
+    heavy: { base: 0, bumps: [] },
+  },
   monk: {
     perception: { base: 1, bumps: [[5,2]] },
     fortitude: { base: 2, bumps: [] },
@@ -458,6 +475,8 @@ export const ATTACK_PROGRESSION: Record<string, AttackProgression> = {
   magus: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
   // Expert Strikes (5), Master Strikes (13).
   monk: { unarmed: E5_M13, simple: E5_M13 },
+  // Weapon Expertise (11) — Impossible Playtest.
+  necromancer: { simple: E11, unarmed: E11 },
   // Weapon Expertise (11).
   oracle: { simple: E11, unarmed: E11 },
   // Weapon Expertise (11).

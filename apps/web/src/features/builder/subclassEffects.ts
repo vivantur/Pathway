@@ -43,7 +43,16 @@ export const ROGUE_RACKET_ABILITY: Record<string, AbilityKey> = {
 };
 
 /** Classes whose level-1 subclass grants a focus spell (and thus a focus point). */
-const FOCUS_SUBCLASS_CLASSES = new Set(['druid', 'sorcerer', 'witch', 'oracle', 'bard', 'psychic']);
+const FOCUS_SUBCLASS_CLASSES = new Set([
+  'druid',
+  'sorcerer',
+  'witch',
+  'oracle',
+  'bard',
+  'psychic',
+  // Impossible Playtest: each grim fascination's class feat grants a grave spell.
+  'necromancer',
+]);
 
 /** The tradition a caster's subclass dictates, if any (else use the class default). */
 export function subclassTradition(classId?: string, subclassId?: string): Tradition | undefined {
@@ -66,6 +75,11 @@ export function focusPoints(state: BuilderState): number {
 // well-known mapping. (Other focus-granting subclasses still grant a focus
 // point above; their spell is surfaced via the subclass description.)
 const SUBCLASS_FOCUS_SPELL: Record<string, Record<string, string>> = {
+  necromancer: {
+    'bone-shaper': 'Bone Spear',
+    'flesh-magician': 'Dead Weight',
+    'spirit-monger': 'Life Tap',
+  },
   druid: { animal: 'Heal Animal', leaf: 'Goodberry', storm: 'Tempest Surge', untamed: 'Untamed Form' },
   sorcerer: {
     aberrant: 'Tentacular Limbs',
