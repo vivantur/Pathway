@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { validate } from '../rules';
+import { prerequisiteProblems } from '../prerequisites';
 import { useBuilder } from '../store';
 import { CharacterOverview } from '../CharacterOverview';
 import { toPathbuilder } from '@/features/builder/pathbuilder';
@@ -8,7 +9,7 @@ export function ReviewStep() {
   const state = useBuilder((s) => s.state);
   const [copied, setCopied] = useState(false);
 
-  const problems = validate(state);
+  const problems = [...validate(state), ...prerequisiteProblems(state)];
   const complete = problems.length === 0;
   const exportJson = JSON.stringify(toPathbuilder(state), null, 2);
 

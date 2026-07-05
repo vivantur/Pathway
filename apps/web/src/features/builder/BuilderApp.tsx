@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { emptyBuilderState } from './types';
 import { STEPS, useBuilder } from './store';
 import { validate } from './rules';
+import { prerequisiteProblems } from './prerequisites';
 import { clearDraft, isEmptyState, loadDraft, saveDraft, type BuilderDraft } from './drafts';
 import { CharacterSummary } from './CharacterSummary';
 import { MobileStatBar } from './MobileStatBar';
@@ -112,7 +113,7 @@ export function BuilderApp({
 
   const index = STEPS.findIndex((s) => s.id === step);
   const Content = STEP_CONTENT[step];
-  const problems = validate(state);
+  const problems = [...validate(state), ...prerequisiteProblems(state)];
   const complete = problems.length === 0;
 
   const onSaveDraft = () => {
