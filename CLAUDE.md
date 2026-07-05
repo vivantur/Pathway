@@ -60,19 +60,20 @@ data loss) are fine — "frozen" means "don't restructure," not "don't fix."
 - Vitest for tests. Content schemas in Zod; TS types via `z.infer`.
 - Supabase (Postgres + Auth + JSONB content store).
 
-## ORC-clean rule (non-negotiable — with a known-debt caveat)
+## Content licensing (owner policy, revised 2026-07-04)
 
-Use ONLY ORC-licensed game mechanics, with attribution. NEVER store, hardcode, commit,
-or import Paizo Product Identity: deity names, setting proper nouns, named NPCs, or
-verbatim flavor/lore text — even for data never shown to users; the liability is in the
-data at rest. Every content entity's display name is an ORC-safe label plus
-source/attribution metadata; a Paizo proper noun is never a primary key or a hardcoded
-string.
+The former "ORC-clean" rule — a hard prohibition on storing any Paizo Product
+Identity — was **retired by the project owner** (2026-07-04). Pathway operates as
+a free fan project under Paizo's Community Use Policy (see the site footer) with
+ORC-licensed rules content attributed; on that basis content decisions are:
 
-> Known debt: the bot and its data are NOT yet ORC-clean (a `/deity` command, Eberron
-> content, AoN-imported bestiary/spell flavor). Rules of engagement: (1) no NEW code may
-> introduce PI; (2) flag PI when you see it; (3) purging/relabeling existing PI is an
-> explicit, tracked cleanup project.
+- Game content (mechanics, creature/feat/spell names, descriptions) may be
+  imported and stored freely from any reasonable source. Prefer machine-readable
+  rules data; keep the `source` field on every entity so attribution stays intact.
+- Keep the Community Use Policy / ORC attribution notices in the web footer and
+  bot embeds — they are the legal basis for the above.
+- The old strict-PI cleanup project is cancelled; the historical ORC-safe labels
+  that exist are fine to leave as-is.
 
 ## Rules-from-source rule (non-negotiable)
 

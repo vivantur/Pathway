@@ -63,6 +63,7 @@ describe('scaleCompanion — item AC bonus (barding) is capped at +3', () => {
 });
 
 import {
+  COMPANION_CATALOG,
   COMPANION_KINDS,
   FAMILIAR_ABILITIES,
   EIDOLON_TYPES,
@@ -90,6 +91,12 @@ describe('companion kinds + familiars + eidolons', () => {
   it('familiar HP is 5 per level; speed 25', () => {
     expect(familiarBaseStats(1)).toEqual({ hp: 5, speed: 25 });
     expect(familiarBaseStats(8)).toEqual({ hp: 40, speed: 25 });
+  });
+
+  it('ships the full companion catalog', () => {
+    expect(COMPANION_CATALOG.length).toBeGreaterThanOrEqual(45);
+    const slugs = COMPANION_CATALOG.map((c) => c.slug);
+    expect(new Set(slugs).size).toBe(slugs.length); // unique slugs
   });
 
   it('offers eidolon subtypes', () => {
