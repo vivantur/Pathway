@@ -525,7 +525,17 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     },
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,
-    focusPoints: focusPoints(state),
+    // Focus pool: the number of focus spells the build knows (feat- or
+    // subclass-granted, chosen on the Spells step), capped at 3 per the focus
+    // rules; the level-1 subclass grant is the floor.
+    focusPoints: Math.max(
+      focusPoints(state),
+      Math.min(
+        3,
+        (state.spellcasting?.focusSpells?.length ?? 0) +
+          (state.spellcasting?.focusCantrips?.length ?? 0),
+      ),
+    ),
     stamina: opt(state, OPT.legacyStamina)
       ? {
           // GMG: (half class HP, min 1, + Con mod) per level; Resolve = key ability mod.
@@ -605,8 +615,9 @@ export function unmetAtLevel(state: BuilderState, level: number): string[] {
   if (slots.skillFeat && !gains?.skillFeatId) out.push('choose a skill feat');
   if (slots.generalFeat && !gains?.generalFeatId) out.push('choose a general feat');
   if (slots.skillIncrease && !gains?.skillIncreases.length) out.push('choose a skill to increase');
-  // Archetype feats are optional in validation until archetype content exists,
-  // so Free Archetype never blocks completing a build.
+  // Archetype feats stay optional in validation: the dataset carries the
+  // archetype feats, but dedication chains (two-feat rule, per-archetype
+  // limits) aren't enforced yet, so Free Archetype never blocks a build.
   if (slots.boostCount > 0) {
     const boosts = (gains?.boosts ?? []).filter(Boolean);
     if (boosts.length < slots.boostCount)

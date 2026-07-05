@@ -55,7 +55,7 @@ export const OPTION_GROUPS: OptionGroup[] = [
   {
     title: 'Advanced Options',
     options: [
-      { id: 'freeArchetype', label: 'Use Free Archetype variant rules?', scope: 'character', implemented: true, note: 'Adds an archetype feat slot at even levels (archetype content arrives with the full data import).' },
+      { id: 'freeArchetype', label: 'Use Free Archetype variant rules?', scope: 'character', implemented: true, note: 'Adds an archetype feat slot at even levels; the dataset carries 1,800+ archetype feats including dedications.' },
       { id: 'removeFreeArchetypeFeatRestrictions', label: 'Remove Free Archetype feat restrictions?', scope: 'character', implemented: false, note: 'Needs archetype content.' },
       { id: 'removeFreeArchetypeAbilityRequirements', label: 'Remove Free Archetype ability requirements', scope: 'character', implemented: false, note: 'Needs archetype content.' },
       { id: 'automaticBonusProgression', label: 'Use Automatic Bonus Progression variant rules?', scope: 'character', implemented: true, note: 'Replaces the “big six” magic items with automatic bonuses by level (attack, AC, saves, Perception, extra weapon dice).' },
