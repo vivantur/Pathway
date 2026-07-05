@@ -21,6 +21,11 @@ export interface BuilderState {
   keyAbility?: AbilityKey;
   /** Chosen subclass (doctrine/muse/order/etc.) id. */
   subclassId?: string;
+  /**
+   * Chosen weapon group for group-scoped proficiency features (the fighter's
+   * Weapon Mastery / Weapon Legend). Ignored by classes without such a choice.
+   */
+  weaponGroup?: string;
 
   /** One choice per ancestry boost slot that is 'free' or a restricted set. Index-aligned to the free/choice slots. */
   ancestryBoostChoices: (AbilityKey | null)[];

@@ -5,8 +5,14 @@ import { useBuilder } from '../store';
 import { rogueRacketAbility } from '../subclassEffects';
 import { ChoiceGrid } from './ChoiceGrid';
 
+// Weapon groups from the item catalog (for the fighter's group-scoped mastery).
+const WEAPON_GROUPS = [
+  'axe', 'bow', 'brawling', 'club', 'crossbow', 'dart', 'firearm', 'flail',
+  'hammer', 'knife', 'pick', 'polearm', 'shield', 'sling', 'spear', 'sword',
+];
+
 export function ClassStep() {
-  const { classId, keyAbility, subclassId } = useBuilder((s) => s.state);
+  const { classId, keyAbility, subclassId, weaponGroup } = useBuilder((s) => s.state);
   const chooseClass = useBuilder((s) => s.chooseClass);
   const update = useBuilder((s) => s.update);
   const klass = classId ? findClass(classId) : undefined;
@@ -86,6 +92,29 @@ export function ClassStep() {
           />
         </div>
       ) : null}
+
+      {klass?.id === 'fighter' && (
+        <div className="panel p-5">
+          <h4 className="mb-2 font-display text-lg text-gold-400">Weapon Group</h4>
+          <p className="mb-3 font-ui text-sm text-parchment/70">
+            Fighter Weapon Mastery (5th) and Weapon Legend (13th) raise your proficiency further with
+            one weapon group of your choice. Weapons of this group show the higher attack bonus.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {WEAPON_GROUPS.map((g) => (
+              <button
+                key={g}
+                type="button"
+                className="choice-card px-3 py-1.5"
+                data-selected={weaponGroup === g}
+                onClick={() => update({ weaponGroup: g })}
+              >
+                <span className="font-ui text-sm text-parchment">{g[0].toUpperCase() + g.slice(1)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {hover &&
         createPortal(

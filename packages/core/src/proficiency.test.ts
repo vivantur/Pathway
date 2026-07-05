@@ -92,3 +92,51 @@ describe('proficiencyRankAtLevel', () => {
     }
   });
 });
+
+import { attackRankAtLevel } from './proficiency';
+
+describe('attackRankAtLevel — weapon proficiency progression', () => {
+  it('barbarian: Brutality (5) expert, Weapon Fury (13) master', () => {
+    expect(attackRankAtLevel('barbarian', { category: 'martial' }, 4)).toBe(0); // pre-bump: initial rank rules
+    expect(attackRankAtLevel('barbarian', { category: 'martial' }, 5)).toBe(2);
+    expect(attackRankAtLevel('barbarian', { category: 'martial' }, 13)).toBe(3);
+  });
+
+  it('fighter class-wide: Weapon Legend (13) master s/m + expert advanced; Versatile Legend (19)', () => {
+    expect(attackRankAtLevel('fighter', { category: 'martial' }, 12)).toBe(0);
+    expect(attackRankAtLevel('fighter', { category: 'martial' }, 13)).toBe(3);
+    expect(attackRankAtLevel('fighter', { category: 'advanced' }, 13)).toBe(2);
+    expect(attackRankAtLevel('fighter', { category: 'martial' }, 19)).toBe(4);
+  });
+
+  it('fighter chosen group: master (5), legendary (13) — only for the chosen group', () => {
+    const sword = { category: 'martial' as const, group: 'sword', chosenGroup: 'sword' };
+    expect(attackRankAtLevel('fighter', sword, 5)).toBe(3);
+    expect(attackRankAtLevel('fighter', sword, 13)).toBe(4);
+    const axeNotChosen = { category: 'martial' as const, group: 'axe', chosenGroup: 'sword' };
+    expect(attackRankAtLevel('fighter', axeNotChosen, 5)).toBe(0); // stays at initial expert via max()
+    expect(attackRankAtLevel('fighter', axeNotChosen, 13)).toBe(3);
+  });
+
+  it('gunslinger: firearm/crossbow scope is fixed, not chosen', () => {
+    expect(attackRankAtLevel('gunslinger', { category: 'martial', group: 'firearm' }, 5)).toBe(3);
+    expect(attackRankAtLevel('gunslinger', { category: 'martial', group: 'firearm' }, 13)).toBe(4);
+    expect(attackRankAtLevel('gunslinger', { category: 'advanced', group: 'crossbow' }, 5)).toBe(2);
+    expect(attackRankAtLevel('gunslinger', { category: 'martial', group: 'sword' }, 5)).toBe(2);
+  });
+
+  it('rogue named list: rapier rides Weapon Tricks; other martial weapons do not', () => {
+    expect(attackRankAtLevel('rogue', { category: 'martial', name: 'rapier' }, 5)).toBe(2);
+    expect(attackRankAtLevel('rogue', { category: 'martial', name: 'rapier' }, 13)).toBe(3);
+    expect(attackRankAtLevel('rogue', { category: 'martial', name: 'longsword' }, 13)).toBe(0);
+  });
+
+  it('wizard: only the named list improves (simple stays trained)', () => {
+    expect(attackRankAtLevel('wizard', { category: 'simple', name: 'staff' }, 11)).toBe(2);
+    expect(attackRankAtLevel('wizard', { category: 'simple', name: 'mace' }, 11)).toBe(0);
+  });
+
+  it('cleric: no class-wide weapon increases (doctrine-scoped)', () => {
+    expect(attackRankAtLevel('cleric', { category: 'simple' }, 20)).toBe(0);
+  });
+});

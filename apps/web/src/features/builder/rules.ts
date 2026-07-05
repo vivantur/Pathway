@@ -13,7 +13,12 @@ import {
   type Weapon,
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
-import { proficiencyRankAtLevel, type ProficiencyTrack } from './data/proficiency';
+import {
+  attackRankAtLevel,
+  proficiencyRankAtLevel,
+  type AttackCategory,
+  type ProficiencyTrack,
+} from './data/proficiency';
 import { focusPoints, subclassArmorRank } from './subclassEffects';
 import type { BuilderState } from './types';
 
@@ -342,11 +347,10 @@ export interface DerivedCharacter {
  * the max.
  *
  * Covered tracks: perception, saves, class DC, spellcasting, and armor
- * (defense) categories. NOT covered — weapon/attack proficiency past level 1:
- * PF2e's weapon increases are weapon-group/choice-scoped (e.g. Fighter Weapon
- * Mastery applies only to a chosen group), so a class-wide attack progression
- * would be wrong; attack ranks stay at the class's level-1 value. Monk's
- * choice-based save increases (Path to Perfection) are likewise unmodeled.
+ * (defense) categories. Weapon/attack proficiency past level 1 is handled in
+ * the weapon derivation via `attackRankAtLevel` (category-, list-, and
+ * group-scoped, including the fighter's chosen group). Monk's choice-based
+ * save increases (Path to Perfection) remain unmodeled.
  */
 function progressionRank(
   state: BuilderState,
@@ -431,7 +435,22 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   });
 
   const weapons: EquippedWeapon[] = equippedWeapons.map((w) => {
-    const catRank = (ip?.attacks[w.category] ?? 0) as ProficiencyRank;
+    // Attack proficiency: the class's level-1 rank, raised by its weapon
+    // expertise/mastery features (category-, list-, and group-scoped — the
+    // fighter's chosen group comes from state.weaponGroup).
+    const featureRank = state.classId
+      ? attackRankAtLevel(
+          state.classId,
+          {
+            category: w.category as AttackCategory,
+            group: w.group,
+            name: w.name.toLowerCase(),
+            chosenGroup: state.weaponGroup,
+          },
+          level,
+        )
+      : 0;
+    const catRank = Math.max(ip?.attacks[w.category] ?? 0, featureRank) as ProficiencyRank;
     const finesse = w.traits.includes('finesse');
     const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;
     const propulsive = w.traits.includes('propulsive');

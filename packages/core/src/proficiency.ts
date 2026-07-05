@@ -7,10 +7,8 @@
 // ranks keyed by generic class ids — no names, flavor, or Product Identity.
 //
 // NOT modeled (deliberately, to avoid wrong numbers):
-//   - Weapon/attack proficiency past level 1: increases are weapon-group- and
-//     choice-scoped (e.g. Fighter Weapon Mastery applies to a chosen group), so
-//     a class-wide attack progression would be incorrect. Callers keep the
-//     class's level-1 weapon rank.
+//   - Weapon/attack proficiency past level 1 now lives in ATTACK_PROGRESSION
+//     below (category-, list-, and group-scoped).
 //   - Monk Path to Perfection: the player chooses which save advances, so it
 //     cannot be applied statically; monk saves stay at their level-1 rank.
 //   - Doctrine-/subclass-dependent branches beyond the base class grants.
@@ -358,6 +356,183 @@ export function proficiencyRankAtLevel(
   for (const [lvl, r] of prog.bumps) {
     if (level >= lvl) rank = r;
     else break;
+  }
+  return rank;
+}
+
+// ── Weapon / unarmed attack proficiency progression ─────────────────────────
+//
+// Extracted from the same machine-readable class-feature data as the table
+// above (each class's Weapon Expertise / Mastery / Legend features; see the
+// feature names in the comments). Base ranks come from each class's level-1
+// initial proficiencies (callers take max(initial, track)), so tracks below
+// carry ONLY the increase points.
+//
+// Scoping:
+//  - Category tracks (unarmed/simple/martial/advanced) cover class-wide bumps.
+//  - `namedWeapons` covers weapon-LIST bumps (rogue/bard/wizard lists).
+//  - `chosenGroup` covers fighter's group-scoped Weapon Mastery / Weapon
+//    Legend, and gunslinger's fixed firearm+crossbow scope via `fixedGroups`.
+//  - Cleric doctrine and monk feat-based increases remain unmodeled (doctrine
+//    is subclass work; feats are choice-scoped).
+
+export type AttackCategory = "unarmed" | "simple" | "martial" | "advanced";
+
+export interface AttackProgression {
+  unarmed?: TrackProgression;
+  simple?: TrackProgression;
+  martial?: TrackProgression;
+  advanced?: TrackProgression;
+  /** Specific weapon names (lowercase) that ride their own track. */
+  namedWeapons?: { names: string[]; track: TrackProgression };
+  /**
+   * Group-scoped overlay. `fixedGroups` (gunslinger: firearm/crossbow) applies
+   * automatically; otherwise the player's chosen group (fighter) activates it.
+   */
+  chosenGroup?: {
+    fixedGroups?: string[];
+    simpleMartialUnarmed: TrackProgression;
+    advanced: TrackProgression;
+  };
+}
+
+const E5_M13: TrackProgression = { base: 0, bumps: [[5, 2], [13, 3]] };
+const E11: TrackProgression = { base: 0, bumps: [[11, 2]] };
+
+export const ATTACK_PROGRESSION: Record<string, AttackProgression> = {
+  // Alchemical Weapon Expertise (7): simple weapons + bombs.
+  alchemist: { simple: { base: 0, bumps: [[7, 2]] } },
+  // Simple Weapon Expertise (11) — Foundry class feature levels.
+  animist: { simple: E11, unarmed: E11 },
+  // Brutality (5), Weapon Fury (13).
+  barbarian: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Bard Weapon Expertise (11): simple + a named list.
+  bard: {
+    simple: E11,
+    namedWeapons: {
+      names: ["longsword", "rapier", "sap", "shortbow", "shortsword", "whip"],
+      track: E11,
+    },
+  },
+  // Weapon Expertise (5), Weapon Mastery (13).
+  champion: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Cleric weapon increases are doctrine-scoped (warpriest) — not modeled here.
+  cleric: {},
+  // Druid Weapon Expertise (11).
+  druid: { simple: E11, unarmed: E11 },
+  // Weapon Expertise (5) + Divine Weapon Mastery (13) — Foundry feature levels,
+  // standard martial pattern.
+  exemplar: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Fighter Weapon Mastery (5, chosen group), Weapon Legend (13: master
+  // simple/martial + expert advanced class-wide; legendary/master in group),
+  // Versatile Legend (19).
+  fighter: {
+    unarmed: { base: 0, bumps: [[19, 4]] },
+    simple: { base: 0, bumps: [[13, 3], [19, 4]] },
+    martial: { base: 0, bumps: [[13, 3], [19, 4]] },
+    advanced: { base: 0, bumps: [[13, 2], [19, 3]] },
+    chosenGroup: {
+      simpleMartialUnarmed: { base: 0, bumps: [[5, 3], [13, 4]] },
+      advanced: { base: 0, bumps: [[5, 2], [13, 3]] },
+    },
+  },
+  // Gunslinger Weapon Mastery (5), Gunslinging Legend (13); firearm/crossbow
+  // scope is fixed, not chosen.
+  gunslinger: {
+    unarmed: E5_M13,
+    simple: E5_M13,
+    martial: E5_M13,
+    chosenGroup: {
+      fixedGroups: ["firearm", "crossbow"],
+      simpleMartialUnarmed: { base: 0, bumps: [[5, 3], [13, 4]] },
+      advanced: { base: 0, bumps: [[5, 2], [13, 3]] },
+    },
+  },
+  // Inventor Weapon Expertise (5), Inventor Weapon Mastery (13).
+  inventor: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Weapon Expertise (5), Weapon Mastery (13).
+  investigator: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Weapon Expertise (11).
+  kineticist: { simple: E11, unarmed: E11 },
+  // Weapon Expertise (5), Weapon Mastery (13).
+  magus: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Expert Strikes (5), Master Strikes (13).
+  monk: { unarmed: E5_M13, simple: E5_M13 },
+  // Weapon Expertise (11).
+  oracle: { simple: E11, unarmed: E11 },
+  // Weapon Expertise (11).
+  psychic: { simple: E11, unarmed: E11 },
+  // Weapon Expertise (5), Weapon Mastery (13).
+  ranger: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Weapon Tricks (5), Master Tricks (13): simple + unarmed + a named list.
+  rogue: {
+    simple: E5_M13,
+    unarmed: E5_M13,
+    namedWeapons: { names: ["rapier", "sap", "shortbow", "shortsword"], track: E5_M13 },
+  },
+  // Simple Weapon Expertise (11).
+  sorcerer: { simple: E11, unarmed: E11 },
+  // Simple Weapon Expertise (11) — the summoner personally; the eidolon's own
+  // track lives in the companion engine.
+  summoner: { simple: E11, unarmed: E11 },
+  // Weapon Expertise (5), Weapon Mastery (13).
+  swashbuckler: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Thaumaturge Weapon Expertise (5), Weapon Mastery (13).
+  thaumaturge: { unarmed: E5_M13, simple: E5_M13, martial: E5_M13 },
+  // Weapon Expertise (11).
+  witch: { simple: E11, unarmed: E11 },
+  // Wizard Weapon Expertise (11): ONLY the named list (simple stays trained).
+  wizard: {
+    namedWeapons: {
+      names: ["club", "crossbow", "dagger", "heavy crossbow", "staff"],
+      track: E11,
+    },
+  },
+};
+
+function trackRank(track: TrackProgression | undefined, level: number): ProficiencyRank {
+  if (!track) return 0;
+  let rank = track.base;
+  for (const [lvl, r] of track.bumps) if (level >= lvl && r > rank) rank = r;
+  return rank;
+}
+
+export interface WeaponRankQuery {
+  category: AttackCategory;
+  /** Weapon group (e.g. "sword") when known — enables group-scoped features. */
+  group?: string;
+  /** Lowercase weapon name — enables list-scoped features. */
+  name?: string;
+  /** The player's chosen weapon group (fighter's Weapon Mastery). */
+  chosenGroup?: string;
+}
+
+/**
+ * The attack proficiency rank a class grants for one weapon at a level, from
+ * class features only (callers still take max() with the class's level-1
+ * initial rank).
+ */
+export function attackRankAtLevel(
+  classId: string,
+  query: WeaponRankQuery,
+  level: number,
+): ProficiencyRank {
+  const prog = ATTACK_PROGRESSION[classId];
+  if (!prog) return 0;
+  let rank = trackRank(prog[query.category], level);
+  if (query.name && prog.namedWeapons?.names.includes(query.name)) {
+    rank = Math.max(rank, trackRank(prog.namedWeapons.track, level)) as ProficiencyRank;
+  }
+  const g = prog.chosenGroup;
+  if (g && query.group) {
+    const inScope = g.fixedGroups
+      ? g.fixedGroups.includes(query.group)
+      : query.chosenGroup === query.group;
+    if (inScope) {
+      const overlay =
+        query.category === "advanced" ? g.advanced : g.simpleMartialUnarmed;
+      rank = Math.max(rank, trackRank(overlay, level)) as ProficiencyRank;
+    }
   }
   return rank;
 }
