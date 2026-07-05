@@ -149,6 +149,8 @@ export interface PathbuilderBuild {
   formula?: unknown;
   spellCasters?: Spellcaster[];
   focus?: FocusPools;
+  /** Top-level focus pool count (the web builder writes this alongside `focus`). */
+  focusPoints?: number;
   /**
    * Damage-typed defenses. Stored inconsistently in Pathbuilder exports —
    * sometimes a single string ("Silver 1"), sometimes a comma-separated string
@@ -375,23 +377,26 @@ function shieldBonusFromNames(names: string[]): number {
 /**
  * The character's focus-pool size (0 if they have no focus spells).
  *
- * Pathbuilder stores a `focusPoints` count on each spellcaster; we sum those
- * and cap at the PF2e maximum of 3. If no explicit count is present but the
- * character has focus spells (not just at-will focus cantrips), we infer a
- * pool of at least 1.
+ * Per the focus rules the pool equals the number of focus spells known,
+ * capped at 3 — so count the spells stored in `build.focus` (the web builder
+ * writes them there). Explicit counts (Pathbuilder's per-caster `focusPoints`,
+ * or the top-level `focusPoints` field) are honored when larger, still capped
+ * at 3. The old behavior inferred a flat pool of 1 whenever any focus spell
+ * existed, which showed 1/1 for characters who know three focus spells.
  */
 export function focusPoolMax(build: PathbuilderBuild): number {
-  let pts = 0;
+  let known = 0;
+  for (const byAbility of Object.values(build.focus ?? {})) {
+    for (const p of Object.values(byAbility)) {
+      known += (p.focusSpells?.length ?? 0) + (p.focusCantrips?.length ?? 0);
+    }
+  }
+  let explicit = 0;
   for (const c of build.spellCasters ?? []) {
-    if (typeof c.focusPoints === 'number' && c.focusPoints > 0) pts += c.focusPoints;
+    if (typeof c.focusPoints === 'number' && c.focusPoints > 0) explicit += c.focusPoints;
   }
-  if (pts === 0) {
-    const hasFocusSpells = Object.values(build.focus ?? {}).some((byAbility) =>
-      Object.values(byAbility).some((p) => (p.focusSpells?.length ?? 0) > 0),
-    );
-    if (hasFocusSpells) pts = 1;
-  }
-  return Math.min(3, pts);
+  const topLevel = typeof build.focusPoints === 'number' ? build.focusPoints : 0;
+  return Math.min(3, Math.max(known, explicit, topLevel));
 }
 
 /** Class DC for classes that have one (kineticist, monk, most casters). */

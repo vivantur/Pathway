@@ -232,7 +232,8 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
             spellcastingType: caster.type,
             ability: caster.keyAbility,
             proficiency: 2, // trained at level 1
-            focusPoints: 0,
+            // Pathbuilder convention: the focus pool rides on the caster entry.
+            focusPoints: Math.max(focusPoolSize(state), focusPoints(state)),
             spells: [
               { spellLevel: 0, list: (sc.cantrips ?? []).map(spellName) },
               ...Object.entries(sc.spellsByRank ?? {})
