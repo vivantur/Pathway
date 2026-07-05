@@ -80,7 +80,7 @@ export function CompanionManager({
 
       {!readOnly &&
         (editing ? (
-          <CompanionForm
+          <CompanionEditorForm
             charKey={charKey}
             level={level}
             existing={editing === 'new' ? null : editing}
@@ -163,19 +163,20 @@ function CompanionCard({
         )}
       </div>
 
-      {kind === 'animal' || kind === 'mount' ? (
-        <AnimalBlock companion={companion} level={level} />
-      ) : kind === 'familiar' ? (
-        <FamiliarBlock companion={companion} level={level} />
-      ) : kind === 'eidolon' ? (
-        <EidolonBlock companion={companion} level={level} />
-      ) : (
-        <CustomBlock companion={companion} />
-      )}
+      <CompanionStatBlock companion={companion} level={level} />
 
       {companion.notes && <p className="mt-2 text-xs italic text-silver/60">{companion.notes}</p>}
     </li>
   );
+}
+
+/** Kind-aware stat block for one companion row. Also used for builder drafts. */
+export function CompanionStatBlock({ companion, level }: { companion: CompanionRow; level: number }) {
+  const kind = companionKind(companion);
+  if (kind === 'animal' || kind === 'mount') return <AnimalBlock companion={companion} level={level} />;
+  if (kind === 'familiar') return <FamiliarBlock companion={companion} level={level} />;
+  if (kind === 'eidolon') return <EidolonBlock companion={companion} level={level} />;
+  return <CustomBlock companion={companion} />;
 }
 
 function StatGrid({ items }: { items: Array<[string, string | number]> }) {
@@ -324,16 +325,34 @@ function CustomBlock({ companion }: { companion: CompanionRow }) {
 const inputCls =
   'rounded border border-gold/25 bg-midnight-950/50 px-2 py-1.5 text-sm text-silver focus:border-gold/60 focus:outline-none';
 
-function CompanionForm({
+/** The per-kind fields the form produces (matches builder CompanionDraft). */
+export interface CompanionFormOutput {
+  kind: CompanionKind;
+  displayName: string;
+  baseType: string;
+  form: CompanionForm;
+  notes?: string | null;
+  familiarAbilities?: string[];
+  eidolonType?: string;
+  custom?: CustomCompanionStats;
+}
+
+export function CompanionEditorForm({
   charKey,
   level,
   existing,
   onClose,
+  onSubmitDraft,
 }: {
   charKey: string;
   level: number;
   existing: CompanionRow | null;
   onClose: () => void;
+  /**
+   * Draft mode (builder, character not saved yet): receive the values instead
+   * of writing to the companions table.
+   */
+  onSubmitDraft?: (output: CompanionFormOutput) => void;
 }) {
   const save = useSaveCompanion(charKey);
   const [kind, setKind] = useState<CompanionKind>(
@@ -373,20 +392,22 @@ function CompanionForm({
     if (!name.trim()) return;
     const baseTypeForKind =
       kind === 'animal' || kind === 'mount' ? baseType : kind === 'familiar' ? 'familiar' : kind;
-    save.mutate(
-      {
-        compKey: existing?.comp_key,
-        kind,
-        displayName: name.trim(),
-        baseType: baseTypeForKind,
-        form: kind === 'animal' || kind === 'mount' ? form : 'young',
-        notes: notes.trim() || null,
-        familiarAbilities: kind === 'familiar' ? familiarAbilities : undefined,
-        eidolonType: kind === 'eidolon' ? eidolonType : undefined,
-        custom: kind === 'custom' ? custom : undefined,
-      },
-      { onSuccess: onClose },
-    );
+    const output: CompanionFormOutput = {
+      kind,
+      displayName: name.trim(),
+      baseType: baseTypeForKind,
+      form: kind === 'animal' || kind === 'mount' ? form : 'young',
+      notes: notes.trim() || null,
+      familiarAbilities: kind === 'familiar' ? familiarAbilities : undefined,
+      eidolonType: kind === 'eidolon' ? eidolonType : undefined,
+      custom: kind === 'custom' ? custom : undefined,
+    };
+    if (onSubmitDraft) {
+      onSubmitDraft(output);
+      onClose();
+      return;
+    }
+    save.mutate({ compKey: existing?.comp_key, ...output }, { onSuccess: onClose });
   };
 
   return (

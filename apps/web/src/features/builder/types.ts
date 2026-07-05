@@ -74,6 +74,26 @@ export interface BuilderState {
    * them; the player records what their build grants (dataset spell ids).
    */
   innateSpells: InnateSpellEntry[];
+
+  /**
+   * Companions drafted during creation, before the character exists in the
+   * vault. Companions are stored per char_key, so a brand-new character can't
+   * write them yet — drafts buffer here and are created for real right after
+   * the first "Save to Vault" (see useSaveBuild), then this list is cleared.
+   */
+  companionDrafts: CompanionDraft[];
+}
+
+/** A companion drafted in the builder (mirrors companions/api SaveCompanionInput). */
+export interface CompanionDraft {
+  kind: 'animal' | 'mount' | 'familiar' | 'eidolon' | 'custom';
+  displayName: string;
+  baseType: string;
+  form: 'young' | 'mature' | 'nimble' | 'savage';
+  notes?: string | null;
+  familiarAbilities?: string[];
+  eidolonType?: string;
+  custom?: Record<string, unknown>;
 }
 
 export type SpellTradition = 'arcane' | 'divine' | 'occult' | 'primal';
@@ -124,6 +144,7 @@ export function emptyBuilderState(): BuilderState {
     money: 15,
     spellcasting: { cantrips: [], spellsByRank: {}, focusSpells: [], focusCantrips: [] },
     innateSpells: [],
+    companionDrafts: [],
   };
 }
 

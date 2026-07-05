@@ -4,6 +4,7 @@ import {
   emptyBuilderState,
   emptyLevelGains,
   type BuilderState,
+  type CompanionDraft,
   type LevelGains,
   type SpellTradition,
   type StepId,
@@ -62,6 +63,10 @@ interface BuilderStore {
   removeInnateSpell: (spellId: string) => void;
   setInnatePerDay: (spellId: string, perDay: number) => void;
   setInnateTradition: (spellId: string, tradition: SpellTradition) => void;
+
+  addCompanionDraft: (draft: CompanionDraft) => void;
+  updateCompanionDraft: (index: number, draft: CompanionDraft) => void;
+  removeCompanionDraft: (index: number) => void;
 }
 
 export const useBuilder = create<BuilderStore>((set) => ({
@@ -266,6 +271,27 @@ export const useBuilder = create<BuilderStore>((set) => ({
         innateSpells: (s.state.innateSpells ?? []).map((e) =>
           e.spellId === spellId ? { ...e, tradition } : e,
         ),
+      },
+    })),
+
+  addCompanionDraft: (draft) =>
+    set((s) => ({
+      state: { ...s.state, companionDrafts: [...(s.state.companionDrafts ?? []), draft] },
+    })),
+
+  updateCompanionDraft: (index, draft) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        companionDrafts: (s.state.companionDrafts ?? []).map((d, i) => (i === index ? draft : d)),
+      },
+    })),
+
+  removeCompanionDraft: (index) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        companionDrafts: (s.state.companionDrafts ?? []).filter((_, i) => i !== index),
       },
     })),
 }));
