@@ -26,6 +26,15 @@ export interface BuilderState {
    * Weapon Mastery / Weapon Legend). Ignored by classes without such a choice.
    */
   weaponGroup?: string;
+  /**
+   * Monk Path to Perfection save choices (7th/11th/15th). `third` must repeat
+   * `first` or `second` (it raises one of them to legendary).
+   */
+  monkPaths?: {
+    first?: 'fortitude' | 'reflex' | 'will';
+    second?: 'fortitude' | 'reflex' | 'will';
+    third?: 'fortitude' | 'reflex' | 'will';
+  };
 
   /** One choice per ancestry boost slot that is 'free' or a restricted set. Index-aligned to the free/choice slots. */
   ancestryBoostChoices: (AbilityKey | null)[];

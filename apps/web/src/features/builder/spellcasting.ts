@@ -2,7 +2,7 @@ import { findClass, getDataset, type AbilityKey, type Spell } from '@/features/b
 import { proficiencyRankAtLevel } from './data/proficiency';
 import { abilityModifier, computeAbilityScores, proficiencyBonus, opt } from './rules';
 import { OPT } from './options/config';
-import { subclassTradition } from './subclassEffects';
+import { doctrineTrackRank, subclassTradition } from './subclassEffects';
 import type { BuilderState } from './types';
 
 export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
@@ -132,7 +132,13 @@ export function spellStats(state: BuilderState): { attack: number; dc: number; a
   const mods = computeAbilityScores(state);
   const abilityMod = abilityModifier(mods[cfg.keyAbility]);
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const rank = Math.max(1, state.classId ? proficiencyRankAtLevel(state.classId, 'spellcasting', level) : 1);
+  // Class progression table, raised by choice-driven schedules (cleric
+  // doctrine determines the cleric's spellcasting progression entirely).
+  const rank = Math.max(
+    1,
+    state.classId ? proficiencyRankAtLevel(state.classId, 'spellcasting', level) : 1,
+    doctrineTrackRank(state, 'spellcasting', level),
+  );
   const bonus = proficiencyBonus(rank as 1 | 2 | 3 | 4, level, pwl);
   return { attack: bonus + abilityMod, dc: 10 + bonus + abilityMod, ability: cfg.keyAbility };
 }

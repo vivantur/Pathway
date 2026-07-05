@@ -12,7 +12,7 @@ const WEAPON_GROUPS = [
 ];
 
 export function ClassStep() {
-  const { classId, keyAbility, subclassId, weaponGroup } = useBuilder((s) => s.state);
+  const { classId, keyAbility, subclassId, weaponGroup, monkPaths } = useBuilder((s) => s.state);
   const chooseClass = useBuilder((s) => s.chooseClass);
   const update = useBuilder((s) => s.update);
   const klass = classId ? findClass(classId) : undefined;
@@ -92,6 +92,49 @@ export function ClassStep() {
           />
         </div>
       ) : null}
+
+      {klass?.id === 'monk' && (
+        <div className="panel p-5">
+          <h4 className="mb-2 font-display text-lg text-gold-400">Paths to Perfection</h4>
+          <p className="mb-3 font-ui text-sm text-parchment/70">
+            At 7th, 11th, and 15th level you perfect your saving throws: a chosen save becomes
+            master (7th), a different save becomes master (11th), and one of those two becomes
+            legendary (15th).
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {(['first', 'second', 'third'] as const).map((slot, i) => {
+              const label = ['First Path (7th)', 'Second Path (11th)', 'Third Path (15th)'][i];
+              const paths = monkPaths ?? {};
+              const options = (['fortitude', 'reflex', 'will'] as const).filter((s) => {
+                if (slot === 'second') return s !== paths.first;
+                if (slot === 'third') return s === paths.first || s === paths.second;
+                return true;
+              });
+              return (
+                <label key={slot} className="flex flex-col gap-1 font-ui text-xs text-parchment/70">
+                  {label}
+                  <select
+                    value={paths[slot] ?? ''}
+                    onChange={(e) =>
+                      update({
+                        monkPaths: { ...paths, [slot]: (e.target.value || undefined) as never },
+                      })
+                    }
+                    className="rounded-lg border border-gold-500/25 bg-midnight-950/50 px-2 py-1.5 text-sm text-parchment focus:border-gold-400/60 focus:outline-none"
+                  >
+                    <option value="">— choose —</option>
+                    {options.map((s) => (
+                      <option key={s} value={s}>
+                        {s[0].toUpperCase() + s.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {klass?.id === 'fighter' && (
         <div className="panel p-5">

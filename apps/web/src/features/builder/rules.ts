@@ -19,7 +19,13 @@ import {
   type AttackCategory,
   type ProficiencyTrack,
 } from './data/proficiency';
-import { focusPoints, subclassArmorRank } from './subclassEffects';
+import {
+  doctrineAttackRank,
+  doctrineTrackRank,
+  focusPoints,
+  monkPathSaveRank,
+  subclassArmorRank,
+} from './subclassEffects';
 import type { BuilderState } from './types';
 
 export type AbilityScores = Record<AbilityKey, number>;
@@ -359,7 +365,11 @@ function progressionRank(
 ): ProficiencyRank {
   const level = state.level || 1;
   const fromClass = state.classId ? proficiencyRankAtLevel(state.classId, track, level) : 0;
-  return Math.max(initial, fromClass) as ProficiencyRank;
+  // Choice-driven schedules: cleric doctrine (saves/armor/spellcasting) and
+  // the monk's Path to Perfection save choices.
+  const fromDoctrine = doctrineTrackRank(state, track, level);
+  const fromMonkPath = monkPathSaveRank(state, track, level);
+  return Math.max(initial, fromClass, fromDoctrine, fromMonkPath) as ProficiencyRank;
 }
 
 export function deriveCharacter(state: BuilderState): DerivedCharacter {
@@ -464,7 +474,11 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
           level,
         )
       : 0;
-    const catRank = Math.max(ip?.attacks[w.category] ?? 0, featureRank) as ProficiencyRank;
+    const catRank = Math.max(
+      ip?.attacks[w.category] ?? 0,
+      featureRank,
+      doctrineAttackRank(state, w.category, level),
+    ) as ProficiencyRank;
     const finesse = w.traits.includes('finesse');
     const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;
     const propulsive = w.traits.includes('propulsive');

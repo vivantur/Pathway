@@ -91,3 +91,69 @@ export function subclassArmorRank(state: BuilderState, category: string): number
   if (state.classId === 'rogue' && state.subclassId === 'ruffian' && category === 'medium') return 1;
   return 0;
 }
+
+// ── Cleric doctrines ────────────────────────────────────────────────────────
+// Proficiency schedules from the doctrine class features (remaster; the CRB
+// and Player Core numbers agree except warpriest's 3rd doctrine, which in the
+// remaster also raises MARTIAL weapons to expert). Favored-weapon-specific
+// grants (crit spec, warpriest's master favored weapon at 19th) need a deity
+// system and are not modeled yet.
+//   Cloistered: Fort expert@3 · divine spells expert@7 / master@15 / legendary@19
+//               · simple+unarmed expert@11
+//   Warpriest:  light+medium armor trained@1 (expert@13 with Divine Defense)
+//               · Fort expert@1, master@15 · martial trained@3, expert@7
+//               · simple+unarmed expert@7 · divine spells expert@11 / master@19
+
+type Bumps = [level: number, rank: number][];
+const bumpRank = (bumps: Bumps, level: number): number => {
+  let r = 0;
+  for (const [lvl, rank] of bumps) if (level >= lvl && rank > r) r = rank;
+  return r;
+};
+
+const DOCTRINE_TRACKS: Record<string, Record<string, Bumps>> = {
+  'cloistered-cleric': {
+    fortitude: [[3, 2]],
+    spellcasting: [[7, 2], [15, 3], [19, 4]],
+  },
+  warpriest: {
+    fortitude: [[1, 2], [15, 3]],
+    light: [[1, 1], [13, 2]],
+    medium: [[1, 1], [13, 2]],
+    spellcasting: [[11, 2], [19, 3]],
+  },
+};
+
+const DOCTRINE_ATTACKS: Record<string, Record<string, Bumps>> = {
+  'cloistered-cleric': { simple: [[11, 2]], unarmed: [[11, 2]] },
+  warpriest: { martial: [[3, 1], [7, 2]], simple: [[7, 2]], unarmed: [[7, 2]] },
+};
+
+/** Proficiency rank a cleric doctrine grants on a track at a level (0 if none). */
+export function doctrineTrackRank(state: BuilderState, track: string, level: number): number {
+  if (state.classId !== 'cleric' || !state.subclassId) return 0;
+  return bumpRank(DOCTRINE_TRACKS[state.subclassId]?.[track] ?? [], level);
+}
+
+/** Attack proficiency rank a cleric doctrine grants for a weapon category. */
+export function doctrineAttackRank(state: BuilderState, category: string, level: number): number {
+  if (state.classId !== 'cleric' || !state.subclassId) return 0;
+  return bumpRank(DOCTRINE_ATTACKS[state.subclassId]?.[category] ?? [], level);
+}
+
+// ── Monk Paths to Perfection ────────────────────────────────────────────────
+// Path to Perfection (7th): chosen save → master. Second Path (11th): a
+// DIFFERENT save → master. Third Path (15th): one of the two chosen saves →
+// legendary. (The success→critical-success riders are display-level effects.)
+
+export type SaveTrack = 'fortitude' | 'reflex' | 'will';
+
+export function monkPathSaveRank(state: BuilderState, track: string, level: number): number {
+  if (state.classId !== 'monk') return 0;
+  const p = state.monkPaths ?? {};
+  let rank = 0;
+  if (level >= 7 && p.first === track) rank = 3;
+  if (level >= 11 && p.second === track) rank = Math.max(rank, 3);
+  if (level >= 15 && p.third === track && (p.first === track || p.second === track)) rank = 4;
+  return rank;
+}
