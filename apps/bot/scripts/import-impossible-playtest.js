@@ -34,10 +34,18 @@ async function main() {
     return;
   }
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
+  // Accept the bot's convention and the Supabase dashboard's names alike.
+  const url = process.env.SUPABASE_URL ?? process.env.SUPABASE_PROJECT_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_KEY;
   if (!url || !key) {
-    console.error('SUPABASE_URL and SUPABASE_SERVICE_KEY must be set (bot .env).');
+    if (!url) console.error('Missing SUPABASE_URL (or SUPABASE_PROJECT_URL).');
+    if (!key)
+      console.error(
+        'Missing SUPABASE_SERVICE_KEY (also accepted: SUPABASE_SERVICE_ROLE_KEY, SUPABASE_KEY).',
+      );
     process.exit(1);
   }
   const sb = createClient(url, key);
