@@ -100,7 +100,8 @@ async function main() {
       description: s.description ?? '',
       source: s.source ?? 'Impossible Playtest',
     };
-    const { error } = await sb.from('spells').insert({ name: s.name, spell_metadata: metadata });
+    // The live table also carries a NOT NULL top-level level column.
+    const { error } = await sb.from('spells').insert({ name: s.name, level: s.rank, spell_metadata: metadata });
     if (error) console.error(`  spell FAILED ${s.name}: ${error.message}`);
     else spellsOk++;
   }
