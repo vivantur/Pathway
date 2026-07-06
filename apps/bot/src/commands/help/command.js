@@ -164,6 +164,7 @@ const HELP_CATEGORIES = {
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
       { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
       { name: '/mattack', summary: 'Manual monster attack — type bonus + damage yourself. For monsters from /init addmonster, prefer /init attack (it auto-fills both).', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
+      { name: '/m attack', summary: 'Save and manage a per-server library of reusable monster attacks (strikes, spell attacks, save-based). Used by /init attack, /mattack, and /m attack use.', options: 'add, addspell, addsave, remove, clear, list, use', example: '/m attack add monster:Goblin attack:Shortsword bonus:8 damage:1d6+2' },
     ],
   },
 };

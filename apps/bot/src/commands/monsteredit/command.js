@@ -140,9 +140,8 @@ async function execute(interaction) {
       return interaction.reply({ content: `✅ Set **${normalized}** ${modifier >= 0 ? '+' : ''}${modifier} on **${displayName}**.`, ephemeral: true });
     }
 
-    // ── attack: add a strike to the attacks array (flavor-only; rollable
-    // saved attacks live in the monster attack library — see
-    // commands/monsterattack, currently only reachable via /m) ──
+    // ── attack: add a strike to the attacks array (flavor-only; for
+    // rollable saved attacks use /m attack add instead) ──
     if (sub === 'attack') {
       const monsterInput = interaction.options.getString('monster');
       const name = interaction.options.getString('name').trim();
