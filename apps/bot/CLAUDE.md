@@ -280,7 +280,7 @@ The rewrite from the legacy single-file bot to feature folders is complete and *
 **Index.js shrinkage**: 19,500 → ~3,000 lines.
 
 **Remaining work** (see `HANDOFF.md` and `docs/avrae-pathbuilder-roadmap.md` at the repo root):
-- Consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2, then delete the retired command folders (`attack`, `initiative`, `monsterattack`, `monsterroll`)
+- Consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2. (The retired standalone `/attack` and `/initiative` folders are already deleted; `commands/monsterroll/` and `commands/monsterattack/` remain because they implement `/m` subcommands and export helpers used by `/mattack` and `/init attack`.)
 - Add a Vitest suite over the pure `rules/` modules
 - Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`, `encounters.js`) when touched
 

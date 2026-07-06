@@ -133,7 +133,6 @@ const skillinfoCmd     = require('./commands/skillinfo/command');
 const skillinfoButtons = require('./commands/skillinfo/buttons');
 const perceptionCmd    = require('./commands/perception/command');
 const saveCmd          = require('./commands/save/command');
-const initiativeCmd    = require('./commands/initiative/command');
 const classCmd         = require('./commands/class/command');
 const classButtons     = require('./commands/class/buttons');
 const companionCmd     = require('./commands/companion/command');
@@ -144,7 +143,6 @@ const harvestCmd       = require('./commands/harvest/command');
 const downtimeActivityCmd = require('./commands/downtimeActivities/command');
 const downtimeCmd      = require('./commands/downtimeCommand/command');
 const mattackCmd       = require('./commands/mattack/command');
-const attackCmd        = require('./commands/attack/command');
 const iCmd             = require('./commands/i/command');
 const initCmd          = require('./commands/init/command');
 const charCmd          = require('./commands/char/command');
@@ -479,7 +477,7 @@ function applyMonsterEdits(monster, edits) {
   return merged;
 }
 
-// Pull the attacks saved via /monsterattack for this guild+monster and
+// Pull the saved monster attack library entries for this guild+monster and
 // surface them on the creature so they render on /monster alongside any
 // bestiary or edit attacks. Strike-kind entries become melee/ranged
 // bestiary-style attacks; spell and save kinds become special abilities
@@ -2102,7 +2100,7 @@ client.on('interactionCreate', async (interaction) => {
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
         }
-        else if ((cmd === 'hp' || cmd === 'recovery' || cmd === 'perception' || cmd === 'initiative' || cmd === 'portrait' || cmd === 'feats' || cmd === 'abilities' || cmd === 'description') && focused.name === 'character') {
+        else if ((cmd === 'hp' || cmd === 'recovery' || cmd === 'perception' || cmd === 'portrait' || cmd === 'feats' || cmd === 'abilities' || cmd === 'description') && focused.name === 'character') {
           const characters = loadCharacters();
           const own = Object.values(characters[interaction.user.id] ?? {}).filter(v => v && v.name).map(e => e.name);
           suggestions = pick(own);
@@ -2147,11 +2145,6 @@ client.on('interactionCreate', async (interaction) => {
             if (sub === 'reset') suggestions = pick(['all', ...names]);
             else suggestions = pick(names);
           }
-        }
-        else if (cmd === 'initiative' && focused.name === 'skill') {
-          // Suggest Perception + the 16 core skills for initiative overrides
-          const skills = ['Perception', 'Acrobatics', 'Arcana', 'Athletics', 'Crafting', 'Deception', 'Diplomacy', 'Intimidation', 'Medicine', 'Nature', 'Occultism', 'Performance', 'Religion', 'Society', 'Stealth', 'Survival', 'Thievery'];
-          suggestions = pick(skills);
         }
         else if (cmd === 'char' && focused.name === 'character' && ['active', 'serveractive'].includes(interaction.options.getSubcommand(false))) {
           const characters = loadCharacters();
@@ -2307,7 +2300,7 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(own);
           }
         }
-        else if (cmd === 'skill' || cmd === 'initiative') {
+        else if (cmd === 'skill') {
           if (focused.name === 'skill') {
             suggestions = pick(Object.values(skillDatabase).map(s => s.name).filter(Boolean));
           } else if (focused.name === 'character') {
@@ -2739,15 +2732,6 @@ client.on('interactionCreate', async (interaction) => {
     await perceptionCmd.execute(interaction);
   }
 
-  // ─── /initiative ─────────────────────────────────────────────────
-  // Roll initiative. Defaults to Perception-based initiative (the PF2e
-  // standard). Allows an optional `skill:` override (e.g. stealth for an
-  // ambush, diplomacy for a social scene). Does NOT add you to an active
-  // encounter — use /init add for that. This is just for rolling.
-  else if (commandName === 'initiative') {
-    await initiativeCmd.execute(interaction);
-  }
-
   // ─── /save ───────────────────────────────────────────────────────
   else if (commandName === 'save') {
     await saveCmd.execute(interaction);
@@ -2894,10 +2878,18 @@ client.on('interactionCreate', async (interaction) => {
     await monsterartCmd.execute(interaction);
   }
 
-
-  // mod values don't leak. Use the `public:true` flag to broadcast results.
+  // ─── monsterroll (reached via /m save and /m skill) ──────────────
+  // GM save/skill rolls for monsters. Not registered as a standalone slash
+  // command; routeMonsterAlias rewrites /m subcommands to this handler.
   else if (commandName === 'monsterroll') {
     await monsterrollCmd.execute(interaction);
+  }
+
+  // ─── monsterattack (reached via the /m attack group) ─────────────
+  // Saved per-guild monster attack library. Not registered standalone;
+  // also exports normalizeAttackForRolling for /mattack and /init attack.
+  else if (commandName === 'monsterattack') {
+    await monsterattackCmd.execute(interaction);
   }
 
   // ─── /monsteredit ────────────────────────────────────────────────
@@ -2961,16 +2953,6 @@ client.on('interactionCreate', async (interaction) => {
 
   else if (commandName === 'init') {
     await initCmd.execute(interaction);
-  }
-
-  // ─── /attack ─────────────────────────────────────────────────────
-  else if (commandName === 'attack') {
-    await attackCmd.execute(interaction);
-  }
-
-  // ─── /monsterattack ──────────────────────────────────────────────
-  else if (commandName === 'monsterattack') {
-    await monsterattackCmd.execute(interaction);
   }
 
   // ─── /downtime ────────────────────────────────────────────────────

@@ -466,7 +466,7 @@ const rollCommand = new SlashCommandBuilder()
   .addStringOption(o => o.setName('dice').setDescription('Dice expression (supports snippets and basic math)').setRequired(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// /skill  /perception  /initiative  /save
+// /skill  /perception  /save
 // ─────────────────────────────────────────────────────────────────────────────
 const skillCommand = new SlashCommandBuilder()
   .setName('skill')
@@ -478,13 +478,6 @@ const skillCommand = new SlashCommandBuilder()
 const perceptionCommand = new SlashCommandBuilder()
   .setName('perception')
   .setDescription('Roll a Perception check.')
-  .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty').setRequired(false))
-  .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true));
-
-const initiativeCommand = new SlashCommandBuilder()
-  .setName('initiative')
-  .setDescription('Roll initiative (defaults to Perception; use skill: to override).')
-  .addStringOption(o => o.setName('skill').setDescription('Override with a different skill (e.g. Stealth for an ambush)').setRequired(false).setAutocomplete(true))
   .addIntegerOption(o => o.setName('bonus').setDescription('Extra bonus or penalty').setRequired(false))
   .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true));
 
@@ -1067,82 +1060,9 @@ const hpCommand = new SlashCommandBuilder()
     .addStringOption(opt => opt.setName('action').setDescription('Clear the override and use the computed max instead').setRequired(false).addChoices({ name: 'Clear override', value: 'clear' }))
     .addStringOption(opt => opt.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true)));
 
-// ─────────────────────────────────────────────────────────────────────────────
-// /monsterattack
-// ─────────────────────────────────────────────────────────────────────────────
-const monsterAttackCommand = new SlashCommandBuilder()
-  .setName('monsterattack')
-  .setDescription('GM: save reusable attacks for monsters by name. Used by /init attack and /monsterattack use.')
-  .addSubcommand(s => s.setName('add')
-    .setDescription('Save a strike (melee/ranged) for a monster.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name (matches bestiary if possible).').setRequired(true))
-    .addStringOption(o => o.setName('attack').setDescription('Attack name (e.g. "Bite", "Longsword").').setRequired(true))
-    .addIntegerOption(o => o.setName('bonus').setDescription('Attack bonus (e.g. 8 for +8).').setRequired(true))
-    .addStringOption(o => o.setName('damage').setDescription('Damage expression (e.g. 1d8+3 or 2d6).').setRequired(true))
-    .addStringOption(o => o.setName('type').setDescription('Damage type (e.g. slashing, fire). Defaults to "damage".').setRequired(false))
-    .addStringOption(o => o.setName('traits').setDescription('Comma-separated traits (agile, reach, finesse...).').setRequired(false))
-    .addStringOption(o => o.setName('extra_damage').setDescription('Extra damage dice (e.g. 1d6 for fire).').setRequired(false))
-    .addStringOption(o => o.setName('extra_type').setDescription('Type for extra damage (e.g. fire).').setRequired(false)))
-  .addSubcommand(s => s.setName('addspell')
-    .setDescription('Save a spell attack for a monster (no MAP applies).')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true))
-    .addStringOption(o => o.setName('attack').setDescription('Spell name (e.g. "Magic Missile").').setRequired(true))
-    .addIntegerOption(o => o.setName('bonus').setDescription('Spell attack bonus.').setRequired(true))
-    .addStringOption(o => o.setName('damage').setDescription('Damage expression (e.g. 4d6).').setRequired(true))
-    .addStringOption(o => o.setName('type').setDescription('Damage type (e.g. force, fire).').setRequired(false)))
-  .addSubcommand(s => s.setName('addsave')
-    .setDescription('Save a save-based attack for a monster (e.g. dragon breath).')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true))
-    .addStringOption(o => o.setName('attack').setDescription('Attack name (e.g. "Breath Weapon").').setRequired(true))
-    .addStringOption(o => o.setName('save').setDescription('Save type targets must roll.').setRequired(true)
-      .addChoices({ name: 'Fortitude', value: 'Fortitude' }, { name: 'Reflex', value: 'Reflex' }, { name: 'Will', value: 'Will' }))
-    .addIntegerOption(o => o.setName('dc').setDescription('Save DC.').setRequired(true))
-    .addStringOption(o => o.setName('damage').setDescription('Damage expression (e.g. 6d6).').setRequired(true))
-    .addStringOption(o => o.setName('type').setDescription('Damage type (e.g. fire).').setRequired(false)))
-  .addSubcommand(s => s.setName('remove')
-    .setDescription('Remove a single saved attack from a monster.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true))
-    .addStringOption(o => o.setName('attack').setDescription('Attack name to remove.').setRequired(true)))
-  .addSubcommand(s => s.setName('clear')
-    .setDescription('Remove ALL saved attacks for a monster.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true)))
-  .addSubcommand(s => s.setName('list')
-    .setDescription('List saved attacks. Provide a monster to see its attacks; omit to list all monsters.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name (omit for all).').setRequired(false)))
-  .addSubcommand(s => s.setName('use')
-    .setDescription('Roll a monster attack in or out of initiative.')
-    .addStringOption(o => o.setName('attacker').setDescription('Combatant or bestiary monster doing the attacking.').setRequired(true))
-    .addStringOption(o => o.setName('monster').setDescription('Optional attack source if different from attacker.').setRequired(false))
-    .addStringOption(o => o.setName('attack').setDescription('Attack name (substring match OK).').setRequired(true))
-    .addStringOption(o => o.setName('target').setDescription('Target combatant (required for strikes/spells, optional for saves).').setRequired(false))
-    .addIntegerOption(o => o.setName('map').setDescription('Override MAP (0=first attack, 1=second, 2=third).').setRequired(false).setMinValue(0).setMaxValue(2)));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// /monsterroll
-// ─────────────────────────────────────────────────────────────────────────────
-const monsterRollCommand = new SlashCommandBuilder()
-  .setName('monsterroll')
-  .setDescription('GM: roll saves and skills for monsters (works in or out of initiative).')
-  .addSubcommand(s => s.setName('save')
-    .setDescription('Roll a save for a monster.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name (combatant in init OR bestiary entry).').setRequired(true))
-    .addStringOption(o => o.setName('save').setDescription('Which save to roll.').setRequired(true)
-      .addChoices(
-        { name: 'Fortitude', value: 'fort' },
-        { name: 'Reflex',    value: 'ref'  },
-        { name: 'Will',      value: 'will' },
-      ))
-    .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against (shows degree of success).').setRequired(false))
-    .addBooleanOption(o => o.setName('public').setDescription('Set to false to keep this roll GM-only (default: true, visible to all).').setRequired(false)))
-  .addSubcommand(s => s.setName('skill')
-    .setDescription('Roll a skill check for a monster.')
-    .addStringOption(o => o.setName('monster').setDescription('Monster name.').setRequired(true))
-    .addStringOption(o => o.setName('skill').setDescription('Skill name (e.g. Stealth, Athletics — partial match OK).').setRequired(true))
-    .addIntegerOption(o => o.setName('dc').setDescription('DC to compare against (shows degree of success).').setRequired(false))
-    .addBooleanOption(o => o.setName('public').setDescription('Set to false to keep this roll GM-only (default: true, visible to all).').setRequired(false)));
-
-// ─────────────────────────────────────────────────────────────────────────────
-// /r (quick alias for /roll)
+// /m (GM: quick monster actions) and /r (quick alias for /roll)
 // ─────────────────────────────────────────────────────────────────────────────
 const mCommand = new SlashCommandBuilder()
   .setName('m')
@@ -1206,19 +1126,6 @@ const rCommand = new SlashCommandBuilder()
   .setName('r')
   .setDescription('Quick alias for /roll. Roll dice without linking to a character.')
   .addStringOption(o => o.setName('dice').setDescription('Dice expression. Supports snippets and basic math.').setRequired(true));
-
-// ─────────────────────────────────────────────────────────────────────────────
-// /attack
-// ─────────────────────────────────────────────────────────────────────────────
-const attackCommand = new SlashCommandBuilder()
-  .setName('attack')
-  .setDescription('Roll a weapon strike for your character (auto-MAP, effect modifiers, damage on hit).')
-  .addStringOption(o => o.setName('weapon').setDescription('Weapon name (partial match OK)').setRequired(true).setAutocomplete(true))
-  .addStringOption(o => o.setName('target').setDescription('Target combatant name (required to apply damage)').setRequired(false))
-  .addIntegerOption(o => o.setName('bonus').setDescription('Extra attack bonus or penalty').setRequired(false))
-  .addIntegerOption(o => o.setName('map').setDescription('Override MAP (0=first, 1=second, 2=third attack)').setRequired(false).setMinValue(0).setMaxValue(2))
-  .addBooleanOption(o => o.setName('no_map').setDescription('Skip MAP entirely (e.g. Flurry of Blows)').setRequired(false))
-  .addStringOption(o => o.setName('character').setDescription('Character name').setRequired(false).setAutocomplete(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /init

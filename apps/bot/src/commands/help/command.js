@@ -64,7 +64,6 @@ const HELP_CATEGORIES = {
       { name: '/roll', summary: 'Roll dice with full expression support, plus modifiers like `adv`, `dis`, `crit`, `rr1`, and iterations (`4#`).', options: 'dice', example: '/roll dice:1d20+7 adv' },
       { name: '/skill', summary: 'Roll a skill check using your character\'s bonuses.', options: 'skill, character, bonus', example: '/skill skill:Athletics' },
       { name: '/perception', summary: 'Roll a Perception check (Wis + proficiency).', options: 'character, bonus', example: '/perception' },
-      { name: '/initiative', summary: 'Roll initiative (defaults to Perception; optional skill override for ambushes/social).', options: 'skill, character, bonus', example: '/initiative skill:Stealth' },
       { name: '/save', summary: 'Roll a saving throw (Fortitude, Reflex, or Will).', options: 'type, character, bonus', example: '/save type:Reflex' },
       { name: '/snippet create', summary: 'Create a personal roll snippet. Use `%1`, `%2` etc. for args (e.g. `+%1:2d6[sneak]`).', options: 'name, expand', example: '/snippet create name:sneaky expand:+%1:2d6[sneak]' },
       { name: '/snippet list', summary: 'List all your personal roll snippets.', options: '', example: '/snippet list' },
@@ -115,7 +114,6 @@ const HELP_CATEGORIES = {
       { name: '/init reaction', summary: 'Manually prompt a specific combatant for a reaction (Shield Block, etc.).', options: 'name, reason', example: '/init reaction name:Fighter reason:Shield Block' },
       { name: '/init damage', summary: 'Manually roll persistent damage on a combatant outside the normal turn tick.', options: 'name', example: '/init damage name:Fighter' },
       { name: '/init effect', summary: 'Apply a status effect. Includes persistent-fire/bleed/etc. and dying/wounded.', options: '(subcommands)', example: '/init effect add name:Fighter effect:persistent-fire value:1' },
-      { name: '/attack', summary: 'Roll an attack. MAP is auto-tracked across attacks this turn.', options: 'weapon, target, map (optional), no_map, bonus', example: '/attack weapon:Longsword target:Goblin 1' },
     ],
   },
 
@@ -166,7 +164,6 @@ const HELP_CATEGORIES = {
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
       { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
       { name: '/mattack', summary: 'Manual monster attack — type bonus + damage yourself. For monsters from /init addmonster, prefer /init attack (it auto-fills both).', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
-      { name: '/monsterattack', summary: 'Save and manage a library of monster attacks (per-server).', options: '(subcommands)', example: '/monsterattack add monster:Goblin attack:Shortsword ...' },
     ],
   },
 };

@@ -344,7 +344,7 @@ Phase 3 command extraction is complete and **v2 is live in production (2026-07-0
 
 1. **Final dispatcher audit** — `src/index.js` is now mostly imports, startup, buttons, modals, autocomplete, and one-line command dispatch. Review the remaining autocomplete and button handlers for any obvious feature-folder moves.
 2. **Fold old top-level command modules only when useful** — `commands/weather-cmd.js`, `commands/calendar-cmd.js`, `commands/downtime.js`, `commands/encounters.js`, and similar scaffolds still exist because feature wrappers depend on them. Don't churn these unless a focused cleanup needs it.
-3. **Post-cutover cleanup** — consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2, then delete the retired command folders (`attack`, `initiative`, `monsterattack`, `monsterroll`) once nothing references them.
+3. **Post-cutover cleanup** — consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2. The retired `attack`/`initiative` command folders and the dead scaffolds (`commands/combatV2.js`, `commands/condition.js`, `commands/deploy-downtime.js`, `rules/covertspells.js`) are already deleted; `commands/monsterroll/` and `commands/monsterattack/` stay because `/m` routes to them and `/mattack`/`/init attack` import `normalizeAttackForRolling` from the latter.
 4. **Add a test suite** — Vitest over the pure `rules/` modules (dice parser, degree of success, MAP, dying/recovery, condition math, spell damage heightening), locked against human-verified worked examples. See `docs/avrae-pathbuilder-roadmap.md` at the repo root for the full roadmap.
 
 ---
