@@ -1,6 +1,13 @@
 # Pathwayv2 Refactor — Handoff Doc
 
-**Status as of this handoff**: Phase 3 extraction complete. 85 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` remains the entry point while startup/autocomplete/button scaffolding is audited. **Nothing has been deployed to production from this branch** — this is preserve-and-continue work, not a release.
+> **Update 2026-07-06**: this doc predates the monorepo move. The bot now lives at
+> `apps/bot/` (the "Project Geography" below describes the old `Pathway/Pathwayv2/`
+> layout), the legacy v1 single-file bot has been removed from the repo, and
+> **v2 is live in production on Railway** (root directory `apps/bot`, `npm start`).
+> The cutover described under "Suggested Next Steps" is complete; what remains is
+> post-cutover cleanup.
+
+**Status as of this handoff**: Phase 3 extraction complete. 85 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` remains the entry point while startup/autocomplete/button scaffolding is audited. ~~**Nothing has been deployed to production from this branch**~~ *(superseded — see update above: v2 is deployed)*.
 
 Read this top to bottom once, then keep `CLAUDE.md` open as the architecture reference. CLAUDE.md is the long-form architecture doc — it explains how the codebase is *organized*. This file explains what's been *done* and what to do *next*.
 
@@ -326,22 +333,19 @@ cd Pathwayv2
 npm run deploy:guild  # instant, for testing
 npm run deploy        # global, ~1 hour propagation
 ```
-But this branch hasn't been deployed at all — Railway is still serving from `Pathway/index.js` (the v1 deployment). Don't merge to main until you're ready to flip the runtime.
-
 ### How v1 and v2 coexist in the repo right now
-`Pathway/index.js` is the live entry point. `Pathway/Pathwayv2/src/index.js` is the v2 entry point. Railway is configured to run the v1 one. **Nothing about that changes when this branch lands** — the v2 directory just sits alongside as work-in-progress. When v2 is feature-complete and ready to flip, that's a separate PR: update `package.json` scripts or Railway config to point at `Pathwayv2/src/index.js`.
+*(Resolved 2026-07-06.)* v1 has been deleted from the repo. Every entry path launches v2: the repo-root `index.js` and `apps/bot/index.js` are thin compatibility launchers that require `apps/bot/src/index.js`, and `npm start` (root or `apps/bot`) runs it directly. Railway serves v2 in production from root directory `apps/bot`.
 
 ---
 
 ## Suggested Next Steps for Viv's Session
 
-Phase 3 command extraction is complete. Suggested next steps, in order:
+Phase 3 command extraction is complete and **v2 is live in production (2026-07-06)** — steps 3–4 of the original list (dev-guild smoke test, cutover) are done, and v1 has been deleted from the repo. What remains, in order:
 
 1. **Final dispatcher audit** — `src/index.js` is now mostly imports, startup, buttons, modals, autocomplete, and one-line command dispatch. Review the remaining autocomplete and button handlers for any obvious feature-folder moves.
 2. **Fold old top-level command modules only when useful** — `commands/weather-cmd.js`, `commands/calendar-cmd.js`, `commands/downtime.js`, `commands/encounters.js`, and similar scaffolds still exist because feature wrappers depend on them. Don't churn these unless a focused cleanup needs it.
-3. **Runtime smoke test in a dev guild** — set `.env`, run `npm run deploy:guild`, start `Pathwayv2/src/index.js`, and test representative commands: `/sheet`, `/char list`, `/init start`, `/i join`, `/monster`, `/spell`, `/bag`, `/weather`, `/calendar`.
-4. **Cutover PR when ready** — Railway still serves `Pathway/index.js` (v1). Switching production to `Pathway/Pathwayv2/src/index.js` should be its own PR after the dev-guild smoke test.
-5. **Post-cutover cleanup** — after v2 has soaked safely, delete the old root `Pathway/index.js` and promote `Pathwayv2/` to the primary source tree in a separate cleanup.
+3. **Post-cutover cleanup** — consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2, then delete the retired command folders (`attack`, `initiative`, `monsterattack`, `monsterroll`) once nothing references them.
+4. **Add a test suite** — Vitest over the pure `rules/` modules (dice parser, degree of success, MAP, dying/recovery, condition math, spell damage heightening), locked against human-verified worked examples. See `docs/avrae-pathbuilder-roadmap.md` at the repo root for the full roadmap.
 
 ---
 

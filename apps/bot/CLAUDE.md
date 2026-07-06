@@ -2,7 +2,7 @@
 
 PF2e companion bot for Discord — handles combat, characters, spells, inventory, downtime, companions, notes. The web app at `../web/` provides a UI over the same Supabase data; this bot owns the game logic and Discord interactions.
 
-This is the **v2 rewrite** of the bot at `../Pathway/`. v1 lives in a single 19,500-line `index.js`; v2 is mid-refactor toward feature-folder modularization (Phase 3 is in progress). Both code-bases connect to the same Supabase project.
+This is the **v2 rewrite** of the bot, organized into feature folders (Phase 3 extraction complete — 85 slash command entries in `src/commands/<name>/`). The legacy v1 single-file bot has been deleted from the repo, and **v2 is live in production** (since 2026-07-06).
 
 ## Stack
 
@@ -12,7 +12,7 @@ This is the **v2 rewrite** of the bot at `../Pathway/`. v1 lives in a single 19,
   - **prod**: `cmmwirlrvqmjqbydlqks`
   - **develop**: `nqnswvuqszpkntnjzomv`
 - **Deployment**: Railway — single process, no volume needed (Supabase is authoritative)
-- **Entry point**: `src/index.js` — what's left of the original dispatcher (~18,400 lines as of Phase 3.8, shrinking)
+- **Entry point**: `src/index.js` — what's left of the original dispatcher (~3,000 lines: env, client, startup, autocomplete, buttons/modals, one-line command dispatch)
 
 ## Project Layout
 
@@ -266,26 +266,23 @@ npm run deploy          # global (takes ~1 hour to propagate)
 npm run deploy:guild    # guild-only (instant, use for testing)
 ```
 
-## Refactor Status (as of Phase 3.8)
+## Refactor Status (updated 2026-07-06)
 
-The bot is mid-rewrite from `Pathway/` (single 19,500-line index.js) to `Pathwayv2/` (feature folders + state modules + rules + lib).
+The rewrite from the legacy single-file bot to feature folders is complete and **deployed to production** (Railway, root directory `apps/bot`).
 
 **Completed**:
 - ✅ Phase 0 — skeleton + Phase 0 imports rewired
 - ✅ Phase 1 — `lib/storage.js` split into state modules (per-table sync helpers)
 - ✅ Phase 2 — every user-state table has cache + Realtime subscription (fixes Liv's bug)
-- ✅ Phase 3.1–3.8 — 4 commands extracted to feature folders with zero-ctx pattern: `/sheet`, `/hp`, `/notes`, `/snippet`
+- ✅ Phase 3 — all 85 slash command entries extracted to feature folders with the zero-ctx pattern (see `HANDOFF.md` for the full table)
+- ✅ Production cutover — v1 deleted from the repo; v2 is the live bot
 
-**Index.js shrinkage**: 19,500 → 18,400 lines (−1,100 through Phase 3).
+**Index.js shrinkage**: 19,500 → ~3,000 lines.
 
-**Remaining extraction targets** (sorted by likely ROI):
-- `/serversnippet` — pairs with `/snippet`, shares validators
-- `/portrait` — tiny, isolated
-- `/xp` — uses XP helpers we already moved
-- `/rest` — medium; uses HP helpers we already moved
-- `/init` and `/i` — combat tracker; significant
-- `/char` family — many sub-handlers, biggest single PR
-- `/spell`, `/monster`, `/feat`, `/item` lookups — reference-data commands
+**Remaining work** (see `HANDOFF.md` and `docs/avrae-pathbuilder-roadmap.md` at the repo root):
+- Consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2, then delete the retired command folders (`attack`, `initiative`, `monsterattack`, `monsterroll`)
+- Add a Vitest suite over the pure `rules/` modules
+- Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`, `encounters.js`) when touched
 
 **Outstanding helper-mining candidates**:
 - The character `edits` overlay handling (currently inline in /sheet's embed)

@@ -9,7 +9,7 @@
 
 **The good news: Pathway is much closer than it probably feels.** The bot already implements most of Avrae's mechanical surface — for PF2e, natively, which Avrae itself never did. The web app is a real, functional level 1–20 builder, not a prototype. The gaps are specific and finite, and one of them is structural rather than feature-shaped.
 
-**The headline finding:** production status of the v2 bot is unverified. `apps/bot/HANDOFF.md` says Railway still serves the legacy v1 single-file bot, but that doc predates the monorepo move — the repo no longer contains v1 at all, and every entry path (`index.js` at the repo root, `apps/bot/index.js`, `npm start`) now launches v2. If Railway has successfully deployed any commit since the move, v2 is already live; if not, the service is pinned to an old commit or failing to build. Confirming and completing the cutover is step one.
+**Deployment status (confirmed 2026-07-06): the v2 bot is live in production.** The handoff doc's old "v1 still in prod" note predated the monorepo move — the repo no longer contains v1 at all, and Railway now serves `apps/bot` (v2). The cutover milestone is done; the roadmap below starts from a deployed bot.
 
 ---
 
@@ -36,7 +36,7 @@ The downtime system (18 activity commands with day banking) and the Golarion cal
 
 ### What separates Pathway from "the Avrae of PF2e"
 
-**1. Ship v2 to production.** Smoke-test in the dev guild, cut Railway over. Everything else is theoretical until real sessions run on this code.
+**1. ~~Ship v2 to production.~~ Done (2026-07-06)** — v2 is live on Railway.
 
 **2. A programmable alias engine — this is Avrae's moat.** Avrae's dominance comes from `!alias` + the Draconic scripting language + the Alias Workshop: users write custom automation and share it across servers, so the community extends the bot for free. Pathway has the precursors (snippets with positional args, cvars with `{{}}` substitution) but no user-defined *logic*:
 
@@ -121,7 +121,7 @@ Why this ranks so high: the alias engine, homebrew authoring, the encounter buil
 
 | # | Milestone | Why / payoff |
 |---|-----------|--------------|
-| 1 | **Deploy the v2 bot** | It's built; it needs a dev-guild smoke test and a Railway cutover. Days, not weeks. |
+| 1 | ~~**Deploy the v2 bot**~~ | ✅ Done — v2 is live on Railway (confirmed 2026-07-06). |
 | 2 | **Vitest over the bot's pure `rules/` modules + fix the Vercel monorepo build** | Cheap safety net on the code that matters most; unblocks all structural work. |
 | 3 | **`packages/core` migration** of the builder engine, value by value, test-locked | Ends the three-implementations drift problem for good. |
 | 4 | **Builder enforcement gaps** (dedication chains, bulk, armor/shield slots) | Cheap wins once the math lives in one place. |
@@ -130,7 +130,7 @@ Why this ranks so high: the alias engine, homebrew authoring, the encounter buil
 | 7 | **Homebrew authoring on the web**, shared schema, consumed by both clients | Matches Pathbuilder's custom packs — but shared with live Discord play. |
 | 8 | **Campaign/party/encounter layer** | The leapfrog feature that turns two tools into one product. |
 
-Items 1–2 are hygiene doable in a week. Items 3–5 make the website credibly better than Pathbuilder. Items 6–8 make the bot the Avrae of PF2e — and the combination is something neither of those products can answer.
+Item 1 is done; item 2 is hygiene doable in a week. Items 3–5 make the website credibly better than Pathbuilder. Items 6–8 make the bot the Avrae of PF2e — and the combination is something neither of those products can answer.
 
 ---
 
@@ -142,7 +142,7 @@ Items 1–2 are hygiene doable in a week. Items 3–5 make the website credibly 
 - ~96 registered slash commands spanning character management, combat, spells, resources, inventory, notes, downtime, and 31 reference lookups
 - Content sourced from Archives of Nethys into Supabase (spells, bestiary, items, plus ~20 reference tables); homebrew spliced in live via Realtime
 - Data layer: Supabase (shared with the web app) with in-memory caches hydrated at startup and kept fresh via Realtime subscriptions
-- Known debt: v2 undeployed, two combat engines mid-migration, no test suite, a handful of legacy command scaffolds awaiting extraction
+- Known debt: two combat engines mid-migration, no test suite, a handful of legacy command scaffolds awaiting extraction
 
 ### Web app (`apps/web`)
 
