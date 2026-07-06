@@ -9,7 +9,7 @@
 
 **The good news: Pathway is much closer than it probably feels.** The bot already implements most of Avrae's mechanical surface — for PF2e, natively, which Avrae itself never did. The web app is a real, functional level 1–20 builder, not a prototype. The gaps are specific and finite, and one of them is structural rather than feature-shaped.
 
-**The headline finding:** the v2 bot — all ~96 commands, the initiative tracker, cast automation, dying/wounded logic — **has never been deployed to production.** Per `apps/bot/HANDOFF.md`, Railway is still serving the legacy v1 single-file bot. Before anything else on this list, ship what's already built.
+**The headline finding:** production status of the v2 bot is unverified. `apps/bot/HANDOFF.md` says Railway still serves the legacy v1 single-file bot, but that doc predates the monorepo move — the repo no longer contains v1 at all, and every entry path (`index.js` at the repo root, `apps/bot/index.js`, `npm start`) now launches v2. If Railway has successfully deployed any commit since the move, v2 is already live; if not, the service is pinned to an old commit or failing to build. Confirming and completing the cutover is step one.
 
 ---
 
