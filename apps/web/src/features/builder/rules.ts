@@ -14,11 +14,18 @@ import {
 } from '@/features/builder/data';
 import { OPT } from '@/features/builder/options/config';
 import {
+  abilityModifier,
   attackRankAtLevel,
+  proficiencyBonus,
   proficiencyRankAtLevel,
+  RANK_LABEL,
   type AttackCategory,
   type ProficiencyTrack,
 } from '@pathway/core';
+
+// Scalar stat math lives in @pathway/core (one source for builder, sheet, and
+// eventually the bot). Re-exported so existing `from './rules'` imports work.
+export { abilityModifier, proficiencyBonus, RANK_LABEL };
 import {
   doctrineAttackRank,
   doctrineTrackRank,
@@ -34,31 +41,6 @@ export type AbilityScores = Record<AbilityKey, number>;
 export function opt(state: BuilderState, id: string): boolean {
   return state.options?.[id] ?? false;
 }
-
-/**
- * PF2e proficiency bonus: 0 when untrained, otherwise level + 2×rank.
- * With Proficiency Without Level (a variant rule), the level term is dropped.
- */
-export function proficiencyBonus(
-  rank: ProficiencyRank,
-  level: number,
-  withoutLevel = false,
-): number {
-  if (rank === 0) return 0;
-  return (withoutLevel ? 0 : level) + rank * 2;
-}
-
-export function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
-}
-
-export const RANK_LABEL: Record<ProficiencyRank, string> = {
-  0: 'Untrained',
-  1: 'Trained',
-  2: 'Expert',
-  3: 'Master',
-  4: 'Legendary',
-};
 
 // PF2e character-advancement table (generic across the Player Core classes).
 // Level 1's class feat + ancestry feat + skill feat live in the creation steps.

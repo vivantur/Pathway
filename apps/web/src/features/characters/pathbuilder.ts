@@ -7,6 +7,13 @@
  * fields we actually render; anything else is preserved but ignored.
  */
 
+import {
+  abilityModifier,
+  proficiencyBonus as coreProficiencyBonus,
+  rankLabel,
+  rawBonusToRank,
+} from '@pathway/core';
+
 // -------- Types --------
 
 export type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
@@ -227,23 +234,16 @@ export const SKILL_ORDER: string[] = [
 
 // -------- Small helpers --------
 
-export function abilityMod(score: number | undefined): number {
-  if (typeof score !== 'number' || Number.isNaN(score)) return 0;
-  return Math.floor((score - 10) / 2);
-}
+// The sheet's historical name for core's abilityModifier.
+export const abilityMod = abilityModifier;
 
 export function fmtMod(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
 export function profLabel(rank: number | undefined): string {
-  switch (rank) {
-    case 8: return 'Legendary';
-    case 6: return 'Master';
-    case 4: return 'Expert';
-    case 2: return 'Trained';
-    default: return 'Untrained';
-  }
+  // Pathbuilder stores the raw bonus (0/2/4/6/8); convert to a core rank.
+  return rankLabel(rawBonusToRank(rank));
 }
 
 export function sizeLabel(size: number | undefined): string | undefined {
@@ -253,9 +253,14 @@ export function sizeLabel(size: number | undefined): string | undefined {
 // -------- PF2e math --------
 
 /**
- * Standard PF2e proficiency-based bonus: ability mod + (rank + level) if
- * trained-or-above, else just ability mod. Ignores item bonuses for now — the
+ * Standard PF2e proficiency-based bonus: ability mod + core proficiency
+ * bonus. Pathbuilder's stored rank is the raw bonus (0/2/4/6/8), so it's
+ * converted to a core rank first. Ignores item bonuses for now — the
  * bot's `mods` object can override individual totals later.
+ *
+ * TODO(core-migration): Pathbuilder JSON carries no variant-rule flags, so
+ * this always adds level. Builds saved with Proficiency Without Level should
+ * pass the flag through once the sheet reads options from _pathwayBuild.
  */
 export function proficiencyBonus(
   build: PathbuilderBuild,
@@ -264,7 +269,7 @@ export function proficiencyBonus(
 ): number {
   const level = build.level ?? 1;
   const mod = abilityMod(build.abilities?.[ability]);
-  return (rank ?? 0) > 0 ? mod + (rank ?? 0) + level : mod;
+  return mod + coreProficiencyBonus(rawBonusToRank(rank), level);
 }
 
 export function skillBonus(build: PathbuilderBuild, skillName: string): number {

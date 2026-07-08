@@ -15,6 +15,11 @@ export const CORE_PLACEHOLDER = true as const;
 // engine to live in core). Consumed by apps/web's character builder.
 export * from './proficiency';
 
+// Scalar stat primitives: ability modifiers, the proficiency-bonus formula
+// (incl. Proficiency Without Level), and rank encoding conversions. Consumed
+// by both of apps/web's engines (builder + sheet).
+export * from './stats';
+
 // Animal companion catalog + derived-stat engine. Consumed by apps/web's
 // companion builder.
 export * from './companion';
