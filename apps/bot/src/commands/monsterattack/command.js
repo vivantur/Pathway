@@ -3,11 +3,11 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const monsterState = require('../../state/monster');
 const { rollDamageExpression, determineDegreeOfSuccess, calculateMap } = require('../../lib/dice');
 const { fmt } = require('../../lib/format');
-const ca = require('../../rules/combatAutomation');
 const { sumEffectModifiers } = require('../../rules/combatEffects');
-const { combatDeathPayload } = require('../../discord/rollEmbeds');
-const { updateSummary } = require('../init/legacySummary');
-const { getEncounter } = require('../encounters');
+const { combatDeathPayload, combatDyingSuffix } = require('../../discord/rollEmbeds');
+const combatV2State = require('../../rules/combatV2/state');
+const combatV2Rolls = require('../../rules/combatV2/rolls');
+const { updateCombatV2Summary } = require('../init/combatV2Summary');
 const { findMonster } = require('../monster/lookup');
 const {
   monsterKey,
@@ -330,12 +330,12 @@ async function execute(interaction) {
       const explicitMap = interaction.options.getInteger('map'); // null if unset
 
       const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
+      const enc = combatV2State.getEncounter(channelId);
 
       // Try to find the attacker as a combatant first. If we find them,
       // we're in "init mode" — MAP and effects flow. Otherwise we treat the
       // attacker name as a bestiary lookup for "out of init" mode.
-      const attacker = enc?.combatants.find(x => x.name.toLowerCase() === attackerName.toLowerCase()) ?? null;
+      const attacker = enc ? combatV2State.findCombatant(enc, attackerName) : null;
       const inInit = !!attacker;
 
       // Resolve which monster's attack library to consult:
@@ -400,7 +400,7 @@ async function execute(interaction) {
       // just a label string we'll mention in the embed (or null if omitted).
       let target = null;
       if (targetName && enc) {
-        target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase()) ?? null;
+        target = combatV2State.findCombatant(enc, targetName);
         // If targetName was given but didn't match a combatant, don't error —
         // just treat it as a label. Useful for "/m attack use ... target:that goblin"
         // when describing things narratively.
@@ -422,9 +422,10 @@ async function execute(interaction) {
           mapPenalty = calculateMap(explicitMap, agile);
           mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
         } else if (inInit) {
-          const mapInfo = ca.computeMapForNextAttack(attacker, agile);
-          mapPenalty = mapInfo.penalty;
-          mapNoteText = mapInfo.noteText;
+          const attacksSoFar = attacker.attacksThisTurn ?? 0;
+          mapPenalty = combatV2Rolls.mapPenalty(attacksSoFar, agile);
+          if (attacksSoFar === 1) mapNoteText = `Attack #2 this turn · MAP ${mapPenalty}${agile ? ' (agile)' : ''}`;
+          else if (attacksSoFar >= 2) mapNoteText = `Attack #3+ this turn · MAP ${mapPenalty}${agile ? ' (agile)' : ''}`;
         }
 
         // Effect modifiers only apply in init (and only when both attacker
@@ -493,12 +494,24 @@ async function execute(interaction) {
         let deathPayload = null;
         let mentionLine = '';
         if (inInit && target && (degree === 'success' || degree === 'crit-success')) {
-          const dmgResult = ca.applyDamage(channelId, target.name, totalDealt, { isCrit: degree === 'crit-success' });
-          const dyingNote = dmgResult?.displaySuffix ?? '';
+          // v2: respect the target's resistances/weaknesses/immunities,
+          // per damage type (main and extra damage may differ).
+          const mainDefended = combatV2Rolls.applyDefenses(mainDamage, attack.damageType, target);
+          const extraDealt = totalDealt - mainDamage;
+          const extraDefended = extraDealt > 0
+            ? combatV2Rolls.applyDefenses(extraDealt, attack.extraType ?? attack.damageType, target)
+            : { finalDamage: 0, notes: [] };
+          const finalDealt = mainDefended.finalDamage + extraDefended.finalDamage;
+          const defenseNotes = [...new Set([...mainDefended.notes, ...extraDefended.notes])];
+          const defenseText = defenseNotes.length ? ` (${defenseNotes.join(', ')})` : '';
+          const dmgResult = finalDealt > 0
+            ? combatV2State.applyHp(channelId, target.id, -finalDealt)
+            : null;
+          const dyingNote = dmgResult ? combatDyingSuffix(dmgResult) : '';
           hpLine = target.isNpc
-            ? `\n**${target.name}** took ${totalDealt} damage${dyingNote}`
-            : `\n**${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-          deathPayload = combatDeathPayload(dmgResult);
+            ? `\n**${target.name}** took ${finalDealt} damage${defenseText}${dyingNote}`
+            : `\n**${target.name}**: ${dmgResult?.combatant.hp ?? target.hp}/${target.maxHp} HP${defenseText}${dyingNote}`;
+          deathPayload = dmgResult ? combatDeathPayload(dmgResult) : null;
         }
         if (inInit && target && !target.isNpc && target.ownerId) mentionLine = `<@${target.ownerId}>`;
 
@@ -518,9 +531,9 @@ async function execute(interaction) {
         await interaction.reply(replyPayload);
         // Record attack for MAP tracking (only in init, only if MAP wasn't manual)
         if (inInit && explicitMap === null) {
-          ca.recordAttack(channelId, attacker.name);
+          attacker.attacksThisTurn = (attacker.attacksThisTurn ?? 0) + 1;
         }
-        if (inInit) await updateSummary(interaction.channel, enc);
+        if (inInit) await updateCombatV2Summary(interaction.channel, combatV2State.getEncounter(channelId) ?? enc);
         return;
       }
 
