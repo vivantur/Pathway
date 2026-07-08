@@ -280,8 +280,14 @@ The rewrite from the legacy single-file bot to feature folders is complete and *
 **Index.js shrinkage**: 19,500 → ~3,000 lines.
 
 **Remaining work** (see `HANDOFF.md` and `docs/avrae-pathbuilder-roadmap.md` at the repo root):
-- Consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2. (The retired standalone `/attack` and `/initiative` folders are already deleted; `commands/monsterroll/` and `commands/monsterattack/` remain because they implement `/m` subcommands and export helpers used by `/mattack` and `/init attack`.)
-- Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`, `encounters.js`) when touched
+- ✅ Combat engine consolidation (2026-07-08): `rules/combatV2/` is the ONLY
+  combat engine. The legacy store (`commands/encounters.js`), automation layer
+  (`rules/combatAutomation.js`), and legacy summary renderers are deleted;
+  every combat command (`/init`, `/i`, `/m`, `/mattack`, `/cast`,
+  `/companion`, `/weather apply`) reads and writes combat v2 state.
+- Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`) when touched
+- Optional polish: port the old tracker's HP bars / detailed-vs-compact
+  pagination into `rules/combatV2/render.js` (the v2 summary is plainer)
 
 ## Testing
 

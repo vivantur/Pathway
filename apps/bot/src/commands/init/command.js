@@ -22,10 +22,6 @@ const {
   combatV2HasName,
 } = require('./combatV2Actors');
 
-// Legacy store — referenced ONLY by the /init start guard so a restored
-// pre-v2 encounter can't be silently shadowed. Goes away with the legacy
-// engine in the final consolidation step.
-const { getEncounter } = require('../encounters');
 const { computeCharMaxHp, resolveChar } = characterState;
 
 function loadCharacters() {
@@ -359,7 +355,7 @@ async function execute(interaction) {
     const userId = interaction.user.id;
 
     if (sub === 'start') {
-      if (combatV2State.getEncounter(channelId) || getEncounter(channelId)) {
+      if (combatV2State.getEncounter(channelId)) {
         return interaction.reply({ content: 'An encounter is already active here. Use `/init end` first.', ephemeral: true });
       }
       const newEnc = combatV2State.createEncounter(channelId, {

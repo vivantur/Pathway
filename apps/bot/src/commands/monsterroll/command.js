@@ -1,6 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
 
-const encounters = require('../encounters');
 const { findMonster } = require('../monster/lookup');
 const {
   lookupMonsterArt,
@@ -223,15 +222,9 @@ async function execute(interaction) {
     }
   }
 
-  const enc = channelId ? encounters.getEncounter(channelId) : null;
-  let combatant = null;
-  if (enc) {
-    combatant = enc.combatants.find(c => c.name.toLowerCase() === monsterInput.toLowerCase()) || null;
-  }
-
-  if (enc && interaction.user.id !== enc.gmId) {
-    return interaction.reply({ content: 'Only the encounter GM can roll for monsters in active combat.', ephemeral: true });
-  }
+  // No v2 encounter in this channel → out-of-combat mode: roll straight from
+  // the bestiary. (The legacy encounter store this used to consult is gone.)
+  const combatant = null;
 
   const lookupName = combatant?.bestiaryKey ?? monsterInput;
   const { monster, matches } = findMonster(lookupName);
