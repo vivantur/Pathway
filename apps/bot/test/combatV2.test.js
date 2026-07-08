@@ -264,6 +264,29 @@ describe('rollRecoveryCheck (v2)', () => {
   });
 });
 
+describe('setDying (GM override)', () => {
+  it('sets the value and marks the combatant unconscious', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0 }]);
+    const r = state.setDying(ch, 'Fighter', 2);
+    expect(r.combatant.dying).toBe(2);
+    expect(r.combatant.unconscious).toBe(true);
+  });
+  it('clearing dying grants Wounded +1 and keeps them unconscious at 0 HP (RAW)', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 2, wounded: 1 }]);
+    const r = state.setDying(ch, 'Fighter', 0);
+    expect(r.recovered).toBe(true);
+    expect(r.combatant.dying).toBe(0);
+    expect(r.combatant.wounded).toBe(2);
+    expect(r.combatant.unconscious).toBe(true); // 0 HP → still out until healed
+  });
+  it('setting at/above the doomed-lowered max is death and removes them', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, doomed: 2 }, { name: 'Ally' }]);
+    const r = state.setDying(ch, 'Fighter', 2); // maxDying = 2
+    expect(r.died).toBe(true);
+    expect(state.getEncounter(ch).combatants.map(c => c.name)).toEqual(['Ally']);
+  });
+});
+
 describe('effects', () => {
   it('addEffect replaces an effect with the same name instead of stacking', () => {
     const ch = makeEncounter([{ name: 'Fighter' }]);

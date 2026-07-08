@@ -289,6 +289,53 @@ function rollRecoveryCheck(channelId, query) {
   };
 }
 
+// GM override of a combatant's dying value (0–4). PF2e RAW semantics match
+// the automated paths: manually clearing dying grants Wounded +1 and does NOT
+// restore HP (unconscious at 0 HP until healed); reaching the max dying value
+// (4, lowered by doomed) is death and removes the combatant.
+function setDying(channelId, query, value) {
+  const encounter = getEncounter(channelId);
+  if (!encounter) throw new Error('No active encounter.');
+  const combatant = findCombatant(encounter, query);
+  if (!combatant) throw new Error(`No combatant matching "${query}".`);
+  const before = combatant.dying ?? 0;
+  const maxDying = Math.max(1, 4 - (combatant.doomed ?? 0));
+  let died = false;
+  let recovered = false;
+  let removed = null;
+
+  encounter.log.push({ at: nowIso(), kind: 'set-dying', name: combatant.name, before, value });
+
+  if (value >= maxDying) {
+    combatant.dying = maxDying;
+    died = true;
+    removed = removeCombatant(channelId, combatant.name).combatant;
+  } else if (value === 0 && before > 0) {
+    combatant.dying = 0;
+    combatant.wounded = (combatant.wounded ?? 0) + 1;
+    combatant.unconscious = (combatant.hp ?? 0) <= 0;
+    recovered = true;
+    touchEncounter(encounter);
+  } else {
+    combatant.dying = Math.max(0, value);
+    if (combatant.dying > 0) combatant.unconscious = true;
+    touchEncounter(encounter);
+  }
+
+  return {
+    encounter,
+    combatant,
+    before,
+    value: died ? maxDying : Math.max(0, value),
+    maxDying,
+    died,
+    recovered,
+    removed,
+    wounded: combatant.wounded ?? 0,
+    doomed: combatant.doomed ?? 0,
+  };
+}
+
 function advanceTurn(channelId, direction = 1) {
   const encounter = getEncounter(channelId);
   if (!encounter || encounter.combatants.length === 0) return null;
@@ -753,6 +800,7 @@ module.exports = {
   currentCombatant,
   advanceTurn,
   rollRecoveryCheck,
+  setDying,
   delayCombatant,
   rejoinCombatant,
   applyHp,

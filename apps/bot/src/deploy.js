@@ -1124,7 +1124,7 @@ const mCommand = new SlashCommandBuilder()
   // ── /m attack — saved per-guild monster attack library. Routed to the
   // monsterattack handler by routeMonsterAlias (commands/m/router.js). ──
   .addSubcommandGroup(g => g.setName('attack')
-    .setDescription('GM: save reusable attacks for monsters. Used by /init attack, /mattack, and /m attack use.')
+    .setDescription('GM: save reusable attacks for monsters. Used by /mattack and /m attack use.')
     .addSubcommand(s => s.setName('add')
       .setDescription('Save a strike (melee/ranged) for a monster.')
       .addStringOption(o => o.setName('monster').setDescription('Monster name (matches bestiary if possible).').setRequired(true))
@@ -1240,14 +1240,8 @@ const initCommand = new SlashCommandBuilder()
     .addStringOption(o => o.setName('weaknesses').setDescription('Comma list like vitality 5, fire 10').setRequired(false))
     .addStringOption(o => o.setName('immunities').setDescription('Comma list like poison, paralyzed').setRequired(false))
     .addStringOption(o => o.setName('notes').setDescription('GM notes shown in combatant details').setRequired(false)))
-  // ── GM attack ──
-  .addSubcommand(s => s.setName('attack')
-    .setDescription('Roll the current combatant\'s attack with smart defaults.')
-    .addStringOption(o => o.setName('monster').setDescription('Attacker override (defaults to your/current combatant)').setRequired(false))
-    .addStringOption(o => o.setName('attack').setDescription('Attack override (defaults to first/primary attack)').setRequired(false))
-    .addStringOption(o => o.setName('target').setDescription('Target override (defaults to first opposing combatant)').setRequired(false))
-    .addIntegerOption(o => o.setName('bonus').setDescription('Extra attack bonus or penalty').setRequired(false))
-    .addIntegerOption(o => o.setName('map').setDescription('Override MAP (0=first, 1=second, 2=third attack)').setRequired(false).setMinValue(0).setMaxValue(2)))
+  // (the old "/init attack" subcommand is retired — players use /i attack,
+  // GMs use /mattack; its legacy-only handler was dead code)
   // ── HP in combat ──
   .addSubcommand(s => s.setName('hp')
     .setDescription('Apply HP change to a combatant (positive = heal, negative = damage).')

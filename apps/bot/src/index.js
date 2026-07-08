@@ -2216,20 +2216,6 @@ client.on('interactionCreate', async (interaction) => {
             suggestions = pick(Object.values(bestiaryDatabase).map(m => m?.name).filter(Boolean));
           }
         }
-        else if (cmd === 'init' && focused.name === 'attack'
-                 && interaction.options.getSubcommand(false) === 'attack') {
-          // Autocomplete the attacker's actual attacks. We need to know which
-          // combatant the GM picked first — read the 'monster' option.
-          const monsterArg = interaction.options.getString('monster');
-          const enc = getEncounter(interaction.channel.id);
-          if (enc && monsterArg) {
-            const attacker = enc.combatants.find(c => c.name.toLowerCase() === monsterArg.toLowerCase());
-            if (attacker?.isNpc && attacker?.bestiaryKey) {
-              const atks = getCombatantAttacks(attacker, interaction.guildId);
-              suggestions = pick(atks.map(a => a.name).filter(Boolean));
-            }
-          }
-        }
         else if (cmd === 'init' && focused.name === 'name'
                  && (interaction.options.getSubcommand(false) === 'effect'
                   || interaction.options.getSubcommand(false) === 'removeeffect')) {

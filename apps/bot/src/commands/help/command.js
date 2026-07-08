@@ -104,7 +104,6 @@ const HELP_CATEGORIES = {
       { name: '/init add', summary: 'Add a combatant to the current encounter.', options: 'name, initiative, hp, (gm flags)', example: '/init add name:Goblin 1 initiative:18 hp:6' },
       { name: '/init addmonster', summary: 'GM: add a bestiary monster with auto-filled HP/AC/perception. Supports multi-spawn.', options: 'monster, count, init_mode, hp_mode, bonus', example: '/init addmonster monster:Goblin Warrior count:4' },
       { name: '/init addnpc', summary: 'GM: add a custom NPC with manual stats (for homebrew).', options: 'name, bonus, hp, ac', example: '/init addnpc name:Bandit Captain bonus:6 hp:45 ac:20' },
-      { name: '/init attack', summary: 'GM: roll an NPC monster\'s bestiary attack against a target. Auto-fills bonus, damage, traits.', options: 'monster, attack, target, bonus, map', example: '/init attack monster:Goblin Warrior attack:dogslicer target:Fighter' },
       { name: '/init remove', summary: 'Remove a combatant.', options: 'name', example: '/init remove name:Goblin 1' },
       { name: '/init next', summary: 'Advance turn. Auto-rolls persistent damage and recovery checks.', example: '/init next' },
       { name: '/init hp', summary: 'Modify a combatant\'s HP. Auto-applies dying when reduced to 0.', options: 'name, change', example: '/init hp name:Fighter change:-12' },
@@ -163,8 +162,8 @@ const HELP_CATEGORIES = {
       { name: '/monsterart remove', summary: 'Remove the custom image for a monster on this server.', options: 'monster', example: '/monsterart remove monster:Goblin Warrior' },
       { name: '/monsterart view', summary: 'View saved art for one monster, or list all saved art on this server.', options: 'monster', example: '/monsterart view' },
       { name: '/monsteredit', summary: 'Override or add stat-block fields for a monster on this server.', options: '(many subcommands)', example: '/monsteredit ability monster:Goblin name:Sneak Attack' },
-      { name: '/mattack', summary: 'Manual monster attack — type bonus + damage yourself. For monsters from /init addmonster, prefer /init attack (it auto-fills both).', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
-      { name: '/m attack', summary: 'Save and manage a per-server library of reusable monster attacks (strikes, spell attacks, save-based). Used by /init attack, /mattack, and /m attack use.', options: 'add, addspell, addsave, remove, clear, list, use', example: '/m attack add monster:Goblin attack:Shortsword bonus:8 damage:1d6+2' },
+      { name: '/mattack', summary: 'Monster attack roll — uses saved/bestiary attacks, or type bonus + damage yourself.', options: 'attacker, target, name, bonus, damage', example: '/mattack attacker:Captain target:Fighter name:Crossbow bonus:8 damage:1d8+3' },
+      { name: '/m attack', summary: 'Save and manage a per-server library of reusable monster attacks (strikes, spell attacks, save-based). Used by /mattack and /m attack use.', options: 'add, addspell, addsave, remove, clear, list, use', example: '/m attack add monster:Goblin attack:Shortsword bonus:8 damage:1d6+2' },
     ],
   },
 };
