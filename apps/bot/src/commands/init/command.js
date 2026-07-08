@@ -16,6 +16,7 @@ const { updateCombatV2Summary, clearCombatV2Summary } = require('./combatV2Summa
 const {
   combatV2Initiative,
   combatV2CharacterAttacks,
+  combatV2CompanionAttacks,
   combatV2CharacterSave,
   combatV2CharacterSkills,
   combatV2HasName,
@@ -111,31 +112,6 @@ function combatV2ParseDefenseMap(input) {
 function combatV2ParseList(input) {
   if (input == null) return null;
   return String(input).split(',').map(s => s.trim()).filter(Boolean);
-}
-
-function combatV2CompanionAttacks(comp, scaled) {
-  const attacks = [];
-  if (scaled.primaryAttack) {
-    attacks.push({
-      name: scaled.primaryAttack.name,
-      bonus: scaled.attackBonus,
-      damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
-      damageType: scaled.damageType ?? '',
-      traits: scaled.primaryAttack.traits ?? [],
-      source: 'companion',
-    });
-  }
-  for (const a of (comp.customAttacks ?? [])) {
-    attacks.push({
-      name: a.name,
-      bonus: a.bonus ?? 0,
-      damage: a.damage ?? '1d4',
-      damageType: a.damageType ?? '',
-      traits: a.traits ?? [],
-      source: 'companion-custom',
-    });
-  }
-  return attacks;
 }
 
 function combatV2MonsterStats(monster, guildId) {

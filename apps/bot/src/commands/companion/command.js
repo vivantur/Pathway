@@ -6,7 +6,8 @@ const { fmt } = require('../../lib/format');
 const { rollD20Plus, determineDegreeOfSuccess, calculateMap } = require('../../lib/dice');
 const { rollCompoundExpression } = require('../../lib/spellDamage');
 const { sumEffectModifiers } = require('../../rules/combatEffects');
-const ca = require('../../rules/combatAutomation');
+const combatV2State = require('../../rules/combatV2/state');
+const combatV2Rolls = require('../../rules/combatV2/rolls');
 const {
   syncCompanionToSupabase,
   deleteCompanionFromSupabase,
@@ -16,8 +17,8 @@ const {
   parseCompanionStatblockText,
   titleCaseFromFilename: titleCaseCompanionFilename,
 } = require('../../parsers/companionPdfParser');
-const { getEncounter, addCombatant } = require('../encounters');
-const { updateSummary } = require('../init/summary');
+const { updateCombatV2Summary } = require('../init/combatV2Summary');
+const { combatV2CompanionAttacks } = require('../init/combatV2Actors');
 const { findMonster } = require('../monster/lookup');
 const { buildRollEmbed, formatRollBreakdown } = require('../../discord/rollEmbeds');
 const {
@@ -232,7 +233,7 @@ async function execute(interaction) {
   // Companions roll initiative on Perception per PF2e standard.
   if (sub === 'use') {
     const channelId = interaction.channel.id;
-    const enc = getEncounter(channelId);
+    const enc = combatV2State.getEncounter(channelId);
     if (!enc) {
       return interaction.reply({ content: `❌ No encounter active in this channel. Start one with \`/init start\` first.`, ephemeral: true });
     }
@@ -246,19 +247,24 @@ async function execute(interaction) {
     const scaled = scaleCompanion(comp, char);
     const initMod = scaled.perception ?? 0;
     const r = rollD20Plus(initMod);
-    addCombatant(channelId, {
+    combatV2State.addCombatant(channelId, {
       name: comp.displayName,
+      type: 'companion',
+      isNpc: false,
+      hidden: false,
       initiative: r.total,
       hp: comp.currentHp ?? scaled.maxHp,
       maxHp: scaled.maxHp,
       ac: scaled.ac,
       ownerId: interaction.user.id,
-      isNpc: false,
-      companionOf: char.name,
-      effects: [],
+      sourceKey: comp.baseType,
+      attacks: combatV2CompanionAttacks(comp, scaled),
+      saves: scaled.saves,
+      skills: comp.skills ?? {},
+      notes: `${char.name}'s ${comp.form} companion`,
     });
     await interaction.reply(`🐾 **${comp.displayName}** (${char.name}'s ${comp.form} companion) joins initiative at **${r.total}** (rolled ${r.roll} ${fmt(r.mod)}). HP ${comp.currentHp ?? scaled.maxHp}/${scaled.maxHp} · AC ${scaled.ac ?? '—'}`);
-    await updateSummary(interaction.channel, enc);
+    await updateCombatV2Summary(interaction.channel, combatV2State.getEncounter(channelId) ?? enc);
     return;
   }
 
@@ -471,8 +477,8 @@ async function execute(interaction) {
       const agile = userAgile != null ? userAgile : traitAgile;
 
       const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
-      const compCombatant = enc?.combatants.find(c => c.name.toLowerCase() === comp.displayName.toLowerCase());
+      const enc = combatV2State.getEncounter(channelId);
+      const compCombatant = enc ? combatV2State.findCombatant(enc, comp.displayName) : null;
 
       let mapPenalty, mapNoteText;
       if (explicitMap != null) {
@@ -480,9 +486,11 @@ async function execute(interaction) {
         mapNoteText = explicitMap > 0 ? `MAP ${mapPenalty} (manual)` : null;
       } else if (compCombatant) {
         // Companion is in initiative — use the encounter's attack tracker
-        const mapInfo = ca.computeMapForNextAttack(compCombatant, agile);
-        mapPenalty = mapInfo.penalty;
-        mapNoteText = mapInfo.noteText;
+        const attacksSoFar = compCombatant.attacksThisTurn ?? 0;
+        mapPenalty = combatV2Rolls.mapPenalty(attacksSoFar, agile);
+        if (attacksSoFar === 1) mapNoteText = `Attack #2 this turn · MAP ${mapPenalty}${agile ? ' (agile)' : ''}`;
+        else if (attacksSoFar >= 2) mapNoteText = `Attack #3+ this turn · MAP ${mapPenalty}${agile ? ' (agile)' : ''}`;
+        else mapNoteText = null;
       } else {
         mapPenalty = 0;
         mapNoteText = null;
@@ -495,7 +503,7 @@ async function execute(interaction) {
         if (!enc) {
           return interaction.reply({ content: `❌ Can't target "${targetName}" — no encounter active in this channel.`, ephemeral: true });
         }
-        target = enc.combatants.find(c => c.name.toLowerCase() === targetName.toLowerCase());
+        target = combatV2State.findCombatant(enc, targetName);
         if (!target) {
           return interaction.reply({ content: `❌ No combatant named "${targetName}" in this encounter.`, ephemeral: true });
         }
@@ -556,7 +564,7 @@ async function execute(interaction) {
       // attack auto-bumps to MAP 1, etc.) — but only if the companion
       // actually rolled in initiative.
       if (compCombatant && explicitMap == null) {
-        ca.recordAttack(channelId, compCombatant.name);
+        compCombatant.attacksThisTurn = (compCombatant.attacksThisTurn ?? 0) + 1;
       }
 
       const traitsLine = attack.traits?.length ? `\n*${attack.traits.join(', ')}*` : '';

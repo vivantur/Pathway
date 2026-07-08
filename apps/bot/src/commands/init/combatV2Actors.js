@@ -203,10 +203,38 @@ function findCharacterEntryForCombatant(characters, combatant) {
   return null;
 }
 
+// Build the v2 attacks array for a companion: the scaled primary attack plus
+// any custom attacks defined via /companion attack.
+function combatV2CompanionAttacks(comp, scaled) {
+  const attacks = [];
+  if (scaled.primaryAttack) {
+    attacks.push({
+      name: scaled.primaryAttack.name,
+      bonus: scaled.attackBonus,
+      damage: `${scaled.damageDice}${scaled.damageBonus !== 0 ? (scaled.damageBonus > 0 ? '+' : '') + scaled.damageBonus : ''}`,
+      damageType: scaled.damageType ?? '',
+      traits: scaled.primaryAttack.traits ?? [],
+      source: 'companion',
+    });
+  }
+  for (const a of (comp.customAttacks ?? [])) {
+    attacks.push({
+      name: a.name,
+      bonus: a.bonus ?? 0,
+      damage: a.damage ?? '1d4',
+      damageType: a.damageType ?? '',
+      traits: a.traits ?? [],
+      source: 'companion-custom',
+    });
+  }
+  return attacks;
+}
+
 module.exports = {
   COMBAT_V2_SKILL_LABELS,
   combatV2Initiative,
   combatV2CharacterAttacks,
+  combatV2CompanionAttacks,
   combatV2CharacterSave,
   combatV2CharacterSkills,
   combatV2FindSkill,
