@@ -13,7 +13,7 @@
     "deploy:guild": "npm --workspace apps/bot run deploy:guild",
     "dev:web": "npm --workspace apps/web run dev",
     "build:web": "npm --workspace apps/web run build",
-    "test": "npm --workspace packages/core run test --if-present",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm --workspaces --if-present run typecheck"
   },
   "license": "ISC"

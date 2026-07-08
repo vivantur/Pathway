@@ -281,8 +281,25 @@ The rewrite from the legacy single-file bot to feature folders is complete and *
 
 **Remaining work** (see `HANDOFF.md` and `docs/avrae-pathbuilder-roadmap.md` at the repo root):
 - Consolidate the two combat engines (legacy `commands/encounters.js` + `rules/combatV2/`) onto combat v2. (The retired standalone `/attack` and `/initiative` folders are already deleted; `commands/monsterroll/` and `commands/monsterattack/` remain because they implement `/m` subcommands and export helpers used by `/mattack` and `/init attack`.)
-- Add a Vitest suite over the pure `rules/` modules
 - Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`, `encounters.js`) when touched
+
+## Testing
+
+`npm test` (in this folder, or via `npm test` at the repo root) runs the Vitest
+suite in `test/`. It covers the pure rules layer: degree of success, MAP,
+basic saves (`test/dice.test.js`), proficiency math (`test/pf2eMath.test.js`),
+the /roll parser (`test/advancedRoll.test.js`), condition presets
+(`test/effects.test.js`), spell damage + heightening (`test/spellDamage.test.js`),
+the dying/wounded/recovery engine driven end-to-end through the in-memory
+encounter store (`test/combatAutomation.test.js`), formatters/currency/bulk
+(`test/format.test.js`), and `{{variable}}` resolution (`test/variables.test.js`).
+
+Conventions: tests are ESM files that load the bot's CommonJS modules via
+`createRequire`; randomness is controlled by stubbing `Math.random` with a
+scripted sequence (`test/helpers.js` — `die(v, sides)` makes a die roll exactly
+`v`). No Supabase env vars are set under test, so all persistence no-ops and
+encounters are purely in-memory. **Run the suite after touching anything in
+`rules/` or `lib/` — these tests lock player-visible game math.**
 
 **Outstanding helper-mining candidates**:
 - The character `edits` overlay handling (currently inline in /sheet's embed)

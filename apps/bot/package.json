@@ -5,6 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "node src/deploy.js",
     "deploy:guild": "node src/deploy.js --guild",
     "import:homebrew-items": "node supabase/import-homebrew-items.js",
@@ -20,5 +22,8 @@
     "dotenv": "^17.3.1",
     "node-fetch": "^2.7.0",
     "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }
