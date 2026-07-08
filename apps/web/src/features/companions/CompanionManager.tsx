@@ -13,7 +13,7 @@ import {
   scaleEidolon,
   type CompanionForm,
   type CompanionKind,
-} from './engine';
+} from '@pathway/core';
 import type { CompanionRow, CustomCompanionStats } from './types';
 import { companionKind } from './types';
 import {

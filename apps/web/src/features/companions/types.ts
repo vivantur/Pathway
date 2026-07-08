@@ -1,4 +1,4 @@
-import type { CompanionAbilityMods, CompanionForm, CompanionKind } from './engine';
+import type { CompanionAbilityMods, CompanionForm, CompanionKind } from '@pathway/core';
 
 export type { CompanionForm, CompanionKind };
 

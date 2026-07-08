@@ -1,5 +1,5 @@
 import { findClass, getDataset, type AbilityKey, type Spell } from '@/features/builder/data';
-import { proficiencyRankAtLevel } from './data/proficiency';
+import { proficiencyRankAtLevel } from '@pathway/core';
 import { abilityModifier, computeAbilityScores, proficiencyBonus, opt } from './rules';
 import { OPT } from './options/config';
 import { doctrineTrackRank, subclassTradition } from './subclassEffects';

@@ -18,7 +18,7 @@ import {
   proficiencyRankAtLevel,
   type AttackCategory,
   type ProficiencyTrack,
-} from './data/proficiency';
+} from '@pathway/core';
 import {
   doctrineAttackRank,
   doctrineTrackRank,
