@@ -179,12 +179,15 @@ describe('applyHp — damage, temp HP, dying', () => {
     expect(r.dying).toBe(2); // 1 + wounded 1
     expect(r.combatant.unconscious).toBe(true);
   });
-  // KNOWN GAP: no isCrit option exists yet — a crit knockout is Dying 1 like
-  // any other hit. Legacy applies Dying 2. Update when step 5 ports isCrit.
-  it('[gap] applyHp has no crit-dying bump (options object ignores isCrit)', () => {
+  it('a CRIT knockout is Dying 2 (Player Core p. 411)', () => {
     const ch = makeEncounter([{ name: 'Fighter' }]);
     const r = state.applyHp(ch, 'Fighter', -20, { isCrit: true });
-    expect(r.dying).toBe(1);
+    expect(r.dying).toBe(2);
+  });
+  it('crit damage while dying → dying +2', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 1 }]);
+    const r = state.applyHp(ch, 'Fighter', -3, { isCrit: true });
+    expect(r.dying).toBe(3);
   });
   it('damage while at 0 and dying → dying +1', () => {
     const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 1 }]);
@@ -261,6 +264,42 @@ describe('rollRecoveryCheck (v2)', () => {
   it('returns null when not dying', () => {
     const ch = makeEncounter([{ name: 'Fighter' }]);
     expect(state.rollRecoveryCheck(ch, 'Fighter')).toBeNull();
+  });
+});
+
+describe('hero points (v2)', () => {
+  it('stabilizeWithHeroPoints clears dying, keeps Wounded, stays unconscious at 0 HP', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 3, wounded: 2 }]);
+    const r = state.stabilizeWithHeroPoints(ch, 'Fighter');
+    expect(r.ok).toBe(true);
+    expect(r.combatant.dying).toBe(0);
+    expect(r.combatant.wounded).toBe(2); // hero-point stabilize adds NO wounded
+    expect(r.combatant.unconscious).toBe(true);
+  });
+  it('stabilize refuses when not dying', () => {
+    const ch = makeEncounter([{ name: 'Fighter' }]);
+    expect(state.stabilizeWithHeroPoints(ch, 'Fighter').ok).toBe(false);
+  });
+  it('reroll keeps the better result (reroll wins)', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 2 }]);
+    stubRandomSequence([die(5, 20)]); // original: fail DC 12 → dying 3
+    const original = state.rollRecoveryCheck(ch, 'Fighter');
+    expect(original.dyingAfter).toBe(3);
+    stubRandomSequence([die(15, 20)]); // reroll: success → dying 1
+    const r = state.rerollRecoveryCheck(ch, 'Fighter', original);
+    expect(r.keptOriginal).toBe(false);
+    expect(get(ch, 'Fighter').dying).toBe(1);
+  });
+  it('reroll keeps the original when the reroll is worse', () => {
+    const ch = makeEncounter([{ name: 'Fighter', hp: 0, dying: 1 }]);
+    stubRandomSequence([die(11, 20)]); // original: success → stabilized (awoke)
+    const original = state.rollRecoveryCheck(ch, 'Fighter');
+    expect(original.awoke).toBe(true);
+    stubRandomSequence([die(5, 20)]); // reroll: failure → dying 2 (worse)
+    const r = state.rerollRecoveryCheck(ch, 'Fighter', original);
+    expect(r.keptOriginal).toBe(true);
+    expect(get(ch, 'Fighter').dying).toBe(0);
+    expect(get(ch, 'Fighter').wounded).toBe(1); // original's wounded restored
   });
 });
 

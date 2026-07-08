@@ -179,6 +179,7 @@ const downtime = require('./commands/downtime');
 const charOverlay = require('./rules/characterOverlay');
 const ca = require('./rules/combatAutomation');
 const combatV2State = require('./rules/combatV2/state');
+const { updateCombatV2Summary } = require('./commands/init/combatV2Summary');
 const combatV2Render = require('./rules/combatV2/render');
 // Spell effects auto-application: maps spell names to mechanical effects
 // (Frightened, Slowed, Bless, etc.) that get applied to targets based on
@@ -1562,7 +1563,7 @@ client.on('interactionCreate', async (interaction) => {
       // Recover the combatant name from the safe-encoded customId
       const safeName = interaction.customId.slice(isTrigger ? 'reaction_trigger_'.length : 'reaction_skip_'.length);
       const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
+      const enc = combatV2State.getEncounter(channelId);
       if (!enc) {
         return interaction.update({ content: '❌ The encounter has ended.', components: [] });
       }
@@ -1585,10 +1586,10 @@ client.on('interactionCreate', async (interaction) => {
       ).join('\n').trim();
 
       if (isTrigger) {
-        ca.consumeReaction(channelId, combatant.name);
+        combatant.reactionUsed = true;
         const newContent = `${cleanedContent}\n⤾ **${combatant.name}** uses their reaction! *(GM: resolve the reaction now.)*`.trim();
         await interaction.update({ content: newContent, components: [] });
-        await updateSummary(interaction.channel, enc);
+        await updateCombatV2Summary(interaction.channel, enc);
       } else {
         const newContent = `${cleanedContent}\n*${combatant.name} declines the reaction.*`.trim();
         await interaction.update({ content: newContent, components: [] });
@@ -1611,7 +1612,7 @@ client.on('interactionCreate', async (interaction) => {
       const awoke = tail.slice(lastUnderscore5 + 1) === '1';
 
       const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
+      const enc = combatV2State.getEncounter(channelId);
       if (!enc) return interaction.update({ content: '❌ The encounter has ended.', components: [] });
       const combatant = enc.combatants.find(c => c.name.replace(/[^a-zA-Z0-9]/g, '_') === safeName);
       if (!combatant) return interaction.update({ content: '❌ Combatant not found.', components: [] });
@@ -1633,7 +1634,8 @@ client.on('interactionCreate', async (interaction) => {
 
       // Reroll
       const originalResult = { dyingBefore, dyingAfter, roll, awoke };
-      const result = ca.rerollRecoveryCheck(channelId, combatant.name, originalResult);
+      const result = combatV2State.rerollRecoveryCheck(channelId, combatant.name, originalResult);
+      if (!result) return interaction.update({ content: '❌ Could not reroll — combatant is no longer dying.', components: [] });
       const outcomeEmoji = result.outcome === 'crit-success' ? '🌟'
         : result.outcome === 'success' ? '✅'
         : result.outcome === 'failure' ? '❌'
@@ -1648,7 +1650,7 @@ client.on('interactionCreate', async (interaction) => {
           `*Hero Points: ${charEntry.heroPoints}/3*`
         );
       await interaction.update({ embeds: [newEmbed], components: [] });
-      await updateSummary(interaction.channel, enc);
+      await updateCombatV2Summary(interaction.channel, combatV2State.getEncounter(channelId) ?? enc);
       return;
     }
 
@@ -1660,7 +1662,7 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.customId.startsWith('rcheck_stabilize_')) {
       const safeName = interaction.customId.slice('rcheck_stabilize_'.length);
       const channelId = interaction.channel.id;
-      const enc = getEncounter(channelId);
+      const enc = combatV2State.getEncounter(channelId);
       if (!enc) return interaction.update({ content: '❌ The encounter has ended.', components: [] });
       const combatant = enc.combatants.find(c => c.name.replace(/[^a-zA-Z0-9]/g, '_') === safeName);
       if (!combatant) return interaction.update({ content: '❌ Combatant not found.', components: [] });
@@ -1683,7 +1685,7 @@ client.on('interactionCreate', async (interaction) => {
       charEntry.heroPoints = 0;
       saveCharacters(characters);
 
-      const stab = ca.stabilizeWithHeroPoints(channelId, combatant.name);
+      const stab = combatV2State.stabilizeWithHeroPoints(channelId, combatant.name);
       if (!stab || !stab.ok) {
         // Refund (shouldn't happen — guard rail)
         charEntry.heroPoints = currentHp;
@@ -1699,7 +1701,7 @@ client.on('interactionCreate', async (interaction) => {
           `*Spent ${spent} Hero Point${spent === 1 ? '' : 's'}. Hero Points: 0/3.*`
         );
       await interaction.update({ embeds: [newEmbed], components: [] });
-      await updateSummary(interaction.channel, enc);
+      await updateCombatV2Summary(interaction.channel, combatV2State.getEncounter(interaction.channel.id) ?? enc);
       return;
     }
 

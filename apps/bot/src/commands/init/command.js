@@ -408,7 +408,7 @@ async function execute(interaction) {
         content: lines.join('\n'),
       };
       if (recoveryCheck) {
-        const recoveryPayload = buildRecoveryCheckPayload(recoveryCheck, recoveryCheck.combatant ?? current, { heroButtons: false });
+        const recoveryPayload = buildRecoveryCheckPayload(recoveryCheck, recoveryCheck.combatant ?? current, { heroButtons: true });
         replyPayload.embeds = recoveryPayload.embeds;
         const deathPayload = combatDeathPayload(recoveryCheck);
         if (deathPayload?.embeds?.length) replyPayload.embeds = [...replyPayload.embeds, ...deathPayload.embeds].slice(0, 10);
@@ -466,7 +466,7 @@ async function execute(interaction) {
         return interaction.reply({ content: `**${target.name}** is not dying.`, ephemeral: true });
       }
       const recoveryCheck = combatV2State.rollRecoveryCheck(channelId, target.name);
-      const payload = buildRecoveryCheckPayload(recoveryCheck, target, { heroButtons: false });
+      const payload = buildRecoveryCheckPayload(recoveryCheck, target, { heroButtons: true });
       const deathPayload = combatDeathPayload(recoveryCheck);
       if (deathPayload?.embeds?.length) payload.embeds = [...(payload.embeds ?? []), ...deathPayload.embeds].slice(0, 10);
       await interaction.reply(payload);

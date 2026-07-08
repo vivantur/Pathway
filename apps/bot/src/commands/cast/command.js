@@ -150,10 +150,10 @@ function combatDeathPayload(result) {
 // Apply spell damage to a v2 combatant through its resistances/weaknesses/
 // immunities. Returns { finalDamage, noteText, hpResult } where hpResult is
 // null when the defenses zeroed the damage.
-function applySpellDamage(channelId, target, amount, damageType) {
+function applySpellDamage(channelId, target, amount, damageType, isCrit = false) {
   const defended = combatV2Rolls.applyDefenses(amount, damageType, target);
   const hpResult = defended.finalDamage > 0
-    ? combatV2State.applyHp(channelId, target.id, -defended.finalDamage)
+    ? combatV2State.applyHp(channelId, target.id, -defended.finalDamage, { isCrit })
     : null;
   const noteText = defended.notes?.length ? ` (${defended.notes.join(', ')})` : '';
   return { finalDamage: defended.finalDamage, noteText, hpResult };
@@ -431,7 +431,10 @@ async function execute(interaction) {
   const attackHit = target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success');
   const basicSaveDealsDamage = target && !isAttackSpell && spell.saveIsBasic && saveDegreeApplied && finalDamage > 0;
   if ((attackHit || basicSaveDealsDamage) && finalDamage > 0) {
-    const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, target, finalDamage, damageTypeLabel);
+    const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(
+      channelId, target, finalDamage, damageTypeLabel,
+      attackDegree === 'crit-success' || saveDegreeApplied === 'crit-failure'
+    );
     const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
     description += target.isNpc
       ? `\n❤️ **${target.name}** took ${dealt} damage${noteText}${dyingNote}`
@@ -503,7 +506,7 @@ async function execute(interaction) {
             if (spell.saveIsBasic && damageResult) {
               const dmgForTarget = basicSaveDamage(damageResult.total, sr.degree);
               if (dmgForTarget > 0) {
-                const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmgForTarget, damageTypeLabel);
+                const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmgForTarget, damageTypeLabel, sr.degree === 'crit-failure');
                 const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
                 line += ` — ${dealt} dmg${noteText}${dyingNote}`;
                 const deathPayload = combatDeathPayload(hpResult);
@@ -527,7 +530,7 @@ async function execute(interaction) {
           line += `Atk ${total} (${die}${fmt(spellAttackBonus + casterMods.attackBonus)}) vs AC ${effAc} ${degreeEmoji[deg] || ''} ${degreeLabel[deg] || ''}`;
           if ((deg === 'success' || deg === 'crit-success') && damageResult) {
             const dmg = deg === 'crit-success' ? damageResult.total * 2 : damageResult.total;
-            const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmg, damageTypeLabel);
+            const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmg, damageTypeLabel, deg === 'crit-success');
             const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
             line += ` — ${dealt} dmg${noteText}${dyingNote}`;
             const deathPayload = combatDeathPayload(hpResult);

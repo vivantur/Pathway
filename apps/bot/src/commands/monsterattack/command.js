@@ -505,7 +505,7 @@ async function execute(interaction) {
           const defenseNotes = [...new Set([...mainDefended.notes, ...extraDefended.notes])];
           const defenseText = defenseNotes.length ? ` (${defenseNotes.join(', ')})` : '';
           const dmgResult = finalDealt > 0
-            ? combatV2State.applyHp(channelId, target.id, -finalDealt)
+            ? combatV2State.applyHp(channelId, target.id, -finalDealt, { isCrit: degree === 'crit-success' })
             : null;
           const dyingNote = dmgResult ? combatDyingSuffix(dmgResult) : '';
           hpLine = target.isNpc

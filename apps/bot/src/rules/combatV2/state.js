@@ -289,6 +289,78 @@ function rollRecoveryCheck(channelId, query) {
   };
 }
 
+// Hero-point reroll of a recovery check (the re-resolve step; the caller is
+// responsible for having already spent the hero point). Undoes the original
+// result, rolls again, keeps whichever leaves the combatant better off.
+function rerollRecoveryCheck(channelId, query, originalResult) {
+  const encounter = getEncounter(channelId);
+  if (!encounter) return null;
+  const combatant = findCombatant(encounter, query);
+  if (!combatant || !originalResult) return null;
+
+  // Undo the original result
+  combatant.dying = originalResult.dyingBefore;
+  if (originalResult.awoke) {
+    combatant.wounded = Math.max(0, (combatant.wounded ?? 0) - 1);
+    // HP stays at 0 — recovery never restores HP (PF2e RAW).
+  }
+
+  const second = rollRecoveryCheck(channelId, combatant.id);
+  if (!second) return null;
+
+  const firstIsBetter = originalResult.dyingAfter < second.dyingAfter
+    || (originalResult.awoke && !second.awoke);
+
+  if (firstIsBetter && !second.died) {
+    // Undo the second roll, reapply the first.
+    combatant.dying = originalResult.dyingAfter;
+    if (originalResult.awoke) {
+      combatant.wounded = (combatant.wounded ?? 0) + 1;
+      combatant.unconscious = (combatant.hp ?? 0) <= 0;
+    }
+    touchEncounter(encounter);
+    return {
+      ...originalResult,
+      originalRoll: originalResult.roll,
+      rerollRoll: second.roll,
+      keptOriginal: true,
+      narration: `Hero Point reroll: ${second.roll} vs original ${originalResult.roll} — kept original.\n${originalResult.narration}`,
+    };
+  }
+  return {
+    ...second,
+    originalRoll: originalResult.roll,
+    rerollRoll: second.roll,
+    keptOriginal: false,
+    narration: `Hero Point reroll: ${second.roll} vs original ${originalResult.roll} — kept reroll.\n${second.narration}`,
+  };
+}
+
+// Spend ALL remaining hero points to escape death (PF2e Player Core p. 411):
+// lose the dying condition entirely, stabilize at 0 HP, wounded unchanged.
+// The caller validates and zeroes the player's hero points.
+function stabilizeWithHeroPoints(channelId, query) {
+  const encounter = getEncounter(channelId);
+  if (!encounter) return null;
+  const combatant = findCombatant(encounter, query);
+  if (!combatant) return null;
+  const dyingBefore = combatant.dying ?? 0;
+  if (dyingBefore <= 0) return { ok: false, reason: 'not-dying' };
+
+  combatant.dying = 0;
+  combatant.unconscious = (combatant.hp ?? 0) <= 0;
+  encounter.log.push({ at: nowIso(), kind: 'hero-stabilize', name: combatant.name, dyingBefore });
+  touchEncounter(encounter);
+
+  return {
+    ok: true,
+    combatant,
+    dyingBefore,
+    woundedKept: combatant.wounded ?? 0,
+    narration: `**${combatant.name}** spends all remaining Hero Points to escape death — stabilized at 0 HP, dying cleared. Wounded ${combatant.wounded ?? 0} unchanged.`,
+  };
+}
+
 // GM override of a combatant's dying value (0–4). PF2e RAW semantics match
 // the automated paths: manually clearing dying grants Wounded +1 and does NOT
 // restore HP (unconscious at 0 HP until healed); reaching the max dying value
@@ -394,7 +466,7 @@ function rejoinCombatant(channelId, query, targetQuery = null) {
   return { encounter, combatant, current: currentCombatant(encounter) };
 }
 
-function applyHp(channelId, query, amount, { mode = 'delta' } = {}) {
+function applyHp(channelId, query, amount, { mode = 'delta', isCrit = false } = {}) {
   const encounter = getEncounter(channelId);
   if (!encounter) throw new Error('No active encounter.');
   const combatant = findCombatant(encounter, query);
@@ -443,12 +515,15 @@ function applyHp(channelId, query, amount, { mode = 'delta' } = {}) {
   }
 
   if ((mode === 'set' || amount < 0) && effectiveDamage > 0 && combatant.hp === 0) {
+    // PF2e Player Core p. 411: knocked to 0 by a critical hit (or crit-failed
+    // save) → Dying 2 instead of 1; damaged while already dying → dying +2 on
+    // a crit instead of +1. Wounded always adds to the initial value.
     if (hpBefore > 0) {
       wentDown = true;
-      combatant.dying = 1 + (combatant.wounded ?? 0);
+      combatant.dying = 1 + (combatant.wounded ?? 0) + (isCrit ? 1 : 0);
     } else if (wasDying) {
       dyingIncreased = true;
-      combatant.dying += 1;
+      combatant.dying += isCrit ? 2 : 1;
     }
     combatant.unconscious = true;
     if (combatant.dying >= maxDying) {
@@ -800,6 +875,8 @@ module.exports = {
   currentCombatant,
   advanceTurn,
   rollRecoveryCheck,
+  rerollRecoveryCheck,
+  stabilizeWithHeroPoints,
   setDying,
   delayCombatant,
   rejoinCombatant,

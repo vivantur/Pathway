@@ -278,7 +278,7 @@ async function execute(interaction) {
         embeds.push(embed);
         if (inCombat && target && ['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
           const beforeHp = target.hp;
-          const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
+          const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage, { isCrit: result.degree === 'criticalSuccess' });
           hpLines.push(`**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP${combatDyingSuffix(applied)}`);
           const deathPayload = combatDeathPayload(applied);
           if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
@@ -455,7 +455,7 @@ async function execute(interaction) {
             if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
             if (inCombat && target && defended.finalDamage > 0) {
               const beforeHp = target.hp;
-              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage, { isCrit: result.degree === 'criticalSuccess' });
               appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
             }
           } else {
@@ -484,7 +484,7 @@ async function execute(interaction) {
             if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
             if (inCombat && target && defended.finalDamage > 0 && (spell.saveIsBasic || result.degree === 'failure' || result.degree === 'criticalFailure')) {
               const beforeHp = target.hp;
-              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+              const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage, { isCrit: result.degree === 'criticalFailure' });
               appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
             }
           }

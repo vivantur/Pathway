@@ -101,7 +101,7 @@ async function execute(interaction) {
       let embedDeath = [];
       if (['success', 'criticalSuccess'].includes(result.degree) && result.finalDamage > 0) {
         const beforeHp = target.hp;
-        const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage);
+        const applied = combatV2State.applyHp(channelId, target.name, -result.finalDamage, { isCrit: result.degree === 'criticalSuccess' });
         content = `**${target.name}** took **${result.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP${combatDyingSuffix(applied)}`;
         const deathPayload = combatDeathPayload(applied);
         if (deathPayload?.embeds?.length) embedDeath = deathPayload.embeds;

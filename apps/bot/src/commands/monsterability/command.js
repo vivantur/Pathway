@@ -58,7 +58,7 @@ async function execute(interaction) {
       if (defended.notes.length) lines.push(`*${defended.notes.join(', ')}*`);
       if (defended.finalDamage > 0 && (isBasic || result.degree === 'failure' || result.degree === 'criticalFailure')) {
         const beforeHp = target.hp;
-        const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage);
+        const applied = combatV2State.applyHp(channelId, target.name, -defended.finalDamage, { isCrit: result.degree === 'criticalFailure' });
         appliedLine = `**${target.name}** took **${defended.finalDamage}** damage: ${beforeHp}/${target.maxHp} -> ${applied.combatant.hp}/${applied.combatant.maxHp} HP`;
       }
     }
