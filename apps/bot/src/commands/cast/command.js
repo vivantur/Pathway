@@ -2,9 +2,10 @@ const { EmbedBuilder } = require('discord.js');
 
 const characterState = require('../../state/characters');
 const charOverlay = require('../../rules/characterOverlay');
-const ca = require('../../rules/combatAutomation');
-const encounters = require('../encounters');
-const { updateSummary } = require('../init/summary');
+const combatV2State = require('../../rules/combatV2/state');
+const combatV2Rolls = require('../../rules/combatV2/rolls');
+const { updateCombatV2Summary } = require('../init/combatV2Summary');
+const { combatDyingSuffix } = require('../../discord/rollEmbeds');
 const { findSpell, spellAmbiguityMessage } = require('../spell/lookup');
 const { normalizeSpell } = require('../spell/embed');
 const { findMonster } = require('../monster/lookup');
@@ -58,6 +59,11 @@ function getTargetSaveBonus(target, saveType, loadedCharacters) {
 
   if (target.saveBonuses && target.saveBonuses[normalized] != null) {
     return { bonus: target.saveBonuses[normalized], source: 'stored' };
+  }
+
+  // Combat v2 combatants carry computed saves directly.
+  if (target.saves && target.saves[normalized] != null) {
+    return { bonus: Number(target.saves[normalized]), source: 'stored' };
   }
 
   if (!target.isNpc && target.ownerId) {
@@ -139,6 +145,18 @@ function buildCombatDeathEmbed(name) {
 function combatDeathPayload(result) {
   const name = result?.removed?.name ?? result?.name ?? result?.combatant?.name;
   return result?.died && name ? { embeds: [buildCombatDeathEmbed(name)] } : null;
+}
+
+// Apply spell damage to a v2 combatant through its resistances/weaknesses/
+// immunities. Returns { finalDamage, noteText, hpResult } where hpResult is
+// null when the defenses zeroed the damage.
+function applySpellDamage(channelId, target, amount, damageType) {
+  const defended = combatV2Rolls.applyDefenses(amount, damageType, target);
+  const hpResult = defended.finalDamage > 0
+    ? combatV2State.applyHp(channelId, target.id, -defended.finalDamage)
+    : null;
+  const noteText = defended.notes?.length ? ` (${defended.notes.join(', ')})` : '';
+  return { finalDamage: defended.finalDamage, noteText, hpResult };
 }
 
 async function execute(interaction) {
@@ -225,7 +243,7 @@ async function execute(interaction) {
   }
 
   const channelId = interaction.channel.id;
-  const enc = encounters.getEncounter(channelId);
+  const enc = combatV2State.getEncounter(channelId);
 
   // ── Resolve target(s) ──────────────────────────────────────────────
   // Two ways to specify targets:
@@ -245,7 +263,7 @@ async function execute(interaction) {
     const names = targetsArg.split(',').map(s => s.trim()).filter(Boolean);
     const notFound = [];
     for (const n of names) {
-      const found = enc.combatants.find(x => x.name.toLowerCase() === n.toLowerCase());
+      const found = combatV2State.findCombatant(enc, n);
       if (found) resolvedTargets.push(found);
       else notFound.push(n);
     }
@@ -255,7 +273,7 @@ async function execute(interaction) {
     target = resolvedTargets[0];
   } else if (targetName) {
     if (!enc) return interaction.editReply('❌ Target specified but no active encounter in this channel. Start one with `/init start`.');
-    target = enc.combatants.find(x => x.name.toLowerCase() === targetName.toLowerCase());
+    target = combatV2State.findCombatant(enc, targetName);
     if (!target) return interaction.editReply(`❌ No combatant named "${targetName}" in this encounter.`);
     resolvedTargets = [target];
   }
@@ -272,7 +290,7 @@ async function execute(interaction) {
   description += '\n';
 
   // Look up caster's active effects if in encounter
-  const casterCombatant = enc ? enc.combatants.find(x => x.name.toLowerCase() === c.name.toLowerCase()) : null;
+  const casterCombatant = enc ? combatV2State.findCombatant(enc, c.name) : null;
   const casterMods = sumEffectModifiers(casterCombatant);
   const targetMods = target ? sumEffectModifiers(target) : { acBonus: 0, activeEffects: [] };
 
@@ -413,12 +431,12 @@ async function execute(interaction) {
   const attackHit = target && isAttackSpell && (attackDegree === 'success' || attackDegree === 'crit-success');
   const basicSaveDealsDamage = target && !isAttackSpell && spell.saveIsBasic && saveDegreeApplied && finalDamage > 0;
   if ((attackHit || basicSaveDealsDamage) && finalDamage > 0) {
-    const dmgResult = ca.applyDamage(channelId, target.name, finalDamage, { isCrit: attackDegree === 'crit-success' || saveDegreeApplied === 'crit-failure' });
-    const dyingNote = dmgResult?.displaySuffix ?? '';
+    const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, target, finalDamage, damageTypeLabel);
+    const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
     description += target.isNpc
-      ? `\n❤️ **${target.name}** took ${finalDamage} damage${dyingNote}`
-      : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${dyingNote}`;
-    const deathPayload = combatDeathPayload(dmgResult);
+      ? `\n❤️ **${target.name}** took ${dealt} damage${noteText}${dyingNote}`
+      : `\n❤️ **${target.name}**: ${target.hp}/${target.maxHp} HP${noteText}${dyingNote}`;
+    const deathPayload = combatDeathPayload(hpResult);
     if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
   }
 
@@ -457,7 +475,7 @@ async function execute(interaction) {
       }
       const effects = spellEffects.resolveEffectsForDegree(spell.name, degreeForTarget, effectiveLevel);
       if (effects.length > 0) {
-        const result = spellEffects.applyEffectsToCombatant(channelId, target.name, effects, encounters, 'spell');
+        const result = spellEffects.applyEffectsToCombatant(channelId, target.name, effects, combatV2State, 'spell');
         if (result.applied > 0) {
           description += `\n✨ **${target.name}** gains: ${spellEffects.formatEffectSummary(effects)}\n`;
         }
@@ -485,10 +503,10 @@ async function execute(interaction) {
             if (spell.saveIsBasic && damageResult) {
               const dmgForTarget = basicSaveDamage(damageResult.total, sr.degree);
               if (dmgForTarget > 0) {
-                const dmgResult = ca.applyDamage(channelId, t.name, dmgForTarget);
-                const dyingNote = dmgResult?.displaySuffix ?? '';
-                line += ` — ${dmgForTarget} dmg${dyingNote}`;
-                const deathPayload = combatDeathPayload(dmgResult);
+                const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmgForTarget, damageTypeLabel);
+                const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
+                line += ` — ${dealt} dmg${noteText}${dyingNote}`;
+                const deathPayload = combatDeathPayload(hpResult);
                 if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
               }
             }
@@ -509,10 +527,10 @@ async function execute(interaction) {
           line += `Atk ${total} (${die}${fmt(spellAttackBonus + casterMods.attackBonus)}) vs AC ${effAc} ${degreeEmoji[deg] || ''} ${degreeLabel[deg] || ''}`;
           if ((deg === 'success' || deg === 'crit-success') && damageResult) {
             const dmg = deg === 'crit-success' ? damageResult.total * 2 : damageResult.total;
-            const dmgResult = ca.applyDamage(channelId, t.name, dmg);
-            const dyingNote = dmgResult?.displaySuffix ?? '';
-            line += ` — ${dmg} dmg${dyingNote}`;
-            const deathPayload = combatDeathPayload(dmgResult);
+            const { finalDamage: dealt, noteText, hpResult } = applySpellDamage(channelId, t, dmg, damageTypeLabel);
+            const dyingNote = hpResult ? combatDyingSuffix(hpResult) : '';
+            line += ` — ${dealt} dmg${noteText}${dyingNote}`;
+            const deathPayload = combatDeathPayload(hpResult);
             if (deathPayload?.embeds?.length) deathEmbeds.push(...deathPayload.embeds);
           }
         }
@@ -528,7 +546,7 @@ async function execute(interaction) {
           }
           const tEffects = spellEffects.resolveEffectsForDegree(spell.name, degForT, effectiveLevel);
           if (tEffects.length > 0) {
-            const r = spellEffects.applyEffectsToCombatant(channelId, t.name, tEffects, encounters, 'spell');
+            const r = spellEffects.applyEffectsToCombatant(channelId, t.name, tEffects, combatV2State, 'spell');
             if (r.applied > 0) line += ` → ${spellEffects.formatEffectSummary(tEffects)}`;
           }
         }
@@ -559,7 +577,7 @@ async function execute(interaction) {
   if (warnings.length) payload.content = warnings.join('\n');
   if (target && !target.isNpc && target.ownerId) payload.content = [payload.content, `<@${target.ownerId}>`].filter(Boolean).join('\n');
   await interaction.editReply(payload);
-  if (target && enc) await updateSummary(interaction.channel, enc);
+  if (target && enc) await updateCombatV2Summary(interaction.channel, combatV2State.getEncounter(channelId) ?? enc);
 }
 
 module.exports = {
