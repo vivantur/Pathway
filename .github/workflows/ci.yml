@@ -6,9 +6,12 @@ on:
   push:
     branches: [main]
 
+# Node 20 reached end-of-life on 2026-04-30, and @supabase/supabase-js (used by
+# both apps) declares `engines.node >= 22`. Keep all jobs on 22 LTS.
+
 jobs:
   bot:
-    name: Bot syntax check
+    name: Bot syntax check + tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,7 +20,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install workspaces
+        run: npm ci
 
       - name: Syntax check - bot entry points
         run: |
@@ -35,10 +42,17 @@ jobs:
       - name: Syntax check - bot scripts
         shell: bash
         run: |
-          find apps/bot/supabase apps/bot/tools -name '*.js' -print0 | while IFS= read -r -d '' f; do
+          find apps/bot/supabase apps/bot/tools apps/bot/scripts -name '*.js' -print0 | while IFS= read -r -d '' f; do
             echo "Checking $f"
             node --check "$f"
           done
+
+      # The bot's Vitest suite locks the pure rules layer: dice/degree-of-success,
+      # MAP, proficiency math, the /roll parser, conditions, spell heightening,
+      # the dying/wounded/recovery engine, and combat v2. This is the game math
+      # that ruins a session when it silently drifts.
+      - name: Test bot
+        run: npm --workspace apps/bot run test
 
   web:
     name: Web typecheck + build
@@ -50,7 +64,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install workspaces
@@ -75,7 +89,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install workspaces

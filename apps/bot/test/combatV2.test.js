@@ -1,13 +1,8 @@
 // Tests for the combat v2 engine — rules/combatV2/{state,rolls}.js.
 //
-// This mirrors test/combatAutomation.test.js (which locks the LEGACY engine)
-// so both engines are pinned before consolidation. Everything runs in memory:
-// with no Supabase env vars, every persistence call no-ops.
-//
-// KNOWN GAP (deliberate): v2's applyHp does NOT implement the "reduced to 0 by
-// a critical hit → Dying 2" rule that legacy applyDamage({isCrit}) has. The
-// tests below lock v2's CURRENT behavior; when the isCrit port lands, update
-// the marked test.
+// combatV2 is the ONLY combat engine; the legacy engine and its suite were
+// deleted in the 2026-07-08 consolidation. Everything runs in memory: with no
+// Supabase env vars, every persistence call no-ops.
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { createRequire } from 'node:module';

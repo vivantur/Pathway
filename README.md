@@ -1,42 +1,36 @@
 # Pathway — PF2e Ecosystem (monorepo)
 
-This repository holds **both** halves of Pathway, which share one Supabase backend:
+A Pathfinder 2nd Edition companion: a **Discord bot** for play and a **web app** for
+content and character management, sharing one Supabase backend and one rules engine.
 
-| Path | What it is | Deploys to |
-| --- | --- | --- |
-| **repo root** (`Pathwayv2/`, `index.js`, …) | The **Discord bot** (Node.js / discord.js) | **Railway** — builds from the repo root, `npm start` → `Pathwayv2/src/index.js` |
-| **`web/`** | The **website** (React + TS + Vite + Supabase) — rules library, character sheet, and character **builder** | **Vercel** — set the project's *Root Directory* to `web/` |
+## Layout
 
-Shared Supabase migrations live in `web/supabase/migrations/` (referenced by the bot as `../web/supabase/migrations/`). The website was merged in from the former `vivantur/pathway-website` repository with its history preserved.
+This is an **npm-workspaces monorepo** (root `package.json` → `workspaces`).
 
----
+| Path | What it is |
+| --- | --- |
+| `packages/core` | Pure PF2e domain — content schema, character model, derived-stat engine. No I/O, no DB, no network. The single source of rules truth. |
+| `packages/db` | Data layer (Supabase client, generated types, queries). Currently a placeholder — nothing imports it yet. |
+| `apps/bot` | The discord.js bot. CommonJS, no build step. |
+| `apps/web` | The Vite + React + React Router + React Query web app. |
 
-A Pathfinder 2e companion bot for Discord. Pathway tracks combat, characters, spells, inventory, downtime, companions, calendar, weather, and lookup commands from Discord slash commands.
+**The one rule that matters:** there is exactly one implementation of the PF2e domain,
+and it lives in `packages/core`. Never compute a rules value in `apps/web` or
+`apps/bot`. See [CLAUDE.md](CLAUDE.md) for the architecture and the migration status.
 
-## Current Runtime
+## Requirements
 
-Pathway now runs from `Pathwayv2`.
-
-The root `package.json` intentionally points to:
-
-```bash
-npm start            # node Pathwayv2/src/index.js
-npm run deploy       # node Pathwayv2/src/deploy.js
-npm run deploy:guild # node Pathwayv2/src/deploy.js --guild
-```
-
-The old root bot files and folders are legacy only and should not be used for new work.
-Root `index.js` and `deploy.js` are tiny compatibility launchers for hosts that
-still call those old paths; both immediately hand off to `Pathwayv2`.
+**Node.js 22 LTS or newer.** Node 20 reached end-of-life on 2026-04-30, and
+`@supabase/supabase-js` declares `engines.node >= 22`. CI runs on 22.
 
 ## Setup
 
 ```bash
-npm install
+npm install          # run at the REPO ROOT — this wires all workspaces
 cp .env.example .env
 ```
 
-Fill in `.env` with:
+Fill in `.env`:
 
 ```bash
 TOKEN=your-discord-bot-token
@@ -49,62 +43,84 @@ SUPABASE_SERVICE_KEY=your-supabase-service-role-key
 
 Never commit `.env`.
 
+> `npm install` must run at the repo root. Installing inside `apps/web` or `apps/bot`
+> alone will not link the `@pathway/core` workspace package, and the web build will
+> fail to resolve it.
+
 ## Commands
 
-Register slash commands in a test guild:
+All run from the repo root:
 
 ```bash
-npm run deploy:guild
+npm start                 # run the bot
+npm run deploy            # register slash commands globally (~1h propagation)
+npm run deploy:guild      # register slash commands to the dev guild (instant)
+npm run dev:web           # Vite dev server for the web app
+npm run build:web         # production build of the web app
+npm test                  # every workspace's tests (core + bot)
+npm run typecheck         # every workspace's typecheck
 ```
 
-Register global slash commands:
+Per-workspace:
 
 ```bash
-npm run deploy
+npm --workspace packages/core run test        # core rules tests
+npm --workspace apps/bot run test             # bot rules tests
+npm --workspace apps/web run typecheck        # web type check
+npm --workspace apps/web run lint             # web lint
 ```
 
-Start the bot:
+## Deployment
+
+Each app deploys from its own directory (its platform "root directory" setting):
+
+| App | Platform | Root directory | Command |
+| --- | --- | --- | --- |
+| Bot | Railway | `apps/bot` | `npm start` |
+| Web | Vercel | `apps/web` | `npm run build` (Vite) |
+
+Railway auto-deploys on push to `main`.
+
+### ⚠️ The web deploy depends on a Vercel dashboard setting
+
+`apps/web` imports `@pathway/core`, which lives outside its root directory. Vercel
+builds with Root Directory = `apps/web` and, by default, **prunes sibling packages** —
+so `packages/core` is not on disk at build time and *nothing in this repo can work
+around that*. Neither a workspace install, nor a Vite `resolve.alias`, nor a tsconfig
+`paths` mapping can reach a directory that was never checked out. All three were tried
+and reverted (see commits `752575b`, `701a572`, `db9f851`, `b297deb`, `72d10f0`).
+
+The deploy works today only because the Vercel project has **"Include source files
+outside of the Root Directory in the Build Step"** enabled. If that setting is ever
+lost, the build fails with:
+
+```
+error TS2307: Cannot find module '@pathway/core' or its corresponding type declarations.
+[vite]: Rollup failed to resolve import "@pathway/core"
+```
+
+If you see that, re-enable the setting — do not vendor a copy of `packages/core` back
+into `apps/web`. The durable fix is to build from the repo root instead
+(Root Directory = `.`, build command `npm run build:web`, output `apps/web/dist`).
+
+Note also that `vercel.json` is strict JSON: a `//` comment key in it once broke
+production deploys (`701a572`). Do not add comments to it.
+
+## Testing
 
 ```bash
-npm start
+npm test    # core (60 tests) + bot (162 tests)
 ```
 
-## Project Structure
+`packages/core` is I/O-free and trivially unit-testable. The bot's suite locks its pure
+`rules/` layer — dice, degree of success, MAP, proficiency math, conditions, spell
+heightening, the dying/recovery engine, and combat v2. **Run it after touching anything
+under `apps/bot/src/rules/` or `apps/bot/src/lib/` — those tests guard player-visible
+game math.**
 
-```text
-Pathway/
-  package.json              # Root npm scripts that launch Pathwayv2
-  .env.example              # Environment template
-  .github/workflows/ci.yml  # CI checks Pathwayv2 only
-  Pathwayv2/
-    src/
-      index.js              # Bot entry point
-      deploy.js             # Slash-command registration
-      commands/             # Feature-folder slash command handlers
-      state/                # Supabase-backed state caches
-      rules/                # PF2e math and game rules
-      lib/                  # Infrastructure helpers
-      parsers/              # Input parsers
-      reference/            # Reference-data helpers
-      discord/              # Discord-specific helpers
-    assets/
-    docs/
-    gamedata/
-    scripts/
-    supabase/
-    tools/
-```
+## Further reading
 
-## Cleanup Note
-
-The old root `index.js`, `deploy.js`, `commands/`, `systems/`, `utils/`, `parsers/`, `assets/`, `docs/`, `gamedata/`, `scripts/`, `supabase/`, and `tools/` were from the pre-v2 layout. New work belongs under `Pathwayv2`.
-
-## Hosting
-
-Railway should run the root start command:
-
-```bash
-npm start
-```
-
-That command launches `Pathwayv2/src/index.js`.
+- [CLAUDE.md](CLAUDE.md) — architecture, conventions, migration status
+- [apps/bot/CLAUDE.md](apps/bot/CLAUDE.md) — bot architecture (state pattern, command pattern)
+- [apps/bot/HANDOFF.md](apps/bot/HANDOFF.md) — what's been done in the bot refactor
+- [docs/avrae-pathbuilder-roadmap.md](docs/avrae-pathbuilder-roadmap.md) — capability review and roadmap

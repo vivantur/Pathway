@@ -292,13 +292,17 @@ The rewrite from the legacy single-file bot to feature folders is complete and *
 ## Testing
 
 `npm test` (in this folder, or via `npm test` at the repo root) runs the Vitest
-suite in `test/`. It covers the pure rules layer: degree of success, MAP,
-basic saves (`test/dice.test.js`), proficiency math (`test/pf2eMath.test.js`),
-the /roll parser (`test/advancedRoll.test.js`), condition presets
-(`test/effects.test.js`), spell damage + heightening (`test/spellDamage.test.js`),
-the dying/wounded/recovery engine driven end-to-end through the in-memory
-encounter store (`test/combatAutomation.test.js`), formatters/currency/bulk
+suite in `test/` — **162 tests across 8 files**, enforced by CI. It covers the pure
+rules layer: degree of success, MAP, basic saves (`test/dice.test.js`), proficiency
+math (`test/pf2eMath.test.js`), the /roll parser (`test/advancedRoll.test.js`),
+condition presets (`test/effects.test.js`), spell damage + heightening
+(`test/spellDamage.test.js`), the dying/wounded/recovery engine and the rest of the
+combat engine (`test/combatV2.test.js`), formatters/currency/bulk
 (`test/format.test.js`), and `{{variable}}` resolution (`test/variables.test.js`).
+
+*(The old `test/combatAutomation.test.js` locked the legacy engine and was deleted
+along with it in the 2026-07-08 combat consolidation; `test/combatV2.test.js` is its
+successor.)*
 
 Conventions: tests are ESM files that load the bot's CommonJS modules via
 `createRequire`; randomness is controlled by stubbing `Math.random` with a

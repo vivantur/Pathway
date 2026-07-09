@@ -5,10 +5,10 @@
 // sync; subsequent writes update in place. Events are append-only inserts
 // into encounter_events keyed by encounter_id.
 //
-// Note: there is already a commands/encounters.js (currently in src/commands/)
-// that holds the in-memory encounter map and command handlers. That module
-// is the in-memory state owner; THIS module is the persistence layer.
-// They are separate by design until Phase 2 unifies them.
+// THIS module is the persistence layer only. The in-memory encounter map lives
+// in rules/combatV2/state.js, which reaches these helpers indirectly via their
+// re-export from lib/storage.js. (The old commands/encounters.js that used to
+// own the in-memory map was deleted in the 2026-07-08 combat consolidation.)
 
 const { getSupabase } = require('../lib/supabase');
 const { _recordSyncSuccess, _recordSyncFailure } = require('../lib/syncTracker');
