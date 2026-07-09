@@ -1,37 +1,32 @@
 // systems/combatV2/state.js
-// Combat v2 state model. This is intentionally isolated from the legacy
-// encounter system so we can migrate commands one slice at a time.
+// Combat v2 encounter store: owns the in-memory Map and every Supabase write.
+//
+// The PURE combat rules now live in ./model.js. This file is the stateful shell
+// around them: it resolves a channelId to an encounter, delegates the rules work
+// to the model, and persists the result. Anything here that does not touch the
+// Map or Supabase belongs in the model instead.
 
 const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require('../../lib/storage');
 const { rollDamage, applyDefenses } = require('./rolls');
+const model = require('./model');
+
+const {
+  slug,
+  nowIso,
+  isCombatV2Snapshot,
+  makeCombatant,
+  findCombatant,
+  currentCombatant,
+  resetTurnState,
+  effectKey,
+  effectValue,
+  tickEffectDurations,
+  getPersistentDamageEffects,
+  persistentDamageConfig,
+  processActionEconomy,
+} = model;
 
 const encounters = new Map();
-
-function slug(value) {
-  return String(value ?? '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function isCombatV2Snapshot(combatants) {
-  if (!Array.isArray(combatants) || combatants.length === 0) return true;
-  return combatants.some(c => c && (
-    c.type != null
-    || c.sourceKey != null
-    || c.attacksThisTurn != null
-    || c.reactionUsed != null
-    || Array.isArray(c.attacks)
-    || Array.isArray(c.spells)
-    || c.resistances != null
-    || c.weaknesses != null
-  ));
-}
 
 function touchEncounter(encounter) {
   if (!encounter) return encounter;
@@ -70,61 +65,10 @@ function endEncounter(channelId) {
   return encounters.delete(channelId);
 }
 
+/** Sort (model) then persist. Kept channel-free: callers already hold the encounter. */
 function sortCombatants(encounter) {
-  const currentId = currentCombatant(encounter)?.id ?? null;
-  encounter.combatants.sort((a, b) => {
-    if (!!a.delayed !== !!b.delayed) return a.delayed ? 1 : -1;
-    if (b.initiative !== a.initiative) return b.initiative - a.initiative;
-    if ((a.groupId ?? '') !== (b.groupId ?? '')) return String(a.groupId ?? '').localeCompare(String(b.groupId ?? ''));
-    if (a.isNpc !== b.isNpc) return a.isNpc ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-  if (currentId) {
-    const newIndex = encounter.combatants.findIndex(c => c.id === currentId);
-    if (newIndex >= 0) encounter.turnIndex = newIndex;
-  }
-  encounter.turnIndex = Math.max(0, Math.min(encounter.turnIndex, Math.max(0, encounter.combatants.length - 1)));
+  model.sortCombatants(encounter);
   return touchEncounter(encounter);
-}
-
-function makeCombatant(input) {
-  const name = String(input.name ?? '').trim();
-  if (!name) throw new Error('Combatant name is required.');
-  const maxHp = Number.isFinite(input.maxHp) ? input.maxHp : (Number.isFinite(input.hp) ? input.hp : 1);
-  const hp = Number.isFinite(input.hp) ? input.hp : maxHp;
-  return {
-    id: input.id ?? `${slug(name)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-    name,
-    type: input.type ?? (input.isNpc ? 'monster' : 'pc'),
-    initiative: Number.isFinite(input.initiative) ? input.initiative : 0,
-    groupId: input.groupId ?? null,
-    ownerId: input.ownerId ?? null,
-    isNpc: input.isNpc ?? !['pc', 'companion'].includes(input.type),
-    hidden: input.hidden ?? input.isNpc ?? !['pc', 'companion'].includes(input.type),
-    sourceKey: input.sourceKey ?? null,
-    hp,
-    maxHp,
-    tempHp: input.tempHp ?? 0,
-    dying: input.dying ?? 0,
-    wounded: input.wounded ?? 0,
-    doomed: input.doomed ?? 0,
-    unconscious: input.unconscious ?? false,
-    ac: input.ac ?? null,
-    saves: { fort: null, ref: null, will: null, ...(input.saves ?? {}) },
-    skills: { ...(input.skills ?? {}) },
-    attacks: Array.isArray(input.attacks) ? input.attacks : [],
-    spells: Array.isArray(input.spells) ? input.spells : [],
-    abilities: Array.isArray(input.abilities) ? input.abilities : [],
-    resistances: { ...(input.resistances ?? {}) },
-    weaknesses: { ...(input.weaknesses ?? {}) },
-    immunities: Array.isArray(input.immunities) ? input.immunities : [],
-    effects: Array.isArray(input.effects) ? input.effects : [],
-    attacksThisTurn: input.attacksThisTurn ?? 0,
-    reactionUsed: input.reactionUsed ?? false,
-    hasReaction: input.hasReaction ?? true,
-    delayed: input.delayed ?? false,
-    notes: input.notes ?? '',
-  };
 }
 
 function addCombatant(channelId, input) {
@@ -137,15 +81,6 @@ function addCombatant(channelId, input) {
   encounter.combatants.push(combatant);
   encounter.log.push({ at: nowIso(), kind: 'add', name: combatant.name });
   return { encounter: sortCombatants(encounter), combatant };
-}
-
-function findCombatant(encounter, query) {
-  if (!encounter || !query) return null;
-  const q = String(query).toLowerCase().trim();
-  const exact = encounter.combatants.find(c => c.name.toLowerCase() === q || c.id === query);
-  if (exact) return exact;
-  const partial = encounter.combatants.filter(c => c.name.toLowerCase().includes(q));
-  return partial.length === 1 ? partial[0] : null;
 }
 
 function removeCombatant(channelId, query) {
@@ -161,16 +96,6 @@ function removeCombatant(channelId, query) {
   encounter.log.push({ at: nowIso(), kind: 'remove', name: combatant.name });
   touchEncounter(encounter);
   return { encounter, combatant };
-}
-
-function currentCombatant(encounter) {
-  return encounter?.combatants?.[encounter.turnIndex] ?? null;
-}
-
-function resetTurnState(combatant) {
-  if (!combatant) return;
-  combatant.attacksThisTurn = 0;
-  combatant.reactionUsed = false;
 }
 
 function rollRecoveryCheck(channelId, query) {
@@ -623,50 +548,6 @@ function modifyCombatant(channelId, query, patch) {
   return { encounter: sortCombatants(encounter), combatant };
 }
 
-function effectKey(effect) {
-  return slug(effect?.id ?? effect?.presetKey ?? effect?.name);
-}
-
-function effectValue(effect) {
-  const value = Number(effect?.value ?? effect?.modifiers?.value ?? 0);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function tickEffectDurations(combatant) {
-  const expiredEffects = [];
-  if (!combatant?.effects?.length) return expiredEffects;
-  combatant.effects = combatant.effects.filter(effect => {
-    if (effect.duration === null || effect.duration === undefined) return true;
-    effect.duration -= 1;
-    if (effect.duration <= 0) {
-      expiredEffects.push({ combatantName: combatant.name, effect });
-      return false;
-    }
-    return true;
-  });
-  return expiredEffects;
-}
-
-function getPersistentDamageEffects(combatant) {
-  if (!combatant?.effects?.length) return [];
-  return combatant.effects.filter(effect => {
-    const kind = effect?.kind ?? effect?.modifiers?.kind;
-    return kind === 'persistent-damage' || effectKey(effect).startsWith('persistent-');
-  });
-}
-
-function persistentDamageConfig(effect) {
-  const modifiers = effect?.modifiers ?? {};
-  const key = effectKey(effect);
-  let damageType = effect.damageType ?? modifiers.damageType ?? modifiers.type ?? null;
-  if (!damageType && key.startsWith('persistent-')) damageType = key.replace(/^persistent-/, '');
-  return {
-    damageDice: effect.dice ?? modifiers.dice ?? modifiers.damageDice ?? modifiers.damage ?? `${Math.max(1, effectValue(effect) || 1)}d6`,
-    damageType: damageType || 'untyped',
-    flatDc: Number(effect.dc ?? modifiers.dc ?? 15) || 15,
-  };
-}
-
 function tickPersistentDamage(channelId, query) {
   const encounter = getEncounter(channelId);
   if (!encounter) return [];
@@ -718,45 +599,6 @@ function tickPersistentDamage(channelId, query) {
   }
   touchEncounter(encounter);
   return results;
-}
-
-function processActionEconomy(combatant) {
-  if (!combatant?.effects?.length) return null;
-  const slowed = combatant.effects.find(e => effectKey(e) === 'slowed');
-  const quickened = combatant.effects.find(e => effectKey(e) === 'quickened');
-  const stunned = combatant.effects.find(e => effectKey(e) === 'stunned');
-
-  const actionNotes = [];
-  let netActions = 3;
-  const slowedValue = effectValue(slowed);
-  const stunnedValue = effectValue(stunned);
-
-  if (slowedValue) {
-    netActions -= slowedValue;
-    actionNotes.push(`Slowed ${slowedValue}`);
-  }
-  if (stunnedValue) {
-    const lost = Math.min(stunnedValue, Math.max(0, netActions));
-    netActions -= lost;
-    const stunnedRemaining = Math.max(0, stunnedValue - lost);
-    if (stunnedRemaining === 0) {
-      combatant.effects = combatant.effects.filter(e => e !== stunned);
-      actionNotes.push(`Stunned ${stunnedValue} (lost ${lost} actions; Stunned cleared)`);
-    } else {
-      stunned.value = stunnedRemaining;
-      actionNotes.push(`Stunned ${stunnedValue} -> ${stunnedRemaining} (lost ${lost} actions)`);
-    }
-  }
-  if (quickened) {
-    netActions += 1;
-    actionNotes.push('Quickened (+1 action)');
-  }
-  if (!actionNotes.length) return null;
-  return {
-    netActions: Math.max(0, netActions),
-    notes: actionNotes,
-    text: `${combatant.name} has ${Math.max(0, netActions)} action${Math.max(0, netActions) === 1 ? '' : 's'} this turn: ${actionNotes.join(', ')}`,
-  };
 }
 
 function processTurnTransition(channelId, direction = 1) {
