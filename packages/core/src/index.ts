@@ -13,13 +13,13 @@ export const CORE_PLACEHOLDER = true as const;
 
 // PF2e class proficiency progression (the first real slice of the derived-stat
 // engine to live in core). Consumed by apps/web's character builder.
-export * from './proficiency';
+export * from './proficiency.js';
 
 // Scalar stat primitives: ability modifiers, the proficiency-bonus formula
 // (incl. Proficiency Without Level), and rank encoding conversions. Consumed
 // by both of apps/web's engines (builder + sheet).
-export * from './stats';
+export * from './stats.js';
 
 // Animal companion catalog + derived-stat engine. Consumed by apps/web's
 // companion builder.
-export * from './companion';
+export * from './companion.js';

@@ -1,0 +1,15 @@
+{
+  // Emit config. `tsconfig.json` is the typecheck/editor config (noEmit) and
+  // covers tests too; this one produces the published `dist/` and excludes them.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

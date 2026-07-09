@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CORE_PLACEHOLDER } from './index';
+import { CORE_PLACEHOLDER } from './index.js';
 
 // Placeholder test proving the Vitest harness runs. Replace with real
 // derived-stat engine tests (written from worked examples) as core is built.

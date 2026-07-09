@@ -1,6 +1,6 @@
 // Worked-example locks for the scalar stat primitives.
 import { describe, expect, it } from 'vitest';
-import { abilityModifier, proficiencyBonus, rawBonusToRank, rankLabel } from './stats';
+import { abilityModifier, proficiencyBonus, rawBonusToRank, rankLabel } from './stats.js';
 
 describe('abilityModifier', () => {
   it('follows floor((score - 10) / 2)', () => {

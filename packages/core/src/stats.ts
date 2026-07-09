@@ -12,7 +12,7 @@
 //   • Pathbuilder JSON stores the pre-doubled raw bonus 0/2/4/6/8. Convert
 //     with `rawBonusToRank` before calling into core.
 
-import type { ProficiencyRank } from './proficiency';
+import type { ProficiencyRank } from './proficiency.js';
 
 /**
  * Ability modifier from an ability score: floor((score − 10) / 2).

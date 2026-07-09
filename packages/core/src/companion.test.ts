@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findCompanionType, scaleCompanion } from './companion';
+import { findCompanionType, scaleCompanion } from './companion.js';
 
 const wolf = findCompanionType('wolf')!;
 
@@ -69,7 +69,7 @@ import {
   EIDOLON_TYPES,
   familiarBaseStats,
   findFamiliarAbility,
-} from './companion';
+} from './companion.js';
 
 describe('companion kinds + familiars + eidolons', () => {
   it('exposes all five companion kinds', () => {
@@ -105,7 +105,7 @@ describe('companion kinds + familiars + eidolons', () => {
   });
 });
 
-import { findEidolonType, scaleEidolon } from './companion';
+import { findEidolonType, scaleEidolon } from './companion.js';
 
 describe('scaleEidolon — Dragon (Marauding build)', () => {
   const dragon = findEidolonType('dragon')!;

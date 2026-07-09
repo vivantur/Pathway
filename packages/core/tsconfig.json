@@ -1,8 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    // NodeNext (not "Bundler") on purpose. core is consumed by BOTH a bundler
+    // (apps/web, via Vite) and by Node directly (apps/bot, via require()). Node's
+    // ESM loader demands file extensions on relative imports, and "Bundler" would
+    // happily let an extensionless `from './stats'` compile — then crash at
+    // runtime inside the bot. NodeNext makes tsc reject it at build time instead.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "strict": true,
     "declaration": true,

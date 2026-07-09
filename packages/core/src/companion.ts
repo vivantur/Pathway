@@ -28,7 +28,7 @@
 // the website (these correct values) and Discord. The stored sync DATA
 // (base type, form, overrides) is identical either way.
 
-import { proficiencyRankAtLevel, type ProficiencyRank } from "./proficiency";
+import { proficiencyRankAtLevel, type ProficiencyRank } from "./proficiency.js";
 
 export type CompanionForm = 'young' | 'mature' | 'nimble' | 'savage';
 export const COMPANION_FORMS: readonly CompanionForm[] = ['young', 'mature', 'nimble', 'savage'];

@@ -16,6 +16,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22.12"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.78.0",
     "discord.js": "^14.25.1",

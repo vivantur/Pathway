@@ -17,6 +17,12 @@ apps/bot/gamedata/*.backup
 characters.json
 saves/*.json
 
+# Build output. packages/core/dist is GENERATED from packages/core/src by
+# `npm run build` (wired to `prepare`, so any install produces it). Never commit
+# it: a stale committed dist would let the bot compute with old rules while the
+# web app reads fresh source — exactly the drift packages/core exists to prevent.
+packages/core/dist/
+
 # The usual suspects
 node_modules/
 .env

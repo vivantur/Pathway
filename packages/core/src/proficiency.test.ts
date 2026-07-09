@@ -3,7 +3,7 @@ import {
   PROFICIENCY_PROGRESSION,
   proficiencyRankAtLevel,
   type ProficiencyTrack,
-} from './proficiency';
+} from './proficiency.js';
 
 describe('proficiencyRankAtLevel', () => {
   it('returns the base rank before any increase', () => {
@@ -93,7 +93,7 @@ describe('proficiencyRankAtLevel', () => {
   });
 });
 
-import { attackRankAtLevel } from './proficiency';
+import { attackRankAtLevel } from './proficiency.js';
 
 describe('attackRankAtLevel — weapon proficiency progression', () => {
   it('barbarian: Brutality (5) expert, Weapon Fury (13) master', () => {
