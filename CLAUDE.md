@@ -54,11 +54,20 @@ apps/
   should become a thin adapter over core, not a second engine.
 - ⬜ **Migrate bot** — `apps/bot/src/rules/pf2eMath.js` + `lib/format.js` remain a
   third implementation of the proficiency/ability math.
-  **Blocked on packaging:** `packages/core` is `"type": "module"` with
-  `"main": "src/index.ts"` — raw, untranspiled, ESM-only TypeScript. The bot is
-  CommonJS with no build step, so it cannot `require('@pathway/core')` today.
-  Core needs a build step emitting both ESM and CJS (or the bot must move to ESM)
-  before any of this can land. Decide that before moving more logic into core.
+  **Blocked on packaging:** `packages/core` sets `"main": "src/index.ts"` — raw,
+  untranspiled TypeScript. Node cannot load that, so the CommonJS bot cannot
+  `require('@pathway/core')` today. Core needs a build step emitting `.js`.
+  Note that ESM is *not* the obstacle: Node ≥22.12 can `require()` an ESM module
+  synchronously (verified on 22.23.1), and core has no top-level await. So core may
+  stay ESM-only — it just has to ship JavaScript. Decide this before moving more
+  logic into core.
+- ⚠️ **The bot's runtime Node version is unpinned.** No `engines` field, no
+  `.node-version`, no `nixpacks.toml` — Railway picks a default. But
+  `@supabase/supabase-js` requires `node >= 22`, and `require(esm)` needs ≥22.12.
+  Pin it before relying on either.
+
+`packages/core` declares a `zod` dependency that nothing imports yet — the content
+schema is still unwritten.
 
 Also note: six modules under `apps/bot/src/rules/` import `lib/storage` or
 `lib/supabase` (`combatV2/state.js`, `calendar.js`, `weather.js`,
