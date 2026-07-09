@@ -98,6 +98,13 @@ function findCombatant(encounter, query) {
   return partial.length === 1 ? partial[0] : null;
 }
 
+/** findCombatant, but throws the caller-facing error when there's no match. */
+function requireCombatant(encounter, query) {
+  const combatant = findCombatant(encounter, query);
+  if (!combatant) throw new Error(`No combatant matching "${query}".`);
+  return combatant;
+}
+
 function currentCombatant(encounter) {
   return encounter?.combatants?.[encounter.turnIndex] ?? null;
 }
@@ -130,7 +137,86 @@ function sortCombatants(encounter) {
   return encounter;
 }
 
+// ── Combatant lifecycle ──────────────────────────────────────────────────────
+//
+// Each of these mutates `encounter` and returns a result. None of them persist:
+// the adapter writes once per public call. (state.js used to persist inside
+// these, and again in sortCombatants, so a single add cost two writes.)
+
+function addCombatant(encounter, input) {
+  const combatant = makeCombatant(input);
+  if (encounter.combatants.some(c => c.name.toLowerCase() === combatant.name.toLowerCase())) {
+    throw new Error(`A combatant named "${combatant.name}" already exists.`);
+  }
+  encounter.combatants.push(combatant);
+  encounter.log.push({ at: nowIso(), kind: 'add', name: combatant.name });
+  sortCombatants(encounter);
+  return { encounter, combatant };
+}
+
+function removeCombatant(encounter, query) {
+  const combatant = requireCombatant(encounter, query);
+  const index = encounter.combatants.findIndex(c => c.id === combatant.id);
+  encounter.combatants.splice(index, 1);
+  // Keep the turn cursor pointing at the same combatant it was on.
+  if (index < encounter.turnIndex) encounter.turnIndex -= 1;
+  if (encounter.turnIndex >= encounter.combatants.length) encounter.turnIndex = 0;
+  encounter.log.push({ at: nowIso(), kind: 'remove', name: combatant.name });
+  return { encounter, combatant };
+}
+
+/** Temporary HP does not stack — the larger pool wins (PF2e Player Core). */
+function setTempHp(encounter, query, amount) {
+  const combatant = requireCombatant(encounter, query);
+  const before = combatant.tempHp ?? 0;
+  combatant.tempHp = Math.max(before, amount);
+  encounter.log.push({ at: nowIso(), kind: 'tempHp', name: combatant.name, before, after: combatant.tempHp });
+  return { encounter, combatant, before };
+}
+
+const MODIFIABLE_FIELDS = [
+  'name', 'initiative', 'hp', 'maxHp', 'tempHp', 'ac', 'hidden', 'groupId',
+  'resistances', 'weaknesses', 'immunities', 'saves', 'skills', 'delayed', 'notes',
+];
+
+function modifyCombatant(encounter, query, patch) {
+  const combatant = requireCombatant(encounter, query);
+  for (const key of MODIFIABLE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) combatant[key] = patch[key];
+  }
+  sortCombatants(encounter);
+  return { encounter, combatant };
+}
+
 // ── Effects ──────────────────────────────────────────────────────────────────
+
+/** Add an effect, replacing any existing one with the same id or slugged name. */
+function addEffect(encounter, query, effect) {
+  const combatant = requireCombatant(encounter, query);
+  const key = slug(effect.name);
+  const clean = {
+    id: effect.id ?? key,
+    name: effect.name,
+    value: effect.value ?? null,
+    duration: effect.duration ?? null,
+    modifiers: { ...(effect.modifiers ?? {}) },
+    hidden: effect.hidden ?? false,
+    source: effect.source ?? null,
+  };
+  const existing = combatant.effects.findIndex(e => e.id === clean.id || slug(e.name) === key);
+  if (existing >= 0) combatant.effects[existing] = clean;
+  else combatant.effects.push(clean);
+  return { encounter, combatant, effect: clean, replaced: existing >= 0 };
+}
+
+function removeEffect(encounter, query, effectName) {
+  const combatant = requireCombatant(encounter, query);
+  const key = slug(effectName);
+  const index = combatant.effects.findIndex(e => e.id === key || slug(e.name) === key);
+  if (index < 0) throw new Error(`No effect named "${effectName}" on ${combatant.name}.`);
+  const [effect] = combatant.effects.splice(index, 1);
+  return { encounter, combatant, effect };
+}
 
 function effectKey(effect) {
   return slug(effect?.id ?? effect?.presetKey ?? effect?.name);
@@ -228,9 +314,16 @@ module.exports = {
   isCombatV2Snapshot,
   makeCombatant,
   findCombatant,
+  requireCombatant,
   currentCombatant,
   resetTurnState,
   sortCombatants,
+  addCombatant,
+  removeCombatant,
+  setTempHp,
+  modifyCombatant,
+  addEffect,
+  removeEffect,
   effectKey,
   effectValue,
   tickEffectDurations,

@@ -10,16 +10,15 @@ const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require
 const { rollDamage, applyDefenses } = require('./rolls');
 const model = require('./model');
 
+// Only what this file still calls directly. The rest of the model is re-exported
+// verbatim at the bottom so the 13 consumers keep their existing import surface.
 const {
   slug,
   nowIso,
   isCombatV2Snapshot,
-  makeCombatant,
   findCombatant,
   currentCombatant,
   resetTurnState,
-  effectKey,
-  effectValue,
   tickEffectDurations,
   getPersistentDamageEffects,
   persistentDamageConfig,
@@ -71,31 +70,30 @@ function sortCombatants(encounter) {
   return touchEncounter(encounter);
 }
 
-function addCombatant(channelId, input) {
+/** Resolve a channel to its live encounter, or throw the caller-facing error. */
+function requireEncounter(channelId) {
   const encounter = getEncounter(channelId);
   if (!encounter) throw new Error('No active encounter.');
-  const combatant = makeCombatant(input);
-  if (encounter.combatants.some(c => c.name.toLowerCase() === combatant.name.toLowerCase())) {
-    throw new Error(`A combatant named "${combatant.name}" already exists.`);
-  }
-  encounter.combatants.push(combatant);
-  encounter.log.push({ at: nowIso(), kind: 'add', name: combatant.name });
-  return { encounter: sortCombatants(encounter), combatant };
+  return encounter;
+}
+
+/**
+ * The adapter shape: resolve the encounter, let the pure model do the rules
+ * work, then persist exactly once. If `fn` throws, nothing is written.
+ */
+function mutate(channelId, fn) {
+  const encounter = requireEncounter(channelId);
+  const result = fn(encounter);
+  touchEncounter(encounter);
+  return result;
+}
+
+function addCombatant(channelId, input) {
+  return mutate(channelId, enc => model.addCombatant(enc, input));
 }
 
 function removeCombatant(channelId, query) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const index = encounter.combatants.findIndex(c => c.id === combatant.id);
-  encounter.combatants.splice(index, 1);
-  if (index < encounter.turnIndex) encounter.turnIndex -= 1;
-  if (encounter.turnIndex >= encounter.combatants.length) encounter.turnIndex = 0;
-  encounter.updatedAt = nowIso();
-  encounter.log.push({ at: nowIso(), kind: 'remove', name: combatant.name });
-  touchEncounter(encounter);
-  return { encounter, combatant };
+  return mutate(channelId, enc => model.removeCombatant(enc, query));
 }
 
 function rollRecoveryCheck(channelId, query) {
@@ -490,62 +488,19 @@ function applyHp(channelId, query, amount, { mode = 'delta', isCrit = false } = 
 }
 
 function setTempHp(channelId, query, amount) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const before = combatant.tempHp ?? 0;
-  combatant.tempHp = Math.max(before, amount);
-  encounter.log.push({ at: nowIso(), kind: 'tempHp', name: combatant.name, before, after: combatant.tempHp });
-  touchEncounter(encounter);
-  return { encounter, combatant, before };
+  return mutate(channelId, enc => model.setTempHp(enc, query, amount));
 }
 
 function addEffect(channelId, query, effect) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const key = slug(effect.name);
-  const clean = {
-    id: effect.id ?? key,
-    name: effect.name,
-    value: effect.value ?? null,
-    duration: effect.duration ?? null,
-    modifiers: { ...(effect.modifiers ?? {}) },
-    hidden: effect.hidden ?? false,
-    source: effect.source ?? null,
-  };
-  const existing = combatant.effects.findIndex(e => e.id === clean.id || slug(e.name) === key);
-  if (existing >= 0) combatant.effects[existing] = clean;
-  else combatant.effects.push(clean);
-  touchEncounter(encounter);
-  return { encounter, combatant, effect: clean, replaced: existing >= 0 };
+  return mutate(channelId, enc => model.addEffect(enc, query, effect));
 }
 
 function removeEffect(channelId, query, effectName) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const key = slug(effectName);
-  const index = combatant.effects.findIndex(e => e.id === key || slug(e.name) === key);
-  if (index < 0) throw new Error(`No effect named "${effectName}" on ${combatant.name}.`);
-  const [effect] = combatant.effects.splice(index, 1);
-  touchEncounter(encounter);
-  return { encounter, combatant, effect };
+  return mutate(channelId, enc => model.removeEffect(enc, query, effectName));
 }
 
 function modifyCombatant(channelId, query, patch) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const allowed = ['name', 'initiative', 'hp', 'maxHp', 'tempHp', 'ac', 'hidden', 'groupId', 'resistances', 'weaknesses', 'immunities', 'saves', 'skills', 'delayed', 'notes'];
-  for (const key of allowed) {
-    if (Object.prototype.hasOwnProperty.call(patch, key)) combatant[key] = patch[key];
-  }
-  return { encounter: sortCombatants(encounter), combatant };
+  return mutate(channelId, enc => model.modifyCombatant(enc, query, patch));
 }
 
 function tickPersistentDamage(channelId, query) {
