@@ -52,22 +52,22 @@ apps/
   `features/characters/pathbuilder.ts` still each compute max HP, AC, saves,
   Perception, and class DC independently, over different input models. The sheet
   should become a thin adapter over core, not a second engine.
+- ✅ **Core packaging** (2026-07-09) — core builds to `dist/` and both consumers are
+  proven against it: the web app typechecks/builds against `dist`, and a CommonJS
+  `require('@pathway/core')` returns working rules math. ESM was never the obstacle
+  (Node ≥22.12 `require(esm)` works); shipping raw `.ts` was.
 - ⬜ **Migrate bot** — `apps/bot/src/rules/pf2eMath.js` + `lib/format.js` remain a
-  third implementation of the proficiency/ability math.
-  **Blocked on packaging:** `packages/core` sets `"main": "src/index.ts"` — raw,
-  untranspiled TypeScript. Node cannot load that, so the CommonJS bot cannot
-  `require('@pathway/core')` today. Core needs a build step emitting `.js`.
-  Note that ESM is *not* the obstacle: Node ≥22.12 can `require()` an ESM module
-  synchronously (verified on 22.23.1), and core has no top-level await. So core may
-  stay ESM-only — it just has to ship JavaScript. Decide this before moving more
-  logic into core.
-- ⚠️ **The bot's runtime Node version is unpinned.** No `engines` field, no
-  `.node-version`, no `nixpacks.toml` — Railway picks a default. But
-  `@supabase/supabase-js` requires `node >= 22`, and `require(esm)` needs ≥22.12.
-  Pin it before relying on either.
+  third implementation of the proficiency/ability math. The packaging is ready; the
+  remaining blocker is a **deploy** one, symmetric to the web app's:
+  `apps/bot` does not declare `@pathway/core` as a dependency, and it currently
+  resolves only by walking up to the repo-root `node_modules`. Railway builds the
+  bot with root directory `apps/bot`. Before adding the dependency, confirm Railway
+  checks out the whole repo and installs from the root — otherwise `@pathway/core: "*"`
+  will 404 against the registry exactly as it did on Vercel (see the Deployment
+  section). Verify this on a branch deploy first, not on `main`.
 
-`packages/core` declares a `zod` dependency that nothing imports yet — the content
-schema is still unwritten.
+`packages/core` no longer declares `zod` — the content schema is still unwritten, so
+add the dependency back when it lands.
 
 Also note: six modules under `apps/bot/src/rules/` import `lib/storage` or
 `lib/supabase` (`combatV2/state.js`, `calendar.js`, `weather.js`,
@@ -83,12 +83,34 @@ data loss) are fine — "frozen" means "don't restructure," not "don't fix."
 
 - TypeScript, `strict: true`, in ALL new code (`packages/*`, `apps/web`). The bot is
   legacy CommonJS JS; migrate it opportunistically, not wholesale.
-- **Node 22 LTS or newer.** Node 20 hit end-of-life 2026-04-30 and
-  `@supabase/supabase-js` requires `node >= 22`. CI runs on 22.
+- **Node 22.12+.** Node 20 hit end-of-life 2026-04-30; `@supabase/supabase-js`
+  requires `node >= 22`; and `require(esm)` (which lets the CommonJS bot consume
+  core) needs 22.12. Pinned via `engines` and `.node-version`. CI runs on 22.
+- **npm 11+ — this is a real requirement, not a preference.** npm 10's cold
+  dependency resolution silently drops transitive packages in this workspace: a
+  fresh `npm install` on npm 10.9.8 produced a lockfile with 517 packages instead
+  of 588, omitting `obug` (a hard dependency of vitest 4), and every test suite
+  then failed with `ERR_MODULE_NOT_FOUND`. `npm ci` from a good lockfile is safe on
+  npm 10 — which is why the deploys and CI are fine — but **anything that
+  re-resolves dependencies must run on npm 11+.** Never delete `package-lock.json`
+  to "fix" an install.
 - **npm workspaces.** One root lockfile; `npm install` **at the repo root** wires
   everything — installing inside a single app will not link `@pathway/core`.
   (The kickstart kit floated pnpm; we chose npm since both apps already used it and
   the deploy build commands keep working unchanged.)
+- **`packages/core` has a build step.** `src/*.ts` → `dist/*.js` + `.d.ts` via
+  `tsc -p tsconfig.build.json`, wired to `prepare` so any install produces it.
+  `dist/` is gitignored. Both clients consume `dist` through the `exports` map —
+  there is deliberately no `development` condition pointing at source, because that
+  would let the web app and the bot read *different* representations of the same
+  rule and drift. Use `npm run watch:core` while editing core.
+- Core's tsconfig uses `moduleResolution: "NodeNext"` on purpose: it forces explicit
+  `.js` extensions on relative imports. "Bundler" would let an extensionless import
+  compile and then crash inside the bot at runtime.
+- **`overrides.undici`** in the root package.json patches a high-severity advisory
+  reached through discord.js (which pins 6.24.1). `npm audit fix --force` proposes
+  "fixing" that chain by installing **discord.js@13 — a major downgrade** that would
+  break the v14 bot. Do not run it. Drop the override once discord.js bumps undici.
 - Vitest for tests. Content schemas in Zod; TS types via `z.infer`.
 - Supabase (Postgres + Auth + JSONB content store).
 

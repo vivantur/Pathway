@@ -92,8 +92,23 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install workspaces
+      # `npm ci` runs core's `prepare` script, which builds dist/. The web build
+      # and the bot both consume that output, so a failure here is a deploy
+      # failure — keep it as its own step rather than an implicit side effect.
+      - name: Install workspaces (builds core via prepare)
         run: npm ci
+
+      - name: Verify core built
+        run: node -e "require('node:fs').accessSync('packages/core/dist/index.js')"
+
+      - name: Typecheck core
+        run: npm --workspace packages/core run typecheck
 
       - name: Test core
         run: npm --workspace packages/core run test
+
+      # The bot is CommonJS and consumes core through require(). Node >= 22.12
+      # can require() an ESM module; this proves the packaging still allows it,
+      # so the bot migration never gets blocked by a silent packaging change.
+      - name: Verify CommonJS can require core
+        run: node -e "const c=require('@pathway/core'); if(c.abilityModifier(18)!==4) throw new Error('core require() broken'); console.log('require(@pathway/core) ok');"

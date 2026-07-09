@@ -20,8 +20,17 @@ and it lives in `packages/core`. Never compute a rules value in `apps/web` or
 
 ## Requirements
 
-**Node.js 22 LTS or newer.** Node 20 reached end-of-life on 2026-04-30, and
-`@supabase/supabase-js` declares `engines.node >= 22`. CI runs on 22.
+- **Node.js 22.12 or newer.** Node 20 reached end-of-life on 2026-04-30;
+  `@supabase/supabase-js` declares `engines.node >= 22`; and `require(esm)` — which
+  lets the CommonJS bot consume `@pathway/core` — needs 22.12. CI runs on 22.
+- **npm 11 or newer**, if you are going to add, remove, or update a dependency.
+  npm 10 resolves this workspace incorrectly from cold: it drops transitive packages
+  (we lost `obug`, a hard dependency of vitest, and 70 others), and every test suite
+  then dies with `ERR_MODULE_NOT_FOUND`. Installing from the committed lockfile
+  (`npm ci`) is safe on npm 10, so CI and the deploys are unaffected.
+
+  **Never delete `package-lock.json` to fix an install.** If a dependency looks
+  wrong, use `npm update <pkg>` on npm 11+.
 
 ## Setup
 
@@ -69,6 +78,22 @@ npm --workspace apps/bot run test             # bot rules tests
 npm --workspace apps/web run typecheck        # web type check
 npm --workspace apps/web run lint             # web lint
 ```
+
+### Working on `packages/core`
+
+Core compiles `src/*.ts` to `dist/` (JS + type declarations), and **both** the bot
+and the web app consume `dist` — never the TypeScript source. That is deliberate: one
+compiled artifact means the two clients cannot read different versions of the same
+rule. `dist/` is gitignored and rebuilt by `prepare` on every install.
+
+While editing core, run the watcher so consumers see your changes:
+
+```bash
+npm run watch:core     # tsc --watch
+npm run build:core     # one-shot rebuild
+```
+
+`npm run dev:web`, `npm run build:web`, and `npm run typecheck` rebuild core first.
 
 ## Deployment
 
