@@ -64,6 +64,18 @@ describe('resolveVariable', () => {
     expect(resolveVariable('nonsense', charEntry)).toBeUndefined();
     expect(resolveVariable('str', null)).toBeUndefined();
   });
+  it('ac reads the sheet total', () => {
+    const withAc = { ...charEntry, data: { ...charEntry.data, acTotal: { acTotal: 21 } } };
+    expect(resolveVariable('ac', withAc)).toBe(21);
+  });
+  // Regression: this used to fall back to a hardcoded 10. Ten is a real,
+  // plausible AC, so a sheet missing acTotal reported a wrong number as if it
+  // were the character's own. Undefined keeps {{ac}} unexpanded instead.
+  it('ac is undefined — never 10 — when the sheet has no acTotal', () => {
+    expect(resolveVariable('ac', charEntry)).toBeUndefined();
+    expect(resolveVariable('ac', { ...charEntry, data: { ...charEntry.data, acTotal: {} } }))
+      .toBeUndefined();
+  });
 });
 
 describe('expandVariables', () => {
@@ -76,6 +88,9 @@ describe('expandVariables', () => {
   });
   it('leaves unknown variables untouched so users can spot the typo', () => {
     expect(expandVariables('1d20+{{stir}}', charEntry)).toBe('1d20+{{stir}}');
+  });
+  it('leaves {{ac}} unexpanded when the sheet has no AC, rather than inventing one', () => {
+    expect(expandVariables('AC {{ac}}', charEntry)).toBe('AC {{ac}}');
   });
   it('passes through text with no variables', () => {
     expect(expandVariables('1d20+5', charEntry)).toBe('1d20+5');

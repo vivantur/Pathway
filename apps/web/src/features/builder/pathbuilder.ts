@@ -70,6 +70,16 @@ export interface PathbuilderBuild {
   formula: unknown[];
   pets: unknown[];
   familiars: unknown[];
+  /**
+   * Precomputed Armor Class. Consumers of this JSON (the character sheet, the
+   * bot) read `acTotal.acTotal` directly — they cannot derive AC themselves,
+   * since it needs the equipped armor, its Dex cap, and its potency rune.
+   * Shape mirrors `PathbuilderBuild['acTotal']` in features/characters/pathbuilder.ts.
+   */
+  acTotal?: {
+    acTotal?: number;
+    shieldBonus?: number;
+  };
   /** Pathway provenance tag the bot understands. */
   _pathwaySource: string;
 }
@@ -347,6 +357,18 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     formula: [],
     pets: [],
     familiars: [],
+    // AC is the one derived stat no consumer of this JSON can recompute from it:
+    // it needs the equipped armor, that armor's Dex cap, and its potency rune,
+    // none of which the readers resolve. The character sheet and the bot both
+    // just read `acTotal.acTotal`, so a build saved without it has no AC at all
+    // (the sheet renders blank, `{{ac}}` had to guess, combat gets null).
+    // Pathbuilder emits this field too, so writing it also makes our export
+    // more faithful. The value excludes the shield, matching how the sheet adds
+    // `shieldBonus` only while the shield is raised.
+    acTotal: {
+      acTotal: derived.ac,
+      shieldBonus: derived.shieldBonus,
+    },
     _pathwaySource: 'pathway-web',
   };
 

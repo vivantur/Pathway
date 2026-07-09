@@ -67,7 +67,12 @@ function resolveVariable(rawName, charEntry) {
     case 'name':       return charEntry.name || c.name || '';
     case 'level':      return lvl;
     case 'speed':      return c.stats?.speed ?? ((c.attributes?.speed ?? 25) + (c.attributes?.speedBonus ?? 0));
-    case 'ac':         return c.acTotal?.acTotal ?? 10;
+    // No `?? 10` fallback: 10 is a real, plausible AC, so a character whose
+    // sheet lacks acTotal used to render a wrong number as if it were true.
+    // Returning undefined leaves `{{ac}}` unexpanded, which is visibly broken
+    // rather than silently wrong. (Builds saved by the web builder now carry
+    // acTotal; this guards older rows and Pathbuilder imports that omit it.)
+    case 'ac':         return c.acTotal?.acTotal;
     case 'hp':         return charEntry.hp ?? c.attributes?.ancestryhp ?? 0;
     case 'maxhp':      return computeCharMaxHp(charEntry);
     case 'hero':       return charOverlay.getHeroPoints(charEntry);

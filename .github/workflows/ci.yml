@@ -76,6 +76,12 @@ jobs:
       - name: Lint web
         run: npm --workspace apps/web run lint
 
+      # Covers what the builder SERIALIZES. Values that consumers cannot recompute
+      # from the saved JSON (AC, notably) must be written into it, or in-house
+      # characters silently lose stats the moment they leave the builder.
+      - name: Test web
+        run: npm --workspace apps/web run test
+
       - name: Build web
         run: npm --workspace apps/web run build
 
