@@ -7,12 +7,24 @@
     "packages/*",
     "apps/*"
   ],
+  "engines": {
+    "node": ">=22.12",
+    "npm": ">=11"
+  },
+  "overrides": {
+    "undici": "^6.27.0"
+  },
   "scripts": {
     "start": "npm --workspace apps/bot run start",
     "deploy": "npm --workspace apps/bot run deploy",
     "deploy:guild": "npm --workspace apps/bot run deploy:guild",
+    "build:core": "npm --workspace packages/core run build",
+    "watch:core": "npm --workspace packages/core run build:watch",
+    "predev:web": "npm run build:core",
     "dev:web": "npm --workspace apps/web run dev",
+    "prebuild:web": "npm run build:core",
     "build:web": "npm --workspace apps/web run build",
+    "pretypecheck": "npm run build:core",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm --workspaces --if-present run typecheck"
   },
