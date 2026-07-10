@@ -69,11 +69,15 @@ apps/
 `packages/core` no longer declares `zod` — the content schema is still unwritten, so
 add the dependency back when it lands.
 
-Also note: six modules under `apps/bot/src/rules/` import `lib/storage` or
-`lib/supabase` (`combatV2/state.js`, `calendar.js`, `weather.js`,
-`eberronCalendar.js`, `eberronWeather.js`, `settings.js`), despite the bot's own
-CLAUDE.md declaring `rules/` pure. Combat v2's rules are welded to its persistence;
-that must be split before any of it can move into an I/O-free core.
+Combat v2's rules were welded to its persistence; that was split on 2026-07-09.
+`apps/bot/src/rules/combatV2/model.js` is now pure (requires only `./rolls`) and
+the encounter Map plus every Supabase write live in `apps/bot/src/state/combat.js`.
+Its 197-test suite drives the rules both directly and through the store.
+
+Still impure, despite the bot's own CLAUDE.md declaring `rules/` pure: `calendar.js`,
+`weather.js`, `settings.js`, `eberronCalendar.js`, and `eberronWeather.js` import
+`lib/storage`, and `rules/combatV2/render.js` imports `discord.js`. Apply the same
+split when each is touched — nothing can move into an I/O-free core before it.
 
 `apps/bot` is otherwise **frozen for architecture**: don't restructure it or add new
 rules logic to it. Carve-out: targeted hotfixes to live bugs (crashes, wrong rules,

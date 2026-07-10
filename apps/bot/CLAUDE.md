@@ -35,13 +35,24 @@ Pathwayv2/
       snippets.js            ← user + guild snippets (two caches)
       monster.js             ← art/edits/attacks (three tables via factory)
       companions.js          ← patches characters cache via Realtime
-      encounters.js
+      combat.js              ← THE combat v2 encounter store: the in-memory Map
+                               + every Supabase write. Delegates all rules to
+                               rules/combatV2/model.js.
+      encounters.js          ← encounter persistence helpers used by combat.js
       homebrew.js            ← + Realtime sub (existed pre-Phase-2)
       guild.js               ← calendar/weather/settings via mutateJson
     rules/                   ← pure PF2e game logic (no I/O, no Discord)
       pf2eMath.js            ← proficiency math (character-data-aware)
       lore.js                ← lore-skill string normalization
-      <plus legacy systems modules — combat, calendar, weather, etc.>
+      combatV2/model.js      ← THE combat rules. Pure: takes an `encounter`
+                               object, mutates it, returns a result. Requires
+                               only ./rolls. No Map, no Supabase.
+      combatV2/rolls.js      ← dice, degree of success, MAP, defenses
+      combatV2/render.js     ← Discord embeds (imports discord.js — a known
+                               layering wart; belongs under discord/)
+      <plus legacy systems modules — calendar, weather, etc. Five of these
+       (calendar, weather, settings, eberronCalendar, eberronWeather) still
+       import lib/storage, so `rules/` is not yet uniformly pure.>
     lib/                     ← framework-level infrastructure
       storage.js             ← paths, write queue, JSON cache, dispatcher, restore orchestrator, reference loader
       supabase.js            ← getSupabase() singleton
@@ -280,29 +291,51 @@ The rewrite from the legacy single-file bot to feature folders is complete and *
 **Index.js shrinkage**: 19,500 → ~3,000 lines.
 
 **Remaining work** (see `HANDOFF.md` and `docs/avrae-pathbuilder-roadmap.md` at the repo root):
-- ✅ Combat engine consolidation (2026-07-08): `rules/combatV2/` is the ONLY
-  combat engine. The legacy store (`commands/encounters.js`), automation layer
+- ✅ Combat engine consolidation (2026-07-08): combat v2 is the ONLY combat
+  engine. The legacy store (`commands/encounters.js`), automation layer
   (`rules/combatAutomation.js`), and legacy summary renderers are deleted;
   every combat command (`/init`, `/i`, `/m`, `/mattack`, `/cast`,
   `/companion`, `/weather apply`) reads and writes combat v2 state.
+- ✅ Combat rules/persistence split (2026-07-09): the 892-line
+  `rules/combatV2/state.js` held the encounter Map, every Supabase write, AND
+  all the PF2e combat rules. It is now `rules/combatV2/model.js` (pure rules,
+  requires only `./rolls`) plus `state/combat.js` (the Map + persistence). The
+  rules can now be tested — and eventually moved to `packages/core` — without a
+  database. `lib/storage.js` no longer re-exports the encounter helpers.
 - Fold remaining legacy top-level command scaffolds (`weather-cmd.js`, `calendar-cmd.js`, `downtime.js`) when touched
+- `rules/` is not yet uniformly pure: `calendar.js`, `weather.js`, `settings.js`,
+  `eberronCalendar.js`, and `eberronWeather.js` still import `lib/storage`, and
+  `rules/combatV2/render.js` imports `discord.js`. Same split as combat v2 when
+  each is touched.
 - Optional polish: port the old tracker's HP bars / detailed-vs-compact
   pagination into `rules/combatV2/render.js` (the v2 summary is plainer)
 
 ## Testing
 
 `npm test` (in this folder, or via `npm test` at the repo root) runs the Vitest
-suite in `test/` — **162 tests across 8 files**, enforced by CI. It covers the pure
+suite in `test/` — **197 tests across 9 files**, enforced by CI. It covers the pure
 rules layer: degree of success, MAP, basic saves (`test/dice.test.js`), proficiency
 math (`test/pf2eMath.test.js`), the /roll parser (`test/advancedRoll.test.js`),
 condition presets (`test/effects.test.js`), spell damage + heightening
-(`test/spellDamage.test.js`), the dying/wounded/recovery engine and the rest of the
-combat engine (`test/combatV2.test.js`), formatters/currency/bulk
-(`test/format.test.js`), and `{{variable}}` resolution (`test/variables.test.js`).
+(`test/spellDamage.test.js`), formatters/currency/bulk (`test/format.test.js`), and
+`{{variable}}` resolution (`test/variables.test.js`).
+
+Combat is covered from both ends:
+- `test/combatV2Model.test.js` drives `rules/combatV2/model.js` directly — plain
+  encounter objects, no channel id, no Supabase. It also asserts the model
+  requires nothing but `./rolls`, so it cannot silently regain an I/O import.
+- `test/combatV2.test.js` drives the same rules through `state/combat.js` the way
+  the bot does: channel ids, with persistence attached.
+
+`npm run lint` runs eslint with exactly one rule: `no-undef`. `node --check` only
+parses — it happily accepts a call to an identifier that was never defined, which
+is how two real bugs shipped here (a `getEncounter` fallback to the deleted legacy
+engine, and a `makeCombatant` that fell out of scope inside the Supabase restore
+path, where errors are swallowed). CI runs it. Keep it at one rule so it stays
+green and useful.
 
 *(The old `test/combatAutomation.test.js` locked the legacy engine and was deleted
-along with it in the 2026-07-08 combat consolidation; `test/combatV2.test.js` is its
-successor.)*
+along with it in the 2026-07-08 combat consolidation.)*
 
 Conventions: tests are ESM files that load the bot's CommonJS modules via
 `createRequire`; randomness is controlled by stubbing `Math.random` with a
