@@ -8,6 +8,10 @@ import {
   getDataset,
   type AbilityKey,
 } from '@/features/builder/data';
+import type {
+  Ability,
+  PathbuilderBuild as PathbuilderData,
+} from '@/features/characters/pathbuilder';
 import {
   casterConfig,
   focusConfig,
@@ -23,66 +27,35 @@ import type { BuilderState, InnateSpellEntry, SpellTradition } from '@/features/
 const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
 
 /**
- * Pathbuilder v2 export shape. The Pathway bot reads
- * `pathbuilder_data.build ?? pathbuilder_data`, so we emit `{ success, build }`
- * to match a real Pathbuilder export and round-trip through the bot.
+ * Pathbuilder v2 export shape — what `toPathbuilder` EMITS. The Pathway bot
+ * reads `pathbuilder_data.build ?? pathbuilder_data`, so we emit `{ success,
+ * build }` to match a real Pathbuilder export and round-trip through the bot.
  *
  * Proficiencies are the Pathbuilder convention: 0/2/4/6/8 (2×rank, WITHOUT the
  * level term — the bot re-derives the level part). Abilities are final scores.
+ *
+ * This is the SAME format the character sheet reads, so it is derived from that
+ * reader type (`PathbuilderData` in features/characters/pathbuilder.ts) rather
+ * than duplicated. Deriving it means a shared field's type has one definition:
+ * the two can no longer drift the way `acTotal` once did (only the sheet's copy
+ * declared it — 449ad40). Two fields are shaped differently on the writer side
+ * and overridden; the rest, `acTotal` included, come straight from the reader.
  */
-export interface PathbuilderBuild {
-  name: string;
-  class: string;
-  dualClass: string | null;
-  level: number;
-  ancestry: string;
-  heritage: string;
-  background: string;
-  alignment: string;
-  gender: string;
-  age: string;
-  deity: string;
-  size: number;
-  sizeName: string;
-  keyability: AbilityKey | '';
-  languages: string[];
-  attributes: {
-    ancestryhp: number;
-    classhp: number;
-    bonushp: number;
-    bonushpPerLevel: number;
-    speed: number;
-    speedBonus: number;
-  };
-  abilities: Record<AbilityKey, number> & { breakdown?: unknown };
-  proficiencies: Record<string, number>;
-  feats: [string, string | null, string, number][];
-  specials: string[];
-  lores: [string, number][];
-  equipment: [string, number][];
-  specificProficiencies: { trained: string[]; expert: string[]; master: string[]; legendary: string[] };
-  weapons: unknown[];
-  money: { cp: number; sp: number; gp: number; pp: number };
-  armor: unknown[];
-  spellCasters: unknown[];
-  focusPoints: number;
-  focus: Record<string, unknown>;
-  formula: unknown[];
-  pets: unknown[];
-  familiars: unknown[];
-  /**
-   * Precomputed Armor Class. Consumers of this JSON (the character sheet, the
-   * bot) read `acTotal.acTotal` directly — they cannot derive AC themselves,
-   * since it needs the equipped armor, its Dex cap, and its potency rune.
-   * Shape mirrors `PathbuilderBuild['acTotal']` in features/characters/pathbuilder.ts.
-   */
-  acTotal?: {
-    acTotal?: number;
-    shieldBonus?: number;
-  };
+export type PathbuilderBuild = Omit<
+  PathbuilderData,
+  'keyability' | 'spellCasters' | 'specificProficiencies'
+> & {
+  /** '' on a class-less draft; external Pathbuilder JSON always has a real key ability. */
+  keyability?: Ability | '';
+  /** Built ad hoc as plain objects; the reader types these as the richer Spellcaster it renders. */
+  spellCasters?: unknown[];
+  specificProficiencies?: { trained: string[]; expert: string[]; master: string[]; legendary: string[] };
+  /** Pathbuilder-format fields the reader type doesn't model yet. */
+  sizeName?: string;
+  specials?: string[];
   /** Pathway provenance tag the bot understands. */
-  _pathwaySource: string;
-}
+  _pathwaySource?: string;
+};
 
 export interface PathbuilderExport {
   success: true;
@@ -127,7 +100,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   if (heritage) specials.push(heritage.name);
   if (subclass) specials.push(subclass.name);
 
-  const feats: PathbuilderBuild['feats'] = [];
+  const feats: [string, string | null, string, number][] = [];
   const push = (id: string | undefined, type: string, level: number) => {
     if (!id) return;
     feats.push([featName(id), null, type, level]);
@@ -147,7 +120,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     push(gains.archetypeFeatId, 'Archetype', lvl);
   }
 
-  const lores: PathbuilderBuild['lores'] = background?.loreSkill
+  const lores: [string, number][] = background?.loreSkill
     ? [[background.loreSkill, p(1)]]
     : [];
 
