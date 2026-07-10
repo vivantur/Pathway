@@ -426,7 +426,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
   const perceptionRank = progressionRank(state, 'perception', ip?.perception ?? 0);
-  const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
+  const perception = proficientModifier({
+    abilityMod: mods.wis,
+    rank: perceptionRank,
+    level,
+    withoutLevel: pwl,
+    itemBonus: abp ? abpPerception(level) : 0,
+  });
 
   const fortRank = progressionRank(state, 'fortitude', ip?.fortitude ?? 0);
   const refRank = progressionRank(state, 'reflex', ip?.reflex ?? 0);
