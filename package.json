@@ -8,8 +8,7 @@
     "apps/*"
   ],
   "engines": {
-    "node": ">=22.12",
-    "npm": ">=11"
+    "node": ">=22.12"
   },
   "overrides": {
     "undici": "^6.27.0"

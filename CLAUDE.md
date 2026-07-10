@@ -90,14 +90,20 @@ data loss) are fine — "frozen" means "don't restructure," not "don't fix."
 - **Node 22.12+.** Node 20 hit end-of-life 2026-04-30; `@supabase/supabase-js`
   requires `node >= 22`; and `require(esm)` (which lets the CommonJS bot consume
   core) needs 22.12. Pinned via `engines` and `.node-version`. CI runs on 22.
-- **npm 11+ — this is a real requirement, not a preference.** npm 10's cold
-  dependency resolution silently drops transitive packages in this workspace: a
-  fresh `npm install` on npm 10.9.8 produced a lockfile with 517 packages instead
-  of 588, omitting `obug` (a hard dependency of vitest 4), and every test suite
-  then failed with `ERR_MODULE_NOT_FOUND`. `npm ci` from a good lockfile is safe on
-  npm 10 — which is why the deploys and CI are fine — but **anything that
-  re-resolves dependencies must run on npm 11+.** Never delete `package-lock.json`
-  to "fix" an install.
+- **Use npm 11+ to change dependencies — but the lockfile must stay npm-10
+  installable.** These are two operations with two different floors, which is why
+  `engines` pins only Node, not npm (a blanket `engines.npm >= 11` would just warn
+  on every CI run, since GitHub Actions' Node 22 ships npm 10.9).
+  - *Re-resolving* (`npm install` / `npm update`) needs **npm 11+**. npm 10's cold
+    resolution silently drops transitive packages here: a fresh `npm install` on
+    npm 10.9.8 produced 517 packages instead of 588, omitting `obug` (a hard
+    dependency of vitest 4), and every suite then failed with
+    `ERR_MODULE_NOT_FOUND`. **Never delete `package-lock.json` to "fix" an install.**
+  - *Installing from the lockfile* (`npm ci`) must work on **npm 10**, because CI
+    and Vercel run it there. An npm-11-generated lockfile can be un-installable by
+    npm 10 (it omits `esbuild` platform variants npm 10 demands). So after any
+    dependency change, regenerate the lockfile and verify **`npx npm@10 ci`
+    succeeds** before committing. CI's `npm ci` is the automated guard.
 - **npm workspaces.** One root lockfile; `npm install` **at the repo root** wires
   everything — installing inside a single app will not link `@pathway/core`.
   (The kickstart kit floated pnpm; we chose npm since both apps already used it and
