@@ -370,7 +370,6 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const klass = state.classId ? findClass(state.classId) : undefined;
   const ip = klass?.initialProficiencies;
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const pb = (rank: ProficiencyRank) => proficiencyBonus(rank, level, pwl);
   const abp = opt(state, OPT.automaticBonusProgression);
 
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
@@ -510,7 +509,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     return {
       id: w.id,
       name: w.name,
-      attack: pb(catRank) + attackMod + potency + (abp ? abpAttack(level) : 0),
+      attack: proficientModifier({
+        abilityMod: attackMod,
+        rank: catRank,
+        level,
+        withoutLevel: pwl,
+        itemBonus: potency + (abp ? abpAttack(level) : 0),
+      }),
       dice: abp ? abpDamageDice(level) : 1 + striking,
       damageDie: w.damageDie,
       damageMod,
