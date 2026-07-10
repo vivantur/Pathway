@@ -42,6 +42,15 @@ export function proficientModifier(i: ProficientModifierInput): number {
 }
 
 /**
+ * A DC built on a proficiency-based statistic: 10 + the proficient modifier.
+ * Class DC and spell DC are the canonical cases; both are 10 + key-ability mod +
+ * proficiency bonus.
+ */
+export function proficientDC(i: ProficientModifierInput): number {
+  return 10 + proficientModifier(i);
+}
+
+/**
  * Maximum Hit Points: ancestry HP (granted once) + (class HP + Constitution
  * modifier) at every level. `bonusHp` is a flat one-time addition; the negative
  * Con case is intentionally not floored here — a consumer that wants a minimum

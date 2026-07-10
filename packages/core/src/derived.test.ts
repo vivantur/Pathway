@@ -1,6 +1,6 @@
 // Worked-example locks for the derived-stat compositions.
 import { describe, expect, it } from 'vitest';
-import { maxHitPoints, proficientModifier } from './derived.js';
+import { maxHitPoints, proficientDC, proficientModifier } from './derived.js';
 
 describe('proficientModifier', () => {
   it('is ability mod + proficiency bonus', () => {
@@ -25,6 +25,20 @@ describe('proficientModifier', () => {
   it('honors Proficiency Without Level (drops the level term)', () => {
     // Expert (rank 2) at level 5 with Dex +4, no level: 4 + 4 = 8.
     expect(proficientModifier({ abilityMod: 4, rank: 2, level: 5, withoutLevel: true })).toBe(8);
+  });
+});
+
+describe('proficientDC', () => {
+  it('is 10 + ability mod + proficiency bonus', () => {
+    // Level-1 fighter, class DC trained (rank 1), key STR +4: 10 + 4 + (1+2) = 17.
+    expect(proficientDC({ abilityMod: 4, rank: 1, level: 1 })).toBe(17);
+    // Level-12, class DC master (rank 3), key +5: 10 + 5 + (12+6) = 33.
+    expect(proficientDC({ abilityMod: 5, rank: 3, level: 12 })).toBe(33);
+  });
+
+  it('drops the proficiency term when untrained', () => {
+    // 10 + 3 + 0 = 13 (a class with no class DC still yields 10 + mod here).
+    expect(proficientDC({ abilityMod: 3, rank: 0, level: 5 })).toBe(13);
   });
 });
 

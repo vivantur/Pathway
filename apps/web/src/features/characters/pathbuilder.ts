@@ -10,6 +10,7 @@
 import {
   abilityModifier,
   maxHitPoints,
+  proficientDC,
   proficientModifier,
   rankLabel,
   rawBonusToRank,
@@ -414,8 +415,12 @@ export function classDC(build: PathbuilderBuild): number | undefined {
   if (cdc == null) return undefined;
   const ability = build.keyability;
   if (!ability) return undefined;
-  const level = build.level ?? 1;
-  return 10 + abilityMod(build.abilities?.[ability]) + (cdc > 0 ? cdc + level : 0);
+  // Pathbuilder stores the pre-doubled rank (0/2/4/6/8); core adds the level term.
+  return proficientDC({
+    abilityMod: abilityMod(build.abilities?.[ability]),
+    rank: rawBonusToRank(cdc),
+    level: build.level ?? 1,
+  });
 }
 
 // -------- Spells / weapons / money --------

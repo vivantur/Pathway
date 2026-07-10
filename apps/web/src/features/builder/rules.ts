@@ -18,6 +18,7 @@ import {
   attackRankAtLevel,
   maxHitPoints,
   proficiencyBonus,
+  proficientDC,
   proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
@@ -530,7 +531,12 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       reflex: saveModifier(refRank, mods.dex),
       will: saveModifier(willRank, mods.wis),
     },
-    classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
+    classDc: proficientDC({
+      abilityMod: state.keyAbility ? mods[state.keyAbility] : 0,
+      rank: classDCRank,
+      level,
+      withoutLevel: pwl,
+    }),
     speed: (ancestry?.speed ?? 25) + speedPenalty,
     // Focus pool: the number of focus spells the build knows (feat- or
     // subclass-granted, chosen on the Spells step), capped at 3 per the focus
