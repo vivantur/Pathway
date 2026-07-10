@@ -42,6 +42,39 @@ export function proficientModifier(i: ProficientModifierInput): number {
 }
 
 /**
+ * Armor Class: 10 + defense proficiency + Dexterity (capped by the armor) +
+ * the armor's AC bonus + item bonuses (potency rune / ABP). The shield is NOT
+ * included — a shield adds its bonus only while raised, which is a consumer-side
+ * concern. AC is the one derived stat a reader of a saved character cannot
+ * recompute without the equipped armor, its Dex cap, and its potency rune, so
+ * the builder computes it here and persists the result (see the acTotal fix).
+ */
+export interface ArmorClassInput {
+  dexMod: number;
+  /** The armor's Dex cap. null/undefined = uncapped (unarmored, or capless armor). */
+  dexCap?: number | null;
+  /** Defense proficiency rank in the worn armor's category. */
+  rank: ProficiencyRank;
+  level: number;
+  withoutLevel?: boolean;
+  /** The armor's own AC bonus (0 when unarmored). */
+  armorBonus?: number;
+  /** Item bonus: an armor potency rune, or Automatic Bonus Progression defense. */
+  itemBonus?: number;
+}
+
+export function armorClass(i: ArmorClassInput): number {
+  const dex = i.dexCap != null ? Math.min(i.dexMod, i.dexCap) : i.dexMod;
+  return (
+    10 +
+    proficiencyBonus(i.rank, i.level, i.withoutLevel) +
+    dex +
+    (i.armorBonus ?? 0) +
+    (i.itemBonus ?? 0)
+  );
+}
+
+/**
  * A DC built on a proficiency-based statistic: 10 + the proficient modifier.
  * Class DC and spell DC are the canonical cases; both are 10 + key-ability mod +
  * proficiency bonus.

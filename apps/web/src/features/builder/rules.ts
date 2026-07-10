@@ -15,6 +15,7 @@ import {
 import { OPT } from '@/features/builder/options/config';
 import {
   abilityModifier,
+  armorClass,
   attackRankAtLevel,
   maxHitPoints,
   proficiencyBonus,
@@ -410,15 +411,16 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     armorCategory as ProficiencyTrack,
     Math.max(ip?.defenses[armorCategory] ?? 0, subclassArmorRank(state, armorCategory)),
   );
-  const dexForAc =
-    armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
-  const ac =
-    10 +
-    pb(defenseRank) +
-    dexForAc +
-    (armor?.acBonus ?? 0) +
-    armorPotency +
-    (abp ? abpDefense(level) : 0);
+  const ac = armorClass({
+    dexMod: mods.dex,
+    // Unarmored (no armor) and capless armor are both uncapped.
+    dexCap: armor ? armor.dexCap : null,
+    rank: defenseRank,
+    level,
+    withoutLevel: pwl,
+    armorBonus: armor?.acBonus ?? 0,
+    itemBonus: armorPotency + (abp ? abpDefense(level) : 0),
+  });
   const unarmoredDefense = progressionRank(state, 'unarmored', ip?.defenses.unarmored ?? 0);
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.

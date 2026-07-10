@@ -1,6 +1,6 @@
 // Worked-example locks for the derived-stat compositions.
 import { describe, expect, it } from 'vitest';
-import { maxHitPoints, proficientDC, proficientModifier } from './derived.js';
+import { armorClass, maxHitPoints, proficientDC, proficientModifier } from './derived.js';
 
 describe('proficientModifier', () => {
   it('is ability mod + proficiency bonus', () => {
@@ -25,6 +25,34 @@ describe('proficientModifier', () => {
   it('honors Proficiency Without Level (drops the level term)', () => {
     // Expert (rank 2) at level 5 with Dex +4, no level: 4 + 4 = 8.
     expect(proficientModifier({ abilityMod: 4, rank: 2, level: 5, withoutLevel: true })).toBe(8);
+  });
+});
+
+describe('armorClass', () => {
+  it('unarmored is 10 + defense proficiency + full Dex', () => {
+    // Level-1 fighter, trained (rank 1) unarmored, Dex +1: 10 + (1+2) + 1 = 14.
+    expect(armorClass({ dexMod: 1, dexCap: null, rank: 1, level: 1 })).toBe(14);
+  });
+
+  it('caps Dex at the armor Dex cap and adds the armor bonus', () => {
+    // Full plate: +6 AC, Dex cap 0; Dex +3 is capped to 0. Trained, level 1:
+    // 10 + 3 + 0 + 6 = 19.
+    expect(
+      armorClass({ dexMod: 3, dexCap: 0, rank: 1, level: 1, armorBonus: 6 }),
+    ).toBe(19);
+    // Leather: +1 AC, Dex cap 4; Dex +2 is under the cap. Expert, level 5:
+    // 10 + (5+4) + 2 + 1 = 22.
+    expect(
+      armorClass({ dexMod: 2, dexCap: 4, rank: 2, level: 5, armorBonus: 1 }),
+    ).toBe(22);
+  });
+
+  it('adds the item bonus and honors Proficiency Without Level', () => {
+    // Unarmored, trained, level 5, Dex +2, +1 potency, no level term:
+    // 10 + 2 + 2 + 1 = 15.
+    expect(
+      armorClass({ dexMod: 2, dexCap: null, rank: 1, level: 5, itemBonus: 1, withoutLevel: true }),
+    ).toBe(15);
   });
 });
 
