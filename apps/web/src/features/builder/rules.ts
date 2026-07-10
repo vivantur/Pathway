@@ -455,7 +455,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       name: s.name,
       ability: s.ability,
       rank,
-      modifier: pb(rank) + mods[s.ability] + penalty,
+      modifier: proficientModifier({
+        abilityMod: mods[s.ability],
+        rank,
+        level,
+        withoutLevel: pwl,
+        otherBonus: penalty,
+      }),
     };
   });
 
