@@ -6,9 +6,10 @@
 // into encounter_events keyed by encounter_id.
 //
 // THIS module is the persistence layer only. The in-memory encounter map lives
-// in rules/combatV2/state.js, which reaches these helpers indirectly via their
-// re-export from lib/storage.js. (The old commands/encounters.js that used to
-// own the in-memory map was deleted in the 2026-07-08 combat consolidation.)
+// in state/combat.js, which requires this file directly. (It used to reach these
+// helpers through a re-export in lib/storage.js; that indirection is gone, and
+// the old commands/encounters.js that owned the map was deleted in the
+// 2026-07-08 combat consolidation.)
 
 const { getSupabase } = require('../lib/supabase');
 const { _recordSyncSuccess, _recordSyncFailure } = require('../lib/syncTracker');

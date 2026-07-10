@@ -101,6 +101,32 @@ function findCombatant(encounter, query) {
   return partial.length === 1 ? partial[0] : null;
 }
 
+/**
+ * Build an in-memory encounter from a stored `encounters` row. Pure, so the
+ * restore path can be tested without Supabase — a bare `makeCombatant` reference
+ * in here once went out of scope and would have silently dropped every active
+ * encounter on bot restart, because restore swallows its own errors.
+ */
+function encounterFromRow(row) {
+  const combatants = Array.isArray(row.combatants) ? row.combatants.map(makeCombatant) : [];
+  return {
+    version: 2,
+    id: row.channel_id,
+    channelId: row.channel_id,
+    guildId: row.discord_guild_id,
+    gmId: row.gm_discord_id ?? null,
+    name: `Combat in #${row.channel_id}`,
+    round: row.round ?? 1,
+    turnIndex: Math.max(0, Math.min(row.turn_index ?? 0, Math.max(0, combatants.length - 1))),
+    summaryMessageId: null,
+    supabaseId: row.id,
+    createdAt: row.created_at ?? nowIso(),
+    updatedAt: row.updated_at ?? nowIso(),
+    combatants,
+    log: [],
+  };
+}
+
 /** findCombatant, but throws the caller-facing error when there's no match. */
 function requireCombatant(encounter, query) {
   const combatant = findCombatant(encounter, query);
@@ -824,6 +850,7 @@ module.exports = {
   nowIso,
   isCombatV2Snapshot,
   makeCombatant,
+  encounterFromRow,
   findCombatant,
   requireCombatant,
   currentCombatant,

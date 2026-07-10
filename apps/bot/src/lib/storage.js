@@ -41,7 +41,6 @@ const downtimeState  = require('../state/downtime');
 const noteState      = require('../state/notes');
 const snippetState   = require('../state/snippets');
 const monsterState   = require('../state/monster');
-const encounterState = require('../state/encounters');
 const homebrewState  = require('../state/homebrew');
 const guildState     = require('../state/guild');
 const xpLogState     = require('../state/xpLog');
@@ -852,10 +851,8 @@ module.exports = {
   syncAllMonsterEditsToSupabase: monsterState.syncAllMonsterEditsToSupabase,
   syncAllMonsterAttacksToSupabase: monsterState.syncAllMonsterAttacksToSupabase,
 
-  // Encounters
-  syncEncounterToSupabase: encounterState.syncEncounterToSupabase,
-  endEncounterInSupabase: encounterState.endEncounterInSupabase,
-  logEncounterEvent: encounterState.logEncounterEvent,
+  // Encounters: none. state/combat.js imports state/encounters.js directly.
+  // (`logEncounterEvent` was re-exported here and called by nobody.)
 
   // Homebrew
   syncHomebrewEntryToSupabase: homebrewState.syncHomebrewEntryToSupabase,
