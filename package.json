@@ -16,5 +16,8 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm --workspaces --if-present run typecheck"
   },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  },
   "license": "ISC"
 }
