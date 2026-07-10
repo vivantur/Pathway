@@ -18,6 +18,7 @@ import {
   attackRankAtLevel,
   maxHitPoints,
   proficiencyBonus,
+  proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
   type AttackCategory,
@@ -432,6 +433,12 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const willRank = progressionRank(state, 'will', ip?.will ?? 0);
   const classDCRank = progressionRank(state, 'classDC', ip?.classDC ?? 0);
 
+  // A saving throw: ability mod + proficiency + a fundamental item bonus (the
+  // resilient rune, or Automatic Bonus Progression's resilience when ABP is on).
+  const saveItemBonus = abp ? abpResilience(level) : resilient;
+  const saveModifier = (rank: ProficiencyRank, abilityMod: number) =>
+    proficientModifier({ abilityMod, rank, level, withoutLevel: pwl, itemBonus: saveItemBonus });
+
   const ranks = skillRankMap(state);
   const skills: SkillProficiency[] = getDataset().skills.map((s) => {
     const rank = ranks.get(s.id) ?? 0;
@@ -507,9 +514,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     shieldBonus: shield?.acBonus ?? 0,
     perception,
     saves: {
-      fortitude: pb(fortRank) + mods.con + (abp ? abpResilience(level) : resilient),
-      reflex: pb(refRank) + mods.dex + (abp ? abpResilience(level) : resilient),
-      will: pb(willRank) + mods.wis + (abp ? abpResilience(level) : resilient),
+      fortitude: saveModifier(fortRank, mods.con),
+      reflex: saveModifier(refRank, mods.dex),
+      will: saveModifier(willRank, mods.wis),
     },
     classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
     speed: (ancestry?.speed ?? 25) + speedPenalty,

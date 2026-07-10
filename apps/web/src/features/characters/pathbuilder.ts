@@ -9,8 +9,8 @@
 
 import {
   abilityModifier,
-  proficiencyBonus as coreProficiencyBonus,
   maxHitPoints,
+  proficientModifier,
   rankLabel,
   rawBonusToRank,
 } from '@pathway/core';
@@ -254,10 +254,11 @@ export function sizeLabel(size: number | undefined): string | undefined {
 // -------- PF2e math --------
 
 /**
- * Standard PF2e proficiency-based bonus: ability mod + core proficiency
- * bonus. Pathbuilder's stored rank is the raw bonus (0/2/4/6/8), so it's
- * converted to a core rank first. Ignores item bonuses for now — the
- * bot's `mods` object can override individual totals later.
+ * Standard PF2e proficiency-based modifier: ability mod + proficiency bonus,
+ * routed through core's `proficientModifier` (the same composition the builder
+ * and the sheet's saves/Perception/skills all share). Pathbuilder's stored rank
+ * is the raw bonus (0/2/4/6/8), converted to a core rank first. Item bonuses are
+ * not applied here — the bot's `mods` object can override individual totals later.
  *
  * TODO(core-migration): Pathbuilder JSON carries no variant-rule flags, so
  * this always adds level. Builds saved with Proficiency Without Level should
@@ -268,9 +269,11 @@ export function proficiencyBonus(
   rank: number | undefined,
   ability: Ability,
 ): number {
-  const level = build.level ?? 1;
-  const mod = abilityMod(build.abilities?.[ability]);
-  return mod + coreProficiencyBonus(rawBonusToRank(rank), level);
+  return proficientModifier({
+    abilityMod: abilityMod(build.abilities?.[ability]),
+    rank: rawBonusToRank(rank),
+    level: build.level ?? 1,
+  });
 }
 
 export function skillBonus(build: PathbuilderBuild, skillName: string): number {

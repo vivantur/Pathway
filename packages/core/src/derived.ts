@@ -9,6 +9,38 @@
 // the two clients can never disagree on how rank + modifier + bonuses combine.
 // See root CLAUDE.md, "Architecture".
 
+import { proficiencyBonus } from './stats.js';
+import type { ProficiencyRank } from './proficiency.js';
+
+/**
+ * A proficiency-based statistic: ability modifier + proficiency bonus + item
+ * and other bonuses. This is the shared shape of a saving throw, Perception, or
+ * a skill modifier — in PF2e they are the same computation, differing only in
+ * which ability and which proficiency rank feed it.
+ *
+ * `withoutLevel` selects the Proficiency Without Level variant (drops the level
+ * term). `itemBonus` is a fundamental item bonus (a resilient rune, Automatic
+ * Bonus Progression). `otherBonus` is a catch-all flat term — pass an armor
+ * check penalty as a negative here.
+ */
+export interface ProficientModifierInput {
+  abilityMod: number;
+  rank: ProficiencyRank;
+  level: number;
+  withoutLevel?: boolean;
+  itemBonus?: number;
+  otherBonus?: number;
+}
+
+export function proficientModifier(i: ProficientModifierInput): number {
+  return (
+    i.abilityMod +
+    proficiencyBonus(i.rank, i.level, i.withoutLevel) +
+    (i.itemBonus ?? 0) +
+    (i.otherBonus ?? 0)
+  );
+}
+
 /**
  * Maximum Hit Points: ancestry HP (granted once) + (class HP + Constitution
  * modifier) at every level. `bonusHp` is a flat one-time addition; the negative
