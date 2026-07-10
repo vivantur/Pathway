@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 
 const monsterState = require('../../state/monster');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 const combatV2Render = require('../../rules/combatV2/render');
 const { sumEffectModifiers } = require('../../rules/combatEffects');

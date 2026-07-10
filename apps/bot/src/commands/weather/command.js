@@ -1,6 +1,6 @@
 // Weather effects apply to combatants through the combat v2 store, which
 // exposes the same getEncounter/addEffect interface the legacy store had.
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const weatherCmd = require('../weather-cmd');
 
 async function execute(interaction) {

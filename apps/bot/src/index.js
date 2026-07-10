@@ -171,7 +171,7 @@ if (!TOKEN) {
 const { listPresets } = require('./rules/effects');
 const downtime = require('./commands/downtime');
 const charOverlay = require('./rules/characterOverlay');
-const combatV2State = require('./rules/combatV2/state');
+const combatV2State = require('./state/combat');
 const { updateCombatV2Summary } = require('./commands/init/combatV2Summary');
 const combatV2Render = require('./rules/combatV2/render');
 // Spell effects auto-application: maps spell names to mechanical effects

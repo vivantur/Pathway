@@ -6,7 +6,7 @@ const { fmt } = require('../../lib/format');
 const { rollD20Plus, determineDegreeOfSuccess, calculateMap } = require('../../lib/dice');
 const { rollCompoundExpression } = require('../../lib/spellDamage');
 const { sumEffectModifiers } = require('../../rules/combatEffects');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 const {
   syncCompanionToSupabase,

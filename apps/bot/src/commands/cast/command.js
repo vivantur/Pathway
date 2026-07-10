@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 
 const characterState = require('../../state/characters');
 const charOverlay = require('../../rules/characterOverlay');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 const { updateCombatV2Summary } = require('../init/combatV2Summary');
 const { combatDyingSuffix } = require('../../discord/rollEmbeds');

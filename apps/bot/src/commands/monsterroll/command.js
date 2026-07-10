@@ -10,7 +10,7 @@ const {
 const { buildRollEmbed, formatRollBreakdown, PATHWAY_GOLD, PATHWAY_DICE_BUFFER, PATHWAY_DICE_REF } = require('../../discord/rollEmbeds');
 const { fmt } = require('../../lib/format');
 const { sumEffectModifiers } = require('../../rules/combatEffects');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 
 const COMBAT_V2_SKILL_LABELS = {

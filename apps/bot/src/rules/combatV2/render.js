@@ -7,7 +7,7 @@ const {
   ButtonStyle,
   EmbedBuilder,
 } = require('discord.js');
-const { currentCombatant } = require('./state');
+const { currentCombatant } = require('./model');
 const { degreeLabel, fmt } = require('./rolls');
 
 const PAGE_SIZE = 5;

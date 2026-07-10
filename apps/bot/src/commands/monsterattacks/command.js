@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 
 const { fmt } = require('../../lib/format');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const { combatV2AttackListText } = require('../monster/combatV2Helpers');
 
 async function execute(interaction) {

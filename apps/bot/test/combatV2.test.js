@@ -1,4 +1,9 @@
-// Tests for the combat v2 engine — rules/combatV2/{state,rolls}.js.
+// Tests for the combat v2 STORE — state/combat.js — plus rules/combatV2/rolls.js.
+//
+// This suite drives combat the way the bot does: through channel ids, with
+// persistence attached. test/combatV2Model.test.js drives the same rules through
+// the pure model instead (plain objects, no channel, no Supabase). Between them:
+// same rules, both entry points.
 //
 // combatV2 is the ONLY combat engine; the legacy engine and its suite were
 // deleted in the 2026-07-08 consolidation. Everything runs in memory: with no
@@ -9,7 +14,7 @@ import { createRequire } from 'node:module';
 import { stubRandomSequence, die } from './helpers.js';
 
 const require = createRequire(import.meta.url);
-const state = require('../src/rules/combatV2/state');
+const state = require('../src/state/combat');
 const rolls = require('../src/rules/combatV2/rolls');
 
 let channelCounter = 0;

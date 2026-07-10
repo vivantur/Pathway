@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const characterState = require('../../state/characters');
 const charOverlay = require('../../rules/characterOverlay');
-const combatV2State = require('../../rules/combatV2/state');
+const combatV2State = require('../../state/combat');
 const combatV2Rolls = require('../../rules/combatV2/rolls');
 const { computeCharSkillModifier, calcCharacterProfNum } = require('../../rules/pf2eMath');
 const { fmt, calcProfNum } = require('../../lib/format');
