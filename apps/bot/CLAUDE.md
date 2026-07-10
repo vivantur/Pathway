@@ -270,6 +270,40 @@ Filename format: `YYYYMMDDHHMMSS_short_description.sql`. New migrations should b
 
 Railway auto-deploys on push to `main`. Single long-lived process. No volume needed.
 
+### ⚠️ Do NOT add devDependencies to `apps/bot/package.json`
+
+Railway builds this app with **Root Directory = `apps/bot`**, and per Railway's docs
+it "will only pull down files from that directory." So the build sees
+`apps/bot/package.json` + `apps/bot/package-lock.json` and nothing else — not the
+repo root, not the root lockfile, not `packages/`.
+
+`npm ci` refuses to install when a `package.json` and its lockfile disagree. Adding
+`vitest` here on 2026-07-08 did exactly that, and **every deploy failed from that
+commit until 2026-07-10** — ten commits, including the entire combat consolidation
+and its live-bug fixes, sat on `main` unshipped:
+
+```
+npm error `npm ci` can only install packages when your package.json and
+npm error package-lock.json ... are in sync.
+npm error Missing: vitest@4.1.10 from lock file
+```
+
+So: **the bot's tooling (vitest, eslint, globals) lives in the ROOT `package.json`'s
+devDependencies.** npm hoists it, so `npm --workspace apps/bot run test` and
+`run lint` still resolve locally and in CI. `apps/bot/package.json` declares
+production dependencies only, which keeps it in sync with its lockfile.
+
+If you genuinely need a devDependency scoped here, you must regenerate
+`apps/bot/package-lock.json` in the same commit — and verify with an isolated
+`npm ci` in a copy of `apps/bot` alone, because the root install will not catch it.
+
+The durable fix is to move Railway to Root Directory `/` with a workspace-scoped
+start command (`npm start` already delegates), which would leave one lockfile and
+also let the root `overrides` (the `undici` security pin) reach production. That
+build needs `npm ci --include=dev`, since `packages/core`'s `prepare` runs `tsc`
+and Railway sets npm's `production` config — verified: a root `npm ci --omit=dev`
+fails with "Lifecycle script `build` failed … tsc -p tsconfig.build.json".
+
 To update slash commands after changing `deploy.js`:
 
 ```bash

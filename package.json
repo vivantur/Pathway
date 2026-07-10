@@ -28,5 +28,10 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm --workspaces --if-present run typecheck"
   },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^15.9.0",
+    "vitest": "^4.1.10"
+  },
   "license": "ISC"
 }
