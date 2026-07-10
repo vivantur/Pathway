@@ -7,11 +7,12 @@
 // Map or Supabase belongs in the model instead.
 
 const { syncEncounterToSupabase, endEncounterInSupabase, getSupabase } = require('../../lib/storage');
-const { rollDamage, applyDefenses } = require('./rolls');
 const model = require('./model');
 
-// Only what this file still calls directly. The rest of the model is re-exported
-// verbatim at the bottom so the 13 consumers keep their existing import surface.
+// Only what this file still references directly — for its own logic (nowIso,
+// makeCombatant, isCombatV2Snapshot in the restore path) or to re-export
+// verbatim (slug, findCombatant, currentCombatant), so the 13 consumers keep
+// their existing import surface.
 const {
   slug,
   nowIso,
@@ -19,11 +20,6 @@ const {
   makeCombatant, // used bare as `.map(makeCombatant)` in the restore path
   findCombatant,
   currentCombatant,
-  resetTurnState,
-  tickEffectDurations,
-  getPersistentDamageEffects,
-  persistentDamageConfig,
-  processActionEconomy,
 } = model;
 
 const encounters = new Map();
@@ -173,121 +169,24 @@ function modifyCombatant(channelId, query, patch) {
   return mutate(channelId, enc => model.modifyCombatant(enc, query, patch));
 }
 
+// ── Persistent damage & the turn pipeline ────────────────────────────────────
+
+/** `[]` (and no write) when there is nothing to tick. */
 function tickPersistentDamage(channelId, query) {
   const encounter = getEncounter(channelId);
   if (!encounter) return [];
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) return [];
-  const effects = getPersistentDamageEffects(combatant);
-  if (!effects.length) return [];
-
-  const results = [];
-  for (const effect of [...effects]) {
-    const { damageDice, damageType, flatDc } = persistentDamageConfig(effect);
-    const damageRoll = rollDamage(damageDice);
-    if (!damageRoll) continue;
-    const hpBefore = combatant.hp;
-    const defended = applyDefenses(damageRoll.total, damageType, combatant);
-    const hpResult = defended.finalDamage > 0
-      ? applyHp(channelId, combatant.id, -defended.finalDamage)
-      : null;
-    const flatRoll = Math.floor(Math.random() * 20) + 1;
-    const ended = flatRoll >= flatDc;
-    const stillPresent = findCombatant(getEncounter(channelId), combatant.id);
-
-    if (ended && stillPresent?.effects?.length) {
-      stillPresent.effects = stillPresent.effects.filter(e => e !== effect);
-      touchEncounter(encounter);
-    }
-
-    results.push({
-      name: combatant.name,
-      effectName: effect.name,
-      damageType,
-      damageDice,
-      damageRolls: damageRoll.rolls,
-      damage: damageRoll.total,
-      finalDamage: defended.finalDamage,
-      defenseNotes: defended.notes,
-      flatRoll,
-      flatDc,
-      ended,
-      hpBefore,
-      hpAfter: stillPresent?.hp ?? hpResult?.combatant?.hp ?? 0,
-      wentDown: hpResult?.wentDown ?? false,
-      died: hpResult?.died ?? false,
-      dying: hpResult?.dying ?? combatant.dying ?? 0,
-      removed: hpResult?.removed ?? null,
-    });
-
-    if (hpResult?.died) break;
-  }
-  touchEncounter(encounter);
+  const results = model.tickPersistentDamage(encounter, query);
+  if (results.length) touchEncounter(encounter);
   return results;
 }
 
+/** null (and no write) when the encounter is empty. */
 function processTurnTransition(channelId, direction = 1) {
   const encounter = getEncounter(channelId);
-  if (!encounter || encounter.combatants.length === 0) return null;
-
-  const outgoing = currentCombatant(encounter);
-  const outgoingIndex = encounter.turnIndex;
-  const persistentResults = direction > 0 && outgoing
-    ? tickPersistentDamage(channelId, outgoing.id)
-    : [];
-  const encounterAfterPersistent = getEncounter(channelId);
-  if (!encounterAfterPersistent || encounterAfterPersistent.combatants.length === 0) {
-    return {
-      encounter: encounterAfterPersistent ?? encounter,
-      current: null,
-      expiredEffects: [],
-      persistentResults,
-      recoveryCheck: null,
-      newRound: false,
-      actionEconomy: null,
-    };
-  }
-  if (direction > 0 && persistentResults.some(result => result.died)) {
-    encounterAfterPersistent.turnIndex = outgoingIndex - 1;
-  }
-
-  const roundBefore = encounter.round;
-  const advanceResult = advanceTurn(channelId, direction);
-  if (!advanceResult) return null;
-
-  let { current } = advanceResult;
-  const newRound = encounter.round > roundBefore;
-  const expiredEffects = direction > 0 && current ? tickEffectDurations(current) : [];
-  const actionEconomy = direction > 0 && current ? processActionEconomy(current) : null;
-  const currentIndexBeforeRecovery = encounter.turnIndex;
-  const recoveryCheck = direction > 0 && (current?.dying ?? 0) > 0
-    ? rollRecoveryCheck(channelId, current.id)
-    : null;
-  if (recoveryCheck?.died && encounter.combatants.length > 0) {
-    encounter.turnIndex = currentIndexBeforeRecovery - 1;
-    current = advanceTurn(channelId, 1)?.current ?? null;
-  }
-
-  encounter.log.push({
-    at: nowIso(),
-    kind: 'turn-transition',
-    current: current?.name ?? null,
-    round: encounter.round,
-    persistentCount: persistentResults.length,
-    expiredCount: expiredEffects.length,
-    recovery: recoveryCheck?.outcome ?? null,
-  });
-  touchEncounter(encounter);
-
-  return {
-    encounter,
-    current,
-    expiredEffects,
-    persistentResults,
-    recoveryCheck,
-    newRound,
-    actionEconomy,
-  };
+  if (!encounter) return null;
+  const result = model.processTurnTransition(encounter, direction);
+  if (result) touchEncounter(encounter);
+  return result;
 }
 
 async function restoreEncountersFromSupabase() {
