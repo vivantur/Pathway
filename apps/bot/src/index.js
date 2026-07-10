@@ -1904,14 +1904,14 @@ client.on('interactionCreate', async (interaction) => {
         }
         else if (cmd === 'init' && focused.name === 'target') {
           // Autocomplete combatants currently in this channel's encounter
-          const enc = combatV2State.getEncounter(interaction.channel.id) ?? getEncounter(interaction.channel.id);
+          const enc = combatV2State.getEncounter(interaction.channel.id);
           if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'init' && focused.name === 'name'
                  && ['hp', 'thp', 'remove', 'modify', 'reaction', 'damage', 'dying', 'recovery', 'move'].includes(interaction.options.getSubcommand(false))) {
           // Autocomplete combatants for any subcommand that takes a 'name' parameter
           // referring to a combatant in the encounter.
-          const enc = combatV2State.getEncounter(interaction.channel.id) ?? getEncounter(interaction.channel.id);
+          const enc = combatV2State.getEncounter(interaction.channel.id);
           if (enc) suggestions = pick(enc.combatants.map(c => c.name));
         }
         else if (cmd === 'monsteradd' && focused.name === 'monster') {

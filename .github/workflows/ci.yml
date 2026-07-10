@@ -47,6 +47,13 @@ jobs:
             node --check "$f"
           done
 
+      # `node --check` only parses — it accepts a call to an identifier that was
+      # never defined. In ~39k lines of untyped CommonJS that is how two real
+      # bugs shipped (a deleted legacy `getEncounter`, and a `makeCombatant` that
+      # fell out of scope in the Supabase restore path). One rule: no-undef.
+      - name: Lint bot (no-undef)
+        run: npm --workspace apps/bot run lint
+
       # The bot's Vitest suite locks the pure rules layer: dice/degree-of-success,
       # MAP, proficiency math, the /roll parser, conditions, spell heightening,
       # the dying/wounded/recovery engine, and combat v2. This is the game math

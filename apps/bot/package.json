@@ -7,6 +7,7 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint .",
     "deploy": "node src/deploy.js",
     "deploy:guild": "node src/deploy.js --guild",
     "import:homebrew-items": "node supabase/import-homebrew-items.js",
@@ -27,6 +28,8 @@
     "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^15.9.0",
     "vitest": "^4.1.10"
   }
 }
