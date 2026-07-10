@@ -97,240 +97,46 @@ function removeCombatant(channelId, query) {
   return mutate(channelId, enc => model.removeCombatant(enc, query));
 }
 
-function rollRecoveryCheck(channelId, query) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  if ((combatant.dying ?? 0) <= 0) return null;
+// ── HP, dying, recovery ──────────────────────────────────────────────────────
+// The rules live in model.js. These wrappers differ only in when they persist,
+// which is not uniform: rollRecoveryCheck writes nothing when the combatant is
+// not dying, and stabilizeWithHeroPoints writes nothing when it declines.
 
-  if (typeof combatant.dying !== 'number') combatant.dying = 0;
-  if (typeof combatant.wounded !== 'number') combatant.wounded = 0;
-  if (typeof combatant.doomed !== 'number') combatant.doomed = 0;
-
-  const dyingBefore = combatant.dying;
-  const wounded = combatant.wounded ?? 0;
-  const doomed = combatant.doomed ?? 0;
-  const maxDying = Math.max(1, 4 - doomed);
-  const dc = 10 + dyingBefore;
-  const roll = Math.floor(Math.random() * 20) + 1;
-
-  let outcome;
-  let baseDelta;
-  if (roll === 20) {
-    outcome = 'crit-success';
-    baseDelta = -2;
-  } else if (roll === 1) {
-    outcome = 'crit-failure';
-    baseDelta = 2;
-  } else if (roll >= dc + 10) {
-    outcome = 'crit-success';
-    baseDelta = -2;
-  } else if (roll >= dc) {
-    outcome = 'success';
-    baseDelta = -1;
-  } else if (roll <= dc - 10) {
-    outcome = 'crit-failure';
-    baseDelta = 2;
-  } else {
-    outcome = 'failure';
-    baseDelta = 1;
-  }
-
-  const woundedAdded = baseDelta > 0 ? wounded : 0;
-  const delta = baseDelta + woundedAdded;
-  let dyingAfter = dyingBefore + delta;
-  let died = false;
-  let awoke = false;
-  let removed = null;
-
-  if (dyingAfter >= maxDying) {
-    died = true;
-    dyingAfter = maxDying;
-    combatant.dying = maxDying;
-    removed = { ...combatant };
-    removeCombatant(channelId, combatant.name);
-  } else if (dyingAfter <= 0) {
-    awoke = true;
-    dyingAfter = 0;
-    combatant.dying = 0;
-    combatant.wounded = (combatant.wounded ?? 0) + 1;
-    combatant.unconscious = (combatant.hp ?? 0) <= 0;
-  } else {
-    combatant.dying = dyingAfter;
-    combatant.unconscious = true;
-  }
-
-  encounter.log.push({
-    at: nowIso(),
-    kind: died ? 'recovery-death' : 'recovery',
-    name: removed?.name ?? combatant.name,
-    roll,
-    dc,
-    outcome,
-    dyingBefore,
-    dyingAfter,
-  });
-  touchEncounter(encounter);
-
-  const name = removed?.name ?? combatant.name;
-  let narration;
-  if (died) {
-    narration = doomed > 0
-      ? `${name} has died. (Doomed ${doomed} means death at Dying ${maxDying}.)`
-      : `${name} has died.`;
-  } else if (awoke) {
-    narration = `${name} stabilizes at 0 HP. (Now Wounded ${combatant.wounded}, still unconscious until healed.)`;
-  } else if (delta < 0) {
-    narration = `Dying reduced: ${dyingBefore} -> ${dyingAfter}`;
-  } else if (delta > 0) {
-    const woundedNote = woundedAdded > 0 ? ` (+${baseDelta} base, +${woundedAdded} from Wounded ${wounded})` : '';
-    narration = `Dying increased: ${dyingBefore} -> ${dyingAfter}${woundedNote}`;
-  } else {
-    narration = `Dying unchanged at ${dyingAfter}`;
-  }
-
-  return {
-    encounter,
-    combatant,
-    removed,
-    name,
-    roll,
-    dc,
-    outcome,
-    delta,
-    baseDelta,
-    dyingBefore,
-    dyingAfter,
-    dying: dyingAfter,
-    wounded: combatant.wounded ?? wounded,
-    woundedAdded,
-    doomed,
-    maxDying,
-    died,
-    awoke,
-    narration,
-  };
+function applyHp(channelId, query, amount, options = {}) {
+  return mutate(channelId, enc => model.applyHp(enc, query, amount, options));
 }
 
-// Hero-point reroll of a recovery check (the re-resolve step; the caller is
-// responsible for having already spent the hero point). Undoes the original
-// result, rolls again, keeps whichever leaves the combatant better off.
+function setDying(channelId, query, value) {
+  return mutate(channelId, enc => model.setDying(enc, query, value));
+}
+
+/** null (and no write) when the combatant is not dying. */
+function rollRecoveryCheck(channelId, query) {
+  const encounter = requireEncounter(channelId);
+  const result = model.rollRecoveryCheck(encounter, query);
+  if (result) touchEncounter(encounter);
+  return result;
+}
+
+/** null (and no write) when there's no encounter, combatant, or prior result. */
 function rerollRecoveryCheck(channelId, query, originalResult) {
   const encounter = getEncounter(channelId);
   if (!encounter) return null;
-  const combatant = findCombatant(encounter, query);
-  if (!combatant || !originalResult) return null;
-
-  // Undo the original result
-  combatant.dying = originalResult.dyingBefore;
-  if (originalResult.awoke) {
-    combatant.wounded = Math.max(0, (combatant.wounded ?? 0) - 1);
-    // HP stays at 0 — recovery never restores HP (PF2e RAW).
-  }
-
-  const second = rollRecoveryCheck(channelId, combatant.id);
-  if (!second) return null;
-
-  const firstIsBetter = originalResult.dyingAfter < second.dyingAfter
-    || (originalResult.awoke && !second.awoke);
-
-  if (firstIsBetter && !second.died) {
-    // Undo the second roll, reapply the first.
-    combatant.dying = originalResult.dyingAfter;
-    if (originalResult.awoke) {
-      combatant.wounded = (combatant.wounded ?? 0) + 1;
-      combatant.unconscious = (combatant.hp ?? 0) <= 0;
-    }
-    touchEncounter(encounter);
-    return {
-      ...originalResult,
-      originalRoll: originalResult.roll,
-      rerollRoll: second.roll,
-      keptOriginal: true,
-      narration: `Hero Point reroll: ${second.roll} vs original ${originalResult.roll} — kept original.\n${originalResult.narration}`,
-    };
-  }
-  return {
-    ...second,
-    originalRoll: originalResult.roll,
-    rerollRoll: second.roll,
-    keptOriginal: false,
-    narration: `Hero Point reroll: ${second.roll} vs original ${originalResult.roll} — kept reroll.\n${second.narration}`,
-  };
+  const result = model.rerollRecoveryCheck(encounter, query, originalResult);
+  if (result) touchEncounter(encounter);
+  return result;
 }
 
-// Spend ALL remaining hero points to escape death (PF2e Player Core p. 411):
-// lose the dying condition entirely, stabilize at 0 HP, wounded unchanged.
-// The caller validates and zeroes the player's hero points.
+/** null when absent; `{ ok: false }` (and no write) when not dying. */
 function stabilizeWithHeroPoints(channelId, query) {
   const encounter = getEncounter(channelId);
   if (!encounter) return null;
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) return null;
-  const dyingBefore = combatant.dying ?? 0;
-  if (dyingBefore <= 0) return { ok: false, reason: 'not-dying' };
-
-  combatant.dying = 0;
-  combatant.unconscious = (combatant.hp ?? 0) <= 0;
-  encounter.log.push({ at: nowIso(), kind: 'hero-stabilize', name: combatant.name, dyingBefore });
-  touchEncounter(encounter);
-
-  return {
-    ok: true,
-    combatant,
-    dyingBefore,
-    woundedKept: combatant.wounded ?? 0,
-    narration: `**${combatant.name}** spends all remaining Hero Points to escape death — stabilized at 0 HP, dying cleared. Wounded ${combatant.wounded ?? 0} unchanged.`,
-  };
+  const result = model.stabilizeWithHeroPoints(encounter, query);
+  if (result?.ok) touchEncounter(encounter);
+  return result;
 }
 
-// GM override of a combatant's dying value (0–4). PF2e RAW semantics match
-// the automated paths: manually clearing dying grants Wounded +1 and does NOT
-// restore HP (unconscious at 0 HP until healed); reaching the max dying value
-// (4, lowered by doomed) is death and removes the combatant.
-function setDying(channelId, query, value) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const before = combatant.dying ?? 0;
-  const maxDying = Math.max(1, 4 - (combatant.doomed ?? 0));
-  let died = false;
-  let recovered = false;
-  let removed = null;
-
-  encounter.log.push({ at: nowIso(), kind: 'set-dying', name: combatant.name, before, value });
-
-  if (value >= maxDying) {
-    combatant.dying = maxDying;
-    died = true;
-    removed = removeCombatant(channelId, combatant.name).combatant;
-  } else if (value === 0 && before > 0) {
-    combatant.dying = 0;
-    combatant.wounded = (combatant.wounded ?? 0) + 1;
-    combatant.unconscious = (combatant.hp ?? 0) <= 0;
-    recovered = true;
-    touchEncounter(encounter);
-  } else {
-    combatant.dying = Math.max(0, value);
-    if (combatant.dying > 0) combatant.unconscious = true;
-    touchEncounter(encounter);
-  }
-
-  return {
-    encounter,
-    combatant,
-    before,
-    value: died ? maxDying : Math.max(0, value),
-    maxDying,
-    died,
-    recovered,
-    removed,
-    wounded: combatant.wounded ?? 0,
-    doomed: combatant.doomed ?? 0,
-  };
-}
+// ── Turn flow ────────────────────────────────────────────────────────────────
 
 // Unlike the other mutators this returns null instead of throwing when the
 // channel has no encounter, and persists nothing when the encounter is empty.
@@ -349,104 +155,6 @@ function delayCombatant(channelId, query) {
 
 function rejoinCombatant(channelId, query, targetQuery = null) {
   return mutate(channelId, enc => model.rejoinCombatant(enc, query, targetQuery));
-}
-
-function applyHp(channelId, query, amount, { mode = 'delta', isCrit = false } = {}) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const before = {
-    hp: combatant.hp,
-    tempHp: combatant.tempHp,
-    dying: combatant.dying ?? 0,
-    wounded: combatant.wounded ?? 0,
-  };
-  if (typeof combatant.dying !== 'number') combatant.dying = 0;
-  if (typeof combatant.wounded !== 'number') combatant.wounded = 0;
-  if (typeof combatant.doomed !== 'number') combatant.doomed = 0;
-
-  const hpBefore = combatant.hp;
-  const wasDying = combatant.dying > 0;
-  let effectiveDamage = 0;
-  if (mode === 'set') {
-    combatant.hp = Math.max(0, Math.min(combatant.maxHp, amount));
-    if (combatant.hp < hpBefore) effectiveDamage = hpBefore - combatant.hp;
-  } else if (amount < 0) {
-    let damage = Math.abs(amount);
-    const absorbed = Math.min(combatant.tempHp ?? 0, damage);
-    combatant.tempHp = Math.max(0, (combatant.tempHp ?? 0) - absorbed);
-    damage -= absorbed;
-    effectiveDamage = damage;
-    combatant.hp = Math.max(0, combatant.hp - damage);
-  } else {
-    combatant.hp = Math.min(combatant.maxHp, combatant.hp + amount);
-  }
-
-  const maxDying = Math.max(1, 4 - (combatant.doomed ?? 0));
-  let wentDown = false;
-  let dyingIncreased = false;
-  let wokeUp = false;
-  let died = false;
-
-  if (amount > 0 && wasDying && combatant.hp > 0) {
-    combatant.dying = 0;
-    combatant.wounded = (combatant.wounded ?? 0) + 1;
-    combatant.unconscious = false;
-    wokeUp = true;
-  } else if (amount > 0 && combatant.unconscious && combatant.hp > 0) {
-    combatant.unconscious = false;
-    wokeUp = true;
-  }
-
-  if ((mode === 'set' || amount < 0) && effectiveDamage > 0 && combatant.hp === 0) {
-    // PF2e Player Core p. 411: knocked to 0 by a critical hit (or crit-failed
-    // save) → Dying 2 instead of 1; damaged while already dying → dying +2 on
-    // a crit instead of +1. Wounded always adds to the initial value.
-    if (hpBefore > 0) {
-      wentDown = true;
-      combatant.dying = 1 + (combatant.wounded ?? 0) + (isCrit ? 1 : 0);
-    } else if (wasDying) {
-      dyingIncreased = true;
-      combatant.dying += isCrit ? 2 : 1;
-    }
-    combatant.unconscious = true;
-    if (combatant.dying >= maxDying) {
-      combatant.dying = maxDying;
-      died = true;
-    }
-  }
-
-  encounter.log.push({
-    at: nowIso(),
-    kind: died ? 'death' : 'hp',
-    name: combatant.name,
-    amount,
-    mode,
-    before,
-    after: { hp: combatant.hp, tempHp: combatant.tempHp, dying: combatant.dying, wounded: combatant.wounded },
-  });
-
-  let removed = null;
-  if (died) {
-    removed = removeCombatant(channelId, combatant.name).combatant;
-  } else {
-    touchEncounter(encounter);
-  }
-
-  return {
-    encounter,
-    combatant,
-    before,
-    wentDown,
-    dyingIncreased,
-    wokeUp,
-    died,
-    removed,
-    dying: combatant.dying,
-    wounded: combatant.wounded,
-    maxDying,
-  };
 }
 
 function setTempHp(channelId, query, amount) {
