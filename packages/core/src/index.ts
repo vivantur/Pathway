@@ -23,3 +23,7 @@ export * from './stats.js';
 // Animal companion catalog + derived-stat engine. Consumed by apps/web's
 // companion builder.
 export * from './companion.js';
+
+// Derived-stat compositions (HP, saves, Perception, skills, DCs, AC). The single
+// implementation both of apps/web's engines (builder + sheet) adapt onto.
+export * from './derived.js';

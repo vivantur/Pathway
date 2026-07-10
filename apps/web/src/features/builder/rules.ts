@@ -16,6 +16,7 @@ import { OPT } from '@/features/builder/options/config';
 import {
   abilityModifier,
   attackRankAtLevel,
+  maxHitPoints,
   proficiencyBonus,
   proficiencyRankAtLevel,
   RANK_LABEL,
@@ -370,7 +371,12 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const abp = opt(state, OPT.automaticBonusProgression);
 
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
-  const maxHp = (ancestry?.hp ?? 0) + ((klass?.hp ?? 0) + mods.con) * level;
+  const maxHp = maxHitPoints({
+    ancestryHp: ancestry?.hp ?? 0,
+    classHp: klass?.hp ?? 0,
+    conMod: mods.con,
+    level,
+  });
 
   // Equipped gear.
   const equipped = (state.inventory ?? [])

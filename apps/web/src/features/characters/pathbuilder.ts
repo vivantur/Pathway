@@ -10,6 +10,7 @@
 import {
   abilityModifier,
   proficiencyBonus as coreProficiencyBonus,
+  maxHitPoints,
   rankLabel,
   rawBonusToRank,
 } from '@pathway/core';
@@ -300,14 +301,14 @@ export function perceptionBonus(build: PathbuilderBuild): number {
 export function maxHp(build: PathbuilderBuild): number | undefined {
   const a = build.attributes;
   if (!a) return undefined;
-  const level = build.level ?? 1;
-  const conMod = abilityMod(build.abilities?.con);
-  const ancestry = a.ancestryhp ?? 0;
-  const cls = a.classhp ?? 0;
-  const bonus = a.bonushp ?? 0;
-  const bonusPer = (a.bonushpPerLevel ?? 0) * level;
-  const conAtLevels = conMod * level;
-  const total = ancestry + cls * level + bonus + bonusPer + conAtLevels;
+  const total = maxHitPoints({
+    ancestryHp: a.ancestryhp ?? 0,
+    classHp: a.classhp ?? 0,
+    conMod: abilityMod(build.abilities?.con),
+    level: build.level ?? 1,
+    bonusHp: a.bonushp ?? 0,
+    bonusHpPerLevel: a.bonushpPerLevel ?? 0,
+  });
   return total > 0 ? total : undefined;
 }
 
