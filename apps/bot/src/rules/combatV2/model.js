@@ -188,6 +188,63 @@ function modifyCombatant(encounter, query, patch) {
   return { encounter, combatant };
 }
 
+// ── Turn flow ────────────────────────────────────────────────────────────────
+
+/**
+ * Step the turn cursor, skipping delayed combatants, wrapping the round.
+ * Returns null (and changes nothing) when there is nobody in the encounter.
+ */
+function advanceTurn(encounter, direction = 1) {
+  if (!encounter || encounter.combatants.length === 0) return null;
+  const len = encounter.combatants.length;
+  let wrapped = false;
+  for (let steps = 0; steps < len; steps += 1) {
+    const previousIndex = encounter.turnIndex;
+    encounter.turnIndex = (encounter.turnIndex + direction + len) % len;
+    if (direction > 0 && previousIndex >= 0 && encounter.turnIndex <= previousIndex) wrapped = true;
+    if (direction < 0 && encounter.turnIndex > previousIndex) wrapped = true;
+    const candidate = currentCombatant(encounter);
+    if (!candidate?.delayed) break;
+  }
+  if (direction > 0 && wrapped) encounter.round += 1;
+  if (direction < 0 && wrapped && encounter.round > 1) encounter.round -= 1;
+  resetTurnState(currentCombatant(encounter));
+  encounter.log.push({ at: nowIso(), kind: direction >= 0 ? 'next' : 'prev', current: currentCombatant(encounter)?.name ?? null });
+  return { encounter, current: currentCombatant(encounter) };
+}
+
+/** Delay: drop to the back of the order. If it was your turn, the next one starts. */
+function delayCombatant(encounter, query) {
+  const combatant = query ? findCombatant(encounter, query) : currentCombatant(encounter);
+  if (!combatant) throw new Error(`No combatant matching "${query}".`);
+  const wasCurrent = currentCombatant(encounter)?.id === combatant.id;
+  combatant.delayed = true;
+  encounter.log.push({ at: nowIso(), kind: 'delay', name: combatant.name });
+  sortCombatants(encounter);
+  if (wasCurrent) {
+    const nextIndex = encounter.combatants.findIndex(c => !c.delayed);
+    encounter.turnIndex = nextIndex >= 0 ? nextIndex : 0;
+    resetTurnState(currentCombatant(encounter));
+  }
+  return { encounter, combatant, current: currentCombatant(encounter) };
+}
+
+/** Rejoin ahead of `targetQuery` (default: the current combatant). */
+function rejoinCombatant(encounter, query, targetQuery = null) {
+  const combatant = requireCombatant(encounter, query);
+  const target = targetQuery ? findCombatant(encounter, targetQuery) : currentCombatant(encounter);
+  combatant.delayed = false;
+  if (target && target.id !== combatant.id) {
+    combatant.initiative = Number(target.initiative ?? 0) + 0.01;
+  }
+  encounter.log.push({ at: nowIso(), kind: 'rejoin', name: combatant.name, before: target?.name ?? null });
+  sortCombatants(encounter);
+  const index = encounter.combatants.findIndex(c => c.id === combatant.id);
+  if (index >= 0) encounter.turnIndex = index;
+  resetTurnState(currentCombatant(encounter));
+  return { encounter, combatant, current: currentCombatant(encounter) };
+}
+
 // ── Effects ──────────────────────────────────────────────────────────────────
 
 /** Add an effect, replacing any existing one with the same id or slugged name. */
@@ -322,6 +379,9 @@ module.exports = {
   removeCombatant,
   setTempHp,
   modifyCombatant,
+  advanceTurn,
+  delayCombatant,
+  rejoinCombatant,
   addEffect,
   removeEffect,
   effectKey,

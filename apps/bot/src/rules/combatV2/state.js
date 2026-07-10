@@ -16,6 +16,7 @@ const {
   slug,
   nowIso,
   isCombatV2Snapshot,
+  makeCombatant, // used bare as `.map(makeCombatant)` in the restore path
   findCombatant,
   currentCombatant,
   resetTurnState,
@@ -331,62 +332,23 @@ function setDying(channelId, query, value) {
   };
 }
 
+// Unlike the other mutators this returns null instead of throwing when the
+// channel has no encounter, and persists nothing when the encounter is empty.
 function advanceTurn(channelId, direction = 1) {
   const encounter = getEncounter(channelId);
-  if (!encounter || encounter.combatants.length === 0) return null;
-  const len = encounter.combatants.length;
-  let wrapped = false;
-  for (let steps = 0; steps < len; steps += 1) {
-    const previousIndex = encounter.turnIndex;
-    encounter.turnIndex = (encounter.turnIndex + direction + len) % len;
-    if (direction > 0 && previousIndex >= 0 && encounter.turnIndex <= previousIndex) wrapped = true;
-    if (direction < 0 && encounter.turnIndex > previousIndex) wrapped = true;
-    const candidate = currentCombatant(encounter);
-    if (!candidate?.delayed) break;
-  }
-  if (direction > 0 && wrapped) encounter.round += 1;
-  if (direction < 0 && wrapped && encounter.round > 1) encounter.round -= 1;
-  resetTurnState(currentCombatant(encounter));
-  encounter.log.push({ at: nowIso(), kind: direction >= 0 ? 'next' : 'prev', current: currentCombatant(encounter)?.name ?? null });
+  if (!encounter) return null;
+  const result = model.advanceTurn(encounter, direction);
+  if (!result) return null;
   touchEncounter(encounter);
-  return { encounter, current: currentCombatant(encounter) };
+  return result;
 }
 
 function delayCombatant(channelId, query) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = query ? findCombatant(encounter, query) : currentCombatant(encounter);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const wasCurrent = currentCombatant(encounter)?.id === combatant.id;
-  combatant.delayed = true;
-  encounter.log.push({ at: nowIso(), kind: 'delay', name: combatant.name });
-  sortCombatants(encounter);
-  if (wasCurrent) {
-    const nextIndex = encounter.combatants.findIndex(c => !c.delayed);
-    encounter.turnIndex = nextIndex >= 0 ? nextIndex : 0;
-    resetTurnState(currentCombatant(encounter));
-  }
-  touchEncounter(encounter);
-  return { encounter, combatant, current: currentCombatant(encounter) };
+  return mutate(channelId, enc => model.delayCombatant(enc, query));
 }
 
 function rejoinCombatant(channelId, query, targetQuery = null) {
-  const encounter = getEncounter(channelId);
-  if (!encounter) throw new Error('No active encounter.');
-  const combatant = findCombatant(encounter, query);
-  if (!combatant) throw new Error(`No combatant matching "${query}".`);
-  const target = targetQuery ? findCombatant(encounter, targetQuery) : currentCombatant(encounter);
-  combatant.delayed = false;
-  if (target && target.id !== combatant.id) {
-    combatant.initiative = Number(target.initiative ?? 0) + 0.01;
-  }
-  encounter.log.push({ at: nowIso(), kind: 'rejoin', name: combatant.name, before: target?.name ?? null });
-  sortCombatants(encounter);
-  const index = encounter.combatants.findIndex(c => c.id === combatant.id);
-  if (index >= 0) encounter.turnIndex = index;
-  resetTurnState(currentCombatant(encounter));
-  touchEncounter(encounter);
-  return { encounter, combatant, current: currentCombatant(encounter) };
+  return mutate(channelId, enc => model.rejoinCombatant(enc, query, targetQuery));
 }
 
 function applyHp(channelId, query, amount, { mode = 'delta', isCrit = false } = {}) {
