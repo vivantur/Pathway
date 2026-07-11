@@ -2,6 +2,32 @@ const { EmbedBuilder } = require('discord.js');
 
 const { fmt } = require('../../lib/format');
 const { companionDatabase } = require('../../reference/databases');
+const { scaleCompanionStats } = require('../../rules/companionScaling');
+const { findSpecificFamiliar } = require('../../rules/specificFamiliars');
+
+// Parse a catalog attack's "1d8 piercing" damage string into the shape the
+// scaling engine wants: { damageDie, damageType }.
+function parseCatalogDamage(damage) {
+  const m = String(damage || '').match(/(\d+d\d+)\s*(\w*)/i);
+  return { damageDie: m ? m[1] : '1d4', damageType: m ? (m[2] || '') : '' };
+}
+
+// Normalize a bot catalog entry into the scaling engine's `type` shape.
+function catalogToScalingType(base) {
+  const rawAttacks = (base.melee && base.melee.length) || (base.ranged && base.ranged.length)
+    ? [...(base.melee || []), ...(base.ranged || [])]
+    : (Array.isArray(base.attacks) ? base.attacks : []);
+  return {
+    abilityMods: base.abilities || {},
+    ancestryHp: base.hp ?? 6,
+    size: base.size || 'Medium',
+    skill: base.skill ? String(base.skill).toLowerCase() : null,
+    attacks: rawAttacks.map((a) => {
+      const d = parseCatalogDamage(a.damage);
+      return { name: a.name, traits: a.traits || [], damageDie: d.damageDie, damageType: d.damageType };
+    }),
+  };
+}
 
 // ── Companion lookup ─────────────────────────────────────────────────────────
 function findCompanion(query) {
@@ -286,12 +312,14 @@ function scaleCompanion(comp, char) {
       overriddenFields: [], kind: 'familiar',
     };
   }
-  let baseHp, abilities, attacks, size, speed;
+  const ov = comp.overrides ?? {};
+
+  // Custom (PDF-imported) companions keep their existing override-driven path:
+  // they carry their own stat block, so the animal-companion advancement
+  // formulas don't apply. Only catalog companions go through the corrected
+  // engine below.
   if (comp.baseType === 'custom' && comp.customStats) {
-    // Use a per-level HP base (default 6, or customStats.hpPerLevel if set).
-    // The raw hp from the bestiary is the creature's FULL HP, not a per-level base.
-    // For custom companions, we approximate size-based per-level HP.
-    baseHp = comp.customStats.hpPerLevel ?? (() => {
+    const baseHp = comp.customStats.hpPerLevel ?? (() => {
       const s = (comp.customStats.size ?? 'Medium').toLowerCase();
       if (s === 'tiny') return 4;
       if (s === 'small') return 6;
@@ -300,55 +328,77 @@ function scaleCompanion(comp, char) {
       if (s === 'huge') return 12;
       return 8;
     })();
-    abilities = comp.customStats.abilities ?? {};
-    attacks = comp.customStats.attacks ?? [];
-    size = comp.customStats.size ?? 'Medium';
-    speed = comp.customStats.speed ?? '25 feet';
-  } else {
-    const { companion: base } = findCompanion(comp.baseType);
-    if (!base) return { maxHp: 10, ac: 10, attackBonus: 0, damageDice: '1d4', form, abilities: {}, saves: { fort: 0, ref: 0, will: 0 }, size: 'Medium', speed: '25 feet', damageType: '', damageBonus: 0, attacks: [], primaryAttack: null };
-    baseHp = base.hp ?? 6;
-    abilities = base.abilities ?? {};
-    attacks = [...(base.melee ?? []), ...(base.ranged ?? [])];
-    if (attacks.length === 0 && Array.isArray(base.attacks)) attacks = base.attacks;
-    size = base.size ?? 'Medium';
-    speed = base.speed ?? '25 feet';
-  }
-  const conMod = abilities.con ?? 0;
-  let maxHp;
-  if (form === 'young') maxHp = baseHp * lvl;
-  else if (form === 'mature') maxHp = (baseHp + conMod) * lvl;
-  else maxHp = (baseHp + conMod + 1) * lvl;
-  if (maxHp < baseHp) maxHp = baseHp;
-  let profBonus;
-  if (form === 'young') profBonus = lvl;
-  else if (form === 'mature') profBonus = lvl + 2;
-  else profBonus = lvl + 4;
-  const dexMod = abilities.dex ?? 0;
-  const ac = 10 + dexMod + profBonus;
-  const saves = { fort: profBonus + conMod, ref: profBonus + dexMod, will: profBonus + (abilities.wis ?? 0) };
-  const primary = attacks[0];
-  const isFinesse = primary?.traits?.includes('finesse');
-  const strMod = abilities.str ?? 0;
-  const abilForAttack = isFinesse && dexMod > strMod ? dexMod : strMod;
-  const attackBonus = profBonus + abilForAttack;
-  let damageDice = '1d4', damageType = '';
-  if (primary?.damage) {
-    const m = primary.damage.match(/(\d+)d(\d+)\s*(\w*)/);
-    if (m) {
-      let dieSize = parseInt(m[2], 10);
-      if (form === 'savage') dieSize = Math.min(12, dieSize + 2);
-      damageDice = `${m[1]}d${dieSize}`;
-      damageType = m[3] || '';
+    const abilities = comp.customStats.abilities ?? {};
+    const attacks = comp.customStats.attacks ?? [];
+    const size = comp.customStats.size ?? 'Medium';
+    const speed = comp.customStats.speed ?? '25 feet';
+    const conMod = abilities.con ?? 0;
+    let maxHp;
+    if (form === 'young') maxHp = baseHp * lvl;
+    else if (form === 'mature') maxHp = (baseHp + conMod) * lvl;
+    else maxHp = (baseHp + conMod + 1) * lvl;
+    if (maxHp < baseHp) maxHp = baseHp;
+    const profBonus = form === 'young' ? lvl : form === 'mature' ? lvl + 2 : lvl + 4;
+    const dexMod = abilities.dex ?? 0;
+    const ac = 10 + dexMod + profBonus;
+    const saves = { fort: profBonus + conMod, ref: profBonus + dexMod, will: profBonus + (abilities.wis ?? 0) };
+    const primary = attacks[0];
+    const isFinesse = primary?.traits?.includes('finesse');
+    const strMod = abilities.str ?? 0;
+    const abilForAttack = isFinesse && dexMod > strMod ? dexMod : strMod;
+    const attackBonus = profBonus + abilForAttack;
+    let damageDice = '1d4', damageType = '';
+    if (primary?.damage) {
+      const m = primary.damage.match(/(\d+)d(\d+)\s*(\w*)/);
+      if (m) {
+        let dieSize = parseInt(m[2], 10);
+        if (form === 'savage') dieSize = Math.min(12, dieSize + 2);
+        damageDice = `${m[1]}d${dieSize}`;
+        damageType = m[3] || '';
+      }
     }
+    const result = { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks, specialization: null, typeSkill: null };
+    return applyCompanionOverrides(result, ov, profBonus, abilities.wis ?? 0);
   }
-  const result = { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks };
 
-  // Apply per-companion overrides. Any field set to a non-null value in
-  // comp.overrides replaces the computed value. This lets players tweak
-  // stats (e.g. boost AC, change ability scores, fix odd HP totals) without
-  // losing the automatic scaling for untouched fields.
-  const ov = comp.overrides ?? {};
+  // Catalog companions: corrected advancement engine (mirrors @pathway/core,
+  // Player Core pg. 206-211). Reads the website-chosen specialization from the
+  // round-tripped custom_stats (webStats.specialization).
+  const { companion: base } = findCompanion(comp.baseType);
+  if (!base) return { maxHp: 10, ac: 10, attackBonus: 0, damageDice: '1d4', form, abilities: {}, saves: { fort: 0, ref: 0, will: 0 }, size: 'Medium', speed: '25 feet', damageType: '', damageBonus: 0, attacks: [], primaryAttack: null, specialization: null, typeSkill: null, overriddenFields: [] };
+  const type = catalogToScalingType(base);
+  const specialization = comp.webStats?.specialization ?? null;
+  const scaled = scaleCompanionStats(type, lvl, form, 0, specialization);
+  const primary = scaled.attacks[0] ?? null;
+  const result = {
+    maxHp: scaled.maxHp,
+    ac: scaled.ac,
+    attackBonus: primary ? primary.attack : 0,
+    damageDice: primary ? primary.damage : '1d4',
+    damageType: primary ? primary.damageType : '',
+    damageBonus: primary ? primary.damageBonus : 0,
+    saves: { fort: scaled.saves.fortitude, ref: scaled.saves.reflex, will: scaled.saves.will },
+    form,
+    size: scaled.size,
+    speed: base.speed ?? '25 feet',
+    primaryAttack: primary ? { name: primary.name, traits: primary.traits } : null,
+    abilities: scaled.abilityMods,
+    attacks: scaled.attacks,
+    specialization: scaled.specialization ? { slug: scaled.specialization.slug, name: scaled.specialization.name } : null,
+    typeSkill: scaled.skill,
+  };
+  // Perception's proficiency component = scaled.perception minus its Wis mod;
+  // applyCompanionOverrides re-adds the (possibly overridden) Wis.
+  const perceptionProf = scaled.perception - (scaled.abilityMods.wis || 0);
+  return applyCompanionOverrides(result, ov, perceptionProf, scaled.abilityMods.wis || 0);
+}
+
+// Apply per-companion overrides on top of a computed result. Any field set to a
+// non-null value in `overrides` replaces the computed value, so players can
+// tweak stats without losing the automatic scaling for untouched fields.
+// `perceptionProf` + `baseWis` reconstruct Perception when Wis is overridden.
+function applyCompanionOverrides(result, ov, perceptionProf, baseWis) {
+  ov = ov ?? {};
   if (ov.hp != null)           result.maxHp = ov.hp;
   if (ov.ac != null)           result.ac = ov.ac;
   if (ov.attackBonus != null)  result.attackBonus = ov.attackBonus;
@@ -368,13 +418,10 @@ function scaleCompanion(comp, char) {
       if (ov.saves[key] != null) result.saves[key] = ov.saves[key];
     }
   }
-  // Compute a default Perception bonus from the final (post-override) wisdom
-  // + proficiency bonus by form. Then apply the override if set.
-  const finalWis = (ov.abilities && ov.abilities.wis != null) ? ov.abilities.wis : (abilities.wis ?? 0);
-  result.perception = profBonus + finalWis;
+  const finalWis = (ov.abilities && ov.abilities.wis != null) ? ov.abilities.wis : baseWis;
+  result.perception = perceptionProf + finalWis;
   if (ov.perception != null) result.perception = ov.perception;
 
-  // Track which fields were overridden so the sheet can flag them visually
   result.overriddenFields = [];
   if (ov.hp != null) result.overriddenFields.push('HP');
   if (ov.ac != null) result.overriddenFields.push('AC');
@@ -394,10 +441,14 @@ function scaleCompanion(comp, char) {
 // custom_stats.familiar.abilities; stats follow the familiar rules (HP 5×level,
 // Speed 25 ft, AC/saves as the master's).
 function buildFamiliarSheetEmbed(comp, scaled, char, charEntry, isActive) {
+  const fam = comp.webStats?.familiar ?? {};
+  const specific = findSpecificFamiliar(fam.specific);
   const embed = new EmbedBuilder()
     .setColor(isActive ? 0xf39c12 : 0x9b59b6)
     .setTitle(`🦉 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
-    .setDescription(`*${char.name}'s familiar*`);
+    .setDescription(specific
+      ? `*${char.name}'s ${specific.name} — ${specific.source}*`
+      : `*${char.name}'s familiar*`);
   if (comp.art) embed.setThumbnail(comp.art);
   else if (charEntry.art) embed.setThumbnail(charEntry.art);
 
@@ -408,9 +459,21 @@ function buildFamiliarSheetEmbed(comp, scaled, char, charEntry, isActive) {
     inline: false,
   });
 
-  const slugs = comp.webStats?.familiar?.abilities ?? [];
+  // A specific familiar's granted abilities are innate and always present; its
+  // unique abilities are listed by name (full text on the website).
+  if (specific) {
+    const parts = [`**Granted (innate):** ${specific.granted.map(titleCaseSlug).join(', ')}`];
+    if (specific.unique.length) parts.push(`**Unique:** ${specific.unique.join(', ')}`);
+    if (specific.access) parts.push(`*Access: ${specific.access}*`);
+    embed.addFields({ name: `⭐ Specific Familiar`, value: parts.join('\n').slice(0, 1020), inline: false });
+  }
+
+  const slugs = fam.abilities ?? [];
+  const limit = fam.limit ?? 2;
+  const consumed = specific ? specific.required : 0;
+  const free = Math.max(0, limit - consumed);
   embed.addFields({
-    name: `✨ Familiar Abilities (${slugs.length})`,
+    name: `✨ Chosen Abilities (${slugs.length}/${free})`,
     value: slugs.length
       ? slugs.map(s => `• ${titleCaseSlug(s)}`).join('\n').slice(0, 1020)
       : '*None selected — pick them on the website or with your daily preparations.*',
@@ -447,10 +510,14 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
 
   const customLabel = comp.customStats?.fromBestiary ?? comp.customStats?.sourceName ?? 'custom';
   const kindWord = kind === 'mount' ? 'mount' : 'companion';
+  // "specialized (Wrecker)" when a specialization is applied, else the form.
+  const formLabel = scaled.specialization
+    ? `specialized (${scaled.specialization.name})`
+    : comp.form;
   const embed = new EmbedBuilder()
     .setColor(isActive ? 0xf39c12 : 0x7289DA)
     .setTitle(`🐾 ${comp.displayName}${isActive ? ' ⭐' : ''}`)
-    .setDescription(`*${char.name}'s ${comp.form} ${comp.baseType === 'custom' ? customLabel : comp.baseType} ${kindWord}*`);
+    .setDescription(`*${char.name}'s ${formLabel} ${comp.baseType === 'custom' ? customLabel : comp.baseType} ${kindWord}*`);
 
   // Show portrait if set. Prefer companion.art, fall back to character art.
   if (comp.art) embed.setThumbnail(comp.art);
@@ -468,11 +535,15 @@ function buildCompanionSheetEmbed(comp, scaled, char, charEntry, isActive) {
   const ab = scaled.abilities;
   embed.addFields({ name: '📊 Abilities', value: `Str ${fmt(ab.str ?? 0)}${abFlag('str')} · Dex ${fmt(ab.dex ?? 0)}${abFlag('dex')} · Con ${fmt(ab.con ?? 0)}${abFlag('con')} · Int ${fmt(ab.int ?? -4)}${abFlag('int')} · Wis ${fmt(ab.wis ?? 0)}${abFlag('wis')} · Cha ${fmt(ab.cha ?? 0)}${abFlag('cha')}`, inline: false });
 
-  // Skills (override-only). Display alphabetically.
-  const skills = comp.skills ?? {};
+  // Skills: the companion type's trained skill (computed) plus any override
+  // skills added via /companion set. Display alphabetically, type skill first.
+  const skills = { ...(comp.skills ?? {}) };
+  if (scaled.typeSkill && skills[scaled.typeSkill.name] == null) {
+    skills[scaled.typeSkill.name] = scaled.typeSkill.modifier;
+  }
   const skillEntries = Object.entries(skills).sort(([a], [b]) => a.localeCompare(b));
   if (skillEntries.length > 0) {
-    const line = skillEntries.map(([name, bonus]) => `**${name}** ${fmt(bonus)}`).join(' · ');
+    const line = skillEntries.map(([name, bonus]) => `**${titleCaseSlug(name)}** ${fmt(bonus)}`).join(' · ');
     embed.addFields({ name: '🎯 Skills', value: line.slice(0, 1020), inline: false });
   }
 
