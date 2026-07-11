@@ -2662,6 +2662,35 @@ console.log('Startup requires complete; attempting Discord gateway login…');
 client.on('debug', (m) => console.log('[discord:debug]', m));
 client.on('warn',  (m) => console.warn('[discord:warn]', m));
 
+// TEMPORARY probe: the network flow logs show TCP to Discord succeeds, so egress
+// works — yet the handshake stalls silently after "Preparing to connect to the
+// gateway". That's the signature of Discord rate-limiting us (exhausted
+// session_start_limit from repeated redeploys, or a 429), which makes discord.js
+// wait out the reset with no error. Hit /gateway/bot directly to read the actual
+// numbers. Uses Node's built-in fetch (separate HTTP path). Remove after diagnosis.
+(async () => {
+  try {
+    const res = await fetch('https://discord.com/api/v10/gateway/bot', {
+      headers: { Authorization: `Bot ${TOKEN}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    console.log(`[net-probe] GET /gateway/bot → HTTP ${res.status}`);
+    const retryAfter = res.headers.get('retry-after');
+    if (retryAfter) console.log(`[net-probe] retry-after: ${retryAfter}s`);
+    const body = await res.json().catch(() => null);
+    if (body) {
+      if (body.url) console.log(`[net-probe] gateway url: ${body.url} | recommended shards: ${body.shards}`);
+      if (body.session_start_limit) {
+        console.log(`[net-probe] session_start_limit: ${JSON.stringify(body.session_start_limit)}`);
+      } else {
+        console.log(`[net-probe] body: ${JSON.stringify(body)}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[net-probe] GET /gateway/bot failed: ${err.name}: ${err.message}`);
+  }
+})();
+
 const readyWatchdog = setTimeout(() => {
   if (!client.isReady()) {
     console.error('[startup] 30s after login(), still not READY — gateway handshake stalled. See [discord:debug] above for the last step reached.');
