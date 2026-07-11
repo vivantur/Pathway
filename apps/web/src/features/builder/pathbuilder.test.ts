@@ -120,6 +120,35 @@ describe('toPathbuilder — proficiencies', () => {
     expect(build.proficiencies.unarmed).toBe(2 * derived.ranks.attacks.unarmed);
   });
 
+  it('bakes the armor speed penalty into attributes.speed (readers cannot derive it)', () => {
+    const state = unarmoredFighter();
+    state.inventory = [{ itemId: 'full-plate', qty: 1, equipped: true }];
+    const derived = deriveCharacter(state);
+    const { build } = toPathbuilder(state);
+
+    // Full Plate is Str +4 / speed -10: reduced to -5 when the requirement is
+    // met, full otherwise — either way the exported speed carries the penalty.
+    expect(derived.speed).toBeLessThan(25);
+    expect(build.attributes.speed).toBe(derived.speed);
+  });
+
+  it('armor Strength requirement compares the MODIFIER, not the raw score', () => {
+    // Str 14 (mod +2) vs Full Plate's Str +4: requirement NOT met, so the
+    // full -10 speed penalty and the -3 check penalty apply. The old raw-score
+    // comparison (14 >= 4) treated it as met.
+    const state = unarmoredFighter();
+    state.inventory = [{ itemId: 'full-plate', qty: 1, equipped: true }];
+    const derived = deriveCharacter(state);
+    expect(derived.mods.str).toBe(2);
+    expect(derived.speed).toBe(15);
+    const athletics = derived.skills.find((s) => s.id === 'athletics');
+    const religion = derived.skills.find((s) => s.id === 'religion');
+    expect(athletics && religion).toBeTruthy();
+    // Check penalty hits Str/Dex skills only.
+    expect(athletics!.modifier).toBe(proficiencyBonus(athletics!.rank, 1) + 2 - 3);
+    expect(religion!.modifier).toBe(proficiencyBonus(religion!.rank, 1) + derived.mods.wis);
+  });
+
   it('caster spell proficiency rides the spellcasting track, not "trained forever"', () => {
     const ds = getDataset();
     const wizard = ds.classes.find((c) => c.id === 'wizard');

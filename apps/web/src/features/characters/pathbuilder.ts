@@ -176,6 +176,15 @@ export interface PathbuilderBuild {
     acTotal?: number;
     shieldBonus?: number;
   };
+  /**
+   * Characters built on the web embed their full BuilderState here (external
+   * Pathbuilder exports don't have it). The sheet only reads `options` — the
+   * variant-rule flags (Proficiency Without Level et al.) that change how the
+   * stored ranks turn into bonuses.
+   */
+  _pathwayBuild?: {
+    options?: Record<string, boolean>;
+  };
 }
 
 // -------- Constants --------
@@ -253,14 +262,20 @@ export function sizeLabel(size: number | undefined): string | undefined {
 // -------- PF2e math --------
 
 /**
+ * True when this build was saved with the Proficiency Without Level variant
+ * on. Plain Pathbuilder JSON carries no variant flags, so external imports
+ * always get the standard (level-added) math.
+ */
+export function usesPwl(build: PathbuilderBuild): boolean {
+  return Boolean(build._pathwayBuild?.options?.proficiencyWithoutLevel);
+}
+
+/**
  * Standard PF2e proficiency-based bonus: ability mod + core proficiency
- * bonus. Pathbuilder's stored rank is the raw bonus (0/2/4/6/8), so it's
- * converted to a core rank first. Ignores item bonuses for now — the
- * bot's `mods` object can override individual totals later.
- *
- * TODO(core-migration): Pathbuilder JSON carries no variant-rule flags, so
- * this always adds level. Builds saved with Proficiency Without Level should
- * pass the flag through once the sheet reads options from _pathwayBuild.
+ * bonus, honoring the build's Proficiency Without Level flag. Pathbuilder's
+ * stored rank is the raw bonus (0/2/4/6/8), so it's converted to a core rank
+ * first. Ignores item bonuses for now — the bot's `mods` object can override
+ * individual totals later.
  */
 export function proficiencyBonus(
   build: PathbuilderBuild,
@@ -269,7 +284,7 @@ export function proficiencyBonus(
 ): number {
   const level = build.level ?? 1;
   const mod = abilityMod(build.abilities?.[ability]);
-  return mod + coreProficiencyBonus(rawBonusToRank(rank), level);
+  return mod + coreProficiencyBonus(rawBonusToRank(rank), level, usesPwl(build));
 }
 
 export function skillBonus(build: PathbuilderBuild, skillName: string): number {
@@ -279,12 +294,27 @@ export function skillBonus(build: PathbuilderBuild, skillName: string): number {
   return proficiencyBonus(build, rank, ability);
 }
 
+/**
+ * Item bonus to saves from the worn armor's resilient rune (`res` is
+ * "resilient" / "greaterResilient" / "majorResilient" in both real Pathbuilder
+ * exports and the web builder's).
+ */
+function resilientBonus(build: PathbuilderBuild): number {
+  const armors = (build.armor ?? []).filter((a) => !isShieldArmor(a));
+  const worn = armors.find((a) => a.worn) ?? armors[0];
+  const res = (worn?.res ?? '').toLowerCase();
+  if (!res.includes('resilient')) return 0;
+  if (res.includes('major')) return 3;
+  if (res.includes('greater')) return 2;
+  return 1;
+}
+
 export function saveBonus(
   build: PathbuilderBuild,
   save: 'fortitude' | 'reflex' | 'will',
 ): number {
   const ability: Ability = save === 'fortitude' ? 'con' : save === 'reflex' ? 'dex' : 'wis';
-  return proficiencyBonus(build, build.proficiencies?.[save], ability);
+  return proficiencyBonus(build, build.proficiencies?.[save], ability) + resilientBonus(build);
 }
 
 export function perceptionBonus(build: PathbuilderBuild): number {
@@ -410,8 +440,7 @@ export function classDC(build: PathbuilderBuild): number | undefined {
   if (cdc == null) return undefined;
   const ability = build.keyability;
   if (!ability) return undefined;
-  const level = build.level ?? 1;
-  return 10 + abilityMod(build.abilities?.[ability]) + (cdc > 0 ? cdc + level : 0);
+  return 10 + proficiencyBonus(build, cdc, ability);
 }
 
 // -------- Spells / weapons / money --------
@@ -438,13 +467,26 @@ export function damageTypeLabel(code: string | undefined): string {
   return DAMAGE_TYPE_LABEL[code] ?? code.toLowerCase();
 }
 
-/** Formatted damage line like `1d8+3 slashing`. */
+/**
+ * Number of weapon damage dice from the striking rune, read from either rune
+ * field ("striking" / "greaterStriking" / "majorStriking" in `runes` or `str`).
+ */
+function weaponDice(w: Weapon): number {
+  const names = [...(w.runes ?? []), w.str ?? ''].map((r) => String(r).toLowerCase());
+  const striking = names.find((r) => r.includes('striking'));
+  if (!striking) return 1;
+  if (striking.includes('major')) return 4;
+  if (striking.includes('greater')) return 3;
+  return 2;
+}
+
+/** Formatted damage line like `2d8+3 slashing` (striking runes included). */
 export function weaponDamage(w: Weapon): string {
   const die = w.die ?? '';
   const dmgType = damageTypeLabel(w.damageType);
   const bonus = w.damageBonus;
   const bonusStr = bonus == null || bonus === 0 ? '' : bonus > 0 ? `+${bonus}` : `${bonus}`;
-  return `1${die}${bonusStr}${dmgType ? ` ${dmgType}` : ''}`.trim();
+  return `${weaponDice(w)}${die}${bonusStr}${dmgType ? ` ${dmgType}` : ''}`.trim();
 }
 
 /** Ordered tradition list (arcane, divine, occult, primal) for consistent UI. */

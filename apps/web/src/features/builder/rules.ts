@@ -452,7 +452,10 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const spellcastingRank = progressionRank(state, 'spellcasting', 0);
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
-  const meetsStr = !armor || scores.str >= armor.strength;
+  // The dataset stores that threshold as a MODIFIER (remaster style: Full Plate
+  // is "Str +4", stored 4) — comparing the raw score (10-20) against it made
+  // every character "meet" every armor, so check/speed penalties never applied.
+  const meetsStr = !armor || mods.str >= armor.strength;
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 

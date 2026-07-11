@@ -348,7 +348,10 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       classhp: klass?.hp ?? 0,
       bonushp: 0,
       bonushpPerLevel: 0,
-      speed: ancestry?.speed ?? 25,
+      // Like acTotal, this is a value the JSON's readers cannot re-derive:
+      // the armor speed penalty needs the equipped armor's stats and the
+      // wearer's Strength, neither of which they resolve. Bake it in.
+      speed: derived.speed,
       speedBonus: 0,
     },
     abilities: { ...derived.scores },

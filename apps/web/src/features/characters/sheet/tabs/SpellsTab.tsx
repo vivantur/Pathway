@@ -5,10 +5,12 @@ import { useSpellsByNames } from '@/features/characters/useSpellsByNames';
 import { useSpellSearch } from '@/features/characters/useSpellSearch';
 import {
   abilityMod,
+  usesPwl,
   type FocusPools,
   type PathbuilderBuild,
   type Spellcaster,
 } from '@/features/characters/pathbuilder';
+import { proficiencyBonus as coreProficiencyBonus, rawBonusToRank } from '@pathway/core';
 import type {
   AddedSpell,
   CharacterRow,
@@ -759,11 +761,10 @@ function FocusSpellsPanel({
       <ul className="space-y-3">
         {entries.map((e, i) => {
           const level = build.level ?? 1;
-          const rank = e.proficiency ?? 0;
           const focusAttack =
-            rank > 0
-              ? level + rank + (e.abilityBonus ?? 0) + (e.itemBonus ?? 0)
-              : e.abilityBonus ?? 0;
+            coreProficiencyBonus(rawBonusToRank(e.proficiency), level, usesPwl(build)) +
+            (e.abilityBonus ?? 0) +
+            (e.itemBonus ?? 0);
           const focusDC = 10 + focusAttack;
           return (
             <li
@@ -898,8 +899,7 @@ function collectAllSpellNames(casters: Spellcaster[], focus: FocusPools): string
 function spellAttackTotal(build: PathbuilderBuild, c: Spellcaster): number {
   const level = build.level ?? 1;
   const ab = abilityMod(build.abilities?.[c.ability]);
-  const rank = c.proficiency ?? 0;
-  return rank > 0 ? level + rank + ab : ab;
+  return ab + coreProficiencyBonus(rawBonusToRank(c.proficiency), level, usesPwl(build));
 }
 
 function fmtSigned(n: number): string {
