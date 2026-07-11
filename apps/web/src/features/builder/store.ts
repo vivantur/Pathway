@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { findAncestry, findBackground, findClass } from '@/features/builder/data';
+import { findAncestry, findBackground, findClass, type AbilityKey } from '@/features/builder/data';
 import {
   emptyBuilderState,
   emptyLevelGains,
@@ -11,6 +11,21 @@ import {
   type StepId,
 } from './types';
 import { choiceSlots } from './rules';
+import { resolveCasterTradition } from './spellcasting';
+
+/** Drop the given per-level feat picks from every level's gains. */
+function clearGains(
+  progression: Record<number, LevelGains>,
+  keys: ('classFeatId' | 'ancestryFeatId')[],
+): Record<number, LevelGains> {
+  const out: Record<number, LevelGains> = {};
+  for (const [lvl, gains] of Object.entries(progression)) {
+    const g = { ...gains };
+    for (const k of keys) delete g[k];
+    out[Number(lvl)] = g;
+  }
+  return out;
+}
 
 export const STEPS: { id: StepId; label: string }[] = [
   { id: 'ancestry', label: 'Ancestry' },
@@ -37,9 +52,14 @@ interface BuilderStore {
   replace: (state: BuilderState) => void;
   reset: () => void;
 
+  /** The char_key this builder session was hydrated from (null = a fresh build). */
+  editingCharKey: string | null;
+  setEditingCharKey: (charKey: string | null) => void;
+
   chooseAncestry: (id: string) => void;
   chooseBackground: (id: string) => void;
   chooseClass: (id: string) => void;
+  chooseSubclass: (id: string, keyAbility?: AbilityKey) => void;
   toggleSkill: (id: string, maxFree: number) => void;
   toggleLanguage: (name: string, max: number) => void;
 
@@ -77,10 +97,14 @@ export const useBuilder = create<BuilderStore>((set) => ({
   setStep: (step) => set({ step }),
   update: (patch) => set((s) => ({ state: { ...s.state, ...patch } })),
   replace: (state) => set({ state }),
-  reset: () => set({ state: emptyBuilderState(), step: 'ancestry' }),
+  reset: () => set({ state: emptyBuilderState(), step: 'ancestry', editingCharKey: null }),
+
+  editingCharKey: null,
+  setEditingCharKey: (charKey) => set({ editingCharKey: charKey }),
 
   chooseAncestry: (id) =>
     set((s) => {
+      if (s.state.ancestryId === id) return s;
       const ancestry = findAncestry(id);
       const slots = ancestry ? choiceSlots(ancestry.boosts).length : 0;
       return {
@@ -91,21 +115,37 @@ export const useBuilder = create<BuilderStore>((set) => ({
           ancestryBoostChoices: Array(slots).fill(null),
           ancestryFeatId: undefined,
           languageChoices: [],
+          // Ancestry feats picked at 5/9/13/17 (or the paragon levels) belong
+          // to the old ancestry; left in place they'd still fill the slots and
+          // validate, exporting a dwarf's feats on an elf.
+          progression: clearGains(s.state.progression, ['ancestryFeatId']),
         },
       };
     }),
 
   chooseBackground: (id) =>
     set((s) => {
+      if (s.state.backgroundId === id) return s;
       const bg = findBackground(id);
       const slots = bg ? choiceSlots(bg.boosts).length : 0;
       return {
-        state: { ...s.state, backgroundId: id, backgroundBoostChoices: Array(slots).fill(null) },
+        state: {
+          ...s.state,
+          backgroundId: id,
+          backgroundBoostChoices: Array(slots).fill(null),
+          // If the new background trains a skill the player had picked as a
+          // free choice, drop the pick — otherwise it renders as "granted"
+          // (disabled) while permanently consuming a free-skill slot.
+          skillChoices: bg?.trainedSkill
+            ? s.state.skillChoices.filter((sk) => sk !== bg.trainedSkill)
+            : s.state.skillChoices,
+        },
       };
     }),
 
   chooseClass: (id) =>
     set((s) => {
+      if (s.state.classId === id) return s;
       const klass = findClass(id);
       return {
         state: {
@@ -115,8 +155,34 @@ export const useBuilder = create<BuilderStore>((set) => ({
           subclassId: undefined,
           classFeatId: undefined,
           skillChoices: [],
+          // Class-scoped choices from the old class must not survive the
+          // switch: level 2-20 class feats stayed selected (and validated),
+          // the old class's spell list rode onto the new one, and the
+          // fighter's weapon group / monk's paths lingered invisibly.
+          weaponGroup: undefined,
+          monkPaths: undefined,
+          progression: clearGains(s.state.progression, ['classFeatId']),
+          spellcasting: { cantrips: [], spellsByRank: {}, focusSpells: [], focusCantrips: [] },
         },
       };
+    }),
+
+  chooseSubclass: (id, keyAbility) =>
+    set((s) => {
+      if (s.state.subclassId === id)
+        return keyAbility ? { state: { ...s.state, keyAbility } } : s;
+      const next: BuilderState = {
+        ...s.state,
+        subclassId: id,
+        ...(keyAbility ? { keyAbility } : {}),
+      };
+      // A subclass can change the casting tradition (sorcerer bloodline, witch
+      // patron). Spells picked under the old tradition would vanish from the
+      // pick lists yet still count against the slot maxima, jamming the step.
+      if (resolveCasterTradition(s.state) !== resolveCasterTradition(next)) {
+        next.spellcasting = { ...next.spellcasting, cantrips: [], spellsByRank: {} };
+      }
+      return { state: next };
     }),
 
   toggleSkill: (id, maxFree) =>
@@ -250,9 +316,21 @@ export const useBuilder = create<BuilderStore>((set) => ({
     }),
 
   setFocusTradition: (tradition) =>
-    set((s) => ({
-      state: { ...s.state, spellcasting: { ...s.state.spellcasting, focusTradition: tradition } },
-    })),
+    set((s) => {
+      const next: BuilderState = {
+        ...s.state,
+        spellcasting: { ...s.state.spellcasting, focusTradition: tradition },
+      };
+      // The summoner's casting tradition IS this choice — switching it orphans
+      // spells picked under the old tradition (invisible but still counted
+      // against the slot maxima), so clear them. Classes whose focus tradition
+      // is cosmetic to their spell list (monk) resolve to the same tradition
+      // before and after and are untouched.
+      if (resolveCasterTradition(s.state) !== resolveCasterTradition(next)) {
+        next.spellcasting = { ...next.spellcasting, cantrips: [], spellsByRank: {} };
+      }
+      return { state: next };
+    }),
 
   addInnateSpell: (spellId, tradition) =>
     set((s) => {

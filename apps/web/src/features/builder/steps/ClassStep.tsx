@@ -14,6 +14,7 @@ const WEAPON_GROUPS = [
 export function ClassStep() {
   const { classId, keyAbility, subclassId, weaponGroup, monkPaths } = useBuilder((s) => s.state);
   const chooseClass = useBuilder((s) => s.chooseClass);
+  const chooseSubclass = useBuilder((s) => s.chooseSubclass);
   const update = useBuilder((s) => s.update);
   const klass = classId ? findClass(classId) : undefined;
   const [hover, setHover] = useState<{ c: CharacterClass; top: number; left: number } | null>(null);
@@ -87,7 +88,7 @@ export function ClassStep() {
             onSelect={(id) => {
               // A rogue's racket sets their key ability (Ruffian=Str, Thief=Dex, …).
               const racket = klass?.id === 'rogue' ? rogueRacketAbility(id) : undefined;
-              update(racket ? { subclassId: id, keyAbility: racket } : { subclassId: id });
+              chooseSubclass(id, racket);
             }}
           />
         </div>

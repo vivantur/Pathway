@@ -96,20 +96,38 @@ export function BuilderApp({
   const { user } = useAuth();
   const save = useSaveBuild();
 
-  // Edit / level-up: load the existing character and hydrate the builder once.
+  // Edit / level-up: load the existing character and hydrate the builder once
+  // PER char_key — navigating between two characters' edit pages must load the
+  // second one, not keep showing (and on save, overwrite it with) the first.
   const editing = Boolean(editCharKey);
   const charQuery = useCharacter(editCharKey);
-  const hydratedRef = useRef(false);
+  const reset = useBuilder((s) => s.reset);
+  const setEditingCharKey = useBuilder((s) => s.setEditingCharKey);
+  const hydratedForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!editCharKey || hydratedRef.current || !charQuery.data) return;
-    hydratedRef.current = true;
+    if (!editCharKey || !charQuery.data) return;
+    if (hydratedForRef.current === editCharKey) return;
+    hydratedForRef.current = editCharKey;
     const data = charQuery.data;
     replace({ ...emptyBuilderState(), ...fromPathbuilder(data.pathbuilder_data) });
+    setEditingCharKey(editCharKey);
     setCurrentId(data.id);
     setPartialLoad(!hasEmbeddedBuild(data.pathbuilder_data));
     if (levelUpOnLoad) levelUp();
     else setStep('ancestry');
-  }, [editCharKey, charQuery.data, levelUpOnLoad, replace, setCurrentId, setStep, levelUp]);
+  }, [editCharKey, charQuery.data, levelUpOnLoad, replace, setEditingCharKey, setCurrentId, setStep, levelUp]);
+
+  // Create mode: if the store still holds a character that was loaded for
+  // editing, start fresh — otherwise "Save to Vault" would silently duplicate
+  // the character that was just being edited.
+  useEffect(() => {
+    if (editCharKey) return;
+    hydratedForRef.current = null;
+    if (useBuilder.getState().editingCharKey) {
+      reset();
+      setCurrentId(null);
+    }
+  }, [editCharKey, reset, setCurrentId]);
 
   const index = STEPS.findIndex((s) => s.id === step);
   const Content = STEP_CONTENT[step];
@@ -141,6 +159,9 @@ export function BuilderApp({
         onSuccess: (result) => {
           if (!editing) clearDraft(); // a fresh build's draft is now saved for real
           setCurrentId(result.id);
+          // Clear the builder so returning to it later starts a NEW character
+          // instead of re-saving (duplicating) this one.
+          reset();
           navigate(`/vault/${result.char_key}`);
         },
       },
