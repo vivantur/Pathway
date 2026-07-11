@@ -7,12 +7,13 @@ import {
   findClass,
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
-import { chosenFeatIds } from '../rules';
+import { chosenFeatIds, gainsForLevel } from '../rules';
 import { FeatPicker } from '../FeatPicker';
 
 export function FeatsStep() {
   const state = useBuilder((s) => s.state);
   const update = useBuilder((s) => s.update);
+  const updateLevelGains = useBuilder((s) => s.updateLevelGains);
   const taken = chosenFeatIds(state);
 
   const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
@@ -27,6 +28,11 @@ export function FeatsStep() {
     (f) => f.type === 'class' && f.level === 1 && (f.classIds ?? []).includes(klass?.id ?? ''),
   );
   const bgFeat = background?.skillFeat ? feats.find((f) => f.id === background.skillFeat) : undefined;
+  // The rogue's class grants a skill feat at 1st level ("at 1st level and
+  // every level thereafter") on top of the background's. It's stored under
+  // progression[1] — the creation fields only model the universal picks.
+  const classSkillFeatAt1 = gainsForLevel(1, state.options, state.classId).skillFeat;
+  const skillFeats = feats.filter((f) => f.type === 'skill' && f.level <= 1);
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,6 +85,26 @@ export function FeatsStep() {
             <div className="font-display text-parchment">{bgFeat.name}</div>
             <p className="mt-1 font-ui text-sm text-parchment/70">{bgFeat.description}</p>
           </div>
+        </section>
+      )}
+
+      {classSkillFeatAt1 && (
+        <section className="panel flex flex-col gap-4 p-5">
+          <div>
+            <h4 className="font-display text-lg text-gold-400">
+              Skill Feat{klass ? ` — ${klass.name}` : ''}
+            </h4>
+            <p className="font-ui text-sm text-parchment/70">
+              Your class grants a skill feat at 1st level and every level thereafter.
+            </p>
+          </div>
+          <FeatPicker
+            feats={skillFeats}
+            selectedId={state.progression[1]?.skillFeatId}
+            onSelect={(id) => updateLevelGains(1, { skillFeatId: id })}
+            emptyLabel="No level-1 skill feats found."
+            takenIds={taken}
+          />
         </section>
       )}
     </div>

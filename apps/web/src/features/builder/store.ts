@@ -10,7 +10,7 @@ import {
   type SpellTradition,
   type StepId,
 } from './types';
-import { choiceSlots } from './rules';
+import { choiceSlots, gainsForLevel } from './rules';
 import { resolveCasterTradition } from './spellcasting';
 
 /** Drop the given per-level feat picks from every level's gains. */
@@ -147,6 +147,12 @@ export const useBuilder = create<BuilderStore>((set) => ({
     set((s) => {
       if (s.state.classId === id) return s;
       const klass = findClass(id);
+      const progression = clearGains(s.state.progression, ['classFeatId']);
+      // The level-1 skill feat slot is class-granted (rogue); if the new class
+      // doesn't grant it, drop the pick so it can't export without a slot.
+      if (progression[1]?.skillFeatId && !gainsForLevel(1, s.state.options, id).skillFeat) {
+        progression[1] = { ...progression[1], skillFeatId: undefined };
+      }
       return {
         state: {
           ...s.state,
@@ -161,7 +167,7 @@ export const useBuilder = create<BuilderStore>((set) => ({
           // fighter's weapon group / monk's paths lingered invisibly.
           weaponGroup: undefined,
           monkPaths: undefined,
-          progression: clearGains(s.state.progression, ['classFeatId']),
+          progression,
           spellcasting: { cantrips: [], spellsByRank: {}, focusSpells: [], focusCantrips: [] },
         },
       };

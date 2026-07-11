@@ -53,6 +53,19 @@ const SKILL_INCREASE_LEVELS = [3, 5, 7, 9, 11, 13, 15, 17, 19];
 const BOOST_LEVELS = [5, 10, 15, 20];
 const GRADUAL_BOOST_LEVELS = [2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20];
 
+/**
+ * Classes whose "Skill Increases" feature reads "At 2nd level and every level
+ * thereafter, you gain a skill increase" (rogue, Player Core pg. 168;
+ * investigator, Player Core 2 pg. 103) instead of the generic odd-levels-from-3
+ * schedule. Their skill-feat cadence is denser too: the rogue gains a skill
+ * feat "at 1st level and every level thereafter"; the investigator gains the
+ * generic even-level skill feats plus Skillful Lessons at 3rd and every odd
+ * level thereafter — effectively every level from 2. (Skillful Lessons is
+ * restricted to Int-, Wis-, or Cha-based skills or the methodology skill; the
+ * picker does not enforce that restriction yet.)
+ */
+const EVERY_LEVEL_SKILL_CLASSES = new Set(['rogue', 'investigator']);
+
 export interface LevelSlots {
   classFeat: boolean;
   ancestryFeat: boolean;
@@ -66,12 +79,19 @@ export interface LevelSlots {
 
 /**
  * What a character gains at a given level, honoring the character's variant-rule
- * options (Ancestry Paragon, Free Archetype, Gradual Ability Boosts).
+ * options (Ancestry Paragon, Free Archetype, Gradual Ability Boosts) and the
+ * class's own advancement table where it differs from the generic one
+ * (rogue/investigator skill feats and skill increases).
  */
-export function gainsForLevel(level: number, options?: Record<string, boolean>): LevelSlots {
+export function gainsForLevel(
+  level: number,
+  options?: Record<string, boolean>,
+  classId?: string,
+): LevelSlots {
   const paragon = options?.[OPT.ancestryParagon] ?? false;
   const freeArchetype = options?.[OPT.freeArchetype] ?? false;
   const gradual = options?.[OPT.gradualAbilityBoosts] ?? false;
+  const everySkill = classId ? EVERY_LEVEL_SKILL_CLASSES.has(classId) : false;
 
   const ancestryLevels = paragon ? ANCESTRY_PARAGON_LEVELS : ANCESTRY_FEAT_LEVELS;
   const boostCount = gradual
@@ -85,10 +105,16 @@ export function gainsForLevel(level: number, options?: Record<string, boolean>):
   return {
     classFeat: CLASS_FEAT_LEVELS.includes(level),
     ancestryFeat: ancestryLevels.includes(level),
-    skillFeat: SKILL_FEAT_LEVELS.includes(level),
+    // Rogue: a skill feat at 1st and every level. Investigator: every level
+    // from 2nd (even = generic, odd = Skillful Lessons). Everyone else: even.
+    skillFeat: everySkill
+      ? classId === 'rogue'
+        ? level >= 1
+        : level >= 2
+      : SKILL_FEAT_LEVELS.includes(level),
     generalFeat: GENERAL_FEAT_LEVELS.includes(level),
     archetypeFeat: freeArchetype && level >= 2 && level % 2 === 0,
-    skillIncrease: SKILL_INCREASE_LEVELS.includes(level),
+    skillIncrease: everySkill ? level >= 2 : SKILL_INCREASE_LEVELS.includes(level),
     boostCount,
   };
 }
@@ -188,7 +214,7 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
     .filter((lvl) => lvl <= (state.level || 1))
     .sort((a, b) => a - b);
   for (const lvl of levels) {
-    const grant = gainsForLevel(lvl, state.options).boostCount;
+    const grant = gainsForLevel(lvl, state.options, state.classId).boostCount;
     if (grant <= 0) continue;
     for (const a of (state.progression[lvl]?.boosts ?? []).slice(0, grant)) {
       if (a) scores[a] += scores[a] >= 18 ? 1 : 2;
@@ -624,6 +650,15 @@ export function validate(state: BuilderState): string[] {
   if (chosen > freePicks)
     problems.push(`Deselect ${chosen - freePicks} trained skill(s) — more than your free skills allow (an Intelligence change likely reduced them).`);
 
+  // The rogue's class grants a skill feat at 1st level on top of the
+  // background's; it lives in progression[1] since the creation steps only
+  // model the universal level-1 picks.
+  if (
+    gainsForLevel(1, state.options, state.classId).skillFeat &&
+    !state.progression[1]?.skillFeatId
+  )
+    problems.push('Choose your level-1 skill feat (your class grants one every level).');
+
   for (let lvl = 2; lvl <= (state.level || 1); lvl += 1) {
     for (const msg of unmetAtLevel(state, lvl)) problems.push(`Level ${lvl}: ${msg}`);
   }
@@ -633,7 +668,7 @@ export function validate(state: BuilderState): string[] {
 
 /** What's still unchosen at a given level (levels ≥ 2). Used by the Advancement UI. */
 export function unmetAtLevel(state: BuilderState, level: number): string[] {
-  const slots = gainsForLevel(level, state.options);
+  const slots = gainsForLevel(level, state.options, state.classId);
   const gains = state.progression[level];
   const out: string[] = [];
   if (slots.classFeat && !gains?.classFeatId) out.push('choose a class feat');

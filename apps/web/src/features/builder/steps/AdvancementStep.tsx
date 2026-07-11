@@ -27,7 +27,7 @@ function SlotBlock({ title, children }: { title: string; children: ReactNode }) 
 function LevelCard({ level }: { level: number }) {
   const state = useBuilder((s) => s.state);
   const updateLevelGains = useBuilder((s) => s.updateLevelGains);
-  const slots = gainsForLevel(level, state.options);
+  const slots = gainsForLevel(level, state.options, state.classId);
   const gains = state.progression[level] ?? emptyLevelGains();
   const taken = chosenFeatIds(state);
   const unmet = unmetAtLevel(state, level);
