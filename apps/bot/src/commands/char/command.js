@@ -17,9 +17,7 @@ const { calcProfNum } = require('../../lib/format');
 const {
   computeCharSkillModifier,
   calcCharacterProfNum,
-  calcEditableProfNum,
   characterProfValue,
-  editableProfValue,
 } = require('../../rules/pf2eMath');
 const { loreKey, loreTopicLabel, isLoreProficiencyKey } = require('../../rules/lore');
 

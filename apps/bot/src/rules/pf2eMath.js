@@ -32,16 +32,6 @@ function calcCharacterProfNum(charData, profNum, level) {
   return level + (usesRankProficiencies(charData) ? profNum * 2 : profNum);
 }
 
-function calcEditableProfNum(profNum, level) {
-  if (!profNum || profNum === 0) return 0;
-  return level + (profNum > 4 ? profNum : profNum * 2);
-}
-
-function editableProfValue(profNum) {
-  if (!profNum || profNum === 0) return 0;
-  return profNum > 4 ? profNum : profNum * 2;
-}
-
 function characterProfValue(charData, profNum) {
   if (!profNum || profNum === 0) return 0;
   return usesRankProficiencies(charData) ? profNum * 2 : profNum;
@@ -107,8 +97,6 @@ module.exports = {
   usesRankProficiencies,
   canonicalProfValue,
   calcCharacterProfNum,
-  calcEditableProfNum,
-  editableProfValue,
   characterProfValue,
   characterProfLabel,
   profIconForValue,

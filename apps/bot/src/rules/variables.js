@@ -3,7 +3,6 @@ const { loreKey } = require('./lore');
 const {
   canonicalProfValue,
   calcCharacterProfNum,
-  calcEditableProfNum,
 } = require('./pf2eMath');
 const { computeCharPerception } = require('./characterChecks');
 const { computeCharMaxHp } = require('../state/characters');
