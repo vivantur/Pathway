@@ -2653,11 +2653,30 @@ client.on('interactionCreate', async (interaction) => {
   });
 });
 
+// ── TEMPORARY LOGIN DIAGNOSTICS ─────────────────────────────────────────────
+// The bot was hanging at login: neither `clientReady` ("Logged in as…") nor the
+// .catch() below fired, so the gateway handshake was stalling with no error to
+// see. These logs narrate the handshake so a deploy shows exactly where it dies.
+// Remove once the stall is diagnosed.
+console.log('Startup requires complete; attempting Discord gateway login…');
+client.on('debug', (m) => console.log('[discord:debug]', m));
+client.on('warn',  (m) => console.warn('[discord:warn]', m));
+
+const readyWatchdog = setTimeout(() => {
+  if (!client.isReady()) {
+    console.error('[startup] 30s after login(), still not READY — gateway handshake stalled. See [discord:debug] above for the last step reached.');
+  }
+}, 30_000);
+client.once('clientReady', () => clearTimeout(readyWatchdog));
+// ────────────────────────────────────────────────────────────────────────────
+
 // Surface login failures instead of swallowing them. This is fire-and-forget,
 // so without a .catch() a rejected login (invalid/revoked token, disallowed
 // intents, gateway unreachable) produces no clear log and the bot just sits
 // offline behind a green deploy. Log the reason and exit so the host restarts.
-client.login(TOKEN).catch((err) => {
-  console.error('FATAL: Discord login failed —', err);
-  process.exit(1);
-});
+client.login(TOKEN)
+  .then(() => console.log('[startup] login() resolved — WS identified, awaiting READY…'))
+  .catch((err) => {
+    console.error('FATAL: Discord login failed —', err);
+    process.exit(1);
+  });
