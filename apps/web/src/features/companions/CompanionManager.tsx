@@ -605,9 +605,12 @@ export function CompanionEditorForm({
             Type
             <select value={baseType} onChange={(e) => setBaseType(e.target.value)} className={inputCls}>
               {typeChoices.map((c) => (
-                <option key={c.slug} value={c.slug}>
+                // Advanced companions are level-gated (Howl of the Wild pg. 93):
+                // selectable only once the character reaches the listed level.
+                <option key={c.slug} value={c.slug} disabled={(c.minLevel ?? 0) > level}>
                   {c.name}
                   {isMountType(c) ? ' (mount)' : ''}
+                  {c.minLevel ? ` — level ${c.minLevel}+` : ''}
                 </option>
               ))}
             </select>
