@@ -49,6 +49,7 @@ export type CompanionSpecialization =
   | 'bully'
   | 'daredevil'
   | 'racer'
+  | 'shade'
   | 'tracker'
   | 'wrecker';
 
@@ -66,6 +67,8 @@ export interface SpecializationDef {
   unarmoredExpert?: boolean;
   /** True if Fortitude rises to legendary (racer). */
   fortLegendary?: boolean;
+  /** Access restriction, when the specialization isn't generally available. */
+  access?: string;
   /** The extra benefit, condensed from the rules text. */
   description: string;
 }
@@ -120,6 +123,19 @@ export const COMPANION_SPECIALIZATIONS: readonly SpecializationDef[] = [
     skill: 'athletics',
     description: "Its unarmed attacks ignore half an object's Hardness. Athletics rises to master.",
   },
+  // Secrets of Magic pg. 229 (uncommon). The other expansion specializations
+  // (Deep Diver, Steadfast Strider, Wildfire Scorcher, Wind Chaser — Legends
+  // pg. 123) require the genie-touched advancement option, which isn't
+  // modeled yet; see docs/rules-sources/companions.md.
+  {
+    slug: 'shade',
+    name: 'Shade',
+    mods: {},
+    unarmoredExpert: true,
+    access: 'Shadowcaster',
+    description:
+      'Its form is made of shadow: it gains darkvision, resistance 5 to all damage except force, and in dim light or darkness it Steps 10 feet instead of 5. Unarmored defense rises to expert.',
+  },
 ];
 
 export function findSpecialization(
@@ -167,6 +183,12 @@ export interface CompanionType {
   attacks: CompanionAttack[];
   support: string;
   source: string;
+  /**
+   * Advanced companions (Howl of the Wild pg. 93): "you cannot choose one of
+   * the companions in this section unless your level is at least equal to"
+   * this. Absent = no gate.
+   */
+  minLevel?: number;
 }
 
 // Full companion catalog, extracted from machine-readable rules data (remaster
@@ -876,7 +898,9 @@ export function scaleCompanion(
   specialization?: CompanionSpecialization | string | null,
 ): ScaledCompanion {
   const lvl = Math.max(1, Math.min(20, Math.round(level)));
-  const delta = FORM_ABILITY_DELTA[form];
+  // `form` comes from a free-text DB column; an unknown value must degrade to
+  // the young baseline, not crash the render.
+  const delta: Partial<CompanionAbilityMods> = FORM_ABILITY_DELTA[form] ?? {};
   const spec =
     form === 'nimble' || form === 'savage' ? findSpecialization(specialization) : undefined;
   const mods: CompanionAbilityMods = {
@@ -890,7 +914,7 @@ export function scaleCompanion(
     cha: type.abilityMods.cha + (spec?.mods.cha ?? 0),
   };
 
-  const matured = form !== 'young';
+  const matured = form !== 'young' && Boolean(FORM_ABILITY_DELTA[form]);
   // Proficiency ranks (1 trained, 2 expert, 3 master, 4 legendary), always at
   // the handler's level. Mature raises Perception + saves (and the type skill)
   // to expert; specialized raises unarmed attacks to expert, saves + Perception
@@ -916,7 +940,7 @@ export function scaleCompanion(
   // Damage dice: one die young, two dice mature+, three dice specialized. The
   // form's additional damage (nimble +2 / savage +3) doubles when specialized.
   const diceFactor = spec ? 3 : matured ? 2 : 1;
-  const flatDamage = FORM_DAMAGE_BONUS[form] * (spec ? 2 : 1);
+  const flatDamage = (FORM_DAMAGE_BONUS[form] ?? 0) * (spec ? 2 : 1);
   const attacks: ScaledAttack[] = type.attacks.map((a) => {
     const finesse = a.traits.includes('finesse');
     const attackAbility = finesse ? Math.max(mods.str, mods.dex) : mods.str;
@@ -946,7 +970,7 @@ export function scaleCompanion(
     name: type.name,
     level: lvl,
     form,
-    size: growSize(type.size, FORM_GROWTH_STAGES[form]),
+    size: growSize(type.size, FORM_GROWTH_STAGES[form] ?? 0),
     abilityMods: mods,
     maxHp,
     ac,
