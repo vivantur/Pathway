@@ -158,6 +158,75 @@ modifier increases by 1.
 object's Hardness. Its Athletics proficiency increases to master, and its
 Strength modifier increases by 1.
 
+### Alternate Advancement Options (nimble/savage replacements)
+
+These replace the nimble-or-savage choice when a feat grants it. Each also
+learns the advanced maneuver for its type, and its attacks count as magical
+for the purpose of ignoring resistances.
+
+**Genie-Touched** (Legends pg. 123, rare, legacy): choose djinni (air),
+efreeti (fire), marid (water), or shaitan (earth). +2 Wisdom; +1
+Str/Dex/Con. +3 additional damage with unarmed attacks (fire damage for
+efreeti; the attack's own type otherwise). Resistance 5: acid (djinni), fire
+(efreeti or marid), electricity (shaitan). Acrobatics expert
+(djinni/efreeti) or Athletics expert (marid/shaitan). Attacks gain the
+genie's elemental trait.
+
+**Indomitable** (World Guide pg. 117, legacy; megafauna companions only): +2
+Constitution; +1 Str/Dex/Wis. +3 additional damage. Athletics expert and
+barding expert. If Medium or smaller, grows one size.
+
+**Unseen** (Dark Archives Remastered pg. 65, uncommon; cryptid companions):
++2 Wisdom; +1 Str/Dex/Con. +3 additional damage, plus an extra 1d4 precision
+damage against off-guard targets (combines with existing precision damage,
+e.g. the cat's). Stealth expert.
+
+### Additional Specializations (beyond the six core ones)
+
+**Deep Diver** (Legends pg. 123, rare; marid-touched only): swim Speed 30 ft
+(or +10-ft status to existing) and water breathing. +1 Constitution.
+Athletics master; barding expert.
+
+**Shade** (Secrets of Magic pg. 229, uncommon; shadowcaster access): body of
+shadow — gains darkvision, resistance 5 to all damage except force, and in
+dim light/darkness Steps 10 feet instead of 5. Unarmored defense expert.
+
+**Steadfast Strider** (Legends pg. 123, rare; shaitan-touched only): ignores
+natural difficult/greater difficult terrain from sediment or stone; walks on
+quicksand/mud. +2 status to saves/DCs vs Shove and Trip. +1 Strength; barding
+expert.
+
+**Wildfire Scorcher** (Legends pg. 123, rare; efreeti-touched only):
+resistance to fire equal to your level; melee attackers/grapplers take 2d6
+fire damage. +1 Dexterity; Reflex legendary; unarmored defense expert.
+
+**Wind Chaser** (Legends pg. 123, rare; djinni-touched only): +20-ft status
+bonus to Speed or fly Speed. Acrobatics master; +1 Dexterity; Reflex
+legendary; unarmored defense expert.
+
+### Advanced Companions (Howl of the Wild pg. 93)
+
+Animal companion options in this section gain the mount special ability. You
+cannot choose one of these companions unless your level is at least equal to
+the level listed alongside the companion's name. The animal still gains the
+normal benefits from being mature, nimble, savage, or having a
+specialization. You can replace an existing animal companion with an advanced
+one by releasing your previous companion and spending one week of downtime.
+(Level gates are noted per entry in companion-catalog.md: giant eel 4,
+hippocampus 4, orca 6, riding tarantula 6, giant frog 6, wyvern 10,
+thruneosaurus rex 14, umbrella mushroom 14, giant wasp 14, griffon 14,
+hippogriff 14, roc 16.)
+
+### Unique Companions
+
+**Fiery Leopard** (The Fall of Plaguestone pg. 57, unique; legacy): base
+animal companion cat. Immunities fire; weaknesses cold 5. Flaming Attacks
+(fire): natural attacks deal 1 additional fire damage (1d4 once nimble or
+savage). Fiery Pelt (fire): creatures starting their turn grappled by it take
+1d4 fire damage; grapple attempts against it take 1d4 fire per attempt.
+Burning Glow: sheds dim light in 10 feet; –2 circumstance to Stealth at night
+or in darkness.
+
 ## Construct Companions (Guns & Gears Remastered pg. 32)
 
 A construct companion is a loyal, semi-sentient construct who follows your
