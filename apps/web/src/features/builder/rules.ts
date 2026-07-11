@@ -15,8 +15,12 @@ import {
 import { OPT } from '@/features/builder/options/config';
 import {
   abilityModifier,
+  armorClass,
   attackRankAtLevel,
+  maxHitPoints,
   proficiencyBonus,
+  proficientDC,
+  proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
   type AttackCategory,
@@ -398,11 +402,15 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const klass = state.classId ? findClass(state.classId) : undefined;
   const ip = klass?.initialProficiencies;
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
-  const pb = (rank: ProficiencyRank) => proficiencyBonus(rank, level, pwl);
   const abp = opt(state, OPT.automaticBonusProgression);
 
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
-  const maxHp = (ancestry?.hp ?? 0) + ((klass?.hp ?? 0) + mods.con) * level;
+  const maxHp = maxHitPoints({
+    ancestryHp: ancestry?.hp ?? 0,
+    classHp: klass?.hp ?? 0,
+    conMod: mods.con,
+    level,
+  });
 
   // Equipped gear.
   const equipped = (state.inventory ?? [])
@@ -443,18 +451,20 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     heavy: defenseRankFor('heavy'),
   };
 
-  // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
+  // Armor Class via core's shared composition, fed the current-level defense
+  // rank (from the `defenses` map above, which the export also serializes).
   const armorCategory = (armor?.category ?? 'unarmored') as ArmorCategory;
   const defenseRank = defenses[armorCategory];
-  const dexForAc =
-    armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
-  const ac =
-    10 +
-    pb(defenseRank) +
-    dexForAc +
-    (armor?.acBonus ?? 0) +
-    armorPotency +
-    (abp ? abpDefense(level) : 0);
+  const ac = armorClass({
+    dexMod: mods.dex,
+    // Unarmored (no armor) and capless armor are both uncapped.
+    dexCap: armor ? armor.dexCap : null,
+    rank: defenseRank,
+    level,
+    withoutLevel: pwl,
+    armorBonus: armor?.acBonus ?? 0,
+    itemBonus: armorPotency + (abp ? abpDefense(level) : 0),
+  });
   const unarmoredDefense = defenses.unarmored;
 
   // Category-level attack ranks (weapon-specific overlays — named weapons,
@@ -486,12 +496,24 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
   const perceptionRank = progressionRank(state, 'perception', ip?.perception ?? 0);
-  const perception = pb(perceptionRank) + mods.wis + (abp ? abpPerception(level) : 0);
+  const perception = proficientModifier({
+    abilityMod: mods.wis,
+    rank: perceptionRank,
+    level,
+    withoutLevel: pwl,
+    itemBonus: abp ? abpPerception(level) : 0,
+  });
 
   const fortRank = progressionRank(state, 'fortitude', ip?.fortitude ?? 0);
   const refRank = progressionRank(state, 'reflex', ip?.reflex ?? 0);
   const willRank = progressionRank(state, 'will', ip?.will ?? 0);
   const classDCRank = progressionRank(state, 'classDC', ip?.classDC ?? 0);
+
+  // A saving throw: ability mod + proficiency + a fundamental item bonus (the
+  // resilient rune, or Automatic Bonus Progression's resilience when ABP is on).
+  const saveItemBonus = abp ? abpResilience(level) : resilient;
+  const saveModifier = (rank: ProficiencyRank, abilityMod: number) =>
+    proficientModifier({ abilityMod, rank, level, withoutLevel: pwl, itemBonus: saveItemBonus });
 
   const ranks = skillRankMap(state);
   const skills: SkillProficiency[] = getDataset().skills.map((s) => {
@@ -503,7 +525,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       name: s.name,
       ability: s.ability,
       rank,
-      modifier: pb(rank) + mods[s.ability] + penalty,
+      modifier: proficientModifier({
+        abilityMod: mods[s.ability],
+        rank,
+        level,
+        withoutLevel: pwl,
+        otherBonus: penalty,
+      }),
     };
   });
 
@@ -549,7 +577,13 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     return {
       id: w.id,
       name: w.name,
-      attack: pb(catRank) + attackMod + potency + (abp ? abpAttack(level) : 0),
+      attack: proficientModifier({
+        abilityMod: attackMod,
+        rank: catRank,
+        level,
+        withoutLevel: pwl,
+        itemBonus: potency + (abp ? abpAttack(level) : 0),
+      }),
       dice: abp ? abpDamageDice(level) : 1 + striking,
       damageDie: w.damageDie,
       damageMod,
@@ -568,11 +602,16 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     shieldBonus: shield?.acBonus ?? 0,
     perception,
     saves: {
-      fortitude: pb(fortRank) + mods.con + (abp ? abpResilience(level) : resilient),
-      reflex: pb(refRank) + mods.dex + (abp ? abpResilience(level) : resilient),
-      will: pb(willRank) + mods.wis + (abp ? abpResilience(level) : resilient),
+      fortitude: saveModifier(fortRank, mods.con),
+      reflex: saveModifier(refRank, mods.dex),
+      will: saveModifier(willRank, mods.wis),
     },
-    classDc: 10 + pb(classDCRank) + (state.keyAbility ? mods[state.keyAbility] : 0),
+    classDc: proficientDC({
+      abilityMod: state.keyAbility ? mods[state.keyAbility] : 0,
+      rank: classDCRank,
+      level,
+      withoutLevel: pwl,
+    }),
     speed: (ancestry?.speed ?? 25) + speedPenalty,
     // Focus pool: the number of focus spells the build knows (feat- or
     // subclass-granted, chosen on the Spells step), capped at 3 per the focus

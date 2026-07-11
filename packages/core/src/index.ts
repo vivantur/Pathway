@@ -27,3 +27,7 @@ export * from './companion.js';
 // Specific familiars (Player Core 2 pg. 170 + expansions): named familiars
 // with required ability counts, innate granted abilities, and unique powers.
 export * from './specificFamiliars.js';
+
+// Derived-stat compositions (HP, saves, Perception, skills, DCs, AC). The single
+// implementation both of apps/web's engines (builder + sheet) adapt onto.
+export * from './derived.js';

@@ -9,7 +9,9 @@
 
 import {
   abilityModifier,
-  proficiencyBonus as coreProficiencyBonus,
+  maxHitPoints,
+  proficientDC,
+  proficientModifier,
   rankLabel,
   rawBonusToRank,
 } from '@pathway/core';
@@ -271,20 +273,24 @@ export function usesPwl(build: PathbuilderBuild): boolean {
 }
 
 /**
- * Standard PF2e proficiency-based bonus: ability mod + core proficiency
- * bonus, honoring the build's Proficiency Without Level flag. Pathbuilder's
- * stored rank is the raw bonus (0/2/4/6/8), so it's converted to a core rank
- * first. Ignores item bonuses for now — the bot's `mods` object can override
- * individual totals later.
+ * Standard PF2e proficiency-based modifier: ability mod + proficiency bonus,
+ * routed through core's `proficientModifier` (the same composition the builder
+ * and the sheet's saves/Perception/skills all share), honoring the build's
+ * Proficiency Without Level flag. Pathbuilder's stored rank is the raw bonus
+ * (0/2/4/6/8), converted to a core rank first. Item bonuses are not applied
+ * here — the bot's `mods` object can override individual totals later.
  */
 export function proficiencyBonus(
   build: PathbuilderBuild,
   rank: number | undefined,
   ability: Ability,
 ): number {
-  const level = build.level ?? 1;
-  const mod = abilityMod(build.abilities?.[ability]);
-  return mod + coreProficiencyBonus(rawBonusToRank(rank), level, usesPwl(build));
+  return proficientModifier({
+    abilityMod: abilityMod(build.abilities?.[ability]),
+    rank: rawBonusToRank(rank),
+    level: build.level ?? 1,
+    withoutLevel: usesPwl(build),
+  });
 }
 
 export function skillBonus(build: PathbuilderBuild, skillName: string): number {
@@ -330,14 +336,14 @@ export function perceptionBonus(build: PathbuilderBuild): number {
 export function maxHp(build: PathbuilderBuild): number | undefined {
   const a = build.attributes;
   if (!a) return undefined;
-  const level = build.level ?? 1;
-  const conMod = abilityMod(build.abilities?.con);
-  const ancestry = a.ancestryhp ?? 0;
-  const cls = a.classhp ?? 0;
-  const bonus = a.bonushp ?? 0;
-  const bonusPer = (a.bonushpPerLevel ?? 0) * level;
-  const conAtLevels = conMod * level;
-  const total = ancestry + cls * level + bonus + bonusPer + conAtLevels;
+  const total = maxHitPoints({
+    ancestryHp: a.ancestryhp ?? 0,
+    classHp: a.classhp ?? 0,
+    conMod: abilityMod(build.abilities?.con),
+    level: build.level ?? 1,
+    bonusHp: a.bonushp ?? 0,
+    bonusHpPerLevel: a.bonushpPerLevel ?? 0,
+  });
   return total > 0 ? total : undefined;
 }
 
@@ -440,7 +446,14 @@ export function classDC(build: PathbuilderBuild): number | undefined {
   if (cdc == null) return undefined;
   const ability = build.keyability;
   if (!ability) return undefined;
-  return 10 + proficiencyBonus(build, cdc, ability);
+  // Pathbuilder stores the pre-doubled rank (0/2/4/6/8); core adds the level
+  // term (dropped under Proficiency Without Level).
+  return proficientDC({
+    abilityMod: abilityMod(build.abilities?.[ability]),
+    rank: rawBonusToRank(cdc),
+    level: build.level ?? 1,
+    withoutLevel: usesPwl(build),
+  });
 }
 
 // -------- Spells / weapons / money --------

@@ -12,8 +12,6 @@ const require = createRequire(import.meta.url);
 const {
   usesRankProficiencies,
   calcCharacterProfNum,
-  calcEditableProfNum,
-  editableProfValue,
   characterProfValue,
   characterProfLabel,
   SKILL_ABIL_MAP,
@@ -47,19 +45,6 @@ describe('calcCharacterProfNum — level + proficiency', () => {
   it('untrained (0) gets NO level bonus — untrained is flat 0', () => {
     expect(calcCharacterProfNum(pathbuilderChar, 0, 20)).toBe(0);
     expect(calcCharacterProfNum(nativeChar, 0, 20)).toBe(0);
-  });
-});
-
-describe('editable overrides (manually set proficiencies)', () => {
-  it('small values (ranks 1-4) are doubled; big values pass through', () => {
-    expect(editableProfValue(2)).toBe(4);   // rank → bonus
-    expect(editableProfValue(6)).toBe(6);   // already a bonus
-    expect(editableProfValue(0)).toBe(0);
-  });
-  it('calcEditableProfNum adds level using the same rule', () => {
-    expect(calcEditableProfNum(2, 5)).toBe(9);  // rank 2 → +4, +5 level
-    expect(calcEditableProfNum(6, 5)).toBe(11); // bonus 6, +5 level
-    expect(calcEditableProfNum(0, 5)).toBe(0);
   });
 });
 

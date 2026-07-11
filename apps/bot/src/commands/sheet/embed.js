@@ -15,8 +15,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { fmt, getMod, calcProfNum, xpToNextLevel } = require('../../lib/format');
 const {
-  calcCharacterProfNum, calcEditableProfNum,
-  characterProfValue, canonicalProfValue, editableProfValue,
+  calcCharacterProfNum, characterProfValue, canonicalProfValue,
   profIconForValue, computeCharSkillModifier,
 } = require('../../rules/pf2eMath');
 const {

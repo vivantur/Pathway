@@ -89,15 +89,15 @@ describe('toPathbuilder — proficiencies', () => {
 
     // Fighter progression per @pathway/core's locked table:
     // perception master@7, fortitude master@9, will expert@3, reflex expert@1.
-    expect(build.proficiencies.perception).toBe(6);
-    expect(build.proficiencies.fortitude).toBe(6);
-    expect(build.proficiencies.will).toBe(4);
-    expect(build.proficiencies.reflex).toBe(4);
+    expect(build.proficiencies!.perception).toBe(6);
+    expect(build.proficiencies!.fortitude).toBe(6);
+    expect(build.proficiencies!.will).toBe(4);
+    expect(build.proficiencies!.reflex).toBe(4);
   });
 
   it('weapon-category ranks follow the class progression (fighter master@13)', () => {
-    const at1 = toPathbuilder(unarmoredFighter()).build.proficiencies;
-    const at13 = toPathbuilder({ ...unarmoredFighter(), level: 13 }).build.proficiencies;
+    const at1 = toPathbuilder(unarmoredFighter()).build.proficiencies!;
+    const at13 = toPathbuilder({ ...unarmoredFighter(), level: 13 }).build.proficiencies!;
 
     expect(at1.martial).toBe(4); // expert at level 1
     expect(at13.martial).toBe(6); // Weapon Legend: master simple/martial
@@ -109,15 +109,15 @@ describe('toPathbuilder — proficiencies', () => {
     const derived = deriveCharacter(state);
     const { build } = toPathbuilder(state);
 
-    expect(build.proficiencies.classDC).toBe(2 * derived.ranks.classDC);
-    expect(build.proficiencies.perception).toBe(2 * derived.ranks.perception);
-    expect(build.proficiencies.fortitude).toBe(2 * derived.ranks.fortitude);
-    expect(build.proficiencies.reflex).toBe(2 * derived.ranks.reflex);
-    expect(build.proficiencies.will).toBe(2 * derived.ranks.will);
-    expect(build.proficiencies.unarmored).toBe(2 * derived.ranks.defenses.unarmored);
-    expect(build.proficiencies.heavy).toBe(2 * derived.ranks.defenses.heavy);
-    expect(build.proficiencies.martial).toBe(2 * derived.ranks.attacks.martial);
-    expect(build.proficiencies.unarmed).toBe(2 * derived.ranks.attacks.unarmed);
+    expect(build.proficiencies!.classDC).toBe(2 * derived.ranks.classDC);
+    expect(build.proficiencies!.perception).toBe(2 * derived.ranks.perception);
+    expect(build.proficiencies!.fortitude).toBe(2 * derived.ranks.fortitude);
+    expect(build.proficiencies!.reflex).toBe(2 * derived.ranks.reflex);
+    expect(build.proficiencies!.will).toBe(2 * derived.ranks.will);
+    expect(build.proficiencies!.unarmored).toBe(2 * derived.ranks.defenses.unarmored);
+    expect(build.proficiencies!.heavy).toBe(2 * derived.ranks.defenses.heavy);
+    expect(build.proficiencies!.martial).toBe(2 * derived.ranks.attacks.martial);
+    expect(build.proficiencies!.unarmed).toBe(2 * derived.ranks.attacks.unarmed);
   });
 
   it('bakes the armor speed penalty into attributes.speed (readers cannot derive it)', () => {
@@ -129,7 +129,7 @@ describe('toPathbuilder — proficiencies', () => {
     // Full Plate is Str +4 / speed -10: reduced to -5 when the requirement is
     // met, full otherwise — either way the exported speed carries the penalty.
     expect(derived.speed).toBeLessThan(25);
-    expect(build.attributes.speed).toBe(derived.speed);
+    expect(build.attributes!.speed).toBe(derived.speed);
   });
 
   it('armor Strength requirement compares the MODIFIER, not the raw score', () => {
@@ -164,11 +164,11 @@ describe('toPathbuilder — proficiencies', () => {
     };
     const derived = deriveCharacter(state);
     const { build } = toPathbuilder(state);
-    const casterEntry = build.spellCasters[0] as { proficiency: number } | undefined;
+    const casterEntry = build.spellCasters![0] as { proficiency: number } | undefined;
 
     expect(casterEntry).toBeDefined();
     expect(derived.ranks.spellcasting).toBeGreaterThan(1);
     expect(casterEntry?.proficiency).toBe(2 * Math.max(1, derived.ranks.spellcasting));
-    expect(build.proficiencies.castingArcane).toBe(casterEntry?.proficiency);
+    expect(build.proficiencies!.castingArcane).toBe(casterEntry?.proficiency);
   });
 });
