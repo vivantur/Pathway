@@ -28,7 +28,9 @@ const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
  * to match a real Pathbuilder export and round-trip through the bot.
  *
  * Proficiencies are the Pathbuilder convention: 0/2/4/6/8 (2×rank, WITHOUT the
- * level term — the bot re-derives the level part). Abilities are final scores.
+ * level term — the bot re-derives the level part), and are the ranks at the
+ * character's CURRENT level, progression bumps included. Abilities are final
+ * scores.
  */
 export interface PathbuilderBuild {
   name: string;
@@ -117,8 +119,13 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   const klass = state.classId ? findClass(state.classId) : undefined;
   const subclass = klass?.subclasses?.find((s) => s.id === state.subclassId);
   const derived = deriveCharacter(state);
-  const ip = klass?.initialProficiencies;
   const trained = trainedSkillIds(state);
+  const caster = casterConfig(state.classId, state.subclassId);
+  const casterTradition = caster
+    ? (resolveCasterTradition(state) ?? caster.tradition ?? 'arcane')
+    : undefined;
+  // Casters are at least trained; the derived rank carries progression bumps.
+  const spellRank = caster ? Math.max(1, derived.ranks.spellcasting) : 0;
 
   const skillProf: Record<string, number> = {};
   for (const s of derived.skills) skillProf[s.id] = p(s.rank);
@@ -151,24 +158,29 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     ? [[background.loreSkill, p(1)]]
     : [];
 
+  // Ranks at the character's CURRENT level (from deriveCharacter), not the
+  // class's level-1 initial proficiencies. Consumers of this JSON (the sheet,
+  // the bot, the PDF) add level + ability themselves but never re-derive rank
+  // progression, so freezing level-1 ranks here made every save, Perception,
+  // and class DC read 2-4 points low from the first progression bump on.
   const proficiencies: Record<string, number> = {
-    classDC: p(ip?.classDC ?? 0),
-    perception: p(ip?.perception ?? 0),
-    fortitude: p(ip?.fortitude ?? 0),
-    reflex: p(ip?.reflex ?? 0),
-    will: p(ip?.will ?? 0),
-    heavy: p(ip?.defenses.heavy ?? 0),
-    medium: p(ip?.defenses.medium ?? 0),
-    light: p(ip?.defenses.light ?? 0),
-    unarmored: p(ip?.defenses.unarmored ?? 0),
-    advanced: p(ip?.attacks.advanced ?? 0),
-    martial: p(ip?.attacks.martial ?? 0),
-    simple: p(ip?.attacks.simple ?? 0),
-    unarmed: p(ip?.attacks.unarmed ?? 0),
-    castingArcane: 0,
-    castingDivine: 0,
-    castingOccult: 0,
-    castingPrimal: 0,
+    classDC: p(derived.ranks.classDC),
+    perception: p(derived.ranks.perception),
+    fortitude: p(derived.ranks.fortitude),
+    reflex: p(derived.ranks.reflex),
+    will: p(derived.ranks.will),
+    heavy: p(derived.ranks.defenses.heavy),
+    medium: p(derived.ranks.defenses.medium),
+    light: p(derived.ranks.defenses.light),
+    unarmored: p(derived.ranks.defenses.unarmored),
+    advanced: p(derived.ranks.attacks.advanced),
+    martial: p(derived.ranks.attacks.martial),
+    simple: p(derived.ranks.attacks.simple),
+    unarmed: p(derived.ranks.attacks.unarmed),
+    castingArcane: casterTradition === 'arcane' ? p(spellRank) : 0,
+    castingDivine: casterTradition === 'divine' ? p(spellRank) : 0,
+    castingOccult: casterTradition === 'occult' ? p(spellRank) : 0,
+    castingPrimal: casterTradition === 'primal' ? p(spellRank) : 0,
     ...skillProf,
   };
 
@@ -230,7 +242,6 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     .map((e) => [findItem(e.itemId)?.name ?? e.itemId, e.qty] as [string, number]);
 
   // Spellcasting → Pathbuilder spellCasters entry (spell lists by rank, cantrips at 0).
-  const caster = casterConfig(state.classId, state.subclassId);
   const sc = state.spellcasting;
   const spellName = (id: string) => findSpell(id)?.name ?? id;
   const spellCastersOut =
@@ -238,10 +249,10 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       ? [
           {
             name: klass?.name ?? 'Spellcaster',
-            magicTradition: resolveCasterTradition(state) ?? caster.tradition ?? 'arcane',
+            magicTradition: casterTradition ?? 'arcane',
             spellcastingType: caster.type,
             ability: caster.keyAbility,
-            proficiency: 2, // trained at level 1
+            proficiency: p(spellRank),
             // Pathbuilder convention: the focus pool rides on the caster entry.
             focusPoints: Math.max(focusPoolSize(state), focusPoints(state)),
             spells: [

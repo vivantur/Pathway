@@ -325,8 +325,14 @@ export interface DerivedCharacter {
     will: ProficiencyRank;
     classDC: ProficiencyRank;
     unarmoredDefense: ProficiencyRank;
+    /** Spell attack/DC track (0 for non-casters), incl. doctrine bumps. */
+    spellcasting: ProficiencyRank;
+    defenses: Record<ArmorCategory, ProficiencyRank>;
+    attacks: Record<AttackCategory, ProficiencyRank>;
   };
 }
+
+type ArmorCategory = 'unarmored' | 'light' | 'medium' | 'heavy';
 
 /**
  * Highest proficiency rank a class has in `track` at the character's level,
@@ -395,13 +401,25 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const armorPotency = abp ? 0 : Math.max(0, Math.min(3, armorRunes?.potency ?? 0));
   const resilient = abp ? 0 : Math.max(0, Math.min(3, armorRunes?.resilient ?? 0));
 
+  // Defense (armor-category) ranks at the current level. All four are derived —
+  // not just the equipped category — because the serialized export carries the
+  // full set and consumers (sheet, bot) must never see level-1 ranks.
+  const defenseRankFor = (cat: ArmorCategory): ProficiencyRank =>
+    progressionRank(
+      state,
+      cat,
+      Math.max(ip?.defenses[cat] ?? 0, subclassArmorRank(state, cat)),
+    );
+  const defenses: Record<ArmorCategory, ProficiencyRank> = {
+    unarmored: defenseRankFor('unarmored'),
+    light: defenseRankFor('light'),
+    medium: defenseRankFor('medium'),
+    heavy: defenseRankFor('heavy'),
+  };
+
   // Armor Class: 10 + defense proficiency + (Dex capped by armor) + armor bonus.
-  const armorCategory = armor?.category ?? 'unarmored';
-  const defenseRank = progressionRank(
-    state,
-    armorCategory as ProficiencyTrack,
-    Math.max(ip?.defenses[armorCategory] ?? 0, subclassArmorRank(state, armorCategory)),
-  );
+  const armorCategory = (armor?.category ?? 'unarmored') as ArmorCategory;
+  const defenseRank = defenses[armorCategory];
   const dexForAc =
     armor && armor.dexCap !== null ? Math.min(mods.dex, armor.dexCap) : mods.dex;
   const ac =
@@ -411,7 +429,27 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     (armor?.acBonus ?? 0) +
     armorPotency +
     (abp ? abpDefense(level) : 0);
-  const unarmoredDefense = progressionRank(state, 'unarmored', ip?.defenses.unarmored ?? 0);
+  const unarmoredDefense = defenses.unarmored;
+
+  // Category-level attack ranks (weapon-specific overlays — named weapons,
+  // group scopes — are applied per equipped weapon below; these are the
+  // baseline ranks the export serializes).
+  const attackRankFor = (cat: AttackCategory): ProficiencyRank =>
+    Math.max(
+      ip?.attacks[cat] ?? 0,
+      state.classId
+        ? attackRankAtLevel(state.classId, { category: cat, chosenGroup: state.weaponGroup }, level)
+        : 0,
+      doctrineAttackRank(state, cat, level),
+    ) as ProficiencyRank;
+  const attacks: Record<AttackCategory, ProficiencyRank> = {
+    unarmed: attackRankFor('unarmed'),
+    simple: attackRankFor('simple'),
+    martial: attackRankFor('martial'),
+    advanced: attackRankFor('advanced'),
+  };
+
+  const spellcastingRank = progressionRank(state, 'spellcasting', 0);
 
   // Armor penalties apply when the wearer doesn't meet the Strength requirement.
   const meetsStr = !armor || scores.str >= armor.strength;
@@ -534,6 +572,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       will: willRank,
       classDC: classDCRank,
       unarmoredDefense,
+      spellcasting: spellcastingRank,
+      defenses,
+      attacks,
     },
   };
 }
