@@ -43,7 +43,7 @@ describe('scaleCompanion — mature wolf at level 5', () => {
   });
   it('attack and doubled damage dice', () =>
     expect(c.attacks[0]).toMatchObject({ attack: 11, damage: '2d8', damageBonus: 3 }));
-  it('type skill goes to expert', () => expect(c.skill.modifier).toBe(11)); // (5+4)+2
+  it('type skill goes to expert', () => expect(c.skill!.modifier).toBe(11)); // (5+4)+2
   it('grows one size (small → medium)', () => expect(c.size).toBe('medium'));
 });
 
