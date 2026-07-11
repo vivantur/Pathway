@@ -159,6 +159,12 @@ export function BuilderApp({
         onSuccess: (result) => {
           if (!editing) clearDraft(); // a fresh build's draft is now saved for real
           setCurrentId(result.id);
+          if (result.companionFailures.length) {
+            alert(
+              `Your character was saved, but these companions could not be: ` +
+                `${result.companionFailures.join(', ')}. Re-add them from the character sheet.`,
+            );
+          }
           // Clear the builder so returning to it later starts a NEW character
           // instead of re-saving (duplicating) this one.
           reset();

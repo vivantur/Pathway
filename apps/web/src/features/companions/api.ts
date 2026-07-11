@@ -78,12 +78,16 @@ export interface SaveCompanionInput {
  * envelope so any nested keys the bot manages (skills, overrides, custom
  * attacks/abilities) are preserved — writing a fresh envelope would drop them
  * on the bot's next Realtime patch.
+ *
+ * Create (no `compKey`) uses INSERT, never upsert: a new companion whose name
+ * slugifies to an existing comp_key must not silently replace that row (and
+ * drop the bot-managed stats it carried). On key collision we suffix -2, -3, …
+ * until the insert lands — the unique index arbitrates races for us.
  */
 export async function saveCompanion(input: SaveCompanionInput): Promise<CompanionRow> {
   const supabase = requireSupabase();
-  const compKey = input.compKey ?? slugifyCompKey(input.displayName);
   const existing = input.compKey
-    ? await fetchExisting(input.userId, input.charKey, compKey)
+    ? await fetchExisting(input.userId, input.charKey, input.compKey)
     : null;
 
   // Read-modify-write: preserve any keys the bot manages, set the ones we own.
@@ -105,7 +109,6 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
   const row = {
     user_id: input.userId,
     char_key: input.charKey,
-    comp_key: compKey,
     display_name: input.displayName,
     base_type: input.baseType,
     form: input.form,
@@ -115,13 +118,31 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
-    .from('companions')
-    .upsert(row, { onConflict: 'user_id,char_key,comp_key' })
-    .select(COLUMNS)
-    .single();
-  if (error) throw error;
-  return data as CompanionRow;
+  if (input.compKey) {
+    // Edit: the caller holds a real comp_key, so replacing that row is the point.
+    const { data, error } = await supabase
+      .from('companions')
+      .upsert({ ...row, comp_key: input.compKey }, { onConflict: 'user_id,char_key,comp_key' })
+      .select(COLUMNS)
+      .single();
+    if (error) throw error;
+    return data as CompanionRow;
+  }
+
+  const base = slugifyCompKey(input.displayName);
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const compKey = attempt === 0 ? base : `${base}-${attempt + 1}`;
+    const { data, error } = await supabase
+      .from('companions')
+      .insert({ ...row, comp_key: compKey })
+      .select(COLUMNS)
+      .single();
+    if (!error) return data as CompanionRow;
+    if (error.code !== '23505') throw error; // anything but unique_violation is real
+  }
+  throw new Error(
+    `Couldn't find a free name-key for "${input.displayName}" — this character already has many companions with that name.`,
+  );
 }
 
 export async function deleteCompanion(

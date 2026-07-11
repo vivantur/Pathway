@@ -17,6 +17,11 @@ export interface SaveBuildInput {
   editCharKey?: string;
 }
 
+export interface SaveBuildResult extends CreateCharacterResult {
+  /** Display names of drafted companions whose save failed (character saved fine). */
+  companionFailures: string[];
+}
+
 /**
  * Save a web-built character to the Supabase vault (create) or update an
  * existing one (edit / level-up). The builder emits Pathbuilder-compatible
@@ -28,7 +33,7 @@ export function useSaveBuild() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  return useMutation<CreateCharacterResult, Error, SaveBuildInput>({
+  return useMutation<SaveBuildResult, Error, SaveBuildInput>({
     mutationFn: async ({ state, editCharKey }) => {
       if (!user) throw new Error('Sign in to save to your vault.');
       const base = toPathbuilder(state).build;
@@ -43,12 +48,15 @@ export function useSaveBuild() {
 
       // Flush companion drafts into the companions table now that the character
       // exists. Best-effort per draft: one failure shouldn't lose the others or
-      // the character save itself.
+      // the character save itself — but failures are reported to the caller,
+      // not just the console, so a vanished companion isn't silent.
+      const companionFailures: string[] = [];
       for (const draft of state.companionDrafts ?? []) {
         try {
           await saveCompanion({ userId: user.id, charKey: result.char_key, ...draft });
         } catch (e) {
           console.error('companion draft save failed:', draft.displayName, e);
+          companionFailures.push(draft.displayName);
         }
       }
 
@@ -64,7 +72,7 @@ export function useSaveBuild() {
           /* portrait upload is optional — ignore */
         }
       }
-      return result;
+      return { ...result, companionFailures };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['characters'] });
