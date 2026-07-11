@@ -268,19 +268,30 @@ Filename format: `YYYYMMDDHHMMSS_short_description.sql`. New migrations should b
 
 ## Deployment
 
-Railway auto-deploys on push to `main`. Single long-lived process. No volume needed.
+Railway auto-deploys on push to `main` after CI passes. Single long-lived
+process. No volume needed.
 
-### ⚠️ Do NOT add devDependencies to `apps/bot/package.json`
+**Railway builds from the repo root** (Root Directory = `/`), install
+`npm ci --include=dev`, start `npm start` (the root script delegates to
+`apps/bot`). This is the durable fix described below: one root lockfile, and the
+root `overrides` (the `undici` security pin) reach production. `--include=dev` is
+required because `packages/core`'s `prepare` runs `tsc` and Railway sets npm's
+`production` config — verified: a root `npm ci --omit=dev` fails with "Lifecycle
+script `build` failed … tsc -p tsconfig.build.json".
 
-Railway builds this app with **Root Directory = `apps/bot`**, and per Railway's docs
-it "will only pull down files from that directory." So the build sees
-`apps/bot/package.json` + `apps/bot/package-lock.json` and nothing else — not the
-repo root, not the root lockfile, not `packages/`.
+Because the build now sees the whole workspace, **`apps/bot` may depend on
+workspace packages** — it declares `@pathway/core` (Phase 5), resolved through
+the root install. There is ONE lockfile: the repo-root `package-lock.json`. Do
+not add a lockfile under `apps/bot`; a workspace dependency isn't
+registry-publishable, so an isolated bot lockfile cannot be valid.
 
-`npm ci` refuses to install when a `package.json` and its lockfile disagree. Adding
-`vitest` here on 2026-07-08 did exactly that, and **every deploy failed from that
-commit until 2026-07-10** — ten commits, including the entire combat consolidation
-and its live-bug fixes, sat on `main` unshipped:
+### History: why the build moved to root
+
+Until 2026-07-10 Railway built with **Root Directory = `apps/bot`**, so the build
+saw only `apps/bot/package.json` + its own lockfile — not the repo root, not
+`packages/`. `npm ci` refuses to install when a `package.json` and its lockfile
+disagree, so adding `vitest` to `apps/bot` on 2026-07-08 broke **every deploy for
+ten commits** (the whole combat consolidation sat on `main` unshipped):
 
 ```
 npm error `npm ci` can only install packages when your package.json and
@@ -288,21 +299,10 @@ npm error package-lock.json ... are in sync.
 npm error Missing: vitest@4.1.10 from lock file
 ```
 
-So: **the bot's tooling (vitest, eslint, globals) lives in the ROOT `package.json`'s
-devDependencies.** npm hoists it, so `npm --workspace apps/bot run test` and
-`run lint` still resolve locally and in CI. `apps/bot/package.json` declares
-production dependencies only, which keeps it in sync with its lockfile.
-
-If you genuinely need a devDependency scoped here, you must regenerate
-`apps/bot/package-lock.json` in the same commit — and verify with an isolated
-`npm ci` in a copy of `apps/bot` alone, because the root install will not catch it.
-
-The durable fix is to move Railway to Root Directory `/` with a workspace-scoped
-start command (`npm start` already delegates), which would leave one lockfile and
-also let the root `overrides` (the `undici` security pin) reach production. That
-build needs `npm ci --include=dev`, since `packages/core`'s `prepare` runs `tsc`
-and Railway sets npm's `production` config — verified: a root `npm ci --omit=dev`
-fails with "Lifecycle script `build` failed … tsc -p tsconfig.build.json".
+The lesson still holds: **the bot's tooling (vitest, eslint, globals) lives in the
+ROOT `package.json`'s devDependencies**, not `apps/bot`'s. npm hoists it, so
+`npm --workspace apps/bot run test` / `run lint` resolve locally and in CI. Keep
+`apps/bot/package.json` to production + workspace dependencies only.
 
 To update slash commands after changing `deploy.js`:
 
@@ -313,7 +313,7 @@ npm run deploy:guild    # guild-only (instant, use for testing)
 
 ## Refactor Status (updated 2026-07-06)
 
-The rewrite from the legacy single-file bot to feature folders is complete and **deployed to production** (Railway, root directory `apps/bot`).
+The rewrite from the legacy single-file bot to feature folders is complete and **deployed to production** (Railway, building from the repo root — see Deployment).
 
 **Completed**:
 - ✅ Phase 0 — skeleton + Phase 0 imports rewired
