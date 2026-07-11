@@ -19,7 +19,9 @@ describe('companion catalog', () => {
 
 describe('scaleCompanion — young wolf at level 1', () => {
   const c = scaleCompanion(wolf, 1, 'young');
-  it('HP = (typeHp + conMod) × level', () => expect(c.maxHp).toBe(8)); // (6+2)*1
+  // Player Core pg. 206: "ancestry Hit Points from its type, plus a number of
+  // Hit Points equal to 6 plus its Constitution modifier for each level".
+  it('HP = ancestryHp + (6 + conMod) × level', () => expect(c.maxHp).toBe(14)); // 6 + (6+2)*1
   it('AC = 10 + (level+2 trained) + dex', () => expect(c.ac).toBe(16)); // 10+3+3
   it('perception = (level+2) + wis', () => expect(c.perception).toBe(4)); // 3+1
   it('saves', () => expect(c.saves).toEqual({ fortitude: 5, reflex: 6, will: 4 }));
@@ -33,7 +35,7 @@ describe('scaleCompanion — mature wolf at level 5', () => {
   const c = scaleCompanion(wolf, 5, 'mature');
   it('applies +1 Str/Dex/Con/Wis', () =>
     expect(c.abilityMods).toMatchObject({ str: 3, dex: 4, con: 3, wis: 2 }));
-  it('HP uses the raised Con mod', () => expect(c.maxHp).toBe(45)); // (6+3)*5
+  it('HP uses the raised Con mod', () => expect(c.maxHp).toBe(51)); // 6 + (6+3)*5
   it('AC', () => expect(c.ac).toBe(21)); // 10 + (5+2) + 4
   it('Perception/saves go to expert', () => {
     expect(c.perception).toBe(11); // (5+4) + 2
@@ -49,10 +51,29 @@ describe('scaleCompanion — savage wolf at level 8', () => {
   const c = scaleCompanion(wolf, 8, 'savage');
   it('applies savage ability spread (+3 Str, +2 Dex/Con/Wis)', () =>
     expect(c.abilityMods).toMatchObject({ str: 5, dex: 5, con: 4, wis: 3 }));
-  it('HP', () => expect(c.maxHp).toBe(80)); // (6+4)*8
+  it('HP', () => expect(c.maxHp).toBe(86)); // 6 + (6+4)*8
   it('adds +3 flat damage on top of doubled dice', () =>
     expect(c.attacks[0]).toMatchObject({ damage: '2d8', damageBonus: 8 })); // str5 + 3
   it('grows two sizes (small → large)', () => expect(c.size).toBe('large'));
+});
+
+describe('size growth re-checks "Medium or smaller" at every stage (PC pg. 211)', () => {
+  // Both mature and savage grow the companion only "if your companion is
+  // Medium or smaller" — a Medium base grows once at mature and is then Large,
+  // so the savage stage's check fails. Only the mature step applies.
+  const horse = findCompanionType('horse')!; // medium base
+  it('mature horse: medium → large', () =>
+    expect(scaleCompanion(horse, 5, 'mature').size).toBe('large'));
+  it('savage horse stops at large (was wrongly huge)', () =>
+    expect(scaleCompanion(horse, 10, 'savage').size).toBe('large'));
+  it('nimble adds no growth of its own: medium → large via mature only', () =>
+    expect(scaleCompanion(horse, 10, 'nimble').size).toBe('large'));
+
+  const drake = findCompanionType('riding drake')!; // large base
+  it('a Large base never grows', () => {
+    expect(scaleCompanion(drake, 5, 'mature').size).toBe('large');
+    expect(scaleCompanion(drake, 10, 'savage').size).toBe('large');
+  });
 });
 
 describe('scaleCompanion — item AC bonus (barding) is capped at +3', () => {

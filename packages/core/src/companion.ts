@@ -55,7 +55,12 @@ export interface CompanionType {
   slug: string;
   name: string;
   size: string;
-  /** Per-level HP base (added to the Con mod, times level). */
+  /**
+   * Ancestry Hit Points, granted ONCE. Per-level HP is 6 + Con per the
+   * young-companion rules (Player Core pg. 206): "Your animal companion has
+   * ancestry Hit Points from its type, plus a number of Hit Points equal to
+   * 6 plus its Constitution modifier for each level you have."
+   */
   hp: number;
   abilityMods: CompanionAbilityMods;
   /** The companion's trained skill (lowercase), e.g. "survival". */
@@ -697,8 +702,12 @@ const FORM_ABILITY_DELTA: Record<CompanionForm, Partial<CompanionAbilityMods>> =
 
 /** Flat damage a form adds to the companion's Strikes (beyond doubling dice). */
 const FORM_DAMAGE_BONUS: Record<CompanionForm, number> = { young: 0, mature: 0, nimble: 2, savage: 3 };
-/** How many size steps a form grows a Medium-or-smaller companion. */
-const FORM_SIZE_STEPS: Record<CompanionForm, number> = { young: 0, mature: 1, nimble: 1, savage: 2 };
+/**
+ * How many advancement stages with a size-growth check the form has been
+ * through: mature is one (young→mature), savage is two (young→mature→savage).
+ * Nimble grants no growth of its own, so it carries only the mature stage.
+ */
+const FORM_GROWTH_STAGES: Record<CompanionForm, number> = { young: 0, mature: 1, nimble: 1, savage: 2 };
 
 export interface ScaledAttack {
   name: string;
@@ -727,13 +736,22 @@ export interface ScaledCompanion {
   senses: string[];
 }
 
-/** Grow a size label by n steps, capped at gargantuan (only for Medium or smaller). */
-function growSize(size: string, steps: number): string {
-  const i = SIZE_ORDER.indexOf(size.toLowerCase() as (typeof SIZE_ORDER)[number]);
-  if (i < 0 || steps <= 0) return size;
-  // Only Medium or smaller grow (per the maturation rules).
-  if (i > SIZE_ORDER.indexOf('medium')) return size;
-  return SIZE_ORDER[Math.min(SIZE_ORDER.length - 1, i + steps)] ?? size;
+/**
+ * Grow a size one step per advancement stage, re-checking the size gate at
+ * each stage. Both mature and savage say "If your companion is Medium or
+ * smaller, it grows by one size" (Player Core pg. 211) — the check applies to
+ * the companion AS IT ENTERS that stage, so a Medium base grows to Large at
+ * mature and then stops: it is no longer Medium or smaller when savage checks.
+ */
+function growSize(size: string, stages: number): string {
+  let i = SIZE_ORDER.indexOf(size.toLowerCase() as (typeof SIZE_ORDER)[number]);
+  if (i < 0) return size;
+  const medium = SIZE_ORDER.indexOf('medium');
+  for (let s = 0; s < stages; s += 1) {
+    if (i > medium) break;
+    i += 1;
+  }
+  return SIZE_ORDER[Math.min(i, SIZE_ORDER.length - 1)] ?? size;
 }
 
 /** "1d8" → "2d8" (double the dice count). */
@@ -774,7 +792,8 @@ export function scaleCompanion(
   const prof = (rank: number) => lvl + 2 * rank;
   const itemAc = Math.max(0, Math.min(3, itemAcBonus));
 
-  const maxHp = (type.hp + mods.con) * lvl;
+  // Ancestry HP once, then 6 + Con per handler level (Player Core pg. 206).
+  const maxHp = type.hp + (6 + mods.con) * lvl;
   const ac = 10 + prof(acRank) + mods.dex + itemAc;
   const perception = prof(advancedRank) + mods.wis;
   const saves = {
@@ -805,7 +824,7 @@ export function scaleCompanion(
     name: type.name,
     level: lvl,
     form,
-    size: growSize(type.size, FORM_SIZE_STEPS[form]),
+    size: growSize(type.size, FORM_GROWTH_STAGES[form]),
     abilityMods: mods,
     maxHp,
     ac,
