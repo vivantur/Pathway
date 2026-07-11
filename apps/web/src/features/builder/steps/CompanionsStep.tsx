@@ -68,7 +68,13 @@ function draftToRow(draft: CompanionDraft, index: number): CompanionRow {
         ? { specialization: draft.specialization ?? null }
         : {}),
       ...(draft.kind === 'familiar'
-        ? { familiar: { abilities: draft.familiarAbilities ?? [], limit: draft.familiarAbilityLimit } }
+        ? {
+            familiar: {
+              abilities: draft.familiarAbilities ?? [],
+              limit: draft.familiarAbilityLimit,
+              specific: draft.specificFamiliar ?? null,
+            },
+          }
         : {}),
       ...(draft.kind === 'eidolon'
         ? {

@@ -67,6 +67,8 @@ export interface SaveCompanionInput {
   familiarAbilities?: string[];
   /** Familiar: abilities choosable per day (base 2). */
   familiarAbilityLimit?: number;
+  /** Familiar: specific-familiar slug (SPECIFIC_FAMILIARS), if adopted. */
+  specificFamiliar?: string | null;
   /** Eidolon: subtype slug. */
   eidolonType?: string;
   /** Eidolon extras: chosen build (ability array) + primary unarmed attack. */
@@ -106,6 +108,7 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     customStats.familiar = {
       abilities: input.familiarAbilities ?? [],
       ...(input.familiarAbilityLimit ? { limit: input.familiarAbilityLimit } : {}),
+      ...(input.specificFamiliar ? { specific: input.specificFamiliar } : {}),
     };
   if (input.kind === 'eidolon')
     customStats.eidolon = {

@@ -50,10 +50,11 @@ export interface CompanionCustomStats {
    */
   specialization?: string | null;
   /**
-   * Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES)
-   * and the number choosable per day (base 2; feats/class features raise it).
+   * Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES),
+   * the number choosable per day (base 2; feats/class features raise it), and
+   * the specific familiar (slug into SPECIFIC_FAMILIARS), if any.
    */
-  familiar?: { abilities: string[]; limit?: number };
+  familiar?: { abilities: string[]; limit?: number; specific?: string | null };
   /**
    * Eidolon: subtype slug (into EIDOLON_TYPES), which of its builds (ability
    * array) was chosen, and the player-chosen primary unarmed attack.

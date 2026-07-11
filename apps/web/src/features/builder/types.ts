@@ -110,6 +110,8 @@ export interface CompanionDraft {
   familiarAbilities?: string[];
   /** Familiar: abilities choosable per day (base 2). */
   familiarAbilityLimit?: number;
+  /** Familiar: specific-familiar slug, if adopted. */
+  specificFamiliar?: string | null;
   eidolonType?: string;
   eidolonBuild?: number;
   eidolonPrimaryName?: string;

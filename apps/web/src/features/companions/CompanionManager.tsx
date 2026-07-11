@@ -10,9 +10,12 @@ import {
   findCompanionType,
   findEidolonType,
   findFamiliarAbility,
+  findSpecificFamiliar,
+  grantedAbilitySlug,
   isMountType,
   scaleCompanion,
   scaleEidolon,
+  SPECIFIC_FAMILIARS,
   type CompanionForm,
   type CompanionKind,
 } from '@pathway/core';
@@ -259,19 +262,48 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
 
 function FamiliarBlock({ companion, level }: { companion: CompanionRow; level: number }) {
   const base = familiarBaseStats(level);
+  const specific = findSpecificFamiliar(companion.custom_stats.familiar?.specific);
   const abilities = (companion.custom_stats.familiar?.abilities ?? [])
     .map(findFamiliarAbility)
     .filter(Boolean);
   return (
     <>
+      {specific && (
+        <div className="mb-1 text-xs text-silver/60">
+          {specific.name}
+          {specific.traits.length > 0 && <span> · {specific.traits.join(', ')}</span>}
+          <span> · requires {specific.requiredAbilities} abilities · {specific.source}</span>
+        </div>
+      )}
       <StatGrid
         items={[
           ['HP', base.hp],
           ['Speed', `${base.speed} ft`],
           ['AC / Saves', 'as master'],
-          ['Abilities', abilities.length],
+          ['Abilities', abilities.length + (specific?.grantedAbilities.length ?? 0)],
         ]}
       />
+      {specific && (
+        <div className="mt-2 space-y-1">
+          <div className="text-xs text-silver/80">
+            <span className="font-display text-gold/90">Granted</span>{' '}
+            <span className="text-silver/60">
+              (innate, can never be swapped): {specific.grantedAbilities.join(', ')}
+            </span>
+          </div>
+          {specific.uniqueAbilities.map((u) => (
+            <div key={u.name} className="text-xs text-silver/80">
+              <span className="font-display text-gold/90">{u.name}</span>
+              {u.actions && (
+                <span className="ml-1 rounded bg-midnight-800/80 px-1 text-[0.55rem] uppercase text-gold/70">
+                  {u.actions}
+                </span>
+              )}
+              <span className="text-silver/60"> — {u.description}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="mt-2 space-y-1">
         {abilities.length === 0 ? (
           <p className="text-xs text-silver/50">No abilities selected.</p>
@@ -396,6 +428,7 @@ export interface CompanionFormOutput {
   notes?: string | null;
   familiarAbilities?: string[];
   familiarAbilityLimit?: number;
+  specificFamiliar?: string | null;
   eidolonType?: string;
   eidolonBuild?: number;
   eidolonPrimaryName?: string;
@@ -443,6 +476,9 @@ export function CompanionEditorForm({
     existing?.custom_stats.familiar?.limit ??
       Math.max(DEFAULT_FAMILIAR_ABILITY_COUNT, existing?.custom_stats.familiar?.abilities?.length ?? 0),
   );
+  const [specificFamiliar, setSpecificFamiliar] = useState<string>(
+    existing?.custom_stats.familiar?.specific ?? '',
+  );
   // eidolon
   const [eidolonType, setEidolonType] = useState(
     existing?.custom_stats.eidolon?.type ?? EIDOLON_TYPES[0].slug,
@@ -468,14 +504,37 @@ export function CompanionEditorForm({
     return t ? scaleCompanion(t, level, form, 0, specialization || null) : null;
   }, [kind, baseType, form, specialization, level]);
 
+  // A specific familiar consumes its required-ability count; whatever remains
+  // of the daily limit buys normal familiar/master abilities. Its granted
+  // abilities are innate and never occupy (or vacate) a slot.
+  const chosenSpecific = kind === 'familiar' ? findSpecificFamiliar(specificFamiliar) : undefined;
+  const grantedSlugs = new Set((chosenSpecific?.grantedAbilities ?? []).map(grantedAbilitySlug));
+  const freeAbilitySlots = Math.max(0, familiarLimit - (chosenSpecific?.requiredAbilities ?? 0));
+
   const toggleAbility = (slug: string) =>
     setFamiliarAbilities((prev) =>
       prev.includes(slug)
         ? prev.filter((s) => s !== slug)
-        : prev.length >= familiarLimit
+        : prev.length >= freeAbilitySlots
           ? prev
           : [...prev, slug],
     );
+
+  const pickSpecificFamiliar = (slug: string) => {
+    setSpecificFamiliar(slug);
+    const spec = findSpecificFamiliar(slug);
+    if (!spec) return;
+    // Adopting requires a familiar with at least the required ability count.
+    setFamiliarLimit((limit) => Math.max(limit, spec.requiredAbilities));
+    // Granted abilities are innate — drop them from the picked list, and trim
+    // picks that no longer fit in the remaining slots.
+    const granted = new Set(spec.grantedAbilities.map(grantedAbilitySlug));
+    setFamiliarAbilities((prev) => {
+      const kept = prev.filter((s) => !granted.has(s));
+      const slots = Math.max(0, Math.max(familiarLimit, spec.requiredAbilities) - spec.requiredAbilities);
+      return kept.slice(0, slots);
+    });
+  };
 
   const submit = () => {
     if (!name.trim()) return;
@@ -490,6 +549,7 @@ export function CompanionEditorForm({
       notes: notes.trim() || null,
       familiarAbilities: kind === 'familiar' ? familiarAbilities : undefined,
       familiarAbilityLimit: kind === 'familiar' ? familiarLimit : undefined,
+      specificFamiliar: kind === 'familiar' ? specificFamiliar || null : undefined,
       eidolonType: kind === 'eidolon' ? eidolonType : undefined,
       eidolonBuild: kind === 'eidolon' ? eidolonBuild : undefined,
       eidolonPrimaryName: kind === 'eidolon' ? eidolonPrimaryName || undefined : undefined,
@@ -591,10 +651,47 @@ export function CompanionEditorForm({
 
       {kind === 'familiar' && (
         <div className="mt-3">
+          <label className="mb-2 flex flex-col gap-1 text-xs text-silver/70">
+            Specific familiar (optional — requires the listed number of abilities)
+            <select
+              value={specificFamiliar}
+              onChange={(e) => pickSpecificFamiliar(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">— none (ordinary familiar) —</option>
+              {SPECIFIC_FAMILIARS.map((f) => (
+                <option key={f.slug} value={f.slug}>
+                  {f.name} (requires {f.requiredAbilities})
+                </option>
+              ))}
+            </select>
+          </label>
+          {chosenSpecific && (
+            <div className="mb-2 rounded border border-gold/15 bg-midnight-950/40 p-2 text-xs text-silver/80">
+              <div>
+                <span className="font-display text-gold/90">Granted (innate):</span>{' '}
+                {chosenSpecific.grantedAbilities.join(', ')}
+              </div>
+              {(chosenSpecific.access || chosenSpecific.rarity) && (
+                <div className="text-silver/50">
+                  {[chosenSpecific.rarity, chosenSpecific.access].filter(Boolean).join(' · ')}
+                </div>
+              )}
+              {chosenSpecific.uniqueAbilities.map((u) => (
+                <div key={u.name}>
+                  <span className="font-display text-gold/90">{u.name}</span>
+                  <span className="text-silver/60"> — {u.description}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-silver/70">
             <span>
-              Familiar abilities ({familiarAbilities.length}/{familiarLimit} chosen). HP{' '}
-              {familiarBaseStats(level).hp}, Speed 25 ft, AC & saves as master.
+              Familiar abilities ({familiarAbilities.length}/{freeAbilitySlots} chosen
+              {chosenSpecific
+                ? ` — ${chosenSpecific.requiredAbilities} of ${familiarLimit} consumed by ${chosenSpecific.name}`
+                : ''}
+              ). HP {familiarBaseStats(level).hp}, Speed 25 ft, AC & saves as master.
             </span>
             <label className="flex items-center gap-1">
               Abilities per day
@@ -614,8 +711,12 @@ export function CompanionEditorForm({
               <label key={a.slug} className="flex cursor-pointer items-start gap-2 rounded px-1 py-0.5 hover:bg-midnight-800/50">
                 <input
                   type="checkbox"
-                  checked={familiarAbilities.includes(a.slug)}
-                  disabled={!familiarAbilities.includes(a.slug) && familiarAbilities.length >= familiarLimit}
+                  checked={grantedSlugs.has(a.slug) || familiarAbilities.includes(a.slug)}
+                  disabled={
+                    grantedSlugs.has(a.slug) ||
+                    (!familiarAbilities.includes(a.slug) && familiarAbilities.length >= freeAbilitySlots)
+                  }
+                  title={grantedSlugs.has(a.slug) ? 'Granted by the specific familiar (innate).' : undefined}
                   onChange={() => toggleAbility(a.slug)}
                   className="mt-0.5"
                 />

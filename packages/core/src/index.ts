@@ -23,3 +23,7 @@ export * from './stats.js';
 // Animal companion catalog + derived-stat engine. Consumed by apps/web's
 // companion builder.
 export * from './companion.js';
+
+// Specific familiars (Player Core 2 pg. 170 + expansions): named familiars
+// with required ability counts, innate granted abilities, and unique powers.
+export * from './specificFamiliars.js';
