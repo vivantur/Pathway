@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   COMPANION_CATALOG,
   COMPANION_FORMS,
+  COMPANION_SPECIALIZATIONS,
   DEFAULT_FAMILIAR_ABILITY_COUNT,
   EIDOLON_TYPES,
   FAMILIAR_ABILITIES,
@@ -9,6 +10,7 @@ import {
   findCompanionType,
   findEidolonType,
   findFamiliarAbility,
+  isMountType,
   scaleCompanion,
   scaleEidolon,
   type CompanionForm,
@@ -203,11 +205,13 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
       </p>
     );
   }
-  const s = scaleCompanion(type, level, companion.form);
+  const s = scaleCompanion(type, level, companion.form, 0, companion.custom_stats.specialization);
   return (
     <>
       <div className="mb-1 text-xs text-silver/60">
-        {cap(companion.form)} {type.name} · {cap(s.size)} · Lvl {level}
+        {s.specialization ? `Specialized (${s.specialization.name}) ` : `${cap(companion.form)} `}
+        {type.name} · {cap(s.size)} · Lvl {level}
+        {isMountType(type) && <span className="ml-1 text-gold/60">· Mount</span>}
       </div>
       <StatGrid
         items={[
@@ -218,7 +222,9 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
           ['Fort', sign(s.saves.fortitude)],
           ['Ref', sign(s.saves.reflex)],
           ['Will', sign(s.saves.will)],
-          [cap(s.skill.name), sign(s.skill.modifier)],
+          ...(s.skill
+            ? ([[cap(s.skill.name), sign(s.skill.modifier)]] as Array<[string, string]>)
+            : ([['Skill', 'none (mindless)']] as Array<[string, string]>)),
         ]}
       />
       <div className="mt-2 space-y-1">
@@ -239,6 +245,12 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
       {type.support && (
         <p className="mt-1 text-xs text-silver/70">
           <span className="text-gold/70">Support</span> {type.support}
+        </p>
+      )}
+      {s.specialization && (
+        <p className="mt-1 text-xs text-silver/70">
+          <span className="text-gold/70">{s.specialization.name}</span>{' '}
+          {s.specialization.description}
         </p>
       )}
     </>
@@ -380,8 +392,10 @@ export interface CompanionFormOutput {
   displayName: string;
   baseType: string;
   form: CompanionForm;
+  specialization?: string | null;
   notes?: string | null;
   familiarAbilities?: string[];
+  familiarAbilityLimit?: number;
   eidolonType?: string;
   eidolonBuild?: number;
   eidolonPrimaryName?: string;
@@ -418,9 +432,16 @@ export function CompanionEditorForm({
     existing && findCompanionType(existing.base_type) ? existing.base_type : COMPANION_CATALOG[0].slug,
   );
   const [form, setForm] = useState<CompanionForm>(existing?.form ?? 'young');
+  const [specialization, setSpecialization] = useState<string>(
+    existing?.custom_stats.specialization ?? '',
+  );
   // familiar
   const [familiarAbilities, setFamiliarAbilities] = useState<string[]>(
     existing?.custom_stats.familiar?.abilities ?? [],
+  );
+  const [familiarLimit, setFamiliarLimit] = useState<number>(
+    existing?.custom_stats.familiar?.limit ??
+      Math.max(DEFAULT_FAMILIAR_ABILITY_COUNT, existing?.custom_stats.familiar?.abilities?.length ?? 0),
   );
   // eidolon
   const [eidolonType, setEidolonType] = useState(
@@ -436,15 +457,24 @@ export function CompanionEditorForm({
   // custom
   const [custom, setCustom] = useState<CustomCompanionStats>(existing?.custom_stats.custom ?? {});
 
+  // Kind 'mount' offers only types whose stat block has the mount special
+  // ability ("especially suited for riding", Player Core pg. 206).
+  const typeChoices = kind === 'mount' ? COMPANION_CATALOG.filter(isMountType) : COMPANION_CATALOG;
+  const specEligible = (kind === 'animal' || kind === 'mount') && (form === 'nimble' || form === 'savage');
+
   const animalPreview = useMemo(() => {
     if (kind !== 'animal' && kind !== 'mount') return null;
     const t = findCompanionType(baseType);
-    return t ? scaleCompanion(t, level, form) : null;
-  }, [kind, baseType, form, level]);
+    return t ? scaleCompanion(t, level, form, 0, specialization || null) : null;
+  }, [kind, baseType, form, specialization, level]);
 
   const toggleAbility = (slug: string) =>
     setFamiliarAbilities((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+      prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : prev.length >= familiarLimit
+          ? prev
+          : [...prev, slug],
     );
 
   const submit = () => {
@@ -456,8 +486,10 @@ export function CompanionEditorForm({
       displayName: name.trim(),
       baseType: baseTypeForKind,
       form: kind === 'animal' || kind === 'mount' ? form : 'young',
+      specialization: specEligible ? specialization || null : null,
       notes: notes.trim() || null,
       familiarAbilities: kind === 'familiar' ? familiarAbilities : undefined,
+      familiarAbilityLimit: kind === 'familiar' ? familiarLimit : undefined,
       eidolonType: kind === 'eidolon' ? eidolonType : undefined,
       eidolonBuild: kind === 'eidolon' ? eidolonBuild : undefined,
       eidolonPrimaryName: kind === 'eidolon' ? eidolonPrimaryName || undefined : undefined,
@@ -483,7 +515,14 @@ export function CompanionEditorForm({
           Kind
           <select
             value={kind}
-            onChange={(e) => setKind(e.target.value as CompanionKind)}
+            onChange={(e) => {
+              const k = e.target.value as CompanionKind;
+              setKind(k);
+              // A mount must be a mount-capable type; snap to one if needed.
+              if (k === 'mount' && !isMountType({ slug: baseType })) {
+                setBaseType(COMPANION_CATALOG.find(isMountType)?.slug ?? baseType);
+              }
+            }}
             className={inputCls}
             disabled={Boolean(existing)}
           >
@@ -505,9 +544,10 @@ export function CompanionEditorForm({
           <label className="flex flex-col gap-1 text-xs text-silver/70">
             Type
             <select value={baseType} onChange={(e) => setBaseType(e.target.value)} className={inputCls}>
-              {COMPANION_CATALOG.map((c) => (
+              {typeChoices.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.name}
+                  {isMountType(c) ? ' (mount)' : ''}
                 </option>
               ))}
             </select>
@@ -522,6 +562,23 @@ export function CompanionEditorForm({
               ))}
             </select>
           </label>
+          {specEligible && (
+            <label className="flex flex-col gap-1 text-xs text-silver/70">
+              Specialization (advances a nimble or savage companion)
+              <select
+                value={specialization}
+                onChange={(e) => setSpecialization(e.target.value)}
+                className={inputCls}
+              >
+                <option value="">— none —</option>
+                {COMPANION_SPECIALIZATIONS.map((s) => (
+                  <option key={s.slug} value={s.slug}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {animalPreview && (
             <div className="sm:col-span-2 rounded border border-gold/10 bg-midnight-950/40 p-2 text-xs text-silver/80">
               <span className="text-silver/50">Preview (lvl {level}): </span>
@@ -534,9 +591,23 @@ export function CompanionEditorForm({
 
       {kind === 'familiar' && (
         <div className="mt-3">
-          <div className="mb-1 text-xs text-silver/70">
-            Familiar abilities ({familiarAbilities.length} chosen — base {DEFAULT_FAMILIAR_ABILITY_COUNT}/day,
-            more via feats). HP {familiarBaseStats(level).hp}, Speed 25 ft, AC & saves as master.
+          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-silver/70">
+            <span>
+              Familiar abilities ({familiarAbilities.length}/{familiarLimit} chosen). HP{' '}
+              {familiarBaseStats(level).hp}, Speed 25 ft, AC & saves as master.
+            </span>
+            <label className="flex items-center gap-1">
+              Abilities per day
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={familiarLimit}
+                onChange={(e) => setFamiliarLimit(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                className={`${inputCls} w-14`}
+                title={`Base ${DEFAULT_FAMILIAR_ABILITY_COUNT} per day; raise this if feats or class features grant more.`}
+              />
+            </label>
           </div>
           <div className="max-h-64 space-y-1 overflow-y-auto rounded border border-gold/15 bg-midnight-950/40 p-2">
             {FAMILIAR_ABILITIES.map((a) => (
@@ -544,6 +615,7 @@ export function CompanionEditorForm({
                 <input
                   type="checkbox"
                   checked={familiarAbilities.includes(a.slug)}
+                  disabled={!familiarAbilities.includes(a.slug) && familiarAbilities.length >= familiarLimit}
                   onChange={() => toggleAbility(a.slug)}
                   className="mt-0.5"
                 />

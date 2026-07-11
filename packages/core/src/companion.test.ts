@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findCompanionType, scaleCompanion } from './companion.js';
+import { findCompanionType, isMountType, scaleCompanion } from './companion.js';
 
 const wolf = findCompanionType('wolf')!;
 
@@ -80,6 +80,73 @@ describe('scaleCompanion — item AC bonus (barding) is capped at +3', () => {
   it('caps the barding bonus', () => {
     const c = scaleCompanion(wolf, 1, 'young', 5);
     expect(c.ac).toBe(19); // 16 + min(3,5)
+  });
+});
+
+// Specialized animal companions (Player Core pg. 211): unarmed attacks expert;
+// saves + Perception master; +1 Dex, +2 Int; two dice → three dice; additional
+// damage 2→4 (nimble) or 3→6 (savage); plus the specialization's own benefit.
+describe('scaleCompanion — specialized (savage wolf, level 8, wrecker)', () => {
+  const c = scaleCompanion(wolf, 8, 'savage', 0, 'wrecker');
+  it('adds the shared package (+1 Dex, +2 Int) plus wrecker Str', () =>
+    expect(c.abilityMods).toEqual({ str: 6, dex: 6, con: 4, int: -2, wis: 3, cha: 0 }));
+  it('unarmed attacks rise to expert', () =>
+    // prof(expert) = 8 + 4 = 12; finesse jaws uses max(Str, Dex) = 6.
+    expect(c.attacks[0]!.attack).toBe(18));
+  it('three damage dice, savage additional damage 3 → 6', () =>
+    expect(c.attacks[0]).toMatchObject({ damage: '3d8', damageBonus: 12 })); // Str 6 + 6
+  it('saves and Perception rise to master', () => {
+    expect(c.saves).toEqual({ fortitude: 18, reflex: 20, will: 17 }); // prof 14 + mods
+    expect(c.perception).toBe(17);
+  });
+  it('type skill untouched by a non-matching specialization', () =>
+    expect(c.skill).toEqual({ name: 'survival', modifier: 15 })); // expert 12 + Wis 3
+  it('unarmored defense stays trained for wrecker', () => expect(c.ac).toBe(26)); // 10+10+6
+  it('reports the specialization', () => expect(c.specialization?.slug).toBe('wrecker'));
+});
+
+describe('scaleCompanion — specialization variants', () => {
+  it('tracker raises the matching type skill to master', () => {
+    const c = scaleCompanion(wolf, 8, 'savage', 0, 'tracker');
+    // Survival master: prof 14 + Wis (3 + 1 tracker) = 18.
+    expect(c.skill).toEqual({ name: 'survival', modifier: 18 });
+  });
+
+  it('racer raises Fortitude to legendary', () => {
+    const c = scaleCompanion(wolf, 8, 'nimble', 0, 'racer');
+    // Nimble mods: Str 4, Dex 6, Con 4, Wis 3; spec +1 Dex; racer +1 Con.
+    expect(c.saves.fortitude).toBe(8 + 8 + 5); // legendary prof + Con 5
+    expect(c.saves.reflex).toBe(8 + 6 + 7); // master prof + Dex 7
+  });
+
+  it('daredevil raises unarmored defense to expert', () => {
+    const c = scaleCompanion(wolf, 8, 'nimble', 0, 'daredevil');
+    // Dex 6 (nimble) + 1 (shared) + 1 (daredevil) = 8; AC 10 + (8+4) + 8.
+    expect(c.ac).toBe(30);
+  });
+
+  it('nimble additional damage 2 doubles to 4', () => {
+    const c = scaleCompanion(wolf, 8, 'nimble', 0, 'tracker');
+    expect(c.attacks[0]!.damageBonus).toBe(4 + 4); // Str 4 + doubled nimble bonus
+  });
+
+  it('is ignored on young and mature forms (specialized advances nimble/savage)', () => {
+    expect(scaleCompanion(wolf, 8, 'young', 0, 'wrecker').specialization).toBeNull();
+    expect(scaleCompanion(wolf, 8, 'mature', 0, 'wrecker').specialization).toBeNull();
+    expect(scaleCompanion(wolf, 8, 'mature', 0, 'wrecker').attacks[0]!.damage).toBe('2d8');
+  });
+});
+
+describe('mount special ability + mindless skill', () => {
+  it('flags the catalog types whose stat block says "mount"', () => {
+    expect(isMountType(findCompanionType('horse')!)).toBe(true);
+    expect(isMountType(findCompanionType('riding drake')!)).toBe(true);
+    expect(isMountType(findCompanionType('wolf')!)).toBe(false);
+  });
+
+  it('mindless companions ("Skill none") derive no type skill', () => {
+    const head = findCompanionType('severed head')!;
+    expect(scaleCompanion(head, 5, 'young').skill).toBeNull();
   });
 });
 

@@ -59,10 +59,14 @@ export interface SaveCompanionInput {
   /** Catalog slug (e.g. "wolf") for animal/mount; else "familiar"/"eidolon"/"custom". */
   baseType: string;
   form: CompanionForm;
+  /** Animal/mount: specialization slug (only meaningful on nimble/savage). */
+  specialization?: string | null;
   notes?: string | null;
   art?: string | null;
   /** Familiar: ability slugs. */
   familiarAbilities?: string[];
+  /** Familiar: abilities choosable per day (base 2). */
+  familiarAbilityLimit?: number;
   /** Eidolon: subtype slug. */
   eidolonType?: string;
   /** Eidolon extras: chosen build (ability array) + primary unarmed attack. */
@@ -96,7 +100,13 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
     kind: input.kind,
     art: input.art ?? existing?.custom_stats?.art ?? null,
   };
-  if (input.kind === 'familiar') customStats.familiar = { abilities: input.familiarAbilities ?? [] };
+  if (input.kind === 'animal' || input.kind === 'mount')
+    customStats.specialization = input.specialization ?? null;
+  if (input.kind === 'familiar')
+    customStats.familiar = {
+      abilities: input.familiarAbilities ?? [],
+      ...(input.familiarAbilityLimit ? { limit: input.familiarAbilityLimit } : {}),
+    };
   if (input.kind === 'eidolon')
     customStats.eidolon = {
       type: input.eidolonType ?? '',

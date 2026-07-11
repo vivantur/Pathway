@@ -43,8 +43,17 @@ export interface CompanionCustomStats {
     traits?: string[];
   }>;
   overrides?: Record<string, unknown>;
-  /** Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES). */
-  familiar?: { abilities: string[] };
+  /**
+   * Animal/mount: specialization slug (Player Core pg. 211; slugs in core's
+   * COMPANION_SPECIALIZATIONS). Kept out of the `form` column because the bot
+   * only knows young/mature/nimble/savage.
+   */
+  specialization?: string | null;
+  /**
+   * Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES)
+   * and the number choosable per day (base 2; feats/class features raise it).
+   */
+  familiar?: { abilities: string[]; limit?: number };
   /**
    * Eidolon: subtype slug (into EIDOLON_TYPES), which of its builds (ability
    * array) was chosen, and the player-chosen primary unarmed attack.

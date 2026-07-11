@@ -104,8 +104,12 @@ export interface CompanionDraft {
   displayName: string;
   baseType: string;
   form: 'young' | 'mature' | 'nimble' | 'savage';
+  /** Animal/mount: specialization slug (only meaningful on nimble/savage). */
+  specialization?: string | null;
   notes?: string | null;
   familiarAbilities?: string[];
+  /** Familiar: abilities choosable per day (base 2). */
+  familiarAbilityLimit?: number;
   eidolonType?: string;
   eidolonBuild?: number;
   eidolonPrimaryName?: string;

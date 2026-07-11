@@ -5,19 +5,24 @@
 // its maturity form. No I/O.
 //
 // RULES SOURCE (non-negotiable per CLAUDE.md — implemented from rules text, not
-// model memory): Pathfinder 2e Remaster, Player Core 1 "Animal Companions".
+// model memory): Pathfinder 2e Remaster, Player Core pg. 206-211 "Animal
+// Companions"; full text in docs/rules-sources/companions.md.
 //   - Young baseline: an animal companion has the same level as its handler,
 //     is trained in unarmored defense, unarmed attacks, all saves, Perception,
 //     Acrobatics, Athletics, and its type's skill, and uses the handler's level
-//     for proficiency. HP = (type HP + Con mod) per level. AC/attacks/saves are
-//     computed like any creature: 10-or-level + proficiency (level + 2×rank) +
-//     ability mod (+ item bonus to AC, max +3).
+//     for proficiency. HP = ancestry HP + (6 + Con mod) per level.
+//     AC/attacks/saves are computed like any creature: 10-or-level +
+//     proficiency (level + 2×rank) + ability mod (+ item bonus to AC, max +3).
 //   - Mature: +1 Str/Dex/Con/Wis; Perception + all saves (and the type skill)
 //     become expert; unarmed damage goes from one die to two dice; grows one
 //     size if Medium or smaller.
 //   - Nimble: +2 Dex, +1 Str/Con/Wis; Acrobatics expert; +2 damage.
 //   - Savage: +2 Str, +1 Dex/Con/Wis; Athletics expert; +3 damage; grows one
 //     size if Medium or smaller.
+//   - Specialized (advances a nimble or savage companion): unarmed attacks
+//     expert; saves + Perception master; +1 Dex, +2 Int; damage dice two →
+//     three; additional damage 2→4 or 3→6; plus one specialization benefit
+//     (ambusher/bully/daredevil/racer/tracker/wrecker).
 //
 // NOTE ON THE DISCORD BOT: the live bot (apps/bot .../companion/helpers.js
 // `scaleCompanion`) uses an older approximation — young HP omits the Con mod,
@@ -32,6 +37,98 @@ import { proficiencyRankAtLevel, type ProficiencyRank } from "./proficiency.js";
 
 export type CompanionForm = 'young' | 'mature' | 'nimble' | 'savage';
 export const COMPANION_FORMS: readonly CompanionForm[] = ['young', 'mature', 'nimble', 'savage'];
+
+/**
+ * Specializations (Player Core pg. 211): a nimble or savage companion can gain
+ * one. Stored separately from `form` because the Discord bot's `form` column
+ * only knows the four forms above — the web keeps the specialization in
+ * `custom_stats`, which the bot preserves but ignores.
+ */
+export type CompanionSpecialization =
+  | 'ambusher'
+  | 'bully'
+  | 'daredevil'
+  | 'racer'
+  | 'tracker'
+  | 'wrecker';
+
+export interface SpecializationDef {
+  slug: CompanionSpecialization;
+  name: string;
+  /** Ability increases beyond the shared specialized package (+1 Dex, +2 Int). */
+  mods: Partial<CompanionAbilityMods>;
+  /**
+   * Skill (lowercase) this specialization raises. When it matches the type's
+   * own skill (which mature already made expert), the rank becomes master.
+   */
+  skill?: string;
+  /** True if the specialization raises unarmored defense to expert. */
+  unarmoredExpert?: boolean;
+  /** True if Fortitude rises to legendary (racer). */
+  fortLegendary?: boolean;
+  /** The extra benefit, condensed from the rules text. */
+  description: string;
+}
+
+export const COMPANION_SPECIALIZATIONS: readonly SpecializationDef[] = [
+  {
+    slug: 'ambusher',
+    name: 'Ambusher',
+    mods: { dex: 1 },
+    skill: 'stealth',
+    unarmoredExpert: true,
+    description:
+      'In its natural environment, it can use a Sneak action even if currently observed. Stealth rises to expert (master if already expert from its type); unarmored defense rises to expert.',
+  },
+  {
+    slug: 'bully',
+    name: 'Bully',
+    mods: { str: 1, cha: 3 },
+    skill: 'intimidation',
+    description:
+      'Terrorizes foes with dominance displays. Athletics and Intimidation rise to expert (master if already expert from its type).',
+  },
+  {
+    slug: 'daredevil',
+    name: 'Daredevil',
+    mods: { dex: 1 },
+    skill: 'acrobatics',
+    unarmoredExpert: true,
+    description:
+      "Gains deny advantage: it isn't off-guard to hidden, undetected, or flanking creatures unless their level is greater than yours. Acrobatics rises to master; unarmored defense rises to expert.",
+  },
+  {
+    slug: 'racer',
+    name: 'Racer',
+    mods: { con: 1 },
+    fortLegendary: true,
+    description:
+      'Gains a +10-foot status bonus to its Speed, swim Speed, or fly Speed (your choice). Fortitude saves rise to legendary.',
+  },
+  {
+    slug: 'tracker',
+    name: 'Tracker',
+    mods: { wis: 1 },
+    skill: 'survival',
+    description:
+      'Moves at full Speed while following tracks. Survival rises to expert (master if already expert from its type).',
+  },
+  {
+    slug: 'wrecker',
+    name: 'Wrecker',
+    mods: { str: 1 },
+    skill: 'athletics',
+    description: "Its unarmed attacks ignore half an object's Hardness. Athletics rises to master.",
+  },
+];
+
+export function findSpecialization(
+  slug: string | null | undefined,
+): SpecializationDef | undefined {
+  if (!slug) return undefined;
+  const s = slug.toLowerCase();
+  return COMPANION_SPECIALIZATIONS.find((d) => d.slug === s);
+}
 
 export interface CompanionAbilityMods {
   str: number;
@@ -537,7 +634,7 @@ export const COMPANION_CATALOG: CompanionType[] = [
     size: "small",
     hp: 4,
     abilityMods: { str: 2, dex: 1, con: 3, int: -5, wis: 0, cha: 0 },
-    skill: "none ({@trait mindless})",
+    skill: "none (mindless)",
     speed: "walk 15 feet, fly 25 feet",
     senses: ["darkvision"],
     attacks: [{ name: "jaws", traits: ["finesse"], damageDie: "1d6", damageType: "piercing" }],
@@ -731,9 +828,12 @@ export interface ScaledCompanion {
   perception: number;
   saves: { fortitude: number; reflex: number; will: number };
   attacks: ScaledAttack[];
-  skill: { name: string; modifier: number };
+  /** Null for mindless companions ("Skill none (mindless)" in the stat block). */
+  skill: { name: string; modifier: number } | null;
   speed: string;
   senses: string[];
+  /** The applied specialization, if any (only valid on nimble/savage forms). */
+  specialization: SpecializationDef | null;
 }
 
 /**
@@ -754,55 +854,69 @@ function growSize(size: string, stages: number): string {
   return SIZE_ORDER[Math.min(i, SIZE_ORDER.length - 1)] ?? size;
 }
 
-/** "1d8" → "2d8" (double the dice count). */
-function doubleDice(die: string): string {
+/** Multiply the dice count of a young damage die, e.g. "1d8" ×3 → "3d8". */
+function multiplyDice(die: string, factor: number): string {
   const m = die.match(/^(\d+)(d\d+)$/i);
   if (!m) return die;
-  return `${Number(m[1]) * 2}${m[2]}`;
+  return `${Number(m[1]) * factor}${m[2]}`;
 }
 
 /**
  * Derive a companion's statistics. `level` is the handler's level; proficiency
- * uses that level plus 2× the statistic's rank (trained = +2, expert = +4).
- * `itemAcBonus` covers barding (max +3 per the rules); default 0.
+ * uses that level plus 2× the statistic's rank (trained = +2, expert = +4,
+ * master = +6, legendary = +8). `itemAcBonus` covers barding (max +3 per the
+ * rules); default 0. `specialization` (Player Core pg. 211) applies only when
+ * the form is nimble or savage — specialized advances one of those two.
  */
 export function scaleCompanion(
   type: CompanionType,
   level: number,
   form: CompanionForm,
   itemAcBonus = 0,
+  specialization?: CompanionSpecialization | string | null,
 ): ScaledCompanion {
   const lvl = Math.max(1, Math.min(20, Math.round(level)));
   const delta = FORM_ABILITY_DELTA[form];
+  const spec =
+    form === 'nimble' || form === 'savage' ? findSpecialization(specialization) : undefined;
   const mods: CompanionAbilityMods = {
-    str: type.abilityMods.str + (delta.str ?? 0),
-    dex: type.abilityMods.dex + (delta.dex ?? 0),
-    con: type.abilityMods.con + (delta.con ?? 0),
-    int: type.abilityMods.int,
-    wis: type.abilityMods.wis + (delta.wis ?? 0),
-    cha: type.abilityMods.cha,
+    // Shared specialized package: +1 Dex, +2 Int — plus the specialization's
+    // own increases.
+    str: type.abilityMods.str + (delta.str ?? 0) + (spec?.mods.str ?? 0),
+    dex: type.abilityMods.dex + (delta.dex ?? 0) + (spec ? 1 : 0) + (spec?.mods.dex ?? 0),
+    con: type.abilityMods.con + (delta.con ?? 0) + (spec?.mods.con ?? 0),
+    int: type.abilityMods.int + (spec ? 2 : 0),
+    wis: type.abilityMods.wis + (delta.wis ?? 0) + (spec?.mods.wis ?? 0),
+    cha: type.abilityMods.cha + (spec?.mods.cha ?? 0),
   };
 
   const matured = form !== 'young';
-  // Proficiency ranks (1 trained, 2 expert). Companions always use the handler's
-  // level; only Perception, saves, and the type skill advance to expert.
-  const acRank = 1; // unarmored defense stays trained (Remaster)
-  const attackRank = 1; // unarmed attacks stay trained
-  const advancedRank = matured ? 2 : 1;
+  // Proficiency ranks (1 trained, 2 expert, 3 master, 4 legendary), always at
+  // the handler's level. Mature raises Perception + saves (and the type skill)
+  // to expert; specialized raises unarmed attacks to expert, saves + Perception
+  // to master (racer's Fortitude to legendary), and ambusher/daredevil raise
+  // unarmored defense to expert.
+  const acRank = spec?.unarmoredExpert ? 2 : 1;
+  const attackRank = spec ? 2 : 1;
+  const saveRank = spec ? 3 : matured ? 2 : 1;
+  const fortRank = spec?.fortLegendary ? 4 : saveRank;
   const prof = (rank: number) => lvl + 2 * rank;
   const itemAc = Math.max(0, Math.min(3, itemAcBonus));
 
   // Ancestry HP once, then 6 + Con per handler level (Player Core pg. 206).
   const maxHp = type.hp + (6 + mods.con) * lvl;
   const ac = 10 + prof(acRank) + mods.dex + itemAc;
-  const perception = prof(advancedRank) + mods.wis;
+  const perception = prof(saveRank) + mods.wis;
   const saves = {
-    fortitude: prof(advancedRank) + mods.con,
-    reflex: prof(advancedRank) + mods.dex,
-    will: prof(advancedRank) + mods.wis,
+    fortitude: prof(fortRank) + mods.con,
+    reflex: prof(saveRank) + mods.dex,
+    will: prof(saveRank) + mods.wis,
   };
 
-  const flatDamage = FORM_DAMAGE_BONUS[form];
+  // Damage dice: one die young, two dice mature+, three dice specialized. The
+  // form's additional damage (nimble +2 / savage +3) doubles when specialized.
+  const diceFactor = spec ? 3 : matured ? 2 : 1;
+  const flatDamage = FORM_DAMAGE_BONUS[form] * (spec ? 2 : 1);
   const attacks: ScaledAttack[] = type.attacks.map((a) => {
     const finesse = a.traits.includes('finesse');
     const attackAbility = finesse ? Math.max(mods.str, mods.dex) : mods.str;
@@ -810,14 +924,22 @@ export function scaleCompanion(
       name: a.name,
       traits: a.traits,
       attack: prof(attackRank) + attackAbility,
-      damage: matured ? doubleDice(a.damageDie) : a.damageDie,
+      damage: multiplyDice(a.damageDie, diceFactor),
       damageBonus: mods.str + flatDamage,
       damageType: a.damageType,
     };
   });
 
+  // Mindless companions have no type skill ("Skill none (mindless)"). The type
+  // skill was raised to expert at mature; a specialization that targets that
+  // same skill raises it to master ("or master if it was already an expert
+  // from its type").
+  const mindless = /^none/i.test(type.skill);
+  const skillRank = spec && spec.skill === type.skill ? 3 : matured ? 2 : 1;
   const skillAbility = SKILL_ABILITY[type.skill] ?? 'str';
-  const skill = { name: type.skill, modifier: prof(advancedRank) + mods[skillAbility] };
+  const skill = mindless
+    ? null
+    : { name: type.skill, modifier: prof(skillRank) + mods[skillAbility] };
 
   return {
     slug: type.slug,
@@ -834,7 +956,32 @@ export function scaleCompanion(
     skill,
     speed: type.speed,
     senses: type.senses,
+    specialization: spec ?? null,
   };
+}
+
+/**
+ * Companion types whose stat block lists the `mount` special ability — "it's
+ * especially suited for riding and ignores both of these restrictions"
+ * (Player Core pg. 206; per-type stat blocks in
+ * docs/rules-sources/companion-catalog.md).
+ */
+const MOUNT_SLUGS = new Set([
+  'augdunar',
+  'bacallia',
+  'beetle',
+  'camel',
+  'chetamog',
+  'draft lizard',
+  'goat',
+  'horse',
+  'monitor lizard',
+  'riding drake',
+  'terror bird',
+]);
+
+export function isMountType(type: Pick<CompanionType, 'slug'>): boolean {
+  return MOUNT_SLUGS.has(type.slug);
 }
 
 // --------------------------------------------------------------------------
@@ -1092,7 +1239,7 @@ export const EIDOLON_TYPES: EidolonType[] = [
     skills: ["Deception","Nature"],
     senses: ["low-light vision"],
     suggestedAttacks: "fist (bludgeoning), wing (bludgeoning), attacks shaped like a weapon",
-    builds: [{ name: "Skirmisher Fey", abilityMods: { str: 2, dex: 4, con: 2, int: 0, wis: 0, cha: 1 }, acBonus: 1, dexCap: 4 }, { name: "Trickster Dragon", abilityMods: { str: 1, dex: 4, con: 1, int: 1, wis: -1, cha: 3 }, acBonus: 1, dexCap: 4 }],
+    builds: [{ name: "Skirmisher Fey", abilityMods: { str: 2, dex: 4, con: 2, int: 0, wis: 0, cha: 1 }, acBonus: 1, dexCap: 4 }, { name: "Trickster Fey", abilityMods: { str: 1, dex: 4, con: 1, int: 1, wis: -1, cha: 3 }, acBonus: 1, dexCap: 4 }],
     source: "SoM",
   },
   {
