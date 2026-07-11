@@ -117,10 +117,22 @@ data loss) are fine — "frozen" means "don't restructure," not "don't fix."
 - Core's tsconfig uses `moduleResolution: "NodeNext"` on purpose: it forces explicit
   `.js` extensions on relative imports. "Bundler" would let an extensionless import
   compile and then crash inside the bot at runtime.
-- **`overrides.undici`** in the root package.json patches a high-severity advisory
-  reached through discord.js (which pins 6.24.1). `npm audit fix --force` proposes
-  "fixing" that chain by installing **discord.js@13 — a major downgrade** that would
-  break the v14 bot. Do not run it. Drop the override once discord.js bumps undici.
+- **No `undici` override — deliberately removed 2026-07-11 after it took the bot
+  offline.** A root `overrides.undici: "^6.27.0"` (patching a high-severity undici
+  advisory) once existed, but `@discordjs/rest`/`@discordjs/ws` pin undici to
+  **exactly `6.24.1`**, and forcing 6.27.0 hung discord.js's REST call at
+  `GET /gateway/bot` — the bot connected to nothing, behind a green deploy. The
+  override only ever reached the bot's *runtime* once Railway moved to the
+  root-directory workspace build (PR #27); before that the bot's own lockfile
+  shielded it, which is why this surfaced suddenly. undici is a **bot-only**
+  dependency (discord.js is the sole consumer; the browser web app never runs it)
+  and it only ever talks to **discord.com over TLS** — while the advisories require
+  a *malicious server*, so they are not reachable in this bot's threat model.
+  Net: track discord.js's own pin. Re-add a patched override **only** when discord.js
+  ships a release that uses a patched undici (verify the bot still logs in), and
+  never let it float ahead of what `@discordjs/rest` pins. Also: `npm audit fix
+  --force` still proposes "fixing" undici by installing **discord.js@13 — a major
+  downgrade** that would break the v14 bot. Do not run it.
 - Vitest for tests. Content schemas in Zod; TS types via `z.infer`.
 - Supabase (Postgres + Auth + JSONB content store).
 

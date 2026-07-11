@@ -10,9 +10,6 @@
   "engines": {
     "node": ">=22.12"
   },
-  "overrides": {
-    "undici": "^6.27.0"
-  },
   "scripts": {
     "start": "npm --workspace apps/bot run start",
     "deploy": "npm --workspace apps/bot run deploy",
