@@ -60,8 +60,6 @@ const {
   usesRankProficiencies,
   canonicalProfValue,
   calcCharacterProfNum,
-  calcEditableProfNum,
-  editableProfValue,
   characterProfValue,
   characterProfLabel,
   profIconForValue,
@@ -537,9 +535,9 @@ function applyMonsterAttackLibrary(monster, guildId) {
 // PF2e math helpers (getMod, calcProfNum, fmt, xpToNextLevel) moved to lib/format.js
 // in Phase 0 (duplicate definitions removed here in Phase 3.4).
 // Character-data-aware proficiency helpers (canonicalProfValue, calcCharacterProfNum,
-// calcEditableProfNum, editableProfValue, characterProfValue, characterProfLabel,
-// usesRankProficiencies, profIconForValue) moved to src/rules/pf2eMath.js in Phase 3.4.
-// All 12 are imported at the top of this file so existing call sites resolve naturally.
+// characterProfValue, characterProfLabel, usesRankProficiencies, profIconForValue)
+// moved to src/rules/pf2eMath.js in Phase 3.4.
+// All are imported at the top of this file so existing call sites resolve naturally.
 // customKey moved out of index.js in Phase 3.5 — see rules/lore.js or state/characters.js.
 // loreKey moved out of index.js in Phase 3.5 — see rules/lore.js or state/characters.js.
 // loreTopicLabel moved out of index.js in Phase 3.5 — see rules/lore.js or state/characters.js.
