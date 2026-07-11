@@ -100,14 +100,21 @@ export const spellSchema = z.object({
   rank: z.number().int().min(1).max(10),
   /** May be empty — focus spells omit Traditions (the class grants them). */
   traditions: z.array(z.string()),
-  actionCost: actionCostSchema,
+  /** Optional: a handful of entries (e.g. constant effects) carry no cast cost. */
+  actionCost: actionCostSchema.optional(),
   /** somatic / verbal / material / focus — may be empty. */
   castComponents: z.array(z.string()),
   range: z.string().min(1).optional(),
   area: z.string().min(1).optional(),
   targets: z.string().min(1).optional(),
   duration: z.string().min(1).optional(),
-  defense: defenseSchema.optional(),
+  /**
+   * The defenses a target resolves against — usually one, but empty for utility
+   * spells and two for the real dual cases (attack roll AND a save, e.g.
+   * Disintegrate; or a target's-choice "Reflex or Will"). The and/or combinator
+   * lives in the description for now; the effect system formalizes it later.
+   */
+  defenses: z.array(defenseSchema),
   degreeOfSuccess: degreeOfSuccessSchema.optional(),
   heightening: z.array(heightenEntrySchema),
   associations: z.array(associationSchema),
@@ -250,6 +257,32 @@ export function parseDefenseText(input: unknown): Defense | undefined {
   return undefined;
 }
 
+function defenseEq(a: Defense, b: Defense): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === 'save' && b.kind === 'save') return a.save === b.save && a.basic === b.basic;
+  return true;
+}
+
+/**
+ * All defenses a spell targets. `isAttack` (from the "Attack" trait) contributes
+ * an AC defense; the save string may add one or more saves — including the real
+ * dual cases AoN writes as "AC and basic Fortitude" or "Reflex or Will (target's
+ * choice)". Parenthetical/"see text" noise is dropped; unparseable → empty.
+ */
+export function parseDefenses(input: unknown, isAttack = false): Defense[] {
+  const out: Defense[] = [];
+  const push = (d: Defense | undefined) => {
+    if (d && !out.some((x) => defenseEq(x, d))) out.push(d);
+  };
+  if (isAttack) push({ kind: 'ac' });
+  const s = str(input);
+  if (s) {
+    const cleaned = s.replace(/\([^)]*\)/g, ' ').replace(/\bsee\s+(?:text|below)\b/gi, ' ');
+    for (const tok of cleaned.split(/\band\b|\bor\b|[,/]/i)) push(parseDefenseText(tok));
+  }
+  return out;
+}
+
 /** Parse "Heightened (+N) …" / "Heightened (3rd) …" lines into entries. */
 export function parseHeightening(input: unknown): HeightenEntry[] {
   // Already-structured entries: pass through (schema validates later).
@@ -385,11 +418,10 @@ export function coerceSpell(raw: unknown): CoerceResult {
     ? parseCastComponents(rec.castComponents)
     : parseCastComponents(firstStr(rec, 'cast', 'components'));
 
-  // Defense: attack flag or "AC" → attack; else a save field (legacy or remaster key).
+  // Defenses: the "Attack" trait contributes an AC defense; the save field
+  // (legacy or remaster key) adds one or more saves — both may apply.
   const defenseText = firstStr(rec, 'defense', 'saving_throw', 'savingThrow', 'save');
-  const defense = truthy(rec.attack)
-    ? ({ kind: 'ac' } as Defense)
-    : parseDefenseText(defenseText);
+  const defenses = parseDefenses(defenseText, truthy(rec.attack));
 
   const draft = {
     id: firstStr(rec, 'id') ?? slugify(name),
@@ -410,7 +442,7 @@ export function coerceSpell(raw: unknown): CoerceResult {
     area: firstStr(rec, 'area'),
     targets: firstStr(rec, 'targets', 'target'),
     duration: firstStr(rec, 'duration'),
-    defense,
+    defenses,
     degreeOfSuccess: parseDegreeOfSuccess(rec.degreeOfSuccess ?? rec.degrees_of_success),
     heightening: parseHeightening(rec.heightening ?? rec.heightened),
     associations: parseAssociations(rec),

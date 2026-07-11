@@ -13,6 +13,7 @@ import {
   coerceSpell,
   parseActionCostText,
   parseDefenseText,
+  parseDefenses,
   parseSource,
   parseHeightening,
   parseAssociations,
@@ -67,7 +68,7 @@ describe('coerceSpell — worked examples', () => {
       actionCost: { kind: 'actions', min: 2, max: 2 },
       castComponents: ['somatic', 'verbal'],
       area: '15-foot cone',
-      defense: { kind: 'save', save: 'fortitude', basic: false },
+      defenses: [{ kind: 'save', save: 'fortitude', basic: false }],
       degreeOfSuccess: {
         critSuccess: 'The creature is unaffected.',
         success: 'The creature takes half damage and no persistent damage.',
@@ -108,7 +109,7 @@ describe('coerceSpell — worked examples', () => {
     expect(spell.spellType).toBe('cantrip');
     expect(spell.actionCost).toEqual({ kind: 'actions', min: 2, max: 2 });
     expect(spell.castComponents).toEqual([]);
-    expect(spell.defense).toEqual({ kind: 'save', save: 'reflex', basic: true });
+    expect(spell.defenses).toEqual([{ kind: 'save', save: 'reflex', basic: true }]);
     expect(spell.targets).toBe('1 or 2 creatures');
     expect(spell.associations).toEqual([{ kind: 'mystery', values: ['tempest'] }]);
     expect(spell.heightening).toEqual([
@@ -133,7 +134,7 @@ describe('coerceSpell — worked examples', () => {
         'Heightened (+1) The damage increases by 1d6 and the persistent bleed damage increases by 1.',
     });
 
-    expect(spell.defense).toEqual({ kind: 'ac' });
+    expect(spell.defenses).toEqual([{ kind: 'ac' }]);
     expect(spell.range).toBe('touch');
     expect(spell.traits).toEqual(['Attack', 'Cantrip', 'Concentrate', 'Manipulate', 'Morph']);
     expect(spell.spellType).toBe('cantrip');
@@ -153,7 +154,7 @@ describe('coerceSpell — worked examples', () => {
     });
 
     expect(spell.spellType).toBe('spell');
-    expect(spell.defense).toBeUndefined();
+    expect(spell.defenses).toEqual([]);
     expect(spell.degreeOfSuccess).toBeUndefined();
     expect(spell.heightening).toEqual([]);
     expect(spell.associations).toEqual([]);
@@ -187,7 +188,7 @@ describe('coerceSpell — worked examples', () => {
     });
 
     expect(spell.rank).toBe(3);
-    expect(spell.defense).toEqual({ kind: 'save', save: 'will', basic: false });
+    expect(spell.defenses).toEqual([{ kind: 'save', save: 'will', basic: false }]);
     expect(spell.associations).toEqual([
       { kind: 'bloodline', values: ['diabolic', 'fey'] },
       { kind: 'deity', values: ['Ardad Lili', 'Belial', 'Bes'] },
@@ -215,7 +216,7 @@ describe('coerceSpell — worked examples', () => {
     expect(spell.actionCost).toEqual({ kind: 'actions', min: 1, max: 1 });
     expect(spell.associations).toEqual([{ kind: 'domain', values: ['travel'] }]);
     expect(spell.duration).toBe('until the end of the current turn');
-    expect(spell.defense).toBeUndefined();
+    expect(spell.defenses).toEqual([]);
   });
 
   it('Illusory Disguise: three at-rank heighten entries, singular Bloodline normalized', () => {
@@ -281,7 +282,7 @@ describe('coerceSpell — variable action cost & column-spelling tolerance', () 
       description: 'A spell stored under legacy column names.',
     });
     expect(spell.rank).toBe(2);
-    expect(spell.defense).toEqual({ kind: 'save', save: 'reflex', basic: true });
+    expect(spell.defenses).toEqual([{ kind: 'save', save: 'reflex', basic: true }]);
     expect(spell.traditions).toEqual(['occult']);
   });
 });
@@ -326,14 +327,46 @@ describe('schema-level constraints', () => {
     expect(spellSchema.safeParse(bad).success).toBe(false);
   });
 
-  it('defense is structurally save-XOR-ac: an ac defense carries no save key', () => {
-    const bad = { kind: 'ac', save: 'reflex', basic: true };
-    // The ac member has no save/basic fields; a save member requires them. A value
-    // claiming to be both cannot satisfy either arm cleanly.
-    const ac = { kind: 'ac' };
-    expect(spellSchema.shape.defense.safeParse(ac).success).toBe(true);
-    expect(spellSchema.shape.defense.safeParse({ kind: 'save', save: 'reflex' }).success).toBe(false);
-    void bad;
+  it('each defense entry is a well-formed save or ac (a save requires its fields)', () => {
+    expect(spellSchema.shape.defenses.safeParse([{ kind: 'ac' }]).success).toBe(true);
+    expect(
+      spellSchema.shape.defenses.safeParse([{ kind: 'save', save: 'reflex', basic: false }]).success,
+    ).toBe(true);
+    // A "save" entry missing its required fields is rejected.
+    expect(spellSchema.shape.defenses.safeParse([{ kind: 'save', save: 'reflex' }]).success).toBe(false);
+  });
+});
+
+describe('defenses & optional actionCost (gap fixes from the AoN audit)', () => {
+  it('parseDefenses handles single, dual attack+save, choice-of-save, and see-text', () => {
+    expect(parseDefenses('basic  Reflex')).toEqual([{ kind: 'save', save: 'reflex', basic: true }]);
+    expect(parseDefenses('AC')).toEqual([{ kind: 'ac' }]);
+    // Disintegrate-style: attack roll AND a basic Fortitude save — both kept.
+    expect(parseDefenses('AC and  basic  Fortitude')).toEqual([
+      { kind: 'ac' },
+      { kind: 'save', save: 'fortitude', basic: true },
+    ]);
+    // Target's-choice: both saves kept; the "or" nuance lives in the description.
+    expect(parseDefenses("basic  Reflex or Will (target's choice)")).toEqual([
+      { kind: 'save', save: 'reflex', basic: true },
+      { kind: 'save', save: 'will', basic: false },
+    ]);
+    // "see text" carries no structured defense.
+    expect(parseDefenses('see text')).toEqual([]);
+    // The Attack trait contributes an ac even with no save string.
+    expect(parseDefenses(undefined, true)).toEqual([{ kind: 'ac' }]);
+  });
+
+  it('coerces a spell with no action cost (actionCost is optional)', () => {
+    const r = coerceSpell({
+      name: 'Constant Effect',
+      rank: 1,
+      traits: 'Aura',
+      source: 'Book pg. 1',
+      description: 'A spell with no discrete cast action.',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.spell.actionCost).toBeUndefined();
   });
 });
 
