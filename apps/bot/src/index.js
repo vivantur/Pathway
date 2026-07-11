@@ -183,9 +183,14 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    // Message content intent — kept enabled in case future features (like reading
-    // posted JSON or chat-based commands) need it. Toggle in Discord Developer Portal.
-    GatewayIntentBits.MessageContent,
+    // NOTE: MessageContent is a *privileged* intent. The bot does not read
+    // message content (no messageCreate handler; the only `.content` use is
+    // interaction.message.content on our own messages, which needs no intent),
+    // so we deliberately do NOT request it. Requesting an unused privileged
+    // intent makes login() fail with a disallowed-intents close (WS 4014) the
+    // moment the Developer Portal toggle is off — which silently took the bot
+    // offline once. Do not add it back unless a feature genuinely reads user
+    // message content, and then only after enabling it in the portal.
   ]
 });
 
@@ -2648,4 +2653,11 @@ client.on('interactionCreate', async (interaction) => {
   });
 });
 
-client.login(TOKEN);
+// Surface login failures instead of swallowing them. This is fire-and-forget,
+// so without a .catch() a rejected login (invalid/revoked token, disallowed
+// intents, gateway unreachable) produces no clear log and the bot just sits
+// offline behind a green deploy. Log the reason and exit so the host restarts.
+client.login(TOKEN).catch((err) => {
+  console.error('FATAL: Discord login failed —', err);
+  process.exit(1);
+});
