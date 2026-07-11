@@ -182,9 +182,26 @@ describe('companion kinds + familiars + eidolons', () => {
   });
 
   it('ships the full companion catalog', () => {
-    expect(COMPANION_CATALOG.length).toBeGreaterThanOrEqual(45);
+    // All 96 types documented in docs/rules-sources/companion-catalog.md.
+    expect(COMPANION_CATALOG.length).toBe(96);
     const slugs = COMPANION_CATALOG.map((c) => c.slug);
     expect(new Set(slugs).size).toBe(slugs.length); // unique slugs
+  });
+
+  it('resolves the newly transcribed companion types', () => {
+    expect(findCompanionType('antelope')?.hp).toBe(6);
+    expect(findCompanionType('riding dragonet')?.skill).toBe('diplomacy');
+    expect(findCompanionType('skeletal bird of prey')?.skill).toBe('none (mindless)');
+    expect(findCompanionType('giant frog')?.attacks[1]).toMatchObject({
+      name: 'tongue',
+      traits: ['reach 15 feet'],
+    });
+    expect(isMountType(findCompanionType('zombie mount')!)).toBe(true);
+    expect(isMountType(findCompanionType('tyrannosaurus')!)).toBe(false);
+    // Advanced companions carry their level gates (Howl of the Wild pg. 93).
+    expect(findCompanionType('roc')?.minLevel).toBe(16);
+    expect(findCompanionType('wyvern')?.minLevel).toBe(10);
+    expect(findCompanionType('hippocampus')?.minLevel).toBe(4);
   });
 
   it('offers eidolon subtypes', () => {
