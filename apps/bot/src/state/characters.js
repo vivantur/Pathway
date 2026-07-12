@@ -41,6 +41,19 @@ const _resolveContext = new AsyncLocalStorage();
 // from interactionCreate; saveAll() reads it implicitly.
 const _usernameCache = new Map();
 
+// ── Write-diff state (Plan B: only sync what changed) ──────────────────────
+// syncAllCharactersToSupabase used to re-upsert EVERY character and issue a
+// per-user active_char_key UPDATE on every save — O(all characters) + O(users)
+// round-trips per mutation, slow enough on large datasets to blow Discord's 3s
+// interaction window (10062 Unknown interaction). These maps let each save push
+// only the rows whose persisted payload actually changed. Keys use the stable
+// Supabase user_id so they survive across saves; entries update only AFTER a
+// successful write, so a failed sync retries next time. The hash is of the exact
+// upsert payload, so the only possible error is a redundant write, never a
+// missed one.
+const _lastCharHash = new Map();   // `${user_id}:${char_key}` → JSON of last-synced payload
+const _lastActiveKey = new Map();  // user_id → last-synced active_char_key (or null)
+
 function rememberUsername(discordId, username) {
   if (!discordId || !username) return;
   _usernameCache.set(String(discordId), String(username));
@@ -595,6 +608,24 @@ async function syncAllCharactersToSupabase(characters, usernamesByDiscordId) {
   return _trackSync(_doSyncAllCharacters(characters, usernamesByDiscordId));
 }
 
+// Pure: split the full upsert list into the rows whose payload changed since the
+// last successful sync (`lastHashes`) plus the hash updates to apply afterward.
+// Exported for unit tests. Never omits a genuine change — the hash is the exact
+// payload — so the only error direction is a redundant write, never a missed one.
+function _selectChangedUpserts(upserts, lastHashes) {
+  const changed = [];
+  const updatedHashes = [];
+  for (const row of upserts) {
+    const key = `${row.user_id}:${row.char_key}`;
+    const hash = JSON.stringify(row);
+    if (lastHashes.get(key) !== hash) {
+      changed.push(row);
+      updatedHashes.push([key, hash]);
+    }
+  }
+  return { changed, updatedHashes };
+}
+
 async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
   try {
     const sb = getSupabase();
@@ -656,21 +687,30 @@ async function _doSyncAllCharacters(characters, usernamesByDiscordId) {
     }
     if (upserts.length === 0) return;
 
-    const { error } = await sb
-      .from('characters')
-      .upsert(upserts, { onConflict: 'user_id,char_key' });
-    if (error) throw error;
+    // Plan B: push only the characters whose payload changed since last sync.
+    const { changed, updatedHashes } = _selectChangedUpserts(upserts, _lastCharHash);
+    if (changed.length > 0) {
+      const { error } = await sb
+        .from('characters')
+        .upsert(changed, { onConflict: 'user_id,char_key' });
+      if (error) throw error;
+      for (const [key, hash] of updatedHashes) _lastCharHash.set(key, hash);
+    }
 
     for (const [discordId, userChars] of Object.entries(characters)) {
       const userId = userMap[discordId];
       if (!userId || !userChars || typeof userChars !== 'object') continue;
       const activeKey = userChars._activeChar;
       const nextActiveKey = activeKey && userChars[activeKey] ? activeKey : null;
+      // Plan B: only write when the active key changed since last sync — this
+      // loop was O(users) sequential round-trips on every save.
+      if (_lastActiveKey.get(userId) === nextActiveKey) continue;
       const { error: activeErr } = await sb
         .from('users')
         .update({ active_char_key: nextActiveKey })
         .eq('id', userId);
       if (activeErr) throw activeErr;
+      _lastActiveKey.set(userId, nextActiveKey);
     }
 
     _recordSyncSuccess();
@@ -846,6 +886,7 @@ module.exports = {
 
   // Phase 1 sync helpers (still re-exported by the storage barrel)
   syncAllCharactersToSupabase,
+  _selectChangedUpserts, // exported for unit tests (Plan B write-diffing)
   syncActiveCharacterToSupabase,
   syncServerActiveCharacterToSupabase,
   mergeCharactersFromSupabase,
