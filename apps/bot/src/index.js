@@ -2653,21 +2653,12 @@ client.on('interactionCreate', async (interaction) => {
   });
 });
 
-// ── TEMPORARY LOGIN DIAGNOSTICS ─────────────────────────────────────────────
-// The bot was hanging at login: neither `clientReady` ("Logged in as…") nor the
-// .catch() below fired, so the gateway handshake was stalling with no error to
-// see. These logs narrate the handshake so a deploy shows exactly where it dies.
-// Remove once the stall is diagnosed.
-console.log('Startup requires complete; attempting Discord gateway login…');
-client.on('debug', (m) => console.log('[discord:debug]', m));
-client.on('warn',  (m) => console.warn('[discord:warn]', m));
-
-// TEMPORARY probe: the network flow logs show TCP to Discord succeeds, so egress
-// works — yet the handshake stalls silently after "Preparing to connect to the
-// gateway". That's the signature of Discord rate-limiting us (exhausted
-// session_start_limit from repeated redeploys, or a 429), which makes discord.js
-// wait out the reset with no error. Hit /gateway/bot directly to read the actual
-// numbers. Uses Node's built-in fetch (separate HTTP path). Remove after diagnosis.
+// Ban-status probe (TEMPORARY — remove once the bot is confirmed healthy again).
+// One GET /gateway/bot at startup logs the HTTP status and any retry-after, so
+// the first post-ban deploy can read the Railway IP's Discord rate-limit state
+// without the full retry machinery: HTTP 200 = clear, HTTP 429 = still banned
+// (note the retry-after, stop the deployment, wait it out). Uses Node's built-in
+// fetch with an 8s timeout so it always resolves quickly.
 (async () => {
   try {
     const res = await fetch('https://discord.com/api/v10/gateway/bot', {
@@ -2677,35 +2668,30 @@ client.on('warn',  (m) => console.warn('[discord:warn]', m));
     console.log(`[net-probe] GET /gateway/bot → HTTP ${res.status}`);
     const retryAfter = res.headers.get('retry-after');
     if (retryAfter) console.log(`[net-probe] retry-after: ${retryAfter}s`);
-    const body = await res.json().catch(() => null);
-    if (body) {
-      if (body.url) console.log(`[net-probe] gateway url: ${body.url} | recommended shards: ${body.shards}`);
-      if (body.session_start_limit) {
-        console.log(`[net-probe] session_start_limit: ${JSON.stringify(body.session_start_limit)}`);
-      } else {
-        console.log(`[net-probe] body: ${JSON.stringify(body)}`);
-      }
-    }
   } catch (err) {
     console.error(`[net-probe] GET /gateway/bot failed: ${err.name}: ${err.message}`);
   }
 })();
 
-const readyWatchdog = setTimeout(() => {
-  if (!client.isReady()) {
-    console.error('[startup] 30s after login(), still not READY — gateway handshake stalled. See [discord:debug] above for the last step reached.');
+// Surface login failures instead of swallowing them (client.login is
+// fire-and-forget). Rate-limit handling is deliberate: a 429 means Discord is
+// refusing connections — almost always from too many restarts. Exiting on a 429
+// would make the host restart and hammer Discord again, extending the ban (that's
+// how a short cooldown became a 20-hour one on 2026-07-11). So on a rate limit,
+// log and stay idle — no exit, no further requests — until a manual redeploy.
+// Any other login failure (bad/revoked token, disallowed intents) is fatal: log
+// and exit so the host restarts into a fresh attempt.
+client.login(TOKEN).catch((err) => {
+  const status = err?.status ?? err?.httpStatus ?? err?.code;
+  const rateLimited = status === 429 || /rate ?limit/i.test(String(err?.message ?? ''));
+  if (rateLimited) {
+    console.error(
+      '[login] Rate-limited by Discord (429). Staying idle to avoid extending the ban — ' +
+      'redeploy manually once it clears. Do NOT redeploy repeatedly.',
+      err,
+    );
+    return;
   }
-}, 30_000);
-client.once('clientReady', () => clearTimeout(readyWatchdog));
-// ────────────────────────────────────────────────────────────────────────────
-
-// Surface login failures instead of swallowing them. This is fire-and-forget,
-// so without a .catch() a rejected login (invalid/revoked token, disallowed
-// intents, gateway unreachable) produces no clear log and the bot just sits
-// offline behind a green deploy. Log the reason and exit so the host restarts.
-client.login(TOKEN)
-  .then(() => console.log('[startup] login() resolved — WS identified, awaiting READY…'))
-  .catch((err) => {
-    console.error('FATAL: Discord login failed —', err);
-    process.exit(1);
-  });
+  console.error('FATAL: Discord login failed —', err);
+  process.exit(1);
+});
