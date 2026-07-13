@@ -2,6 +2,42 @@ import type { CompanionAbilityMods, CompanionForm, CompanionKind } from '@pathwa
 
 export type { CompanionForm, CompanionKind };
 
+/**
+ * Per-field stat overrides layered over a companion's auto-scaled stats. The KEY
+ * NAMES here are the bot's (apps/bot/src/commands/companion/helpers.js:351-388),
+ * NOT @pathway/core's — the bot reads these verbatim, so they must match exactly
+ * (`fort`/`ref`/`will`, `attackBonus`, `damageDice`, `damageBonus`). Any field
+ * left undefined keeps the automatic scaling.
+ */
+export interface CompanionOverrides {
+  hp?: number;
+  ac?: number;
+  attackBonus?: number;
+  damageDice?: string;
+  damageBonus?: number;
+  speed?: string;
+  size?: string;
+  perception?: number;
+  abilities?: Partial<Record<'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha', number>>;
+  saves?: Partial<Record<'fort' | 'ref' | 'will', number>>;
+}
+
+/** A hand-entered extra ability (bot key: custom_stats.customAbilities). */
+export interface CompanionCustomAbility {
+  name: string;
+  description: string;
+  actionCost?: string;
+}
+
+/** A hand-entered extra attack (bot key: custom_stats.customAttacks). */
+export interface CompanionCustomAttack {
+  name: string;
+  bonus: number;
+  damage: string;
+  damageType?: string;
+  traits?: string[];
+}
+
 /** Freeform stat block for a custom companion (all fields optional). */
 export interface CustomCompanionStats {
   size?: string;
@@ -34,15 +70,9 @@ export interface CompanionCustomStats {
   customStats?: unknown;
   art?: string | null;
   skills?: Record<string, number>;
-  customAbilities?: Array<{ name: string; description: string; actionCost?: string }>;
-  customAttacks?: Array<{
-    name: string;
-    bonus: number;
-    damage: string;
-    damageType?: string;
-    traits?: string[];
-  }>;
-  overrides?: Record<string, unknown>;
+  customAbilities?: CompanionCustomAbility[];
+  customAttacks?: CompanionCustomAttack[];
+  overrides?: CompanionOverrides;
   /** Familiar: the abilities channelled into it (slugs into FAMILIAR_ABILITIES). */
   familiar?: { abilities: string[] };
   /**
