@@ -2,6 +2,7 @@ import { requireSupabase } from '@/lib/supabase';
 import type { PathbuilderBuild } from './pathbuilder';
 import { maxHp } from './pathbuilder';
 import { preferRemaster } from './pf2eData/sourcePreference';
+import { coerceSpellRow } from './pf2eData/spellFromRow';
 import type {
   AncestryRow,
   BagItem,
@@ -788,11 +789,13 @@ export async function searchSpellsForPicker(query: string): Promise<SpellPickRes
     const key = r.name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    const rank = r.rank ?? r.level ?? r.spell_level ?? 0;
+    // Interpretation via core's coerceSpell (shared with the bot); fall back to
+    // the bare name if a row can't be coerced.
+    const spell = coerceSpellRow(r);
     out.push({
       name: r.name,
-      rank: typeof rank === 'number' ? rank : 0,
-      traits: Array.isArray(r.traits) ? r.traits.filter((t): t is string => typeof t === 'string') : [],
+      rank: spell?.rank ?? 0,
+      traits: spell?.traits ?? [],
     });
   }
   return out.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
