@@ -1,0 +1,17 @@
+{
+  "feats": {
+    "skillful-tail-geniekin": "skillful-tail",
+    "skillful-tail-nephilim": "skillful-tail",
+    "skill-mastery-investigator": "skill-mastery",
+    "skill-mastery-rogue": "skill-mastery",
+    "evasiveness-rogue": "evasiveness",
+    "evasiveness-swashbuckler": "evasiveness",
+    "necromancer-conceal-spell": "conceal-spell",
+    "necromancer-lifesense": "lifesense",
+    "necromancer-quickened-casting": "quickened-casting",
+    "necromancer-zombie-horde": "zombie-horde",
+    "necromancer-effortless-concentration": "effortless-concentration",
+    "runesmith-remote-detonation": "remote-detonation"
+  },
+  "spells": {}
+}

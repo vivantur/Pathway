@@ -1,0 +1,78 @@
+{
+  "generatedFrom": "foundryvtt/pf2e packs/pf2e",
+  "feats": {
+    "raw": 6044,
+    "total": 6116,
+    "preservedExistingIds": 6116,
+    "newIds": 0,
+    "aliased": 12,
+    "preservedLegacy": 73
+  },
+  "spells": {
+    "raw": 1802,
+    "total": 1818,
+    "preservedExistingIds": 1818,
+    "newIds": 0,
+    "aliased": 0,
+    "preservedLegacy": 16
+  },
+  "aliasSample": [
+    [
+      "skillful-tail-geniekin",
+      "skillful-tail"
+    ],
+    [
+      "skillful-tail-nephilim",
+      "skillful-tail"
+    ],
+    [
+      "skill-mastery-investigator",
+      "skill-mastery"
+    ],
+    [
+      "skill-mastery-rogue",
+      "skill-mastery"
+    ],
+    [
+      "evasiveness-rogue",
+      "evasiveness"
+    ],
+    [
+      "evasiveness-swashbuckler",
+      "evasiveness"
+    ],
+    [
+      "necromancer-conceal-spell",
+      "conceal-spell"
+    ],
+    [
+      "necromancer-lifesense",
+      "lifesense"
+    ],
+    [
+      "necromancer-quickened-casting",
+      "quickened-casting"
+    ],
+    [
+      "necromancer-zombie-horde",
+      "zombie-horde"
+    ]
+  ],
+  "legacyPreservedSample": [
+    "runesmith-backup-runic-enhancement",
+    "necromancer-bone-speaker",
+    "necromancer-bone-spear",
+    "necromancer-dead-weight",
+    "runesmith-engraving-strike",
+    "necromancer-life-tap",
+    "necromancer-reach-of-the-dead",
+    "runesmith-rune-singer"
+  ],
+  "recommendationsRewritten": 0,
+  "descriptionsEnriched": {
+    "ancestries": 48,
+    "heritages": 311,
+    "backgrounds": 459,
+    "classes": 25
+  }
+}

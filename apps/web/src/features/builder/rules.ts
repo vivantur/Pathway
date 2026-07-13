@@ -3,6 +3,7 @@ import {
   findAncestry,
   findBackground,
   findClass,
+  findFeat,
   findItem,
   getDataset,
   type AbilityKey,
@@ -17,14 +18,20 @@ import {
   abilityModifier,
   armorClass,
   attackRankAtLevel,
+  collectSheetEffects,
   maxHitPoints,
   proficiencyBonus,
   proficientDC,
   proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
+  stackModifiers,
+  type AppliedEffect,
   type AttackCategory,
+  type Modifier,
   type ProficiencyTrack,
+  type RuleElement,
+  type SheetEffects,
 } from '@pathway/core';
 
 // Scalar stat math lives in @pathway/core (one source for builder, sheet, and
@@ -202,6 +209,25 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
   return scores;
 }
 
+/**
+ * Sheet effects granted by the character's chosen feats — HP bonuses and
+ * proficiency-rank grants resolved from each feat's ingested rule elements by
+ * `@pathway/core`. Recomputed on demand; the underlying collection is cheap.
+ */
+export function characterEffects(state: BuilderState): SheetEffects {
+  const level = state.level || 1;
+  const itemRules: RuleElement[][] = [];
+  const labels: string[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (feat && Array.isArray(feat.rules)) {
+      itemRules.push(feat.rules as RuleElement[]);
+      labels.push(feat.name);
+    }
+  }
+  return collectSheetEffects(itemRules, { level }, labels);
+}
+
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
 export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> {
   const level = state.level || 1;
@@ -218,8 +244,15 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
     }
   }
 
+  // The per-level increase cap bounds only the player's chosen increases.
   const cap = maxRankForLevel(level);
   for (const [id, rank] of ranks) ranks.set(id, Math.min(rank, cap) as ProficiencyRank);
+
+  // Feat-granted training is explicit (e.g. "You become trained in Nature") and
+  // is not subject to the increase cap — apply it after, taking the higher rank.
+  for (const [skillId, grant] of characterEffects(state).skillRanks) {
+    ranks.set(skillId, Math.max(ranks.get(skillId) ?? 0, grant) as ProficiencyRank);
+  }
   return ranks;
 }
 
@@ -330,6 +363,8 @@ export interface DerivedCharacter {
     classDC: ProficiencyRank;
     unarmoredDefense: ProficiencyRank;
   };
+  /** Feat-granted effects applied to this sheet, attributed to their source. */
+  effectNotes: AppliedEffect[];
 }
 
 /**
@@ -372,12 +407,29 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
   const abp = opt(state, OPT.automaticBonusProgression);
 
+  // Feat-granted sheet effects (HP bonuses, proficiency-rank grants, typed stat
+  // modifiers), resolved from each chosen feat's rule elements by @pathway/core.
+  const effects = characterEffects(state);
+
+  // Net bonus for a stat: the stat's own fundamental item bonus (rune / ABP) plus
+  // any feat modifiers on the given selector buckets, run through the PF2e
+  // stacking rules (so, e.g., a rune's item bonus and a feat's item bonus don't
+  // both count — only the higher does). With no feats and no runes this returns
+  // the plain item bonus, so baseline sheets are unchanged.
+  const statBonus = (itemBonus: number, ...buckets: string[]): number => {
+    const mods: Modifier[] = itemBonus ? [{ type: 'item', value: itemBonus }] : [];
+    for (const b of buckets) for (const m of effects.statModifiers.get(b) ?? []) mods.push(m);
+    return stackModifiers(mods);
+  };
+
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
+  // Feat HP bonuses (e.g. Toughness → +level) are added as a flat bonus.
   const maxHp = maxHitPoints({
     ancestryHp: ancestry?.hp ?? 0,
     classHp: klass?.hp ?? 0,
     conMod: mods.con,
     level,
+    bonusHp: effects.hpBonus,
   });
 
   // Equipped gear.
@@ -418,7 +470,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     level,
     withoutLevel: pwl,
     armorBonus: armor?.acBonus ?? 0,
-    itemBonus: armorPotency + (abp ? abpDefense(level) : 0),
+    itemBonus: statBonus(armorPotency + (abp ? abpDefense(level) : 0), 'ac'),
   });
   const unarmoredDefense = progressionRank(state, 'unarmored', ip?.defenses.unarmored ?? 0);
 
@@ -427,25 +479,40 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
-  const perceptionRank = progressionRank(state, 'perception', ip?.perception ?? 0);
+  // A feat may raise a save/Perception rank (e.g. Canny Acumen); take the higher
+  // of the class progression and any feat grant.
+  const withGrant = (rank: ProficiencyRank, grant: ProficiencyRank | number | undefined) =>
+    Math.max(rank, grant ?? 0) as ProficiencyRank;
+
+  const perceptionRank = withGrant(
+    progressionRank(state, 'perception', ip?.perception ?? 0),
+    effects.perceptionRank ?? 0,
+  );
   const perception = proficientModifier({
     abilityMod: mods.wis,
     rank: perceptionRank,
     level,
     withoutLevel: pwl,
-    itemBonus: abp ? abpPerception(level) : 0,
+    itemBonus: statBonus(abp ? abpPerception(level) : 0, 'perception'),
   });
 
-  const fortRank = progressionRank(state, 'fortitude', ip?.fortitude ?? 0);
-  const refRank = progressionRank(state, 'reflex', ip?.reflex ?? 0);
-  const willRank = progressionRank(state, 'will', ip?.will ?? 0);
+  const fortRank = withGrant(progressionRank(state, 'fortitude', ip?.fortitude ?? 0), effects.saveRanks.get('fortitude'));
+  const refRank = withGrant(progressionRank(state, 'reflex', ip?.reflex ?? 0), effects.saveRanks.get('reflex'));
+  const willRank = withGrant(progressionRank(state, 'will', ip?.will ?? 0), effects.saveRanks.get('will'));
   const classDCRank = progressionRank(state, 'classDC', ip?.classDC ?? 0);
 
   // A saving throw: ability mod + proficiency + a fundamental item bonus (the
   // resilient rune, or Automatic Bonus Progression's resilience when ABP is on).
   const saveItemBonus = abp ? abpResilience(level) : resilient;
-  const saveModifier = (rank: ProficiencyRank, abilityMod: number) =>
-    proficientModifier({ abilityMod, rank, level, withoutLevel: pwl, itemBonus: saveItemBonus });
+  const saveModifier = (rank: ProficiencyRank, abilityMod: number, saveId: string) =>
+    proficientModifier({
+      abilityMod,
+      rank,
+      level,
+      withoutLevel: pwl,
+      // 'saving-throw' modifiers hit all saves; the save-specific bucket only this one.
+      itemBonus: statBonus(saveItemBonus, 'saving-throw', saveId),
+    });
 
   const ranks = skillRankMap(state);
   const skills: SkillProficiency[] = getDataset().skills.map((s) => {
@@ -462,6 +529,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
         rank,
         level,
         withoutLevel: pwl,
+        // Feat modifiers to all skills ('skill-check') and to this skill; the
+        // armor check penalty stays a separate untyped term.
+        itemBonus: statBonus(0, 'skill-check', s.id),
         otherBonus: penalty,
       }),
     };
@@ -534,9 +604,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     shieldBonus: shield?.acBonus ?? 0,
     perception,
     saves: {
-      fortitude: saveModifier(fortRank, mods.con),
-      reflex: saveModifier(refRank, mods.dex),
-      will: saveModifier(willRank, mods.wis),
+      fortitude: saveModifier(fortRank, mods.con, 'fortitude'),
+      reflex: saveModifier(refRank, mods.dex, 'reflex'),
+      will: saveModifier(willRank, mods.wis, 'will'),
     },
     classDc: proficientDC({
       abilityMod: state.keyAbility ? mods[state.keyAbility] : 0,
@@ -544,7 +614,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       level,
       withoutLevel: pwl,
     }),
-    speed: (ancestry?.speed ?? 25) + speedPenalty,
+    // Base Speed + armor penalty + feat modifiers to land Speed (e.g. +5 status).
+    speed: (ancestry?.speed ?? 25) + speedPenalty + statBonus(0, 'land-speed'),
     // Focus pool: the number of focus spells the build knows (feat- or
     // subclass-granted, chosen on the Spells step), capped at 3 per the focus
     // rules; the level-1 subclass grant is the floor.
@@ -573,6 +644,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       classDC: classDCRank,
       unarmoredDefense,
     },
+    effectNotes: effects.applied,
   };
 }
 

@@ -10,6 +10,7 @@ import { LoginPage } from '@/routes/LoginPage';
 import { VaultPage } from '@/routes/VaultPage';
 import { AddCharacterPage } from '@/routes/AddCharacterPage';
 import { CharacterBuilderPage } from '@/routes/CharacterBuilderPage';
+import { ContentGate } from '@/features/builder/ContentGate';
 import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
@@ -48,7 +49,11 @@ export const router = createBrowserRouter([
         // vault (and syncing to the bot) requires login, enforced in the
         // builder's Save button.
         path: 'vault/create',
-        element: <CharacterBuilderPage />,
+        element: (
+          <ContentGate>
+            <CharacterBuilderPage />
+          </ContentGate>
+        ),
       },
       {
         // Edit / level-up an existing character in the builder. Registered
@@ -56,7 +61,9 @@ export const router = createBrowserRouter([
         path: 'vault/:charKey/edit',
         element: (
           <RequireAuth>
-            <CharacterBuilderPage />
+            <ContentGate>
+              <CharacterBuilderPage />
+            </ContentGate>
           </RequireAuth>
         ),
       },

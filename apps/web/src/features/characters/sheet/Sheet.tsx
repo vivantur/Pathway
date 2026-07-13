@@ -36,6 +36,7 @@ import { PlaceholderTab } from './tabs/PlaceholderTab';
 import { SkillsTab } from './tabs/SkillsTab';
 import { SpellsTab } from './tabs/SpellsTab';
 import { DiceRoller } from './DiceRoller';
+import { XpLogModal } from './XpLogModal';
 import { TAB_DEFINITIONS, normalizeTabId, type TabId } from './tabs/tabDefs';
 import {
   ABILITY_ORDER,
@@ -251,6 +252,7 @@ function SheetHeader({
   const level = character.level ?? build.level ?? 1;
   const xpTarget = 1000;
   const xp = character.experience ?? 0;
+  const [xpLogOpen, setXpLogOpen] = useState(false);
   const overlay = character.overlay ?? {};
   const bg =
     overlay.pathway_bot_state?.edits?.background ??
@@ -281,11 +283,7 @@ function SheetHeader({
           <HeaderField label="Class" value={character.class_name ?? build.class} />
           <HeaderField label="Level" value={level} />
           {edit?.enabled ? (
-            <XpHeaderField
-              xp={xp}
-              target={xpTarget}
-              onChange={(n) => edit.update({ experience: n })}
-            />
+            <XpHeaderField xp={xp} target={xpTarget} onOpenLog={() => setXpLogOpen(true)} />
           ) : (
             <HeaderField
               label="Experience Points"
@@ -303,6 +301,9 @@ function SheetHeader({
         {/* Actions — hidden entirely on read-only public shares */}
         {!readOnly && <SheetActions character={character} build={build} />}
       </div>
+      {xpLogOpen && (
+        <XpLogModal charKey={character.char_key} currentXp={xp} onClose={() => setXpLogOpen(false)} />
+      )}
     </header>
   );
 }
@@ -845,42 +846,26 @@ function HeaderField({
   );
 }
 
-/** Editable XP header field — commits on blur / Enter. */
-function XpHeaderField({
-  xp,
-  target,
-  onChange,
-}: {
-  xp: number;
-  target: number;
-  onChange: (n: number) => void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const commit = () => {
-    if (draft != null) {
-      const n = Number(draft);
-      if (!Number.isNaN(n) && n !== xp) onChange(Math.max(0, n));
-    }
-    setDraft(null);
-  };
+/**
+ * Read-only XP header field. XP can no longer be typed directly — clicking it
+ * opens the XP Log, where entries are added/edited (and the total follows).
+ */
+function XpHeaderField({ xp, target, onOpenLog }: { xp: number; target: number; onOpenLog: () => void }) {
   return (
     <div className="flex items-center gap-2">
       <div className="whitespace-nowrap text-[0.6rem] uppercase tracking-widest text-gold/70">
         Experience Points
       </div>
-      <div className="flex flex-1 items-center gap-1 rounded-sm border border-gold/20 bg-midnight-800/80 px-3 py-1 font-serif text-silver">
-        <input
-          type="number"
-          value={draft ?? String(xp)}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-          className="w-16 bg-transparent tabular-nums focus:outline-none"
-        />
+      <button
+        type="button"
+        onClick={onOpenLog}
+        title="Open the XP log to add or edit entries"
+        className="group flex flex-1 items-center gap-1 rounded-sm border border-gold/20 bg-midnight-800/80 px-3 py-1 font-serif text-silver transition hover:border-gold/50 hover:bg-midnight-800"
+      >
+        <span className="tabular-nums">{xp.toLocaleString()}</span>
         <span className="text-silver/40">/ {target.toLocaleString()}</span>
-      </div>
+        <StarIcon className="ml-auto text-xs text-gold/50 transition group-hover:text-gold" />
+      </button>
     </div>
   );
 }

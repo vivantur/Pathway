@@ -152,6 +152,18 @@ export interface Feat {
   ancestryId?: string;
   /** Optional theme tags for filtering (curated or derived). */
   tags?: string[];
+  /** Action cost: '1' | '2' | '3' | 'reaction' | 'free'; absent for passive feats. */
+  actionCost?: string;
+  /** Rarity when not common ('uncommon' | 'rare' | 'unique'). */
+  rarity?: string;
+  /**
+   * Foundry machine-readable effect rules (FlatModifier, ChoiceSet, GrantItem, …).
+   * DORMANT — carried by the ingest for the future effects engine; nothing reads
+   * it yet. Deliberately untyped until that engine defines the shape it consumes.
+   */
+  rules?: unknown[];
+  /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
+  legacy?: boolean;
   source: string;
   description: string;
 }
@@ -241,8 +253,36 @@ export interface Spell {
   traits: string[];
   /** Casting time, e.g. "2" (actions), "1", "reaction". */
   cast: string;
+  /** Normalized action cost mirroring `cast` (kept distinct for future display). */
+  actionCost?: string;
+  /** Range, e.g. "30 feet", "touch", "planar". */
+  range?: string;
+  /** Area, e.g. "20-foot burst", "60-foot cone". */
+  area?: string;
+  /** Target text, e.g. "1 creature". */
+  targets?: string;
+  /** Duration, e.g. "1 minute", "sustained". */
+  duration?: string;
+  /** Defense the target rolls, e.g. "basic Reflex", "Will". */
+  defense?: string;
+  /** Structured heightening (Foundry shape: interval / fixed levels). Untyped for now. */
+  heightening?: unknown;
+  /** Rarity when not common. */
+  rarity?: string;
+  /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
+  legacy?: boolean;
   source: string;
   description: string;
+}
+
+/**
+ * Old content id → current id, for ids the Remaster corpus renamed or
+ * consolidated (e.g. `evasiveness-rogue` → `evasiveness`). Lets saved characters
+ * and curated recommendations built on the old ids keep resolving.
+ */
+export interface ContentAliases {
+  feats: Record<string, string>;
+  spells: Record<string, string>;
 }
 
 export interface Dataset {

@@ -1,8 +1,11 @@
 import { requireSupabase } from '@/lib/supabase';
 import type {
+  CompanionCustomAbility,
+  CompanionCustomAttack,
   CompanionCustomStats,
   CompanionForm,
   CompanionKind,
+  CompanionOverrides,
   CompanionRow,
   CustomCompanionStats,
 } from './types';
@@ -71,6 +74,39 @@ export interface SaveCompanionInput {
   eidolonPrimaryDie?: string;
   /** Custom companion: a hand-entered stat block. */
   custom?: CustomCompanionStats;
+  /**
+   * Per-field stat overrides (bot key names), layered over auto-scaled stats and
+   * read verbatim by the bot. Pass the COMPLETE desired set when provided —
+   * omitted fields clear that override (back to auto-scale).
+   */
+  overrides?: CompanionOverrides;
+  /** Extra skills the bot displays (skill name → total modifier). */
+  skills?: Record<string, number>;
+  /** Hand-entered extra abilities the bot displays. */
+  customAbilities?: CompanionCustomAbility[];
+  /** Hand-entered extra attacks the bot displays. */
+  customAttacks?: CompanionCustomAttack[];
+}
+
+/** Drop undefined/empty entries so we never persist blank override keys. */
+function pruneOverrides(o: CompanionOverrides | undefined): CompanionOverrides | undefined {
+  if (!o) return undefined;
+  const out: CompanionOverrides = {};
+  if (o.hp != null) out.hp = o.hp;
+  if (o.ac != null) out.ac = o.ac;
+  if (o.attackBonus != null) out.attackBonus = o.attackBonus;
+  if (o.damageDice) out.damageDice = o.damageDice;
+  if (o.damageBonus != null) out.damageBonus = o.damageBonus;
+  if (o.speed) out.speed = o.speed;
+  if (o.size) out.size = o.size;
+  if (o.perception != null) out.perception = o.perception;
+  const abilities = Object.fromEntries(
+    Object.entries(o.abilities ?? {}).filter(([, v]) => v != null),
+  );
+  if (Object.keys(abilities).length) out.abilities = abilities;
+  const saves = Object.fromEntries(Object.entries(o.saves ?? {}).filter(([, v]) => v != null));
+  if (Object.keys(saves).length) out.saves = saves;
+  return out;
 }
 
 /**
@@ -101,6 +137,28 @@ export async function saveCompanion(input: SaveCompanionInput): Promise<Companio
       primaryDie: input.eidolonPrimaryDie,
     };
   if (input.kind === 'custom') customStats.custom = input.custom ?? existing?.custom_stats?.custom ?? {};
+
+  // Stat overrides + extras (bot-read keys). When the caller manages these
+  // (edit form), it passes the complete desired set — so we REPLACE rather than
+  // merge, letting a cleared field fall back to auto-scaling. When omitted, we
+  // preserve whatever the bot last wrote (already spread in above).
+  if (input.overrides !== undefined) {
+    const pruned = pruneOverrides(input.overrides);
+    if (pruned && Object.keys(pruned).length) customStats.overrides = pruned;
+    else delete customStats.overrides;
+  }
+  if (input.skills !== undefined) {
+    if (Object.keys(input.skills).length) customStats.skills = input.skills;
+    else delete customStats.skills;
+  }
+  if (input.customAbilities !== undefined) {
+    if (input.customAbilities.length) customStats.customAbilities = input.customAbilities;
+    else delete customStats.customAbilities;
+  }
+  if (input.customAttacks !== undefined) {
+    if (input.customAttacks.length) customStats.customAttacks = input.customAttacks;
+    else delete customStats.customAttacks;
+  }
 
   const row = {
     user_id: input.userId,

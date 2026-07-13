@@ -8,6 +8,7 @@ import {
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
 import { chosenFeatIds } from '../rules';
+import { plainText } from '../contentText';
 import { FeatPicker } from '../FeatPicker';
 
 export function FeatsStep() {
@@ -77,7 +78,7 @@ export function FeatsStep() {
           <h4 className="mb-1 font-display text-lg text-gold-400">Skill Feat (from background)</h4>
           <div className="choice-card" data-selected="true">
             <div className="font-display text-parchment">{bgFeat.name}</div>
-            <p className="mt-1 font-ui text-sm text-parchment/70">{bgFeat.description}</p>
+            <p className="mt-1 font-ui text-sm text-parchment/70">{plainText(bgFeat.description)}</p>
           </div>
         </section>
       )}

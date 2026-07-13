@@ -14,7 +14,13 @@ import {
   type CompanionForm,
   type CompanionKind,
 } from '@pathway/core';
-import type { CompanionRow, CustomCompanionStats } from './types';
+import type {
+  CompanionCustomAbility,
+  CompanionCustomAttack,
+  CompanionOverrides,
+  CompanionRow,
+  CustomCompanionStats,
+} from './types';
 import { companionKind } from './types';
 import {
   useCompanions,
@@ -194,6 +200,9 @@ function StatGrid({ items }: { items: Array<[string, string | number]> }) {
   );
 }
 
+/** Append a pencil to a stat label when a manual override is in effect. */
+const mark = (label: string, overridden: boolean) => (overridden ? `${label} ✏️` : label);
+
 function AnimalBlock({ companion, level }: { companion: CompanionRow; level: number }) {
   const type = findCompanionType(companion.base_type);
   if (!type) {
@@ -204,33 +213,46 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
     );
   }
   const s = scaleCompanion(type, level, companion.form);
+  const ov = companion.custom_stats.overrides ?? {};
+  // Layer overrides over the auto-scaled stats (mirrors the bot's helpers.js).
+  const size = ov.size ?? s.size;
+  const firstAttack = s.attacks[0];
   return (
     <>
       <div className="mb-1 text-xs text-silver/60">
-        {cap(companion.form)} {type.name} · {cap(s.size)} · Lvl {level}
+        {cap(companion.form)} {type.name} · {cap(size)} · Lvl {level}
       </div>
       <StatGrid
         items={[
-          ['HP', s.maxHp],
-          ['AC', s.ac],
-          ['Perception', sign(s.perception)],
-          ['Speed', s.speed],
-          ['Fort', sign(s.saves.fortitude)],
-          ['Ref', sign(s.saves.reflex)],
-          ['Will', sign(s.saves.will)],
+          [mark('HP', ov.hp != null), ov.hp ?? s.maxHp],
+          [mark('AC', ov.ac != null), ov.ac ?? s.ac],
+          [mark('Perception', ov.perception != null), sign(ov.perception ?? s.perception)],
+          [mark('Speed', Boolean(ov.speed)), ov.speed ?? s.speed],
+          [mark('Fort', ov.saves?.fort != null), sign(ov.saves?.fort ?? s.saves.fortitude)],
+          [mark('Ref', ov.saves?.ref != null), sign(ov.saves?.ref ?? s.saves.reflex)],
+          [mark('Will', ov.saves?.will != null), sign(ov.saves?.will ?? s.saves.will)],
           [cap(s.skill.name), sign(s.skill.modifier)],
         ]}
       />
       <div className="mt-2 space-y-1">
-        {s.attacks.map((a) => (
+        {firstAttack && (
+          <div className="text-xs text-silver/80">
+            <span className="font-display text-gold/90">{cap(firstAttack.name)}</span>{' '}
+            {sign(ov.attackBonus ?? firstAttack.attack)} · {ov.damageDice ?? firstAttack.damage}
+            {(ov.damageBonus ?? firstAttack.damageBonus) ? sign(ov.damageBonus ?? firstAttack.damageBonus) : ''}{' '}
+            {firstAttack.damageType}
+            {firstAttack.traits.length > 0 && <span className="text-silver/50"> ({firstAttack.traits.join(', ')})</span>}
+            {(ov.attackBonus != null || ov.damageDice || ov.damageBonus != null) && ' ✏️'}
+          </div>
+        )}
+        {s.attacks.slice(1).map((a) => (
           <div key={a.name} className="text-xs text-silver/80">
-            <span className="font-display text-gold/90">{cap(a.name)}</span> {sign(a.attack)} ·{' '}
-            {a.damage}
+            <span className="font-display text-gold/90">{cap(a.name)}</span> {sign(a.attack)} · {a.damage}
             {a.damageBonus ? sign(a.damageBonus) : ''} {a.damageType}
-            {a.traits.length > 0 && <span className="text-silver/50"> ({a.traits.join(', ')})</span>}
           </div>
         ))}
       </div>
+      <CompanionExtras companion={companion} />
       {type.senses.length > 0 && (
         <p className="mt-2 text-xs text-silver/60">
           <span className="text-silver/40">Senses:</span> {type.senses.join(', ')}
@@ -245,8 +267,38 @@ function AnimalBlock({ companion, level }: { companion: CompanionRow; level: num
   );
 }
 
+/** Renders a companion's hand-entered extra attacks, abilities, and skills. */
+function CompanionExtras({ companion }: { companion: CompanionRow }) {
+  const { customAttacks, customAbilities, skills } = companion.custom_stats;
+  const skillRows = Object.entries(skills ?? {});
+  if (!customAttacks?.length && !customAbilities?.length && !skillRows.length) return null;
+  return (
+    <div className="mt-2 space-y-1">
+      {customAttacks?.map((a, i) => (
+        <div key={`atk-${i}`} className="text-xs text-silver/80">
+          <span className="font-display text-gold/90">{cap(a.name)}</span> {sign(a.bonus)} · {a.damage}{' '}
+          {a.damageType ?? ''}
+        </div>
+      ))}
+      {customAbilities?.map((a, i) => (
+        <div key={`abil-${i}`} className="text-xs text-silver/80">
+          <span className="font-display text-gold/90">{a.name}</span>
+          <span className="text-silver/60"> — {a.description}</span>
+        </div>
+      ))}
+      {skillRows.length > 0 && (
+        <p className="text-xs text-silver/60">
+          <span className="text-silver/40">Skills:</span>{' '}
+          {skillRows.map(([n, m]) => `${cap(n)} ${sign(m)}`).join(', ')}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function FamiliarBlock({ companion, level }: { companion: CompanionRow; level: number }) {
   const base = familiarBaseStats(level);
+  const ov = companion.custom_stats.overrides ?? {};
   const abilities = (companion.custom_stats.familiar?.abilities ?? [])
     .map(findFamiliarAbility)
     .filter(Boolean);
@@ -254,9 +306,9 @@ function FamiliarBlock({ companion, level }: { companion: CompanionRow; level: n
     <>
       <StatGrid
         items={[
-          ['HP', base.hp],
-          ['Speed', `${base.speed} ft`],
-          ['AC / Saves', 'as master'],
+          [mark('HP', ov.hp != null), ov.hp ?? base.hp],
+          [mark('Speed', Boolean(ov.speed)), ov.speed ?? `${base.speed} ft`],
+          [mark('AC', ov.ac != null), ov.ac ?? 'as master'],
           ['Abilities', abilities.length],
         ]}
       />
@@ -277,6 +329,7 @@ function FamiliarBlock({ companion, level }: { companion: CompanionRow; level: n
           ))
         )}
       </div>
+      <CompanionExtras companion={companion} />
     </>
   );
 }
@@ -290,22 +343,23 @@ function EidolonBlock({ companion, level }: { companion: CompanionRow; level: nu
     );
   }
   const s = scaleEidolon(type, cfg?.build ?? 0, level);
+  const ov = companion.custom_stats.overrides ?? {};
   const primaryName = cfg?.primaryName || 'primary attack';
   const primaryDie = cfg?.primaryDie || '—';
   return (
     <>
       <div className="mb-1 text-xs text-silver/60">
-        {s.buildName} {type.name} eidolon · {cap(s.size)} · {cap(s.tradition)} · Lvl {level}
+        {s.buildName} {type.name} eidolon · {cap(ov.size ?? s.size)} · {cap(s.tradition)} · Lvl {level}
       </div>
       <StatGrid
         items={[
           ['HP', 'shared'],
-          ['AC', s.ac],
-          ['Perception', sign(s.perception)],
-          ['Speed', s.speed],
-          ['Fort', sign(s.saves.fortitude)],
-          ['Ref', sign(s.saves.reflex)],
-          ['Will', sign(s.saves.will)],
+          [mark('AC', ov.ac != null), ov.ac ?? s.ac],
+          [mark('Perception', ov.perception != null), sign(ov.perception ?? s.perception)],
+          [mark('Speed', Boolean(ov.speed)), ov.speed ?? s.speed],
+          [mark('Fort', ov.saves?.fort != null), sign(ov.saves?.fort ?? s.saves.fortitude)],
+          [mark('Ref', ov.saves?.ref != null), sign(ov.saves?.ref ?? s.saves.reflex)],
+          [mark('Will', ov.saves?.will != null), sign(ov.saves?.will ?? s.saves.will)],
           ['Spec. dmg', s.specializationDamage ? `+${s.specializationDamage}` : '—'],
         ]}
       />
@@ -332,6 +386,7 @@ function EidolonBlock({ companion, level }: { companion: CompanionRow; level: nu
           </>
         )}
       </p>
+      <CompanionExtras companion={companion} />
       <p className="mt-1 text-xs italic text-silver/50">
         Shares your HP pool, actions, and multiple attack penalty.
       </p>
@@ -387,6 +442,10 @@ export interface CompanionFormOutput {
   eidolonPrimaryName?: string;
   eidolonPrimaryDie?: string;
   custom?: CustomCompanionStats;
+  overrides?: CompanionOverrides;
+  skills?: Record<string, number>;
+  customAbilities?: CompanionCustomAbility[];
+  customAttacks?: CompanionCustomAttack[];
 }
 
 export function CompanionEditorForm({
@@ -435,12 +494,26 @@ export function CompanionEditorForm({
   );
   // custom
   const [custom, setCustom] = useState<CustomCompanionStats>(existing?.custom_stats.custom ?? {});
+  // overrides + extras (bot-read keys), for non-custom kinds
+  const [overrides, setOverrides] = useState<CompanionOverrides>(existing?.custom_stats.overrides ?? {});
+  const [skills, setSkills] = useState<Record<string, number>>(existing?.custom_stats.skills ?? {});
+  const [customAbilities, setCustomAbilities] = useState<CompanionCustomAbility[]>(
+    existing?.custom_stats.customAbilities ?? [],
+  );
+  const [customAttacks, setCustomAttacks] = useState<CompanionCustomAttack[]>(
+    existing?.custom_stats.customAttacks ?? [],
+  );
 
   const animalPreview = useMemo(() => {
     if (kind !== 'animal' && kind !== 'mount') return null;
     const t = findCompanionType(baseType);
     return t ? scaleCompanion(t, level, form) : null;
   }, [kind, baseType, form, level]);
+
+  const autoStats = useMemo(
+    () => computeAutoStats(kind, { baseType, form, eidolonType, eidolonBuild, level }),
+    [kind, baseType, form, eidolonType, eidolonBuild, level],
+  );
 
   const toggleAbility = (slug: string) =>
     setFamiliarAbilities((prev) =>
@@ -463,6 +536,11 @@ export function CompanionEditorForm({
       eidolonPrimaryName: kind === 'eidolon' ? eidolonPrimaryName || undefined : undefined,
       eidolonPrimaryDie: kind === 'eidolon' ? eidolonPrimaryDie || undefined : undefined,
       custom: kind === 'custom' ? custom : undefined,
+      // Overrides + extras apply to the auto-scaled kinds (not the fully custom one).
+      overrides: kind === 'custom' ? undefined : overrides,
+      skills: kind === 'custom' ? undefined : skills,
+      customAbilities: kind === 'custom' ? undefined : customAbilities,
+      customAttacks: kind === 'custom' ? undefined : customAttacks,
     };
     if (onSubmitDraft) {
       onSubmitDraft(output);
@@ -578,6 +656,18 @@ export function CompanionEditorForm({
       )}
 
       {kind === 'custom' && <CustomStatFields value={custom} onChange={setCustom} />}
+
+      {kind !== 'custom' && (
+        <details className="mt-3 rounded border border-gold/15 bg-midnight-950/30 p-2">
+          <summary className="cursor-pointer text-xs font-display uppercase tracking-widest text-gold/80">
+            Override stats &amp; extras
+          </summary>
+          <OverrideStatsFields value={overrides} auto={autoStats} onChange={setOverrides} />
+          <ExtraAttacksFields value={customAttacks} onChange={setCustomAttacks} />
+          <ExtraAbilitiesFields value={customAbilities} onChange={setCustomAbilities} />
+          <SkillOverrideFields value={skills} onChange={setSkills} />
+        </details>
+      )}
 
       <label className="mt-3 flex flex-col gap-1 text-xs text-silver/70">
         Notes
@@ -749,6 +839,273 @@ function CustomStatFields({
           />
         </div>
       </label>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------
+// Override stats + extras (animal / mount / familiar / eidolon)
+// ---------------------------------------------------------------
+
+/** The auto-scaled values used as placeholders in the override fields. */
+interface AutoStats {
+  hp?: number;
+  ac?: number;
+  perception?: number;
+  speed?: string;
+  size?: string;
+  attackBonus?: number;
+  damageDice?: string;
+  damageBonus?: number;
+  abilities?: Record<'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha', number>;
+  saves?: { fort: number; ref: number; will: number };
+}
+
+/** Compute a companion's auto-scaled stats (for override placeholders + display). */
+function computeAutoStats(
+  kind: CompanionKind,
+  opts: { baseType: string; form: CompanionForm; eidolonType: string; eidolonBuild: number; level: number },
+): AutoStats {
+  const { baseType, form, eidolonType, eidolonBuild, level } = opts;
+  if (kind === 'animal' || kind === 'mount') {
+    const t = findCompanionType(baseType);
+    if (!t) return {};
+    const s = scaleCompanion(t, level, form);
+    return {
+      hp: s.maxHp,
+      ac: s.ac,
+      perception: s.perception,
+      speed: s.speed,
+      size: s.size,
+      attackBonus: s.attacks[0]?.attack,
+      damageDice: s.attacks[0]?.damage,
+      damageBonus: s.attacks[0]?.damageBonus,
+      abilities: s.abilityMods,
+      saves: { fort: s.saves.fortitude, ref: s.saves.reflex, will: s.saves.will },
+    };
+  }
+  if (kind === 'eidolon') {
+    const t = findEidolonType(eidolonType);
+    if (!t) return {};
+    const s = scaleEidolon(t, eidolonBuild, level);
+    return {
+      ac: s.ac,
+      perception: s.perception,
+      speed: s.speed,
+      size: s.size,
+      attackBonus: s.attack,
+      saves: { fort: s.saves.fortitude, ref: s.saves.reflex, will: s.saves.will },
+    };
+  }
+  if (kind === 'familiar') return { hp: familiarBaseStats(level).hp, speed: `${familiarBaseStats(level).speed} feet` };
+  return {};
+}
+
+const ABIL_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+const SAVE_KEYS = ['fort', 'ref', 'will'] as const;
+const numOrUndef = (s: string) => (s.trim() === '' ? undefined : Number(s));
+
+/** Grid of override inputs; each placeholder shows the auto-scaled value. */
+function OverrideStatsFields({
+  value,
+  auto,
+  onChange,
+}: {
+  value: CompanionOverrides;
+  auto: AutoStats;
+  onChange: (v: CompanionOverrides) => void;
+}) {
+  const set = (patch: Partial<CompanionOverrides>) => onChange({ ...value, ...patch });
+  const ph = (n: number | string | undefined) => (n == null ? 'auto' : `auto ${n}`);
+  const numField = (label: string, key: 'hp' | 'ac' | 'attackBonus' | 'damageBonus' | 'perception', autoVal?: number) => (
+    <label className="flex flex-col gap-1 text-xs text-silver/70">
+      {label}
+      <input
+        type="number"
+        value={value[key] ?? ''}
+        onChange={(e) => set({ [key]: numOrUndef(e.target.value) })}
+        placeholder={ph(autoVal)}
+        className={inputCls}
+      />
+    </label>
+  );
+  return (
+    <div className="mt-2 space-y-3">
+      <p className="text-[0.7rem] italic text-silver/50">
+        Leave a field blank to keep the automatic value. Anything you set here is saved to this
+        companion and shown the same way on the Discord bot.
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {numField('HP', 'hp', auto.hp)}
+        {numField('AC', 'ac', auto.ac)}
+        {numField('Perception', 'perception', auto.perception)}
+        <label className="flex flex-col gap-1 text-xs text-silver/70">
+          Speed
+          <input
+            value={value.speed ?? ''}
+            onChange={(e) => set({ speed: e.target.value || undefined })}
+            placeholder={ph(auto.speed)}
+            className={inputCls}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-silver/70">
+          Size
+          <input
+            value={value.size ?? ''}
+            onChange={(e) => set({ size: e.target.value || undefined })}
+            placeholder={ph(auto.size)}
+            className={inputCls}
+          />
+        </label>
+        {numField('Attack', 'attackBonus', auto.attackBonus)}
+        <label className="flex flex-col gap-1 text-xs text-silver/70">
+          Damage dice
+          <input
+            value={value.damageDice ?? ''}
+            onChange={(e) => set({ damageDice: e.target.value || undefined })}
+            placeholder={ph(auto.damageDice)}
+            className={inputCls}
+          />
+        </label>
+        {numField('Dmg bonus', 'damageBonus', auto.damageBonus)}
+      </div>
+      <div>
+        <div className="mb-1 text-[0.6rem] uppercase tracking-widest text-silver/45">Ability modifiers</div>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {ABIL_KEYS.map((k) => (
+            <label key={k} className="flex flex-col gap-1 text-xs text-silver/70">
+              {k.toUpperCase()}
+              <input
+                type="number"
+                value={value.abilities?.[k] ?? ''}
+                onChange={(e) => set({ abilities: { ...value.abilities, [k]: numOrUndef(e.target.value) } })}
+                placeholder={ph(auto.abilities?.[k])}
+                className={inputCls}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="mb-1 text-[0.6rem] uppercase tracking-widest text-silver/45">Saves</div>
+        <div className="grid grid-cols-3 gap-2">
+          {SAVE_KEYS.map((k) => (
+            <label key={k} className="flex flex-col gap-1 text-xs text-silver/70">
+              {k === 'fort' ? 'Fortitude' : k === 'ref' ? 'Reflex' : 'Will'}
+              <input
+                type="number"
+                value={value.saves?.[k] ?? ''}
+                onChange={(e) => set({ saves: { ...value.saves, [k]: numOrUndef(e.target.value) } })}
+                placeholder={ph(auto.saves?.[k])}
+                className={inputCls}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExtraAttacksFields({
+  value,
+  onChange,
+}: {
+  value: CompanionCustomAttack[];
+  onChange: (v: CompanionCustomAttack[]) => void;
+}) {
+  const update = (i: number, patch: Partial<CompanionCustomAttack>) =>
+    onChange(value.map((a, j) => (j === i ? { ...a, ...patch } : a)));
+  return (
+    <div className="mt-3">
+      <div className="mb-1 text-[0.6rem] uppercase tracking-widest text-silver/45">Extra attacks</div>
+      <div className="space-y-2">
+        {value.map((a, i) => (
+          <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <input value={a.name} onChange={(e) => update(i, { name: e.target.value })} placeholder="name" className={inputCls} />
+            <input type="number" value={a.bonus ?? ''} onChange={(e) => update(i, { bonus: Number(e.target.value) })} placeholder="+bonus" className={inputCls} />
+            <input value={a.damage} onChange={(e) => update(i, { damage: e.target.value })} placeholder="1d8" className={inputCls} />
+            <input value={a.damageType ?? ''} onChange={(e) => update(i, { damageType: e.target.value })} placeholder="piercing" className={inputCls} />
+            <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="rounded border border-red-400/30 px-2 text-xs text-red-300/80 hover:bg-red-500/10">Remove</button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange([...value, { name: '', bonus: 0, damage: '' }])}
+        className="mt-2 rounded border border-gold/25 px-2 py-1 text-xs text-gold/80 hover:bg-gold/10"
+      >
+        + Add attack
+      </button>
+    </div>
+  );
+}
+
+function ExtraAbilitiesFields({
+  value,
+  onChange,
+}: {
+  value: CompanionCustomAbility[];
+  onChange: (v: CompanionCustomAbility[]) => void;
+}) {
+  const update = (i: number, patch: Partial<CompanionCustomAbility>) =>
+    onChange(value.map((a, j) => (j === i ? { ...a, ...patch } : a)));
+  return (
+    <div className="mt-3">
+      <div className="mb-1 text-[0.6rem] uppercase tracking-widest text-silver/45">Extra abilities</div>
+      <div className="space-y-2">
+        {value.map((a, i) => (
+          <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-6">
+            <input value={a.name} onChange={(e) => update(i, { name: e.target.value })} placeholder="name" className={`${inputCls} sm:col-span-2`} />
+            <input value={a.description} onChange={(e) => update(i, { description: e.target.value })} placeholder="what it does" className={`${inputCls} sm:col-span-3`} />
+            <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="rounded border border-red-400/30 px-2 text-xs text-red-300/80 hover:bg-red-500/10">Remove</button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange([...value, { name: '', description: '' }])}
+        className="mt-2 rounded border border-gold/25 px-2 py-1 text-xs text-gold/80 hover:bg-gold/10"
+      >
+        + Add ability
+      </button>
+    </div>
+  );
+}
+
+function SkillOverrideFields({
+  value,
+  onChange,
+}: {
+  value: Record<string, number>;
+  onChange: (v: Record<string, number>) => void;
+}) {
+  const rows = Object.entries(value);
+  const setRow = (oldName: string, name: string, mod: number) => {
+    const next = { ...value };
+    delete next[oldName];
+    if (name.trim()) next[name.trim().toLowerCase()] = mod;
+    onChange(next);
+  };
+  return (
+    <div className="mt-3">
+      <div className="mb-1 text-[0.6rem] uppercase tracking-widest text-silver/45">Skills (name → modifier)</div>
+      <div className="space-y-2">
+        {rows.map(([name, mod], i) => (
+          <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <input defaultValue={name} onBlur={(e) => setRow(name, e.target.value, mod)} placeholder="acrobatics" className={`${inputCls} sm:col-span-2`} />
+            <input type="number" defaultValue={mod} onBlur={(e) => setRow(name, name, Number(e.target.value))} placeholder="+8" className={inputCls} />
+            <button type="button" onClick={() => { const n = { ...value }; delete n[name]; onChange(n); }} className="rounded border border-red-400/30 px-2 text-xs text-red-300/80 hover:bg-red-500/10">Remove</button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, '': 0 })}
+        className="mt-2 rounded border border-gold/25 px-2 py-1 text-xs text-gold/80 hover:bg-gold/10"
+      >
+        + Add skill
+      </button>
     </div>
   );
 }

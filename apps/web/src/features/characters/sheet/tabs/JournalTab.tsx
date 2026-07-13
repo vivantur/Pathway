@@ -4,6 +4,7 @@ import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { useUpdateCharacterNotes } from '@/features/characters/useUpdateCharacterNotes';
 import { useCharacterDowntime } from '@/features/characters/useCharacterDowntime';
 import { useUpdateCharacterDowntime } from '@/features/characters/useUpdateCharacterDowntime';
+import { useXpLog } from '@/features/characters/useXpLog';
 import type {
   CharacterNoteEntry,
   CharacterRow,
@@ -27,7 +28,21 @@ export function JournalTab({
   edit: EditControls;
 }) {
   const { data: notes, isLoading: notesLoading } = useCharacterNotes(character.char_key);
-  const xpLog = character.overlay?.pathway_bot_state?.xpLog ?? [];
+  // Read the shared character_xp_log table (the bot's live store), mapping rows
+  // onto the display shape. Falls back to the legacy overlay copy if the table
+  // query is empty (older characters whose log predates the dedicated table).
+  const { data: xpRows = [] } = useXpLog(character.char_key);
+  const legacyXp = character.overlay?.pathway_bot_state?.xpLog ?? [];
+  const xpLog: XpLogEntry[] = xpRows.length
+    ? xpRows.map((r) => ({
+        at: r.created_at,
+        amount: r.amount,
+        reason: r.reason ?? undefined,
+        oldXp: r.old_xp,
+        newXp: r.new_xp,
+        awardedBy: r.awarded_by_discord_id ?? undefined,
+      }))
+    : legacyXp;
 
   return (
     <div className="space-y-4">

@@ -14,7 +14,8 @@
     "start": "serve -s dist",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+  "ingest:pf2e": "node scripts/ingest-pf2e.mjs"
   },
   "dependencies": {
     "@pathway/core": "*",

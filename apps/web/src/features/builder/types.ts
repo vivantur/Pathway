@@ -1,4 +1,9 @@
 import type { AbilityKey } from '@/features/builder/data';
+import type {
+  CompanionCustomAbility,
+  CompanionCustomAttack,
+  CompanionOverrides,
+} from '@/features/companions/types';
 
 /**
  * The player's raw choices. Everything derived (final scores, HP, AC, saves)
@@ -111,6 +116,10 @@ export interface CompanionDraft {
   eidolonPrimaryName?: string;
   eidolonPrimaryDie?: string;
   custom?: Record<string, unknown>;
+  overrides?: CompanionOverrides;
+  skills?: Record<string, number>;
+  customAbilities?: CompanionCustomAbility[];
+  customAttacks?: CompanionCustomAttack[];
 }
 
 export type SpellTradition = 'arcane' | 'divine' | 'occult' | 'primal';

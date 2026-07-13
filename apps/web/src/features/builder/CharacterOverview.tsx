@@ -189,6 +189,22 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
         </Section>
       )}
 
+      {d.effectNotes.length > 0 && (
+        <Section title={`Feat Effects (${d.effectNotes.length})`}>
+          <div className="flex flex-col gap-1">
+            {d.effectNotes.map((n, i) => (
+              <div
+                key={`${n.source}-${n.stat}-${i}`}
+                className="flex items-baseline justify-between gap-2 font-ui text-sm"
+              >
+                <span className="text-parchment">{n.source}</span>
+                <span className="text-gold-400/90">{n.summary}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {cfg && (
         <Section title="Spells">
           <div className="mb-2 flex flex-wrap gap-2">

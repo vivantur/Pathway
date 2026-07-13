@@ -76,6 +76,11 @@ function draftToRow(draft: CompanionDraft, index: number): CompanionRow {
           }
         : {}),
       ...(draft.kind === 'custom' ? { custom: draft.custom ?? {} } : {}),
+      // Manual overrides + extras (bot-read keys) so the draft preview reflects them.
+      ...(draft.overrides && Object.keys(draft.overrides).length ? { overrides: draft.overrides } : {}),
+      ...(draft.skills && Object.keys(draft.skills).length ? { skills: draft.skills } : {}),
+      ...(draft.customAbilities?.length ? { customAbilities: draft.customAbilities } : {}),
+      ...(draft.customAttacks?.length ? { customAttacks: draft.customAttacks } : {}),
     },
   };
 }
