@@ -27,3 +27,7 @@ export * from './companion.js';
 // Derived-stat compositions (HP, saves, Perception, skills, DCs, AC). The single
 // implementation both of apps/web's engines (builder + sheet) adapt onto.
 export * from './derived.js';
+
+// Effects engine: resolves the machine-readable rule elements on chosen feats
+// into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
+export * from './effects.js';

@@ -3,6 +3,7 @@ import {
   findAncestry,
   findBackground,
   findClass,
+  findFeat,
   findItem,
   getDataset,
   type AbilityKey,
@@ -17,6 +18,7 @@ import {
   abilityModifier,
   armorClass,
   attackRankAtLevel,
+  collectSheetEffects,
   maxHitPoints,
   proficiencyBonus,
   proficientDC,
@@ -25,6 +27,8 @@ import {
   RANK_LABEL,
   type AttackCategory,
   type ProficiencyTrack,
+  type RuleElement,
+  type SheetEffects,
 } from '@pathway/core';
 
 // Scalar stat math lives in @pathway/core (one source for builder, sheet, and
@@ -202,6 +206,21 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
   return scores;
 }
 
+/**
+ * Sheet effects granted by the character's chosen feats — HP bonuses and
+ * proficiency-rank grants resolved from each feat's ingested rule elements by
+ * `@pathway/core`. Recomputed on demand; the underlying collection is cheap.
+ */
+export function characterEffects(state: BuilderState): SheetEffects {
+  const level = state.level || 1;
+  const itemRules: RuleElement[][] = [];
+  for (const id of chosenFeatIds(state)) {
+    const rules = findFeat(id)?.rules;
+    if (Array.isArray(rules)) itemRules.push(rules as RuleElement[]);
+  }
+  return collectSheetEffects(itemRules, { level });
+}
+
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
 export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> {
   const level = state.level || 1;
@@ -218,8 +237,15 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
     }
   }
 
+  // The per-level increase cap bounds only the player's chosen increases.
   const cap = maxRankForLevel(level);
   for (const [id, rank] of ranks) ranks.set(id, Math.min(rank, cap) as ProficiencyRank);
+
+  // Feat-granted training is explicit (e.g. "You become trained in Nature") and
+  // is not subject to the increase cap — apply it after, taking the higher rank.
+  for (const [skillId, grant] of characterEffects(state).skillRanks) {
+    ranks.set(skillId, Math.max(ranks.get(skillId) ?? 0, grant) as ProficiencyRank);
+  }
   return ranks;
 }
 
@@ -372,12 +398,18 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const pwl = opt(state, OPT.proficiencyWithoutLevel);
   const abp = opt(state, OPT.automaticBonusProgression);
 
+  // Feat-granted sheet effects (HP bonuses, proficiency-rank grants), resolved
+  // from each chosen feat's rule elements by @pathway/core.
+  const effects = characterEffects(state);
+
   // Ancestry HP is granted once; class HP + Con modifier apply every level.
+  // Feat HP bonuses (e.g. Toughness → +level) are added as a flat bonus.
   const maxHp = maxHitPoints({
     ancestryHp: ancestry?.hp ?? 0,
     classHp: klass?.hp ?? 0,
     conMod: mods.con,
     level,
+    bonusHp: effects.hpBonus,
   });
 
   // Equipped gear.
@@ -427,7 +459,15 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const checkPenalty = armor && !meetsStr ? armor.checkPenalty : 0;
   const speedPenalty = armor ? (meetsStr ? Math.min(0, armor.speedPenalty + 5) : armor.speedPenalty) : 0;
 
-  const perceptionRank = progressionRank(state, 'perception', ip?.perception ?? 0);
+  // A feat may raise a save/Perception rank (e.g. Canny Acumen); take the higher
+  // of the class progression and any feat grant.
+  const withGrant = (rank: ProficiencyRank, grant: ProficiencyRank | number | undefined) =>
+    Math.max(rank, grant ?? 0) as ProficiencyRank;
+
+  const perceptionRank = withGrant(
+    progressionRank(state, 'perception', ip?.perception ?? 0),
+    effects.perceptionRank ?? 0,
+  );
   const perception = proficientModifier({
     abilityMod: mods.wis,
     rank: perceptionRank,
@@ -436,9 +476,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     itemBonus: abp ? abpPerception(level) : 0,
   });
 
-  const fortRank = progressionRank(state, 'fortitude', ip?.fortitude ?? 0);
-  const refRank = progressionRank(state, 'reflex', ip?.reflex ?? 0);
-  const willRank = progressionRank(state, 'will', ip?.will ?? 0);
+  const fortRank = withGrant(progressionRank(state, 'fortitude', ip?.fortitude ?? 0), effects.saveRanks.get('fortitude'));
+  const refRank = withGrant(progressionRank(state, 'reflex', ip?.reflex ?? 0), effects.saveRanks.get('reflex'));
+  const willRank = withGrant(progressionRank(state, 'will', ip?.will ?? 0), effects.saveRanks.get('will'));
   const classDCRank = progressionRank(state, 'classDC', ip?.classDC ?? 0);
 
   // A saving throw: ability mod + proficiency + a fundamental item bonus (the
