@@ -15,6 +15,18 @@ describe('companion catalog', () => {
     expect(findCompanionType('WOLF')?.slug).toBe('wolf');
     expect(findCompanionType('nope')).toBeUndefined();
   });
+
+  it('exposes the wyvern (advanced companion) with its base statblock', () => {
+    const wyvern = findCompanionType('wyvern')!;
+    expect(wyvern).toBeDefined();
+    expect(wyvern.size).toBe('large');
+    expect(wyvern.hp).toBe(8);
+    expect(wyvern.abilityMods).toEqual({ str: 2, dex: 2, con: 2, int: -4, wis: 1, cha: 0 });
+    expect(wyvern.skill).toBe('stealth');
+    expect(wyvern.speed).toBe('walk 20 feet, fly 40 feet');
+    expect(wyvern.attacks.map((a) => a.name)).toEqual(['stinger', 'jaws']);
+    expect(wyvern.attacks[1]).toMatchObject({ damageDie: '1d8', damageType: 'piercing' });
+  });
 });
 
 describe('scaleCompanion — young wolf at level 1', () => {

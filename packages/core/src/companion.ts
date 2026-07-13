@@ -656,6 +656,27 @@ export const COMPANION_CATALOG: CompanionType[] = [
     support: "Your wood elemental entangles your foes with detachable branches and roots. Until the start of your next turn, if you hit with a Strike that deals damage to a creature in your wood elemental's reach, the creature takes a −5-foot circumstance penalty to its Speeds for 1 minute (−10 on a critical success). The creature, or a creature adjacent to it, can use an Interact action to unravel the branches and roots and remove the penalty.",
     source: "RoE",
   },
+  {
+    // Advanced companion (available at 10th level or higher). Its special
+    // abilities — the stinger's extra poison, Unsteady Mount, and the Diving
+    // Skewer advanced maneuver — aren't representable in this base-stats schema
+    // (as with other companions, only the base statblock + support benefit are
+    // modeled). Transcribed from Pathfinder #209: Destroyer's Doom pg. 81.
+    slug: "wyvern",
+    name: "Wyvern",
+    size: "large",
+    hp: 8,
+    abilityMods: { str: 2, dex: 2, con: 2, int: -4, wis: 1, cha: 0 },
+    skill: "stealth",
+    speed: "walk 20 feet, fly 40 feet",
+    senses: ["darkvision", "scent (imprecise) 30 feet"],
+    attacks: [
+      { name: "stinger", traits: [], damageDie: "1d6", damageType: "piercing" },
+      { name: "jaws", traits: [], damageDie: "1d8", damageType: "piercing" },
+    ],
+    support: "Your wyvern whips its stinger at your foes. Until the start of your next turn, your Strikes that damage a creature in your wyvern's reach also deal 1d6 persistent poison damage. If your wyvern is nimble or savage, the persistent damage increases to 2d6.",
+    source: "Pathfinder #209",
+  },
 ];
 
 export function findCompanionType(slug: string): CompanionType | undefined {
