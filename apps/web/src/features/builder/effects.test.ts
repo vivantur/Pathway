@@ -55,5 +55,12 @@ describe('feat effects on the derived sheet', () => {
     expect(e.skillRanks.size).toBe(0);
     expect(e.saveRanks.size).toBe(0);
     expect(e.perceptionRank).toBeNull();
+    expect(e.statModifiers.size).toBe(0);
+  });
+
+  it('applies an unconditional typed stat modifier (Superior Sight → +2 Perception)', () => {
+    const base = deriveCharacter(fighter()).perception;
+    const withFeat = deriveCharacter({ ...fighter(), ancestryFeatId: 'superior-sight' }).perception;
+    expect(withFeat - base).toBe(2);
   });
 });

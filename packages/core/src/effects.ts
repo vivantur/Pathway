@@ -30,6 +30,61 @@ export interface RuleElement {
   [field: string]: unknown;
 }
 
+// ---------------------------------------------------------------------------
+// PF2e bonus & penalty stacking
+// ---------------------------------------------------------------------------
+//
+// Implemented verbatim from the Player Core "Bonuses and Penalties" rules
+// (corroborated against Archive of Nethys "Bonuses"/"Penalties", ID 2281/2282):
+//
+//   Bonuses come in three types — circumstance, status, item. (There are no
+//   untyped bonuses in the rules.) If you have more than one bonus of the same
+//   type, you use only the HIGHEST. Bonuses of different types all add together.
+//
+//   Penalties come in the same three types plus UNTYPED. For each *typed*
+//   penalty, if you have more than one of the same type you use only the WORST.
+//   Penalties of different types all add together. Untyped penalties are the
+//   exception: you always add ALL of them together rather than taking the worst.
+//
+// Data note: the Foundry corpus occasionally tags a *bonus* as "untyped" (which
+// the rules say shouldn't exist). Such bonuses are authored to always apply, so
+// we stack them — matching how the source system evaluates them.
+
+export type BonusType = "circumstance" | "status" | "item" | "untyped";
+
+export interface Modifier {
+  type: BonusType;
+  /** Positive = bonus, negative = penalty. Zero contributes nothing. */
+  value: number;
+}
+
+/**
+ * Net modifier from a set of typed bonuses/penalties, per the PF2e stacking
+ * rules above. Bonuses and penalties are resolved independently and summed.
+ */
+export function stackModifiers(mods: Modifier[]): number {
+  // Highest bonus per typed category; untyped bonuses all stack.
+  const bestBonus: Record<string, number> = {};
+  let untypedBonus = 0;
+  // Worst (most negative) penalty per typed category; untyped penalties all stack.
+  const worstPenalty: Record<string, number> = {};
+  let untypedPenalty = 0;
+
+  for (const m of mods) {
+    if (!m || !Number.isFinite(m.value) || m.value === 0) continue;
+    if (m.value > 0) {
+      if (m.type === "untyped") untypedBonus += m.value;
+      else bestBonus[m.type] = Math.max(bestBonus[m.type] ?? 0, m.value);
+    } else {
+      if (m.type === "untyped") untypedPenalty += m.value;
+      else worstPenalty[m.type] = Math.min(worstPenalty[m.type] ?? 0, m.value);
+    }
+  }
+
+  const sum = (o: Record<string, number>) => Object.values(o).reduce((s, n) => s + n, 0);
+  return sum(bestBonus) + untypedBonus + sum(worstPenalty) + untypedPenalty;
+}
+
 export interface EffectContext {
   /** Character level — the only actor value the supported expressions reference. */
   level: number;
@@ -53,9 +108,19 @@ export interface SheetEffects {
   /** Highest granted Perception rank, if any. */
   perceptionRank: ProficiencyRank | null;
   /**
+   * Typed bonus/penalty modifiers to combine per stat, keyed by selector:
+   * `ac`, `saving-throw`, `fortitude`/`reflex`/`will`, `perception`,
+   * `skill-check`, an individual skill slug, or `land-speed`. The consumer
+   * gathers the relevant selectors for a stat and runs them through
+   * `stackModifiers`. (Raw lists — stacking is applied at use, once the stat's
+   * own item bonuses are folded in, so item bonuses don't double-count.)
+   */
+  statModifiers: Map<string, Modifier[]>;
+  /**
    * Count of rule elements that would affect the sheet but fall outside this
-   * increment's scope (typed modifiers, choice-driven, unparseable value). Kept
-   * for reporting so silently-skipped effects are visible, never hidden.
+   * increment's scope (choice-driven, unparseable value, strikes, ability/
+   * proficiency-typed). Kept for reporting so silently-skipped effects are
+   * visible, never hidden.
    */
   skipped: number;
 }
@@ -188,6 +253,33 @@ function toRank(n: number): ProficiencyRank | null {
   return r >= 0 && r <= 4 ? (r as ProficiencyRank) : null;
 }
 
+// The 16 PF2e skills (canonical rules content). A `skill-check` FlatModifier
+// hits all of them; a skill-slug selector hits just one.
+const SKILL_SLUGS = new Set([
+  "acrobatics", "arcana", "athletics", "crafting", "deception", "diplomacy",
+  "intimidation", "medicine", "nature", "occultism", "performance", "religion",
+  "society", "stealth", "survival", "thievery",
+]);
+
+// FlatModifier selectors this increment applies to the static sheet.
+const STAT_SELECTORS = new Set(["ac", "saving-throw", "fortitude", "reflex", "will", "perception", "skill-check", "land-speed"]);
+
+/** Which stat-modifier bucket(s) a FlatModifier selector maps to, if any. */
+function statBucketFor(selector: unknown): string | null {
+  if (typeof selector !== "string") return null;
+  if (STAT_SELECTORS.has(selector) || SKILL_SLUGS.has(selector)) return selector;
+  return null;
+}
+
+/** The stacking type for a modifier, or null if it's a base-calc type we skip. */
+function modifierType(rawType: unknown): BonusType | null {
+  if (rawType === "circumstance" || rawType === "status" || rawType === "item") return rawType;
+  // Missing type or "untyped" → untyped. "ability"/"proficiency"/etc. are part of
+  // the base statistic already (attribute mod + proficiency) — not stacked here.
+  if (rawType == null || rawType === "untyped") return "untyped";
+  return null;
+}
+
 // Rule-element kinds that change the static sheet but are deferred to a later
 // increment; counted toward `skipped` so deferred coverage is measurable.
 const DEFERRED_SHEET_KINDS = new Set([
@@ -215,12 +307,18 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
     skillRanks: new Map(),
     saveRanks: new Map(),
     perceptionRank: null,
+    statModifiers: new Map(),
     skipped: 0,
   };
 
   const raise = (map: Map<string, ProficiencyRank>, key: string, rank: ProficiencyRank) => {
     const cur = map.get(key) ?? 0;
     if (rank > cur) map.set(key, rank);
+  };
+  const addModifier = (bucket: string, mod: Modifier) => {
+    const list = effects.statModifiers.get(bucket);
+    if (list) list.push(mod);
+    else effects.statModifiers.set(bucket, [mod]);
   };
 
   for (const rules of itemRules) {
@@ -239,6 +337,29 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
         } catch {
           effects.skipped += 1;
         }
+        continue;
+      }
+
+      // --- typed stat modifiers: unconditional FlatModifier on a sheet stat ---
+      if (rule.key === "FlatModifier") {
+        const bucket = statBucketFor(rule.selector);
+        if (!bucket) {
+          effects.skipped += 1; // strike-*, initiative, spell DCs, … — deferred
+          continue;
+        }
+        const type = modifierType(rule.type);
+        if (type === null || isConditional(rule)) {
+          effects.skipped += 1; // ability/proficiency-typed or situational
+          continue;
+        }
+        let value: number;
+        try {
+          value = evalNumeric(rule.value, ctx);
+        } catch {
+          effects.skipped += 1;
+          continue;
+        }
+        if (value !== 0) addModifier(bucket, { type, value });
         continue;
       }
 
@@ -289,12 +410,9 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
       }
 
       // Anything else that would change the sheet but is deferred to a later
-      // increment (typed stat modifiers → stacking rules; speed/senses/resistances
-      // → the class-feature pass) is counted, so deferred coverage stays visible.
-      if (
-        rule.key === "FlatModifier" || // non-hp selectors (ac, saves, skills, strikes, …)
-        DEFERRED_SHEET_KINDS.has(rule.key)
-      ) {
+      // increment (speed/senses/resistances → the class-feature pass) is counted,
+      // so deferred coverage stays visible. (FlatModifiers are fully handled above.)
+      if (DEFERRED_SHEET_KINDS.has(rule.key)) {
         effects.skipped += 1;
       }
     }
