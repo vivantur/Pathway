@@ -23,6 +23,7 @@
 // skipped and counted, never guessed.
 
 import type { ProficiencyRank } from "./proficiency.js";
+import { RANK_LABEL } from "./stats.js";
 
 /** A Foundry rule element. Only the fields we read are typed; the rest is open. */
 export interface RuleElement {
@@ -98,6 +99,18 @@ export interface RankGrant {
   rank: ProficiencyRank;
 }
 
+/**
+ * A single applied effect, attributed to its source, for "why did this change?"
+ * display. `stat` is the affected stat key ("hp", "perception", a skill slug, …);
+ * `summary` is a ready-to-show phrase ("+5 HP", "Trained in Thievery",
+ * "+2 circumstance to Perception").
+ */
+export interface AppliedEffect {
+  source: string;
+  stat: string;
+  summary: string;
+}
+
 export interface SheetEffects {
   /** Total flat HP bonus (summed untyped `hp` FlatModifiers). */
   hpBonus: number;
@@ -116,6 +129,8 @@ export interface SheetEffects {
    * own item bonuses are folded in, so item bonuses don't double-count.)
    */
   statModifiers: Map<string, Modifier[]>;
+  /** Every applied effect, attributed to its source, for provenance display. */
+  applied: AppliedEffect[];
   /**
    * Count of rule elements that would affect the sheet but fall outside this
    * increment's scope (choice-driven, unparseable value, strikes, ability/
@@ -271,6 +286,23 @@ function statBucketFor(selector: unknown): string | null {
   return null;
 }
 
+const titleCase = (s: string): string => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** Human label for a stat bucket, for provenance summaries. */
+function statLabel(bucket: string): string {
+  switch (bucket) {
+    case "ac": return "AC";
+    case "saving-throw": return "saves";
+    case "fortitude": return "Fortitude";
+    case "reflex": return "Reflex";
+    case "will": return "Will";
+    case "perception": return "Perception";
+    case "skill-check": return "skill checks";
+    case "land-speed": return "Speed";
+    default: return titleCase(bucket); // a skill slug
+  }
+}
+
 /** The stacking type for a modifier, or null if it's a base-calc type we skip. */
 function modifierType(rawType: unknown): BonusType | null {
   if (rawType === "circumstance" || rawType === "status" || rawType === "item") return rawType;
@@ -299,15 +331,22 @@ const PERCEPTION_RANK_PATH = /^system\.(?:attributes\.)?perception\.rank$/;
 
 /**
  * Resolve every in-scope sheet effect from a set of chosen items' rule arrays.
- * `itemRules` is one rule-element array per chosen feat/feature.
+ * `itemRules` is one rule-element array per chosen feat/feature; `labels[i]` is
+ * the display name of item `i` (for the attributed `applied` list — pass the
+ * feat/feature names). Labels are optional so existing callers/tests still work.
  */
-export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectContext): SheetEffects {
+export function collectSheetEffects(
+  itemRules: RuleElement[][],
+  ctx: EffectContext,
+  labels: string[] = [],
+): SheetEffects {
   const effects: SheetEffects = {
     hpBonus: 0,
     skillRanks: new Map(),
     saveRanks: new Map(),
     perceptionRank: null,
     statModifiers: new Map(),
+    applied: [],
     skipped: 0,
   };
 
@@ -321,8 +360,10 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
     else effects.statModifiers.set(bucket, [mod]);
   };
 
-  for (const rules of itemRules) {
-    if (!Array.isArray(rules)) continue;
+  itemRules.forEach((rules, itemIndex) => {
+    const source = labels[itemIndex] ?? "";
+    const note = (stat: string, summary: string) => effects.applied.push({ source, stat, summary });
+    if (!Array.isArray(rules)) return;
     for (const rule of rules) {
       if (!rule || typeof rule.key !== "string" || rule.ignored) continue;
 
@@ -333,7 +374,9 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
           continue;
         }
         try {
-          effects.hpBonus += evalNumeric(rule.value, ctx);
+          const v = evalNumeric(rule.value, ctx);
+          effects.hpBonus += v;
+          if (v !== 0) note("hp", `${v >= 0 ? "+" : ""}${v} HP`);
         } catch {
           effects.skipped += 1;
         }
@@ -359,7 +402,10 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
           effects.skipped += 1;
           continue;
         }
-        if (value !== 0) addModifier(bucket, { type, value });
+        if (value !== 0) {
+          addModifier(bucket, { type, value });
+          note(bucket, `${value >= 0 ? "+" : ""}${value} ${type} to ${statLabel(bucket)}`);
+        }
         continue;
       }
 
@@ -393,15 +439,18 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
         const skill = SKILL_RANK_PATH.exec(path);
         if (skill?.[1]) {
           raise(effects.skillRanks, skill[1], rank);
+          note(skill[1], `${RANK_LABEL[rank]} in ${titleCase(skill[1])}`);
           continue;
         }
         const save = SAVE_RANK_PATH.exec(path);
         if (save?.[1]) {
           raise(effects.saveRanks, save[1], rank);
+          note(save[1], `${RANK_LABEL[rank]} ${titleCase(save[1])}`);
           continue;
         }
         if (PERCEPTION_RANK_PATH.test(path)) {
           if (effects.perceptionRank === null || rank > effects.perceptionRank) effects.perceptionRank = rank;
+          note("perception", `${RANK_LABEL[rank]} Perception`);
           continue;
         }
         // A rank path we don't map (e.g. spellcasting-entry ranks) — out of scope.
@@ -416,7 +465,7 @@ export function collectSheetEffects(itemRules: RuleElement[][], ctx: EffectConte
         effects.skipped += 1;
       }
     }
-  }
+  });
 
   return effects;
 }

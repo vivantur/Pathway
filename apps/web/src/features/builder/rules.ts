@@ -26,6 +26,7 @@ import {
   proficiencyRankAtLevel,
   RANK_LABEL,
   stackModifiers,
+  type AppliedEffect,
   type AttackCategory,
   type Modifier,
   type ProficiencyTrack,
@@ -216,11 +217,15 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
 export function characterEffects(state: BuilderState): SheetEffects {
   const level = state.level || 1;
   const itemRules: RuleElement[][] = [];
+  const labels: string[] = [];
   for (const id of chosenFeatIds(state)) {
-    const rules = findFeat(id)?.rules;
-    if (Array.isArray(rules)) itemRules.push(rules as RuleElement[]);
+    const feat = findFeat(id);
+    if (feat && Array.isArray(feat.rules)) {
+      itemRules.push(feat.rules as RuleElement[]);
+      labels.push(feat.name);
+    }
   }
-  return collectSheetEffects(itemRules, { level });
+  return collectSheetEffects(itemRules, { level }, labels);
 }
 
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
@@ -358,6 +363,8 @@ export interface DerivedCharacter {
     classDC: ProficiencyRank;
     unarmoredDefense: ProficiencyRank;
   };
+  /** Feat-granted effects applied to this sheet, attributed to their source. */
+  effectNotes: AppliedEffect[];
 }
 
 /**
@@ -637,6 +644,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       classDC: classDCRank,
       unarmoredDefense,
     },
+    effectNotes: effects.applied,
   };
 }
 

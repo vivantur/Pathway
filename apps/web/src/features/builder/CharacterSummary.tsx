@@ -144,6 +144,25 @@ export function CharacterSummary() {
           </div>
         </div>
       )}
+
+      {d.effectNotes.length > 0 && (
+        <div>
+          <div className="mb-1 font-ui text-[10px] uppercase tracking-widest text-parchment/60">
+            Feat effects
+          </div>
+          <ul className="flex flex-col gap-1">
+            {d.effectNotes.map((n, i) => (
+              <li
+                key={`${n.source}-${n.stat}-${i}`}
+                className="flex items-baseline justify-between gap-2 rounded border border-gold-500/15 bg-midnight-800/40 px-2 py-1 font-ui text-xs"
+              >
+                <span className="text-gold-400/90">{n.source}</span>
+                <span className="text-right text-parchment/70">{n.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </aside>
   );
 }

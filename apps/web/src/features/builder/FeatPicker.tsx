@@ -2,8 +2,21 @@ import { useMemo, useState } from 'react';
 import type { Feat, Recommendation } from '@/features/builder/data';
 import { useApp } from '@/features/builder/appStore';
 import { useBuilder } from './store';
+import { plainText } from './contentText';
 import { checkFeat, prereqContext, type PrereqCheck } from './prerequisites';
 import { featThemes, THEMES, type Theme } from './featThemes';
+
+/** Action-cost glyph for a feat's activation, if any. */
+function ActionGlyph({ cost }: { cost?: string }) {
+  if (!cost) return null;
+  const label =
+    cost === '1' ? '◆' : cost === '2' ? '◆◆' : cost === '3' ? '◆◆◆' : cost === 'reaction' ? '⤾' : cost === 'free' ? '◇' : cost;
+  return (
+    <span className="shrink-0 font-ui text-xs text-gold-400/80" title={`${cost} action${cost === '1' ? '' : 's'}`}>
+      {label}
+    </span>
+  );
+}
 
 function FeatCard({
   feat,
@@ -39,13 +52,14 @@ function FeatCard({
       onClick={onSelect}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-display text-lg text-parchment">
+        <span className="flex items-baseline gap-1.5 font-display text-lg text-parchment">
           {reason && (
-            <span className="mr-1 text-gold-400" aria-hidden>
+            <span className="text-gold-400" aria-hidden>
               ★
             </span>
           )}
           {feat.name}
+          <ActionGlyph cost={feat.actionCost} />
         </span>
         {taken ? (
           <span className="rounded bg-midnight-600/70 px-1.5 py-0.5 font-ui text-[10px] uppercase tracking-wider text-parchment/60">
@@ -63,14 +77,28 @@ function FeatCard({
           )
         )}
       </div>
+      {feat.traits.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {feat.traits.slice(0, 5).map((t) => (
+            <span
+              key={t}
+              className="rounded bg-midnight-700/60 px-1.5 py-0.5 font-ui text-[10px] uppercase tracking-wider text-parchment/55"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
       {locked ? (
-        <p className="mt-1 font-ui text-sm leading-snug text-red-300/80">
+        <p className="mt-1.5 font-ui text-sm leading-snug text-red-300/80">
           Requires {prereq!.unmet.join('; ')}
         </p>
       ) : reason ? (
-        <p className="mt-1 font-ui text-sm leading-snug text-gold-400/90">{reason}</p>
+        <p className="mt-1.5 font-ui text-sm leading-snug text-gold-400/90">{reason}</p>
       ) : (
-        <p className="mt-1 font-ui text-sm leading-snug text-parchment/70">{feat.description}</p>
+        <p className="mt-1.5 line-clamp-4 font-ui text-sm leading-snug text-parchment/70">
+          {plainText(feat.description)}
+        </p>
       )}
     </button>
   );

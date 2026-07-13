@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { findClass, findSpell, getDataset, type Spell } from '@/features/builder/data';
 import { useBuilder } from '../store';
 import type { SpellTradition } from '../types';
@@ -116,7 +117,7 @@ function SpellSection({
         createPortal(
         <div
           role="tooltip"
-          className="pointer-events-none fixed z-50 w-80 rounded-xl border border-gold-500/40 bg-midnight-900/95 p-3 shadow-rune backdrop-blur"
+          className="pointer-events-none fixed z-50 max-h-[80vh] w-80 overflow-hidden rounded-xl border border-gold-500/40 bg-midnight-900/95 p-3 shadow-rune backdrop-blur"
           style={{ top: hover.top, left: hover.left }}
         >
           <div className="flex items-baseline justify-between gap-2">
@@ -137,18 +138,36 @@ function SpellSection({
               ))}
             </div>
           )}
-          {hover.spell.cast && (
-            <div className="mt-1 font-ui text-[10px] uppercase tracking-wider text-parchment/50">
-              Cast: {hover.spell.cast === 'reaction' ? 'reaction' : `${hover.spell.cast} action(s)`}
-            </div>
-          )}
-          <p className="mt-2 font-ui text-xs leading-relaxed text-parchment/85">
-            {hover.spell.description || 'No description available.'}
-          </p>
+          <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 font-ui text-[10px] text-parchment/70">
+            {hover.spell.cast && (
+              <SpellMeta label="Cast" value={hover.spell.cast === 'reaction' ? 'reaction' : `${hover.spell.cast} action(s)`} />
+            )}
+            {hover.spell.range && <SpellMeta label="Range" value={hover.spell.range} />}
+            {hover.spell.area && <SpellMeta label="Area" value={hover.spell.area} />}
+            {hover.spell.targets && <SpellMeta label="Targets" value={hover.spell.targets} />}
+            {hover.spell.defense && <SpellMeta label="Defense" value={hover.spell.defense} />}
+            {hover.spell.duration && <SpellMeta label="Duration" value={hover.spell.duration} />}
+          </dl>
+          <div className="mt-2 border-t border-gold-500/15 pt-2">
+            {hover.spell.description ? (
+              <GrimoireMarkdown>{hover.spell.description}</GrimoireMarkdown>
+            ) : (
+              <p className="font-ui text-xs text-parchment/60">No description available.</p>
+            )}
+          </div>
         </div>,
           document.body,
         )}
     </section>
+  );
+}
+
+function SpellMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="truncate">
+      <span className="uppercase tracking-wider text-parchment/45">{label}: </span>
+      <span className="text-parchment/85">{value}</span>
+    </div>
   );
 }
 

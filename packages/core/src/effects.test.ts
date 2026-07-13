@@ -106,6 +106,23 @@ describe("collectSheetEffects", () => {
     expect(e.skipped).toBe(2);
   });
 
+  it("attributes each applied effect to its source label", () => {
+    const e = collectSheetEffects(
+      [
+        [{ key: "FlatModifier", selector: "hp", value: "@actor.level" }],
+        [{ key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.thievery.rank", value: 1 }],
+        [{ key: "FlatModifier", selector: "perception", type: "circumstance", value: 2 }],
+      ],
+      { level: 5 },
+      ["Toughness", "Adroit Manipulation", "Superior Sight"],
+    );
+    expect(e.applied).toEqual([
+      { source: "Toughness", stat: "hp", summary: "+5 HP" },
+      { source: "Adroit Manipulation", stat: "thievery", summary: "Trained in Thievery" },
+      { source: "Superior Sight", stat: "perception", summary: "+2 circumstance to Perception" },
+    ]);
+  });
+
   it("grants a fixed-path skill rank via upgrade", () => {
     const e = collectSheetEffects(
       [[rule({ key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.thievery.rank", value: 1 })]],
