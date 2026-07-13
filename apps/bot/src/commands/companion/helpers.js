@@ -2,6 +2,13 @@ const { EmbedBuilder } = require('discord.js');
 
 const { fmt } = require('../../lib/format');
 const { companionDatabase } = require('../../reference/databases');
+// Shared PF2e companion engine — the SAME implementation the website uses, so an
+// animal companion's stats match on Discord and the site (fixes the old
+// approximation: young HP omitting Con, AC short the +2, damage dice not doubled).
+const {
+  scaleCompanion: coreScaleCompanion,
+  findCompanionType: coreFindCompanionType,
+} = require('@pathway/core');
 
 // ── Companion lookup ─────────────────────────────────────────────────────────
 function findCompanion(query) {
@@ -286,6 +293,37 @@ function scaleCompanion(comp, char) {
       overriddenFields: [], kind: 'familiar',
     };
   }
+  // Core-backed path: a catalog animal/mount the shared engine knows. Compute it
+  // with @pathway/core so Discord and the website agree exactly, then fall through
+  // to the shared override block below. Anything core doesn't have (imported
+  // bestiary blocks, bot-only catalog entries) uses the legacy math after this.
+  const coreType =
+    comp.baseType && comp.baseType !== 'custom' && !comp.customStats
+      ? coreFindCompanionType(comp.baseType)
+      : null;
+  if (coreType) {
+    const s = coreScaleCompanion(coreType, lvl, form);
+    const primary = s.attacks[0] ?? null;
+    const dmgText = (a) => `${a.damage}${a.damageType ? ` ${a.damageType}` : ''}`.trim();
+    const result = {
+      maxHp: s.maxHp,
+      ac: s.ac,
+      attackBonus: primary ? primary.attack : 0,
+      damageDice: primary ? primary.damage : '1d4',
+      damageType: primary ? primary.damageType : '',
+      damageBonus: primary ? primary.damageBonus : 0,
+      saves: { fort: s.saves.fortitude, ref: s.saves.reflex, will: s.saves.will },
+      form,
+      size: titleCaseSlug(s.size),
+      speed: s.speed,
+      primaryAttack: primary ? { name: primary.name, traits: primary.traits ?? [], damage: dmgText(primary) } : null,
+      abilities: { ...s.abilityMods },
+      attacks: s.attacks.map((a) => ({ name: a.name, traits: a.traits ?? [], damage: dmgText(a) })),
+      perception: s.perception,
+    };
+    return applyOverrides(result, comp, /* coreScaled */ true);
+  }
+
   let baseHp, abilities, attacks, size, speed;
   if (comp.baseType === 'custom' && comp.customStats) {
     // Use a per-level HP base (default 6, or customStats.hpPerLevel if set).
@@ -343,11 +381,17 @@ function scaleCompanion(comp, char) {
     }
   }
   const result = { maxHp, ac, attackBonus, damageDice, damageType, damageBonus: strMod, saves, form, size, speed, primaryAttack: primary, abilities, attacks };
+  // Legacy path derives Perception from proficiency + Wisdom (post-override wis).
+  return applyOverrides(result, comp, false, profBonus, abilities);
+}
 
-  // Apply per-companion overrides. Any field set to a non-null value in
-  // comp.overrides replaces the computed value. This lets players tweak
-  // stats (e.g. boost AC, change ability scores, fix odd HP totals) without
-  // losing the automatic scaling for untouched fields.
+// Apply per-companion overrides. Any field set to a non-null value in
+// comp.overrides replaces the computed value, letting players tweak stats (boost
+// AC, change ability scores, fix odd HP totals) without losing the automatic
+// scaling for untouched fields — and it's how web-edited stats reach the bot.
+// `coreScaled` builds already carry a final Perception; the legacy path recomputes
+// it from `profBonus` + the (post-override) Wisdom modifier.
+function applyOverrides(result, comp, coreScaled, profBonus, baseAbilities) {
   const ov = comp.overrides ?? {};
   if (ov.hp != null)           result.maxHp = ov.hp;
   if (ov.ac != null)           result.ac = ov.ac;
@@ -368,10 +412,10 @@ function scaleCompanion(comp, char) {
       if (ov.saves[key] != null) result.saves[key] = ov.saves[key];
     }
   }
-  // Compute a default Perception bonus from the final (post-override) wisdom
-  // + proficiency bonus by form. Then apply the override if set.
-  const finalWis = (ov.abilities && ov.abilities.wis != null) ? ov.abilities.wis : (abilities.wis ?? 0);
-  result.perception = profBonus + finalWis;
+  if (!coreScaled) {
+    const finalWis = (ov.abilities && ov.abilities.wis != null) ? ov.abilities.wis : (baseAbilities?.wis ?? 0);
+    result.perception = (profBonus ?? 0) + finalWis;
+  }
   if (ov.perception != null) result.perception = ov.perception;
 
   // Track which fields were overridden so the sheet can flag them visually
