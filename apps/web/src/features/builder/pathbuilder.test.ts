@@ -10,12 +10,18 @@
 // in-house character had no AC at all — the sheet rendered blank, the bot's `{{ac}}`
 // substituted a hardcoded 10, and combat saw null.
 
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { proficiencyBonus } from '@pathway/core';
-import { getDataset } from '@/features/builder/data';
+import { getDataset, loadDataset } from '@/features/builder/data';
 import { toPathbuilder } from '@/features/builder/pathbuilder';
 import { deriveCharacter } from '@/features/builder/rules';
 import { emptyBuilderState, type BuilderState } from '@/features/builder/types';
+
+// The content dataset is now lazily code-split; populate the singleton before
+// any test reads it through the synchronous getDataset()/find* lookups.
+beforeAll(async () => {
+  await loadDataset();
+});
 
 /** A level-1 fighter with nothing equipped, so AC is the unarmored case. */
 function unarmoredFighter(): BuilderState {
