@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RouteError } from '@/components/RouteError';
 import { RequireAuth } from '@/components/RequireAuth';
+import { RequireAdmin } from '@/components/RequireAdmin';
 import { LandingPage } from '@/routes/LandingPage';
 import { AboutPage } from '@/routes/AboutPage';
 import { RoadmapPage } from '@/routes/RoadmapPage';
@@ -13,6 +14,7 @@ import { CharacterBuilderPage } from '@/routes/CharacterBuilderPage';
 import { ContentGate } from '@/features/builder/ContentGate';
 import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
+import { AdminPage } from '@/routes/AdminPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -80,6 +82,19 @@ export const router = createBrowserRouter([
         // include a policy allowing `is_public = true` for anon reads.
         path: 'share/:shareId',
         element: <PublicSharePage />,
+      },
+      {
+        // Admin dashboard. Signed-in AND admin-flagged; the server RPCs it
+        // calls re-check is_admin(), so the guard is defence-in-depth, not the
+        // security boundary.
+        path: 'admin',
+        element: (
+          <RequireAuth>
+            <RequireAdmin>
+              <AdminPage />
+            </RequireAdmin>
+          </RequireAuth>
+        ),
       },
       { path: '*', element: <NotFoundPage /> },
     ],

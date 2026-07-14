@@ -125,7 +125,12 @@ export function resolveFallbackRow(
   return candidates.find((c) => suffixOf(c.name) == null) ?? candidates[0]!;
 }
 
-async function loadFallbackIndex(): Promise<FallbackIndex> {
+/**
+ * Load (and cache) the builder-dataset fallback index. Exported so tooling —
+ * e.g. the admin content-gap panel — can test name resolution against the exact
+ * same index the sheet uses.
+ */
+export async function loadFallbackIndex(): Promise<FallbackIndex> {
   if (cached) return cached;
   const [feats, versatile, ancestries] = await Promise.all([
     import('@/features/builder/data/feats.json').then((m) => m.default as unknown as Feat[]),
