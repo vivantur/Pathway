@@ -16,3 +16,4 @@ export * from './spells';
 export * from './content-store';
 export * from './ancestries';
 export * from './backgrounds';
+export * from './feats';

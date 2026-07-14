@@ -49,3 +49,7 @@ export * from './ancestry.js';
 // Background entity (third content slice). Restricted-choice + free boosts;
 // optional trained skill / lore / skill feat.
 export * from './background.js';
+
+// Feat entity (fourth content slice). Display/lookup scope; `rules` carried as
+// dormant effect feedstock for the future effect engine (never interpreted here).
+export * from './feat.js';
