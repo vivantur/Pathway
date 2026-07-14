@@ -24,7 +24,7 @@ Railway project → **Variables** tab and keep it open; you'll copy from there:
 | `CLIENT_ID` | `CLIENT_ID` |
 | `BOT_OWNER_ID` | `BOT_OWNER_ID` |
 | `SUPABASE_URL` | `SUPABASE_URL` |
-| `SUPABASE_SERVICE_KEY` | `SUPABASE_SERVICE_KEY` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `SUPABASE_SERVICE_ROLE_KEY` (the service_role key) |
 
 (Optional: `FEEDBACK_CHANNEL_ID` for the Contact-form notifications.)
 

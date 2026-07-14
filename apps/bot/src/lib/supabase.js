@@ -9,8 +9,10 @@ let _client = null;
 // without Supabase configured (local dev, Railway without vars set, etc.).
 function getSupabase() {
   if (_client) return _client;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Accept either spelling of each var so a value under any common name works
+  // (Railway used SUPABASE_SERVICE_ROLE_KEY; some setups use SUPABASE_SERVICE_KEY).
+  const url = process.env.SUPABASE_URL || process.env.SUPABASE_PROJECT_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
   _client = createClient(url, key, {
     auth: { persistSession: false },
