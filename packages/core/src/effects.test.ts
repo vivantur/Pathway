@@ -171,6 +171,46 @@ describe("collectSheetEffects", () => {
     expect(e.skipped).toBe(1);
   });
 
+  it("resolves a whole-path choice (Canny Acumen → chosen save rank)", () => {
+    // Canny Acumen's ActiveEffectLike path IS the placeholder; the stored choice
+    // is the full target path. Expert until 17th, master after.
+    const cannyAcumen: RuleElement[] = [
+      {
+        key: "ActiveEffectLike",
+        mode: "upgrade",
+        path: "{item|flags.system.rulesSelections.cannyAcumen}",
+        value: "ternary(gte(@actor.level,17),3,2)",
+      },
+    ];
+    const e = collectSheetEffects(
+      [cannyAcumen],
+      { level: 10 },
+      ["Canny Acumen"],
+      [{ cannyAcumen: "system.saves.will.rank" }],
+    );
+    expect(e.saveRanks.get("will")).toBe(2);
+    expect(e.skipped).toBe(0);
+  });
+
+  it("resolves an embedded skill-slug choice (Natural Skill → chosen skill)", () => {
+    const naturalSkill: RuleElement[] = [
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.skillOne}.rank", value: 1 },
+    ];
+    const e = collectSheetEffects([naturalSkill], { level: 1 }, ["Natural Skill"], [{ skillOne: "stealth" }]);
+    expect(e.skillRanks.get("stealth")).toBe(1);
+    expect(e.skipped).toBe(0);
+  });
+
+  it("skips a choice-driven path when the referenced flag has no stored selection", () => {
+    const naturalSkill: RuleElement[] = [
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.skillOne}.rank", value: 1 },
+    ];
+    // Wrong/empty flag map → unresolved → skipped, never guessed.
+    const e = collectSheetEffects([naturalSkill], { level: 1 }, ["Natural Skill"], [{ somethingElse: "stealth" }]);
+    expect(e.skillRanks.size).toBe(0);
+    expect(e.skipped).toBe(1);
+  });
+
   it("collects typed FlatModifiers per stat bucket", () => {
     const e = collectSheetEffects(
       [

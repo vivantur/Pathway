@@ -51,6 +51,15 @@ export interface BuilderState {
   /** Skills the player chose to train (class free picks + Intelligence bonus). */
   skillChoices: string[];
 
+  /**
+   * ChoiceSet selections for feats that ask the player to pick (Canny Acumen's
+   * save/Perception, Natural Skill's two skills, …). Keyed by feat id → a map of
+   * the feat's ChoiceSet flag name → the chosen value (a rank target path for
+   * whole-path choices, or a skill slug for embedded choices). Read by
+   * `characterEffects` to resolve `{item|flags.system.rulesSelections.<flag>}`.
+   */
+  featChoices: Record<string, Record<string, string>>;
+
   ancestryFeatId?: string;
   classFeatId?: string;
 
@@ -171,6 +180,7 @@ export function emptyBuilderState(): BuilderState {
     backgroundBoostChoices: [],
     freeBoosts: [null, null, null, null],
     skillChoices: [],
+    featChoices: {},
     languageChoices: [],
     progression: {},
     inventory: [],

@@ -42,6 +42,7 @@ interface BuilderStore {
   chooseClass: (id: string) => void;
   toggleSkill: (id: string, maxFree: number) => void;
   toggleLanguage: (name: string, max: number) => void;
+  setFeatChoice: (featId: string, flag: string, value: string) => void;
 
   setLevel: (level: number) => void;
   levelUp: () => void;
@@ -137,6 +138,17 @@ export const useBuilder = create<BuilderStore>((set) => ({
       else if (chosen.size < max) chosen.add(name);
       return { state: { ...s.state, languageChoices: [...chosen] } };
     }),
+
+  setFeatChoice: (featId, flag, value) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        featChoices: {
+          ...s.state.featChoices,
+          [featId]: { ...(s.state.featChoices?.[featId] ?? {}), [flag]: value },
+        },
+      },
+    })),
 
   setLevel: (level) =>
     set((s) => ({

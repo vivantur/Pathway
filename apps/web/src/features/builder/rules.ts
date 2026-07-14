@@ -9,6 +9,7 @@ import {
   type AbilityKey,
   type Armor,
   type Boost,
+  type Feat,
   type ProficiencyRank,
   type Shield,
   type Weapon,
@@ -218,14 +219,133 @@ export function characterEffects(state: BuilderState): SheetEffects {
   const level = state.level || 1;
   const itemRules: RuleElement[][] = [];
   const labels: string[] = [];
+  const choices: Record<string, string>[] = [];
   for (const id of chosenFeatIds(state)) {
     const feat = findFeat(id);
     if (feat && Array.isArray(feat.rules)) {
       itemRules.push(feat.rules as RuleElement[]);
       labels.push(feat.name);
+      choices.push(state.featChoices?.[id] ?? {});
     }
   }
-  return collectSheetEffects(itemRules, { level }, labels);
+  return collectSheetEffects(itemRules, { level }, labels, choices);
+}
+
+// --- choice-driven feats: player prompts ------------------------------------
+//
+// Some feats carry a ChoiceSet whose selection drives a proficiency-rank grant
+// (Canny Acumen picks a save/Perception; Natural Skill picks two skills). Core
+// resolves `{item|flags.system.rulesSelections.<flag>}` once the player's choice
+// is stored in `state.featChoices`. These helpers expose which prompts a feat
+// needs and turn a raw ChoiceSet into simple {value,label} options — scoped to
+// the rank paths the engine actually applies, so we never show a dropdown whose
+// selection would silently do nothing.
+
+export interface FeatChoiceOption {
+  value: string;
+  label: string;
+}
+export interface FeatChoicePrompt {
+  /** ChoiceSet flag the selection is stored under (e.g. `cannyAcumen`, `skillOne`). */
+  flag: string;
+  /** Short label for the dropdown ("Proficiency", "Skill", "Save"). */
+  prompt: string;
+  options: FeatChoiceOption[];
+}
+
+const CHOICE_SKILL_RANK = /^system\.skills\.([a-z]+)\.rank$/;
+const CHOICE_SAVE_RANK = /^system\.saves\.(fortitude|reflex|will)\.rank$/;
+const CHOICE_PERCEPTION_RANK = /^system\.(?:attributes\.)?perception\.rank$/;
+
+/** A whole-path choice value the effects engine can map to a sheet rank. */
+function mappableRankPath(p: unknown): p is string {
+  return (
+    typeof p === 'string' &&
+    (CHOICE_SKILL_RANK.test(p) || CHOICE_SAVE_RANK.test(p) || CHOICE_PERCEPTION_RANK.test(p))
+  );
+}
+
+/** Human label for a whole-path rank choice value. */
+function labelForRankPath(p: string): string {
+  const save = CHOICE_SAVE_RANK.exec(p);
+  if (save?.[1]) return titleCaseWord(save[1]);
+  const skill = CHOICE_SKILL_RANK.exec(p);
+  if (skill?.[1]) return titleCaseWord(skill[1]);
+  if (CHOICE_PERCEPTION_RANK.test(p)) return 'Perception';
+  return p;
+}
+
+const titleCaseWord = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+const SAVE_CHOICE_OPTIONS: FeatChoiceOption[] = [
+  { value: 'fortitude', label: 'Fortitude' },
+  { value: 'reflex', label: 'Reflex' },
+  { value: 'will', label: 'Will' },
+];
+
+function skillChoiceOptions(): FeatChoiceOption[] {
+  return getDataset().skills.map((s) => ({ value: s.id, label: s.name }));
+}
+
+/** True if some ActiveEffectLike rank path on `rules` references this flag. */
+function flagDrivesRank(rules: unknown[], flag: string): boolean {
+  const placeholder = `{item|flags.system.rulesSelections.${flag}}`;
+  return rules.some(
+    (r) =>
+      r != null &&
+      typeof r === 'object' &&
+      (r as { key?: unknown }).key === 'ActiveEffectLike' &&
+      typeof (r as { path?: unknown }).path === 'string' &&
+      ((r as { path: string }).path.includes(placeholder)),
+  );
+}
+
+/**
+ * The player prompts a feat needs, in order. Empty when the feat has no
+ * choice-driven rank grant this engine supports (its object-valued or
+ * out-of-scope ChoiceSets are omitted rather than shown as dead dropdowns).
+ */
+export function featChoicePrompts(feat: Feat | undefined): FeatChoicePrompt[] {
+  const rules = feat?.rules;
+  if (!feat || !Array.isArray(rules)) return [];
+  const prompts: FeatChoicePrompt[] = [];
+  for (const rule of rules) {
+    if (!rule || typeof rule !== 'object') continue;
+    const r = rule as { key?: unknown; flag?: unknown; choices?: unknown };
+    if (r.key !== 'ChoiceSet' || typeof r.flag !== 'string') continue;
+    if (!flagDrivesRank(rules, r.flag)) continue;
+
+    if (Array.isArray(r.choices)) {
+      // Explicit list (Canny Acumen): each value is a whole rank path. Keep only
+      // the ones the engine applies (saves + Perception), labelled from the path.
+      const options = r.choices
+        .map((c) => (c as { value?: unknown }).value)
+        .filter(mappableRankPath)
+        .map((v) => ({ value: v, label: labelForRankPath(v) }));
+      if (options.length) prompts.push({ flag: r.flag, prompt: 'Proficiency', options });
+    } else if (r.choices && typeof r.choices === 'object') {
+      const config = (r.choices as { config?: unknown }).config;
+      if (config === 'skills') prompts.push({ flag: r.flag, prompt: 'Skill', options: skillChoiceOptions() });
+      else if (config === 'saves') prompts.push({ flag: r.flag, prompt: 'Save', options: SAVE_CHOICE_OPTIONS });
+      // Other configs (weapons, itemType filters, compound clan-lore) are out of
+      // scope for the rank engine — omitted, not shown as a no-op dropdown.
+    }
+  }
+  return prompts;
+}
+
+/** Every chosen feat that still needs one or more player choices, with prompts. */
+export function pendingFeatChoices(
+  state: BuilderState,
+): { feat: Feat; prompts: FeatChoicePrompt[] }[] {
+  const out: { feat: Feat; prompts: FeatChoicePrompt[] }[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    const prompts = featChoicePrompts(feat);
+    if (prompts.length) out.push({ feat, prompts });
+  }
+  return out;
 }
 
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */

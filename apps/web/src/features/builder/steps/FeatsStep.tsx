@@ -10,6 +10,7 @@ import { useBuilder } from '../store';
 import { chosenFeatIds } from '../rules';
 import { plainText } from '../contentText';
 import { FeatPicker } from '../FeatPicker';
+import { FeatChoicesPanel } from '../FeatChoicesPanel';
 
 export function FeatsStep() {
   const state = useBuilder((s) => s.state);
@@ -82,6 +83,8 @@ export function FeatsStep() {
           </div>
         </section>
       )}
+
+      <FeatChoicesPanel />
     </div>
   );
 }

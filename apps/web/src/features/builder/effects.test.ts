@@ -5,8 +5,8 @@
 // core and reflects the result on the derived sheet, against the real dataset.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadDataset } from '@/features/builder/data';
-import { characterEffects, deriveCharacter } from './rules';
+import { findFeat, loadDataset } from '@/features/builder/data';
+import { characterEffects, deriveCharacter, featChoicePrompts } from './rules';
 import { emptyBuilderState, type BuilderState } from './types';
 
 beforeAll(async () => {
@@ -62,6 +62,37 @@ describe('feat effects on the derived sheet', () => {
       c.weapons.find((w) => w.id === 'longsword')!.damageMod;
     expect(dmg(after) - dmg(before)).toBe(2);
     expect(after.effectNotes.some((n) => n.source === 'Weapon Specialization')).toBe(true);
+  });
+
+  it('applies a choice-driven feat once the player stores a selection (Canny Acumen)', () => {
+    const noChoice = characterEffects({ ...fighter(), classFeatId: 'canny-acumen' });
+    expect(noChoice.saveRanks.size).toBe(0);
+    expect(noChoice.skipped).toBeGreaterThanOrEqual(1);
+
+    const chosen = characterEffects({
+      ...fighter(),
+      classFeatId: 'canny-acumen',
+      featChoices: { 'canny-acumen': { cannyAcumen: 'system.saves.will.rank' } },
+    });
+    // Canny Acumen grants expert (rank 2) until 17th level.
+    expect(chosen.saveRanks.get('will')).toBe(2);
+  });
+
+  it('surfaces the right prompts/options for choice-driven feats', () => {
+    const canny = featChoicePrompts(findFeat('canny-acumen'));
+    expect(canny).toHaveLength(1);
+    expect(canny[0]!.flag).toBe('cannyAcumen');
+    // Three saves + Perception are mappable; the rest of the ChoiceSet is dropped.
+    expect(canny[0]!.options.map((o) => o.label).sort()).toEqual([
+      'Fortitude',
+      'Perception',
+      'Reflex',
+      'Will',
+    ]);
+
+    const natural = featChoicePrompts(findFeat('natural-skill'));
+    expect(natural).toHaveLength(2); // skillOne + skillTwo
+    expect(natural.every((p) => p.options.length === 16)).toBe(true);
   });
 
   it('leaves a featless build unchanged', () => {

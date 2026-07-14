@@ -333,12 +333,17 @@ const PERCEPTION_RANK_PATH = /^system\.(?:attributes\.)?perception\.rank$/;
  * Resolve every in-scope sheet effect from a set of chosen items' rule arrays.
  * `itemRules` is one rule-element array per chosen feat/feature; `labels[i]` is
  * the display name of item `i` (for the attributed `applied` list — pass the
- * feat/feature names). Labels are optional so existing callers/tests still work.
+ * feat/feature names). `choices[i]` maps a ChoiceSet flag name to the player's
+ * stored selection for item `i` (e.g. `{ cannyAcumen: "system.saves.will.rank" }`
+ * or `{ skillOne: "stealth" }`), used to resolve `{item|flags.system.
+ * rulesSelections.<flag>}` placeholders in an ActiveEffectLike path. All three
+ * trailing args are optional so existing callers/tests still work.
  */
 export function collectSheetEffects(
   itemRules: RuleElement[][],
   ctx: EffectContext,
   labels: string[] = [],
+  choices: Record<string, string>[] = [],
 ): SheetEffects {
   const effects: SheetEffects = {
     hpBonus: 0,
@@ -360,8 +365,11 @@ export function collectSheetEffects(
     else effects.statModifiers.set(bucket, [mod]);
   };
 
+  const CHOICE_PLACEHOLDER = /\{item\|flags\.system\.rulesSelections\.([^}]+)\}/g;
+
   itemRules.forEach((rules, itemIndex) => {
     const source = labels[itemIndex] ?? "";
+    const itemChoices = choices[itemIndex] ?? {};
     const note = (stat: string, summary: string) => effects.applied.push({ source, stat, summary });
     if (!Array.isArray(rules)) return;
     for (const rule of rules) {
@@ -411,15 +419,28 @@ export function collectSheetEffects(
 
       // --- proficiency rank: fixed-path ActiveEffectLike upgrade/override ---
       if (rule.key === "ActiveEffectLike" && typeof rule.path === "string") {
-        const path = rule.path;
+        let path = rule.path;
+        // Resolve choice-driven paths (`{item|flags.system.rulesSelections.<flag>}`)
+        // by substituting the player's stored selection for each flag. Skip the
+        // rule entirely if any referenced flag has no stored choice yet.
+        if (path.includes("{item")) {
+          let missing = false;
+          path = path.replace(CHOICE_PLACEHOLDER, (_m, flag: string) => {
+            const sel = itemChoices[flag];
+            if (typeof sel !== "string" || sel === "") {
+              missing = true;
+              return "";
+            }
+            return sel;
+          });
+          if (missing) {
+            effects.skipped += 1;
+            continue;
+          }
+        }
         if (!/\.rank$/.test(path)) continue;
         const mode = rule.mode;
         if (mode !== "upgrade" && mode !== "override") continue;
-        // Choice-driven paths (`{item|…}`) need a stored selection we don't have yet.
-        if (path.includes("{item")) {
-          effects.skipped += 1;
-          continue;
-        }
         if (isConditional(rule)) {
           effects.skipped += 1;
           continue;
