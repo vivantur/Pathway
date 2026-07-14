@@ -45,3 +45,7 @@ export * from './spell.js';
 // (own `ancestryId`; empty = versatile). Consolidates the web builder's
 // Ancestry/Heritage interfaces and adds senses + special abilities.
 export * from './ancestry.js';
+
+// Background entity (third content slice). Restricted-choice + free boosts;
+// optional trained skill / lore / skill feat.
+export * from './background.js';
