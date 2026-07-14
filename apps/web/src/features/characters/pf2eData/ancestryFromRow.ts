@@ -5,8 +5,10 @@
 import {
   coerceAncestry,
   coerceBackground,
+  coerceFeat,
   type Ancestry,
   type Background,
+  type Feat,
 } from '@pathway/core';
 
 export function coerceAncestryRow(row: unknown): Ancestry | null {
@@ -17,6 +19,11 @@ export function coerceAncestryRow(row: unknown): Ancestry | null {
 export function coerceBackgroundRow(row: unknown): Background | null {
   const r = coerceBackground(row);
   return r.ok ? r.background : null;
+}
+
+export function coerceFeatRow(row: unknown): Feat | null {
+  const r = coerceFeat(row);
+  return r.ok ? r.feat : null;
 }
 
 /** "Player Core" + page → "Player Core pg. 43". */

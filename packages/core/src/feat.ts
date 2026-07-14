@@ -21,7 +21,8 @@ export type FeatType = z.infer<typeof featTypeSchema>;
 
 export const featSchema = z.object({
   ...contentBaseSchema.shape,
-  level: z.number().int().min(1).max(20),
+  /** 1–20 for normal feats; some data stores level-0 feat-likes (e.g. deity boons). */
+  level: z.number().int().min(0).max(20),
   featType: featTypeSchema.optional(),
   /** Reused from the spell schema — a feat's action cost is the same concept. */
   actionCost: actionCostSchema.optional(),

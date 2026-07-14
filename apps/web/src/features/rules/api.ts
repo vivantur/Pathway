@@ -8,6 +8,7 @@ import {
 import {
   coerceAncestryRow,
   coerceBackgroundRow,
+  coerceFeatRow,
   sourceLabel,
 } from '@/features/characters/pf2eData/ancestryFromRow';
 import type { RuleCategoryId, RuleEntry } from './types';
@@ -186,23 +187,50 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
     label: 'Feats',
     table: 'feats',
     hasLevel: true,
-    map: (r) => ({
-      id: String(r.id),
-      name: str(r.name) ?? 'Unknown',
-      category: 'feats',
-      level: num(r.level),
-      rarity: str(r.rarity),
-      traits: arr(r.traits),
-      actionCost: str(r.action_cost),
-      prerequisites: str(r.prerequisites),
-      trigger: str(r.trigger),
-      description: str(r.description),
-      aonUrl: str(r.aon_url),
-      meta: [
-        str(r.feat_type) ? { label: 'Type', value: str(r.feat_type)! } : null,
-        str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
-      ].filter(Boolean) as RuleEntry['meta'],
-    }),
+    // Interpretation via core's coerceFeat; an uncoercible row falls back to the
+    // raw read. The `rules` effect feedstock is carried by core but not shown here.
+    map: (r) => {
+      const f = coerceFeatRow(r);
+      if (!f) {
+        return {
+          id: String(r.id),
+          name: str(r.name) ?? 'Unknown',
+          category: 'feats',
+          level: num(r.level),
+          rarity: str(r.rarity),
+          traits: arr(r.traits),
+          actionCost: str(r.action_cost),
+          prerequisites: str(r.prerequisites),
+          trigger: str(r.trigger),
+          description: str(r.description),
+          aonUrl: str(r.aon_url),
+          meta: [
+            str(r.feat_type) ? { label: 'Type', value: str(r.feat_type)! } : null,
+            str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
+          ].filter(Boolean) as RuleEntry['meta'],
+        };
+      }
+      return {
+        id: String(r.id),
+        name: f.name,
+        category: 'feats',
+        level: f.level,
+        rarity: f.rarity,
+        traits: f.traits,
+        actionCost: formatActionCost(f.actionCost),
+        prerequisites: f.prerequisites ?? null,
+        trigger: f.trigger ?? null,
+        description: f.description,
+        aonUrl: str(r.aon_url),
+        meta: [
+          f.featType ? { label: 'Type', value: capitalize(f.featType) } : null,
+          f.access ? { label: 'Access', value: f.access } : null,
+          f.requirements ? { label: 'Requirements', value: f.requirements } : null,
+          f.frequency ? { label: 'Frequency', value: f.frequency } : null,
+          { label: 'Source', value: sourceLabel(f.source) },
+        ].filter(Boolean) as RuleEntry['meta'],
+      };
+    },
   },
   {
     id: 'spells',

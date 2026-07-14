@@ -143,6 +143,14 @@ describe('coerceFeat — dormant rules feedstock + rejections', () => {
     expect(f.rules).toEqual([{ key: 'FlatModifier', selector: 'hp', value: '@actor.level', type: 'untyped' }]);
   });
 
+  it('coerces a level-0 feat-like (some data stores deity boons at level 0)', () => {
+    const r = coerceFeat({
+      name: 'Blessing of the Five', level: 0, traits: 'General', source: 'Book pg. 1', description: 'x',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.feat.level).toBe(0);
+  });
+
   it('rejects a feat with no name', () => {
     const r = coerceFeat({ level: 1, traits: 'General', description: 'x' });
     expect(r.ok).toBe(false);
