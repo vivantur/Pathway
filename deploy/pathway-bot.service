@@ -1,0 +1,37 @@
+# Pathway Discord bot — systemd service.
+# Install steps are in docs/server-setup.md. This runs the bot as a dedicated
+# unprivileged user, restarts it on crash (capped so a crash-loop can't hammer
+# Discord's rate limits), and starts it on boot.
+#
+# Copy to /etc/systemd/system/pathway-bot.service, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now pathway-bot
+#   journalctl -u pathway-bot -f      # follow logs
+
+[Unit]
+Description=Pathway Discord bot
+After=network-online.target
+Wants=network-online.target
+# If it fails 5 times within 5 minutes, stop and stay stopped instead of
+# crash-looping. The login path is rate-limit-aware (it stays idle on a 429
+# rather than exiting), so this mainly guards against genuine crashes.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pathway
+Group=pathway
+# The bot loads apps/bot/.env via dotenv relative to its working directory,
+# so keep secrets in that file (chmod 600) — no EnvironmentFile needed.
+WorkingDirectory=/opt/pathway/apps/bot
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=10
+# Light hardening (safe defaults). Stricter sandboxing (ProtectSystem=strict +
+# ReadWritePaths) can be added later once you've confirmed nothing needs it.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
