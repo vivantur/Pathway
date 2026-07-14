@@ -474,10 +474,23 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
 
   // ── Typed table: spells ──────────────────────────────────────────────────
   try {
-    const spellRows = await fetchAllRows('spells', 'spell_metadata');
+    // Also pull the top-level `associations` column (populated by the AoN import)
+    // and merge it into each spell object so /spell can show mysteries/bloodlines/
+    // deities/domains. Fall back to spell_metadata-only if the column isn't there
+    // yet, so a missing migration can never break spell loading.
+    let spellRows;
+    try {
+      spellRows = await fetchAllRows('spells', 'spell_metadata, associations');
+    } catch {
+      spellRows = await fetchAllRows('spells', 'spell_metadata');
+    }
     if (spellRows.length > 0) {
       const homebrew = dbs.spellDatabase.filter(s => s._homebrew);
-      const fresh = spellRows.map(r => r.spell_metadata).filter(s => s && typeof s.name === 'string' && s.name.length > 0);
+      const fresh = spellRows
+        .map(r => (r.spell_metadata && r.associations
+          ? { ...r.spell_metadata, associations: r.associations }
+          : r.spell_metadata))
+        .filter(s => s && typeof s.name === 'string' && s.name.length > 0);
       dbs.spellDatabase.splice(0, dbs.spellDatabase.length, ...fresh, ...homebrew);
       console.log(`[startup] spells: ${dbs.spellDatabase.length}`);
     }
