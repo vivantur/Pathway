@@ -127,3 +127,69 @@ export async function removeMember(campaignId: string, userId: string): Promise<
     .eq('user_id', userId);
   if (error) throw error;
 }
+
+// --- session journal -------------------------------------------------------
+
+export interface JournalEntry {
+  id: string;
+  campaign_id: string;
+  author_user_id: string | null;
+  title: string | null;
+  body: string;
+  session_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JournalInput {
+  title?: string;
+  body: string;
+  sessionDate?: string; // YYYY-MM-DD
+}
+
+export async function fetchJournal(campaignId: string): Promise<JournalEntry[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('campaign_journal')
+    .select('id, campaign_id, author_user_id, title, body, session_date, created_at, updated_at')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as JournalEntry[];
+}
+
+export async function postJournal(
+  campaignId: string,
+  authorUserId: string,
+  input: JournalInput,
+): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_journal').insert({
+    campaign_id: campaignId,
+    author_user_id: authorUserId,
+    title: input.title?.trim() || null,
+    body: input.body.trim(),
+    session_date: input.sessionDate || null,
+  });
+  if (error) throw error;
+}
+
+export async function updateJournalEntry(id: string, input: JournalInput): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('campaign_journal')
+    .update({
+      title: input.title?.trim() || null,
+      body: input.body.trim(),
+      session_date: input.sessionDate || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteJournalEntry(id: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_journal').delete().eq('id', id);
+  if (error) throw error;
+}

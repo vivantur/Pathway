@@ -13,6 +13,7 @@ import {
   useUpdateCampaign,
 } from '@/features/campaigns/useCampaigns';
 import type { PartyMember } from '@/features/campaigns/api';
+import { JournalSection } from '@/features/campaigns/JournalSection';
 
 /** A campaign dashboard: the party at a glance + membership + GM controls. */
 export function CampaignPage() {
@@ -94,6 +95,14 @@ export function CampaignPage() {
       {myMembership && (
         <MyCharacterPanel campaignId={campaign.id} current={myMembership.char_key} />
       )}
+
+      <JournalSection
+        campaignId={campaign.id}
+        isGm={isGm}
+        authorName={(uid) =>
+          (party ?? []).find((m) => m.user_id === uid)?.username ?? 'Unknown'
+        }
+      />
     </div>
   );
 }

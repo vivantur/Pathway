@@ -3,13 +3,18 @@ import { useAuth } from '@/features/auth/useAuth';
 import {
   createCampaign,
   deleteCampaign,
+  deleteJournalEntry,
   fetchCampaign,
+  fetchJournal,
   fetchMyCampaigns,
   fetchParty,
   joinCampaign,
+  postJournal,
   removeMember,
   setMyCharacter,
   updateCampaign,
+  updateJournalEntry,
+  type JournalInput,
 } from './api';
 
 export function useMyCampaigns() {
@@ -93,5 +98,40 @@ export function useRemoveMember(campaignId: string) {
       qc.invalidateQueries({ queryKey: ['campaign-party', campaignId] });
       qc.invalidateQueries({ queryKey: ['my-campaigns'] });
     },
+  });
+}
+
+// --- journal ---------------------------------------------------------------
+
+export function useJournal(campaignId: string | undefined) {
+  return useQuery({
+    queryKey: ['campaign-journal', campaignId],
+    queryFn: () => fetchJournal(campaignId!),
+    enabled: !!campaignId,
+  });
+}
+
+export function usePostJournal(campaignId: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: JournalInput) => postJournal(campaignId, user!.id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-journal', campaignId] }),
+  });
+}
+
+export function useUpdateJournal(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: JournalInput }) => updateJournalEntry(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-journal', campaignId] }),
+  });
+}
+
+export function useDeleteJournal(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteJournalEntry(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-journal', campaignId] }),
   });
 }
