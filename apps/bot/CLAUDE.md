@@ -244,6 +244,9 @@ SUPABASE_SERVICE_KEY     — Service role key (bypasses RLS — never expose to 
 CLIENT_ID                — Discord application ID
 BOT_OWNER_ID             — Discord user ID with admin commands
 DEV_GUILD_ID             — Guild for `npm run deploy:guild` testing
+FEEDBACK_CHANNEL_ID      — (optional) channel to post website Contact-form
+                           submissions into; falls back to DMing BOT_OWNER_ID.
+                           See src/notifiers/feedback.js.
 ```
 
 Stored in `Pathwayv2/.env` (not committed). `dotenv` loads it at startup.

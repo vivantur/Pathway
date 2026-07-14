@@ -66,3 +66,20 @@ drop policy if exists "Admins delete feedback" on public.feedback;
 create policy "Admins delete feedback"
   on public.feedback for delete to authenticated
   using (public.is_admin());
+
+-- Realtime: the bot subscribes to INSERTs here to push a Discord notification
+-- on each new submission. REPLICA IDENTITY FULL keeps future UPDATE/DELETE
+-- payloads complete; INSERTs already carry the full new row.
+alter table public.feedback replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'feedback'
+  ) then
+    alter publication supabase_realtime add table public.feedback;
+  end if;
+end $$;

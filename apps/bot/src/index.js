@@ -35,6 +35,7 @@ const bagState = require('./state/bags');
 const companionState = require('./state/companions');
 const characterState = require('./state/characters');
 const xpLogState = require('./state/xpLog');
+const feedbackNotifier = require('./notifiers/feedback');
 const {
   computeCharMaxHp, getCharacterHp, setCharacterHp,
   getCharacterXp, setCharacterXp,
@@ -1054,6 +1055,10 @@ client.once('clientReady', async () => {
     // Companions don't own their own cache — they patch the shared
     // characters cache (owned by state/characters as of Phase 2) in place.
     companionState.subscribe(sb, () => characterState.getAll());
+    // Not a state cache: bridge new website feedback rows to a Discord
+    // notification (channel or owner DM). Holds no cache, so it's outside the
+    // subscribe-before-restore contract.
+    feedbackNotifier.subscribe(sb, client);
   }
 
   const restored = await restoreAllFromSupabase();

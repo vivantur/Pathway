@@ -5,6 +5,7 @@ import { useAdminCharacters, useAdminStats, useAdminUsers } from '@/features/adm
 import type { AdminCharacterRow, AdminUserRow } from '@/features/admin/api';
 import { useFeedbackInbox, useUpdateFeedbackStatus } from '@/features/feedback/useFeedback';
 import type { FeedbackRow, FeedbackStatus } from '@/features/feedback/api';
+import { isSchemaNotReady } from '@/features/characters/errors';
 import {
   loadFallbackIndex,
   resolveFallbackRow,
@@ -64,6 +65,13 @@ function QueryState({
 }) {
   if (isLoading) return <Spinner label={label} />;
   if (error) {
+    if (isSchemaNotReady(error)) {
+      return (
+        <p className="rounded-md border border-arcane/25 bg-arcane/5 p-3 text-sm text-silver/75">
+          This table isn&apos;t set up yet — apply the pending Supabase migration, then reload.
+        </p>
+      );
+    }
     return (
       <p className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
         {error instanceof Error ? error.message : 'Failed to load.'}
