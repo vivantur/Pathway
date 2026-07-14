@@ -40,3 +40,8 @@ export * from './content.js';
 // the adapter that ingests messy DB/import rows into it. First content slice;
 // replaces the duplicated spell readers in apps/web and apps/bot.
 export * from './spell.js';
+
+// Ancestry + heritage entities (second content slice). Heritages are standalone
+// (own `ancestryId`; empty = versatile). Consolidates the web builder's
+// Ancestry/Heritage interfaces and adds senses + special abilities.
+export * from './ancestry.js';

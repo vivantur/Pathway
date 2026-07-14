@@ -50,6 +50,23 @@ export const contentBaseSchema = z.object({
 });
 export type ContentBase = z.infer<typeof contentBaseSchema>;
 
+/** The six PF2e ability scores, by short key. Shared by ancestries/backgrounds/classes. */
+export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+export const abilitySchema = z.enum(ABILITIES);
+export type Ability = z.infer<typeof abilitySchema>;
+
+/**
+ * A single ability-boost slot: a fixed ability, `'free'` (player picks any), or a
+ * restricted choice among the listed abilities (array of 2+). Shared by ancestries
+ * and backgrounds.
+ */
+export const boostSchema = z.union([
+  abilitySchema,
+  z.literal('free'),
+  z.array(abilitySchema).min(2),
+]);
+export type Boost = z.infer<typeof boostSchema>;
+
 /**
  * Slugify a name into a stable id: lowercase, punctuation → underscores.
  * Mirrors the bot's existing `toSlug` so ids line up across the two importers.
