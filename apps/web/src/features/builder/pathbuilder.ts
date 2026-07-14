@@ -107,6 +107,7 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   };
   // Level 1 (from the creation steps).
   push(state.ancestryFeatId, 'Ancestry', 1);
+  push(state.ancestryParagonFeatId, 'Ancestry', 1); // Ancestry Paragon bonus feat
   push(state.classFeatId, 'Class', 1);
   if (background?.skillFeat) push(background.skillFeat, 'Skill', 1);
   // Levels 2–20 (from the progression record).

@@ -61,6 +61,8 @@ export interface BuilderState {
   featChoices: Record<string, Record<string, string>>;
 
   ancestryFeatId?: string;
+  /** Second level-1 ancestry feat granted by the Ancestry Paragon variant. */
+  ancestryParagonFeatId?: string;
   classFeatId?: string;
 
   /** Additional languages chosen (Int-gated + ancestry bonus). */

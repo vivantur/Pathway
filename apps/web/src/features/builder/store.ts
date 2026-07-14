@@ -91,6 +91,7 @@ export const useBuilder = create<BuilderStore>((set) => ({
           heritageId: undefined, // reset heritage when ancestry changes
           ancestryBoostChoices: Array(slots).fill(null),
           ancestryFeatId: undefined,
+          ancestryParagonFeatId: undefined,
           languageChoices: [],
         },
       };

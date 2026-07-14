@@ -7,7 +7,8 @@ import {
   findClass,
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
-import { chosenFeatIds } from '../rules';
+import { chosenFeatIds, opt } from '../rules';
+import { OPT } from '../options/config';
 import { plainText } from '../contentText';
 import { FeatPicker } from '../FeatPicker';
 import { FeatChoicesPanel } from '../FeatChoicesPanel';
@@ -56,6 +57,28 @@ export function FeatsStep() {
           takenIds={taken}
         />
       </section>
+
+      {opt(state, OPT.ancestryParagon) && (
+        <section className="panel flex flex-col gap-4 p-5">
+          <div>
+            <h4 className="font-display text-lg text-gold-400">
+              Ancestry Paragon Feat{ancestry ? ` — ${ancestry.name}` : ''}
+            </h4>
+            <p className="font-ui text-sm text-parchment/70">
+              A bonus 1st-level ancestry feat from the Ancestry Paragon variant rule (you gain
+              further bonus ancestry feats at levels 3, 7, 11, 15, and 19 in Advancement).
+            </p>
+          </div>
+          <FeatPicker
+            feats={ancestryFeats}
+            recommendations={[]}
+            selectedId={state.ancestryParagonFeatId}
+            onSelect={(id) => update({ ancestryParagonFeatId: id })}
+            emptyLabel="Choose an ancestry first."
+            takenIds={taken}
+          />
+        </section>
+      )}
 
       <section className="panel flex flex-col gap-4 p-5">
         <div>

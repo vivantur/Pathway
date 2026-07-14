@@ -62,7 +62,13 @@ export function opt(state: BuilderState, id: string): boolean {
 // Level 1's class feat + ancestry feat + skill feat live in the creation steps.
 const CLASS_FEAT_LEVELS = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 const ANCESTRY_FEAT_LEVELS = [1, 5, 9, 13, 17];
-const ANCESTRY_PARAGON_LEVELS = [1, 3, 7, 11, 15, 19];
+// Ancestry Paragon ADDS bonus ancestry feats (1, 3, 7, 11, 15, 19) ON TOP of the
+// normal schedule (1, 5, 9, 13, 17) — so an ancestry feat lands at every odd
+// level. Their union (below) drives the Advancement step for levels 2+. Level 1
+// grants TWO ancestry feats: the normal creation feat plus a paragon bonus,
+// which is stored separately (`ancestryParagonFeatId`) and picked in the Feats
+// step, since the boolean-per-level slot model can't represent two at once.
+const ANCESTRY_PARAGON_LEVELS = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
 const SKILL_FEAT_LEVELS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 const GENERAL_FEAT_LEVELS = [3, 7, 11, 15, 19];
 const SKILL_INCREASE_LEVELS = [3, 5, 7, 9, 11, 13, 15, 17, 19];
@@ -454,6 +460,7 @@ export function chosenFeatIds(state: BuilderState): Set<string> {
     if (id) ids.add(id);
   };
   add(state.ancestryFeatId);
+  add(state.ancestryParagonFeatId);
   add(state.classFeatId);
   const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
   add(bg?.skillFeat);
