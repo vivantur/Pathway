@@ -9,9 +9,11 @@ import { emptyBuilderState, type BuilderState } from '@/features/builder/types';
 import type { PathbuilderBuild } from './pathbuilder';
 import * as pb from './pathbuilder';
 import * as sheetStats from './sheet/sheetStats';
+import { loadTraitIndex } from './sheet/pathbuilderTraits';
 
 beforeAll(async () => {
   await loadDataset();
+  await loadTraitIndex();
 });
 
 function fighterState(): BuilderState {
@@ -56,16 +58,42 @@ describe('sheetStats', () => {
     expect(sheetStats.resistances(build).find((r) => r.type === 'fire')?.value).toBe(2);
   });
 
-  it('falls back to pathbuilder math when there is no _pathwayBuild', () => {
+  it('falls back to pathbuilder math for base stats when there is no _pathwayBuild', () => {
     const build = {
       level: 1,
+      ancestry: 'Human', // normal vision, no ancestry senses
       abilities: { con: 12 },
       attributes: { ancestryhp: 8, classhp: 10, bonushp: 0, bonushpPerLevel: 0 },
     } as unknown as PathbuilderBuild;
 
     expect(sheetStats.isCoreDerived(build)).toBe(false);
     expect(sheetStats.maxHp(build)).toBe(pb.maxHp(build));
-    expect(sheetStats.senses(build)).toEqual([]);
+  });
+
+  it('enriches an IMPORTED character with senses & gap-filling resistances (by name)', () => {
+    const build = {
+      level: 5,
+      ancestry: 'Dwarf',
+      heritage: 'Forge Dwarf',
+    } as unknown as PathbuilderBuild;
+
+    // Base stats stay on Pathbuilder — we do NOT recompute them.
+    expect(sheetStats.isCoreDerived(build)).toBe(false);
+    // But senses come from the ancestry/heritage (Pathbuilder doesn't export them).
+    expect(sheetStats.senses(build).some((s) => s.type === 'darkvision')).toBe(true);
+    // Pathbuilder listed no resistances → core fills the Forge Dwarf fire one.
+    expect(sheetStats.resistances(build).find((r) => r.type === 'fire')?.value).toBe(2);
+  });
+
+  it('defers entirely to Pathbuilder resistances when the import already lists them', () => {
+    const build = {
+      level: 5,
+      ancestry: 'Dwarf',
+      heritage: 'Forge Dwarf',
+      resistances: ['fire 10'], // pathbuilder's own list is authoritative
+    } as unknown as PathbuilderBuild;
+
+    // No duplication — core adds nothing when Pathbuilder already has resistances.
     expect(sheetStats.resistances(build)).toEqual([]);
   });
 });

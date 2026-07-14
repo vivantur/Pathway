@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { safeHttpUrl } from "@/lib/safeUrl";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isDatasetLoaded, loadDataset } from '@/features/builder/data';
+import { loadTraitIndex } from './pathbuilderTraits';
 import { PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { errorMessage } from '@/features/characters/errorMessage';
 import {
@@ -128,6 +129,16 @@ export function Sheet({
     queryKey: ['builder-dataset-for-sheet'],
     queryFn: loadDataset,
     enabled: hasEmbeddedBuild && !isDatasetLoaded(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  // Imported / bot characters have no embedded build — load just the small
+  // ancestry+heritage index so `sheetStats` can still show their senses &
+  // (gap-filling) resistances without recomputing any base numbers.
+  useQuery({
+    queryKey: ['sheet-trait-index'],
+    queryFn: loadTraitIndex,
+    enabled: !hasEmbeddedBuild,
     staleTime: Infinity,
     gcTime: Infinity,
   });

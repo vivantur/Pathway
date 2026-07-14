@@ -19,7 +19,8 @@ import { deriveCharacter, type DerivedCharacter } from '@/features/builder/rules
 import type { BuilderState } from '@/features/builder/types';
 import type { GrantedResistance, GrantedSense } from '@pathway/core';
 import * as pb from '../pathbuilder';
-import type { PathbuilderBuild } from '../pathbuilder';
+import { normalizeDefenseList, type PathbuilderBuild } from '../pathbuilder';
+import { pathbuilderTraits } from './pathbuilderTraits';
 
 // deriveCharacter is a few ms of work; memoize per build object so repeated
 // reads across the sheet's stat cards don't recompute. `build` is a stable
@@ -105,12 +106,29 @@ export function skillBonus(build: PathbuilderBuild, skillName: string): number {
   return pb.skillBonus(build, skillName);
 }
 
-/** Special senses (darkvision, scent, …) — empty for non-site-built characters. */
+/**
+ * Special senses (darkvision, scent, …). Site-built characters use the full
+ * core derivation; imported characters get ancestry/heritage senses resolved by
+ * name (Pathbuilder doesn't reliably export senses). Empty until data loads.
+ */
 export function senses(build: PathbuilderBuild): GrantedSense[] {
-  return derived(build)?.senses ?? [];
+  const d = derived(build);
+  if (d) return d.senses;
+  return pathbuilderTraits(build)?.senses ?? [];
 }
 
-/** Damage resistances, resolved at the character's level — empty when unavailable. */
+/**
+ * Damage resistances, resolved at the character's level. Site-built → core.
+ * Imported → core-derived ancestry/heritage resistances, but ONLY when
+ * Pathbuilder didn't export any of its own (its list stays authoritative, and
+ * we never duplicate it). Empty until data loads.
+ */
 export function resistances(build: PathbuilderBuild): GrantedResistance[] {
-  return derived(build)?.resistances ?? [];
+  const d = derived(build);
+  if (d) return d.resistances;
+  const traits = pathbuilderTraits(build);
+  if (!traits) return [];
+  // Pathbuilder already listed resistances → trust it, add nothing.
+  if (normalizeDefenseList(build.resistances).length > 0) return [];
+  return traits.resistances;
 }
