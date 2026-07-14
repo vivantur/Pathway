@@ -1414,10 +1414,13 @@ async function execute(interaction) {
 
       // /char active action:clear
       if (action === 'clear') {
+        await interaction.deferReply({ ephemeral: true });
         delete characters[userId]._activeChar;
+        // syncActiveCharacterToSupabase already persists active_char_key durably.
+        // The old extra saveCharacters() re-synced EVERY character and blew
+        // Discord's 3s ack window (10062 Unknown interaction). Cache updated above.
         await syncActiveCharacterToSupabase(userId, null, interaction.user.username);
-        await saveCharacters(characters);
-        return interaction.reply({ content: `✅ Active character cleared. Commands will now prompt you to choose when you have multiple characters.`, ephemeral: true });
+        return interaction.editReply({ content: `✅ Active character cleared. Commands will now prompt you to choose when you have multiple characters.` });
       }
 
       // /char active (no args) — view current active
@@ -1438,11 +1441,14 @@ async function execute(interaction) {
         const names = Object.keys(characters[userId]).filter(k => !k.startsWith('_')).map(k => characters[userId][k].name).join(', ');
         return interaction.reply({ content: `❌ Couldn't find **${nameArg}**.\nYour characters: ${names}`, ephemeral: true });
       }
+      await interaction.deferReply({ ephemeral: true });
       characters[userId]._activeChar = charKey;
+      // syncActiveCharacterToSupabase already persists active_char_key durably.
+      // The old extra saveCharacters() re-synced EVERY character and blew
+      // Discord's 3s ack window (10062 Unknown interaction). Cache updated above.
       await syncActiveCharacterToSupabase(userId, charKey, interaction.user.username);
-      await saveCharacters(characters);
       const charName = characters[userId][charKey].name;
-      return interaction.reply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.`, ephemeral: true });
+      return interaction.editReply({ content: `📌 Active character set to **${charName}**. Commands will default to them when no \`character:\` is specified.` });
     }
 
     else if (sub === 'serveractive') {

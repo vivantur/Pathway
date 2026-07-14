@@ -14,6 +14,12 @@ import type {
   CharacterRow,
   SpellRow,
 } from '@/features/characters/types';
+import {
+  coerceSpellRow,
+  formatActionCost,
+  formatDefenses,
+  formatHeightening,
+} from '@/features/characters/pf2eData/spellFromRow';
 import { Panel, type EditControls } from '../Sheet';
 import { SpellsIcon, StarIcon } from '../icons';
 
@@ -558,17 +564,25 @@ function SpellDetailCard({ name, row }: { name: string; row?: SpellRow }) {
     );
   }
 
-  const traits = normalizeStringArray(row.traits);
-  const spellLevel = row.rank ?? row.level ?? row.spell_level ?? null;
-  const actions = pickString(row, 'actions', 'action_cost');
-  const range = pickString(row, 'range');
-  const area = pickString(row, 'area');
-  const targets = pickString(row, 'targets');
-  const savingThrow = pickString(row, 'saving_throw', 'save');
-  const duration = pickString(row, 'duration');
-  const heightened = pickString(row, 'heightened');
-  const source = pickString(row, 'source');
-  const rarity = pickString(row, 'rarity');
+  // Interpretation via core's coerceSpell (shared with the bot); each field
+  // falls back to the raw defensive read only when a row can't be coerced.
+  const spell = coerceSpellRow(row);
+  const traits = spell ? spell.traits : normalizeStringArray(row.traits);
+  const spellLevel = spell ? spell.rank : row.rank ?? row.level ?? row.spell_level ?? null;
+  const actions = spell ? formatActionCost(spell.actionCost) : pickString(row, 'actions', 'action_cost');
+  const range = spell ? spell.range ?? null : pickString(row, 'range');
+  const area = spell ? spell.area ?? null : pickString(row, 'area');
+  const targets = spell ? spell.targets ?? null : pickString(row, 'targets');
+  const savingThrow = spell ? formatDefenses(spell.defenses) : pickString(row, 'saving_throw', 'save');
+  const duration = spell ? spell.duration ?? null : pickString(row, 'duration');
+  const heightened = spell ? formatHeightening(spell.heightening) : pickString(row, 'heightened');
+  const source = spell
+    ? spell.source.page
+      ? `${spell.source.title} pg. ${spell.source.page}`
+      : spell.source.title
+    : pickString(row, 'source');
+  const rarity = spell ? spell.rarity : pickString(row, 'rarity');
+  const description = spell ? spell.description : row.description ?? null;
 
   return (
     <div className="my-2 rounded border border-gold/30 bg-midnight-900/70 p-4 shadow-gilded">
@@ -622,13 +636,13 @@ function SpellDetailCard({ name, row }: { name: string; row?: SpellRow }) {
           {range && <MechEntry label="Range" value={range} />}
           {area && <MechEntry label="Area" value={area} />}
           {targets && <MechEntry label="Targets" value={targets} />}
-          {savingThrow && <MechEntry label="Save" value={savingThrow} />}
+          {savingThrow && <MechEntry label="Defense" value={savingThrow} />}
           {duration && <MechEntry label="Duration" value={duration} />}
         </dl>
       )}
 
-      {row.description && (
-        <GrimoireMarkdown strip={['**Source**']}>{row.description}</GrimoireMarkdown>
+      {description && (
+        <GrimoireMarkdown strip={['**Source**']}>{description}</GrimoireMarkdown>
       )}
 
       {heightened && (

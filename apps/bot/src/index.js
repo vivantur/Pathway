@@ -195,7 +195,12 @@ const client = new Client({
 });
 
 process.on('unhandledRejection', error => {
-  if (isDeadInteractionError(error)) return; // silently ignore
+  if (isDeadInteractionError(error)) {
+    // [TEST-DIAG] Normally silent. Surfaced so we can see when a reply lands
+    // after Discord's 3s window — the cause of "did not respond". Remove after diagnosis.
+    console.warn('[TEST-DIAG] swallowed 10062 Unknown-interaction rejection — a reply arrived too late (>3s)');
+    return;
+  }
   console.error('Unhandled rejection:', error);
 });
 
@@ -1115,6 +1120,11 @@ client.once('clientReady', async () => {
 // ── Interaction handler ───────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
   return characterState.runWithResolveContext({ guildId: interaction.guildId }, async () => {
+  // [TEST-DIAG] Confirms the handler is firing and what it received. If a command
+  // shows "did not respond" but this never logs → interactions aren't reaching the
+  // bot (gateway). If it logs but the reply still fails → the reply is stalling
+  // (REST throttle / rate limit). Remove after diagnosis.
+  console.log(`[interaction] received ${interaction.isChatInputCommand?.() ? '/' + interaction.commandName : interaction.isButton?.() ? 'button:' + interaction.customId : interaction.isModalSubmit?.() ? 'modal:' + interaction.customId : interaction.isAutocomplete?.() ? 'autocomplete:' + interaction.commandName : 'type:' + interaction.type} from ${interaction.user?.id ?? '?'}`);
   // Cache the Discord username so character writes can auto-create users
   // rows for bot-only users who haven't logged into the web app. The cache
   // itself lives in state/characters now (Phase 3.7).
@@ -2661,6 +2671,12 @@ client.on('interactionCreate', async (interaction) => {
 console.log('Startup requires complete; attempting Discord gateway login…');
 client.on('debug', (m) => console.log('[discord:debug]', m));
 client.on('warn',  (m) => console.warn('[discord:warn]', m));
+// [TEST-DIAG] REST-side visibility. If replies fail because Discord is throttling
+// the bot's outbound requests, these fire: 'rateLimited' = a bucket/global limit
+// was hit; 'invalidRequestWarning' = nearing Discord's Cloudflare ban for too many
+// invalid requests. Remove after diagnosis.
+client.rest.on('rateLimited', (info) => console.warn('[rest:rateLimited]', JSON.stringify({ global: info.global, method: info.method, route: info.route, url: info.url, timeToReset: info.timeToReset, limit: info.limit })));
+client.rest.on('invalidRequestWarning', (info) => console.warn('[rest:invalidRequestWarning]', JSON.stringify(info)));
 
 // TEMPORARY probe: the network flow logs show TCP to Discord succeeds, so egress
 // works — yet the handshake stalls silently after "Preparing to connect to the

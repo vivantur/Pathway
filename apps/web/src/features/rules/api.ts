@@ -1,5 +1,10 @@
 import { requireSupabase } from '@/lib/supabase';
 import { preferRemaster } from '@/features/characters/pf2eData/sourcePreference';
+import {
+  coerceSpellRow,
+  formatActionCost,
+  formatDefenses,
+} from '@/features/characters/pf2eData/spellFromRow';
 import type { RuleCategoryId, RuleEntry } from './types';
 
 /**
@@ -199,27 +204,53 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
     label: 'Spells',
     table: 'spells',
     hasLevel: true,
-    map: (r) => ({
-      id: String(r.id),
-      name: str(r.name) ?? 'Unknown',
-      category: 'spells',
-      level: num(r.rank) ?? num(r.level) ?? num(r.spell_level),
-      rarity: str(r.rarity),
-      traits: arr(r.traits),
-      actionCost: str(r.actions) ?? str(r.action_cost),
-      prerequisites: null,
-      trigger: str(r.trigger),
-      description: str(r.description),
-      aonUrl: str(r.aon_url),
-      meta: [
-        str(r.range) ? { label: 'Range', value: str(r.range)! } : null,
-        str(r.area) ? { label: 'Area', value: str(r.area)! } : null,
-        str(r.targets) ? { label: 'Targets', value: str(r.targets)! } : null,
-        str(r.saving_throw) ?? str(r.save) ? { label: 'Save', value: (str(r.saving_throw) ?? str(r.save))! } : null,
-        str(r.duration) ? { label: 'Duration', value: str(r.duration)! } : null,
-        str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
-      ].filter(Boolean) as RuleEntry['meta'],
-    }),
+    // Interpretation runs through @pathway/core's coerceSpell (one reader shared
+    // with the bot), leaving only display passthroughs (trigger, aon_url) as raw
+    // reads. An uncoercible row still shows name + description via the fallback.
+    map: (r) => {
+      const spell = coerceSpellRow(r);
+      if (!spell) {
+        return {
+          id: String(r.id),
+          name: str(r.name) ?? 'Unknown',
+          category: 'spells',
+          level: num(r.rank) ?? num(r.level) ?? num(r.spell_level),
+          rarity: str(r.rarity),
+          traits: arr(r.traits),
+          actionCost: str(r.actions) ?? str(r.action_cost),
+          prerequisites: null,
+          trigger: str(r.trigger),
+          description: str(r.description),
+          aonUrl: str(r.aon_url),
+          meta: [],
+        };
+      }
+      const save = formatDefenses(spell.defenses);
+      const source = spell.source.page
+        ? `${spell.source.title} pg. ${spell.source.page}`
+        : spell.source.title;
+      return {
+        id: String(r.id),
+        name: spell.name,
+        category: 'spells',
+        level: spell.rank,
+        rarity: spell.rarity,
+        traits: spell.traits,
+        actionCost: formatActionCost(spell.actionCost),
+        prerequisites: null,
+        trigger: str(r.trigger),
+        description: spell.description,
+        aonUrl: str(r.aon_url),
+        meta: [
+          spell.range ? { label: 'Range', value: spell.range } : null,
+          spell.area ? { label: 'Area', value: spell.area } : null,
+          spell.targets ? { label: 'Targets', value: spell.targets } : null,
+          save ? { label: 'Defense', value: save } : null,
+          spell.duration ? { label: 'Duration', value: spell.duration } : null,
+          { label: 'Source', value: source },
+        ].filter(Boolean) as RuleEntry['meta'],
+      };
+    },
   },
   {
     id: 'items',

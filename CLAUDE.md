@@ -151,6 +151,27 @@ ORC-licensed rules content attributed; on that basis content decisions are:
 - The old strict-PI cleanup project is cancelled; the historical ORC-safe labels
   that exist are fine to leave as-is.
 
+**Commercial end-goal (owner note, 2026-07-11).** Pathway is intended to eventually
+become a public product, which changes the licensing basis — so plan for it now even
+though we don't abide by it yet. The Community Use Policy above is **non-commercial**:
+right for the current fan phase, but it does NOT cover a commercial product. The **ORC
+License** (paizo.com/orclicense) permits commercial use of *Licensed Material* (game
+mechanics) but excludes *Reserved Material* (proper nouns, settings, deities,
+storylines, adventure-specific content) unless a licensor designates otherwise, and
+requires the ORC Notice + upstream attribution + no implied Paizo endorsement.
+
+We do NOT have to follow ORC strictly yet — but the architecture must let us reach an
+ORC-clean, commercially-usable subset WITHOUT refactoring core/backend later:
+- Keep provenance rich on every content entity: `source` (granular to the book),
+  `isLegacy` (pre-Remaster/OGL), and — worth capturing at import — a coarse
+  source-category (core-rules vs adventure vs setting), so the clean subset is a query,
+  not a manual scrub. Reserved Material is broader than proper nouns, so filter by
+  provenance, not by name-matching.
+- The eventual commercial dataset should be sourced from Paizo's official ORC release,
+  not AoN provenance (AoN runs under the Community Use Policy and mixes ORC/OGL/PI).
+  Pulling from AoN is fine for the current fan phase and for coverage diagnostics.
+- Not legal advice — get an IP review before commercializing.
+
 ## Rules-from-source rule (non-negotiable)
 
 Do NOT implement Pathfinder rules from training knowledge — it is often subtly wrong

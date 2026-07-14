@@ -154,6 +154,42 @@ function formatSpellHeightened(heightened, baseLevel = null) {
   return lines.filter(Boolean).join('\n').trim();
 }
 
+const ASSOCIATION_LABELS = {
+  mystery: 'Mystery',
+  bloodline: 'Bloodlines',
+  deity: 'Deities',
+  domain: 'Domains',
+  lesson: 'Lessons',
+  patron: 'Patrons',
+};
+
+// Render the `associations` column (recovered from the AoN import):
+//   [{ kind: 'bloodline', values: ['Demonic'] }, { kind: 'mystery', values: ['Blight'] }]
+// → "**Bloodlines:** Demonic\n**Mystery:** Blight". Long deity lists are trimmed to
+// stay well under Discord's 1024-char field limit.
+function formatSpellAssociations(associations) {
+  if (!Array.isArray(associations) || associations.length === 0) return null;
+  const lines = [];
+  for (const a of associations) {
+    if (!a || !Array.isArray(a.values) || a.values.length === 0) continue;
+    const kind = String(a.kind || '');
+    const label = ASSOCIATION_LABELS[kind] || (kind.charAt(0).toUpperCase() + kind.slice(1));
+    let vals = a.values.join(', ');
+    if (vals.length > 240) {
+      const shown = [];
+      let len = 0;
+      for (const v of a.values) {
+        if (len + v.length + 2 > 240) break;
+        shown.push(v);
+        len += v.length + 2;
+      }
+      vals = `${shown.join(', ')} …(+${a.values.length - shown.length} more)`;
+    }
+    lines.push(`**${label}:** ${vals}`);
+  }
+  return lines.length ? lines.join('\n') : null;
+}
+
 function buildSpellEmbed(rawSpell) {
   const spell = normalizeSpell(rawSpell);
   const isCantrip = spell.type === 'Cantrip';
@@ -170,6 +206,8 @@ function buildSpellEmbed(rawSpell) {
   if (spell.source) embed.addFields({ name: 'Source', value: spell.source, inline: false });
   embed.addFields({ name: 'Traditions', value: traditionsDisplay, inline: false });
   if (traitsDisplay) embed.addFields({ name: 'Traits', value: traitsDisplay, inline: false });
+  const associationsDisplay = formatSpellAssociations(spell.associations);
+  if (associationsDisplay) embed.addFields({ name: 'Granted By', value: associationsDisplay, inline: false });
   const metaLines = [
     spell.cast     ? `**Cast** ${spell.cast}`         : null,
     spell.range    ? `**Range** ${spell.range}`       : null,

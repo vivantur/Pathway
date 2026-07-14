@@ -31,3 +31,12 @@ export * from './derived.js';
 // Effects engine: resolves the machine-readable rule elements on chosen feats
 // into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
 export * from './effects.js';
+
+// Content envelope shared by every stored PF2e entity (id + pinned version,
+// official/homebrew, rarity, source). The template the content schemas extend.
+export * from './content.js';
+
+// The spell entity: the canonical `spellSchema`/`Spell` shape plus `coerceSpell`,
+// the adapter that ingests messy DB/import rows into it. First content slice;
+// replaces the duplicated spell readers in apps/web and apps/bot.
+export * from './spell.js';
