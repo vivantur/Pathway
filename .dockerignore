@@ -1,0 +1,14 @@
+# Keep the build context lean and reproducible. Never copy host node_modules
+# (they'd shadow the clean `npm ci`) or any secrets.
+**/node_modules
+**/dist
+.git
+.github
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+npm-debug.log*
+scratchpad
+apps/web/dist
+bot.env
