@@ -6,9 +6,13 @@
  * packs into the same shape under `data/generated/`.
  */
 
-export type AbilityKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+import type { Ability, Boost as CoreBoost, Size as CoreSize } from '@pathway/core';
+import { ABILITIES } from '@pathway/core';
 
-export const ABILITY_KEYS: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+/** The six PF2e ability keys — re-exported from @pathway/core (one definition). */
+export type AbilityKey = Ability;
+
+export const ABILITY_KEYS: readonly AbilityKey[] = ABILITIES;
 
 export const ABILITY_NAMES: Record<AbilityKey, string> = {
   str: 'Strength',
@@ -22,15 +26,11 @@ export const ABILITY_NAMES: Record<AbilityKey, string> = {
 /** Proficiency rank: 0 untrained, 1 trained, 2 expert, 3 master, 4 legendary. */
 export type ProficiencyRank = 0 | 1 | 2 | 3 | 4;
 
-export type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
+/** Creature size — re-exported from @pathway/core. */
+export type Size = CoreSize;
 
-/**
- * A single ability boost slot:
- *  - a fixed ability (e.g. 'con')
- *  - 'free' — the player picks any ability
- *  - an array — a restricted choice among the listed abilities
- */
-export type Boost = AbilityKey | 'free' | AbilityKey[];
+/** A single ability-boost slot — from @pathway/core (fixed | 'free' | restricted choice). */
+export type Boost = CoreBoost;
 
 export interface Heritage {
   id: string;

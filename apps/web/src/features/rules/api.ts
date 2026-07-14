@@ -5,6 +5,11 @@ import {
   formatActionCost,
   formatDefenses,
 } from '@/features/characters/pf2eData/spellFromRow';
+import {
+  coerceAncestryRow,
+  coerceBackgroundRow,
+  sourceLabel,
+} from '@/features/characters/pf2eData/ancestryFromRow';
 import type { RuleCategoryId, RuleEntry } from './types';
 
 /**
@@ -370,47 +375,97 @@ export const RULE_CATEGORIES: CategoryConfig[] = [
     label: 'Ancestries',
     table: 'ancestries',
     hasLevel: false,
-    map: (r) => ({
-      id: String(r.id),
-      name: str(r.name) ?? 'Unknown',
-      category: 'ancestries',
-      level: null,
-      rarity: str(r.rarity),
-      traits: arr(r.traits),
-      actionCost: null,
-      prerequisites: null,
-      trigger: null,
-      description: str(r.description),
-      aonUrl: str(r.aon_url),
-      meta: [
-        num(r.hp) != null ? { label: 'HP', value: String(num(r.hp)) } : null,
-        str(r.size) ? { label: 'Size', value: str(r.size)! } : null,
-        num(r.speed) != null ? { label: 'Speed', value: `${num(r.speed)} ft.` } : null,
-        str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
-      ].filter(Boolean) as RuleEntry['meta'],
-    }),
+    // Interpretation runs through core's coerceAncestry; an uncoercible row falls
+    // back to the raw read so nothing vanishes.
+    map: (r) => {
+      const a = coerceAncestryRow(r);
+      if (!a) {
+        return {
+          id: String(r.id),
+          name: str(r.name) ?? 'Unknown',
+          category: 'ancestries',
+          level: null,
+          rarity: str(r.rarity),
+          traits: arr(r.traits),
+          actionCost: null,
+          prerequisites: null,
+          trigger: null,
+          description: str(r.description),
+          aonUrl: str(r.aon_url),
+          meta: [
+            num(r.hp) != null ? { label: 'HP', value: String(num(r.hp)) } : null,
+            str(r.size) ? { label: 'Size', value: str(r.size)! } : null,
+            num(r.speed) != null ? { label: 'Speed', value: `${num(r.speed)} ft.` } : null,
+            str(r.source) ? { label: 'Source', value: str(r.source)! } : null,
+          ].filter(Boolean) as RuleEntry['meta'],
+        };
+      }
+      return {
+        id: String(r.id),
+        name: a.name,
+        category: 'ancestries',
+        level: null,
+        rarity: a.rarity,
+        traits: a.traits,
+        actionCost: null,
+        prerequisites: null,
+        trigger: null,
+        description: a.description,
+        aonUrl: str(r.aon_url),
+        meta: [
+          { label: 'HP', value: String(a.hp) },
+          { label: 'Size', value: capitalize(a.size) },
+          { label: 'Speed', value: `${a.speed} ft.` },
+          { label: 'Source', value: sourceLabel(a.source) },
+        ],
+      };
+    },
   },
   {
     id: 'backgrounds',
     label: 'Backgrounds',
     table: 'backgrounds',
     hasLevel: false,
-    map: (r) => ({
-      id: String(r.id),
-      name: str(r.name) ?? 'Unknown',
-      category: 'backgrounds',
-      level: null,
-      rarity: str(r.rarity),
-      traits: arr(r.traits),
-      actionCost: null,
-      prerequisites: null,
-      trigger: null,
-      description: str(r.description),
-      aonUrl: str(r.aon_url),
-      meta: [str(r.source) ? { label: 'Source', value: str(r.source)! } : null].filter(
-        Boolean,
-      ) as RuleEntry['meta'],
-    }),
+    map: (r) => {
+      const b = coerceBackgroundRow(r);
+      if (!b) {
+        return {
+          id: String(r.id),
+          name: str(r.name) ?? 'Unknown',
+          category: 'backgrounds',
+          level: null,
+          rarity: str(r.rarity),
+          traits: arr(r.traits),
+          actionCost: null,
+          prerequisites: null,
+          trigger: null,
+          description: str(r.description),
+          aonUrl: str(r.aon_url),
+          meta: [str(r.source) ? { label: 'Source', value: str(r.source)! } : null].filter(
+            Boolean,
+          ) as RuleEntry['meta'],
+        };
+      }
+      return {
+        id: String(r.id),
+        name: b.name,
+        category: 'backgrounds',
+        level: null,
+        rarity: b.rarity,
+        traits: b.traits,
+        actionCost: null,
+        prerequisites: null,
+        trigger: null,
+        description: b.description,
+        aonUrl: str(r.aon_url),
+        meta: [
+          b.trainedSkill ? { label: 'Trained', value: b.trainedSkill } : null,
+          b.loreSkill ? { label: 'Lore', value: b.loreSkill } : null,
+          b.skillFeat ? { label: 'Skill Feat', value: b.skillFeat } : null,
+          { label: 'Source', value: sourceLabel(b.source) },
+        ].filter(Boolean) as RuleEntry['meta'],
+      };
+    },
   },
   // ---- gamedata-backed categories (generic AoN import keyed by `category`) ----
   { id: 'classes', label: 'Classes', table: 'gamedata', gamedataCategory: 'classes', hasLevel: false, map: gamedataMap('classes') },
