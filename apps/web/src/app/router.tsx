@@ -15,6 +15,7 @@ import { ContentGate } from '@/features/builder/ContentGate';
 import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
 import { AdminPage } from '@/routes/AdminPage';
+import { ContactPage } from '@/routes/ContactPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'about', element: <AboutPage /> },
       { path: 'roadmap', element: <RoadmapPage /> },
       { path: 'rules', element: <RulesLibraryPage /> },
+      { path: 'contact', element: <ContactPage /> },
       { path: 'login', element: <LoginPage /> },
       {
         path: 'vault',

@@ -79,12 +79,12 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a
-                  href={links.contactEmail}
+                <Link
+                  to="/contact"
                   className="inline-flex items-center gap-2 text-silver/70 transition-colors hover:text-gold"
                 >
                   <MailIcon size={16} /> Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

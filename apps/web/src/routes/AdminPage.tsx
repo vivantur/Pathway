@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAdminCharacters, useAdminStats, useAdminUsers } from '@/features/admin/useAdmin';
 import type { AdminCharacterRow, AdminUserRow } from '@/features/admin/api';
+import { useFeedbackInbox, useUpdateFeedbackStatus } from '@/features/feedback/useFeedback';
+import type { FeedbackRow, FeedbackStatus } from '@/features/feedback/api';
 import {
   loadFallbackIndex,
   resolveFallbackRow,
@@ -29,6 +31,7 @@ export function AdminPage() {
       </div>
 
       <StatsPanel query={stats} />
+      <FeedbackPanel />
       <UsersPanel query={users} />
       <CharactersPanel query={characters} />
       <ContentGapsPanel />
@@ -213,6 +216,123 @@ function CharactersPanel({ query }: { query: ReturnType<typeof useAdminCharacter
                 )}
               </tbody>
             </table>
+          </div>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+// --- feedback inbox --------------------------------------------------------
+
+const KIND_STYLES: Record<string, string> = {
+  bug: 'border-red-500/30 bg-red-500/10 text-red-300',
+  suggestion: 'border-emerald/30 bg-emerald/10 text-emerald-300',
+  concern: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  contact: 'border-arcane/30 bg-arcane/10 text-arcane',
+  other: 'border-gold/25 bg-gold/10 text-gold',
+};
+
+function FeedbackCard({ row }: { row: FeedbackRow }) {
+  const update = useUpdateFeedbackStatus();
+  const setStatus = (status: FeedbackStatus) => update.mutate({ id: row.id, status });
+
+  return (
+    <div
+      className={[
+        'rounded-lg border p-4',
+        row.status === 'new' ? 'border-gold/30 bg-midnight-800/60' : 'border-gold/10 bg-midnight-800/30',
+      ].join(' ')}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className={`rounded border px-2 py-0.5 text-[0.65rem] uppercase tracking-wider ${KIND_STYLES[row.kind] ?? KIND_STYLES.other}`}>
+          {row.kind}
+        </span>
+        {row.status !== 'new' && (
+          <span className="rounded border border-silver/20 px-2 py-0.5 text-[0.65rem] uppercase tracking-wider text-silver/50">
+            {row.status}
+          </span>
+        )}
+        <span className="text-xs text-silver/50">{fmtDate(row.created_at)}</span>
+        <span className="ml-auto text-xs text-silver/60">
+          {row.name || 'Anonymous'}
+          {row.email && (
+            <>
+              {' · '}
+              <a href={`mailto:${row.email}`} className="text-gold underline underline-offset-2">
+                {row.email}
+              </a>
+            </>
+          )}
+        </span>
+      </div>
+      {row.subject && <div className="mb-1 font-display text-parchment">{row.subject}</div>}
+      <p className="whitespace-pre-wrap text-sm text-silver/80">{row.message}</p>
+      {row.page && <p className="mt-2 text-xs text-silver/40">From: {row.page}</p>}
+      <div className="mt-3 flex gap-2">
+        {row.status !== 'read' && (
+          <button
+            type="button"
+            onClick={() => setStatus('read')}
+            className="rounded border border-gold/20 px-2.5 py-1 text-xs text-silver/70 hover:border-gold/50 hover:text-gold"
+          >
+            Mark read
+          </button>
+        )}
+        {row.status !== 'resolved' && (
+          <button
+            type="button"
+            onClick={() => setStatus('resolved')}
+            className="rounded border border-emerald/20 px-2.5 py-1 text-xs text-emerald-300/80 hover:border-emerald/50"
+          >
+            Resolve
+          </button>
+        )}
+        {row.status !== 'new' && (
+          <button
+            type="button"
+            onClick={() => setStatus('new')}
+            className="rounded border border-silver/15 px-2.5 py-1 text-xs text-silver/50 hover:border-silver/40"
+          >
+            Reopen
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackPanel() {
+  const query = useFeedbackInbox(true);
+  const rows: FeedbackRow[] = useMemo(() => query.data ?? [], [query.data]);
+  const [showResolved, setShowResolved] = useState(false);
+  const shown = useMemo(
+    () => (showResolved ? rows : rows.filter((r) => r.status !== 'resolved')),
+    [rows, showResolved],
+  );
+  const newCount = rows.filter((r) => r.status === 'new').length;
+
+  return (
+    <Panel
+      title={`Feedback inbox${newCount ? ` (${newCount} new)` : ''}`}
+      subtitle="Bug reports, suggestions, concerns, and messages from the Contact page."
+    >
+      <QueryState isLoading={query.isLoading} error={query.error} label="Opening the mailbag…" />
+      {query.data && (
+        <>
+          <label className="mb-3 flex items-center gap-2 text-xs text-silver/60">
+            <input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} />
+            Show resolved
+          </label>
+          <div className="space-y-3">
+            {shown.map((r) => (
+              <FeedbackCard key={r.id} row={r} />
+            ))}
+            {shown.length === 0 && (
+              <p className="py-6 text-center text-sm text-silver/50">
+                {rows.length === 0 ? 'No messages yet.' : 'Nothing open — all caught up.'}
+              </p>
+            )}
           </div>
         </>
       )}
