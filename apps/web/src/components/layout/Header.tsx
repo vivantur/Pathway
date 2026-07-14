@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { to: '/roadmap', label: 'Roadmap' },
   { to: '/rules', label: 'Rules' },
   { to: '/vault', label: 'Vault' },
+  { to: '/campaigns', label: 'Campaigns' },
 ];
 
 const ADMIN_LINK = { to: '/admin', label: 'Admin', end: false };

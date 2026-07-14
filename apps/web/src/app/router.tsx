@@ -16,6 +16,8 @@ import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
 import { AdminPage } from '@/routes/AdminPage';
 import { ContactPage } from '@/routes/ContactPage';
+import { CampaignsPage } from '@/routes/CampaignsPage';
+import { CampaignPage } from '@/routes/CampaignPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -84,6 +86,22 @@ export const router = createBrowserRouter([
         // include a policy allowing `is_public = true` for anon reads.
         path: 'share/:shareId',
         element: <PublicSharePage />,
+      },
+      {
+        path: 'campaigns',
+        element: (
+          <RequireAuth>
+            <CampaignsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'campaigns/:campaignId',
+        element: (
+          <RequireAuth>
+            <CampaignPage />
+          </RequireAuth>
+        ),
       },
       {
         // Admin dashboard. Signed-in AND admin-flagged; the server RPCs it
