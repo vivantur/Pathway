@@ -537,6 +537,15 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     };
   });
 
+  // Weapon Specialization (a class feature granted at a class-specific level):
+  // +2/+3/+4 to a weapon's damage when you're expert/master/legendary in it, per
+  // the Foundry weapon-specialization.json rule elements (base 2, upgraded to 3
+  // at master and 4 at legendary). Greater Weapon Specialization doubles it.
+  const hasWeaponSpec = klass?.weaponSpecialization != null && level >= klass.weaponSpecialization;
+  const hasGreaterWeaponSpec =
+    klass?.greaterWeaponSpecialization != null && level >= klass.greaterWeaponSpecialization;
+  const weaponSpecNotes: AppliedEffect[] = [];
+
   const weapons: EquippedWeapon[] = equippedWeapons.map((w) => {
     // Attack proficiency: the class's level-1 rank, raised by its weapon
     // expertise/mastery features (category-, list-, and group-scoped — the
@@ -576,6 +585,17 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     const wRunes = runesFor(w.id);
     const potency = abp ? 0 : Math.max(0, Math.min(3, wRunes?.potency ?? 0));
     const striking = abp ? 0 : Math.max(0, Math.min(3, wRunes?.striking ?? 0));
+    // Applies only at expert+ (rank ≥ 2); the value equals the rank, doubled by
+    // Greater Weapon Specialization.
+    const weaponSpecBonus =
+      hasWeaponSpec && catRank >= 2 ? catRank * (hasGreaterWeaponSpec ? 2 : 1) : 0;
+    if (weaponSpecBonus > 0) {
+      weaponSpecNotes.push({
+        source: hasGreaterWeaponSpec ? 'Greater Weapon Specialization' : 'Weapon Specialization',
+        stat: w.id,
+        summary: `+${weaponSpecBonus} ${w.name} damage`,
+      });
+    }
     return {
       id: w.id,
       name: w.name,
@@ -588,7 +608,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       }),
       dice: abp ? abpDamageDice(level) : 1 + striking,
       damageDie: w.damageDie,
-      damageMod,
+      damageMod: damageMod + weaponSpecBonus,
       damageType: w.damageType,
       ranged: w.ranged,
       range: w.range,
@@ -644,7 +664,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       classDC: classDCRank,
       unarmoredDefense,
     },
-    effectNotes: effects.applied,
+    effectNotes: [...effects.applied, ...weaponSpecNotes],
   };
 }
 

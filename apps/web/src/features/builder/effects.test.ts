@@ -49,6 +49,21 @@ describe('feat effects on the derived sheet', () => {
     expect(e.skillRanks.size).toBe(0);
   });
 
+  it('Weapon Specialization adds the weapon proficiency rank to damage (fighter, expert)', () => {
+    // Level-1 fighter is expert (rank 2) in martial weapons. Weapon Specialization
+    // is granted at level 7 → +2 damage; before that, nothing.
+    const equipLongsword = (level: number): BuilderState => ({
+      ...fighter(level),
+      inventory: [{ itemId: 'longsword', equipped: true, qty: 1 }],
+    });
+    const before = deriveCharacter(equipLongsword(6));
+    const after = deriveCharacter(equipLongsword(7));
+    const dmg = (c: ReturnType<typeof deriveCharacter>) =>
+      c.weapons.find((w) => w.id === 'longsword')!.damageMod;
+    expect(dmg(after) - dmg(before)).toBe(2);
+    expect(after.effectNotes.some((n) => n.source === 'Weapon Specialization')).toBe(true);
+  });
+
   it('leaves a featless build unchanged', () => {
     const e = characterEffects(fighter());
     expect(e.hpBonus).toBe(0);

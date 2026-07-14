@@ -418,10 +418,22 @@ function main() {
   // Only the `description` text is replaced; mechanical fields are untouched.
   log('Enriching descriptions for ancestries / heritages / backgrounds / classes…');
   const descIndex = new Map(); // slug -> enriched description
+  // slug -> the level a class grants (Greater) Weapon Specialization, read from
+  // the class doc's system.items progression (authoritative per-class levels).
+  const wsLevels = new Map();
   for (const type of ['ancestries', 'heritages', 'backgrounds', 'classes']) {
     for (const p of walkJson(join(packsRoot, type))) {
       const doc = readDoc(p);
-      descIndex.set(slugOf(p), enrich(doc.system?.description?.value ?? '', uuidById));
+      const slug = slugOf(p);
+      descIndex.set(slug, enrich(doc.system?.description?.value ?? '', uuidById));
+      if (type === 'classes') {
+        const items = Object.values(doc.system?.items ?? {});
+        const lvlOf = (name) => items.find((i) => i.name === name)?.level;
+        wsLevels.set(slug, {
+          weaponSpecialization: lvlOf('Weapon Specialization'),
+          greaterWeaponSpecialization: lvlOf('Greater Weapon Specialization'),
+        });
+      }
     }
   }
   const enrichDescriptions = (list) => {
@@ -452,6 +464,14 @@ function main() {
   herHit += enrichDescriptions(versatileHeritages);
   const bgHit = enrichDescriptions(backgrounds);
   const clsHit = enrichDescriptions(classes);
+  // Weapon Specialization grant levels (mechanical field — additive, never clobbers).
+  for (const c of classes) {
+    const ws = wsLevels.get(c.id);
+    if (ws?.weaponSpecialization != null) c.weaponSpecialization = ws.weaponSpecialization;
+    else delete c.weaponSpecialization;
+    if (ws?.greaterWeaponSpecialization != null) c.greaterWeaponSpecialization = ws.greaterWeaponSpecialization;
+    else delete c.greaterWeaponSpecialization;
+  }
 
   // ---- reconciliation: alias consolidated ids, preserve Foundry-absent ones ----
   const priorAliases = existsSync(join(out, 'content-aliases.json'))

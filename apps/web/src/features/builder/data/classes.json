@@ -58,7 +58,8 @@
     "features": [
       "Alchemy",
       "Research Field"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "animist",
@@ -97,7 +98,8 @@
       "Apparition Attunement",
       "Animistic Practice",
       "Animist & Apparition Spellcasting"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "barbarian",
@@ -164,7 +166,8 @@
       "Instinct",
       "Rage",
       "Quick-Tempered"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "bard",
@@ -228,7 +231,8 @@
       "Composition Spells",
       "Muses",
       "Occult Spellcasting"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "champion",
@@ -269,7 +273,9 @@
       "Cause",
       "Devotion Spells",
       "Shield Block"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "cleric",
@@ -323,7 +329,8 @@
       "Doctrine",
       "First Doctrine",
       "Divine Font"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "druid",
@@ -388,7 +395,8 @@
       "Wildsong",
       "Shield Block",
       "Voice of Nature"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "exemplar",
@@ -465,7 +473,9 @@
     "features": [
       "Reactive Strike",
       "Shield Block"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "gunslinger",
@@ -524,7 +534,8 @@
     "features": [
       "Gunslinger's Way",
       "Slinger's Precision"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "inventor",
@@ -583,7 +594,8 @@
       "Explode",
       "Overdrive",
       "Innovation"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "investigator",
@@ -646,7 +658,8 @@
       "Methodology",
       "Devise a Stratagem",
       "Strategic Strike"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "kineticist",
@@ -718,7 +731,8 @@
       "Kinetic Aura",
       "Kinetic Gate",
       "Impulses"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "magus",
@@ -788,7 +802,8 @@
       "Spellstrike",
       "Hybrid Study",
       "Conflux Spells"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "monk",
@@ -825,7 +840,8 @@
     "features": [
       "Flurry of Blows",
       "Powerful Fist"
-    ]
+    ],
+    "weaponSpecialization": 7
   },
   {
     "id": "oracle",
@@ -909,7 +925,8 @@
       "Oracular Curse",
       "Revelation Spells",
       "Spell Repertoire"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "psychic",
@@ -1039,7 +1056,9 @@
     "features": [
       "Hunter's Edge",
       "Hunt Prey"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "rogue",
@@ -1101,7 +1120,9 @@
       "Rogue's Racket",
       "Sneak Attack",
       "Surprise Attack"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "sorcerer",
@@ -1193,7 +1214,8 @@
       "Sorcerer Spellcasting",
       "Bloodline",
       "Bloodline Spells"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "summoner",
@@ -1285,7 +1307,8 @@
       "Summoner Spellcasting",
       "Spell Repertoire",
       "Link Spells"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "swashbuckler",
@@ -1354,7 +1377,9 @@
       "Confident Finisher",
       "Swashbuckler's Style",
       "Stylish Combatant"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "thaumaturge",
@@ -1445,7 +1470,9 @@
       "Esoteric Lore",
       "Implement's Empowerment",
       "Exploit Vulnerability"
-    ]
+    ],
+    "weaponSpecialization": 7,
+    "greaterWeaponSpecialization": 15
   },
   {
     "id": "witch",
@@ -1521,7 +1548,8 @@
       "Familiar (Witch)",
       "Hexes",
       "Patron"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "wizard",
@@ -1584,7 +1612,8 @@
       "Arcane School",
       "Arcane Bond",
       "Arcane Thesis"
-    ]
+    ],
+    "weaponSpecialization": 13
   },
   {
     "id": "necromancer",

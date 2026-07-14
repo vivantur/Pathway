@@ -126,6 +126,10 @@ export interface CharacterClass {
   subclasses?: Subclass[];
   /** Named class features granted automatically at level 1. */
   features?: string[];
+  /** Level at which this class grants Weapon Specialization (undefined = never). */
+  weaponSpecialization?: number;
+  /** Level at which this class grants Greater Weapon Specialization. */
+  greaterWeaponSpecialization?: number;
   source: string;
   description: string;
 }
