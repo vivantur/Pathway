@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectSheetEffects, evalNumeric, stackModifiers, type Modifier, type RuleElement } from "./effects.js";
+import { collectSheetEffects, collectTraits, evalNumeric, stackModifiers, type Modifier, type RuleElement } from "./effects.js";
 
 describe("stackModifiers (PF2e bonus/penalty stacking)", () => {
   const m = (type: Modifier["type"], value: number): Modifier => ({ type, value });
@@ -72,10 +72,23 @@ describe("evalNumeric", () => {
     expect(evalNumeric("floor(add(@actor.level,1))", ctx(4))).toBe(5);
   });
 
+  it("evaluates infix arithmetic with precedence (resistance scaling)", () => {
+    // The exact forms the corpus uses for level-scaled resistances.
+    expect(evalNumeric("floor(@actor.level/2)", ctx(6))).toBe(3);
+    expect(evalNumeric("floor(@actor.level/2)", ctx(5))).toBe(2);
+    expect(evalNumeric("max(1,floor(@actor.level/2))", ctx(1))).toBe(1);
+    // Precedence + parens + unary minus.
+    expect(evalNumeric("@actor.level + 1", ctx(1))).toBe(2);
+    expect(evalNumeric("1 + 2 * 3", ctx(1))).toBe(7);
+    expect(evalNumeric("(1 + 2) * 3", ctx(1))).toBe(9);
+    expect(evalNumeric("floor((@actor.level - 7) / 2)", ctx(11))).toBe(2);
+    expect(evalNumeric("-3 + 5", ctx(1))).toBe(2);
+  });
+
   it("throws on unsupported references / grammar (so callers skip, never guess)", () => {
     expect(() => evalNumeric("@actor.system.proficiencies.defenses.medium.rank", ctx(1))).toThrow();
     expect(() => evalNumeric("{item|flags.system.rulesSelections.rank}", ctx(1))).toThrow();
-    expect(() => evalNumeric("@actor.level + 1", ctx(1))).toThrow();
+    expect(() => evalNumeric("@actor.level %% 1", ctx(1))).toThrow();
     expect(() => evalNumeric("bogus(1)", ctx(1))).toThrow();
   });
 });
@@ -250,5 +263,58 @@ describe("collectSheetEffects", () => {
     );
     expect(e.hpBonus).toBe(0);
     expect(e.skipped).toBe(0);
+  });
+});
+
+describe("collectTraits (senses & resistances)", () => {
+  it("collects a simple sense and an acuity/range sense", () => {
+    const t = collectTraits(
+      [
+        [{ key: "Sense", selector: "darkvision" }],
+        [{ key: "Sense", selector: "scent", acuity: "imprecise", range: 30 }],
+      ],
+      { level: 1 },
+      ["Cavern Elf", "Hunting Catfolk"],
+    );
+    expect(t.senses).toEqual([
+      { type: "darkvision", source: "Cavern Elf" },
+      { type: "scent", acuity: "imprecise", range: 30, source: "Hunting Catfolk" },
+    ]);
+  });
+
+  it("resolves a level-scaled resistance and drops one that rounds to 0", () => {
+    const rule: RuleElement[] = [{ key: "Resistance", type: "cold", value: "floor(@actor.level/2)" }];
+    expect(collectTraits([rule], { level: 6 }).resistances).toEqual([
+      { type: "cold", value: 3, source: "" },
+    ]);
+    // At level 1, floor(1/2) = 0 → not yet a resistance.
+    expect(collectTraits([rule], { level: 1 }).resistances).toEqual([]);
+  });
+
+  it("keeps the higher resistance and the more useful sense when types collide", () => {
+    const t = collectTraits(
+      [
+        [{ key: "Resistance", type: "fire", value: 2 }],
+        [{ key: "Resistance", type: "fire", value: 5 }],
+        [{ key: "Sense", selector: "darkvision", range: 30 }],
+        [{ key: "Sense", selector: "darkvision" }], // unlimited range wins
+      ],
+      { level: 1 },
+    );
+    expect(t.resistances).toEqual([{ type: "fire", value: 5, source: "" }]);
+    expect(t.senses).toEqual([{ type: "darkvision", source: "" }]);
+  });
+
+  it("skips (and counts) choice-driven resistance types and conditional traits", () => {
+    const t = collectTraits(
+      [
+        [{ key: "Resistance", type: "{item|flags.system.rulesSelections.heritageDeepFetchling}", value: 3 }],
+        [{ key: "Sense", selector: "tremorsense", predicate: ["self:prone"] }],
+      ],
+      { level: 6 },
+    );
+    expect(t.resistances).toEqual([]);
+    expect(t.senses).toEqual([]);
+    expect(t.skipped).toBe(1); // the resistance; the conditional sense is simply ignored
   });
 });

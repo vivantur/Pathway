@@ -68,7 +68,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens The Mwangi Expanse",
-    "description": "*Anadi people are reclusive, sapient spiders who hail from the jungles of southern Garund. Though they act in many ways like natural-born shapeshifters, their twin forms actually stem from carefully developed magic.*\n\n*Anadi*"
+    "description": "*Anadi people are reclusive, sapient spiders who hail from the jungles of southern Garund. Though they act in many ways like natural-born shapeshifters, their twin forms actually stem from carefully developed magic.*\n\n*Anadi*",
+    "vision": "normal"
   },
   {
     "id": "android",
@@ -139,7 +140,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Technological wonders from another world, androids have synthetic bodies and living souls. Their dual nature makes them quick-thinking and calm under pressure, but comfortable in stillness and solitude.*\n\n*Android*"
+    "description": "*Technological wonders from another world, androids have synthetic bodies and living souls. Their dual nature makes them quick-thinking and calm under pressure, but comfortable in stillness and solitude.*\n\n*Android*",
+    "vision": "low-light-vision"
   },
   {
     "id": "athamaru",
@@ -202,7 +204,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "Athamarus are fish-like humanoids who form tight-knit undersea communities. In small settlements, they engage in the subsistence farming of seaweed, train eels to serve as mounts, and create elaborate works of coral art. Their interactions with other aquatic ancestries are strained, as athamarus have suffered mistreatment at their hands. However, they remain curious about potential connections and what new opportunities may offer.\n\n*Athamaru*"
+    "description": "Athamarus are fish-like humanoids who form tight-knit undersea communities. In small settlements, they engage in the subsistence farming of seaweed, train eels to serve as mounts, and create elaborate works of coral art. Their interactions with other aquatic ancestries are strained, as athamarus have suffered mistreatment at their hands. However, they remain curious about potential connections and what new opportunities may offer.\n\n*Athamaru*",
+    "vision": "low-light-vision"
   },
   {
     "id": "automaton",
@@ -267,7 +270,8 @@
       }
     ],
     "source": "Pathfinder Guns & Gears",
-    "description": "*These intelligent constructs house actual souls and represent what remains of a dying empire's last attempt at greatness. Automatons combine technological ingenuity with magical power, creating a blended being wholly unique to Golarion.*\n\nAutomaton"
+    "description": "*These intelligent constructs house actual souls and represent what remains of a dying empire's last attempt at greatness. Automatons combine technological ingenuity with magical power, creating a blended being wholly unique to Golarion.*\n\nAutomaton",
+    "vision": "low-light-vision"
   },
   {
     "id": "awakened-animal",
@@ -323,7 +327,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "You once enjoyed the simple and boundless pleasures of nature with an innocent, uncluttered mind. You lived from moment to moment, never questioning what comes next or pondering the ramifications of what happened before. You were at one with the wild. Then came the event that changed everything. You drank from a glowing lake, someone pulled a magical prank, a druid sought to elevate your mind. You were pulled out of the present moment of the wild and into a land of thought.\n\n*Awakened Animal*"
+    "description": "You once enjoyed the simple and boundless pleasures of nature with an innocent, uncluttered mind. You lived from moment to moment, never questioning what comes next or pondering the ramifications of what happened before. You were at one with the wild. Then came the event that changed everything. You drank from a glowing lake, someone pulled a magical prank, a druid sought to elevate your mind. You were pulled out of the present moment of the wild and into a land of thought.\n\n*Awakened Animal*",
+    "vision": "normal"
   },
   {
     "id": "azarketi",
@@ -363,21 +368,41 @@
         "ancestryId": "azarketi",
         "name": "Ancient Scale Azarketi",
         "description": "Your lineage stems from azarketis who remain dedicated to their deep-sea roots. Divorced from land society, you're a foreigner to any world above a thousand fathoms deep. You gain darkvision.\n\nYour body is dotted with phosphorescent spots that emit a guiding light and help you communicate. The spots - located primarily on your face, arms, and hands - illuminate a 10-foot radius around you with dim light. You can activate, deactivate, or change the arrangement of lights as an action, which has the concentration trait.",
-        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "benthic-azarketi",
         "ancestryId": "azarketi",
         "name": "Benthic Azarketi",
         "description": "Your heritage traces to azarketis living deep beneath the sea, and you can handle the chilling depths more easily than most. You gain resistance to cold equal to half your level, and you don't treat environmental cold as one degree more severe when you are wet. You adapt to pressure changes from being deep underwater automatically without ill effect.",
-        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens"
+        "source": "Pathfinder Lost Omens Absalom, City of Lost Omens",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "floor(@actor.level/2)"
+          }
+        ]
       },
       {
         "id": "inured-azarketi",
         "ancestryId": "azarketi",
         "name": "Inured Azarketi",
         "description": "Your ancestors had to survive in polluted water that made every breath noxious. You gain poison resistance equal to half your level (minimum 1). Furthermore, you can survive outside of water for 72 hours before you begin to suffocate.",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "mistbreath-azarketi",
@@ -412,7 +437,15 @@
         "ancestryId": "azarketi",
         "name": "Tactile Azarketi",
         "description": "Your skin can detect the slightest changes in ocean currents. You gain imprecise wavesense with a range of 30 feet, allowing you to sense motion in the water around you. You also gain a +1 circumstance bonus to Survival checks to Sense Direction in aquatic environments.",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "wavesense"
+          }
+        ]
       },
       {
         "id": "thalassic-azarketi",
@@ -423,7 +456,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Absalom, City of Lost Omens",
-    "description": "Azarketis, inheritors of a shattered empire's legacy, hold their proud traditions close but still surface to interact with the rest of the world.\n\nThe aquatic humanoids of the Inner Sea share a somber and burdened history. Most refer to these aquatic peoples as gillmen or sometimes Low Azlanti, though they typically refer to themselves as azarketi, an Azlanti word that translates roughly to \"people of the seas.\" After Earthfall, these proud humans were mutated into aquatic servants by their alghollthu foes. Feeling like they don't fully belong with their human brethren nor with the sea that binds them, many azarketis struggle for a sense of identity and purpose. Though they remain distrusted by the surface dwellers, azarketis celebrate their unique lineage and their descent from the venerated Azlanti culture.\n\nAzarketi"
+    "description": "Azarketis, inheritors of a shattered empire's legacy, hold their proud traditions close but still surface to interact with the rest of the world.\n\nThe aquatic humanoids of the Inner Sea share a somber and burdened history. Most refer to these aquatic peoples as gillmen or sometimes Low Azlanti, though they typically refer to themselves as azarketi, an Azlanti word that translates roughly to \"people of the seas.\" After Earthfall, these proud humans were mutated into aquatic servants by their alghollthu foes. Feeling like they don't fully belong with their human brethren nor with the sea that binds them, many azarketis struggle for a sense of identity and purpose. Though they remain distrusted by the surface dwellers, azarketis celebrate their unique lineage and their descent from the venerated Azlanti culture.\n\nAzarketi",
+    "vision": "low-light-vision"
   },
   {
     "id": "catfolk",
@@ -478,7 +512,15 @@
         "ancestryId": "catfolk",
         "name": "Hunting Catfolk",
         "description": "You come from a long line of skilled hunters and trackers and have a particularly keen sense of smell. You gain imprecise scent with a range of 30 feet. This means you can use your sense of smell to determine a creature's location. The GM will usually double the range if you're downwind from the creature or halve the range if you're upwind.\n\nIn addition, you gain a +2 circumstance bonus to Track a creature or object if you've smelled it before.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "scent"
+          }
+        ]
       },
       {
         "id": "jungle-catfolk",
@@ -513,11 +555,19 @@
         "ancestryId": "catfolk",
         "name": "Winter Catfolk",
         "description": "You have a thick coat of fur that protects you from the cold. You gain cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Curious and gregarious wanderers, catfolk combine the features of felines and humanoids in both appearance and temperament. They enjoy learning new things, collecting new tales and trinkets, and ensuring their loved ones are safe and happy. Catfolk view themselves as the chosen guardians of natural places in the world and are often recklessly brave, even in the face of overwhelming opposition. They believe that strong communities, breadth of experience, and continual self-improvement aid them in this fight.*\n\n*Catfolk*"
+    "description": "*Curious and gregarious wanderers, catfolk combine the features of felines and humanoids in both appearance and temperament. They enjoy learning new things, collecting new tales and trinkets, and ensuring their loved ones are safe and happy. Catfolk view themselves as the chosen guardians of natural places in the world and are often recklessly brave, even in the face of overwhelming opposition. They believe that strong communities, breadth of experience, and continual self-improvement aid them in this fight.*\n\n*Catfolk*",
+    "vision": "low-light-vision"
   },
   {
     "id": "centaur",
@@ -597,7 +647,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "Centaurs are proud nomads who range far and wide across their ancestral territories, protecting their lands from exploitation and intrusion. They are survivalists who forge tight bonds with family and community and stand firm in the face of danger. Many are skilled hunters, trackers, and warriors who do battle with bow, steel, and hooves. Brave and stubborn, they're willing to challenge even the fiercest foes and largest forces to protect their homes, kin, and the land within their domain.\n\n*Centaur*"
+    "description": "Centaurs are proud nomads who range far and wide across their ancestral territories, protecting their lands from exploitation and intrusion. They are survivalists who forge tight bonds with family and community and stand firm in the face of danger. Many are skilled hunters, trackers, and warriors who do battle with bow, steel, and hooves. Brave and stubborn, they're willing to challenge even the fiercest foes and largest forces to protect their homes, kin, and the land within their domain.\n\n*Centaur*",
+    "vision": "darkvision"
   },
   {
     "id": "conrasu",
@@ -669,7 +720,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens The Mwangi Expanse",
-    "description": "*Conrasus are shards of cosmic force given consciousness who construct intricate exoskeletons to interface with the mortal world. Both an integral part of the underlying processes of the universe and strangely set apart, conrasus look to aeons to understand their existence.*\n\n*Conrasu*"
+    "description": "*Conrasus are shards of cosmic force given consciousness who construct intricate exoskeletons to interface with the mortal world. Both an integral part of the underlying processes of the universe and strangely set apart, conrasus look to aeons to understand their existence.*\n\n*Conrasu*",
+    "vision": "normal"
   },
   {
     "id": "dwarf",
@@ -736,7 +788,14 @@
         "ancestryId": "dwarf",
         "name": "Forge Dwarf",
         "description": "You have a remarkable adaptation to hot environments. This grants you fire resistance equal to half your level (minimum 1), and you treat environmental heat effects as if they were one step less extreme (incredible heat becomes extreme, extreme heat becomes severe, and so on).",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "fire",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "forge-blessed-dwarf",
@@ -764,11 +823,19 @@
         "ancestryId": "dwarf",
         "name": "Strong-Blooded Dwarf",
         "description": "Your blood runs hearty and strong, and you can shake off toxins. You gain poison resistance equal to half your level (minimum 1), and each of your successful saving throws against a poison affliction reduces its stage by 2, or by 1 for a virulent poison. Each critical success against an ongoing poison reduces its stage by 3, or by 2 for a virulent poison.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*Dwarves have a well-earned reputation as a stoic and stern people, ensconced within citadels and cities carved from solid rock. While some see them as dour and humorless crafters of stone and metal, dwarves and those who have spent time among them understand their unbridled zeal for their work, caring far more about quality than quantity. To a stranger, they can seem untrusting and clannish, but to their friends and family, they are warm and caring, their halls filled with the sounds of laughter and hammers hitting anvils.*\n\n*Dwarf*"
+    "description": "*Dwarves have a well-earned reputation as a stoic and stern people, ensconced within citadels and cities carved from solid rock. While some see them as dour and humorless crafters of stone and metal, dwarves and those who have spent time among them understand their unbridled zeal for their work, caring far more about quality than quantity. To a stranger, they can seem untrusting and clannish, but to their friends and family, they are warm and caring, their halls filled with the sounds of laughter and hammers hitting anvils.*\n\n*Dwarf*",
+    "vision": "darkvision"
   },
   {
     "id": "elf",
@@ -815,21 +882,41 @@
         "ancestryId": "elf",
         "name": "Arctic Elf",
         "description": "You dwell deep in the frozen north and have gained incredible resilience against cold environments, granting you cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "cavern-elf",
         "ancestryId": "elf",
         "name": "Cavern Elf",
         "description": "You were born or spent many years in underground tunnels or caverns where light is scarce. You gain darkvision.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "desert-elf",
         "ancestryId": "elf",
         "name": "Desert Elf",
         "description": "You live under the desert's blazing heat, gaining incredible resilience to warm environments. You gain fire resistance equal to half your level (minimum 1), and environmental heat effects are one step less extreme for you (incredible heat becomes extreme, extreme heat becomes severe, and so on).",
-        "source": "Pathfinder Lost Omens Character Guide"
+        "source": "Pathfinder Lost Omens Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "fire",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "seer-elf",
@@ -854,7 +941,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*As an ancient people, elves have seen great change and have the perspective that can come only from watching the arc of history. After leaving the world in ancient times, they returned to a changed land, and they still struggle to reclaim their ancestral homes, most notably from terrible demons that have invaded parts of their lands. To some, the elves are objects of awe—graceful and beautiful, with immense talent and knowledge. Among themselves, however, the elves place far more importance on personal freedom than on living up to these ideals.*\n\n*Elf*"
+    "description": "*As an ancient people, elves have seen great change and have the perspective that can come only from watching the arc of history. After leaving the world in ancient times, they returned to a changed land, and they still struggle to reclaim their ancestral homes, most notably from terrible demons that have invaded parts of their lands. To some, the elves are objects of awe—graceful and beautiful, with immense talent and knowledge. Among themselves, however, the elves place far more importance on personal freedom than on living up to these ideals.*\n\n*Elf*",
+    "vision": "low-light-vision"
   },
   {
     "id": "fetchling",
@@ -896,7 +984,14 @@
         "ancestryId": "fetchling",
         "name": "Deep Fetchling",
         "description": "Your predecessors dwelled in the Shadow Plane's deepest, most treacherous regions. You might cast a denser shadow, have a slower pulse, or find comfort in the embrace of darkness. You gain cold or void resistance equal to half your level (minimum 1), chosen when you gain this heritage.",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "{item|flags.system.rulesSelections.heritageDeepFetchling}",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "liminal-fetchling",
@@ -921,7 +1016,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Once human and now something apart, fetchlings display the Shadow Plane's ancient influence through monochrome complexions, glowing eyes, and the casting of supernatural shadows.*\n\n*Fetchling*"
+    "description": "*Once human and now something apart, fetchlings display the Shadow Plane's ancient influence through monochrome complexions, glowing eyes, and the casting of supernatural shadows.*\n\n*Fetchling*",
+    "vision": "darkvision"
   },
   {
     "id": "fleshwarp",
@@ -984,7 +1080,14 @@
         "ancestryId": "fleshwarp",
         "name": "Shapewrought Fleshwarp",
         "description": "A victim of fleshwarping, you likely bear loose flesh, bony spurs, or features of inhuman creatures sprouting from your skin. You have nevertheless turned the psychic toll of your transformation into a strength. You gain resistance to mental damage equal to half your level (minimum 1).",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "mental",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "surgewise-fleshwarp",
@@ -1002,7 +1105,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Fleshwarps are people whose forms were created or radically transformed by magic, alchemy, or unnatural energies. Their unorthodox appearance can make it difficult for them to find a place for themselves in the world.*\n\n*Fleshwarp*"
+    "description": "*Fleshwarps are people whose forms were created or radically transformed by magic, alchemy, or unnatural energies. Their unorthodox appearance can make it difficult for them to find a place for themselves in the world.*\n\n*Fleshwarp*",
+    "vision": "low-light-vision"
   },
   {
     "id": "ghoran",
@@ -1063,7 +1167,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Impossible Lands",
-    "description": "These intelligent plant people, created by a long-dead druid, possess a sort of immortality through their seeds—unless these are destroyed by external events other than merely the ravages of time.\n\nGhoran"
+    "description": "These intelligent plant people, created by a long-dead druid, possess a sort of immortality through their seeds—unless these are destroyed by external events other than merely the ravages of time.\n\nGhoran",
+    "vision": "low-light-vision"
   },
   {
     "id": "gnome",
@@ -1124,21 +1229,42 @@
         "ancestryId": "gnome",
         "name": "Sensate Gnome",
         "description": "You see all colors as brighter, hear all sounds as richer, and especially smell all scents with incredible detail. You gain a special sense: imprecise scent with a range of 30 feet. This means you can use your sense of smell to determine the exact location of a creature. The GM will usually double the range if you're downwind from the creature or halve the range if you're upwind.\n\nIn addition, you gain a +2 circumstance bonus to Perception checks whenever you're trying to locate an undetected creature that is within the range of your scent.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "scent"
+          }
+        ]
       },
       {
         "id": "umbral-gnome",
         "ancestryId": "gnome",
         "name": "Umbral Gnome",
         "description": "Whether from a connection to dark or shadowy fey, from the underground gnomes known as drathnelar, or from another source, you can see in complete darkness. You gain darkvision.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "vivacious-gnome",
         "ancestryId": "gnome",
         "name": "Vivacious Gnome",
         "description": "You have an incredibly strong connection to the vitality energy that flows through the First World, making it harder to attack your life force with void energy. You gain void resistance equal to half your level (minimum 1). When you have the Doomed condition, the condition affects you as if its value was 1 lower than it actually is (doomed 1 has no effect, doomed 2 causes you to die at Dying 3, and so on).",
-        "source": "Pathfinder Lost Omens Character Guide"
+        "source": "Pathfinder Lost Omens Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "void",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "wellspring-gnome",
@@ -1149,7 +1275,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*Long ago, early gnome ancestors emigrated from the First World, realm of the fey. While it's unclear why the first gnomes wandered to Golarion, this lineage manifests in modern gnomes as bizarre reasoning, eccentricity, obsessive tendencies, and what some see as naivete. These qualities are further reflected in their physical characteristics, such as spindly limbs, brightly colored hair, and childlike and extremely expressive facial features that further reflect their otherworldly origins.*\n\n*Gnome*"
+    "description": "*Long ago, early gnome ancestors emigrated from the First World, realm of the fey. While it's unclear why the first gnomes wandered to Golarion, this lineage manifests in modern gnomes as bizarre reasoning, eccentricity, obsessive tendencies, and what some see as naivete. These qualities are further reflected in their physical characteristics, such as spindly limbs, brightly colored hair, and childlike and extremely expressive facial features that further reflect their otherworldly origins.*\n\n*Gnome*",
+    "vision": "low-light-vision"
   },
   {
     "id": "goblin",
@@ -1188,7 +1315,14 @@
         "ancestryId": "goblin",
         "name": "Charhide Goblin",
         "description": "Your ancestors have always had a connection to fire and a thicker skin, which allows you to resist burning. You gain fire resistance equal to half your level (minimum 1). You can also recover from being on fire more easily. Your flat check to remove persistent fire damage is DC 10 instead of DC 15, which is reduced to Flat DC 5 if another creature uses a particularly appropriate action to help.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "fire",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "dokkaebi-goblin",
@@ -1216,7 +1350,14 @@
         "ancestryId": "goblin",
         "name": "Snow Goblin",
         "description": "You are acclimated to living in frigid lands and have skin ranging from sky blue to navy in color, as well as blue fur. You gain cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "tailed-goblin",
@@ -1241,7 +1382,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*The convoluted histories other people cling to don't interest goblins. These small folk live in the moment, and they prefer tall tales over factual records. The wars of a few decades ago might as well be from the ancient past. Misunderstood by other people, goblins are happy how they are. Goblin virtues are about being present, creative, and honest. They strive to lead fulfilled lives, rather than worrying about how their journeys will end. To tell stories, not nitpick the facts. To be small, but dream big.*\n\n*Goblin*"
+    "description": "*The convoluted histories other people cling to don't interest goblins. These small folk live in the moment, and they prefer tall tales over factual records. The wars of a few decades ago might as well be from the ancient past. Misunderstood by other people, goblins are happy how they are. Goblin virtues are about being present, creative, and honest. They strive to lead fulfilled lives, rather than worrying about how their journeys will end. To tell stories, not nitpick the facts. To be small, but dream big.*\n\n*Goblin*",
+    "vision": "darkvision"
   },
   {
     "id": "goloma",
@@ -1279,7 +1421,13 @@
         "ancestryId": "goloma",
         "name": "Farsight Goloma",
         "description": "Your eyes have adapted to see more in less than favorable conditions. You gain low-light vision.",
-        "source": "Pathfinder Lost Omens The Mwangi Expanse"
+        "source": "Pathfinder Lost Omens The Mwangi Expanse",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "low-light-vision"
+          }
+        ]
       },
       {
         "id": "frightful-goloma",
@@ -1311,7 +1459,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens The Mwangi Expanse",
-    "description": "*Golomas fear most other people and deliberately use their unusual biology to frighten off those they consider to be dangerous predators. Rarely seen and poorly understood, golomas' many-eyed and wooden faced visages instill terror in most they meet.*\n\n*Goloma*"
+    "description": "*Golomas fear most other people and deliberately use their unusual biology to frighten off those they consider to be dangerous predators. Rarely seen and poorly understood, golomas' many-eyed and wooden faced visages instill terror in most they meet.*\n\n*Goloma*",
+    "vision": "normal"
   },
   {
     "id": "halfling",
@@ -1383,7 +1532,13 @@
         "ancestryId": "halfling",
         "name": "Twilight Halfling",
         "description": "Your ancestors performed many secret acts under the concealing cover of dusk, whether for good or ill, and over time they developed the ability to see in twilight beyond even the usual keen sight of halflings. You gain low-light vision.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "low-light-vision"
+          }
+        ]
       },
       {
         "id": "wildwood-halfling",
@@ -1394,7 +1549,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*Claiming no place as their own, halflings control few settlements larger than villages. Instead, they frequently live among humans within the walls of larger cities, carving out small communities alongside taller folk. Many halflings lead perfectly fulfilling lives in the shadows of their larger neighbors, while others prefer a nomadic existence, traveling the world and taking advantage of opportunities and adventures as they come.*\n\n*Halfling*"
+    "description": "*Claiming no place as their own, halflings control few settlements larger than villages. Instead, they frequently live among humans within the walls of larger cities, carving out small communities alongside taller folk. Many halflings lead perfectly fulfilling lives in the shadows of their larger neighbors, while others prefer a nomadic existence, traveling the world and taking advantage of opportunities and adventures as they come.*\n\n*Halfling*",
+    "vision": "normal"
   },
   {
     "id": "hobgoblin",
@@ -1454,7 +1610,14 @@
         "ancestryId": "hobgoblin",
         "name": "Smokeworker Hobgoblin",
         "description": "Your family have been alchemists, engineers, and scientists for generations, laboring on projects that bring smoke and fire to the field of battle. You gain fire resistance equal to half your level (minimum 1). You automatically succeed at the DC 5 flat check to target a Concealed creature if that creature is concealed only by smoke.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "fire",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "steelskin-hobgoblin",
@@ -1479,7 +1642,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Taller and stronger than their goblin kin, hobgoblins are equals in strength and size to humans, with broad shoulders and long, powerful arms.*\n\n*Hobgoblin*"
+    "description": "*Taller and stronger than their goblin kin, hobgoblins are equals in strength and size to humans, with broad shoulders and long, powerful arms.*\n\n*Hobgoblin*",
+    "vision": "darkvision"
   },
   {
     "id": "human",
@@ -1535,11 +1699,19 @@
         "ancestryId": "human",
         "name": "Wintertouched Human",
         "description": "The power of winter flows through you. This heritage is most common among the Jadwiga of Irrisen, due to their descent from Baba Yaga, and certain Erutaki touched by the spirits. You gain cold resistance equal to half your level (minimum 1), and you treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Lost Omens Character Guide"
+        "source": "Pathfinder Lost Omens Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*As unpredictable and varied as any of Golarion's peoples, humans have exceptional drive and the capacity to endure and expand. Though many civilizations thrived before humanity rose to prominence, humans have built some of the greatest and the most terrible societies throughout the course of history, and today they are the most populous people in the realms around the Inner Sea.*\n\n*Human*"
+    "description": "*As unpredictable and varied as any of Golarion's peoples, humans have exceptional drive and the capacity to endure and expand. Though many civilizations thrived before humanity rose to prominence, humans have built some of the greatest and the most terrible societies throughout the course of history, and today they are the most populous people in the realms around the Inner Sea.*\n\n*Human*",
+    "vision": "normal"
   },
   {
     "id": "kashrishi",
@@ -1605,7 +1777,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Impossible Lands",
-    "description": "Kashrishi make their homes in remote areas of the world. These quiet beings have stout, durable frames and distinctive crystalline horns. Their inherent psychic abilities make them natural empaths but also occasionally burden them with the unceasing thoughts of their neighbors.\n\nKashrishi"
+    "description": "Kashrishi make their homes in remote areas of the world. These quiet beings have stout, durable frames and distinctive crystalline horns. Their inherent psychic abilities make them natural empaths but also occasionally burden them with the unceasing thoughts of their neighbors.\n\nKashrishi",
+    "vision": "normal"
   },
   {
     "id": "kholo",
@@ -1651,7 +1824,13 @@
         "ancestryId": "kholo",
         "name": "Cave Kholo",
         "description": "Storytellers spin ancient tales claiming that kholo lived in caves and underground before most of your kind ventured into the light. You're a throwback to these ancients, with a broad chest and markings that resemble short black slashes instead of spots. Your eyes are developed to see perfectly in the dark, a valuable advantage to your clan. You gain darkvision.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "dog-kholo",
@@ -1679,7 +1858,14 @@
         "ancestryId": "kholo",
         "name": "Winter Kholo",
         "description": "You're a hardy kholo covered in thick, tufted fur that makes you able to survive in the harsh winters of the colder territories. You gain cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "witch-kholo",
@@ -1690,7 +1876,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Kholo have bad reputations as brutal raiders and demon-worshipers. Many believe that kholo are witches, cannibals, and worse. The truth is more complex. Kholo are eminently practical and pragmatic hunters and raiders. To them, honor is just another word for pointless risk. Any loss of a kholo affects not just the individual, but their packmates and kin as well. Wasting time on anything but victory, whether it's mercy or cruelty, is seen as little shy of immoral. Kholo are masters of ambushes, tactical feints, and psychological warfare. Equally misunderstood is the kholo practice of ancestor worship and endocannibalism. Kholo consume their dead as a sign of reverence, holding a grand feast and transforming the bones into art or weapons. Kholo extend this honor to respected foes, hoping to bring their enemy's cunning or strength into the clan.*\n\n*xBV8oGvecw7abZxc*"
+    "description": "*Kholo have bad reputations as brutal raiders and demon-worshipers. Many believe that kholo are witches, cannibals, and worse. The truth is more complex. Kholo are eminently practical and pragmatic hunters and raiders. To them, honor is just another word for pointless risk. Any loss of a kholo affects not just the individual, but their packmates and kin as well. Wasting time on anything but victory, whether it's mercy or cruelty, is seen as little shy of immoral. Kholo are masters of ambushes, tactical feints, and psychological warfare. Equally misunderstood is the kholo practice of ancestor worship and endocannibalism. Kholo consume their dead as a sign of reverence, holding a grand feast and transforming the bones into art or weapons. Kholo extend this honor to respected foes, hoping to bring their enemy's cunning or strength into the clan.*\n\n*xBV8oGvecw7abZxc*",
+    "vision": "low-light-vision"
   },
   {
     "id": "kitsune",
@@ -1753,7 +1940,14 @@
         "ancestryId": "kitsune",
         "name": "Frozen Wind Kitsune",
         "description": "Your ancestors crossed the Crown of the World or resided on snowy peaks. You gain cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on). Your alternate form is a common Medium humanoid ancestry prevalent where you grew up (typically human), called a tailless form.",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "palace-echoes-kitsune",
@@ -1764,7 +1958,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Kitsune are a charismatic and witty people with a connection to the spiritual that grants them many magical abilities, chiefly the power to shapechange into other forms. Whether they pass unseen among other peoples or hold their tails high, kitsune are clever observers of the societies around them.*\n\nKitsune"
+    "description": "*Kitsune are a charismatic and witty people with a connection to the spiritual that grants them many magical abilities, chiefly the power to shapechange into other forms. Whether they pass unseen among other peoples or hold their tails high, kitsune are clever observers of the societies around them.*\n\nKitsune",
+    "vision": "low-light-vision"
   },
   {
     "id": "kobold",
@@ -1826,7 +2021,14 @@
         "ancestryId": "kobold",
         "name": "Elementheart Kobold",
         "description": "When you hatched, you imprinted on a creature strongly associated with one of the Elemental Planes, such as an elemental or genie. Choose air, earth, fire, metal, water, or wood for your elemental benefactor. You gain resistance equal to half your level (minimum 1) to the damage type associated with your elemental benefactor: cold for air, electricity for earth, fire for fire, sonic for metal, acid for water, or poison for wood.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "{item|flags.system.rulesSelections.element}",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "heavenscribe-kobold",
@@ -1872,7 +2074,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Every kobold instinctively understands the importance of power, and many are inclined to venerate those who have it, whether they be mighty dragons, cruel fiends, imperious fey, or even ancient artifacts. Kobolds seek out these alliances out of a sense of pragmatism—after all, who would dare bully a kobold who serves an ancient dragon?—but also because kobold eggs incubated near such loci of power take on physical traits (and sometimes abilities) similar to those of the warren's benefactor. On their own, kobolds are ingenious crafters and devoted allies, but outsiders who trespass into their territory find them to be inspired skirmishers and clever ambushers. However, these reptilian opportunists prove happy to cooperate with other humanoids when it's to their benefit, combining caution and cunning to make their fortunes in the wider world.*\n\n*Kobold*"
+    "description": "*Every kobold instinctively understands the importance of power, and many are inclined to venerate those who have it, whether they be mighty dragons, cruel fiends, imperious fey, or even ancient artifacts. Kobolds seek out these alliances out of a sense of pragmatism—after all, who would dare bully a kobold who serves an ancient dragon?—but also because kobold eggs incubated near such loci of power take on physical traits (and sometimes abilities) similar to those of the warren's benefactor. On their own, kobolds are ingenious crafters and devoted allies, but outsiders who trespass into their territory find them to be inspired skirmishers and clever ambushers. However, these reptilian opportunists prove happy to cooperate with other humanoids when it's to their benefit, combining caution and cunning to make their fortunes in the wider world.*\n\n*Kobold*",
+    "vision": "darkvision"
   },
   {
     "id": "leshy",
@@ -1932,7 +2135,13 @@
         "ancestryId": "leshy",
         "name": "Fungus Leshy",
         "description": "Your body was made from fungi that grows in the shade of caves and trees, and you are at home in dark caverns and warrens. You gain darkvision. You lose the plant trait and gain the fungus trait.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "gourd-leshy",
@@ -1992,7 +2201,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*Guardians and emissaries of the environment, leshies are immortal spirits of nature temporarily granted a physical form.*\n\n*Leshy*"
+    "description": "*Guardians and emissaries of the environment, leshies are immortal spirits of nature temporarily granted a physical form.*\n\n*Leshy*",
+    "vision": "low-light-vision"
   },
   {
     "id": "lizardfolk",
@@ -2067,7 +2277,14 @@
         "ancestryId": "lizardfolk",
         "name": "Sandstrider Lizardfolk",
         "description": "Your thick scales help you retain water and combat the sun's glare. You gain fire resistance equal to half your level (minimum 1). Environmental heat effects are one step less extreme for you, and you can go 10 times as long as normal before you are affected by starvation or thirst. However, unless you wear protective gear or take shelter, environmental cold effects are one step more extreme for you.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "fire",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "unseen-lizardfolk",
@@ -2092,7 +2309,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Lizardfolk are consummate survivors, heirs to empires considered ancient even by the elves.*\n\n*Lizardfolk*"
+    "description": "*Lizardfolk are consummate survivors, heirs to empires considered ancient even by the elves.*\n\n*Lizardfolk*",
+    "vision": "normal"
   },
   {
     "id": "merfolk",
@@ -2131,14 +2349,28 @@
         "ancestryId": "merfolk",
         "name": "Abyssal Merfolk",
         "description": "You live far, far below the surface of the ocean. Your fish tail might resemble a viperfish or anglerfish, and you might have luminous eyes or translucent skin. Abyssal merfolk have an uncanny reputation, but they can exist in even the most lightless realms. You gain darkvision and are immune to the crushing pressure of the oceanic depths.",
-        "source": "Pathfinder Howl of the Wild"
+        "source": "Pathfinder Howl of the Wild",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "carcharodon-merfolk",
         "ancestryId": "merfolk",
         "name": "Carcharodon Merfolk",
         "description": "As a fearsome shark merfolk, your lower body is similar to that of one of the apex predators of the ocean. Like a shark, you can smell blood from quite a distance. You gain scent as an imprecise sense with a range of 30 feet. However, you can smell spilled blood at a range of 120 feet in the air and 500 feet in the water.",
-        "source": "Pathfinder Howl of the Wild"
+        "source": "Pathfinder Howl of the Wild",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "selector": "scent",
+            "value": 30
+          }
+        ]
       },
       {
         "id": "pelagic-merfolk",
@@ -2152,7 +2384,14 @@
         "ancestryId": "merfolk",
         "name": "Reef Merfolk",
         "description": "You were raised amid colorful corals and schools of tropical fish. Compared to most merfolk, your body is vividly hued with stripes, spots, and patterns like a clownfish or angelfish. You're used to the occasionally toxic denizens of your home and are bothered little by stings or petty poisons. You gain poison resistance equal to half your level (minimum 1), and each of your successful saving throws against a poison affliction reduces its stage by 2, or by 1 for a virulent poison. Each critical success against an ongoing poison reduces its stage by 3, or by 2 for a virulent poison.",
-        "source": "Pathfinder Howl of the Wild"
+        "source": "Pathfinder Howl of the Wild",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "sailfish-merfolk",
@@ -2163,7 +2402,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "Merfolk live in every ocean of Golarion, infinite in their variety and awe-inspiring in their majesty. They consider themselves, not without some merit, the rulers of the sea. Among the tropical reefs of the Fever Sea, merfolk build temples and palaces of brightly colored corals. Beneath the ice floes of the Shining Sea, merfolk hunt seals and whales for food in small, standoffish clans. In the Embaral Ocean, merfolk populate the great trading city of Alohmab, built into the shell of a titanic snail that crawls across the ocean floor.\n\n*Merfolk*"
+    "description": "Merfolk live in every ocean of Golarion, infinite in their variety and awe-inspiring in their majesty. They consider themselves, not without some merit, the rulers of the sea. Among the tropical reefs of the Fever Sea, merfolk build temples and palaces of brightly colored corals. Beneath the ice floes of the Shining Sea, merfolk hunt seals and whales for food in small, standoffish clans. In the Embaral Ocean, merfolk populate the great trading city of Alohmab, built into the shell of a titanic snail that crawls across the ocean floor.\n\n*Merfolk*",
+    "vision": "low-light-vision"
   },
   {
     "id": "minotaur",
@@ -2209,7 +2449,14 @@
         "ancestryId": "minotaur",
         "name": "Glacier Cavern Minotaur",
         "description": "Your fur grows thick and warm, well suited to the frozen mountains in which you reside. You gain cold resistance equal to half your level (minimum of 1). Environmental cold effects are one step less extreme for you.",
-        "source": "Pathfinder Howl of the Wild"
+        "source": "Pathfinder Howl of the Wild",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "littlehorn-minotaur",
@@ -2241,7 +2488,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "Minotaurs stalk complex passageways, whether natural or artificial, and are masters of stone architecture. Inquisitive and steadfast, these bovine humanoids spend their lives perfecting the pursuit that calls to them, which can sometimes lead them far from the enclaves where they were raised. Minotaurs are originally from the Iblydos archipelago but have spread far and wide across Golarion, forming close-knit communities often near mountains or beneath the surface of the earth. Though sometimes mistaken for simple brutes, minotaurs have scholars and warriors alike. Those who can look past their appearance will find an affinity for building and navigation, as well as creative problem-solving.\n\n*Minotaur*"
+    "description": "Minotaurs stalk complex passageways, whether natural or artificial, and are masters of stone architecture. Inquisitive and steadfast, these bovine humanoids spend their lives perfecting the pursuit that calls to them, which can sometimes lead them far from the enclaves where they were raised. Minotaurs are originally from the Iblydos archipelago but have spread far and wide across Golarion, forming close-knit communities often near mountains or beneath the surface of the earth. Though sometimes mistaken for simple brutes, minotaurs have scholars and warriors alike. Those who can look past their appearance will find an affinity for building and navigation, as well as creative problem-solving.\n\n*Minotaur*",
+    "vision": "darkvision"
   },
   {
     "id": "nagaji",
@@ -2294,7 +2542,15 @@
         "ancestryId": "nagaji",
         "name": "Shimmertongue Nagaji",
         "description": "You were born with a keen sense for magic, able to taste its unique effects in the air. You gain magicsense as a vague sense that has a range of 30 feet—like all vague senses, it's only about as precise as an average human's sense of smell, meaning you generally can predict only if magic is present; however, each tradition of magic has a unique taste to you, allowing you to identify the tradition of magic present.",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "acuity": "vague",
+            "key": "Sense",
+            "range": 30,
+            "selector": "magicsense"
+          }
+        ]
       },
       {
         "id": "titan-nagaji",
@@ -2308,7 +2564,14 @@
         "ancestryId": "nagaji",
         "name": "Venomshield Nagaji",
         "description": "Your intrinsic connection to nagas and mundane serpents grants you an innate resistance to toxins of every sort. You gain resistance to poison equal to half your level (minimum 1 resistance), and you gain a +1 circumstance bonus to all saving throws against poison.",
-        "source": "Pathfinder Lost Omens Impossible Lands"
+        "source": "Pathfinder Lost Omens Impossible Lands",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "whipfang-nagaji",
@@ -2319,7 +2582,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Impossible Lands",
-    "description": "With humanoid figures and serpentine heads, nagaji are heralds, companions, and servitors of powerful nagas. They hold a deep reverence for holy areas and spiritual truths, an aspect many others find as intimidating as a nagaji's appearance.\n\nNagaji"
+    "description": "With humanoid figures and serpentine heads, nagaji are heralds, companions, and servitors of powerful nagas. They hold a deep reverence for holy areas and spiritual truths, an aspect many others find as intimidating as a nagaji's appearance.\n\nNagaji",
+    "vision": "low-light-vision"
   },
   {
     "id": "orc",
@@ -2374,7 +2638,14 @@
         "ancestryId": "orc",
         "name": "Grave Orc",
         "description": "You were exposed to powerful necromantic energies that should have killed you—but you survived. Your skin is cold, clammy, and gray. You gain resistance to void damage equal to half your level (minimum 1). You also gain a +1 circumstance bonus to saving throws against effects with the death or void trait.",
-        "source": "Pathfinder Player Core"
+        "source": "Pathfinder Player Core",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "void",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "hold-scarred-orc",
@@ -2399,7 +2670,8 @@
       }
     ],
     "source": "Pathfinder Player Core",
-    "description": "*Orcs are forged in the fires of violence and conflict, often from the moment they are born. As they live lives that are frequently cut brutally short, orcs revel in testing their strength against worthy foes, whether by challenging a higher-ranking member of their community for dominance or raiding a neighboring settlement. Many orcs seek glory as soon as they can walk and carry a blade or club, taming wild beasts or hunting deadly monsters.*\n\n*Orc*"
+    "description": "*Orcs are forged in the fires of violence and conflict, often from the moment they are born. As they live lives that are frequently cut brutally short, orcs revel in testing their strength against worthy foes, whether by challenging a higher-ranking member of their community for dominance or raiding a neighboring settlement. Many orcs seek glory as soon as they can walk and carry a blade or club, taming wild beasts or hunting deadly monsters.*\n\n*Orc*",
+    "vision": "darkvision"
   },
   {
     "id": "poppet",
@@ -2437,7 +2709,14 @@
         "ancestryId": "poppet",
         "name": "Ghost Poppet",
         "description": "You awakened when a bit of another person's life force and a fragment of their soul-possibly, but not always, at the moment of their death-found its way into your constructed body. You don't remember anything more than vague flashes of your \"before life,\" but that life essence still protects you. You gain resistance to void damage equal to half your level (minimum 1).",
-        "source": "Pathfinder Lost Omens The Grand Bazaar"
+        "source": "Pathfinder Lost Omens The Grand Bazaar",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "void",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "stuffed-poppet",
@@ -2476,7 +2755,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens The Grand Bazaar",
-    "description": "*Poppets are small, basic constructs that typically help their owners with simple tasks. Occasionally, poppets gain sapience, independence, and a spark of life. Elevated beyond mere helpers or playthings, these poppets are free to chart their own destinies.*\n\n*Poppet*"
+    "description": "*Poppets are small, basic constructs that typically help their owners with simple tasks. Occasionally, poppets gain sapience, independence, and a spark of life. Elevated beyond mere helpers or playthings, these poppets are free to chart their own destinies.*\n\n*Poppet*",
+    "vision": "darkvision"
   },
   {
     "id": "ratfolk",
@@ -2518,7 +2798,13 @@
         "ancestryId": "ratfolk",
         "name": "Deep Rat",
         "description": "Your ancestors lived deeper underground than other ratfolk, granting you the ability to see in the dark. You gain darkvision.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "desert-rat",
@@ -2532,7 +2818,15 @@
         "ancestryId": "ratfolk",
         "name": "Longsnout Rat",
         "description": "Your long snout gives you a keener sense of smell than most ratfolk. You gain imprecise scent with a range of 30 feet. This means you can use your sense of smell to determine a creature's location. The GM will usually double the range if you're downwind from the creature or halve the range if you're upwind.\n\nIn addition, you gain a +2 circumstance bonus to Perception checks to Seek a creature or object within the range of your scent.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "scent"
+          }
+        ]
       },
       {
         "id": "sewer-rat",
@@ -2553,7 +2847,14 @@
         "ancestryId": "ratfolk",
         "name": "Snow Rat",
         "description": "You have a thicker coat and bulkier frame to defend against the cold, granting you cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "tunnel-rat",
@@ -2564,7 +2865,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Ysoki are beings that most surface-dwelling humanoids refer to as \"ratfolk.\" They are a communal people who prefer cramped conditions, with up to 100 individuals living in a given home. If they can't find homes in town, ratfolk may instead live in caves and cavern complexes, as these provide great storage for the many and varied goods they bring back from trading expeditions.*\n\nRatfolk"
+    "description": "*Ysoki are beings that most surface-dwelling humanoids refer to as \"ratfolk.\" They are a communal people who prefer cramped conditions, with up to 100 individuals living in a given home. If they can't find homes in town, ratfolk may instead live in caves and cavern complexes, as these provide great storage for the many and varied goods they bring back from trading expeditions.*\n\nRatfolk",
+    "vision": "low-light-vision"
   },
   {
     "id": "samsaran",
@@ -2613,7 +2915,14 @@
         "ancestryId": "samsaran",
         "name": "Mountaineer Samsaran",
         "description": "Your past incarnations dwelled in the caves on the snowcapped mountains of Tian Xia, so your body has become adept at surviving frigid storms. You gain cold resistance equal to half your level (minimum 1). You treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on).",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "oracular-samsaran",
@@ -2638,7 +2947,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Samsarans, as the tale goes, originated with a group of scholars in Zi Ha who ventured into the mountains to find the cure for an illness ravaging their village. After weeks of peril, they found a freshwater spring filled with pure magical life essence. This water brought the scholars back from the brink of death and cured the villagers. Given a new chance at life, everyone who drank the water devoted the rest of their life to learning and experiencing the world fully. Upon death, this devotion, combined with the magical essence now infused in their bodies, transformed these people into the first samsarans.*\n\n*Samsaran*"
+    "description": "*Samsarans, as the tale goes, originated with a group of scholars in Zi Ha who ventured into the mountains to find the cure for an illness ravaging their village. After weeks of peril, they found a freshwater spring filled with pure magical life essence. This water brought the scholars back from the brink of death and cured the villagers. Given a new chance at life, everyone who drank the water devoted the rest of their life to learning and experiencing the world fully. Upon death, this devotion, combined with the magical essence now infused in their bodies, transformed these people into the first samsarans.*\n\n*Samsaran*",
+    "vision": "low-light-vision"
   },
   {
     "id": "sarangay",
@@ -2710,7 +3020,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Sarangay are carabao-headed people who have long survived deep in the forests across Tian Xia. Many adventurers have thought them to be monsters at first, but sarangay are nothing more than a thriving society who value their community and their souls above all else. Their cultures are built upon the intense desire to protect their communities and their chosen leader. Their horns are said to be a crescent moon, and their towering statures are said to have come from their ancestors being stretched so far up to reach their Father Moon while their Mother Earth kept them close to her bosom. They revere the great Father Moon, their First Ancestor, and endeavor to protect and exalt nature above all else, for they understand that they're part of it.*\n\n*Sarangay*"
+    "description": "*Sarangay are carabao-headed people who have long survived deep in the forests across Tian Xia. Many adventurers have thought them to be monsters at first, but sarangay are nothing more than a thriving society who value their community and their souls above all else. Their cultures are built upon the intense desire to protect their communities and their chosen leader. Their horns are said to be a crescent moon, and their towering statures are said to have come from their ancestors being stretched so far up to reach their Father Moon while their Mother Earth kept them close to her bosom. They revere the great Father Moon, their First Ancestor, and endeavor to protect and exalt nature above all else, for they understand that they're part of it.*\n\n*Sarangay*",
+    "vision": "normal"
   },
   {
     "id": "shisk",
@@ -2783,7 +3094,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens The Mwangi Expanse",
-    "description": "*Shisks are secretive mountain-dwellers, bone-feathered humanoids who lurk underground in dark tunnels and caverns. Their fascination with collecting and protecting esoteric knowledge is one of the few things that can persuade them to explore the outside world.*\n\n*Shisk*"
+    "description": "*Shisks are secretive mountain-dwellers, bone-feathered humanoids who lurk underground in dark tunnels and caverns. Their fascination with collecting and protecting esoteric knowledge is one of the few things that can persuade them to explore the outside world.*\n\n*Shisk*",
+    "vision": "darkvision"
   },
   {
     "id": "shoony",
@@ -2821,7 +3133,15 @@
         "ancestryId": "shoony",
         "name": "Bloodhound Shoony",
         "description": "Your ancestors were famous trackers, and you carry in your blood that same gift of the hunt.\n\nYou gain a special sense: imprecise scent with a range of 30 feet. This means you can use your sense of smell to determine the location of a creature, but it remains Hidden.\n\nIn addition, you gain a +2 circumstance bonus to Survival checks to Track creatures that you have previously sensed with your scent.",
-        "source": "Pathfinder #153: Life's Long Shadows"
+        "source": "Pathfinder #153: Life's Long Shadows",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "scent"
+          }
+        ]
       },
       {
         "id": "fishseeker-shoony",
@@ -2842,11 +3162,19 @@
         "ancestryId": "shoony",
         "name": "Thickcoat Shoony",
         "description": "You are a rare shoony who hails from colder climes. You gain cold resistance equal to half your level (minimum 1), and you treat environmental cold effects as if they were one step less extreme (incredible cold becomes extreme, extreme cold becomes severe, and so on). You don't need to succeed at a flat check to target a concealed creature if that creature is Concealed only by snow. Unless you wear protective gear or take shelter, environmental heat effects are one step more extreme for you.",
-        "source": "Pathfinder #153: Life's Long Shadows"
+        "source": "Pathfinder #153: Life's Long Shadows",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "cold",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder #153: Life's Long Shadows",
-    "description": "*Diminutive humanoids who resemble squat, bipedal dogs, shoonies are sometimes mistaken for weak and insular pacifists. However, their sheer perseverance, incredible work ethic, and resourceful use of diplomacy make shoonies far from helpless.*\n\n*Shoony*"
+    "description": "*Diminutive humanoids who resemble squat, bipedal dogs, shoonies are sometimes mistaken for weak and insular pacifists. However, their sheer perseverance, incredible work ethic, and resourceful use of diplomacy make shoonies far from helpless.*\n\n*Shoony*",
+    "vision": "low-light-vision"
   },
   {
     "id": "skeleton",
@@ -2910,7 +3238,8 @@
       }
     ],
     "source": "Pathfinder Book of the Dead",
-    "description": "*Skeletons are considered among the lowest types of undead. They're typically mindless creatures, lacking many of the abilities that make other undead a serious threat. However, the animated bones of dragons, giants, and other great beasts make for dangerous foes. Powerful living creatures can retain some of their might and intellect upon returning as a skeleton. Some necromancers turn their strongest enemies into skeletal undead servants, assuming they can keep control of them.*\n\n*Skeleton*"
+    "description": "*Skeletons are considered among the lowest types of undead. They're typically mindless creatures, lacking many of the abilities that make other undead a serious threat. However, the animated bones of dragons, giants, and other great beasts make for dangerous foes. Powerful living creatures can retain some of their might and intellect upon returning as a skeleton. Some necromancers turn their strongest enemies into skeletal undead servants, assuming they can keep control of them.*\n\n*Skeleton*",
+    "vision": "normal"
   },
   {
     "id": "sprite",
@@ -3016,7 +3345,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Sprites are diminutive, whimsical, and exuberant creatures from the fey realm known as the First World. They love playing pranks, exploring new things, and embracing everything to do with magic.*\n\n*Sprite*"
+    "description": "*Sprites are diminutive, whimsical, and exuberant creatures from the fey realm known as the First World. They love playing pranks, exploring new things, and embracing everything to do with magic.*\n\n*Sprite*",
+    "vision": "low-light-vision"
   },
   {
     "id": "strix",
@@ -3050,7 +3380,13 @@
         "ancestryId": "strix",
         "name": "Nightglider Strix",
         "description": "You are a dedicated nocturnal avian, keeping watch and predating in the most lightless environments. You gain darkvision.",
-        "source": "Pathfinder Lost Omens Ancestry Guide"
+        "source": "Pathfinder Lost Omens Ancestry Guide",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "predator-strix",
@@ -3082,7 +3418,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "description": "*Known as itarii in their own language, strix are reclusive avian humanoids devoted to their homelands and their tribes. They defend their precious communities with broad wingspans and razor talons.*\n\n*Strix*"
+    "description": "*Known as itarii in their own language, strix are reclusive avian humanoids devoted to their homelands and their tribes. They defend their precious communities with broad wingspans and razor talons.*\n\n*Strix*",
+    "vision": "low-light-vision"
   },
   {
     "id": "surki",
@@ -3140,7 +3477,8 @@
       }
     ],
     "source": "Pathfinder Howl of the Wild",
-    "description": "Surkis are an insectile species who subsist on the latent magic in the world around them. As a subterranean species native to the Darklands, surkis have rarely been seen on the surface, and always with long pauses between historical sightings. This is due to surkis' life cycle—long dormancies followed by so-called \"generation digs,\" as they migrate great distances in response to happenings underground. The healing of the Worldwound initiated one of the largest such digs in their history, bringing surkis up into the caverns and passages of the Sarkoris Scar and emerging onto the surface for the first time in many years. Since their emergence, several small surki settlements have been established in secluded corners of Sarkoris, voraciously cataloging the wildlife, magics, and various other inhabitants of the area as they explore the alien environment of the surface.\n\n*Surki*"
+    "description": "Surkis are an insectile species who subsist on the latent magic in the world around them. As a subterranean species native to the Darklands, surkis have rarely been seen on the surface, and always with long pauses between historical sightings. This is due to surkis' life cycle—long dormancies followed by so-called \"generation digs,\" as they migrate great distances in response to happenings underground. The healing of the Worldwound initiated one of the largest such digs in their history, bringing surkis up into the caverns and passages of the Sarkoris Scar and emerging onto the surface for the first time in many years. Since their emergence, several small surki settlements have been established in secluded corners of Sarkoris, voraciously cataloging the wildlife, magics, and various other inhabitants of the area as they explore the alien environment of the surface.\n\n*Surki*",
+    "vision": "darkvision"
   },
   {
     "id": "tanuki",
@@ -3179,7 +3517,15 @@
         "ancestryId": "tanuki",
         "name": "Ascetic Tanuki",
         "description": "It's said your round form is the result of calmness and restraint, not indulgence. You gain scent as an imprecise sense with a range of 30 feet. The GM will usually double the range if you're downwind from something you're trying to smell or halve the range if you're upwind. In addition, you gain a +2 circumstance bonus to Perception checks whenever you're trying to locate food, drink, or a consumable item that's ingested (such as a potion or elixir) using your scent.",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "acuity": "imprecise",
+            "key": "Sense",
+            "range": 30,
+            "selector": "scent"
+          }
+        ]
       },
       {
         "id": "courageous-tanuki",
@@ -3207,11 +3553,19 @@
         "ancestryId": "tanuki",
         "name": "Virtuous Tanuki",
         "description": "Many tanuki carry a gourd of alcohol to remind themselves to act with virtue, and by these standards, you're quite virtuous indeed. You gain poison resistance equal to half your level (minimum 1). You can eat and drink things when you're Sickened. You can't become incapacitated by conventional alcohol if you don't wish to be.",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Tian Xia is replete with magically gifted ancestries—such as tengu, kitsune, yakshas, and yaoguai—whose powers bring them high regard and who, in turn, use their gifts for responsible ends. Tanuki aren't one of these ancestries. Instead, the shapeshifting raccoon dog–like humanoids use their powers of illusion and transformation in ways more people should: for fun! Tanuki delight in pranks and practical jokes, especially those that allow them to take the high and mighty down a notch and show them what life is like for everyone else. Where other peoples take pride in their storied histories, noble traditions, or intricate ceremonies, tanuki take pride in their simplicity and disregard for the world's many rules. Though some might claim this outlook reduces tanuki to uncouth rubes, tanuki feel it makes them more cultured; after all, one must know a rule to bend it, and one must understand a norm to break it.*\n\n*Tanuki*"
+    "description": "*Tian Xia is replete with magically gifted ancestries—such as tengu, kitsune, yakshas, and yaoguai—whose powers bring them high regard and who, in turn, use their gifts for responsible ends. Tanuki aren't one of these ancestries. Instead, the shapeshifting raccoon dog–like humanoids use their powers of illusion and transformation in ways more people should: for fun! Tanuki delight in pranks and practical jokes, especially those that allow them to take the high and mighty down a notch and show them what life is like for everyone else. Where other peoples take pride in their storied histories, noble traditions, or intricate ceremonies, tanuki take pride in their simplicity and disregard for the world's many rules. Though some might claim this outlook reduces tanuki to uncouth rubes, tanuki feel it makes them more cultured; after all, one must know a rule to bend it, and one must understand a norm to break it.*\n\n*Tanuki*",
+    "vision": "normal"
   },
   {
     "id": "tengu",
@@ -3275,7 +3629,14 @@
         "ancestryId": "tengu",
         "name": "Stormtossed Tengu",
         "description": "Whether due to a blessing from Hei Feng or hatching from your egg during a squall, you are resistant to storms. You gain electricity resistance equal to half your level (minimum 1). You automatically succeed at the flat check to target a Concealed creature if that creature is concealed only by rain or fog.",
-        "source": "Pathfinder Player Core 2"
+        "source": "Pathfinder Player Core 2",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "electricity",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "taloned-tengu",
@@ -3293,7 +3654,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Tengu are survivalists and conversationalists, equally at home living off the wilderness and finding a niche in dense cities. They accumulate knowledge, tools, and companions, adding them to their collection as they travel.*\n\nTengu"
+    "description": "*Tengu are survivalists and conversationalists, equally at home living off the wilderness and finding a niche in dense cities. They accumulate knowledge, tools, and companions, adding them to their collection as they travel.*\n\nTengu",
+    "vision": "low-light-vision"
   },
   {
     "id": "tripkee",
@@ -3372,7 +3734,8 @@
       }
     ],
     "source": "Pathfinder Player Core 2",
-    "description": "*Tripkees are a shy and cautious people who generally seek to avoid being drawn into the affairs of others. Despite their cautious outlook and small stature, adventurous tripkees still take bold and noble action when the situation demands it.*\n\nFhIJtKcINEe7fipX"
+    "description": "*Tripkees are a shy and cautious people who generally seek to avoid being drawn into the affairs of others. Despite their cautious outlook and small stature, adventurous tripkees still take bold and noble action when the situation demands it.*\n\nFhIJtKcINEe7fipX",
+    "vision": "low-light-vision"
   },
   {
     "id": "vanara",
@@ -3432,7 +3795,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Impossible Lands",
-    "description": "Vanaras are inquisitive and mischievous monkey-like humanoids with short, soft fur, expressive eyes, and long, prehensile tails. Their handlike feet and agile builds serve them well in the jungle realms where most vanaras live.\n\nVanara"
+    "description": "Vanaras are inquisitive and mischievous monkey-like humanoids with short, soft fur, expressive eyes, and long, prehensile tails. Their handlike feet and agile builds serve them well in the jungle realms where most vanaras live.\n\nVanara",
+    "vision": "normal"
   },
   {
     "id": "vishkanya",
@@ -3504,11 +3868,19 @@
         "ancestryId": "vishkanya",
         "name": "Venom-Resistant Vishkanya",
         "description": "Your body contains not just venom but numerous antivenoms. You gain poison resistance equal to half your level (minimum 1), and each of your successful saving throws against a poison affliction reduces its stage by 2, or by 1 for a virulent poison. Each critical success against an ongoing poison reduces its stage by 3, or by 2 for a virulent poison.",
-        "source": "Pathfinder Lost Omens Impossible Lands"
+        "source": "Pathfinder Lost Omens Impossible Lands",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "poison",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       }
     ],
     "source": "Pathfinder Lost Omens Impossible Lands",
-    "description": "Vishkanyas are ophidian humanoids who carry potent venom within their blood and saliva. Largely misunderstood due to old tales of their toxicity and natural finesse, vishkanyas work to grow into more than just what stories paint them to be.\n\nVishkanya"
+    "description": "Vishkanyas are ophidian humanoids who carry potent venom within their blood and saliva. Largely misunderstood due to old tales of their toxicity and natural finesse, vishkanyas work to grow into more than just what stories paint them to be.\n\nVishkanya",
+    "vision": "low-light-vision"
   },
   {
     "id": "wayang",
@@ -3582,7 +3954,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Wayangs are diasporic sojourners from the Netherworld where they lived and worked alongside their allies, lightweaving d'ziriaks. Both peoples shared affinities for artistic expression and spiritual introspection, inspiring each other's sensitivities to color, form, and function; they also bolstered each other's defense against rampaging dragons, oni, and undead. This idyll collapsed from divine meddling; some say when Abadar sentenced Zon-Kuthon to exile in the Netherworld, the Midnight Lord's deific presence distorted the plane into a nightmarish domain, while others accounts ascribe fiendish sources to this doom.*\n\n*Wayang*"
+    "description": "*Wayangs are diasporic sojourners from the Netherworld where they lived and worked alongside their allies, lightweaving d'ziriaks. Both peoples shared affinities for artistic expression and spiritual introspection, inspiring each other's sensitivities to color, form, and function; they also bolstered each other's defense against rampaging dragons, oni, and undead. This idyll collapsed from divine meddling; some say when Abadar sentenced Zon-Kuthon to exile in the Netherworld, the Midnight Lord's deific presence distorted the plane into a nightmarish domain, while others accounts ascribe fiendish sources to this doom.*\n\n*Wayang*",
+    "vision": "darkvision"
   },
   {
     "id": "yaksha",
@@ -3629,14 +4002,27 @@
         "ancestryId": "yaksha",
         "name": "Deny the Firstborn Pursuit",
         "description": "You swore a vow to shelter others from the First World's cruelties. Wise to fey's mind-affecting abilities, your vow grants mental resistance equal to half your level (minimum 1), and a +2 circumstance bonus to Nature checks to Recall Knowledge about fey.\n\n---\n\n**Additional Edict** confront cruel fey you encounter (as long as you have a reasonable chance of success)",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "key": "Resistance",
+            "type": "mental",
+            "value": "max(1,floor(@actor.level/2))"
+          }
+        ]
       },
       {
         "id": "deny-the-traitors-rebirth",
         "ancestryId": "yaksha",
         "name": "Deny the Traitor's Rebirth",
         "description": "You swore a vow to deliver others from rakshasas and asuras, whom yaksha legends have condemned as corrupted kin. To counter their shadowy schemes, your vow grants you darkvision and a +1 circumstance bonus to Perception checks to Seek or Sense the Motives of rakshasas and asuras.\n\n---\n\n**Additional Edict** confront rakshasas and asuras you come across (as long as you have a reasonable chance of success); in the unlikely event you find a benevolent rakshasa or asura, you don't have to confront them",
-        "source": "Pathfinder Lost Omens Tian Xia Character Guide"
+        "source": "Pathfinder Lost Omens Tian Xia Character Guide",
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "darkvision"
+          }
+        ]
       },
       {
         "id": "respite-of-a-thousand-roofs",
@@ -3661,7 +4047,8 @@
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Away from shining citadels and opulent palaces, reticent yakshas shelter Tian Xia's rural hinterlands from natural disasters and otherworldly depredations. Famed for resolute vows and prowess with primal magic, yakshas shield the indigent and protect the wilderness, punishing those who threaten either with bone-crushing fury. Yaksha legends recall their origins as divine spirits, overseeing the safety of roads and abodes in a primeval world of vast storm forests and titanic flame floods—the First World, a realm of boundless potentiality. During the Great Abandonment, when the gods left the First World, many yakshas rejected this exodus, instead staying to perform their duties as caretakers. Despite the realm's sudden dearth of divine power, the remaining yakshas swore primordial vows, allowing them to channel power from the nearby Creation's Forge into primal magic and transform swathes of the metamorphic First World into stable regions to provide refuge for destitute fey.*\n\n*Yaksha*"
+    "description": "*Away from shining citadels and opulent palaces, reticent yakshas shelter Tian Xia's rural hinterlands from natural disasters and otherworldly depredations. Famed for resolute vows and prowess with primal magic, yakshas shield the indigent and protect the wilderness, punishing those who threaten either with bone-crushing fury. Yaksha legends recall their origins as divine spirits, overseeing the safety of roads and abodes in a primeval world of vast storm forests and titanic flame floods—the First World, a realm of boundless potentiality. During the Great Abandonment, when the gods left the First World, many yakshas rejected this exodus, instead staying to perform their duties as caretakers. Despite the realm's sudden dearth of divine power, the remaining yakshas swore primordial vows, allowing them to channel power from the nearby Creation's Forge into primal magic and transform swathes of the metamorphic First World into stable regions to provide refuge for destitute fey.*\n\n*Yaksha*",
+    "vision": "low-light-vision"
   },
   {
     "id": "yaoguai",
@@ -3734,6 +4121,7 @@
       }
     ],
     "source": "Pathfinder Lost Omens Tian Xia Character Guide",
-    "description": "*Yaoguai usually begin as simple animals, plants, or objects before finding a way to awaken to sapience, becoming strange shapeshifting creatures in the process. Often originating from an infusion of ambient energy into their original form, yaoguai attain their powers through training their innate magic. Taking care not to expose their true appearance and nature, yaoguai of the same origins or species sometimes form enclaves in which they dedicate their lives to honing their powers or engaging in hedonistic pursuits—though the two aren't mutually exclusive. Yaoguai who lack a solid community, meanwhile, feel compelled to cultivate themselves until they transcend their origin, which might allow them to join society and experience a new kind of freedom.*\n\n*Yaoguai*"
+    "description": "*Yaoguai usually begin as simple animals, plants, or objects before finding a way to awaken to sapience, becoming strange shapeshifting creatures in the process. Often originating from an infusion of ambient energy into their original form, yaoguai attain their powers through training their innate magic. Taking care not to expose their true appearance and nature, yaoguai of the same origins or species sometimes form enclaves in which they dedicate their lives to honing their powers or engaging in hedonistic pursuits—though the two aren't mutually exclusive. Yaoguai who lack a solid community, meanwhile, feel compelled to cultivate themselves until they transcend their origin, which might allow them to join society and experience a new kind of freedom.*\n\n*Yaoguai*",
+    "vision": "normal"
   }
 ]

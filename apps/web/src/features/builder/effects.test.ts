@@ -6,7 +6,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { findFeat, loadDataset } from '@/features/builder/data';
-import { characterEffects, deriveCharacter, featChoicePrompts } from './rules';
+import { characterEffects, characterTraits, deriveCharacter, featChoicePrompts } from './rules';
 import { emptyBuilderState, type BuilderState } from './types';
 
 beforeAll(async () => {
@@ -93,6 +93,31 @@ describe('feat effects on the derived sheet', () => {
     const natural = featChoicePrompts(findFeat('natural-skill'));
     expect(natural).toHaveLength(2); // skillOne + skillTwo
     expect(natural.every((p) => p.options.length === 16)).toBe(true);
+  });
+
+  it('derives ancestry base vision as a sense (Dwarf → darkvision)', () => {
+    const d = deriveCharacter({ ...fighter(), ancestryId: 'dwarf' });
+    expect(d.senses.some((s) => s.type === 'darkvision')).toBe(true);
+  });
+
+  it('derives a heritage resistance, level-scaled (Forge Dwarf → fire)', () => {
+    const build = (level: number): BuilderState => ({
+      ...fighter(level),
+      ancestryId: 'dwarf',
+      heritageId: 'forge-dwarf',
+    });
+    // max(1, floor(level/2)): 1 at level 1, 3 at level 6.
+    expect(characterTraits(build(1)).resistances).toEqual([
+      { type: 'fire', value: 1, source: 'Forge Dwarf' },
+    ]);
+    expect(characterTraits(build(6)).resistances[0]?.value).toBe(3);
+  });
+
+  it('lets a heritage sense upgrade the ancestry vision (Cavern Elf → darkvision, no low-light)', () => {
+    const t = characterTraits({ ...fighter(), ancestryId: 'elf', heritageId: 'cavern-elf' });
+    const types = t.senses.map((s) => s.type);
+    expect(types).toContain('darkvision');
+    expect(types).not.toContain('low-light-vision'); // superseded by darkvision
   });
 
   it('leaves a featless build unchanged', () => {

@@ -4,6 +4,7 @@ import {
   findBackground,
   findClass,
   findFeat,
+  findHeritage,
   findItem,
   getDataset,
   type AbilityKey,
@@ -20,6 +21,7 @@ import {
   armorClass,
   attackRankAtLevel,
   collectSheetEffects,
+  collectTraits,
   maxHitPoints,
   proficiencyBonus,
   proficientDC,
@@ -29,6 +31,8 @@ import {
   stackModifiers,
   type AppliedEffect,
   type AttackCategory,
+  type CharacterTraits,
+  type GrantedSense,
   type Modifier,
   type ProficiencyTrack,
   type RuleElement,
@@ -348,6 +352,54 @@ export function pendingFeatChoices(
   return out;
 }
 
+// --- ancestry / heritage traits: senses & resistances -----------------------
+
+/**
+ * Special senses and damage resistances the character's ancestry and heritage
+ * grant, resolved (and level-scaled) by `@pathway/core`. The ancestry's base
+ * vision is modeled as a sense so it dedupes/upgrades against heritage senses.
+ */
+export function characterTraits(state: BuilderState): CharacterTraits {
+  const level = state.level || 1;
+  const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
+  const heritage = findHeritage(state.ancestryId, state.heritageId);
+  const itemRules: RuleElement[][] = [];
+  const labels: string[] = [];
+
+  if (ancestry?.vision && ancestry.vision !== 'normal') {
+    itemRules.push([{ key: 'Sense', selector: ancestry.vision } as RuleElement]);
+    labels.push(ancestry.name);
+  }
+  if (ancestry && Array.isArray(ancestry.rules)) {
+    itemRules.push(ancestry.rules as RuleElement[]);
+    labels.push(ancestry.name);
+  }
+  if (heritage && Array.isArray(heritage.rules)) {
+    itemRules.push(heritage.rules as RuleElement[]);
+    labels.push(heritage.name);
+  }
+
+  const traits = collectTraits(itemRules, { level }, labels);
+  // Darkvision supersedes low-light-vision (it does everything low-light does),
+  // so don't list both when a heritage upgrades an ancestry's low-light vision.
+  if (traits.senses.some((s) => s.type === 'darkvision')) {
+    traits.senses = traits.senses.filter((s) => s.type !== 'low-light-vision');
+  }
+  return traits;
+}
+
+/** Human-readable label for a granted sense, e.g. "Scent (imprecise, 30 ft)". */
+export function formatSenseLabel(sense: GrantedSense): string {
+  const name = sense.type
+    .split('-')
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w))
+    .join('-');
+  const parts: string[] = [];
+  if (sense.acuity) parts.push(sense.acuity);
+  if (sense.range) parts.push(`${sense.range} ft`);
+  return parts.length ? `${name} (${parts.join(', ')})` : name;
+}
+
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
 export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> {
   const level = state.level || 1;
@@ -485,6 +537,10 @@ export interface DerivedCharacter {
   };
   /** Feat-granted effects applied to this sheet, attributed to their source. */
   effectNotes: AppliedEffect[];
+  /** Special senses granted by ancestry/heritage (darkvision, scent, …). */
+  senses: GrantedSense[];
+  /** Damage resistances granted by ancestry/heritage, resolved at this level. */
+  resistances: CharacterTraits['resistances'];
 }
 
 /**
@@ -530,6 +586,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   // Feat-granted sheet effects (HP bonuses, proficiency-rank grants, typed stat
   // modifiers), resolved from each chosen feat's rule elements by @pathway/core.
   const effects = characterEffects(state);
+  // Ancestry/heritage senses & resistances (level-scaled) from the same engine.
+  const traits = characterTraits(state);
 
   // Net bonus for a stat: the stat's own fundamental item bonus (rune / ABP) plus
   // any feat modifiers on the given selector buckets, run through the PF2e
@@ -785,6 +843,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       unarmoredDefense,
     },
     effectNotes: [...effects.applied, ...weaponSpecNotes],
+    senses: traits.senses,
+    resistances: traits.resistances,
   };
 }
 

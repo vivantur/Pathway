@@ -43,6 +43,12 @@ export interface Heritage {
   versatile?: boolean;
   /** Optional extra languages, senses, etc. — free text summaries for now. */
   grants?: string[];
+  /**
+   * The trait-relevant subset of this heritage's Foundry rule elements — only
+   * `Sense` and `Resistance` — carried for the effects engine (`collectTraits`).
+   * Other rule kinds are intentionally omitted to keep the dataset lean.
+   */
+  rules?: unknown[];
 }
 
 export interface Ancestry {
@@ -63,6 +69,13 @@ export interface Ancestry {
   bonusLanguageChoices: string[];
   traits: string[];
   heritages: Heritage[];
+  /** Base visual sense: 'normal', 'low-light-vision', or 'darkvision'. */
+  vision?: 'normal' | 'low-light-vision' | 'darkvision';
+  /**
+   * The trait-relevant subset of this ancestry's Foundry rule elements — only
+   * `Sense` and `Resistance` — carried for the effects engine (`collectTraits`).
+   */
+  rules?: unknown[];
   source: string;
   description: string;
 }

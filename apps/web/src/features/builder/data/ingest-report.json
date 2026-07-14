@@ -74,5 +74,9 @@
     "heritages": 311,
     "backgrounds": 459,
     "classes": 25
+  },
+  "traits": {
+    "vision": 48,
+    "senseResistanceRules": 61
   }
 }

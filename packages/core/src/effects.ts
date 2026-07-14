@@ -145,11 +145,18 @@ export interface SheetEffects {
 // ---------------------------------------------------------------------------
 //
 // The corpus expresses these effect values as either a number, an integer
-// string, `@actor.level`, or a fully-parenthesized function-call expression such
-// as `ternary(gte(@actor.level,13),2,1)`. No infix operators appear. We parse
-// that grammar and evaluate it; anything unrecognized throws (caller skips).
+// string, `@actor.level`, a fully-parenthesized function-call expression such
+// as `ternary(gte(@actor.level,13),2,1)`, or one using infix arithmetic like
+// `floor(@actor.level/2)` (resistance scaling). We parse both — function calls
+// and the four infix operators `+ - * /` with the usual precedence — and
+// evaluate; anything unrecognized throws (the caller then skips, never guesses).
 
-type Token = { t: "num"; v: number } | { t: "ref" } | { t: "ident"; v: string } | { t: "punc"; v: "(" | ")" | "," };
+type Token =
+  | { t: "num"; v: number }
+  | { t: "ref" }
+  | { t: "ident"; v: string }
+  | { t: "punc"; v: "(" | ")" | "," }
+  | { t: "op"; v: "+" | "-" | "*" | "/" };
 
 function tokenize(src: string): Token[] {
   const tokens: Token[] = [];
@@ -165,6 +172,11 @@ function tokenize(src: string): Token[] {
       i += 1;
       continue;
     }
+    if (c === "+" || c === "-" || c === "*" || c === "/") {
+      tokens.push({ t: "op", v: c });
+      i += 1;
+      continue;
+    }
     if (c === "@") {
       // Only `@actor.level` is supported; any other @-ref is rejected.
       const m = /^@actor\.level/.exec(src.slice(i));
@@ -173,7 +185,8 @@ function tokenize(src: string): Token[] {
       i += m[0].length;
       continue;
     }
-    let m = /^-?\d+(?:\.\d+)?/.exec(src.slice(i));
+    // Bare (unsigned) numbers only; a leading `-` is the unary/binary operator.
+    let m = /^\d+(?:\.\d+)?/.exec(src.slice(i));
     if (m) {
       tokens.push({ t: "num", v: Number(m[0]) });
       i += m[0].length;
@@ -219,11 +232,50 @@ export function evalNumeric(expr: unknown, ctx: EffectContext): number {
   const peek = () => tokens[pos];
   const next = () => tokens[pos++];
 
+  // expr := term (('+' | '-') term)*
   function parseExpr(): number {
+    let acc = parseTerm();
+    for (let p = peek(); p && p.t === "op" && (p.v === "+" || p.v === "-"); p = peek()) {
+      next();
+      const rhs = parseTerm();
+      acc = p.v === "+" ? acc + rhs : acc - rhs;
+    }
+    return acc;
+  }
+
+  // term := unary (('*' | '/') unary)*
+  function parseTerm(): number {
+    let acc = parseUnary();
+    for (let p = peek(); p && p.t === "op" && (p.v === "*" || p.v === "/"); p = peek()) {
+      next();
+      const rhs = parseUnary();
+      acc = p.v === "*" ? acc * rhs : acc / rhs;
+    }
+    return acc;
+  }
+
+  // unary := '-' unary | primary
+  function parseUnary(): number {
+    const p = peek();
+    if (p && p.t === "op" && p.v === "-") {
+      next();
+      return -parseUnary();
+    }
+    return parsePrimary();
+  }
+
+  // primary := num | ref | ident '(' args ')' | '(' expr ')'
+  function parsePrimary(): number {
     const tok = next();
     if (!tok) throw new Error(`unexpected end of "${expr}"`);
     if (tok.t === "num") return tok.v;
     if (tok.t === "ref") return ctx.level;
+    if (tok.t === "punc" && tok.v === "(") {
+      const inner = parseExpr();
+      const close = next();
+      if (!close || close.t !== "punc" || close.v !== ")") throw new Error(`expected ) in "${expr}"`);
+      return inner;
+    }
     if (tok.t === "ident") {
       const fn = FUNCS[tok.v];
       if (!fn) throw new Error(`unsupported function "${tok.v}"`);
@@ -250,6 +302,123 @@ export function evalNumeric(expr: unknown, ctx: EffectContext): number {
   const result = parseExpr();
   if (pos !== tokens.length) throw new Error(`trailing tokens in "${expr}"`);
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// senses & resistances (ancestry / heritage traits)
+// ---------------------------------------------------------------------------
+//
+// Ancestries and heritages grant special senses (darkvision, scent, …) and
+// damage resistances via `Sense` / `Resistance` rule elements. Resistance values
+// are commonly level-scaled expressions (`floor(@actor.level/2)`), evaluated with
+// the same bounded grammar as ranks. Choice-driven resistance types (a
+// `{item|…}` placeholder we don't yet resolve) are skipped and counted.
+
+/** A special sense granted to the character (darkvision, scent, tremorsense, …). */
+export interface GrantedSense {
+  /** Sense selector, e.g. "darkvision", "low-light-vision", "scent", "wavesense". */
+  type: string;
+  /** Acuity, when the sense specifies one. */
+  acuity?: "precise" | "imprecise";
+  /** Range in feet, when the sense is limited. */
+  range?: number;
+  /** Attribution (the ancestry/heritage/feat that granted it). */
+  source: string;
+}
+
+/** A damage resistance granted to the character, resolved at the character's level. */
+export interface GrantedResistance {
+  /** Damage type resisted, e.g. "cold", "fire", "poison". */
+  type: string;
+  /** Resistance amount at the character's level (always ≥ 1). */
+  value: number;
+  /** Attribution (the ancestry/heritage/feat that granted it). */
+  source: string;
+}
+
+export interface CharacterTraits {
+  senses: GrantedSense[];
+  resistances: GrantedResistance[];
+  /** Count of Sense/Resistance rules that couldn't be resolved (choice-driven, unparseable). */
+  skipped: number;
+}
+
+/** How "strong" a sense acuity is, for deduping (precise beats imprecise beats none). */
+const ACUITY_RANK: Record<string, number> = { precise: 2, imprecise: 1 };
+
+/**
+ * Resolve the special senses and damage resistances granted by a set of items'
+ * rule arrays (an ancestry's, a heritage's, …). `labels[i]` attributes item `i`.
+ * Senses dedupe by type keeping the more useful (precise > imprecise, then longer
+ * range); resistances dedupe by type keeping the highest value.
+ */
+export function collectTraits(
+  itemRules: RuleElement[][],
+  ctx: EffectContext,
+  labels: string[] = [],
+): CharacterTraits {
+  const senses = new Map<string, GrantedSense>();
+  const resistances = new Map<string, GrantedResistance>();
+  let skipped = 0;
+
+  const senseBetter = (a: GrantedSense, b: GrantedSense): boolean => {
+    const ra = ACUITY_RANK[a.acuity ?? ""] ?? 0;
+    const rb = ACUITY_RANK[b.acuity ?? ""] ?? 0;
+    if (ra !== rb) return ra > rb;
+    // Unlimited range (undefined) beats any finite range; otherwise longer wins.
+    if ((a.range ?? Infinity) !== (b.range ?? Infinity)) return (a.range ?? Infinity) > (b.range ?? Infinity);
+    return false;
+  };
+
+  itemRules.forEach((rules, itemIndex) => {
+    const source = labels[itemIndex] ?? "";
+    if (!Array.isArray(rules)) return;
+    for (const rule of rules) {
+      if (!rule || typeof rule.key !== "string" || rule.ignored) continue;
+      if (isConditional(rule)) continue; // situational senses/resistances are out of scope
+
+      if (rule.key === "Sense") {
+        const type = rule.selector;
+        if (typeof type !== "string" || type.includes("{item")) {
+          skipped += 1;
+          continue;
+        }
+        const acuity = rule.acuity === "precise" || rule.acuity === "imprecise" ? rule.acuity : undefined;
+        const range = typeof rule.range === "number" && rule.range > 0 ? rule.range : undefined;
+        const next: GrantedSense = { type, source, ...(acuity ? { acuity } : {}), ...(range ? { range } : {}) };
+        const cur = senses.get(type);
+        if (!cur || senseBetter(next, cur)) senses.set(type, next);
+        continue;
+      }
+
+      if (rule.key === "Resistance") {
+        const type = rule.type;
+        if (typeof type !== "string" || type.includes("{item")) {
+          skipped += 1; // choice-driven resistance type — needs a stored selection
+          continue;
+        }
+        let value: number;
+        try {
+          value = evalNumeric(rule.value, ctx);
+        } catch {
+          skipped += 1;
+          continue;
+        }
+        value = Math.floor(value);
+        if (value < 1) continue; // a resistance that rounds to 0 doesn't apply yet
+        const cur = resistances.get(type);
+        if (!cur || value > cur.value) resistances.set(type, { type, value, source });
+        continue;
+      }
+    }
+  });
+
+  const byType = (a: { type: string }, b: { type: string }) => a.type.localeCompare(b.type);
+  return {
+    senses: [...senses.values()].sort(byType),
+    resistances: [...resistances.values()].sort(byType),
+    skipped,
+  };
 }
 
 // ---------------------------------------------------------------------------
