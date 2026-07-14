@@ -97,7 +97,12 @@ export type SpellType = z.infer<typeof spellTypeSchema>;
 export const spellSchema = z.object({
   ...contentBaseSchema.shape,
   spellType: spellTypeSchema,
-  rank: z.number().int().min(1).max(10),
+  /**
+   * The spell's base (unheightened) rank. 1–10 for leveled spells; some data
+   * sources store cantrips as rank 0 (their unheightened rank) while others use
+   * 1 — both are accepted, and the display treats 0/cantrip as "Cantrip".
+   */
+  rank: z.number().int().min(0).max(10),
   /** May be empty — focus spells omit Traditions (the class grants them). */
   traditions: z.array(z.string()),
   /** Optional: a handful of entries (e.g. constant effects) carry no cast cost. */

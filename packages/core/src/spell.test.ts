@@ -368,6 +368,35 @@ describe('defenses & optional actionCost (gap fixes from the AoN audit)', () => 
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.spell.actionCost).toBeUndefined();
   });
+
+  it('coerces a cantrip stored at rank 0 and keeps its associations', () => {
+    // Some data sources (incl. the live DB) store cantrips at level 0 rather than
+    // 1. Rejecting rank 0 was dropping every cantrip to the raw fallback, hiding
+    // its associations on the web.
+    const r = coerceSpell({
+      name: 'Caustic Blast',
+      level: 0,
+      type: 'Cantrip',
+      traits: 'Acid, Cantrip, Concentrate, Manipulate',
+      traditions: 'arcane, primal',
+      source: 'Player Core pg. 319',
+      defense: 'basic Reflex',
+      description: 'Fling a glob of acid that splashes a small area.',
+      associations: [
+        { kind: 'bloodline', values: ['Demonic'] },
+        { kind: 'mystery', values: ['Blight'] },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.spell.rank).toBe(0);
+      expect(r.spell.spellType).toBe('cantrip');
+      expect(r.spell.associations).toEqual([
+        { kind: 'mystery', values: ['Blight'] },
+        { kind: 'bloodline', values: ['Demonic'] },
+      ]);
+    }
+  });
 });
 
 describe('pure helpers', () => {
