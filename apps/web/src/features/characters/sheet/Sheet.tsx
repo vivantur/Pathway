@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { safeHttpUrl } from "@/lib/safeUrl";
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { isDatasetLoaded, loadDataset } from '@/features/builder/data';
 import { PORTRAIT_MIME_TYPES } from '@/features/characters/api';
 import { errorMessage } from '@/features/characters/errorMessage';
 import {
@@ -44,25 +46,32 @@ import {
   SKILL_ABILITY,
   TRADITION_COLOR,
   abilityMod,
-  acTotal,
-  classDC,
   defenseLine,
   fmtMod,
-  focusPoolMax,
-  maxHp,
-  perceptionBonus,
   profLabel,
-  saveBonus,
-  shieldBonus,
-  skillBonus,
   sizeLabel,
-  speed,
   weaponDamage,
   type Ability,
   type PathbuilderBuild,
   type Spellcaster,
   type Weapon,
 } from '@/features/characters/pathbuilder';
+// Core stat numbers go through the adapter so site-built characters show the
+// SAME values as the builder (falls back to pathbuilder.ts otherwise).
+import {
+  acTotal,
+  classDC,
+  focusPoolMax,
+  maxHp,
+  perceptionBonus,
+  resistances as coreResistances,
+  saveBonus,
+  senses as coreSenses,
+  shieldBonus,
+  skillBonus,
+  speed,
+} from './sheetStats';
+import { formatSenseLabel } from '@/features/builder/rules';
 import {
   BookIcon,
   BrainIcon,
@@ -108,6 +117,20 @@ export function Sheet({
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTabId(searchParams.get('tab'));
+
+  // Characters built on the site embed their builder state (`_pathwayBuild`).
+  // Load the builder dataset so `sheetStats` can derive their stats with the
+  // exact same @pathway/core engine the builder used — the sheet then can't
+  // drift from the builder. No-op for imported / bot characters, and cached
+  // across the session once loaded.
+  const hasEmbeddedBuild = !!(build as { _pathwayBuild?: unknown })._pathwayBuild;
+  useQuery({
+    queryKey: ['builder-dataset-for-sheet'],
+    queryFn: loadDataset,
+    enabled: hasEmbeddedBuild && !isDatasetLoaded(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 
   // Live sync: subscribe to bot-side writes on this character. Disabled on
   // read-only public shares (they use a different, non-owner query path).
@@ -918,15 +941,22 @@ function LeftColumn({
   const perception = perceptionBonus(build);
   const overlay = character.overlay ?? {};
   // Overlay-side edits win when present (bot is the authority when set);
-  // otherwise fall back to the ancestry+heritage senses lookup, preferring the
-  // denormalized `ancestry_name`/`heritage_name` columns which stay accurate
-  // even after Pathbuilder re-imports.
+  // then, for site-built characters, the core engine's senses (level-scaled,
+  // heritage-aware — same as the builder); otherwise the ancestry+heritage
+  // lookup, preferring the denormalized `ancestry_name`/`heritage_name` columns
+  // which stay accurate even after Pathbuilder re-imports.
+  const derivedSenses = coreSenses(build);
   const senses =
     overlay.pathway_bot_state?.edits?.senses ??
-    computeSensesFromAncestry(
-      character.ancestry_name ?? build.ancestry,
-      character.heritage_name ?? build.heritage,
-    );
+    (derivedSenses.length > 0
+      ? derivedSenses.map(formatSenseLabel)
+      : computeSensesFromAncestry(
+          character.ancestry_name ?? build.ancestry,
+          character.heritage_name ?? build.heritage,
+        ));
+  // Damage resistances from the core engine (empty for imported/bot characters,
+  // and for low levels where they round to 0).
+  const resistances = coreResistances(build);
   const languages =
     overlay.pathway_bot_state?.edits?.languages ?? build.languages ?? [];
   return (
@@ -945,6 +975,14 @@ function LeftColumn({
           {senses.length ? senses.join(', ') : '—'}
         </p>
         <p className="mt-1 text-xs text-silver/60">Perception {fmtMod(perception)}</p>
+        {resistances.length > 0 && (
+          <p className="mt-1 text-xs text-silver/60">
+            Resistances:{' '}
+            {resistances
+              .map((r) => `${r.type[0].toUpperCase()}${r.type.slice(1)} ${r.value}`)
+              .join(', ')}
+          </p>
+        )}
       </FramedBlock>
       <FramedBlock title="Languages">
         <p className="text-sm text-silver/80">
