@@ -307,7 +307,7 @@ function NoteEditor({
 /** Downtime bank: spendable days + audit log, with grant/spend in edit mode. */
 function DowntimePanel({ charKey, canEdit }: { charKey: string; canEdit: boolean }) {
   const { data, isLoading } = useCharacterDowntime(charKey);
-  const { grant, spend, isPending } = useUpdateCharacterDowntime(charKey);
+  const { grant, spend, isPending, isError, error } = useUpdateCharacterDowntime(charKey);
   const [days, setDays] = useState('');
   const [reason, setReason] = useState('');
 
@@ -371,6 +371,12 @@ function DowntimePanel({ charKey, canEdit }: { charKey: string; canEdit: boolean
                 Spend
               </button>
             </div>
+          )}
+
+          {isError && (
+            <p className="mt-2 text-xs text-red-300">
+              Couldn’t save downtime: {error?.message ?? 'unknown error'}
+            </p>
           )}
 
           {recent.length > 0 && (
