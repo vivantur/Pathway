@@ -87,7 +87,9 @@ export const degreeOfSuccessSchema = z.object({
   failure: z.string().optional(),
   critFailure: z.string().optional(),
 });
-export type DegreeOfSuccess = z.infer<typeof degreeOfSuccessSchema>;
+/** The per-degree effect TEXT on a spell (display copy), distinct from the
+ *  degree-of-success RESOLVER enum in degree.ts. */
+export type DegreeOutcomes = z.infer<typeof degreeOfSuccessSchema>;
 
 export const spellTypeSchema = z.enum(['spell', 'cantrip', 'focus']);
 export type SpellType = z.infer<typeof spellTypeSchema>;
@@ -377,9 +379,9 @@ export function parseSource(input: unknown): Source | undefined {
   return { title: s };
 }
 
-function parseDegreeOfSuccess(v: unknown): DegreeOfSuccess | undefined {
+function parseDegreeOfSuccess(v: unknown): DegreeOutcomes | undefined {
   const rec = asRecord(v);
-  const dos: DegreeOfSuccess = {
+  const dos: DegreeOutcomes = {
     critSuccess: firstStr(rec, 'critSuccess', 'criticalSuccess', 'crit_success', 'critical_success'),
     success: firstStr(rec, 'success'),
     failure: firstStr(rec, 'failure'),

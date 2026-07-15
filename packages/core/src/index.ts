@@ -33,6 +33,11 @@ export * from './derived.js';
 // the shared list of the 16 skill slugs. A shared primitive of both layers.
 export * from './selectors.js';
 
+// Degree of success — the shared resolver attack/save/check route through
+// (four degrees, natural-20/1 shift, ability adjustments). A core L2 primitive,
+// implemented from rules text and locked by the worked examples in its tests.
+export * from './degree.js';
+
 // The damage-type vocabulary — physical/energy types + materials + categories +
 // the structured `DamageDescriptor`. A shared L2 primitive; vocabulary only, no
 // resistance/bypass resolution (that is rules behavior, implemented later).
