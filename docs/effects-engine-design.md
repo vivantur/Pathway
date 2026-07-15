@@ -304,10 +304,14 @@ character-stat namespace / engine input surface landed as `character.ts` (`Resol
 + `resolveSelector` + `characterNamespace`); ~~the content/db schema~~ ✅ substantially built
 (content-store + five entities).
 
-**Shared primitives to design first** (both layers depend on them): the selector vocabulary
-✅ (landed in `selectors.ts` — read-surface namespace + 16 skill slugs); still to build —
-the degree-of-success resolver, the damage-type vocabulary, the expression language, the
-counter model.
+**Shared primitives to design first** (both layers depend on them): ✅ **ALL DONE
+(2026-07-14)** on `phase-7/core-character-model` — selector vocabulary (`selectors.ts`),
+degree-of-success resolver (`degree.ts`, from rules text), damage-type vocabulary
+(`damage.ts`), counter model (`counter.ts`), and the expression language (`expr.ts` — AST +
+`evaluate`/`parseExpr` + `ExprScope`; `effects.ts` `evalNumeric` now delegates to it, killing
+the duplicate parser). The character namespace (`characterNamespace`/`characterScope` in
+`character.ts`) exposes ability mods, defenses/checks, skills, `rank("x")`, `keyAbilityMod`/
+`spellcastingMod`, extra speeds, `focusPointsMax`. 213 core tests green.
 
 **Staging:**
 1. **Layer 1 first** — finishes the derived-stat consolidation (retire the duplicate
