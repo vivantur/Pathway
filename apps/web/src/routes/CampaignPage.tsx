@@ -14,6 +14,7 @@ import {
 } from '@/features/campaigns/useCampaigns';
 import type { PartyMember } from '@/features/campaigns/api';
 import { JournalSection } from '@/features/campaigns/JournalSection';
+import { NpcsSection } from '@/features/campaigns/NpcsSection';
 
 /** A campaign dashboard: the party at a glance + membership + GM controls. */
 export function CampaignPage() {
@@ -95,6 +96,8 @@ export function CampaignPage() {
       {myMembership && (
         <MyCharacterPanel campaignId={campaign.id} current={myMembership.char_key} />
       )}
+
+      <NpcsSection campaignId={campaign.id} isGm={isGm} />
 
       <JournalSection
         campaignId={campaign.id}

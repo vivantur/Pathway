@@ -193,3 +193,66 @@ export async function deleteJournalEntry(id: string): Promise<void> {
   const { error } = await supabase.from('campaign_journal').delete().eq('id', id);
   if (error) throw error;
 }
+
+// --- NPCs ------------------------------------------------------------------
+
+export interface Npc {
+  id: string;
+  name: string;
+  role: string | null;
+  location: string | null;
+  description: string | null;
+  /** GM-only notes — null for players (the RPC strips them). */
+  gm_notes: string | null;
+  is_secret: boolean;
+  updated_at: string;
+}
+
+export interface NpcInput {
+  name: string;
+  role?: string;
+  location?: string;
+  description?: string;
+  gmNotes?: string;
+  isSecret?: boolean;
+}
+
+/** The visible NPCs for the caller (GM: all + gm_notes; players: revealed only). */
+export async function fetchNpcs(campaignId: string): Promise<Npc[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.rpc('campaign_npcs_list', { cid: campaignId });
+  if (error) throw error;
+  return (data ?? []) as Npc[];
+}
+
+function npcRow(input: NpcInput) {
+  return {
+    name: input.name.trim(),
+    role: input.role?.trim() || null,
+    location: input.location?.trim() || null,
+    description: input.description?.trim() || null,
+    gm_notes: input.gmNotes?.trim() || null,
+    is_secret: input.isSecret ?? false,
+  };
+}
+
+export async function createNpc(campaignId: string, input: NpcInput): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_npcs').insert({ campaign_id: campaignId, ...npcRow(input) });
+  if (error) throw error;
+}
+
+export async function updateNpc(id: string, input: NpcInput): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('campaign_npcs')
+    .update({ ...npcRow(input), updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteNpc(id: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_npcs').delete().eq('id', id);
+  if (error) throw error;
+}

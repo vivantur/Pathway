@@ -2,11 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/useAuth';
 import {
   createCampaign,
+  createNpc,
   deleteCampaign,
   deleteJournalEntry,
+  deleteNpc,
   fetchCampaign,
   fetchJournal,
   fetchMyCampaigns,
+  fetchNpcs,
   fetchParty,
   joinCampaign,
   postJournal,
@@ -14,7 +17,9 @@ import {
   setMyCharacter,
   updateCampaign,
   updateJournalEntry,
+  updateNpc,
   type JournalInput,
+  type NpcInput,
 } from './api';
 
 export function useMyCampaigns() {
@@ -133,5 +138,39 @@ export function useDeleteJournal(campaignId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteJournalEntry(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-journal', campaignId] }),
+  });
+}
+
+// --- NPCs ------------------------------------------------------------------
+
+export function useNpcs(campaignId: string | undefined) {
+  return useQuery({
+    queryKey: ['campaign-npcs', campaignId],
+    queryFn: () => fetchNpcs(campaignId!),
+    enabled: !!campaignId,
+  });
+}
+
+export function useCreateNpc(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NpcInput) => createNpc(campaignId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-npcs', campaignId] }),
+  });
+}
+
+export function useUpdateNpc(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: NpcInput }) => updateNpc(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-npcs', campaignId] }),
+  });
+}
+
+export function useDeleteNpc(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteNpc(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-npcs', campaignId] }),
   });
 }
