@@ -3,23 +3,30 @@ import { useAuth } from '@/features/auth/useAuth';
 import {
   createCampaign,
   createNpc,
+  createQuest,
   deleteCampaign,
   deleteJournalEntry,
   deleteNpc,
+  deleteQuest,
   fetchCampaign,
   fetchJournal,
   fetchMyCampaigns,
   fetchNpcs,
   fetchParty,
+  fetchQuests,
   joinCampaign,
   postJournal,
   removeMember,
   setMyCharacter,
+  setQuestStatus,
   updateCampaign,
   updateJournalEntry,
   updateNpc,
+  updateQuest,
   type JournalInput,
   type NpcInput,
+  type QuestInput,
+  type QuestStatus,
 } from './api';
 
 export function useMyCampaigns() {
@@ -172,5 +179,47 @@ export function useDeleteNpc(campaignId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteNpc(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-npcs', campaignId] }),
+  });
+}
+
+// --- quests ----------------------------------------------------------------
+
+export function useQuests(campaignId: string | undefined) {
+  return useQuery({
+    queryKey: ['campaign-quests', campaignId],
+    queryFn: () => fetchQuests(campaignId!),
+    enabled: !!campaignId,
+  });
+}
+
+export function useCreateQuest(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: QuestInput) => createQuest(campaignId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-quests', campaignId] }),
+  });
+}
+
+export function useUpdateQuest(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: QuestInput }) => updateQuest(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-quests', campaignId] }),
+  });
+}
+
+export function useSetQuestStatus(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: QuestStatus }) => setQuestStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-quests', campaignId] }),
+  });
+}
+
+export function useDeleteQuest(campaignId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteQuest(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-quests', campaignId] }),
   });
 }

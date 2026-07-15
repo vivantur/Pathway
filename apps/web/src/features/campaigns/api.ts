@@ -256,3 +256,73 @@ export async function deleteNpc(id: string): Promise<void> {
   const { error } = await supabase.from('campaign_npcs').delete().eq('id', id);
   if (error) throw error;
 }
+
+// --- quests ----------------------------------------------------------------
+
+export type QuestStatus = 'active' | 'completed' | 'failed';
+
+export interface Quest {
+  id: string;
+  title: string;
+  description: string | null;
+  status: QuestStatus;
+  gm_notes: string | null;
+  is_secret: boolean;
+  updated_at: string;
+}
+
+export interface QuestInput {
+  title: string;
+  description?: string;
+  status?: QuestStatus;
+  gmNotes?: string;
+  isSecret?: boolean;
+}
+
+export async function fetchQuests(campaignId: string): Promise<Quest[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.rpc('campaign_quests_list', { cid: campaignId });
+  if (error) throw error;
+  return (data ?? []) as Quest[];
+}
+
+function questRow(input: QuestInput) {
+  return {
+    title: input.title.trim(),
+    description: input.description?.trim() || null,
+    status: input.status ?? 'active',
+    gm_notes: input.gmNotes?.trim() || null,
+    is_secret: input.isSecret ?? false,
+  };
+}
+
+export async function createQuest(campaignId: string, input: QuestInput): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_quests').insert({ campaign_id: campaignId, ...questRow(input) });
+  if (error) throw error;
+}
+
+export async function updateQuest(id: string, input: QuestInput): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('campaign_quests')
+    .update({ ...questRow(input), updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Lightweight status change (GM flips active/completed/failed). */
+export async function setQuestStatus(id: string, status: QuestStatus): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('campaign_quests')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteQuest(id: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('campaign_quests').delete().eq('id', id);
+  if (error) throw error;
+}
