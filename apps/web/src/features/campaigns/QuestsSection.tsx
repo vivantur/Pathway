@@ -25,13 +25,15 @@ export function QuestsSection({ campaignId, isGm }: { campaignId: string; isGm: 
 
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-lg text-gold">Quests{quests ? ` (${quests.length})` : ''}</h2>
+      <div className="mb-4 flex items-center justify-between border-b border-gold/15 pb-2">
+        <h2 className="font-display text-xl text-gold">
+          Quests{quests ? <span className="ml-1 text-sm text-silver/50">({quests.length})</span> : null}
+        </h2>
         {isGm && !adding && (
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60"
+            className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold transition-all hover:-translate-y-0.5 hover:border-gold/60"
           >
             + Add quest
           </button>

@@ -28,7 +28,12 @@ export function JournalSection({
 
   return (
     <section>
-      <h2 className="mb-3 font-display text-lg text-gold">Session journal</h2>
+      <div className="mb-4 flex items-baseline justify-between border-b border-gold/15 pb-2">
+        <h2 className="font-display text-xl text-gold">
+          Session journal
+          {entries && <span className="ml-1 text-sm text-silver/50">({entries.length})</span>}
+        </h2>
+      </div>
       <div className="space-y-4">
         <NewEntryForm campaignId={campaignId} />
         {isLoading && <Spinner label="Turning the pages…" />}

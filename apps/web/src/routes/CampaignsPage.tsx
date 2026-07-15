@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { CornerBrackets } from '@/components/ui/CornerBrackets';
 import { Spinner } from '@/components/ui/Spinner';
 import { isSchemaNotReady } from '@/features/characters/errors';
 import { useMyCharacters } from '@/features/characters/useCharacters';
 import { useCreateCampaign, useJoinCampaign, useMyCampaigns } from '@/features/campaigns/useCampaigns';
+import type { CampaignSummary } from '@/features/campaigns/api';
 
 /**
  * Campaign hub: the campaigns you're in, plus create / join. A campaign is a
@@ -14,13 +16,16 @@ export function CampaignsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl text-gold">Campaigns</h1>
-        <p className="mt-1 text-sm text-silver/70">
-          Run a table from one place — your party, at a glance. Create one as GM, or join with a
-          code your GM shares.
-        </p>
-      </div>
+      <header className="relative overflow-hidden rounded-lg border border-gold/30 bg-midnight-900/70 p-6 shadow-gilded">
+        <CornerBrackets />
+        <div className="relative">
+          <h1 className="font-display text-3xl tracking-wide text-gold sm:text-4xl">Campaigns</h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-silver/70">
+            Run a table from one place — your party, quests, NPCs, and session recaps at a glance.
+            Create one as GM, or join with a code your GM shares.
+          </p>
+        </div>
+      </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <CreateCampaign />
@@ -28,7 +33,12 @@ export function CampaignsPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 font-display text-lg text-gold">Your campaigns</h2>
+        <div className="mb-4 flex items-baseline justify-between border-b border-gold/15 pb-2">
+          <h2 className="font-display text-xl text-gold">
+            Your campaigns
+            {campaigns && <span className="ml-1 text-sm text-silver/50">({campaigns.length})</span>}
+          </h2>
+        </div>
         {isLoading && <Spinner label="Gathering your tables…" />}
         {isError && isSchemaNotReady(error) && (
           <p className="rounded-md border border-arcane/25 bg-arcane/5 p-4 text-sm text-silver/75">
@@ -47,36 +57,53 @@ export function CampaignsPage() {
           </p>
         )}
         {campaigns && campaigns.length > 0 && (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {campaigns.map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={`/campaigns/${c.id}`}
-                  className="block rounded-xl border border-gold/15 bg-midnight-900/50 p-4 transition-colors hover:border-gold/40"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-display text-parchment">{c.name}</span>
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-[0.6rem] uppercase tracking-widest ${
-                        c.role === 'gm' ? 'bg-gold/15 text-gold' : 'bg-midnight-700 text-silver/60'
-                      }`}
-                    >
-                      {c.role === 'gm' ? 'GM' : 'Player'}
-                    </span>
-                  </div>
-                  {c.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-silver/60">{c.description}</p>
-                  )}
-                  <p className="mt-2 text-[0.7rem] uppercase tracking-widest text-silver/45">
-                    {c.member_count} {c.member_count === 1 ? 'member' : 'members'}
-                  </p>
-                </Link>
-              </li>
+              <CampaignCard key={c.id} campaign={c} />
             ))}
           </ul>
         )}
       </section>
     </div>
+  );
+}
+
+function CampaignCard({ campaign: c }: { campaign: CampaignSummary }) {
+  const crest = c.name.trim().slice(0, 1).toUpperCase() || '?';
+  return (
+    <li>
+      <Link
+        to={`/campaigns/${c.id}`}
+        className="group relative flex h-full gap-4 overflow-hidden rounded-xl border border-gold/20 bg-midnight-900/60 p-4 shadow-gilded transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:shadow-arcane"
+      >
+        {/* Crest / illuminated initial */}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-gradient-to-br from-midnight-700 to-midnight-950 font-display text-2xl text-gold/70 shadow-gilded">
+          {crest}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <span className="truncate font-display text-lg text-parchment group-hover:text-gold">
+              {c.name}
+            </span>
+            <span
+              className={`shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-display uppercase tracking-widest ${
+                c.role === 'gm' ? 'bg-gold/15 text-gold' : 'bg-midnight-700 text-silver/60'
+              }`}
+            >
+              {c.role === 'gm' ? 'GM' : 'Player'}
+            </span>
+          </div>
+          {c.description ? (
+            <p className="mt-1 line-clamp-2 text-xs text-silver/60">{c.description}</p>
+          ) : (
+            <p className="mt-1 text-xs italic text-silver/35">No description yet.</p>
+          )}
+          <p className="mt-3 text-[0.7rem] uppercase tracking-widest text-silver/45">
+            {c.member_count} {c.member_count === 1 ? 'member' : 'members'}
+          </p>
+        </div>
+      </Link>
+    </li>
   );
 }
 
