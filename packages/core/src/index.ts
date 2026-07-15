@@ -33,6 +33,11 @@ export * from './derived.js';
 // the shared list of the 16 skill slugs. A shared primitive of both layers.
 export * from './selectors.js';
 
+// The damage-type vocabulary — physical/energy types + materials + categories +
+// the structured `DamageDescriptor`. A shared L2 primitive; vocabulary only, no
+// resistance/bypass resolution (that is rules behavior, implemented later).
+export * from './damage.js';
+
 // The resolved-character model — the effects engine's PUBLIC INPUT SURFACE.
 // `ResolvedCharacter` + `resolveSelector`/`characterNamespace`: the shape both
 // the web builder and the Pathbuilder reader emit, and what the expression
