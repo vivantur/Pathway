@@ -30,8 +30,10 @@ import {
   type AttackCategory,
   type Modifier,
   type ProficiencyTrack,
+  type ResolvedCharacter,
   type RuleElement,
   type SheetEffects,
+  type SkillStat,
 } from '@pathway/core';
 
 // Scalar stat math lives in @pathway/core (one source for builder, sheet, and
@@ -645,6 +647,40 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       unarmoredDefense,
     },
     effectNotes: effects.applied,
+  };
+}
+
+/**
+ * Adapt the builder's forward-derived character onto core's `ResolvedCharacter`
+ * — the shared read-surface the effects engine consumes. This is a pure
+ * re-shaping of values `deriveCharacter` already computed (no new rules math);
+ * it exists so the sheet, the bot, and the effects engine all read ONE resolved
+ * shape rather than this builder-specific one. Spell attack/DC are omitted: the
+ * builder does not compute them today (a caster's spell selectors resolve to 0
+ * until it does), which is honest rather than guessed.
+ */
+export function toResolvedCharacter(state: BuilderState): ResolvedCharacter {
+  const derived = deriveCharacter(state);
+  const skills: Record<string, SkillStat> = {};
+  for (const s of derived.skills) {
+    skills[s.id] = { modifier: s.modifier, rank: s.rank, ability: s.ability };
+  }
+  return {
+    level: state.level || 1,
+    scores: derived.scores,
+    mods: derived.mods,
+    hp: { max: derived.maxHp },
+    ac: { value: derived.ac, shieldBonus: derived.shieldBonus },
+    perception: { modifier: derived.perception, rank: derived.ranks.perception },
+    saves: {
+      fortitude: { modifier: derived.saves.fortitude, rank: derived.ranks.fortitude },
+      reflex: { modifier: derived.saves.reflex, rank: derived.ranks.reflex },
+      will: { modifier: derived.saves.will, rank: derived.ranks.will },
+    },
+    classDc: { modifier: derived.classDc, rank: derived.ranks.classDC },
+    speeds: { land: derived.speed },
+    skills,
+    focusPoints: { max: derived.focusPoints },
   };
 }
 

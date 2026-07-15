@@ -28,6 +28,17 @@ export * from './companion.js';
 // implementation both of apps/web's engines (builder + sheet) adapt onto.
 export * from './derived.js';
 
+// Canonical stat-selector vocabulary — the read-surface namespace (`ac`,
+// `fortitude`, a skill slug, …) the effects engine resolves targets against, and
+// the shared list of the 16 skill slugs. A shared primitive of both layers.
+export * from './selectors.js';
+
+// The resolved-character model — the effects engine's PUBLIC INPUT SURFACE.
+// `ResolvedCharacter` + `resolveSelector`/`characterNamespace`: the shape both
+// the web builder and the Pathbuilder reader emit, and what the expression
+// language reads. Pure and input-only (no rules math). See character.ts.
+export * from './character.js';
+
 // Effects engine: resolves the machine-readable rule elements on chosen feats
 // into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
 export * from './effects.js';

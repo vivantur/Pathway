@@ -14,6 +14,8 @@ import {
   proficientModifier,
   rankLabel,
   rawBonusToRank,
+  type ResolvedCharacter,
+  type SkillStat,
 } from '@pathway/core';
 
 // -------- Types --------
@@ -421,6 +423,65 @@ export function classDC(build: PathbuilderBuild): number | undefined {
     rank: rawBonusToRank(cdc),
     level: build.level ?? 1,
   });
+}
+
+/**
+ * Assemble core's shared `ResolvedCharacter` from an imported Pathbuilder build —
+ * the same read-surface the builder's `toResolvedCharacter` produces, so a sheet
+ * loaded from a Pathbuilder import and one built in-app are read identically (and
+ * both can feed the effects engine). Reuses the readers above and adds no new
+ * rules math. Spell attack/DC are omitted (Pathbuilder stores caster proficiency
+ * but this reader doesn't resolve spell stats yet), matching the builder adapter;
+ * spell selectors resolve to 0 until a real resolver lands.
+ */
+export function resolvedFromPathbuilder(build: PathbuilderBuild): ResolvedCharacter {
+  const level = build.level ?? 1;
+  const scores = ABILITY_ORDER.reduce(
+    (acc, a) => {
+      acc[a] = build.abilities?.[a] ?? 10;
+      return acc;
+    },
+    {} as Record<Ability, number>,
+  );
+  const mods = ABILITY_ORDER.reduce(
+    (acc, a) => {
+      acc[a] = abilityMod(scores[a]);
+      return acc;
+    },
+    {} as Record<Ability, number>,
+  );
+
+  const skills: Record<string, SkillStat> = {};
+  for (const [slug, ability] of Object.entries(SKILL_ABILITY)) {
+    skills[slug] = {
+      modifier: skillBonus(build, slug),
+      rank: rawBonusToRank(build.proficiencies?.[slug]),
+      ability,
+    };
+  }
+
+  const cdc = classDC(build);
+
+  return {
+    level,
+    scores,
+    mods,
+    hp: { max: maxHp(build) ?? 0 },
+    ac: { value: acTotal(build) ?? 0, shieldBonus: shieldBonus(build) },
+    perception: {
+      modifier: perceptionBonus(build),
+      rank: rawBonusToRank(build.proficiencies?.perception),
+    },
+    saves: {
+      fortitude: { modifier: saveBonus(build, 'fortitude'), rank: rawBonusToRank(build.proficiencies?.fortitude) },
+      reflex: { modifier: saveBonus(build, 'reflex'), rank: rawBonusToRank(build.proficiencies?.reflex) },
+      will: { modifier: saveBonus(build, 'will'), rank: rawBonusToRank(build.proficiencies?.will) },
+    },
+    classDc: cdc == null ? null : { modifier: cdc, rank: rawBonusToRank(build.proficiencies?.classDC) },
+    speeds: { land: speed(build) },
+    skills,
+    focusPoints: { max: focusPoolMax(build) },
+  };
 }
 
 // -------- Spells / weapons / money --------

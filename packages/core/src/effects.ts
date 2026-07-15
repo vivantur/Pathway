@@ -23,6 +23,7 @@
 // skipped and counted, never guessed.
 
 import type { ProficiencyRank } from "./proficiency.js";
+import { isSkillSlug } from "./selectors.js";
 import { RANK_LABEL } from "./stats.js";
 
 /** A Foundry rule element. Only the fields we read are typed; the rest is open. */
@@ -268,21 +269,18 @@ function toRank(n: number): ProficiencyRank | null {
   return r >= 0 && r <= 4 ? (r as ProficiencyRank) : null;
 }
 
-// The 16 PF2e skills (canonical rules content). A `skill-check` FlatModifier
-// hits all of them; a skill-slug selector hits just one.
-const SKILL_SLUGS = new Set([
-  "acrobatics", "arcana", "athletics", "crafting", "deception", "diplomacy",
-  "intimidation", "medicine", "nature", "occultism", "performance", "religion",
-  "society", "stealth", "survival", "thievery",
-]);
-
-// FlatModifier selectors this increment applies to the static sheet.
+// Foundry-ingest FlatModifier selectors this increment applies to the static
+// sheet. These are the names Foundry's rule elements carry (`saving-throw`,
+// `land-speed`, `skill-check`) — an import vocabulary, distinct from the
+// resolved-read `Selector` namespace in selectors.ts. The 16 skill slugs ARE
+// shared between the two, so they come from there (`isSkillSlug`); a
+// `skill-check` FlatModifier hits all of them, a skill-slug selector hits one.
 const STAT_SELECTORS = new Set(["ac", "saving-throw", "fortitude", "reflex", "will", "perception", "skill-check", "land-speed"]);
 
 /** Which stat-modifier bucket(s) a FlatModifier selector maps to, if any. */
 function statBucketFor(selector: unknown): string | null {
   if (typeof selector !== "string") return null;
-  if (STAT_SELECTORS.has(selector) || SKILL_SLUGS.has(selector)) return selector;
+  if (STAT_SELECTORS.has(selector) || isSkillSlug(selector)) return selector;
   return null;
 }
 
