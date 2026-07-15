@@ -33,6 +33,11 @@ export * from './derived.js';
 // the shared list of the 16 skill slugs. A shared primitive of both layers.
 export * from './selectors.js';
 
+// The counter — a general spend/restore resource primitive (focus points, item
+// charges, "recharge 6" pools, …). Spellcasting resources are a specialized
+// layer over these same verbs, added later. Pure mechanics, no rules.
+export * from './counter.js';
+
 // Degree of success — the shared resolver attack/save/check route through
 // (four degrees, natural-20/1 shift, ability adjustments). A core L2 primitive,
 // implemented from rules text and locked by the worked examples in its tests.
