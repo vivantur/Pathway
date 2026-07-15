@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   characterNamespace,
+  characterScope,
+  resolveRank,
   resolveSelector,
   type ResolvedCharacter,
 } from "./character.js";
+import { evaluateString } from "./expr.js";
 
 // A hand-RESOLVED level-1 martial: no spellcasting, class DC present. Every
 // value is authored directly (this module does no math), so the tests assert
@@ -12,6 +15,7 @@ const fighter: ResolvedCharacter = {
   level: 1,
   scores: { str: 18, dex: 14, con: 12, int: 10, wis: 12, cha: 8 },
   mods: { str: 4, dex: 2, con: 1, int: 0, wis: 1, cha: -1 },
+  keyAbility: "str",
   hp: { max: 20 },
   ac: { value: 18, shieldBonus: 2 },
   perception: { modifier: 7, rank: 2 },
@@ -33,6 +37,7 @@ const wizard: ResolvedCharacter = {
   level: 5,
   scores: { str: 8, dex: 14, con: 12, int: 18, wis: 12, cha: 10 },
   mods: { str: -1, dex: 2, con: 1, int: 4, wis: 1, cha: 0 },
+  keyAbility: "int",
   hp: { max: 38 },
   ac: { value: 20, shieldBonus: 0 },
   perception: { modifier: 9, rank: 1 },
@@ -47,7 +52,7 @@ const wizard: ResolvedCharacter = {
     arcana: { modifier: 13, rank: 2, ability: "int" },
   },
   spellcasting: [
-    { tradition: "arcane", spellAttack: { modifier: 13, rank: 2 }, spellDc: { modifier: 23, rank: 2 } },
+    { tradition: "arcane", ability: "int", spellAttack: { modifier: 13, rank: 2 }, spellDc: { modifier: 23, rank: 2 } },
   ],
   focusPoints: { max: 1 },
 };
@@ -115,5 +120,49 @@ describe("characterNamespace", () => {
     expect(ns.spellAttack).toBe(13);
     expect(ns.classDc).toBe(0);
     expect("spellDc" in characterNamespace(fighter)).toBe(false);
+  });
+
+  it("exposes key/casting ability mods (group B)", () => {
+    expect(characterNamespace(fighter).keyAbilityMod).toBe(4); // str
+    const ns = characterNamespace(wizard);
+    expect(ns.keyAbilityMod).toBe(4); // int
+    expect(ns.spellcastingMod).toBe(4); // int
+    expect("spellcastingMod" in characterNamespace(fighter)).toBe(false);
+  });
+
+  it("exposes extra speeds and focus max only when present (groups D, E)", () => {
+    const ns = characterNamespace(wizard);
+    expect(ns.speedFly).toBe(30);
+    expect(ns.focusPointsMax).toBe(1);
+    expect("speedFly" in characterNamespace(fighter)).toBe(false);
+    expect("focusPointsMax" in characterNamespace(fighter)).toBe(false);
+  });
+});
+
+describe("resolveRank", () => {
+  it("reads the rank behind saves, perception, skills, and class DC", () => {
+    expect(resolveRank(fighter, "fortitude")).toBe(2);
+    expect(resolveRank(fighter, "perception")).toBe(2);
+    expect(resolveRank(fighter, "athletics")).toBe(1);
+    expect(resolveRank(fighter, "class-dc")).toBe(1);
+  });
+  it("returns 0 for rank-less selectors and absent stats", () => {
+    expect(resolveRank(fighter, "ac")).toBe(0);
+    expect(resolveRank(fighter, "stealth")).toBe(0); // not on the sheet
+    expect(resolveRank(wizard, "class-dc")).toBe(0); // no class DC
+  });
+});
+
+describe("characterScope + the rank() expression function", () => {
+  it("evaluates a rank(...) expression against the character", () => {
+    const scope = characterScope(fighter);
+    expect(evaluateString('rank("athletics")', scope, "number")).toBe(1);
+    // Trained-or-better gate scaling by level.
+    expect(
+      evaluateString('ternary(gte(rank("perception"),2),strengthMod,0)', scope, "number"),
+    ).toBe(4);
+  });
+  it("returns 0 for an unknown selector name", () => {
+    expect(evaluateString('rank("bogus")', characterScope(fighter), "number")).toBe(0);
   });
 });

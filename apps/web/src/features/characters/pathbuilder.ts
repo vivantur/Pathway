@@ -466,6 +466,7 @@ export function resolvedFromPathbuilder(build: PathbuilderBuild): ResolvedCharac
     level,
     scores,
     mods,
+    keyAbility: build.keyability ?? null,
     hp: { max: maxHp(build) ?? 0 },
     ac: { value: acTotal(build) ?? 0, shieldBonus: shieldBonus(build) },
     perception: {

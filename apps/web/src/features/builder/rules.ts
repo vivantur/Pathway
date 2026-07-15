@@ -669,6 +669,7 @@ export function toResolvedCharacter(state: BuilderState): ResolvedCharacter {
     level: state.level || 1,
     scores: derived.scores,
     mods: derived.mods,
+    keyAbility: state.keyAbility ?? null,
     hp: { max: derived.maxHp },
     ac: { value: derived.ac, shieldBonus: derived.shieldBonus },
     perception: { modifier: derived.perception, rank: derived.ranks.perception },

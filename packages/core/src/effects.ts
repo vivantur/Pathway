@@ -22,6 +22,7 @@
 // proficiencies, choice selections, infix arithmetic) throws and the effect is
 // skipped and counted, never guessed.
 
+import { evaluate, parseExpr } from "./expr.js";
 import type { ProficiencyRank } from "./proficiency.js";
 import { isSkillSlug } from "./selectors.js";
 import { RANK_LABEL } from "./stats.js";
@@ -145,112 +146,18 @@ export interface SheetEffects {
 // value expression evaluator
 // ---------------------------------------------------------------------------
 //
-// The corpus expresses these effect values as either a number, an integer
-// string, `@actor.level`, or a fully-parenthesized function-call expression such
-// as `ternary(gte(@actor.level,13),2,1)`. No infix operators appear. We parse
-// that grammar and evaluate it; anything unrecognized throws (caller skips).
-
-type Token = { t: "num"; v: number } | { t: "ref" } | { t: "ident"; v: string } | { t: "punc"; v: "(" | ")" | "," };
-
-function tokenize(src: string): Token[] {
-  const tokens: Token[] = [];
-  let i = 0;
-  while (i < src.length) {
-    const c = src[i];
-    if (c === " ") {
-      i += 1;
-      continue;
-    }
-    if (c === "(" || c === ")" || c === ",") {
-      tokens.push({ t: "punc", v: c });
-      i += 1;
-      continue;
-    }
-    if (c === "@") {
-      // Only `@actor.level` is supported; any other @-ref is rejected.
-      const m = /^@actor\.level/.exec(src.slice(i));
-      if (!m) throw new Error(`unsupported reference at "${src.slice(i)}"`);
-      tokens.push({ t: "ref" });
-      i += m[0].length;
-      continue;
-    }
-    let m = /^-?\d+(?:\.\d+)?/.exec(src.slice(i));
-    if (m) {
-      tokens.push({ t: "num", v: Number(m[0]) });
-      i += m[0].length;
-      continue;
-    }
-    m = /^[a-zA-Z]+/.exec(src.slice(i));
-    if (m) {
-      tokens.push({ t: "ident", v: m[0] });
-      i += m[0].length;
-      continue;
-    }
-    throw new Error(`unexpected character "${c}" in "${src}"`);
-  }
-  return tokens;
-}
-
-// Arity is guaranteed by the grammar at call time, but TS can't see that, so
-// read positional args through a 0-defaulting accessor.
-const g = (a: number[], i: number): number => a[i] ?? 0;
-
-const FUNCS: Record<string, (a: number[]) => number> = {
-  ternary: (a) => (g(a, 0) ? g(a, 1) : g(a, 2)),
-  gte: (a) => (g(a, 0) >= g(a, 1) ? 1 : 0),
-  gt: (a) => (g(a, 0) > g(a, 1) ? 1 : 0),
-  lte: (a) => (g(a, 0) <= g(a, 1) ? 1 : 0),
-  lt: (a) => (g(a, 0) < g(a, 1) ? 1 : 0),
-  eq: (a) => (g(a, 0) === g(a, 1) ? 1 : 0),
-  min: (a) => Math.min(...a),
-  max: (a) => Math.max(...a),
-  floor: (a) => Math.floor(g(a, 0)),
-  ceil: (a) => Math.ceil(g(a, 0)),
-  add: (a) => a.reduce((s, n) => s + n, 0),
-  subtract: (a) => g(a, 0) - g(a, 1),
-  multiply: (a) => a.reduce((s, n) => s * n, 1),
-};
+// Effect values in the corpus are a number, an integer string, `@actor.level`,
+// or a function-call expression like `ternary(gte(@actor.level,13),2,1)`. Parsing
+// and evaluation live in the shared expression language (expr.ts) — one
+// implementation for both the ingest path here and the effect engine. This is a
+// thin adapter: it binds the single actor variable this path exposes
+// (`@actor.level` → `level`) and coerces the result to a number.
 
 /** Evaluate a supported value expression to a number, or throw if unsupported. */
 export function evalNumeric(expr: unknown, ctx: EffectContext): number {
   if (typeof expr === "number") return expr;
   if (typeof expr !== "string") throw new Error(`unsupported value ${JSON.stringify(expr)}`);
-  const tokens = tokenize(expr.trim());
-  let pos = 0;
-  const peek = () => tokens[pos];
-  const next = () => tokens[pos++];
-
-  function parseExpr(): number {
-    const tok = next();
-    if (!tok) throw new Error(`unexpected end of "${expr}"`);
-    if (tok.t === "num") return tok.v;
-    if (tok.t === "ref") return ctx.level;
-    if (tok.t === "ident") {
-      const fn = FUNCS[tok.v];
-      if (!fn) throw new Error(`unsupported function "${tok.v}"`);
-      const open = next();
-      if (!open || open.t !== "punc" || open.v !== "(") throw new Error(`expected ( after ${tok.v}`);
-      const args: number[] = [];
-      let p = peek();
-      if (p && !(p.t === "punc" && p.v === ")")) {
-        args.push(parseExpr());
-        p = peek();
-        while (p && p.t === "punc" && p.v === ",") {
-          next();
-          args.push(parseExpr());
-          p = peek();
-        }
-      }
-      const close = next();
-      if (!close || close.t !== "punc" || close.v !== ")") throw new Error(`expected ) closing ${tok.v}`);
-      return fn(args);
-    }
-    throw new Error(`unexpected token in "${expr}"`);
-  }
-
-  const result = parseExpr();
-  if (pos !== tokens.length) throw new Error(`trailing tokens in "${expr}"`);
-  return result;
+  return evaluate(parseExpr(expr.trim()), { vars: { level: ctx.level } }, "number") as number;
 }
 
 // ---------------------------------------------------------------------------

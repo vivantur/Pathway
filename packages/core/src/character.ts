@@ -17,8 +17,9 @@
 // the shared composition primitives both clients build on.
 
 import type { Ability } from "./content.js";
+import type { ExprScope } from "./expr.js";
 import type { ProficiencyRank } from "./proficiency.js";
-import { SKILL_SLUGS, type SaveSelector, type Selector } from "./selectors.js";
+import { isSelector, SKILL_SLUGS, type SaveSelector, type Selector } from "./selectors.js";
 
 /**
  * A resolved statistic: its final total and the proficiency rank behind it. For
@@ -39,6 +40,8 @@ export interface SkillStat extends StatValue {
 /** One spellcasting entry's resolved spell attack + spell DC, by tradition. */
 export interface SpellcastingStat {
   tradition: string;
+  /** The ability that powers this tradition's spellcasting (its mod feeds `spellcastingMod`). */
+  ability: Ability;
   spellAttack: StatValue;
   spellDc: StatValue;
 }
@@ -53,6 +56,8 @@ export interface ResolvedCharacter {
   level: number;
   scores: Record<Ability, number>;
   mods: Record<Ability, number>;
+  /** The class key ability (its mod feeds `keyAbilityMod`); null if unset/unknown. */
+  keyAbility?: Ability | null;
   hp: { max: number };
   /** AC total, plus the extra AC a raised shield would add (0 if none). */
   ac: { value: number; shieldBonus: number };
@@ -109,6 +114,37 @@ export function resolveSelector(rc: ResolvedCharacter, selector: Selector): numb
 }
 
 /**
+ * The proficiency RANK (0–4) behind a statistic — the companion to
+ * `resolveSelector`, backing the expression language's `rank("athletics")`
+ * function. Selectors without a rank on the model (`ac`, speeds, the reserved
+ * per-weapon selectors) return 0.
+ */
+export function resolveRank(rc: ResolvedCharacter, selector: Selector): ProficiencyRank {
+  switch (selector) {
+    case "fortitude":
+    case "reflex":
+    case "will":
+      return rc.saves[selector].rank;
+    case "perception":
+      return rc.perception.rank;
+    case "class-dc":
+      return rc.classDc?.rank ?? 0;
+    case "spell-dc":
+      return rc.spellcasting?.[0]?.spellDc.rank ?? 0;
+    case "spell-attack":
+      return rc.spellcasting?.[0]?.spellAttack.rank ?? 0;
+    case "ac":
+    case "speed:land":
+    case "attack":
+    case "damage":
+    case "initiative":
+      return 0;
+    default:
+      return rc.skills[selector]?.rank ?? 0;
+  }
+}
+
+/**
  * The flat variable bag the bounded expression evaluator reads — the concrete
  * "character stats" namespace of the effects engine's expression system. Keys
  * are stable names (`strengthMod`, `perception`, `classDc`, each skill slug, …);
@@ -137,10 +173,44 @@ export function characterNamespace(rc: ResolvedCharacter): Record<string, number
     const s = rc.skills[slug];
     if (s) ns[slug] = s.modifier;
   }
+  // Key ability modifier (group B) — emitted only when the key ability is known.
+  if (rc.keyAbility) ns.keyAbilityMod = rc.mods[rc.keyAbility];
+  // Extra speeds (group D) — emitted only when the character has them.
+  for (const [key, varName] of [
+    ["fly", "speedFly"],
+    ["swim", "speedSwim"],
+    ["climb", "speedClimb"],
+    ["burrow", "speedBurrow"],
+  ] as const) {
+    const feet = rc.speeds[key];
+    if (feet !== undefined) ns[varName] = feet;
+  }
+  // Focus pool (group E).
+  if (rc.focusPoints) ns.focusPointsMax = rc.focusPoints.max;
   const primary = rc.spellcasting?.[0];
   if (primary) {
     ns.spellDc = primary.spellDc.modifier;
     ns.spellAttack = primary.spellAttack.modifier;
+    // Casting ability modifier (group B).
+    ns.spellcastingMod = rc.mods[primary.ability];
   }
   return ns;
+}
+
+/**
+ * Build the effects-engine expression scope for a character: the flat variable
+ * bag plus the scope-aware `rank(selector)` function (group A). This is the seam
+ * the expression evaluator plugs into — the host merges execution/target state
+ * into `vars` on top of this.
+ */
+export function characterScope(rc: ResolvedCharacter): ExprScope {
+  return {
+    vars: characterNamespace(rc),
+    functions: {
+      rank: (args) => {
+        const sel = String(args[0]);
+        return isSelector(sel) ? resolveRank(rc, sel) : 0;
+      },
+    },
+  };
 }

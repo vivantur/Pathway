@@ -33,6 +33,11 @@ export * from './derived.js';
 // the shared list of the 16 skill slugs. A shared primitive of both layers.
 export * from './selectors.js';
 
+// The expression language — the bounded, sandboxed evaluator for effect values
+// (AST + `evaluate`/`parseExpr` + the `ExprScope` seam). One implementation for
+// both the Foundry-ingest value path and the effect engine. No `eval`.
+export * from './expr.js';
+
 // The counter — a general spend/restore resource primitive (focus points, item
 // charges, "recharge 6" pools, …). Spellcasting resources are a specialized
 // layer over these same verbs, added later. Pure mechanics, no rules.
