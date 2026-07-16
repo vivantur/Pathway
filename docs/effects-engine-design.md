@@ -349,10 +349,12 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    (3) `attack`/`save`/`check`, (4) `damage`/`temphp`, (5) `counter`, (6) `target` scoping +
    multi-actor, (7) Layer 1.5 applied effect + `applyEffect`/`removeEffect`. Slices 3–4 need
    pasted PF2e rules text (basicSave + target-derived DC; crit-doubles-the-total + cantrip
-   heightening); the rest are structural. **Slice 1 landed 2026-07-15** (`rng.ts` +
+   heightening); the rest are structural. **Slices 1–2 landed 2026-07-15.** Slice 1 (`rng.ts` +
    `automation.ts`): the execution model (context → outcome = log + intended mutations), the
-   uniform error policy (ignore/warn/value/raise), and the three rules-free nodes. `mutations`
-   is empty until slice 4's `damage` — the union grows one kind per slice.
+   uniform error policy (ignore/warn/value/raise), and the rules-free nodes text/variable/branch.
+   Slice 2 (`dice.ts` + the `roll` node): a dice parser/evaluator with full basic arithmetic
+   (`+ - * /`, parens, variable terms) over the seeded RNG. `mutations` is empty until slice 4's
+   `damage` — the union grows one kind per slice. Slice 3 is next and needs pasted rules text.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
