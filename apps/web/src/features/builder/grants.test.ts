@@ -14,6 +14,7 @@ import {
   deriveCharacter,
   featChoicePrompts,
   featChosenSkillIds,
+  featLanguageSlots,
   gainsForLevel,
   loreId,
 } from '@/features/builder/rules';
@@ -129,6 +130,32 @@ describe('object-valued feat skill grants (Clan Lore family)', () => {
   it('grants nothing until the choice is made', () => {
     const state = base({ ancestryFeatId: 'clan-lore', heritageId: 'skilled-human' });
     expect(featChosenSkillIds(state)).toEqual([]);
+  });
+});
+
+describe('Multilingual language slots', () => {
+  it('grants 2 base languages (trained/expert Society)', () => {
+    // Fighter trained in Society via a free pick; Multilingual as the class feat slot.
+    const state = base({ classFeatId: 'multilingual', skillChoices: ['society'] });
+    expect(featLanguageSlots(state)).toBe(2);
+  });
+  it('adds +1 at master and +1 more at legendary Society', () => {
+    const master = base({ classFeatId: 'multilingual', skillOverrides: { society: 3 } });
+    expect(featLanguageSlots(master)).toBe(3);
+    const legendary = base({ classFeatId: 'multilingual', skillOverrides: { society: 4 } });
+    expect(featLanguageSlots(legendary)).toBe(4);
+  });
+  it('is repeatable — each instance grants its own languages', () => {
+    const state = base({
+      level: 2,
+      classFeatId: 'multilingual',
+      skillOverrides: { society: 1 },
+      progression: { 2: { ...emptyLevelGains(), skillFeatId: 'multilingual' } },
+    });
+    expect(featLanguageSlots(state)).toBe(4); // 2 + 2
+  });
+  it('grants nothing without the feat', () => {
+    expect(featLanguageSlots(base())).toBe(0);
   });
 });
 

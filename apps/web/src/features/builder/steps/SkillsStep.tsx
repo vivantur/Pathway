@@ -11,6 +11,7 @@ import {
   backgroundLoreSubject,
   deriveCharacter,
   featChosenSkillIds,
+  featLanguageSlots,
   freeSkillCount,
   loreDisplayName,
   trainedSkillIds,
@@ -85,9 +86,11 @@ export function SkillsStep() {
   const remaining = maxFree - chosen.size - loreList.length;
   const bgLore = backgroundLoreSubject(state);
 
-  // Languages: ancestry's fixed bonus slots + your Intelligence modifier (if positive).
+  // Languages: ancestry's fixed bonus slots + Intelligence modifier (if positive)
+  // + any feat grants (Multilingual, …).
   const intMod = derived.mods.int;
-  const bonusLangs = (ancestry?.bonusLanguages ?? 0) + Math.max(0, intMod);
+  const featLangs = featLanguageSlots(state);
+  const bonusLangs = (ancestry?.bonusLanguages ?? 0) + Math.max(0, intMod) + featLangs;
   const known = ancestry?.languages ?? [];
   const chosenLangs = new Set(state.languageChoices);
   const langsRemaining = bonusLangs - chosenLangs.size;
@@ -311,7 +314,14 @@ export function SkillsStep() {
             <>
               <p className="font-ui text-xs text-parchment/60">
                 Choose {bonusLangs} additional language{bonusLangs > 1 ? 's' : ''}
-                {intMod > 0 ? ` (${intMod} from Intelligence)` : ''}.
+                {(() => {
+                  const parts = [
+                    intMod > 0 ? `${intMod} from Intelligence` : null,
+                    featLangs > 0 ? `${featLangs} from feats` : null,
+                  ].filter(Boolean);
+                  return parts.length ? ` (${parts.join(', ')})` : '';
+                })()}
+                .
               </p>
               <input
                 value={langFilter}

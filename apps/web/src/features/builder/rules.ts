@@ -725,6 +725,30 @@ export function chosenFeatIds(state: BuilderState): Set<string> {
   return ids;
 }
 
+/** How many times a feat id is taken on the build (repeatable feats), counting
+ *  fixed slots AND filled bonus-feat grants. */
+function countFeatOccurrences(state: BuilderState, featId: string): number {
+  let n = featLevels(state, featId).length;
+  for (const slot of bonusFeatSlots(state)) {
+    if (state.bonusFeatChoices?.[slot.key] === featId) n += 1;
+  }
+  return n;
+}
+
+/**
+ * Extra language slots granted by feats. Multilingual (Player Core p.258):
+ * "You learn two new languages … an additional if you are or become a master in
+ * Society, and again if legendary." It's repeatable, so each instance grants
+ * its own 2 + master + legendary. Society rank is read from the derived build.
+ */
+export function featLanguageSlots(state: BuilderState): number {
+  const count = countFeatOccurrences(state, 'multilingual');
+  if (!count) return 0;
+  const society = skillRankMap(state).get('society') ?? 0;
+  const perInstance = 2 + (society >= 3 ? 1 : 0) + (society >= 4 ? 1 : 0);
+  return count * perInstance;
+}
+
 /** Total number of free skills the player may pick (class count + Int bonus).
  *  The Intelligence bonus is fixed at level 1: a later Int boost does NOT grant
  *  additional trained skills, so this reads creation-level Int, not current. */
