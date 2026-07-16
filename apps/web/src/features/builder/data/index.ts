@@ -129,6 +129,26 @@ export function findSpell(id: string): Spell | undefined {
   return ds.spells.find((s) => s.id === id) ?? ds.spells.find((s) => s.id === aliases.spells[id]);
 }
 
+let languageCache: string[] | null = null;
+
+/**
+ * The full roster of languages known to the dataset — the union of every
+ * ancestry's always-known languages and their bonus-language pools, sorted.
+ * Bonus languages are offered from this comprehensive list rather than a
+ * per-ancestry preset, so any language a character has reason to learn is
+ * available. Cached after first build.
+ */
+export function allLanguages(): string[] {
+  if (languageCache) return languageCache;
+  const set = new Set<string>();
+  for (const a of getDataset().ancestries) {
+    for (const l of a.languages ?? []) set.add(l);
+    for (const l of a.bonusLanguageChoices ?? []) set.add(l);
+  }
+  languageCache = [...set].sort((x, y) => x.localeCompare(y));
+  return languageCache;
+}
+
 /** Curated beginner feat recommendations for a class id. */
 export function classRecommendations(classId: string | undefined) {
   return (classId && recommendations.class[classId]) || [];

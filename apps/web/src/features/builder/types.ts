@@ -52,6 +52,13 @@ export interface BuilderState {
   skillChoices: string[];
 
   /**
+   * Custom Lore skill subjects the player trained with free skill slots, e.g.
+   * "Warfare" (rendered as "Warfare Lore"). Draws from the same free-skill pool
+   * as {@link skillChoices}. The Lore a background grants is derived separately.
+   */
+  loreChoices: string[];
+
+  /**
    * ChoiceSet selections for feats that ask the player to pick (Canny Acumen's
    * save/Perception, Natural Skill's two skills, …). Keyed by feat id → a map of
    * the feat's ChoiceSet flag name → the chosen value (a rank target path for
@@ -182,6 +189,7 @@ export function emptyBuilderState(): BuilderState {
     backgroundBoostChoices: [],
     freeBoosts: [null, null, null, null],
     skillChoices: [],
+    loreChoices: [],
     featChoices: {},
     languageChoices: [],
     progression: {},

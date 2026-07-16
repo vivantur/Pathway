@@ -11,7 +11,7 @@ import {
   findSkill,
   findSpell,
 } from '@/features/builder/data';
-import { deriveCharacter, formatSenseLabel } from './rules';
+import { backgroundLoreSubject, deriveCharacter, formatSenseLabel, loreDisplayName } from './rules';
 import { casterConfig, spellStats } from './spellcasting';
 import { grantedFocusSpell } from './subclassEffects';
 import type { BuilderState } from './types';
@@ -119,7 +119,10 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
             <div>
               <span className="text-gold-400">{background.name}:</span> trained in{' '}
               {findSkill(background.trainedSkill)?.name ?? background.trainedSkill} and{' '}
-              {background.loreSkill}
+              {(() => {
+                const lore = backgroundLoreSubject(state);
+                return lore ? loreDisplayName(lore) : 'a Lore of your choice';
+              })()}
               {background.skillFeat ? `; ${findFeat(background.skillFeat)?.name ?? ''} feat` : ''}
             </div>
           )}

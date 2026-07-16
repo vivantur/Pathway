@@ -41,6 +41,8 @@ interface BuilderStore {
   chooseBackground: (id: string) => void;
   chooseClass: (id: string) => void;
   toggleSkill: (id: string, maxFree: number) => void;
+  addLore: (subject: string, max: number) => void;
+  removeLore: (subject: string) => void;
   toggleLanguage: (name: string, max: number) => void;
   setFeatChoice: (featId: string, flag: string, value: string) => void;
 
@@ -117,6 +119,7 @@ export const useBuilder = create<BuilderStore>((set) => ({
           subclassId: undefined,
           classFeatId: undefined,
           skillChoices: [],
+          loreChoices: [],
         },
       };
     }),
@@ -131,6 +134,26 @@ export const useBuilder = create<BuilderStore>((set) => ({
       }
       return { state: { ...s.state, skillChoices: [...chosen] } };
     }),
+
+  addLore: (subject, max) =>
+    set((s) => {
+      const clean = subject.trim();
+      const cur = s.state.loreChoices ?? [];
+      // No blanks, no duplicate subjects, and never past the shared free-skill cap.
+      if (!clean || cur.length >= max) return { state: s.state };
+      if (cur.some((l) => l.toLowerCase() === clean.toLowerCase())) return { state: s.state };
+      return { state: { ...s.state, loreChoices: [...cur, clean] } };
+    }),
+
+  removeLore: (subject) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        loreChoices: (s.state.loreChoices ?? []).filter(
+          (l) => l.toLowerCase() !== subject.trim().toLowerCase(),
+        ),
+      },
+    })),
 
   toggleLanguage: (name, max) =>
     set((s) => {

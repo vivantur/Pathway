@@ -412,6 +412,9 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
   const trained = trainedSkillIds(state);
   const ranks = new Map<string, ProficiencyRank>();
   for (const s of getDataset().skills) ranks.set(s.id, trained.has(s.id) ? 1 : 0);
+  // Trained Lore subjects (background + chosen) start at trained; per-level
+  // increases below can raise them like any other skill.
+  for (const subject of trainedLoreSubjects(state)) ranks.set(loreId(subject), 1);
 
   for (const [lvlStr, gains] of Object.entries(state.progression)) {
     if (Number(lvlStr) > level) continue;
@@ -451,6 +454,61 @@ export function trainedSkillIds(state: BuilderState): Set<string> {
   if (klass) for (const s of klass.initialProficiencies.trainedSkills) set.add(s);
   for (const s of state.skillChoices) set.add(s);
   return set;
+}
+
+// --- Lore skills -----------------------------------------------------------
+// Lore is an Intelligence skill with a player-named subject ("Warfare Lore").
+// A build can carry any number of distinct subjects; each is its own skill with
+// its own proficiency. We key them by a `lore:<slug>` id so they slot into the
+// same rank/derive machinery as the 16 standard skills.
+
+const LORE_PREFIX = 'lore:';
+
+/** Stable id for a Lore subject, e.g. "Warfare" → "lore:warfare". */
+export function loreId(subject: string): string {
+  return LORE_PREFIX + subject.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+/** Display name for a Lore subject, normalised to end in a single "Lore". */
+export function loreDisplayName(subject: string): string {
+  const base = subject.trim().replace(/(\s+lore)+\s*$/i, '').trim();
+  return base ? `${base} Lore` : 'Lore';
+}
+
+/**
+ * The Lore subject a background grants, cleaned of the free-text noise in the
+ * source data ("Academia Lore Lore", trailing "Lore", …). Returns null when the
+ * source leaves the subject to the player ("your choice", "GM choice"), so those
+ * backgrounds simply let the player add a Lore of their own instead.
+ */
+export function backgroundLoreSubject(state: BuilderState): string | null {
+  const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
+  const raw = bg?.loreSkill?.trim();
+  if (!raw) return null;
+  if (/choice|choose|\bgm\b/i.test(raw)) return null;
+  const subject = raw.replace(/(\s+lore)+\s*$/i, '').trim();
+  return subject || null;
+}
+
+/**
+ * Every trained Lore subject on the build: the background's granted Lore plus
+ * the player's chosen Lores, de-duplicated case-insensitively (first spelling
+ * wins). Background Lore is free; chosen Lores draw from the free-skill pool.
+ */
+export function trainedLoreSubjects(state: BuilderState): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (s: string | null | undefined) => {
+    const v = s?.trim();
+    if (!v) return;
+    const k = v.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push(v);
+  };
+  push(backgroundLoreSubject(state));
+  for (const l of state.loreChoices ?? []) push(l);
+  return out;
 }
 
 /** Every feat id chosen anywhere on the build (all levels + creation slots). */
@@ -722,6 +780,27 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     };
   });
 
+  // Lore skills (Intelligence-based, player-named) live alongside the standard
+  // skills so the sheet, overview, and exports treat them uniformly.
+  for (const subject of trainedLoreSubjects(state)) {
+    const id = loreId(subject);
+    const rank = ranks.get(id) ?? 1;
+    skills.push({
+      id,
+      name: loreDisplayName(subject),
+      ability: 'int',
+      rank,
+      modifier: proficientModifier({
+        abilityMod: mods.int,
+        rank,
+        level,
+        withoutLevel: pwl,
+        itemBonus: statBonus(0, 'skill-check', id),
+        otherBonus: 0,
+      }),
+    });
+  }
+
   // Weapon Specialization (a class feature granted at a class-specific level):
   // +2/+3/+4 to a weapon's damage when you're expert/master/legendary in it, per
   // the Foundry weapon-specialization.json rule elements (base 2, upgraded to 3
@@ -889,7 +968,8 @@ export function validate(state: BuilderState): string[] {
     problems.push('The four free boosts must each target a different ability.');
 
   const freePicks = freeSkillCount(state);
-  const chosen = state.skillChoices.length;
+  // Chosen Lores draw from the same free-skill pool as trained skills.
+  const chosen = state.skillChoices.length + (state.loreChoices?.length ?? 0);
   if (chosen < freePicks) problems.push(`Choose ${freePicks - chosen} more trained skill(s).`);
   // Also flag TOO MANY — e.g. picked at Int +3 then a boost moved off Int, so the
   // free-skill count shrank but the extra picks weren't trimmed. Without this the

@@ -94,7 +94,12 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   const trained = trainedSkillIds(state);
 
   const skillProf: Record<string, number> = {};
-  for (const s of derived.skills) skillProf[s.id] = p(s.rank);
+  // Lore skills carry `lore:*` ids and belong in the `lores` array below, not
+  // in the standard skill-proficiency map.
+  for (const s of derived.skills) {
+    if (s.id.startsWith('lore:')) continue;
+    skillProf[s.id] = p(s.rank);
+  }
 
   const specials: string[] = [];
   if (heritage) specials.push(heritage.name);
@@ -121,9 +126,11 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     push(gains.archetypeFeatId, 'Archetype', lvl);
   }
 
-  const lores: [string, number][] = background?.loreSkill
-    ? [[background.loreSkill, p(1)]]
-    : [];
+  // Every trained Lore (background-granted + player-chosen), named the
+  // Pathbuilder way (subject without a trailing "Lore") with its proficiency.
+  const lores: [string, number][] = derived.skills
+    .filter((s) => s.id.startsWith('lore:'))
+    .map((s) => [s.name.replace(/\s+Lore$/i, ''), p(s.rank)]);
 
   const proficiencies: Record<string, number> = {
     classDC: p(ip?.classDC ?? 0),
