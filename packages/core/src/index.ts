@@ -68,6 +68,12 @@ export * from './predicate.js';
 // into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
 export * from './effects.js';
 
+// Layer 1 — the canonical passive-effect union (modifier/proficiency/grant/
+// rollAdjust/note) + `applyPassiveEffects`, which folds modifiers onto a
+// ResolvedCharacter (via stackModifiers) and collects the deferred kinds into
+// typed buckets. OUR schema — the homebrew builder emits it, Foundry maps into it.
+export * from './passive.js';
+
 // Content envelope shared by every stored PF2e entity (id + pinned version,
 // official/homebrew, rarity, source). The template the content schemas extend.
 export * from './content.js';

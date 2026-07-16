@@ -15,6 +15,8 @@
 // It supersedes effects.ts's original single-purpose `evalNumeric` parser, which
 // now delegates here so there is ONE expression implementation.
 
+import { z } from "zod";
+
 export type ExprValue = number | boolean | string;
 
 /** The stored value AST. `lit` = constant, `var` = a namespace lookup, `call` = a function. */
@@ -22,6 +24,20 @@ export type Expr =
   | { kind: "lit"; value: ExprValue }
   | { kind: "var"; name: string }
   | { kind: "call"; fn: string; args: Expr[] };
+
+/**
+ * Zod schema for the value AST (recursive via `z.lazy`) — so any stored effect
+ * whose value is an `Expr` (a Layer-1 modifier, a Layer-2 term) validates the
+ * same shape this evaluator reads. This is the persisted `Value` form of the
+ * design doc's decision #1.
+ */
+export const exprSchema: z.ZodType<Expr> = z.lazy(() =>
+  z.union([
+    z.object({ kind: z.literal("lit"), value: z.union([z.number(), z.boolean(), z.string()]) }).strict(),
+    z.object({ kind: z.literal("var"), name: z.string().min(1) }).strict(),
+    z.object({ kind: z.literal("call"), fn: z.string().min(1), args: z.array(exprSchema) }).strict(),
+  ]),
+);
 
 /**
  * The evaluation environment. `vars` holds the merged namespaces (character
