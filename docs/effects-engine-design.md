@@ -4,16 +4,21 @@
 this depends on the content/db work and the `packages/core` character model, both in
 progress in separate tracks.*
 
-> **Status (updated 2026-07-14): the prerequisites have landed — implementation has begun.**
-> Both blockers named below are cleared. The DB/content schema is substantially built
+> **Status (updated 2026-07-15): Layer 1 has landed (additive).** The prerequisites
+> (both blockers below) were already cleared: the DB/content schema is substantially built
 > (`packages/db` content-store + spell/ancestry/heritage/background/feat entities in
-> `packages/core`). And **Stage 1 — the character model — landed** as the resolved
+> `packages/core`), and **Stage 1 — the character model — landed** as the resolved
 > read-surface the engine consumes: `packages/core/src/character.ts` (`ResolvedCharacter` +
 > `resolveSelector` + `characterNamespace`) and `packages/core/src/selectors.ts` (the
 > canonical read-selector vocabulary + the 16 skill slugs). It is pure and input-only (no
 > rules math); the web builder and Pathbuilder reader both emit it (`toResolvedCharacter`,
-> `resolvedFromPathbuilder`). See "Dependencies & sequencing" for what's next. This doc
-> remains the durable design to resume from.
+> `resolvedFromPathbuilder`).
+>
+> **Layer 1 now exists** in two pure, tested modules (2026-07-15, `phase-7/core-character-model`):
+> `predicate.ts` (the `when?` boolean-tree + tag evaluator + `staticTags`) and `passive.ts`
+> (the canonical `PassiveEffect` union + `applyPassiveEffects`). See "Layer 1" and "Staging"
+> below for exactly what is applied vs. collected, and what remains. This doc remains the
+> durable design to resume from.
 >
 > *Original gate (kept for context): do not begin implementation drafts — Zod schemas, node
 > interpreter, etc. — until the DB/content schema and character model land. Both now have.*
@@ -101,6 +106,21 @@ automation**. Persistent damage, escape-grapple, sustained spells all live in th
 ---
 
 ## Layer 1 — Passive effect schema
+
+> **Implemented (2026-07-15) in `packages/core/src/passive.ts` + `predicate.ts`.** The union
+> below is the `PassiveEffect` type; the `Value` is the `expr.ts` AST (`exprSchema`), and the
+> `Predicate` is `predicate.ts` (a boolean tree over a **membership-flag** tag set — no
+> numeric/threshold leaves; those are Layer 2 `branch` expressions). `applyPassiveEffects(rc,
+> effects, ctx?)` is deliberately **additive and boundary-honest**: it folds `modifier`
+> (via `stackModifiers`) and `note` onto the resolved sheet, and *collects* the kinds it must
+> not guess — `proficiency` → `rankGrants` (re-deriving a modifier from a raised rank is the
+> content-blocked orchestration), `grant` → `grants` (no senses/resistances field on the model
+> yet), `rollAdjust` → `rollAdjusts` (consumed at Layer 2). Predicates evaluate against the
+> character's `staticTags` unioned with caller-supplied combat tags — *one evaluator, two
+> contexts*. **Not yet built:** the `set`/override full-stat mode (polymorph; validation-run
+> item), grant/rollAdjust *behavior*, combat-tag production, the `collectSheetEffects`→
+> `PassiveEffect[]` ingest refactor, and retiring the duplicate builder/pathbuilder
+> orchestration (all still additive-blocked or their own slice).
 
 A passive effect is a *targeted, typed, conditional change*. Small discriminated union:
 
@@ -315,10 +335,13 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
 
 **Staging:**
 1. **Layer 1 first** — finishes the derived-stat consolidation (retire the duplicate
-   `deriveCharacter`/`pathbuilder` sheet math) and delivers the character sheet. Started in
-   `effects.ts`; the resolved read-surface (`character.ts`) now exists for both to emit,
-   though the duplicate *orchestration* (which ranks/abilities feed which stat) is not yet
-   retired — that's content-in-core-blocked.
+   `deriveCharacter`/`pathbuilder` sheet math) and delivers the character sheet. **The schema
+   + apply landed 2026-07-15** (`predicate.ts` + `passive.ts`), additive: modifiers/notes fold
+   onto `ResolvedCharacter`, the other kinds are collected. **Still open under Layer 1:** the
+   duplicate *orchestration* (which ranks/abilities feed which stat) is not yet retired —
+   content-in-core-blocked; the Foundry ingest (`collectSheetEffects`) still emits its own bag
+   rather than mapping to `PassiveEffect[]`; and the web sheet does not yet consume
+   `applyPassiveEffects`.
 2. **Layer 2 next** — the automation runtime; where the bot's *play* lives. Larger; consumes
    the shared primitives; much of the *behavior* already exists in the bot to extract.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
