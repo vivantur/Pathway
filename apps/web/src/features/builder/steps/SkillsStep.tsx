@@ -10,6 +10,7 @@ import {
 import {
   backgroundLoreSubject,
   deriveCharacter,
+  featChosenSkillIds,
   freeSkillCount,
   loreDisplayName,
   trainedSkillIds,
@@ -72,6 +73,8 @@ export function SkillsStep() {
 
   // Skills a subclass trains (e.g. a Gunslinger Way), and its optional pick.
   const subclassSkillIds = new Set(subclassGrantedSkillIds(state));
+  // Skills trained by a resolved feat choice (Clan Lore, Aldori/Eldritch, …).
+  const featSkillIds = new Set(featChosenSkillIds(state));
   const subclassName = klass.subclasses?.find((s) => s.id === state.subclassId)?.name;
   const wayChoice = subclassSkillGrant(state)?.choose;
   const overrides = state.skillOverrides ?? {};
@@ -123,9 +126,13 @@ export function SkillsStep() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {getDataset().skills.map((skill) => {
           const overridden = (overrides[skill.id] ?? 0) > 0;
-          // Auto-granted / locked: class, background, subclass, or a manual
-          // override — none of which the player toggles from this grid.
-          const isGranted = granted.has(skill.id) || subclassSkillIds.has(skill.id) || overridden;
+          // Auto-granted / locked: class, background, subclass, a feat choice, or
+          // a manual override — none of which the player toggles from this grid.
+          const isGranted =
+            granted.has(skill.id) ||
+            subclassSkillIds.has(skill.id) ||
+            featSkillIds.has(skill.id) ||
+            overridden;
           const isChosen = chosen.has(skill.id);
           const trained = isGranted || isChosen;
           const disabled = isGranted || (!isChosen && remaining === 0);
@@ -136,9 +143,11 @@ export function SkillsStep() {
                 ? 'Class'
                 : subclassSkillIds.has(skill.id)
                   ? subclassName ?? 'Way'
-                  : overridden
-                    ? 'GM'
-                    : null;
+                  : featSkillIds.has(skill.id)
+                    ? 'Feat'
+                    : overridden
+                      ? 'GM'
+                      : null;
           return (
             <button
               key={skill.id}

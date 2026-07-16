@@ -339,11 +339,77 @@ export function featChoicePrompts(feat: Feat | undefined): FeatChoicePrompt[] {
       const config = (r.choices as { config?: unknown }).config;
       if (config === 'skills') prompts.push({ flag: r.flag, prompt: 'Skill', options: skillChoiceOptions() });
       else if (config === 'saves') prompts.push({ flag: r.flag, prompt: 'Save', options: SAVE_CHOICE_OPTIONS });
-      // Other configs (weapons, itemType filters, compound clan-lore) are out of
-      // scope for the rank engine — omitted, not shown as a no-op dropdown.
+      // Other configs (weapons, itemType filters) are out of scope for the rank
+      // engine — omitted, not shown as a no-op dropdown.
     }
   }
+  // Object-valued skill grants (Clan Lore, Aldori/Eldritch dedications): these
+  // pick an option whose sub-fields name skills, which we apply ourselves.
+  prompts.push(...objectSkillChoicePrompts(feat));
   return prompts;
+}
+
+// A skill-rank grant driven by a *nested* selection field, e.g. Clan Lore's
+// `…rulesSelections.clan.skillOne`. Core can't substitute nested flags, so the
+// builder resolves these: the prompt's stored value is the granted skill id(s).
+const NESTED_SKILL_RANK = /system\.skills\.\{item\|flags\.system\.rulesSelections\.([a-z]+)\.([a-z]+)\}\.rank/i;
+
+/**
+ * Prompts for ChoiceSets whose object-valued options grant skills via nested
+ * rank paths. Each option's value is the comma-joined skill ids it trains (also
+ * what gets stored), labelled by the skill names.
+ */
+function objectSkillChoicePrompts(feat: Feat | undefined): FeatChoicePrompt[] {
+  const rules = feat?.rules;
+  if (!Array.isArray(rules)) return [];
+  // flag → the sub-fields of its selection that name a trained skill.
+  const subfieldsByFlag = new Map<string, Set<string>>();
+  for (const r of rules) {
+    const path = (r as { key?: unknown; path?: unknown }).path;
+    if ((r as { key?: unknown }).key !== 'ActiveEffectLike' || typeof path !== 'string') continue;
+    const m = NESTED_SKILL_RANK.exec(path);
+    if (m) (subfieldsByFlag.get(m[1]) ?? subfieldsByFlag.set(m[1], new Set()).get(m[1])!).add(m[2]);
+  }
+  if (!subfieldsByFlag.size) return [];
+  const skillIds = new Set(getDataset().skills.map((s) => s.id));
+  const skillName = (id: string) => getDataset().skills.find((s) => s.id === id)?.name ?? id;
+  const prompts: FeatChoicePrompt[] = [];
+  for (const rule of rules) {
+    const r = rule as { key?: unknown; flag?: unknown; choices?: unknown };
+    if (r.key !== 'ChoiceSet' || typeof r.flag !== 'string' || !Array.isArray(r.choices)) continue;
+    const subs = subfieldsByFlag.get(r.flag);
+    if (!subs) continue;
+    const seen = new Set<string>();
+    const options: FeatChoiceOption[] = [];
+    for (const c of r.choices as Array<{ value?: unknown }>) {
+      const val = c.value;
+      if (!val || typeof val !== 'object') continue;
+      const ids = [...subs]
+        .map((sf) => (val as Record<string, unknown>)[sf])
+        .filter((x): x is string => typeof x === 'string' && skillIds.has(x));
+      if (!ids.length) continue;
+      const key = ids.join(',');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      options.push({ value: key, label: ids.map(skillName).join(', ') });
+    }
+    if (options.length) prompts.push({ flag: r.flag, prompt: 'Trains', options });
+  }
+  return prompts;
+}
+
+/** Skill ids trained by a resolved object-valued feat choice (Clan Lore, etc.). */
+export function featChosenSkillIds(state: BuilderState): string[] {
+  const out: string[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    for (const p of objectSkillChoicePrompts(feat)) {
+      const chosen = state.featChoices?.[id]?.[p.flag];
+      if (chosen) out.push(...chosen.split(',').filter(Boolean));
+    }
+  }
+  return out;
 }
 
 /** Every chosen feat that still needs one or more player choices, with prompts. */
@@ -439,6 +505,11 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
 
   // Subclass-granted training (e.g. a Gunslinger Way trains you in its skill).
   for (const id of subclassGrantedSkillIds(state)) {
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, 1) as ProficiencyRank);
+  }
+
+  // Object-valued feat choices that train skills (Clan Lore, Aldori/Eldritch).
+  for (const id of featChosenSkillIds(state)) {
     ranks.set(id, Math.max(ranks.get(id) ?? 0, 1) as ProficiencyRank);
   }
 

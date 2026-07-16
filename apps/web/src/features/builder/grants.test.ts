@@ -12,9 +12,12 @@ import {
   bonusFeatSlots,
   chosenFeatIds,
   deriveCharacter,
+  featChoicePrompts,
+  featChosenSkillIds,
   gainsForLevel,
   loreId,
 } from '@/features/builder/rules';
+import { findFeat } from '@/features/builder/data';
 import { subclassGrantedSkillIds } from '@/features/builder/subclassEffects';
 import { emptyBuilderState, emptyLevelGains, type BuilderState } from '@/features/builder/types';
 
@@ -101,6 +104,31 @@ describe('bonus feats granted by another choice', () => {
     // With the heritage, the same choice is honoured.
     const active = base({ heritageId: 'versatile-human', bonusFeatChoices: { 'versatile-human': 'diehard' } });
     expect(chosenFeatIds(active).has('diehard')).toBe(true);
+  });
+});
+
+describe('object-valued feat skill grants (Clan Lore family)', () => {
+  it('Clan Lore surfaces a picker of skill-pair options', () => {
+    const prompts = featChoicePrompts(findFeat('clan-lore'));
+    expect(prompts.length).toBeGreaterThan(0);
+    // Each option value is comma-joined skill ids (e.g. "diplomacy,society").
+    const opt = prompts[0].options.find((o) => o.value.includes(','));
+    expect(opt).toBeTruthy();
+    expect(opt!.value.split(',').every((id) => /^[a-z]+$/.test(id))).toBe(true);
+  });
+  it('applies the chosen skills as trained', () => {
+    const state = base({
+      ancestryFeatId: 'clan-lore',
+      heritageId: 'skilled-human',
+      featChoices: { 'clan-lore': { clan: 'diplomacy,society' } },
+    });
+    expect(featChosenSkillIds(state)).toEqual(expect.arrayContaining(['diplomacy', 'society']));
+    expect(rank(state, 'diplomacy')).toBe(1);
+    expect(rank(state, 'society')).toBe(1);
+  });
+  it('grants nothing until the choice is made', () => {
+    const state = base({ ancestryFeatId: 'clan-lore', heritageId: 'skilled-human' });
+    expect(featChosenSkillIds(state)).toEqual([]);
   });
 });
 
