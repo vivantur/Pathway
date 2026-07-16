@@ -78,23 +78,17 @@ export const durationSchema = z.discriminatedUnion("kind", [
 ]);
 export type Duration = z.infer<typeof durationSchema>;
 
-export const appliedEffectSchema = z
+/**
+ * The AUTHORED part of an applied effect — everything content can know ahead of
+ * time. An `applyEffect` node carries one of these; the runtime identity
+ * (`id`/`originId`/`bearerId`/`appliedAt`) is stamped by the HOST when it applies
+ * the mutation, because minting an instance id and reading the clock are both
+ * impure and belong outside core.
+ */
+export const effectTemplateSchema = z
   .object({
-    id: z.string().min(1),
     name: z.string().min(1),
-    /** The creature that applied it — the "your" in "your next turn". */
-    originId: z.string().min(1),
-    /** The creature it is on. */
-    bearerId: z.string().min(1),
     duration: durationSchema,
-    /**
-     * When it was applied. Required to resolve "your NEXT turn" without an
-     * off-by-one: an end-of-turn moment during the turn it was applied in must not
-     * count. `duringTurnOf` is the creature whose turn it was (null out of combat).
-     */
-    appliedAt: z
-      .object({ round: z.number().int().nonnegative(), duringTurnOf: z.string().min(1).nullable() })
-      .strict(),
     /**
      * Whether this effect can be Sustained — INDEPENDENT of `duration`. `extends`
      * says whether Sustaining restarts the duration clock (implicit for
@@ -108,6 +102,34 @@ export const appliedEffectSchema = z
     passives: z.array(passiveEffectSchema),
     /** Can be ended early by the Dismiss action. */
     dismissible: z.boolean().optional(),
+  })
+  .strict();
+export type EffectTemplate = z.infer<typeof effectTemplateSchema>;
+
+/** A live applied effect: the authored template plus the runtime identity the host stamps. */
+export const appliedEffectSchema = z
+  .object({
+    ...effectTemplateSchema.shape,
+    id: z.string().min(1),
+    /** The creature that applied it — the "your" in "your next turn". */
+    originId: z.string().min(1),
+    /** The creature it is on. */
+    bearerId: z.string().min(1),
+    /**
+     * When it was applied. Required to resolve "your NEXT turn" without an
+     * off-by-one: an end-of-turn moment during the turn it was applied in must not
+     * count. `duringTurnOf` is the creature whose turn it was (null out of combat).
+     */
+    appliedAt: z
+      .object({ round: z.number().int().nonnegative(), duringTurnOf: z.string().min(1).nullable() })
+      .strict(),
+    /**
+     * The link group this effect belongs to, if it was applied as part of a linked
+     * set (Constrict → Grappled on the target AND Grappling on the caster).
+     * Removing any member with cascade removes the whole group. The host resolves
+     * an invocation's authored group LABEL into a real group id.
+     */
+    linkGroup: z.string().min(1).optional(),
   })
   .strict();
 export type AppliedEffect = z.infer<typeof appliedEffectSchema>;

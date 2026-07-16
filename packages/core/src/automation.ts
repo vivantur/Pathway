@@ -20,6 +20,9 @@
 //                double), and emit an intended `Mutation`. (slice 4)
 //   • counter  — spend/restore a resource (counter.ts) read from the context's
 //                snapshot, emitting a `counter` mutation. (slice 5)
+//   • applyEffect / removeEffect — impose or lift a Layer-1.5 applied effect
+//                (applied.ts), emitting a mutation; `linkGroup` pairs effects
+//                applied to different actors so they remove as a unit. (slice 7b)
 //   • target   — a repeatable SCOPING node: re-scope the current target (all /
 //                self / position(N)) and run its children once per creature, so
 //                each target gets its own DC comparison, degree, and mutations.
@@ -40,6 +43,7 @@
 // a `value` fallback of a boolean literal — no branch-specific machinery needed.
 
 import { z } from "zod";
+import { effectTemplateSchema, type EffectTemplate } from "./applied.js";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
 import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
@@ -154,6 +158,8 @@ export type AutomationNode =
   | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
+  | { kind: "applyEffect"; effect: EffectTemplate; target?: "self" | "target"; linkGroup?: string; onError?: ErrorPolicy }
+  | { kind: "removeEffect"; name: string; target?: "self" | "target"; cascade?: boolean; onError?: ErrorPolicy }
   | { kind: "target"; mode: "all" | "self" | "position"; index?: number; children: AutomationNode[]; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
@@ -169,6 +175,8 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     damageNodeSchema,
     tempHpNodeSchema,
     counterNodeSchema,
+    applyEffectNodeSchema,
+    removeEffectNodeSchema,
     targetNodeSchema,
     branchNodeSchema,
   ]),
@@ -295,6 +303,34 @@ const counterNodeSchema = z
   })
   .strict();
 
+const applyEffectNodeSchema = z
+  .object({
+    kind: z.literal("applyEffect"),
+    /** The authored effect; the host stamps its runtime identity when applying. */
+    effect: effectTemplateSchema,
+    target: z.enum(["self", "target"]).optional(),
+    /**
+     * A label joining effects applied by ONE invocation into a link group, so a
+     * paired application (Grappled on the target + Grappling on the caster) can be
+     * removed as a unit. The host maps the label to a real group id.
+     */
+    linkGroup: z.string().min(1).optional(),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
+const removeEffectNodeSchema = z
+  .object({
+    kind: z.literal("removeEffect"),
+    /** The effect's name; the host resolves which instance(s) on that creature. */
+    name: z.string().min(1),
+    target: z.enum(["self", "target"]).optional(),
+    /** Also remove every effect linked to it (the whole link group). */
+    cascade: z.boolean().optional(),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
 const targetNodeSchema = z
   .object({
     kind: z.literal("target"),
@@ -352,7 +388,9 @@ export type MutationTarget = { kind: "self" } | { kind: "target"; index: number 
 export type Mutation =
   | { kind: "damage"; target: MutationTarget; healing: boolean; amount: number; instances: DamageInstance[] }
   | { kind: "temphp"; target: MutationTarget; amount: number }
-  | { kind: "counter"; counter: string; spent: number; remaining: number };
+  | { kind: "counter"; counter: string; spent: number; remaining: number }
+  | { kind: "applyEffect"; target: MutationTarget; effect: EffectTemplate; linkGroup?: string }
+  | { kind: "removeEffect"; target: MutationTarget; name: string; cascade: boolean };
 
 export interface Outcome {
   /** Narration produced, in order. */
@@ -725,6 +763,31 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         counters[node.counter] = result.counter; // later nodes see the spend
         bindCounter(node.name, result.requested, result.spent, result.remaining, result.clamped);
         outcome.mutations.push({ kind: "counter", counter: node.counter, spent: result.spent, remaining: result.remaining });
+        return;
+      }
+      case "applyEffect": {
+        try {
+          const target = mutationTarget(node.target ?? "target");
+          outcome.mutations.push({
+            kind: "applyEffect",
+            target,
+            effect: node.effect,
+            ...(node.linkGroup !== undefined ? { linkGroup: node.linkGroup } : {}),
+          });
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, `applyEffect "${node.effect.name}"`);
+        }
+        return;
+      }
+      case "removeEffect": {
+        try {
+          const target = mutationTarget(node.target ?? "target");
+          outcome.mutations.push({ kind: "removeEffect", target, name: node.name, cascade: node.cascade === true });
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, `removeEffect "${node.name}"`);
+        }
         return;
       }
       case "target": {

@@ -5,6 +5,7 @@ import {
   type AutomationNode,
   type ExecutionContext,
 } from "./automation.js";
+import type { EffectTemplate } from "./applied.js";
 import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
 import { makeRng } from "./rng.js";
@@ -692,6 +693,91 @@ describe("rollMode — shared vs per-target", () => {
   });
 });
 
+describe("applyEffect / removeEffect", () => {
+  const frightened: EffectTemplate = {
+    name: "Frightened 1",
+    duration: { kind: "rounds", count: 1 },
+    tickTiming: { when: "end", whose: "bearer" },
+    passives: [{ kind: "modifier", target: "will", bonusType: "status", value: lit(-1) }],
+  };
+
+  it("emits an applyEffect mutation carrying the template, defaulting to the current target", () => {
+    const out = runAutomation([{ kind: "applyEffect", effect: frightened }], ctx({ targets: [target], rng: seqRng(1) }));
+    expect(out.mutations).toEqual([
+      { kind: "applyEffect", target: { kind: "target", index: 0 }, effect: frightened },
+    ]);
+  });
+
+  it("applies to every creature inside a target scope", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "all", children: [{ kind: "applyEffect", effect: frightened }] }],
+      ctx({ targets: [target, { ...target, ac: { value: 25, shieldBonus: 0 } }], rng: seqRng(1) }),
+    );
+    expect(out.mutations.map((m) => m.kind === "applyEffect" && m.target)).toEqual([
+      { kind: "target", index: 0 },
+      { kind: "target", index: 1 },
+    ]);
+  });
+
+  // The doc's load-bearing case: ONE invocation applies paired effects to TWO
+  // actors — Grappled on the target and Grappling on the caster — joined so that
+  // removing either removes both.
+  it("links a paired application across two actors (Grapple)", () => {
+    const grappled: EffectTemplate = { name: "Grappled", duration: { kind: "unlimited" }, passives: [] };
+    const grappling: EffectTemplate = { name: "Grappling", duration: { kind: "unlimited" }, passives: [] };
+    const out = runAutomation(
+      [
+        { kind: "applyEffect", effect: grappled, target: "target", linkGroup: "grapple" },
+        { kind: "applyEffect", effect: grappling, target: "self", linkGroup: "grapple" },
+      ],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([
+      { kind: "applyEffect", target: { kind: "target", index: 0 }, effect: grappled, linkGroup: "grapple" },
+      { kind: "applyEffect", target: { kind: "self" }, effect: grappling, linkGroup: "grapple" },
+    ]);
+  });
+
+  it("removeEffect emits by name, with cascade defaulting to false", () => {
+    const out = runAutomation(
+      [
+        { kind: "removeEffect", name: "Grappled", cascade: true },
+        { kind: "removeEffect", name: "Slowed", target: "self" },
+      ],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([
+      { kind: "removeEffect", target: { kind: "target", index: 0 }, name: "Grappled", cascade: true },
+      { kind: "removeEffect", target: { kind: "self" }, name: "Slowed", cascade: false },
+    ]);
+  });
+
+  it("no target in scope obeys the error policy", () => {
+    const out = runAutomation(
+      [{ kind: "applyEffect", effect: frightened, onError: { on: "warn" } }],
+      ctx({ targets: [], rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([]);
+    expect(out.warnings.some((w) => /applyEffect "Frightened 1"/.test(w))).toBe(true);
+  });
+
+  it("can be gated on a resolved degree (apply only on a failed save)", () => {
+    const out = runAutomation(
+      [
+        {
+          kind: "save",
+          save: "will",
+          dc: { kind: "flat", value: lit(30) }, // will +7, die 10 → 17 vs 30 → crit failure
+          onCriticalFailure: [{ kind: "applyEffect", effect: frightened }],
+        },
+      ],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    expect(out.mutations).toHaveLength(1);
+    expect(out.mutations[0]).toMatchObject({ kind: "applyEffect" });
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -769,6 +855,25 @@ describe("automationSchema", () => {
         { kind: "save", save: "reflex", dc: { kind: "flat", value: { kind: "lit", value: 20 } }, rollMode: "shared" },
       ]).success,
     ).toBe(false);
+  });
+
+  it("validates applyEffect / removeEffect nodes", () => {
+    expect(
+      automationSchema.safeParse([
+        {
+          kind: "applyEffect",
+          effect: { name: "Grappled", duration: { kind: "unlimited" }, passives: [] },
+          target: "target",
+          linkGroup: "grapple",
+        },
+      ]).success,
+    ).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "removeEffect", name: "Grappled", cascade: true }]).success).toBe(true);
+    // a template must carry a valid duration and its passives
+    expect(
+      automationSchema.safeParse([{ kind: "applyEffect", effect: { name: "X", duration: { kind: "forever" }, passives: [] } }]).success,
+    ).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "removeEffect" }]).success).toBe(false); // name required
   });
 
   it("validates a target node with nested children", () => {
