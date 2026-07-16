@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
 
 /** A stub RNG whose `int` always returns a fixed d20 face. */
 const fixedd20 = (face: number) => ({ next: () => 0, int: (_min: number, _max: number) => face });
@@ -18,6 +18,24 @@ describe("degreeOrdinal", () => {
     expect(degreeOrdinal("failure")).toBe(1);
     expect(degreeOrdinal("success")).toBe(2);
     expect(degreeOrdinal("critical-success")).toBe(3);
+  });
+});
+
+describe("basicSaveMultiplier", () => {
+  it("is none / half / full / double by degree", () => {
+    expect(basicSaveMultiplier("critical-success")).toBe(0);
+    expect(basicSaveMultiplier("success")).toBe(0.5);
+    expect(basicSaveMultiplier("failure")).toBe(1);
+    expect(basicSaveMultiplier("critical-failure")).toBe(2);
+  });
+});
+
+describe("attackDamageMultiplier", () => {
+  it("doubles on a crit, full on a hit, none on a miss", () => {
+    expect(attackDamageMultiplier("critical-success")).toBe(2);
+    expect(attackDamageMultiplier("success")).toBe(1);
+    expect(attackDamageMultiplier("failure")).toBe(0);
+    expect(attackDamageMultiplier("critical-failure")).toBe(0);
   });
 });
 
