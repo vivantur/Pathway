@@ -83,6 +83,12 @@ export * from './rng.js';
 // automation node consumes it. Generic dice; no PF2e rules.
 export * from './dice.js';
 
+// Check resolution — the shared d20-vs-DC primitive attack/save/check route
+// through (`rollCheck` → a degree via degree.ts), plus `dcFromModifier` (the
+// pasted "DC = 10 + modifier" rule) and `degreeOrdinal`. A Layer-2 slice-3
+// primitive; the resolution nodes consume it.
+export * from './checks.js';
+
 // Layer 2 — the automation tree interpreter (skeleton slice): the execution model
 // (context + outcome = narration log + intended mutations), the uniform error
 // policy, and the rules-free nodes (text/variable/branch). Pure; the rest of the
