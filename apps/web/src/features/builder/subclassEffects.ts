@@ -66,6 +66,44 @@ export function rogueRacketAbility(subclassId?: string): AbilityKey | undefined 
   return subclassId ? ROGUE_RACKET_ABILITY[subclassId] : undefined;
 }
 
+// ── Subclass-granted skill training ─────────────────────────────────────────
+// Some level-1 subclass features train the character in a skill (the Gunslinger
+// "Way Skill", verified against the Foundry pf2e class-feature rules the dataset
+// is ingested from). A `choose` grant offers a pick the player resolves.
+export interface SubclassSkillGrant {
+  fixed?: string[];
+  choose?: { key: string; options: string[] };
+}
+
+const SUBCLASS_SKILLS: Record<string, Record<string, SubclassSkillGrant>> = {
+  gunslinger: {
+    // Way Skill per Guns & Gears (Remaster): Drifter→Acrobatics, Sniper→Stealth,
+    // Vanguard→Athletics, Pistolero→Deception or Intimidation.
+    drifter: { fixed: ['acrobatics'] },
+    sniper: { fixed: ['stealth'] },
+    vanguard: { fixed: ['athletics'] },
+    pistolero: { choose: { key: 'gunslinger-way', options: ['deception', 'intimidation'] } },
+  },
+};
+
+/** The skill grant a build's level-1 subclass carries, if any. */
+export function subclassSkillGrant(state: BuilderState): SubclassSkillGrant | undefined {
+  if (!state.classId || !state.subclassId) return undefined;
+  return SUBCLASS_SKILLS[state.classId]?.[state.subclassId];
+}
+
+/** Concrete skill ids a subclass trains: its fixed skills plus a resolved choice. */
+export function subclassGrantedSkillIds(state: BuilderState): string[] {
+  const g = subclassSkillGrant(state);
+  if (!g) return [];
+  const out = [...(g.fixed ?? [])];
+  if (g.choose) {
+    const chosen = state.subclassSkillChoices?.[g.choose.key];
+    if (chosen && g.choose.options.includes(chosen)) out.push(chosen);
+  }
+  return out;
+}
+
 /** Level-1 focus points granted by the subclass choice (0 or 1). */
 export function focusPoints(state: BuilderState): number {
   return state.classId && FOCUS_SUBCLASS_CLASSES.has(state.classId) && state.subclassId ? 1 : 0;

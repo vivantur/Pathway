@@ -48,6 +48,8 @@ import {
   focusPoints,
   monkPathSaveRank,
   subclassArmorRank,
+  subclassGrantedSkillIds,
+  subclassSkillGrant,
 } from './subclassEffects';
 import type { BuilderState } from './types';
 
@@ -434,6 +436,17 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
   for (const [skillId, grant] of characterEffects(state).skillRanks) {
     ranks.set(skillId, Math.max(ranks.get(skillId) ?? 0, grant) as ProficiencyRank);
   }
+
+  // Subclass-granted training (e.g. a Gunslinger Way trains you in its skill).
+  for (const id of subclassGrantedSkillIds(state)) {
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, 1) as ProficiencyRank);
+  }
+
+  // Manual overrides (homebrew / GM grants) raise a skill to the chosen rank.
+  for (const [id, rank] of Object.entries(state.skillOverrides ?? {})) {
+    const r = Math.max(0, Math.min(4, Math.floor(rank))) as ProficiencyRank;
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, r) as ProficiencyRank);
+  }
   return ranks;
 }
 
@@ -511,8 +524,8 @@ export function trainedLoreSubjects(state: BuilderState): string[] {
   return out;
 }
 
-/** Every feat id chosen anywhere on the build (all levels + creation slots). */
-export function chosenFeatIds(state: BuilderState): Set<string> {
+/** Feats from the fixed build slots (creation + per-level), excluding grants. */
+function sourceFeatIds(state: BuilderState): Set<string> {
   const ids = new Set<string>();
   const add = (id?: string) => {
     if (id) ids.add(id);
@@ -528,6 +541,49 @@ export function chosenFeatIds(state: BuilderState): Set<string> {
     add(g.skillFeatId);
     add(g.generalFeatId);
     add(g.archetypeFeatId);
+  }
+  return ids;
+}
+
+// --- bonus feats granted by another choice ---------------------------------
+// A few options hand you an *extra* feat to choose: Natural Ambition (a class
+// feat), General Training (a general feat), and the Versatile Human heritage (a
+// general feat). Each surfaces as its own picker; the choice is stored under a
+// stable slot key so it survives edits and is honoured only while its source is.
+
+export type BonusFeatKind = 'class' | 'general';
+
+export interface BonusFeatSlot {
+  /** Stable key the chosen feat is stored under in `state.bonusFeatChoices`. */
+  key: string;
+  kind: BonusFeatKind;
+  /** What granted the feat, for the picker's heading. */
+  source: string;
+}
+
+const VERSATILE_HUMAN_HERITAGE = 'versatile-human';
+
+/** The bonus-feat pickers a build currently has, from its granting choices. */
+export function bonusFeatSlots(state: BuilderState): BonusFeatSlot[] {
+  const src = sourceFeatIds(state);
+  const slots: BonusFeatSlot[] = [];
+  if (state.heritageId === VERSATILE_HUMAN_HERITAGE)
+    slots.push({ key: 'versatile-human', kind: 'general', source: 'Versatile Human heritage' });
+  if (src.has('natural-ambition'))
+    slots.push({ key: 'natural-ambition', kind: 'class', source: 'Natural Ambition' });
+  if (src.has('general-training'))
+    slots.push({ key: 'general-training', kind: 'general', source: 'General Training' });
+  return slots;
+}
+
+/** Every feat id on the build: the fixed slots plus active bonus-feat grants. */
+export function chosenFeatIds(state: BuilderState): Set<string> {
+  const ids = sourceFeatIds(state);
+  // Only honour a stored bonus choice while its granting slot is still active,
+  // so removing Natural Ambition (etc.) also drops the feat it granted.
+  for (const slot of bonusFeatSlots(state)) {
+    const id = state.bonusFeatChoices?.[slot.key];
+    if (id) ids.add(id);
   }
   return ids;
 }
@@ -976,6 +1032,16 @@ export function validate(state: BuilderState): string[] {
   // build validates as complete and exports an illegal extra trained skill.
   if (chosen > freePicks)
     problems.push(`Deselect ${chosen - freePicks} trained skill(s) — more than your free skills allow (an Intelligence change likely reduced them).`);
+
+  // Bonus feats granted by another choice must be filled in.
+  for (const slot of bonusFeatSlots(state)) {
+    if (!state.bonusFeatChoices?.[slot.key])
+      problems.push(`Choose the ${slot.kind} feat granted by ${slot.source}.`);
+  }
+  // A subclass skill choice (e.g. Gunslinger Pistolero) must be resolved.
+  const wayChoice = subclassSkillGrant(state)?.choose;
+  if (wayChoice && !state.subclassSkillChoices?.[wayChoice.key])
+    problems.push('Choose the skill your subclass trains.');
 
   for (let lvl = 2; lvl <= (state.level || 1); lvl += 1) {
     for (const msg of unmetAtLevel(state, lvl)) problems.push(`Level ${lvl}: ${msg}`);

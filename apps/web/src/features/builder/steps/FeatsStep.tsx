@@ -7,7 +7,7 @@ import {
   findClass,
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
-import { chosenFeatIds, opt } from '../rules';
+import { bonusFeatSlots, chosenFeatIds, opt } from '../rules';
 import { OPT } from '../options/config';
 import { plainText } from '../contentText';
 import { FeatPicker } from '../FeatPicker';
@@ -16,6 +16,7 @@ import { FeatChoicesPanel } from '../FeatChoicesPanel';
 export function FeatsStep() {
   const state = useBuilder((s) => s.state);
   const update = useBuilder((s) => s.update);
+  const setBonusFeat = useBuilder((s) => s.setBonusFeat);
   const taken = chosenFeatIds(state);
 
   const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
@@ -29,7 +30,13 @@ export function FeatsStep() {
   const classFeats = feats.filter(
     (f) => f.type === 'class' && f.level === 1 && (f.classIds ?? []).includes(klass?.id ?? ''),
   );
+  // A "general feat" grant may be filled by a general OR skill feat (skill feats
+  // are valid in general slots), so offer both.
+  const generalFeats = feats.filter(
+    (f) => (f.type === 'general' || f.type === 'skill') && f.level === 1,
+  );
   const bgFeat = background?.skillFeat ? feats.find((f) => f.id === background.skillFeat) : undefined;
+  const bonusSlots = bonusFeatSlots(state);
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,6 +103,25 @@ export function FeatsStep() {
           takenIds={taken}
         />
       </section>
+
+      {bonusSlots.map((slot) => (
+        <section key={slot.key} className="panel flex flex-col gap-4 p-5">
+          <div>
+            <h4 className="font-display text-lg text-gold-400">
+              Bonus {slot.kind === 'class' ? 'Class' : 'General'} Feat
+            </h4>
+            <p className="font-ui text-sm text-parchment/70">Granted by {slot.source}.</p>
+          </div>
+          <FeatPicker
+            feats={slot.kind === 'class' ? classFeats : generalFeats}
+            recommendations={[]}
+            selectedId={state.bonusFeatChoices?.[slot.key]}
+            onSelect={(id) => setBonusFeat(slot.key, id)}
+            emptyLabel={slot.kind === 'class' ? 'Choose a class first.' : 'Choose an ancestry first.'}
+            takenIds={taken}
+          />
+        </section>
+      ))}
 
       {bgFeat && (
         <section className="panel p-5">

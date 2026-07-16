@@ -14,7 +14,16 @@ import {
   loreDisplayName,
   trainedSkillIds,
 } from '../rules';
+import { subclassGrantedSkillIds, subclassSkillGrant } from '../subclassEffects';
 import { useBuilder } from '../store';
+
+const RANK_OPTIONS = [
+  { rank: 0, label: 'Untrained' },
+  { rank: 1, label: 'Trained' },
+  { rank: 2, label: 'Expert' },
+  { rank: 3, label: 'Master' },
+  { rank: 4, label: 'Legendary' },
+];
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 
@@ -40,10 +49,13 @@ export function SkillsStep() {
   const toggleSkill = useBuilder((s) => s.toggleSkill);
   const addLore = useBuilder((s) => s.addLore);
   const removeLore = useBuilder((s) => s.removeLore);
+  const setSubclassSkillChoice = useBuilder((s) => s.setSubclassSkillChoice);
+  const setSkillOverride = useBuilder((s) => s.setSkillOverride);
   const toggleLanguage = useBuilder((s) => s.toggleLanguage);
 
   const [loreInput, setLoreInput] = useState('');
   const [langFilter, setLangFilter] = useState('');
+  const [showOverrides, setShowOverrides] = useState(false);
 
   const klass = state.classId ? findClass(state.classId) : undefined;
   const background = state.backgroundId ? findBackground(state.backgroundId) : undefined;
@@ -57,6 +69,13 @@ export function SkillsStep() {
   const granted = trainedSkillIds({ ...state, skillChoices: [] }); // class + background auto-trained
   const derived = deriveCharacter(state);
   const modById = new Map(derived.skills.map((s) => [s.id, s.modifier]));
+
+  // Skills a subclass trains (e.g. a Gunslinger Way), and its optional pick.
+  const subclassSkillIds = new Set(subclassGrantedSkillIds(state));
+  const subclassName = klass.subclasses?.find((s) => s.id === state.subclassId)?.name;
+  const wayChoice = subclassSkillGrant(state)?.choose;
+  const overrides = state.skillOverrides ?? {};
+  const rankById = new Map(derived.skills.map((s) => [s.id, s.rank]));
 
   // Trained skills and chosen Lores share one free-skill pool.
   const loreList = state.loreChoices ?? [];
@@ -103,10 +122,23 @@ export function SkillsStep() {
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {getDataset().skills.map((skill) => {
-          const isGranted = granted.has(skill.id);
+          const overridden = (overrides[skill.id] ?? 0) > 0;
+          // Auto-granted / locked: class, background, subclass, or a manual
+          // override — none of which the player toggles from this grid.
+          const isGranted = granted.has(skill.id) || subclassSkillIds.has(skill.id) || overridden;
           const isChosen = chosen.has(skill.id);
           const trained = isGranted || isChosen;
           const disabled = isGranted || (!isChosen && remaining === 0);
+          const badge =
+            background && background.trainedSkill === skill.id
+              ? 'Background'
+              : granted.has(skill.id)
+                ? 'Class'
+                : subclassSkillIds.has(skill.id)
+                  ? subclassName ?? 'Way'
+                  : overridden
+                    ? 'GM'
+                    : null;
           return (
             <button
               key={skill.id}
@@ -123,9 +155,9 @@ export function SkillsStep() {
               </span>
               <span className="flex items-center gap-2">
                 <span className="font-display text-gold-400">{sign(modById.get(skill.id) ?? 0)}</span>
-                {isGranted && (
+                {badge && (
                   <span className="rounded bg-midnight-600/70 px-1.5 py-0.5 font-ui text-[10px] uppercase tracking-wider text-parchment/60">
-                    {background && background.trainedSkill === skill.id ? 'Background' : 'Class'}
+                    {badge}
                   </span>
                 )}
               </span>
@@ -133,6 +165,30 @@ export function SkillsStep() {
           );
         })}
       </div>
+
+      {/* Way Skill choice (e.g. Gunslinger Pistolero: Deception or Intimidation) */}
+      {wayChoice && (
+        <div className="panel flex flex-wrap items-center gap-3 p-4">
+          <span className="font-ui text-sm text-parchment/80">
+            {subclassName ?? 'Subclass'} grants a skill — choose one:
+          </span>
+          {wayChoice.options.map((id) => {
+            const skill = getDataset().skills.find((s) => s.id === id);
+            const active = state.subclassSkillChoices?.[wayChoice.key] === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSubclassSkillChoice(wayChoice.key, id)}
+                className="choice-card px-3 py-1.5"
+                data-selected={active}
+              >
+                <span className="font-ui text-sm text-parchment">{skill?.name ?? id}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Lore skills -------------------------------------------------------- */}
       <div className="panel flex flex-col gap-3 p-5">
@@ -283,6 +339,53 @@ export function SkillsStep() {
           )}
         </div>
       )}
+
+      {/* Manual proficiency overrides (homebrew / GM grants) ----------------- */}
+      <div className="panel flex flex-col gap-3 p-5">
+        <button
+          type="button"
+          onClick={() => setShowOverrides((v) => !v)}
+          className="flex items-center justify-between text-left"
+        >
+          <div>
+            <h4 className="font-display text-lg text-gold-400">Adjust proficiencies</h4>
+            <p className="font-ui text-xs text-parchment/60">
+              Manually set a skill&apos;s rank — for homebrew or a proficiency your GM granted.
+              This only ever raises a skill above what the rules already give it.
+            </p>
+          </div>
+          <span className="font-ui text-sm text-gold-400">{showOverrides ? '▾' : '▸'}</span>
+        </button>
+
+        {showOverrides && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {getDataset().skills.map((skill) => {
+              const derivedRank = rankById.get(skill.id) ?? 0;
+              const override = overrides[skill.id] ?? 0;
+              return (
+                <label
+                  key={skill.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-gold-500/15 bg-midnight-900/40 px-3 py-1.5"
+                >
+                  <span className="font-ui text-sm text-parchment/85">{skill.name}</span>
+                  <select
+                    value={override || ''}
+                    onChange={(e) => setSkillOverride(skill.id, e.target.value ? Number(e.target.value) : null)}
+                    className="rounded border border-gold-500/20 bg-midnight-900 px-2 py-1 font-ui text-xs text-parchment focus:border-gold-500/60 focus:outline-none"
+                  >
+                    <option value="">Auto ({RANK_OPTIONS[derivedRank]?.label ?? 'Untrained'})</option>
+                    {RANK_OPTIONS.filter((o) => o.rank >= 1).map((o) => (
+                      <option key={o.rank} value={o.rank}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

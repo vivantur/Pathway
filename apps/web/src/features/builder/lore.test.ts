@@ -75,10 +75,11 @@ describe('chosen lore skills', () => {
   it('exports into the Pathbuilder `lores` array, not the skill map', () => {
     const state = human({ loreChoices: ['Warfare'] });
     const { build } = toPathbuilder(state);
-    expect(build.lores.some(([name]) => name === 'Warfare')).toBe(true);
+    const lores = build.lores ?? [];
+    expect(lores.some(([name]) => name === 'Warfare')).toBe(true);
     // The `lore:*` id must not leak into the standard skill-proficiency map.
     expect(Object.keys(build.proficiencies ?? {}).some((k) => k.startsWith('lore:'))).toBe(false);
-    expect(build.lores.every(([name]) => !/lore$/i.test(name))).toBe(true);
+    expect(lores.every(([name]) => !/lore$/i.test(name))).toBe(true);
   });
 });
 

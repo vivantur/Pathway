@@ -43,6 +43,9 @@ interface BuilderStore {
   toggleSkill: (id: string, maxFree: number) => void;
   addLore: (subject: string, max: number) => void;
   removeLore: (subject: string) => void;
+  setBonusFeat: (slotKey: string, featId: string | undefined) => void;
+  setSubclassSkillChoice: (key: string, skillId: string) => void;
+  setSkillOverride: (skillId: string, rank: number | null) => void;
   toggleLanguage: (name: string, max: number) => void;
   setFeatChoice: (featId: string, flag: string, value: string) => void;
 
@@ -154,6 +157,30 @@ export const useBuilder = create<BuilderStore>((set) => ({
         ),
       },
     })),
+
+  setBonusFeat: (slotKey, featId) =>
+    set((s) => {
+      const next = { ...(s.state.bonusFeatChoices ?? {}) };
+      if (featId) next[slotKey] = featId;
+      else delete next[slotKey];
+      return { state: { ...s.state, bonusFeatChoices: next } };
+    }),
+
+  setSubclassSkillChoice: (key, skillId) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        subclassSkillChoices: { ...(s.state.subclassSkillChoices ?? {}), [key]: skillId },
+      },
+    })),
+
+  setSkillOverride: (skillId, rank) =>
+    set((s) => {
+      const next = { ...(s.state.skillOverrides ?? {}) };
+      if (rank && rank > 0) next[skillId] = rank;
+      else delete next[skillId];
+      return { state: { ...s.state, skillOverrides: next } };
+    }),
 
   toggleLanguage: (name, max) =>
     set((s) => {

@@ -72,6 +72,27 @@ export interface BuilderState {
   ancestryParagonFeatId?: string;
   classFeatId?: string;
 
+  /**
+   * Extra feats granted by another choice (Natural Ambition → a class feat,
+   * General Training / Versatile Human heritage → a general feat). Keyed by a
+   * stable grant-slot key (see `bonusFeatSlots`) → the chosen feat id. Only
+   * choices whose slot is currently active are honoured.
+   */
+  bonusFeatChoices: Record<string, string>;
+
+  /**
+   * Skill choices a subclass grants at level 1 (e.g. Gunslinger's Way of the
+   * Pistolero picks Deception or Intimidation). Keyed by a grant key → skill id.
+   */
+  subclassSkillChoices: Record<string, string>;
+
+  /**
+   * Manual proficiency-rank overrides for skills — homebrew or GM-granted
+   * training the rules engine wouldn't otherwise produce. skill id (or `lore:*`)
+   * → rank 1–4. Applied as a floor: it only ever raises a skill's proficiency.
+   */
+  skillOverrides: Record<string, number>;
+
   /** Additional languages chosen (Int-gated + ancestry bonus). */
   languageChoices: string[];
 
@@ -191,6 +212,9 @@ export function emptyBuilderState(): BuilderState {
     skillChoices: [],
     loreChoices: [],
     featChoices: {},
+    bonusFeatChoices: {},
+    subclassSkillChoices: {},
+    skillOverrides: {},
     languageChoices: [],
     progression: {},
     inventory: [],

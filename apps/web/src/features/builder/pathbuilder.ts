@@ -21,7 +21,7 @@ import {
   resolveCasterTradition,
 } from './spellcasting';
 import { focusPoints } from './subclassEffects';
-import { abilityModifier, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
+import { abilityModifier, bonusFeatSlots, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState, InnateSpellEntry, SpellTradition } from '@/features/builder/types';
 
 const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
@@ -115,6 +115,11 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   push(state.ancestryParagonFeatId, 'Ancestry', 1); // Ancestry Paragon bonus feat
   push(state.classFeatId, 'Class', 1);
   if (background?.skillFeat) push(background.skillFeat, 'Skill', 1);
+  // Bonus feats granted by another choice (Natural Ambition → class, General
+  // Training / Versatile Human → general).
+  for (const slot of bonusFeatSlots(state)) {
+    push(state.bonusFeatChoices?.[slot.key], slot.kind === 'class' ? 'Class' : 'General', 1);
+  }
   // Levels 2–20 (from the progression record).
   for (const [lvlStr, gains] of Object.entries(state.progression)) {
     const lvl = Number(lvlStr);
