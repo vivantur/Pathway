@@ -227,11 +227,18 @@ Key properties learned from the walkthrough:
 - **Buttons are self-contained mini-actions** — own presentation (label/verb/style), own
   automation tree, own DC/bonus **resolution chain** (explicit on node → button/effect
   default → actor's default casting/class stat).
-- **Buttons capture context at *apply* time, not press time** (a closure). When Constrict
-  applies Grappled, the grapple DC is *frozen into* the escape button, used when the target
-  presses it turns later. The runtime must support **deferred execution with captured
-  context** — the automation on a button runs long after, and detached from, the action
-  that spawned it.
+- **Buttons are LIVE by default; capture is opt-in.** ~~Buttons capture context at *apply*
+  time, not press time (a closure).~~ **Corrected 2026-07-15 (owner) — this Avrae framing is
+  wrong for PF2e** and was nearly built. PF2e leans far harder on bonuses and penalties, so a
+  derived DC must track *current* circumstances: if you grapple at Athletics DC 20 and then
+  become enfeebled 2, the escape DC is 18 **while the grapple is ongoing** — not still 20. So
+  `runButton` takes a context built **fresh at press time** and re-resolves against current
+  stats (the host recomputes that sheet with `applyPassiveEffects` over the creature's active
+  effects). The `applyEffect` node's `capture?` is **opt-in freezing**, for the narrow set that
+  genuinely must not drift — the rank a spell was cast at, a one-time roll, a value from a
+  creature that may be gone. The runtime still supports **deferred execution** — a button's
+  automation runs long after, and detached from, the action that spawned it — it just resolves
+  live rather than replaying a snapshot.
 - **Granted actions ≠ buttons.** A granted action is a full activity the creature *gains*
   for the duration (a stance's special strike, an Escape action); a button is a quick
   trigger. **[PF2e]** stances and transformations lean on this heavily.
@@ -328,6 +335,7 @@ structure genuinely has to differ.
 | `scales like cantrip` (5e) | PF2e cantrip heightening (half level, round up) |
 | spell slots = uniform counters | **heterogeneous**: focus points, per-rank slots, prepared vs spontaneous, cantrips (unlimited), non-casters |
 | `lastAttackDidCrit` (boolean) | `lastAttack.degree` (degree-aware, richer branches) |
+| button context **frozen** at apply time (a closure) | **live by default** — re-resolved at press time against current stats, because PF2e's bonus/penalty layer moves DCs mid-effect (enfeebled drops a grapple's escape DC); `capture` is opt-in for what must not drift |
 
 ---
 
@@ -412,6 +420,19 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    `applyEffect`/`removeEffect` nodes + mutations + link groups/cascade; **7c** = granted actions
    + buttons (apply-time context capture → the recursion), which is also where a tick's
    manually-invocable twin lives.
+   **Slices 7b + 7c landed 2026-07-15 — Layer 2's node vocabulary is COMPLETE.** 7b: the
+   `applyEffect`/`removeEffect` nodes + mutations; `EffectTemplate` (authored) split from
+   `AppliedEffect` (runtime), since minting an instance id and reading the clock are impure and
+   belong to the host; `linkGroup` is an authored label joining a paired application across two
+   actors (Grappled on the target AND Grappling on the caster) so `cascade` removes them as a
+   unit — the Grapple pair is a test. 7c: `Button`/`GrantedAction` + `runButton` (the recursion
+   closing), `tickButton` wiring a tick to the same button a player can press off-turn, and
+   `capture?` as opt-in freezing. **Module arrangement (owner chose A):** the loop
+   applyEffect→template→button→node is genuinely mutually recursive, so the AUTHORED vocabulary
+   (TurnMoment/Duration/Button/GrantedAction/EffectTemplate) lives in `automation.ts` beside the
+   node union; `applied.ts` holds the runtime shape + timing resolvers and imports **one-way**
+   (no cycle). A later cleanup could extract a `schema.ts` (option B) if `automation.ts` grows
+   unwieldy.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
