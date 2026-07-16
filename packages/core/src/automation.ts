@@ -15,6 +15,9 @@
 //   • save / attack / check — roll d20 + a modifier vs a DC and resolve the four
 //                degrees (checks.ts + degree.ts), bind degree refs, log, and run
 //                the matching per-degree child list. (slice 3)
+//   • damage / temphp — roll typed damage (dice.ts + damage.ts), optionally scale
+//                by a resolved degree (crit doubles, basic save none/half/full/
+//                double), and emit an intended `Mutation`. (slice 4)
 //   • branch   — evaluate a boolean expression and run one of two child lists.
 // Only save/attack/check carry PF2e rules, and only via the pasted-text primitives
 // in checks.ts/degree.ts (the DC=10+modifier formula, the degree bands); this
@@ -33,8 +36,9 @@
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
-import { dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
-import type { DegreeOfSuccess } from "./degree.js";
+import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
+import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
 import type { Rng } from "./rng.js";
@@ -81,6 +85,39 @@ export interface DegreeChildren {
 }
 
 /**
+ * One typed component of a `damage` node — a dice formula plus its damage
+ * descriptor (damage.ts vocabulary). `type` is optional: an untyped component is
+ * valid (untyped damage exists, and healing is untyped).
+ */
+export interface DamageComponent {
+  formula: string;
+  type?: DamageType;
+  material?: string;
+  categories?: DamageCategory[];
+  label?: string;
+}
+
+/**
+ * How a `damage` node scales by a resolved degree: `attack` (crit ×2 / hit ×1 /
+ * miss ×0) or `basic-save` (crit-success ×0 / success ×½ / failure ×1 /
+ * crit-failure ×2). `from` names which resolution's degree to read (default the
+ * most recent, `last`).
+ */
+export interface DamageScaling {
+  by: "attack" | "basic-save";
+  from?: string;
+}
+
+/** One rolled damage component in an emitted mutation (pre-scaling amount + descriptor). */
+export interface DamageInstance {
+  amount: number;
+  type?: DamageType;
+  material?: string;
+  categories?: DamageCategory[];
+  label?: string;
+}
+
+/**
  * One automation node. The union grows one entry per later slice; only the nodes
  * the interpreter can actually run are here, so the schema never claims more.
  * `branch` and the resolution nodes' per-degree lists make the tree recursive.
@@ -92,6 +129,8 @@ export type AutomationNode =
   | ({ kind: "save"; save: SaveSelector; dc: Dc; basicSave?: boolean; onError?: ErrorPolicy } & DegreeChildren)
   | ({ kind: "attack"; bonus: Expr; onError?: ErrorPolicy } & DegreeChildren)
   | ({ kind: "check"; check: Selector; dc: Dc; onError?: ErrorPolicy } & DegreeChildren)
+  | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; onError?: ErrorPolicy }
+  | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
 /** Zod schema for a node (recursive via `z.lazy`, since nodes nest node lists). */
@@ -103,6 +142,8 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     saveNodeSchema,
     attackNodeSchema,
     checkNodeSchema,
+    damageNodeSchema,
+    tempHpNodeSchema,
     branchNodeSchema,
   ]),
 );
@@ -176,6 +217,36 @@ const checkNodeSchema = z
   })
   .strict();
 
+const damageComponentSchema = z
+  .object({
+    formula: z.string().min(1).refine((n) => safeParseDice(n) !== null, { message: "invalid dice notation" }),
+    type: z.custom<DamageType>((v) => isDamageType(v), { message: "unknown damage type" }).optional(),
+    material: z.string().min(1).optional(),
+    categories: z.array(z.enum(["persistent", "precision", "splash"])).optional(),
+    label: z.string().min(1).optional(),
+  })
+  .strict();
+
+const damageNodeSchema = z
+  .object({
+    kind: z.literal("damage"),
+    components: z.array(damageComponentSchema).min(1),
+    scaling: z.object({ by: z.enum(["attack", "basic-save"]), from: z.string().min(1).optional() }).strict().optional(),
+    healing: z.boolean().optional(),
+    target: z.enum(["self", "target"]).optional(),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
+const tempHpNodeSchema = z
+  .object({
+    kind: z.literal("temphp"),
+    formula: z.string().min(1).refine((n) => safeParseDice(n) !== null, { message: "invalid dice notation" }),
+    target: z.enum(["self", "target"]).optional(),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
 const branchNodeSchema = z
   .object({
     kind: z.literal("branch"),
@@ -204,12 +275,15 @@ export type LogEntry =
   | { kind: "check"; checkType: "save" | "attack" | "check"; die: number; total: number; dc: number; degree: DegreeOfSuccess; name?: string };
 
 /**
- * An intended state change for the host app to apply. The union grows one kind
- * per later slice (damage, applyEffect, spendCounter, …); NO node produces one
- * yet, so this slice's outcome always has `mutations: []`. Represented as the
- * empty union (`never`) until the first producer lands.
+ * An intended state change for the host app to apply. The union grows one kind per
+ * later slice (applyEffect, spendCounter, …). `target` is the current target or the
+ * actor; the host resolves those to concrete actors. Amounts are final integers;
+ * `instances` carries the pre-scaling typed breakdown for the (later) resistance
+ * slice. These are INTENTIONS — this module computes them, it never applies them.
  */
-export type Mutation = never;
+export type Mutation =
+  | { kind: "damage"; target: "self" | "target"; healing: boolean; amount: number; instances: DamageInstance[] }
+  | { kind: "temphp"; target: "self" | "target"; amount: number };
 
 export interface Outcome {
   /** Narration produced, in order. */
@@ -383,6 +457,18 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     return childrenFor(node, result.degree);
   };
 
+  /** The degree-based damage multiplier for a scaling spec, reading the named degree ref. */
+  const scalingFactor = (scaling: DamageScaling): number => {
+    const from = scaling.from ?? "last";
+    const ord = execVars[`${from}Degree`];
+    if (typeof ord !== "number" || DEGREES[ord] === undefined) {
+      outcome.warnings.push(`damage scaling: no "${from}" degree to scale by`);
+      return 1;
+    }
+    const degree = DEGREES[ord];
+    return scaling.by === "attack" ? attackDamageMultiplier(degree) : basicSaveMultiplier(degree);
+  };
+
   const runNode = (node: AutomationNode): void => {
     switch (node.kind) {
       case "text":
@@ -439,6 +525,42 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           return;
         }
         if (children) runNodes(children);
+        return;
+      }
+      case "damage": {
+        try {
+          const vars = numericVars();
+          const instances: DamageInstance[] = [];
+          let subtotal = 0;
+          for (const c of node.components) {
+            const rolled = rollNotation(c.formula, ctx.rng, vars);
+            subtotal += rolled.total;
+            instances.push({
+              amount: rolled.total,
+              ...(c.type !== undefined ? { type: c.type } : {}),
+              ...(c.material !== undefined ? { material: c.material } : {}),
+              ...(c.categories !== undefined ? { categories: c.categories } : {}),
+              ...(c.label !== undefined ? { label: c.label } : {}),
+            });
+          }
+          // Scale the TOTAL, then round down once (PF2e's round-once-at-the-end rule).
+          const factor = node.scaling ? scalingFactor(node.scaling) : 1;
+          const amount = Math.max(0, Math.floor(subtotal * factor));
+          outcome.mutations.push({ kind: "damage", target: node.target ?? "target", healing: node.healing === true, amount, instances });
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, "damage");
+        }
+        return;
+      }
+      case "temphp": {
+        try {
+          const amount = Math.max(0, rollNotation(node.formula, ctx.rng, numericVars()).total);
+          outcome.mutations.push({ kind: "temphp", target: node.target ?? "self", amount });
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, "temphp");
+        }
         return;
       }
       case "branch": {
