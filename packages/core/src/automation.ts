@@ -42,7 +42,7 @@
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
-import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
 import { applyCounter, canSpend, type Counter } from "./counter.js";
 import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
 import { DEGREES, type DegreeOfSuccess } from "./degree.js";
@@ -115,6 +115,21 @@ export interface DamageScaling {
   from?: string;
 }
 
+/**
+ * Whether an ACTOR-rolled node re-rolls for every target or rolls once and shares
+ * the result across an enclosing `target` scope's iterations. Default
+ * `per-target` — explicit beats magic.
+ *
+ * Only the roll is shared: the DC/AC lookup, the degree, and any damage multiplier
+ * are ALWAYS computed per target. That is what expresses a one-attack-roll-vs-many-
+ * ACs feat (one d20, different degrees because the ACs differ), and an area spell
+ * whose damage is rolled once and then scaled by each target's own save result.
+ *
+ * `save` deliberately has no rollMode: a save is rolled BY the target, so every
+ * creature inherently rolls its own.
+ */
+export type RollMode = "per-target" | "shared";
+
 /** One rolled damage component in an emitted mutation (pre-scaling amount + descriptor). */
 export interface DamageInstance {
   amount: number;
@@ -134,9 +149,9 @@ export type AutomationNode =
   | { kind: "variable"; name: string; value: Expr; onError?: ErrorPolicy }
   | { kind: "roll"; notation: string; name?: string; onError?: ErrorPolicy }
   | ({ kind: "save"; save: SaveSelector; dc: Dc; basicSave?: boolean; onError?: ErrorPolicy } & DegreeChildren)
-  | ({ kind: "attack"; bonus: Expr; onError?: ErrorPolicy } & DegreeChildren)
-  | ({ kind: "check"; check: Selector; dc: Dc; onError?: ErrorPolicy } & DegreeChildren)
-  | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; onError?: ErrorPolicy }
+  | ({ kind: "attack"; bonus: Expr; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
+  | ({ kind: "check"; check: Selector; dc: Dc; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
+  | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
   | { kind: "target"; mode: "all" | "self" | "position"; index?: number; children: AutomationNode[]; onError?: ErrorPolicy }
@@ -158,6 +173,8 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     branchNodeSchema,
   ]),
 );
+
+const rollModeSchema = z.enum(["per-target", "shared"]);
 
 /** Any readable stat selector (a fixed stat or a skill slug); validated by isSelector. */
 const selectorSchema = z.custom<Selector>((v) => isSelector(v), { message: "unknown stat selector" });
@@ -212,6 +229,7 @@ const attackNodeSchema = z
     kind: z.literal("attack"),
     /** The attack modifier expression (e.g. `spellAttack`); resolved against the target's AC. */
     bonus: exprSchema,
+    rollMode: rollModeSchema.optional(),
     onError: errorPolicySchema.optional(),
     ...degreeOutcomeShape,
   })
@@ -223,6 +241,7 @@ const checkNodeSchema = z
     /** The statistic the actor rolls (a skill, Perception, …). */
     check: selectorSchema,
     dc: dcSchema,
+    rollMode: rollModeSchema.optional(),
     onError: errorPolicySchema.optional(),
     ...degreeOutcomeShape,
   })
@@ -245,6 +264,7 @@ const damageNodeSchema = z
     scaling: z.object({ by: z.enum(["attack", "basic-save"]), from: z.string().min(1).optional() }).strict().optional(),
     healing: z.boolean().optional(),
     target: z.enum(["self", "target"]).optional(),
+    rollMode: rollModeSchema.optional(),
     onError: errorPolicySchema.optional(),
   })
   .strict();
@@ -465,6 +485,16 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
   // node re-scopes it per iteration.
   let current: MutationTarget | null = (ctx.targets?.length ?? 0) > 0 ? { kind: "target", index: 0 } : null;
 
+  // Cache for `rollMode: "shared"` nodes, keyed by node identity and scoped to one
+  // `target` node's iteration. Null outside a target scope — a shared node there is
+  // simply a normal single roll, since there is nothing to share across.
+  let sharedRolls: Map<AutomationNode, unknown> | null = null;
+  const getShared = <T>(node: AutomationNode, mode: RollMode | undefined): T | undefined =>
+    mode === "shared" ? (sharedRolls?.get(node) as T | undefined) : undefined;
+  const putShared = (node: AutomationNode, mode: RollMode | undefined, value: unknown): void => {
+    if (mode === "shared") sharedRolls?.set(node, value);
+  };
+
   /** The creature currently in scope, or throw (→ the node's error policy). */
   const requireTarget = (): ResolvedCharacter => {
     if (!current) throw new Error("no target in context");
@@ -520,8 +550,13 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     checkType: "save" | "attack" | "check",
     modifier: number,
     dc: number,
+    rollMode?: RollMode,
   ): AutomationNode[] | undefined => {
-    const result = rollCheck({ modifier, dc, rng: ctx.rng });
+    // A shared roll is made once and compared against each target's own DC, so the
+    // degree still differs per target.
+    const cached = getShared<{ die: number; total: number }>(node as AutomationNode, rollMode);
+    const result = cached ? resolveCheck({ ...cached, dc }) : rollCheck({ modifier, dc, rng: ctx.rng });
+    if (!cached) putShared(node as AutomationNode, rollMode, { die: result.die, total: result.total });
     const name = node.name ?? checkType;
     bindDegree(name, result.degree);
     bindDegree("last", result.degree);
@@ -602,7 +637,7 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         try {
           const target = requireTarget();
           const modifier = evaluate(node.bonus, scope(), "number") as number;
-          children = resolve(node, "attack", modifier, resolveSelector(target, "ac"));
+          children = resolve(node, "attack", modifier, resolveSelector(target, "ac"), node.rollMode);
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, "attack");
@@ -614,7 +649,7 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       case "check": {
         let children: AutomationNode[] | undefined;
         try {
-          children = resolve(node, "check", resolveSelector(ctx.actor, node.check), resolveDc(node.dc));
+          children = resolve(node, "check", resolveSelector(ctx.actor, node.check), resolveDc(node.dc), node.rollMode);
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, `check (${node.check})`);
@@ -625,24 +660,33 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       }
       case "damage": {
         try {
-          const vars = numericVars();
-          const instances: DamageInstance[] = [];
-          let subtotal = 0;
-          for (const c of node.components) {
-            const rolled = rollNotation(c.formula, ctx.rng, vars);
-            subtotal += rolled.total;
-            instances.push({
-              amount: rolled.total,
-              ...(c.type !== undefined ? { type: c.type } : {}),
-              ...(c.material !== undefined ? { material: c.material } : {}),
-              ...(c.categories !== undefined ? { categories: c.categories } : {}),
-              ...(c.label !== undefined ? { label: c.label } : {}),
-            });
+          // A shared damage roll is rolled once and reused for every target; each
+          // target's own degree still scales it independently.
+          let rolled = getShared<{ instances: DamageInstance[]; subtotal: number }>(node, node.rollMode);
+          if (!rolled) {
+            const vars = numericVars();
+            const instances: DamageInstance[] = [];
+            let subtotal = 0;
+            for (const c of node.components) {
+              const r = rollNotation(c.formula, ctx.rng, vars);
+              subtotal += r.total;
+              instances.push({
+                amount: r.total,
+                ...(c.type !== undefined ? { type: c.type } : {}),
+                ...(c.material !== undefined ? { material: c.material } : {}),
+                ...(c.categories !== undefined ? { categories: c.categories } : {}),
+                ...(c.label !== undefined ? { label: c.label } : {}),
+              });
+            }
+            rolled = { instances, subtotal };
+            putShared(node, node.rollMode, rolled);
           }
           // Scale the TOTAL, then round down once (PF2e's round-once-at-the-end rule).
           const factor = node.scaling ? scalingFactor(node.scaling) : 1;
-          const amount = Math.max(0, Math.floor(subtotal * factor));
+          const amount = Math.max(0, Math.floor(rolled.subtotal * factor));
           const target = mutationTarget(node.target ?? "target");
+          // Clone the instances so shared rolls never alias across mutations.
+          const instances = rolled.instances.map((i) => ({ ...i }));
           outcome.mutations.push({ kind: "damage", target, healing: node.healing === true, amount, instances });
         } catch (e) {
           if (e instanceof Abort) throw e;
@@ -701,6 +745,8 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         // Children run OUTSIDE any try/catch so a `raise` inside them still aborts;
         // `finally` restores the enclosing scope either way.
         const saved = current;
+        const savedShared = sharedRolls;
+        sharedRolls = new Map();
         try {
           for (const scope of scopes) {
             current = scope;
@@ -708,6 +754,7 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           }
         } finally {
           current = saved;
+          sharedRolls = savedShared;
         }
         return;
       }

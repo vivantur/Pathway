@@ -604,6 +604,94 @@ describe("target node", () => {
   });
 });
 
+describe("rollMode — shared vs per-target", () => {
+  const tough = { ...target, ac: { value: 25, shieldBonus: 0 } };
+
+  it("per-target (default) re-rolls damage for each target", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "all", children: [{ kind: "damage", components: [{ formula: "1d6", type: "fire" }] }] }],
+      ctx({ targets: [target, tough], rng: seqRng(2, 5) }),
+    );
+    expect(out.mutations.map((m) => m.kind === "damage" && m.amount)).toEqual([2, 5]);
+  });
+
+  it("shared rolls the damage once and reuses it for every target", () => {
+    const out = runAutomation(
+      [
+        {
+          kind: "target",
+          mode: "all",
+          children: [{ kind: "damage", components: [{ formula: "1d6", type: "fire" }], rollMode: "shared" }],
+        },
+      ],
+      ctx({ targets: [target, tough], rng: seqRng(2, 5) }),
+    );
+    expect(out.mutations.map((m) => m.kind === "damage" && m.amount)).toEqual([2, 2]);
+  });
+
+  // Owner's example 1: fireball at several targets — each rolls its OWN save
+  // against the shared spell DC, but the damage is rolled ONCE and then scaled
+  // by each target's own result.
+  it("fireball: per-target saves, one shared damage roll scaled per target", () => {
+    const out = runAutomation(
+      [
+        {
+          kind: "target",
+          mode: "all",
+          children: [
+            { kind: "save", save: "reflex", dc: { kind: "flat", value: lit(20) }, basicSave: true },
+            { kind: "damage", components: [{ formula: "6d6", type: "fire" }], scaling: { by: "basic-save" }, rollMode: "shared" },
+          ],
+        },
+      ],
+      // target reflex +3, tough reflex +3. d20 faces: 20 (crit success) then 1 (crit fail);
+      // between them the shared 6d6 rolls six 3s = 18.
+      ctx({ targets: [target, tough], rng: seqRng(20, 3, 3, 3, 3, 3, 3, 1) }),
+    );
+    const dmg = out.mutations.filter((m) => m.kind === "damage");
+    // First target crit-succeeds → 0. Second crit-fails → the SAME 18, doubled → 36.
+    expect(dmg.map((m) => m.kind === "damage" && m.amount)).toEqual([0, 36]);
+    expect(dmg.map((m) => m.kind === "damage" && m.target)).toEqual([
+      { kind: "target", index: 0 },
+      { kind: "target", index: 1 },
+    ]);
+  });
+
+  // Owner's example 2: a fighter feat that makes ONE attack roll compared against
+  // each enemy's AC, with a single damage roll shared between them.
+  it("fighter feat: one shared attack roll vs each AC, one shared damage roll", () => {
+    const out = runAutomation(
+      [
+        {
+          kind: "target",
+          mode: "all",
+          children: [
+            { kind: "attack", bonus: lit(10), rollMode: "shared" },
+            { kind: "damage", components: [{ formula: "1d8 + 4", type: "slashing" }], scaling: { by: "attack" }, rollMode: "shared" },
+          ],
+        },
+      ],
+      // ONE d20 face of 10 → total 20: beats AC 18 (hit), misses AC 25. Then one 1d8 = 4 → 8 damage.
+      ctx({ targets: [target, tough], rng: seqRng(10, 4) }),
+    );
+    const checks = out.log.filter((e) => e.kind === "check");
+    // Same roll, different DCs → different degrees
+    expect(checks.map((e) => e.kind === "check" && e.die)).toEqual([10, 10]);
+    expect(checks.map((e) => e.kind === "check" && e.total)).toEqual([20, 20]);
+    expect(checks.map((e) => e.kind === "check" && e.degree)).toEqual(["success", "failure"]);
+    // Hit deals the shared 8; miss deals none.
+    expect(out.mutations.map((m) => m.kind === "damage" && m.amount)).toEqual([8, 0]);
+  });
+
+  it("a shared roll outside any target scope is just a normal single roll", () => {
+    const out = runAutomation(
+      [{ kind: "damage", components: [{ formula: "1d6", type: "fire" }], rollMode: "shared" }],
+      ctx({ targets: [target], rng: seqRng(3) }),
+    );
+    expect(out.mutations[0]).toMatchObject({ amount: 3 });
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -667,6 +755,20 @@ describe("automationSchema", () => {
     ).toBe(true);
     expect(automationSchema.safeParse([{ kind: "counter", counter: "", amount: { kind: "lit", value: 1 } }]).success).toBe(false);
     expect(automationSchema.safeParse([{ kind: "counter", counter: "focus" }]).success).toBe(false); // amount required
+  });
+
+  it("validates rollMode on actor-rolled nodes and rejects it on save", () => {
+    expect(automationSchema.safeParse([{ kind: "attack", bonus: { kind: "lit", value: 9 }, rollMode: "shared" }]).success).toBe(true);
+    expect(
+      automationSchema.safeParse([{ kind: "damage", components: [{ formula: "1d6" }], rollMode: "per-target" }]).success,
+    ).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "attack", bonus: { kind: "lit", value: 9 }, rollMode: "once" }]).success).toBe(false);
+    // a save is rolled BY each target, so it has no rollMode
+    expect(
+      automationSchema.safeParse([
+        { kind: "save", save: "reflex", dc: { kind: "flat", value: { kind: "lit", value: 20 } }, rollMode: "shared" },
+      ]).success,
+    ).toBe(false);
   });
 
   it("validates a target node with nested children", () => {

@@ -86,6 +86,17 @@ export interface CheckResult {
 }
 
 /**
+ * Resolve the degree for an ALREADY-ROLLED d20 (its natural face + final total)
+ * against a DC. This is the path a SHARED roll takes: one attack roll compared
+ * against several targets' ACs yields a different degree per target, because the
+ * DC differs even though the roll doesn't.
+ */
+export function resolveCheck(input: { die: number; total: number; dc: number }): CheckResult {
+  const degree = degreeOfSuccess({ total: input.total, dc: input.dc, die: input.die });
+  return { die: input.die, total: input.total, dc: input.dc, degree };
+}
+
+/**
  * Roll a d20 + modifier against a DC and resolve the degree. The natural die face
  * is passed to the degree resolver so the nat-20/nat-1 one-degree shift applies.
  * (Assurance / Fortune / Misfortune degree adjustments are deferred — the resolver
@@ -93,7 +104,5 @@ export interface CheckResult {
  */
 export function rollCheck(input: { modifier: number; dc: number; rng: Rng }): CheckResult {
   const die = input.rng.int(1, 20);
-  const total = die + input.modifier;
-  const degree = degreeOfSuccess({ total, dc: input.dc, die });
-  return { die, total, dc: input.dc, degree };
+  return resolveCheck({ die, total: die + input.modifier, dc: input.dc });
 }
