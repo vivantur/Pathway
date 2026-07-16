@@ -243,6 +243,20 @@ Key properties learned from the walkthrough:
 - **Lifecycle owner differs by context.** In combat the applied effect lives in the bot's
   `state/combat.js`; out of combat, plain passive effects apply on the character sheet. The
   *same passive schema* serves both — different lifecycle owner.
+- **Sustain is ORTHOGONAL to duration (owner, 2026-07-15).** The `sustained: boolean` above is
+  not redundant with `duration` — but it is too weak a type. There are effects with an ordinary
+  duration that do **not** need sustaining, yet offer an *additional* effect when you Sustain
+  them. So `sustain` is its own optional field (`{ extends?, onSustain? }`), never inferred from
+  the duration; `duration: sustained` is the separate, self-extending case ("until the end of
+  your next turn unless you Sustain").
+- **Ticks PROMPT, they do not RESOLVE (owner, 2026-07-15).** `tickTiming` says only *when* a
+  recurring effect fires. What it fires must also be **manually invocable** — because the
+  defaults get overridden constantly: assistance lowers a persistent-damage flat-check DC, and
+  abilities like *Cauterize* grant an immediate recovery attempt off-turn. So the tick and a
+  button invoke the **same** automation, and its DC is a resolved value, not a constant. This is
+  the same principle already locked for reactions ("auto-firing is wrong; proxy with buttons +
+  text") extended to effect ticks: **no effect is purely automated — there is always a way to
+  manually trigger a new attempt.**
 
 ---
 
@@ -384,6 +398,20 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    *fireball* (each target rolls its own save; one shared 6d6 scaled by each result) and a
    *one-attack-roll-vs-many-ACs feat* (one d20 → different degrees per AC; one shared damage roll).
    Both are locked as tests. Area/template geometry stays the host's concern.
+   **Slice 7a landed 2026-07-15** (`applied.ts` — the Layer-1.5 shape + duration/tick vocabulary
+   + pure resolvers). `TurnMoment {when: start|end, whose: origin|bearer}` is the shared primitive
+   behind both tick and expiry — modelling start/end *without whose* is how effects end up a turn
+   off. `Duration` kinds come from the pasted Durations text, which pins the trap: **`rounds`
+   decrements at the START of the ORIGIN's turn** (the caster's, not the bearer's), so a 1-round
+   effect cast on your turn ends at the start of your *next* turn — the off-by-one falls out
+   mechanically; and the origin anchor **outlives the origin** ("using the caster's initiative
+   order"). `AppliedEffect.passives` is where **Layer 1 plugs back in** (`effectPassives`). Core
+   owns the semantics (`advanceDuration`/`tickFires`/`sustainEffect`, tested); the host's tracker
+   owns initiative + the round counter and feeds `TurnEvent`s. Note: `effects.ts`'s display record
+   `AppliedEffect` was renamed `EffectProvenance` to free the doc-canonical name. **7b** =
+   `applyEffect`/`removeEffect` nodes + mutations + link groups/cascade; **7c** = granted actions
+   + buttons (apply-time context capture → the recursion), which is also where a tick's
+   manually-invocable twin lives.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
