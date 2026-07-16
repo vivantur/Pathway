@@ -20,6 +20,10 @@
 //                double), and emit an intended `Mutation`. (slice 4)
 //   • counter  — spend/restore a resource (counter.ts) read from the context's
 //                snapshot, emitting a `counter` mutation. (slice 5)
+//   • target   — a repeatable SCOPING node: re-scope the current target (all /
+//                self / position(N)) and run its children once per creature, so
+//                each target gets its own DC comparison, degree, and mutations.
+//                (slice 6)
 //   • branch   — evaluate a boolean expression and run one of two child lists.
 // Only save/attack/check carry PF2e rules, and only via the pasted-text primitives
 // in checks.ts/degree.ts (the DC=10+modifier formula, the degree bands); this
@@ -135,6 +139,7 @@ export type AutomationNode =
   | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
+  | { kind: "target"; mode: "all" | "self" | "position"; index?: number; children: AutomationNode[]; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
 /** Zod schema for a node (recursive via `z.lazy`, since nodes nest node lists). */
@@ -149,6 +154,7 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     damageNodeSchema,
     tempHpNodeSchema,
     counterNodeSchema,
+    targetNodeSchema,
     branchNodeSchema,
   ]),
 );
@@ -269,6 +275,18 @@ const counterNodeSchema = z
   })
   .strict();
 
+const targetNodeSchema = z
+  .object({
+    kind: z.literal("target"),
+    /** `all` iterates every target; `self` scopes to the actor; `position` picks the `index`th. */
+    mode: z.enum(["all", "self", "position"]),
+    /** Required by `position` mode; ignored otherwise. */
+    index: z.number().int().nonnegative().optional(),
+    children: z.array(automationNodeSchema),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
 const branchNodeSchema = z
   .object({
     kind: z.literal("branch"),
@@ -303,9 +321,17 @@ export type LogEntry =
  * `instances` carries the pre-scaling typed breakdown for the (later) resistance
  * slice. These are INTENTIONS — this module computes them, it never applies them.
  */
+/**
+ * WHICH creature a mutation lands on, resolved by the interpreter: the acting
+ * character, or a concrete entry in the context's `targets` list (by index — the
+ * host maps the index back to its own actor). A node authors `"self" | "target"`
+ * ("the actor" / "the current target"); this is what that resolves to at emit.
+ */
+export type MutationTarget = { kind: "self" } | { kind: "target"; index: number };
+
 export type Mutation =
-  | { kind: "damage"; target: "self" | "target"; healing: boolean; amount: number; instances: DamageInstance[] }
-  | { kind: "temphp"; target: "self" | "target"; amount: number }
+  | { kind: "damage"; target: MutationTarget; healing: boolean; amount: number; instances: DamageInstance[] }
+  | { kind: "temphp"; target: MutationTarget; amount: number }
   | { kind: "counter"; counter: string; spent: number; remaining: number };
 
 export interface Outcome {
@@ -323,12 +349,14 @@ export interface ExecutionContext {
   /** The acting character; its resolved stats seed the expression scope. */
   actor: ResolvedCharacter;
   /**
-   * The current target of a resolution node (`save`/`attack`/`check`). A single
-   * target for now; multi-target scoping is the `target` node (slice 6), which
-   * will re-scope this per iteration. A resolution needing a target with none set
-   * fails through the error policy.
+   * The ordered creatures this invocation can affect. The interpreter tracks a
+   * CURRENT target — `targets[0]` outside any `target` node (so single-target
+   * automations read naturally), re-scoped per iteration by a `target` node.
+   * A resolution or mutation needing a target with none set fails through the
+   * error policy. The host supplies this list; area/template geometry is its
+   * concern, not the engine's.
    */
-  target?: ResolvedCharacter;
+  targets?: ResolvedCharacter[];
   /**
    * A read-only snapshot of the actor's named counters (focus points, item
    * charges, …), supplied by the HOST — this interpreter owns no persistent
@@ -432,9 +460,25 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     outcome.log.push({ kind: "roll", notation: node.notation, total, dice, ...(node.name ? { name: node.name } : {}) });
   };
 
+  // The current target scope: the actor, or an index into ctx.targets. Defaults to
+  // the first target so single-target automations need no `target` node; a `target`
+  // node re-scopes it per iteration.
+  let current: MutationTarget | null = (ctx.targets?.length ?? 0) > 0 ? { kind: "target", index: 0 } : null;
+
+  /** The creature currently in scope, or throw (→ the node's error policy). */
   const requireTarget = (): ResolvedCharacter => {
-    if (!ctx.target) throw new Error("no target in context");
-    return ctx.target;
+    if (!current) throw new Error("no target in context");
+    if (current.kind === "self") return ctx.actor;
+    const t = ctx.targets?.[current.index];
+    if (!t) throw new Error("no target in context");
+    return t;
+  };
+
+  /** Resolve an authored `"self" | "target"` to the concrete creature a mutation lands on. */
+  const mutationTarget = (which: "self" | "target"): MutationTarget => {
+    if (which === "self") return { kind: "self" };
+    if (!current) throw new Error("no target in context");
+    return current;
   };
 
   /** Resolve a DC: a flat expression, or `10 + a creature's stat modifier`. */
@@ -598,7 +642,8 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           // Scale the TOTAL, then round down once (PF2e's round-once-at-the-end rule).
           const factor = node.scaling ? scalingFactor(node.scaling) : 1;
           const amount = Math.max(0, Math.floor(subtotal * factor));
-          outcome.mutations.push({ kind: "damage", target: node.target ?? "target", healing: node.healing === true, amount, instances });
+          const target = mutationTarget(node.target ?? "target");
+          outcome.mutations.push({ kind: "damage", target, healing: node.healing === true, amount, instances });
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, "damage");
@@ -608,7 +653,8 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       case "temphp": {
         try {
           const amount = Math.max(0, rollNotation(node.formula, ctx.rng, numericVars()).total);
-          outcome.mutations.push({ kind: "temphp", target: node.target ?? "self", amount });
+          const target = mutationTarget(node.target ?? "self");
+          outcome.mutations.push({ kind: "temphp", target, amount });
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, "temphp");
@@ -635,6 +681,34 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         counters[node.counter] = result.counter; // later nodes see the spend
         bindCounter(node.name, result.requested, result.spent, result.remaining, result.clamped);
         outcome.mutations.push({ kind: "counter", counter: node.counter, spent: result.spent, remaining: result.remaining });
+        return;
+      }
+      case "target": {
+        // Work out the scopes to iterate. `all` over an empty target list simply
+        // runs nothing (an area that caught no one is not an error).
+        let scopes: MutationTarget[];
+        if (node.mode === "self") {
+          scopes = [{ kind: "self" }];
+        } else if (node.mode === "all") {
+          scopes = (ctx.targets ?? []).map((_, i) => ({ kind: "target", index: i }));
+        } else {
+          if (node.index === undefined || (ctx.targets ?? [])[node.index] === undefined) {
+            applyPolicy(node.onError, `target position ${node.index ?? "(unset)"}`);
+            return;
+          }
+          scopes = [{ kind: "target", index: node.index }];
+        }
+        // Children run OUTSIDE any try/catch so a `raise` inside them still aborts;
+        // `finally` restores the enclosing scope either way.
+        const saved = current;
+        try {
+          for (const scope of scopes) {
+            current = scope;
+            runNodes(node.children);
+          }
+        } finally {
+          current = saved;
+        }
         return;
       }
       case "branch": {

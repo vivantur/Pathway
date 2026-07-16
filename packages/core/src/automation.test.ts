@@ -239,7 +239,7 @@ describe("save node", () => {
           onCriticalSuccess: [{ kind: "text", body: "unreached" }],
         },
       ],
-      ctx({ target, rng: fixedd20(10) }),
+      ctx({ targets: [target], rng: fixedd20(10) }),
     );
     const entry = out.log.find((e) => e.kind === "check");
     expect(entry).toEqual({ kind: "check", checkType: "save", die: 10, total: 15, dc: 20, degree: "failure" });
@@ -254,7 +254,7 @@ describe("save node", () => {
         { kind: "branch", condition: v("saveIsCritFailure"), onTrue: [{ kind: "text", body: "critically failed" }], onFalse: [] },
         { kind: "branch", condition: call("eq", v("lastDegree"), lit(0)), onTrue: [{ kind: "text", body: "last was 0" }], onFalse: [] },
       ],
-      ctx({ target, rng: fixedd20(10) }),
+      ctx({ targets: [target], rng: fixedd20(10) }),
     );
     expect(out.log.some((e) => e.kind === "text" && e.body === "critically failed")).toBe(true);
     expect(out.log.some((e) => e.kind === "text" && e.body === "last was 0")).toBe(true);
@@ -279,13 +279,13 @@ describe("attack node", () => {
     // bonus 20, die 10 → total 30 vs AC 18 → beats by 12 → critical success
     const crit = runAutomation(
       [{ kind: "attack", bonus: lit(20), onCriticalSuccess: [{ kind: "text", body: "crit hit" }] }],
-      ctx({ target, rng: fixedd20(10) }),
+      ctx({ targets: [target], rng: fixedd20(10) }),
     );
     expect(crit.log.find((e) => e.kind === "check")).toMatchObject({ checkType: "attack", dc: 18, degree: "critical-success" });
     expect(crit.log.some((e) => e.kind === "text" && e.body === "crit hit")).toBe(true);
 
     // bonus 0, die 20 → total 20 vs AC 25 → numerical failure, nat-20 bumps to success
-    const nat20 = runAutomation([{ kind: "attack", bonus: lit(0) }], ctx({ target: { ...target, ac: { value: 25, shieldBonus: 0 } }, rng: fixedd20(20) }));
+    const nat20 = runAutomation([{ kind: "attack", bonus: lit(0) }], ctx({ targets: [{ ...target, ac: { value: 25, shieldBonus: 0 } }], rng: fixedd20(20) }));
     expect(nat20.log.find((e) => e.kind === "check")).toMatchObject({ degree: "success" });
   });
 });
@@ -302,7 +302,7 @@ describe("check node", () => {
           onSuccess: [{ kind: "text", body: "tripped" }],
         },
       ],
-      ctx({ target, rng: fixedd20(10) }),
+      ctx({ targets: [target], rng: fixedd20(10) }),
     );
     expect(out.log.find((e) => e.kind === "check")).toMatchObject({ checkType: "check", dc: 13, total: 21, degree: "success" });
     expect(out.log.some((e) => e.kind === "text" && e.body === "tripped")).toBe(true);
@@ -314,7 +314,7 @@ describe("check node", () => {
         { kind: "check", check: "athletics", dc: { kind: "flat", value: lit(50) }, name: "climb" },
         { kind: "branch", condition: v("climbIsCritFailure"), onTrue: [{ kind: "text", body: "fell" }], onFalse: [] },
       ],
-      ctx({ target, rng: fixedd20(10) }),
+      ctx({ targets: [target], rng: fixedd20(10) }),
     );
     // athletics +11, die 10 → 21 vs 50 → fails by 29 → critical failure
     expect(out.log.find((e) => e.kind === "check")).toMatchObject({ name: "climb", degree: "critical-failure" });
@@ -326,10 +326,10 @@ describe("damage node", () => {
   it("rolls typed components and emits a damage mutation", () => {
     const out = runAutomation(
       [{ kind: "damage", components: [{ formula: "2d6", type: "fire" }] }],
-      ctx({ target, rng: seqRng(4, 5) }),
+      ctx({ targets: [target], rng: seqRng(4, 5) }),
     );
     expect(out.mutations).toEqual([
-      { kind: "damage", target: "target", healing: false, amount: 9, instances: [{ amount: 9, type: "fire" }] },
+      { kind: "damage", target: { kind: "target", index: 0 }, healing: false, amount: 9, instances: [{ amount: 9, type: "fire" }] },
     ]);
     expect(out.log).toEqual([]); // damage is a mutation, not narration
   });
@@ -345,7 +345,7 @@ describe("damage node", () => {
           ],
         },
       ],
-      ctx({ target, rng: seqRng(5, 3) }),
+      ctx({ targets: [target], rng: seqRng(5, 3) }),
     );
     expect(out.mutations[0]).toMatchObject({
       amount: 8,
@@ -363,7 +363,7 @@ describe("damage node", () => {
         { kind: "attack", bonus: lit(20) },
         { kind: "damage", components: [{ formula: "2d6", type: "fire" }], scaling: { by: "attack" } },
       ],
-      ctx({ target, rng: seqRng(10, 4, 5) }),
+      ctx({ targets: [target], rng: seqRng(10, 4, 5) }),
     );
     expect(crit.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 18 });
 
@@ -373,7 +373,7 @@ describe("damage node", () => {
         { kind: "attack", bonus: lit(0) },
         { kind: "damage", components: [{ formula: "2d6", type: "fire" }], scaling: { by: "attack" } },
       ],
-      ctx({ target, rng: seqRng(10, 4, 5) }),
+      ctx({ targets: [target], rng: seqRng(10, 4, 5) }),
     );
     expect(miss.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 0 });
   });
@@ -385,7 +385,7 @@ describe("damage node", () => {
         { kind: "save", save: "fortitude", dc: { kind: "flat", value: lit(15) }, basicSave: true },
         { kind: "damage", components: [{ formula: "1d6", type: "fire" }], scaling: { by: "basic-save" } },
       ],
-      ctx({ target, rng: seqRng(10, 3) }),
+      ctx({ targets: [target], rng: seqRng(10, 3) }),
     );
     expect(half.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 1 });
 
@@ -395,7 +395,7 @@ describe("damage node", () => {
         { kind: "save", save: "fortitude", dc: { kind: "flat", value: lit(30) }, basicSave: true },
         { kind: "damage", components: [{ formula: "1d6", type: "fire" }], scaling: { by: "basic-save" } },
       ],
-      ctx({ target, rng: seqRng(10, 3) }),
+      ctx({ targets: [target], rng: seqRng(10, 3) }),
     );
     expect(critFail.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 6 });
   });
@@ -403,7 +403,7 @@ describe("damage node", () => {
   it("scaling with no prior degree warns and deals full damage", () => {
     const out = runAutomation(
       [{ kind: "damage", components: [{ formula: "1d6", type: "fire" }], scaling: { by: "attack" } }],
-      ctx({ target, rng: seqRng(4) }),
+      ctx({ targets: [target], rng: seqRng(4) }),
     );
     expect(out.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 4 });
     expect(out.warnings.some((w) => /scaling/.test(w))).toBe(true);
@@ -412,17 +412,17 @@ describe("damage node", () => {
   it("healing emits a healing mutation; an untyped component is allowed", () => {
     const out = runAutomation(
       [{ kind: "damage", components: [{ formula: "2d8" }], healing: true, target: "self" }],
-      ctx({ target, rng: seqRng(3, 4) }),
+      ctx({ targets: [target], rng: seqRng(3, 4) }),
     );
     expect(out.mutations).toEqual([
-      { kind: "damage", target: "self", healing: true, amount: 7, instances: [{ amount: 7 }] },
+      { kind: "damage", target: { kind: "self" }, healing: true, amount: 7, instances: [{ amount: 7 }] },
     ]);
   });
 
   it("a bad dice variable obeys the error policy (default ignore → no mutation)", () => {
     const out = runAutomation(
       [{ kind: "damage", components: [{ formula: "1d6 + missing", type: "fire" }] }],
-      ctx({ target, rng: seqRng(3) }),
+      ctx({ targets: [target], rng: seqRng(3) }),
     );
     expect(out.mutations).toEqual([]);
     expect(out.aborted).toBe(false);
@@ -431,8 +431,8 @@ describe("damage node", () => {
 
 describe("temphp node", () => {
   it("emits a temphp mutation, defaulting to self", () => {
-    const out = runAutomation([{ kind: "temphp", formula: "2d4 + 2" }], ctx({ target, rng: seqRng(2, 3) }));
-    expect(out.mutations).toEqual([{ kind: "temphp", target: "self", amount: 7 }]);
+    const out = runAutomation([{ kind: "temphp", formula: "2d4 + 2" }], ctx({ targets: [target], rng: seqRng(2, 3) }));
+    expect(out.mutations).toEqual([{ kind: "temphp", target: { kind: "self" }, amount: 7 }]);
   });
 });
 
@@ -525,6 +525,85 @@ describe("counter node", () => {
   });
 });
 
+describe("target node", () => {
+  const tough = { ...target, ac: { value: 25, shieldBonus: 0 } };
+  const dmg1: AutomationNode = { kind: "damage", components: [{ formula: "1d1", type: "fire" }] };
+
+  it("mode all: runs children once per target, attributing each mutation by index", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "all", children: [dmg1] }],
+      ctx({ targets: [target, tough], rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([
+      { kind: "damage", target: { kind: "target", index: 0 }, healing: false, amount: 1, instances: [{ amount: 1, type: "fire" }] },
+      { kind: "damage", target: { kind: "target", index: 1 }, healing: false, amount: 1, instances: [{ amount: 1, type: "fire" }] },
+    ]);
+  });
+
+  it("each target gets its OWN DC comparison and degree", () => {
+    // one d20 face of 10 + bonus 10 = 20: beats AC 18 (success), misses AC 25 (failure)
+    const out = runAutomation(
+      [{ kind: "target", mode: "all", children: [{ kind: "attack", bonus: lit(10) }] }],
+      ctx({ targets: [target, tough], rng: fixedd20(10) }),
+    );
+    const checks = out.log.filter((e) => e.kind === "check");
+    expect(checks[0]).toMatchObject({ dc: 18, degree: "success" });
+    expect(checks[1]).toMatchObject({ dc: 25, degree: "failure" });
+  });
+
+  it("mode self: scopes to the actor, so 'target' mutations land on self", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "self", children: [dmg1] }],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(out.mutations[0]).toMatchObject({ target: { kind: "self" } });
+  });
+
+  it("mode position: picks the Nth target; out of range obeys the error policy", () => {
+    const picked = runAutomation(
+      [{ kind: "target", mode: "position", index: 1, children: [dmg1] }],
+      ctx({ targets: [target, tough], rng: seqRng(1) }),
+    );
+    expect(picked.mutations[0]).toMatchObject({ target: { kind: "target", index: 1 } });
+
+    const missing = runAutomation(
+      [{ kind: "target", mode: "position", index: 5, children: [dmg1], onError: { on: "raise" } }],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(missing.aborted).toBe(true);
+    expect(missing.mutations).toEqual([]);
+  });
+
+  it("mode all over an empty target list runs nothing (an area that caught no one)", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "all", children: [{ kind: "text", body: "hit" }] }],
+      ctx({ targets: [], rng: seqRng(1) }),
+    );
+    expect(out.log).toEqual([]);
+    expect(out.aborted).toBe(false);
+  });
+
+  it("restores the enclosing scope after the node", () => {
+    const out = runAutomation(
+      [{ kind: "target", mode: "self", children: [dmg1] }, dmg1],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(out.mutations.map((m) => m.kind === "damage" && m.target)).toEqual([{ kind: "self" }, { kind: "target", index: 0 }]);
+  });
+
+  it("a raise inside children still aborts the whole run", () => {
+    const out = runAutomation(
+      [
+        { kind: "target", mode: "all", children: [{ kind: "variable", name: "x", value: v("nope"), onError: { on: "raise" } }] },
+        { kind: "text", body: "after" },
+      ],
+      ctx({ targets: [target, tough], rng: seqRng(1) }),
+    );
+    expect(out.aborted).toBe(true);
+    expect(out.log).toEqual([]);
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -588,6 +667,17 @@ describe("automationSchema", () => {
     ).toBe(true);
     expect(automationSchema.safeParse([{ kind: "counter", counter: "", amount: { kind: "lit", value: 1 } }]).success).toBe(false);
     expect(automationSchema.safeParse([{ kind: "counter", counter: "focus" }]).success).toBe(false); // amount required
+  });
+
+  it("validates a target node with nested children", () => {
+    expect(
+      automationSchema.safeParse([
+        { kind: "target", mode: "all", children: [{ kind: "damage", components: [{ formula: "1d6", type: "fire" }] }] },
+      ]).success,
+    ).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "target", mode: "position", index: 2, children: [] }]).success).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "target", mode: "everyone", children: [] }]).success).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "target", mode: "all" }]).success).toBe(false); // children required
   });
 
   it("rejects a bad damage type, empty components, and a bad temphp formula", () => {
