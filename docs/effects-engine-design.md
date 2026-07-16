@@ -344,6 +344,15 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    `applyPassiveEffects`.
 2. **Layer 2 next** — the automation runtime; where the bot's *play* lives. Larger; consumes
    the shared primitives; much of the *behavior* already exists in the bot to extract.
+   Sequenced into 7 slices (owner-approved 2026-07-15), each its own plan→approve→build:
+   (1) interpreter skeleton + `text`/`variable`/`branch`, (2) seeded dice roller + `roll`,
+   (3) `attack`/`save`/`check`, (4) `damage`/`temphp`, (5) `counter`, (6) `target` scoping +
+   multi-actor, (7) Layer 1.5 applied effect + `applyEffect`/`removeEffect`. Slices 3–4 need
+   pasted PF2e rules text (basicSave + target-derived DC; crit-doubles-the-total + cantrip
+   heightening); the rest are structural. **Slice 1 landed 2026-07-15** (`rng.ts` +
+   `automation.ts`): the execution model (context → outcome = log + intended mutations), the
+   uniform error policy (ignore/warn/value/raise), and the three rules-free nodes. `mutations`
+   is empty until slice 4's `damage` — the union grows one kind per slice.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
