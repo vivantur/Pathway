@@ -359,7 +359,15 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    target-stat-derived), a single `ExecutionContext.target`, per-degree child lists
    (`onCriticalSuccess`/…/`onCriticalFailure`) + degree execution-state refs. `basicSave` is
    carried as metadata; its none/half/full/double damage scale is applied by slice 4's `damage`.
-   `mutations` is still empty until slice 4 — the union grows one kind per slice.
+   **Slice 4 landed 2026-07-15** (`checks.ts` multipliers + the `damage`/`temphp` nodes): the
+   FIRST `mutations` producers. `damage` rolls typed components (`dice.ts` + `damage.ts` vocab,
+   type optional so untyped/healing are valid) and optionally scales by a resolved degree —
+   `scaling {by:"attack"|"basic-save", from?}` applies `attackDamageMultiplier` (crit x2 / hit x1
+   / miss x0) or `basicSaveMultiplier` (0 / half / 1 / 2) to the total, floored once. `Mutation`
+   is now `{damage} | {temphp}`. Heightening (cantrip half-level + the "+N per increment" scaling)
+   is DEFERRED to its own slice — needs a cast-rank input the context lacks + ties to the
+   spellcasting layer; rules text recorded. Resistance/weakness resolution is also deferred (with
+   a "minimum 1" note for feat-granted resistance).
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
