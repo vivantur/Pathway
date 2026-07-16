@@ -7,17 +7,21 @@
 // (docs/effects-engine-design.md, "Layer 2 — the automation engine").
 //
 // This is where the execution model was settled (slice 1) so every later node
-// (attack/save/check, damage, counter, target, applyEffect) plugs into a stable
-// contract. The nodes so far encode NO PF2e rules — pure plumbing + generic dice:
+// (damage, counter, target, applyEffect) plugs into a stable contract. The nodes:
 //   • text     — append narration.
 //   • variable — evaluate an expression and BIND it to a name (forward-only scope).
 //   • roll     — roll dice (dice.ts) with the seeded RNG, bind the total to
 //                `lastRoll` (and an optional name), and log the dice. (slice 2)
+//   • save / attack / check — roll d20 + a modifier vs a DC and resolve the four
+//                degrees (checks.ts + degree.ts), bind degree refs, log, and run
+//                the matching per-degree child list. (slice 3)
 //   • branch   — evaluate a boolean expression and run one of two child lists.
-// Expressions are the shared evaluator (expr.ts), reading the character namespace
-// (character.ts) merged with the execution-state vars this interpreter binds as it
-// runs. Randomness is the seeded RNG (rng.ts) — no node here consumes it yet, but
-// it is threaded from the start so the context seam stays stable for the dice slice.
+// Only save/attack/check carry PF2e rules, and only via the pasted-text primitives
+// in checks.ts/degree.ts (the DC=10+modifier formula, the degree bands); this
+// module wires them, it re-derives nothing. Expressions are the shared evaluator
+// (expr.ts), reading the character namespace (character.ts) merged with the
+// execution-state vars this interpreter binds as it runs. Randomness is the seeded
+// RNG (rng.ts), so every run is replayable.
 //
 // THE UNIFORM ERROR POLICY (the doc insists this is ONE model, not per-node
 // bolt-ons): any node/expression that fails applies a `ErrorPolicy` — `ignore`
@@ -28,10 +32,13 @@
 
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
-import { characterScope } from "./character.js";
+import { characterScope, resolveSelector } from "./character.js";
+import { dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import type { DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
 import type { Rng } from "./rng.js";
+import { isSelector, type SaveSelector, type Selector } from "./selectors.js";
 
 // ---------------------------------------------------------------------------
 // the error policy (shared by every node/expression that can fail)
@@ -46,24 +53,76 @@ export const errorPolicySchema = z.discriminatedUnion("on", [
 export type ErrorPolicy = z.infer<typeof errorPolicySchema>;
 
 // ---------------------------------------------------------------------------
-// node vocabulary (this slice: text / variable / branch)
+// node vocabulary
 // ---------------------------------------------------------------------------
 
 /**
- * One automation node. The union grows one entry per later slice; only the
- * rules-free nodes are here so the schema never claims to run what the
- * interpreter can't yet. `branch` makes the tree recursive.
+ * A DC for a resolution node: a flat value expression, or one DERIVED from a
+ * creature's stat modifier per the pasted rule (`10 + modifier`). `who` picks the
+ * actor or the current target; `selector` should name a modifier-type statistic
+ * (a save, a skill, Perception) — the derived DC is `10 + that modifier`.
+ */
+export type Dc =
+  | { kind: "flat"; value: Expr }
+  | { kind: "stat"; who: "actor" | "target"; selector: Selector };
+
+/**
+ * The optional per-degree child node-lists shared by every resolution node
+ * (`save`/`attack`/`check`). After the degree is resolved, the matching list runs
+ * — the "additional effect on this result" mechanism. `name` prefixes the degree
+ * execution-state refs this node binds (defaults to the node kind).
+ */
+export interface DegreeChildren {
+  name?: string;
+  onCriticalSuccess?: AutomationNode[];
+  onSuccess?: AutomationNode[];
+  onFailure?: AutomationNode[];
+  onCriticalFailure?: AutomationNode[];
+}
+
+/**
+ * One automation node. The union grows one entry per later slice; only the nodes
+ * the interpreter can actually run are here, so the schema never claims more.
+ * `branch` and the resolution nodes' per-degree lists make the tree recursive.
  */
 export type AutomationNode =
   | { kind: "text"; title?: string; body: string }
   | { kind: "variable"; name: string; value: Expr; onError?: ErrorPolicy }
   | { kind: "roll"; notation: string; name?: string; onError?: ErrorPolicy }
+  | ({ kind: "save"; save: SaveSelector; dc: Dc; basicSave?: boolean; onError?: ErrorPolicy } & DegreeChildren)
+  | ({ kind: "attack"; bonus: Expr; onError?: ErrorPolicy } & DegreeChildren)
+  | ({ kind: "check"; check: Selector; dc: Dc; onError?: ErrorPolicy } & DegreeChildren)
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
-/** Zod schema for a node (recursive via `z.lazy`, since `branch` nests node lists). */
+/** Zod schema for a node (recursive via `z.lazy`, since nodes nest node lists). */
 export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
-  z.discriminatedUnion("kind", [textNodeSchema, variableNodeSchema, rollNodeSchema, branchNodeSchema]),
+  z.discriminatedUnion("kind", [
+    textNodeSchema,
+    variableNodeSchema,
+    rollNodeSchema,
+    saveNodeSchema,
+    attackNodeSchema,
+    checkNodeSchema,
+    branchNodeSchema,
+  ]),
 );
+
+/** Any readable stat selector (a fixed stat or a skill slug); validated by isSelector. */
+const selectorSchema = z.custom<Selector>((v) => isSelector(v), { message: "unknown stat selector" });
+
+const dcSchema: z.ZodType<Dc> = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("flat"), value: exprSchema }).strict(),
+  z.object({ kind: z.literal("stat"), who: z.enum(["actor", "target"]), selector: selectorSchema }).strict(),
+]);
+
+/** The per-degree child lists, spread into each resolution node's schema. */
+const degreeOutcomeShape = {
+  name: z.string().min(1).optional(),
+  onCriticalSuccess: z.array(automationNodeSchema).optional(),
+  onSuccess: z.array(automationNodeSchema).optional(),
+  onFailure: z.array(automationNodeSchema).optional(),
+  onCriticalFailure: z.array(automationNodeSchema).optional(),
+};
 
 const textNodeSchema = z
   .object({ kind: z.literal("text"), title: z.string().optional(), body: z.string() })
@@ -81,6 +140,39 @@ const rollNodeSchema = z
     /** Optional name to bind the total to (the total is always bound to `lastRoll`). */
     name: z.string().min(1).optional(),
     onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
+const saveNodeSchema = z
+  .object({
+    kind: z.literal("save"),
+    save: z.enum(["fortitude", "reflex", "will"]),
+    dc: dcSchema,
+    /** Marks this as a basic save; the none/half/full/double scale is applied by the damage node (slice 4). */
+    basicSave: z.boolean().optional(),
+    onError: errorPolicySchema.optional(),
+    ...degreeOutcomeShape,
+  })
+  .strict();
+
+const attackNodeSchema = z
+  .object({
+    kind: z.literal("attack"),
+    /** The attack modifier expression (e.g. `spellAttack`); resolved against the target's AC. */
+    bonus: exprSchema,
+    onError: errorPolicySchema.optional(),
+    ...degreeOutcomeShape,
+  })
+  .strict();
+
+const checkNodeSchema = z
+  .object({
+    kind: z.literal("check"),
+    /** The statistic the actor rolls (a skill, Perception, …). */
+    check: selectorSchema,
+    dc: dcSchema,
+    onError: errorPolicySchema.optional(),
+    ...degreeOutcomeShape,
   })
   .strict();
 
@@ -108,7 +200,8 @@ export const automationSchema = z.array(automationNodeSchema);
  */
 export type LogEntry =
   | { kind: "text"; title?: string; body: string }
-  | { kind: "roll"; notation: string; total: number; dice: RolledDie[]; name?: string };
+  | { kind: "roll"; notation: string; total: number; dice: RolledDie[]; name?: string }
+  | { kind: "check"; checkType: "save" | "attack" | "check"; die: number; total: number; dc: number; degree: DegreeOfSuccess; name?: string };
 
 /**
  * An intended state change for the host app to apply. The union grows one kind
@@ -132,6 +225,13 @@ export interface Outcome {
 export interface ExecutionContext {
   /** The acting character; its resolved stats seed the expression scope. */
   actor: ResolvedCharacter;
+  /**
+   * The current target of a resolution node (`save`/`attack`/`check`). A single
+   * target for now; multi-target scoping is the `target` node (slice 6), which
+   * will re-scope this per iteration. A resolution needing a target with none set
+   * fails through the error policy.
+   */
+  target?: ResolvedCharacter;
   /** The seeded RNG — the ONLY randomness source, so the run is replayable. */
   rng: Rng;
   /** Default error policy for nodes that don't carry their own. Defaults to `ignore`. */
@@ -222,6 +322,67 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     outcome.log.push({ kind: "roll", notation: node.notation, total, dice, ...(node.name ? { name: node.name } : {}) });
   };
 
+  const requireTarget = (): ResolvedCharacter => {
+    if (!ctx.target) throw new Error("no target in context");
+    return ctx.target;
+  };
+
+  /** Resolve a DC: a flat expression, or `10 + a creature's stat modifier`. */
+  const resolveDc = (dc: Dc): number => {
+    if (dc.kind === "flat") return evaluate(dc.value, scope(), "number") as number;
+    const creature = dc.who === "actor" ? ctx.actor : requireTarget();
+    return dcFromModifier(resolveSelector(creature, dc.selector));
+  };
+
+  /** Bind a degree to the execution scope under `<name>…` refs (ordinal + booleans). */
+  const bindDegree = (name: string, degree: DegreeOfSuccess): void => {
+    execVars[`${name}Degree`] = degreeOrdinal(degree);
+    execVars[`${name}IsCritSuccess`] = degree === "critical-success";
+    execVars[`${name}IsSuccess`] = degree === "success";
+    execVars[`${name}IsFailure`] = degree === "failure";
+    execVars[`${name}IsCritFailure`] = degree === "critical-failure";
+  };
+
+  const childrenFor = (node: DegreeChildren, degree: DegreeOfSuccess): AutomationNode[] | undefined => {
+    switch (degree) {
+      case "critical-success":
+        return node.onCriticalSuccess;
+      case "success":
+        return node.onSuccess;
+      case "failure":
+        return node.onFailure;
+      case "critical-failure":
+        return node.onCriticalFailure;
+    }
+  };
+
+  /**
+   * Roll a resolution, bind its degree refs (under the node's name AND `last…`),
+   * log it, and return the matching per-degree child list to run. The children are
+   * returned rather than run here so a `raise` inside them propagates cleanly.
+   */
+  const resolve = (
+    node: DegreeChildren,
+    checkType: "save" | "attack" | "check",
+    modifier: number,
+    dc: number,
+  ): AutomationNode[] | undefined => {
+    const result = rollCheck({ modifier, dc, rng: ctx.rng });
+    const name = node.name ?? checkType;
+    bindDegree(name, result.degree);
+    bindDegree("last", result.degree);
+    outcome.log.push({
+      kind: "check",
+      checkType,
+      die: result.die,
+      total: result.total,
+      dc: result.dc,
+      degree: result.degree,
+      ...(node.name ? { name: node.name } : {}),
+    });
+    return childrenFor(node, result.degree);
+  };
+
   const runNode = (node: AutomationNode): void => {
     switch (node.kind) {
       case "text":
@@ -239,6 +400,45 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         } catch {
           applyPolicy(node.onError, `roll "${node.notation}"`, (v) => bindRoll(node, Number(v), []), "number");
         }
+        return;
+      }
+      case "save": {
+        let children: AutomationNode[] | undefined;
+        try {
+          const target = requireTarget();
+          children = resolve(node, "save", resolveSelector(target, node.save), resolveDc(node.dc));
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, `save (${node.save})`);
+          return;
+        }
+        if (children) runNodes(children);
+        return;
+      }
+      case "attack": {
+        let children: AutomationNode[] | undefined;
+        try {
+          const target = requireTarget();
+          const modifier = evaluate(node.bonus, scope(), "number") as number;
+          children = resolve(node, "attack", modifier, resolveSelector(target, "ac"));
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, "attack");
+          return;
+        }
+        if (children) runNodes(children);
+        return;
+      }
+      case "check": {
+        let children: AutomationNode[] | undefined;
+        try {
+          children = resolve(node, "check", resolveSelector(ctx.actor, node.check), resolveDc(node.dc));
+        } catch (e) {
+          if (e instanceof Abort) throw e;
+          applyPolicy(node.onError, `check (${node.check})`);
+          return;
+        }
+        if (children) runNodes(children);
         return;
       }
       case "branch": {

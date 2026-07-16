@@ -26,7 +26,28 @@ const actor: ResolvedCharacter = {
   skills: { athletics: { modifier: 11, rank: 2, ability: "str" } },
 };
 
+// A target with known defenses, for resolution nodes.
+const target: ResolvedCharacter = {
+  level: 3,
+  scores: { str: 10, dex: 12, con: 12, int: 10, wis: 10, cha: 10 },
+  mods: { str: 0, dex: 1, con: 1, int: 0, wis: 0, cha: 0 },
+  hp: { max: 30 },
+  ac: { value: 18, shieldBonus: 0 },
+  perception: { modifier: 6, rank: 1 },
+  saves: {
+    fortitude: { modifier: 5, rank: 1 },
+    reflex: { modifier: 3, rank: 1 },
+    will: { modifier: 7, rank: 2 },
+  },
+  classDc: null,
+  speeds: { land: 25 },
+  skills: {},
+};
+
 const ctx = (over: Partial<ExecutionContext> = {}): ExecutionContext => ({ actor, rng: makeRng(1), ...over });
+
+/** A stub RNG whose d20 always shows `face`, for deterministic degrees. */
+const fixedd20 = (face: number): ExecutionContext["rng"] => ({ next: () => 0, int: () => face });
 
 const lit = (value: number | boolean | string): Expr => ({ kind: "lit", value });
 const v = (name: string): Expr => ({ kind: "var", name });
@@ -198,6 +219,103 @@ describe("roll node", () => {
   });
 });
 
+describe("save node", () => {
+  it("the target rolls the save vs a flat DC; the matching per-degree list runs", () => {
+    // target fortitude +5, die 10 → total 15 vs DC 20 → failure (within 10)
+    const out = runAutomation(
+      [
+        {
+          kind: "save",
+          save: "fortitude",
+          dc: { kind: "flat", value: lit(20) },
+          basicSave: true,
+          onFailure: [{ kind: "text", body: "failed the save" }],
+          onCriticalSuccess: [{ kind: "text", body: "unreached" }],
+        },
+      ],
+      ctx({ target, rng: fixedd20(10) }),
+    );
+    const entry = out.log.find((e) => e.kind === "check");
+    expect(entry).toEqual({ kind: "check", checkType: "save", die: 10, total: 15, dc: 20, degree: "failure" });
+    expect(out.log.some((e) => e.kind === "text" && e.body === "failed the save")).toBe(true);
+    expect(out.log.some((e) => e.kind === "text" && e.body === "unreached")).toBe(false);
+  });
+
+  it("binds degree refs a later node can branch on", () => {
+    const out = runAutomation(
+      [
+        { kind: "save", save: "will", dc: { kind: "flat", value: lit(30) } }, // will +7, die 10 → 17 vs 30 → crit fail
+        { kind: "branch", condition: v("saveIsCritFailure"), onTrue: [{ kind: "text", body: "critically failed" }], onFalse: [] },
+        { kind: "branch", condition: call("eq", v("lastDegree"), lit(0)), onTrue: [{ kind: "text", body: "last was 0" }], onFalse: [] },
+      ],
+      ctx({ target, rng: fixedd20(10) }),
+    );
+    expect(out.log.some((e) => e.kind === "text" && e.body === "critically failed")).toBe(true);
+    expect(out.log.some((e) => e.kind === "text" && e.body === "last was 0")).toBe(true);
+  });
+
+  it("a missing target obeys the error policy (ignore skips, raise aborts)", () => {
+    const skipped = runAutomation([{ kind: "save", save: "reflex", dc: { kind: "flat", value: lit(15) } }], ctx({ rng: fixedd20(10) }));
+    expect(skipped.log.some((e) => e.kind === "check")).toBe(false);
+    expect(skipped.aborted).toBe(false);
+
+    const aborted = runAutomation(
+      [{ kind: "save", save: "reflex", dc: { kind: "flat", value: lit(15) }, onError: { on: "raise" } }, { kind: "text", body: "after" }],
+      ctx({ rng: fixedd20(10) }),
+    );
+    expect(aborted.aborted).toBe(true);
+    expect(aborted.log.length).toBe(0);
+  });
+});
+
+describe("attack node", () => {
+  it("rolls the actor's bonus vs the target's AC; nat-20 shifts a degree", () => {
+    // bonus 20, die 10 → total 30 vs AC 18 → beats by 12 → critical success
+    const crit = runAutomation(
+      [{ kind: "attack", bonus: lit(20), onCriticalSuccess: [{ kind: "text", body: "crit hit" }] }],
+      ctx({ target, rng: fixedd20(10) }),
+    );
+    expect(crit.log.find((e) => e.kind === "check")).toMatchObject({ checkType: "attack", dc: 18, degree: "critical-success" });
+    expect(crit.log.some((e) => e.kind === "text" && e.body === "crit hit")).toBe(true);
+
+    // bonus 0, die 20 → total 20 vs AC 25 → numerical failure, nat-20 bumps to success
+    const nat20 = runAutomation([{ kind: "attack", bonus: lit(0) }], ctx({ target: { ...target, ac: { value: 25, shieldBonus: 0 } }, rng: fixedd20(20) }));
+    expect(nat20.log.find((e) => e.kind === "check")).toMatchObject({ degree: "success" });
+  });
+});
+
+describe("check node", () => {
+  it("rolls an actor skill vs a target-stat-derived DC (10 + modifier)", () => {
+    // actor athletics +11, die 10 → total 21 vs (10 + target reflex 3 = 13) → success
+    const out = runAutomation(
+      [
+        {
+          kind: "check",
+          check: "athletics",
+          dc: { kind: "stat", who: "target", selector: "reflex" },
+          onSuccess: [{ kind: "text", body: "tripped" }],
+        },
+      ],
+      ctx({ target, rng: fixedd20(10) }),
+    );
+    expect(out.log.find((e) => e.kind === "check")).toMatchObject({ checkType: "check", dc: 13, total: 21, degree: "success" });
+    expect(out.log.some((e) => e.kind === "text" && e.body === "tripped")).toBe(true);
+  });
+
+  it("supports a flat DC and names the degree refs by the node name", () => {
+    const out = runAutomation(
+      [
+        { kind: "check", check: "athletics", dc: { kind: "flat", value: lit(50) }, name: "climb" },
+        { kind: "branch", condition: v("climbIsCritFailure"), onTrue: [{ kind: "text", body: "fell" }], onFalse: [] },
+      ],
+      ctx({ target, rng: fixedd20(10) }),
+    );
+    // athletics +11, die 10 → 21 vs 50 → fails by 29 → critical failure
+    expect(out.log.find((e) => e.kind === "check")).toMatchObject({ name: "climb", degree: "critical-failure" });
+    expect(out.log.some((e) => e.kind === "text" && e.body === "fell")).toBe(true);
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -217,6 +335,30 @@ describe("automationSchema", () => {
   it("validates a roll node and rejects invalid dice notation", () => {
     expect(automationSchema.safeParse([{ kind: "roll", notation: "2d6 + 3", name: "dmg" }]).success).toBe(true);
     expect(automationSchema.safeParse([{ kind: "roll", notation: "2d" }]).success).toBe(false);
+  });
+
+  it("validates resolution nodes with DCs and per-degree children", () => {
+    expect(
+      automationSchema.safeParse([
+        {
+          kind: "save",
+          save: "reflex",
+          dc: { kind: "flat", value: { kind: "lit", value: 20 } },
+          basicSave: true,
+          onCriticalFailure: [{ kind: "text", body: "prone" }],
+        },
+      ]).success,
+    ).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "attack", bonus: { kind: "lit", value: 9 } }]).success).toBe(true);
+    expect(
+      automationSchema.safeParse([{ kind: "check", check: "athletics", dc: { kind: "stat", who: "target", selector: "reflex" } }]).success,
+    ).toBe(true);
+  });
+
+  it("rejects a bad save selector, a bad DC selector, and a missing attack bonus", () => {
+    expect(automationSchema.safeParse([{ kind: "save", save: "dexterity", dc: { kind: "flat", value: { kind: "lit", value: 1 } } }]).success).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "check", check: "athletics", dc: { kind: "stat", who: "target", selector: "made-up" } }]).success).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "attack" }]).success).toBe(false);
   });
 
   it("rejects an unknown node kind, missing branch arms, and extra fields", () => {
