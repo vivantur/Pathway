@@ -1,14 +1,17 @@
-// Layer 1.5 — the APPLIED EFFECT: the bridge where passive and active meet.
+// Layer 1.5 — the APPLIED EFFECT at RUNTIME, and the timing semantics.
 //
 // An applied effect is a container carried on a creature during play: the Layer-1
-// passive effects it imposes (`passives` — the SAME `PassiveEffect` schema the
-// character sheet uses, per the doc's "one passive schema, two lifecycle owners"),
-// plus its duration and tick timing. See docs/effects-engine-design.md, "Layer 1.5
-// — the applied effect".
+// passive effects it imposes (the SAME `PassiveEffect` schema the character sheet
+// uses, per the doc's "one passive schema, two lifecycle owners"), plus its
+// duration, tick timing, buttons and granted actions. See
+// docs/effects-engine-design.md, "Layer 1.5 — the applied effect".
 //
-// THIS SLICE (7a) is the shape + the duration/tick VOCABULARY + the pure resolvers.
-// The `applyEffect`/`removeEffect` nodes, link groups, granted actions and buttons
-// land in 7b/7c.
+// MODULE SPLIT: the AUTHORED vocabulary (`TurnMoment`, `Duration`, `Button`,
+// `GrantedAction`, `EffectTemplate`) lives in automation.ts, next to the node
+// union — an `applyEffect` node carries a template, a template carries buttons,
+// and a button carries automation nodes, so those declarations are mutually
+// recursive and cannot be split apart. THIS module builds the runtime shape on top
+// and imports one-way; automation.ts never imports it.
 //
 // ── The rules encoded here (from pasted Player Core "Durations" text) ────────
 //   • "If a spell's duration is given in rounds, the number of rounds remaining
@@ -28,83 +31,13 @@
 //     restarts that clock (`sustainEffect`).
 //   • "Spells with an unlimited duration last until counteracted or Dismissed."
 //
-// SUSTAIN IS ORTHOGONAL TO DURATION. An effect can have an ordinary duration AND
-// still offer a Sustain action with an ADDITIONAL effect — so `sustain` is its own
-// optional field, never inferred from the duration. (`duration: sustained` is the
-// separate, self-extending case.)
-//
-// TICKS PROMPT, THEY DO NOT RESOLVE. `tickTiming` says only WHEN a recurring effect
-// fires; what it fires (and its manually-invocable twin) is a button/granted action
-// in 7c, so the same automation can be triggered off-turn — assistance changing a
-// flat-check DC, or an ability granting an immediate extra attempt, means pure
-// automation is wrong. This mirrors the doc's existing stance on reactions.
-//
 // PURITY: this module has no clock. The host's combat tracker owns initiative and
 // the round counter and feeds `TurnEvent`s; core owns what they MEAN. One tested
 // implementation, per the reason packages/core exists.
 
 import { z } from "zod";
-import { passiveEffectSchema, type PassiveEffect } from "./passive.js";
-
-/**
- * A moment in the turn cycle, relative to an effect: the start or end of the turn
- * of the creature that APPLIED it (`origin`) or the one it is ON (`bearer`). The
- * shared primitive behind both tick timing and expiry — modelling only start/end,
- * without *whose*, is how effects end up a turn off.
- */
-export const turnMomentSchema = z
-  .object({ when: z.enum(["start", "end"]), whose: z.enum(["origin", "bearer"]) })
-  .strict();
-export type TurnMoment = z.infer<typeof turnMomentSchema>;
-
-/** How long an applied effect lasts. Kinds mirror the Durations rules text. */
-export const durationSchema = z.discriminatedUnion("kind", [
-  /** Until counteracted or Dismissed. */
-  z.object({ kind: z.literal("unlimited") }).strict(),
-  /** N rounds: decrements at the START of the origin's turn, ending at 0. */
-  z.object({ kind: z.literal("rounds"), count: z.number().int().nonnegative() }).strict(),
-  /** Until the end of the origin's NEXT turn, unless Sustained. */
-  z.object({ kind: z.literal("sustained") }).strict(),
-  /**
-   * Until a given turn moment. `next: true` means the NEXT such turn — the
-   * occurrence during the turn the effect was applied in does not count ("until the
-   * end of your next turn" vs "until the end of your turn").
-   */
-  z.object({ kind: z.literal("until"), moment: turnMomentSchema, next: z.boolean().optional() }).strict(),
-  /** Wall/game-clock durations. Not resolved by the turn machinery — the host's clock. */
-  z.object({ kind: z.literal("time"), amount: z.number().positive(), unit: z.enum(["minutes", "hours", "days"]) }).strict(),
-  /** Until the origin's next daily preparations. */
-  z.object({ kind: z.literal("dailyPreparations") }).strict(),
-]);
-export type Duration = z.infer<typeof durationSchema>;
-
-/**
- * The AUTHORED part of an applied effect — everything content can know ahead of
- * time. An `applyEffect` node carries one of these; the runtime identity
- * (`id`/`originId`/`bearerId`/`appliedAt`) is stamped by the HOST when it applies
- * the mutation, because minting an instance id and reading the clock are both
- * impure and belong outside core.
- */
-export const effectTemplateSchema = z
-  .object({
-    name: z.string().min(1),
-    duration: durationSchema,
-    /**
-     * Whether this effect can be Sustained — INDEPENDENT of `duration`. `extends`
-     * says whether Sustaining restarts the duration clock (implicit for
-     * `duration: sustained`); a fixed-duration effect with a Sustain bonus sets
-     * `extends: false` and carries its extra automation in 7c.
-     */
-    sustain: z.object({ extends: z.boolean().optional() }).strict().optional(),
-    /** WHEN a recurring effect fires/prompts. What it fires lands in 7c. */
-    tickTiming: turnMomentSchema.optional(),
-    /** The Layer-1 passives this effect imposes while active. */
-    passives: z.array(passiveEffectSchema),
-    /** Can be ended early by the Dismiss action. */
-    dismissible: z.boolean().optional(),
-  })
-  .strict();
-export type EffectTemplate = z.infer<typeof effectTemplateSchema>;
+import { effectTemplateSchema, type Button, type Duration, type TurnMoment } from "./automation.js";
+import type { PassiveEffect } from "./passive.js";
 
 /** A live applied effect: the authored template plus the runtime identity the host stamps. */
 export const appliedEffectSchema = z
@@ -130,6 +63,12 @@ export const appliedEffectSchema = z
      * an invocation's authored group LABEL into a real group id.
      */
     linkGroup: z.string().min(1).optional(),
+    /**
+     * Values FROZEN at apply time by the `applyEffect` node's opt-in `capture`, fed
+     * to this effect's buttons via `runButton`. Live resolution is the default —
+     * only what genuinely must not drift lands here.
+     */
+    captured: z.record(z.string(), z.union([z.number(), z.boolean(), z.string()])).optional(),
   })
   .strict();
 export type AppliedEffect = z.infer<typeof appliedEffectSchema>;
@@ -149,13 +88,20 @@ export function momentCreature(moment: TurnMoment, effect: Pick<AppliedEffect, "
 
 /**
  * Does this effect's recurring tick fire on this turn event? Pure matching — it
- * says only that the moment arrived, never what should happen (see the header:
- * ticks prompt, they do not resolve).
+ * says only that the moment arrived, never what should happen. Ticks PROMPT, they
+ * do not resolve: what fires is `tickButton`, the very same button a player can
+ * press off-turn (see `effectTickButton`).
  */
 export function tickFires(effect: AppliedEffect, event: TurnEvent): boolean {
   const t = effect.tickTiming;
   if (!t) return false;
   return event.when === t.when && event.creature === momentCreature(t, effect);
+}
+
+/** The button an effect's tick fires — the manually-pressable twin of the tick. */
+export function effectTickButton(effect: AppliedEffect): Button | undefined {
+  if (!effect.tickButton) return undefined;
+  return effect.buttons?.find((b) => b.id === effect.tickButton);
 }
 
 /**
@@ -205,7 +151,7 @@ function expiresAt(
  * Apply the Sustain action: restart the duration clock so a `sustained` effect
  * again lasts until the end of the origin's next turn. Only durations that Sustain
  * extends are affected — an effect with a fixed duration and a Sustain *bonus* is
- * returned unchanged (its extra automation is a granted action, 7c).
+ * returned unchanged (its extra automation is a granted action).
  */
 export function sustainEffect(
   effect: AppliedEffect,

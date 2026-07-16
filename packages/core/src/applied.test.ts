@@ -5,6 +5,7 @@ import {
   effectPassives,
   momentCreature,
   sustainEffect,
+  effectTickButton,
   tickFires,
   type AppliedEffect,
   type Duration,
@@ -163,6 +164,28 @@ describe("sustainEffect — sustain is orthogonal to duration", () => {
     const e = effect({ kind: "until", moment: { when: "end", whose: "origin" }, next: true }, { sustain: { extends: true } });
     const s = sustainEffect(e, { round: 4, duringTurnOf: CASTER });
     expect(s.appliedAt).toEqual({ round: 4, duringTurnOf: CASTER });
+  });
+});
+
+describe("effectTickButton — the tick's manually-pressable twin", () => {
+  // Ticks prompt, they do not resolve: the tick fires the SAME button a player can
+  // press off-turn, so a recovery check can be re-attempted whenever an ability
+  // allows it, and its DC stays a resolved value rather than a constant.
+  const recover = { id: "recover", label: "Recovery check", automation: [{ kind: "text" as const, body: "flat check" }] };
+  const bleeding = effect({ kind: "unlimited" }, {
+    tickTiming: { when: "end", whose: "bearer" },
+    tickButton: "recover",
+    buttons: [recover],
+  });
+
+  it("resolves the tick's button, which is the same object a player can press", () => {
+    expect(tickFires(bleeding, ev("end", TARGET, 3))).toBe(true);
+    expect(effectTickButton(bleeding)).toBe(recover);
+  });
+
+  it("is undefined when no tick button is wired, or the id does not match", () => {
+    expect(effectTickButton(effect({ kind: "unlimited" }))).toBeUndefined();
+    expect(effectTickButton({ ...bleeding, tickButton: "missing" })).toBeUndefined();
   });
 });
 

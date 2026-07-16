@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   automationSchema,
   runAutomation,
+  runButton,
   type AutomationNode,
+  type Button,
+  type EffectTemplate,
   type ExecutionContext,
 } from "./automation.js";
-import type { EffectTemplate } from "./applied.js";
 import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
 import { makeRng } from "./rng.js";
@@ -778,6 +780,81 @@ describe("applyEffect / removeEffect", () => {
   });
 });
 
+describe("buttons — runButton (live by default)", () => {
+  const escape: Button = {
+    id: "escape",
+    label: "Escape",
+    automation: [{ kind: "check", check: "athletics", dc: { kind: "stat", who: "target", selector: "athletics" } }],
+  };
+  const grappler: ResolvedCharacter = { ...target, skills: { athletics: { modifier: 10, rank: 2, ability: "str" } } };
+
+  // The owner's case: a grapple's escape DC is 10 + the GRAPPLER's Athletics. It is
+  // NOT frozen at apply time — if the grappler becomes enfeebled 2 mid-grapple, the
+  // DC follows, right now. [PF2e] divergence from Avrae's frozen-closure buttons.
+  it("re-resolves a derived DC against the CURRENT stats every press", () => {
+    // presser is the actor; the grappler is the creature the check is measured against
+    const before = runButton(escape, { actor, targets: [grappler], rng: fixedd20(10) });
+    expect(before.log.find((e) => e.kind === "check")).toMatchObject({ dc: 20 });
+
+    // enfeebled 2 → the grappler's Athletics drops to +8 → escape DC is now 18
+    const enfeebled: ResolvedCharacter = { ...grappler, skills: { athletics: { modifier: 8, rank: 2, ability: "str" } } };
+    const after = runButton(escape, { actor, targets: [enfeebled], rng: fixedd20(10) });
+    expect(after.log.find((e) => e.kind === "check")).toMatchObject({ dc: 18 });
+  });
+
+  it("merges an effect's captured values in as starting variables", () => {
+    const frozen: Button = {
+      id: "b",
+      label: "B",
+      automation: [{ kind: "check", check: "athletics", dc: { kind: "flat", value: v("escapeDc") } }],
+    };
+    const out = runButton(frozen, { actor, targets: [target], rng: fixedd20(10) }, { escapeDc: 25 });
+    expect(out.log.find((e) => e.kind === "check")).toMatchObject({ dc: 25 });
+  });
+
+  it("a button can mix a live lookup with a frozen one, and re-enters the full node set", () => {
+    const mixed: Button = {
+      id: "b",
+      label: "B",
+      automation: [
+        { kind: "check", check: "athletics", dc: { kind: "stat", who: "target", selector: "athletics" } },
+        { kind: "damage", components: [{ formula: "castRank", type: "fire" }], scaling: { by: "attack" } },
+      ],
+    };
+    const out = runButton(mixed, { actor, targets: [grappler], rng: fixedd20(10) }, { castRank: 5 });
+    // live DC from the grappler, frozen 5 damage from the captured cast rank
+    expect(out.log.find((e) => e.kind === "check")).toMatchObject({ dc: 20 });
+    expect(out.mutations.find((m) => m.kind === "damage")).toMatchObject({ amount: 5 });
+  });
+});
+
+describe("applyEffect — capture (opt-in freeze)", () => {
+  const tpl: EffectTemplate = { name: "Grappled", duration: { kind: "unlimited" }, passives: [] };
+
+  it("evaluates capture expressions at APPLY time and rides them along", () => {
+    const out = runAutomation(
+      [{ kind: "applyEffect", effect: tpl, capture: { escapeDc: v("classDc"), castRank: lit(3) } }],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    // the actor's classDc is 18, frozen now
+    expect(out.mutations[0]).toMatchObject({ captured: { escapeDc: 18, castRank: 3 } });
+  });
+
+  it("omits captured entirely when nothing is captured (live is the default)", () => {
+    const out = runAutomation([{ kind: "applyEffect", effect: tpl }], ctx({ targets: [target], rng: seqRng(1) }));
+    expect(out.mutations[0]).not.toHaveProperty("captured");
+  });
+
+  it("a failing capture expression obeys the error policy", () => {
+    const out = runAutomation(
+      [{ kind: "applyEffect", effect: tpl, capture: { x: v("nope") }, onError: { on: "warn" } }],
+      ctx({ targets: [target], rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([]);
+    expect(out.warnings.some((w) => /applyEffect "Grappled"/.test(w))).toBe(true);
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -874,6 +951,34 @@ describe("automationSchema", () => {
       automationSchema.safeParse([{ kind: "applyEffect", effect: { name: "X", duration: { kind: "forever" }, passives: [] } }]).success,
     ).toBe(false);
     expect(automationSchema.safeParse([{ kind: "removeEffect" }]).success).toBe(false); // name required
+  });
+
+  it("validates an effect template carrying buttons and granted actions", () => {
+    expect(
+      automationSchema.safeParse([
+        {
+          kind: "applyEffect",
+          effect: {
+            name: "Grappled",
+            duration: { kind: "unlimited" },
+            passives: [],
+            tickTiming: { when: "end", whose: "bearer" },
+            tickButton: "recover",
+            buttons: [{ id: "recover", label: "Recovery check", automation: [{ kind: "text", body: "flat check" }] }],
+            grantedActions: [{ id: "escape", name: "Escape", actionCost: { kind: "actions", min: 1, max: 1 } }],
+          },
+          capture: { escapeDc: { kind: "lit", value: 20 } },
+        },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it("rejects a button with no id/label and an unknown template field", () => {
+    const eff = { name: "X", duration: { kind: "unlimited" }, passives: [] };
+    expect(
+      automationSchema.safeParse([{ kind: "applyEffect", effect: { ...eff, buttons: [{ label: "no id", automation: [] }] } }]).success,
+    ).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "applyEffect", effect: { ...eff, bogus: 1 } }]).success).toBe(false);
   });
 
   it("validates a target node with nested children", () => {

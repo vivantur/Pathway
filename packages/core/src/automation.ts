@@ -43,7 +43,6 @@
 // a `value` fallback of a boolean literal — no branch-specific machinery needed.
 
 import { z } from "zod";
-import { effectTemplateSchema, type EffectTemplate } from "./applied.js";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
 import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
@@ -53,7 +52,9 @@ import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
 import type { Rng } from "./rng.js";
+import { passiveEffectSchema } from "./passive.js";
 import { isSelector, type SaveSelector, type Selector } from "./selectors.js";
+import { actionCostSchema } from "./spell.js";
 
 // ---------------------------------------------------------------------------
 // the error policy (shared by every node/expression that can fail)
@@ -158,7 +159,7 @@ export type AutomationNode =
   | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
-  | { kind: "applyEffect"; effect: EffectTemplate; target?: "self" | "target"; linkGroup?: string; onError?: ErrorPolicy }
+  | { kind: "applyEffect"; effect: EffectTemplate; target?: "self" | "target"; linkGroup?: string; capture?: Record<string, Expr>; onError?: ErrorPolicy }
   | { kind: "removeEffect"; name: string; target?: "self" | "target"; cascade?: boolean; onError?: ErrorPolicy }
   | { kind: "target"; mode: "all" | "self" | "position"; index?: number; children: AutomationNode[]; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
@@ -200,6 +201,126 @@ const degreeOutcomeShape = {
   onFailure: z.array(automationNodeSchema).optional(),
   onCriticalFailure: z.array(automationNodeSchema).optional(),
 };
+
+// ---------------------------------------------------------------------------
+// the authored EFFECT vocabulary (Layer 1.5's content side)
+// ---------------------------------------------------------------------------
+//
+// This lives here, next to the node union, because the two are MUTUALLY
+// RECURSIVE — an `applyEffect` node carries an effect template, the template
+// carries buttons, and a button carries automation nodes. That loop is the doc's
+// "heart of the engine" (automation → applied effect → button → automation), so
+// the declarations cannot be split across modules. `applied.ts` builds the RUNTIME
+// shape on top of these and imports one-way.
+
+/**
+ * A moment in the turn cycle, relative to an effect: the start or end of the turn
+ * of the creature that APPLIED it (`origin`) or the one it is ON (`bearer`). The
+ * shared primitive behind both tick timing and expiry — modelling only start/end,
+ * without *whose*, is how effects end up a turn off.
+ */
+export const turnMomentSchema = z
+  .object({ when: z.enum(["start", "end"]), whose: z.enum(["origin", "bearer"]) })
+  .strict();
+export type TurnMoment = z.infer<typeof turnMomentSchema>;
+
+/** How long an applied effect lasts. Kinds mirror the Durations rules text. */
+export const durationSchema = z.discriminatedUnion("kind", [
+  /** Until counteracted or Dismissed. */
+  z.object({ kind: z.literal("unlimited") }).strict(),
+  /** N rounds: decrements at the START of the origin's turn, ending at 0. */
+  z.object({ kind: z.literal("rounds"), count: z.number().int().nonnegative() }).strict(),
+  /** Until the end of the origin's NEXT turn, unless Sustained. */
+  z.object({ kind: z.literal("sustained") }).strict(),
+  /**
+   * Until a given turn moment. `next: true` means the NEXT such turn — the
+   * occurrence during the turn the effect was applied in does not count ("until the
+   * end of your next turn" vs "until the end of your turn").
+   */
+  z.object({ kind: z.literal("until"), moment: turnMomentSchema, next: z.boolean().optional() }).strict(),
+  /** Wall/game-clock durations. Not resolved by the turn machinery — the host's clock. */
+  z.object({ kind: z.literal("time"), amount: z.number().positive(), unit: z.enum(["minutes", "hours", "days"]) }).strict(),
+  /** Until the origin's next daily preparations. */
+  z.object({ kind: z.literal("dailyPreparations") }).strict(),
+]);
+export type Duration = z.infer<typeof durationSchema>;
+
+/**
+ * A BUTTON on an applied effect — a self-contained mini-action a player presses
+ * (Escape a grapple, attempt a recovery check). Its automation is re-entered
+ * through `runButton`, which is the recursion closing.
+ *
+ * [PF2e] Its context is LIVE, not a frozen closure: the host builds a fresh
+ * execution context at PRESS time, so a DC derived from a creature's stat tracks
+ * that creature's current bonuses and penalties (a grapple's escape DC drops when
+ * the grappler becomes enfeebled). Values that genuinely must not drift are frozen
+ * separately, via the `applyEffect` node's opt-in `capture`.
+ */
+export const buttonSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    verb: z.string().min(1).optional(),
+    style: z.enum(["primary", "secondary", "danger"]).optional(),
+    automation: z.array(automationNodeSchema),
+  })
+  .strict();
+export type Button = z.infer<typeof buttonSchema>;
+
+/**
+ * A GRANTED ACTION — a full activity the creature gains for the effect's duration
+ * (a stance's special strike, Escape). Distinct from a button: a button is a quick
+ * trigger, an action is something you spend actions on.
+ */
+export const grantedActionSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    actionCost: actionCostSchema.optional(),
+    description: z.string().min(1).optional(),
+    automation: z.array(automationNodeSchema).optional(),
+  })
+  .strict();
+export type GrantedAction = z.infer<typeof grantedActionSchema>;
+
+/**
+ * The AUTHORED part of an applied effect — everything content can know ahead of
+ * time. An `applyEffect` node carries one of these; the runtime identity
+ * (`id`/`originId`/`bearerId`/`appliedAt`) is stamped by the HOST, because minting
+ * an instance id and reading the clock are both impure and belong outside core.
+ * See `applied.ts` for the runtime shape and the timing resolvers.
+ */
+export const effectTemplateSchema = z
+  .object({
+    name: z.string().min(1),
+    duration: durationSchema,
+    /**
+     * Whether this effect can be Sustained — INDEPENDENT of `duration`. `extends`
+     * says whether Sustaining restarts the duration clock (implicit for
+     * `duration: sustained`); a fixed-duration effect with a Sustain bonus sets
+     * `extends: false` and carries its extra automation as a granted action.
+     */
+    sustain: z.object({ extends: z.boolean().optional() }).strict().optional(),
+    /** WHEN a recurring effect fires/prompts. */
+    tickTiming: turnMomentSchema.optional(),
+    /**
+     * The button the tick fires — so the tick and a manual press run the SAME
+     * automation. Ticks PROMPT, they do not resolve: a recovery check must always
+     * be re-attemptable off-turn (assistance changing its DC, an ability granting
+     * an immediate attempt), so nothing here is purely automatic.
+     */
+    tickButton: z.string().min(1).optional(),
+    /** The Layer-1 passives this effect imposes while active. */
+    passives: z.array(passiveEffectSchema),
+    /** Quick triggers the bearer/origin can press while the effect is active. */
+    buttons: z.array(buttonSchema).optional(),
+    /** Full activities gained for the duration. */
+    grantedActions: z.array(grantedActionSchema).optional(),
+    /** Can be ended early by the Dismiss action. */
+    dismissible: z.boolean().optional(),
+  })
+  .strict();
+export type EffectTemplate = z.infer<typeof effectTemplateSchema>;
 
 const textNodeSchema = z
   .object({ kind: z.literal("text"), title: z.string().optional(), body: z.string() })
@@ -315,6 +436,14 @@ const applyEffectNodeSchema = z
      * removed as a unit. The host maps the label to a real group id.
      */
     linkGroup: z.string().min(1).optional(),
+    /**
+     * OPT-IN freezing: expressions evaluated NOW, at apply time, whose values ride
+     * along on the effect for its buttons to read. Live resolution is the DEFAULT —
+     * a DC derived from a creature's stat should track that creature's current
+     * bonuses/penalties — so capture only what genuinely must not drift (the rank a
+     * spell was cast at, a one-time roll, a value from a creature that may be gone).
+     */
+    capture: z.record(z.string(), exprSchema).optional(),
     onError: errorPolicySchema.optional(),
   })
   .strict();
@@ -389,7 +518,7 @@ export type Mutation =
   | { kind: "damage"; target: MutationTarget; healing: boolean; amount: number; instances: DamageInstance[] }
   | { kind: "temphp"; target: MutationTarget; amount: number }
   | { kind: "counter"; counter: string; spent: number; remaining: number }
-  | { kind: "applyEffect"; target: MutationTarget; effect: EffectTemplate; linkGroup?: string }
+  | { kind: "applyEffect"; target: MutationTarget; effect: EffectTemplate; linkGroup?: string; captured?: Record<string, ExprValue> }
   | { kind: "removeEffect"; target: MutationTarget; name: string; cascade: boolean };
 
 export interface Outcome {
@@ -426,6 +555,12 @@ export interface ExecutionContext {
   counters?: Record<string, Counter>;
   /** The seeded RNG — the ONLY randomness source, so the run is replayable. */
   rng: Rng;
+  /**
+   * Starting execution-state variables supplied by the host — how a pressed
+   * button receives an effect's `captured` values. Character-namespace names are
+   * still readable; these sit alongside them and are visible to every node.
+   */
+  vars?: Record<string, ExprValue>;
   /** Default error policy for nodes that don't carry their own. Defaults to `ignore`. */
   onError?: ErrorPolicy;
 }
@@ -448,7 +583,7 @@ class Abort {
 export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionContext): Outcome {
   const outcome: Outcome = { log: [], mutations: [], warnings: [], aborted: false };
   const charScope = characterScope(ctx.actor);
-  const execVars: Record<string, ExprValue> = {};
+  const execVars: Record<string, ExprValue> = { ...(ctx.vars ?? {}) };
   // A working copy of the host's counter snapshot: spends within one run compound,
   // but the caller's objects are never mutated.
   const counters: Record<string, Counter> = {};
@@ -768,11 +903,18 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       case "applyEffect": {
         try {
           const target = mutationTarget(node.target ?? "target");
+          // Opt-in freeze: evaluate the captured expressions NOW.
+          let captured: Record<string, ExprValue> | undefined;
+          if (node.capture) {
+            captured = {};
+            for (const [name, expr] of Object.entries(node.capture)) captured[name] = evaluate(expr, scope());
+          }
           outcome.mutations.push({
             kind: "applyEffect",
             target,
             effect: node.effect,
             ...(node.linkGroup !== undefined ? { linkGroup: node.linkGroup } : {}),
+            ...(captured !== undefined ? { captured } : {}),
           });
         } catch (e) {
           if (e instanceof Abort) throw e;
@@ -844,4 +986,23 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     }
   }
   return outcome;
+}
+
+/**
+ * Run a button's automation — the host's entry point when a player presses it, and
+ * where the engine's recursion closes (automation → applied effect → button →
+ * automation).
+ *
+ * `ctx` is built FRESH at press time, so everything resolves LIVE against current
+ * stats: an escape DC read as `{kind:"stat", who:"target", selector:"athletics"}`
+ * follows the grappler's Athletics *right now*, enfeebled and all. `captured` (the
+ * opt-in values frozen when the effect was applied) is merged in as starting
+ * variables, so a button can mix live lookups with frozen ones.
+ */
+export function runButton(
+  button: Button,
+  ctx: ExecutionContext,
+  captured: Record<string, ExprValue> = {},
+): Outcome {
+  return runAutomation(button.automation, { ...ctx, vars: { ...ctx.vars, ...captured } });
 }
