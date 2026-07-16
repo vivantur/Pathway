@@ -78,6 +78,11 @@ export * from './passive.js';
 // automation interpreter uses, so an invocation is replayable and testable.
 export * from './rng.js';
 
+// Dice notation — a parser + seeded evaluator for `2d6 + strengthMod`-style
+// expressions (full arithmetic: + - * /, parens, variable terms). The `roll`
+// automation node consumes it. Generic dice; no PF2e rules.
+export * from './dice.js';
+
 // Layer 2 — the automation tree interpreter (skeleton slice): the execution model
 // (context + outcome = narration log + intended mutations), the uniform error
 // policy, and the rules-free nodes (text/variable/branch). Pure; the rest of the

@@ -147,6 +147,57 @@ describe("error policy", () => {
   });
 });
 
+describe("roll node", () => {
+  it("rolls, binds the total to lastRoll (and a name), and logs the dice", () => {
+    // Seed chosen so the run is deterministic; assert via bounds + structure.
+    const out = runAutomation(
+      [
+        { kind: "roll", notation: "2d6 + 3", name: "dmg" },
+        { kind: "branch", condition: call("eq", v("dmg"), v("lastRoll")), onTrue: [{ kind: "text", body: "bound" }], onFalse: [] },
+      ],
+      ctx({ rng: makeRng(5) }),
+    );
+    const rollEntry = out.log.find((e) => e.kind === "roll");
+    expect(rollEntry).toBeDefined();
+    if (rollEntry?.kind === "roll") {
+      expect(rollEntry.name).toBe("dmg");
+      expect(rollEntry.dice).toHaveLength(2);
+      expect(rollEntry.total).toBeGreaterThanOrEqual(2 + 3);
+      expect(rollEntry.total).toBeLessThanOrEqual(12 + 3);
+    }
+    // dmg and lastRoll are equal → the branch reached onTrue
+    expect(out.log.some((e) => e.kind === "text" && e.body === "bound")).toBe(true);
+  });
+
+  it("a roll can read character-namespace variables in its notation", () => {
+    const out = runAutomation([{ kind: "roll", notation: "1d1 + strengthMod" }], ctx({ rng: makeRng(1) }));
+    const entry = out.log.find((e) => e.kind === "roll");
+    // 1d1 is always 1; strengthMod is 3 → total 4
+    expect(entry?.kind === "roll" && entry.total).toBe(4);
+  });
+
+  it("a bad notation obeys the error policy (raise aborts)", () => {
+    const out = runAutomation(
+      [
+        { kind: "roll", notation: "1d6 + missingVar", onError: { on: "raise" } },
+        { kind: "text", body: "after" },
+      ],
+      ctx({ rng: makeRng(1) }),
+    );
+    expect(out.aborted).toBe(true);
+    expect(out.log.some((e) => e.kind === "text")).toBe(false);
+  });
+
+  it("a value fallback binds a substitute total when the roll fails", () => {
+    const out = runAutomation(
+      [{ kind: "roll", notation: "1d6 + missingVar", name: "dmg", onError: { on: "value", value: lit(0) } }],
+      ctx({ rng: makeRng(1) }),
+    );
+    const entry = out.log.find((e) => e.kind === "roll");
+    expect(entry?.kind === "roll" && entry.total).toBe(0);
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -163,8 +214,13 @@ describe("automationSchema", () => {
     expect(automationSchema.safeParse(tree).success).toBe(true);
   });
 
+  it("validates a roll node and rejects invalid dice notation", () => {
+    expect(automationSchema.safeParse([{ kind: "roll", notation: "2d6 + 3", name: "dmg" }]).success).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "roll", notation: "2d" }]).success).toBe(false);
+  });
+
   it("rejects an unknown node kind, missing branch arms, and extra fields", () => {
-    expect(automationSchema.safeParse([{ kind: "roll", dice: "1d6" }]).success).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "teleport", to: "x" }]).success).toBe(false);
     expect(automationSchema.safeParse([{ kind: "branch", condition: { kind: "lit", value: true }, onTrue: [] }]).success).toBe(false);
     expect(automationSchema.safeParse([{ kind: "text", body: "x", extra: 1 }]).success).toBe(false);
   });

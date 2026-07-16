@@ -6,11 +6,13 @@
 // for the host app to apply. It never touches persistence, Discord, or the DB
 // (docs/effects-engine-design.md, "Layer 2 — the automation engine").
 //
-// THIS SLICE settles the execution model + the three rules-free nodes, so every
-// later node (roll, attack/save/check, damage, counter, target, applyEffect) plugs
-// into a stable contract. It encodes NO PF2e rules — it is pure plumbing:
+// This is where the execution model was settled (slice 1) so every later node
+// (attack/save/check, damage, counter, target, applyEffect) plugs into a stable
+// contract. The nodes so far encode NO PF2e rules — pure plumbing + generic dice:
 //   • text     — append narration.
 //   • variable — evaluate an expression and BIND it to a name (forward-only scope).
+//   • roll     — roll dice (dice.ts) with the seeded RNG, bind the total to
+//                `lastRoll` (and an optional name), and log the dice. (slice 2)
 //   • branch   — evaluate a boolean expression and run one of two child lists.
 // Expressions are the shared evaluator (expr.ts), reading the character namespace
 // (character.ts) merged with the execution-state vars this interpreter binds as it
@@ -27,6 +29,7 @@
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope } from "./character.js";
+import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
 import type { Rng } from "./rng.js";
 
@@ -54,11 +57,12 @@ export type ErrorPolicy = z.infer<typeof errorPolicySchema>;
 export type AutomationNode =
   | { kind: "text"; title?: string; body: string }
   | { kind: "variable"; name: string; value: Expr; onError?: ErrorPolicy }
+  | { kind: "roll"; notation: string; name?: string; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
 /** Zod schema for a node (recursive via `z.lazy`, since `branch` nests node lists). */
 export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
-  z.discriminatedUnion("kind", [textNodeSchema, variableNodeSchema, branchNodeSchema]),
+  z.discriminatedUnion("kind", [textNodeSchema, variableNodeSchema, rollNodeSchema, branchNodeSchema]),
 );
 
 const textNodeSchema = z
@@ -67,6 +71,17 @@ const textNodeSchema = z
 
 const variableNodeSchema = z
   .object({ kind: z.literal("variable"), name: z.string().min(1), value: exprSchema, onError: errorPolicySchema.optional() })
+  .strict();
+
+const rollNodeSchema = z
+  .object({
+    kind: z.literal("roll"),
+    /** Dice notation (`2d6 + strengthMod`); validated as parseable at schema time. */
+    notation: z.string().min(1).refine((n) => safeParseDice(n) !== null, { message: "invalid dice notation" }),
+    /** Optional name to bind the total to (the total is always bound to `lastRoll`). */
+    name: z.string().min(1).optional(),
+    onError: errorPolicySchema.optional(),
+  })
   .strict();
 
 const branchNodeSchema = z
@@ -86,12 +101,14 @@ export const automationSchema = z.array(automationNodeSchema);
 // execution context + outcome
 // ---------------------------------------------------------------------------
 
-/** A narration entry the interpreter appends (this slice: only `text`). */
-export interface LogEntry {
-  kind: "text";
-  title?: string;
-  body: string;
-}
+/**
+ * A narration entry the interpreter appends. `text` is authored narration; `roll`
+ * records a dice roll (its total + every die) so the outcome is transparent about
+ * what was rolled. The union grows with the node vocabulary.
+ */
+export type LogEntry =
+  | { kind: "text"; title?: string; body: string }
+  | { kind: "roll"; notation: string; total: number; dice: RolledDie[]; name?: string };
 
 /**
  * An intended state change for the host app to apply. The union grows one kind
@@ -142,6 +159,37 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
   const execVars: Record<string, ExprValue> = {};
   const scope = (): ExprScope => ({ vars: { ...charScope.vars, ...execVars }, functions: charScope.functions });
 
+  /**
+   * The single error-policy handler (the doc's uniform model). Called after a
+   * failure; on a `value` policy it evaluates the fallback expression (coerced to
+   * `expected`) and hands it to `onValue`. Throws `Abort` on `raise`.
+   */
+  const applyPolicy = (
+    policy: ErrorPolicy | undefined,
+    what: string,
+    onValue?: (v: ExprValue) => void,
+    expected?: "number" | "boolean",
+  ): void => {
+    const p = policy ?? ctx.onError ?? { on: "ignore" };
+    switch (p.on) {
+      case "raise":
+        throw new Abort(`${what} failed`);
+      case "warn":
+        outcome.warnings.push(`${what} failed`);
+        return;
+      case "value":
+        if (!onValue) return;
+        try {
+          onValue(evaluate(p.value, scope(), expected));
+        } catch {
+          outcome.warnings.push(`${what} failed and its fallback value failed`);
+        }
+        return;
+      case "ignore":
+        return;
+    }
+  };
+
   /** Evaluate an expression under the active error policy. */
   const tryEval = (
     expr: Expr,
@@ -152,24 +200,26 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     try {
       return { ok: true, value: evaluate(expr, scope(), expected) };
     } catch {
-      const p = policy ?? ctx.onError ?? { on: "ignore" };
-      switch (p.on) {
-        case "raise":
-          throw new Abort(`${what} failed`);
-        case "warn":
-          outcome.warnings.push(`${what} failed`);
-          return { ok: false };
-        case "value":
-          try {
-            return { ok: true, value: evaluate(p.value, scope(), expected) };
-          } catch {
-            outcome.warnings.push(`${what} failed and its fallback value failed`);
-            return { ok: false };
-          }
-        case "ignore":
-          return { ok: false };
-      }
+      let result: { ok: true; value: ExprValue } | { ok: false } = { ok: false };
+      applyPolicy(policy, what, (v) => {
+        result = { ok: true, value: v };
+      }, expected);
+      return result;
     }
+  };
+
+  /** The numeric subset of the current scope vars — what dice notation can read. */
+  const numericVars = (): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(scope().vars ?? {})) if (typeof v === "number") out[k] = v;
+    return out;
+  };
+
+  /** Bind a roll's total to `lastRoll` (and the node's name) and log it. */
+  const bindRoll = (node: { notation: string; name?: string }, total: number, dice: RolledDie[]): void => {
+    execVars.lastRoll = total;
+    if (node.name) execVars[node.name] = total;
+    outcome.log.push({ kind: "roll", notation: node.notation, total, dice, ...(node.name ? { name: node.name } : {}) });
   };
 
   const runNode = (node: AutomationNode): void => {
@@ -180,6 +230,15 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       case "variable": {
         const r = tryEval(node.value, undefined, node.onError, `variable "${node.name}"`);
         if (r.ok) execVars[node.name] = r.value;
+        return;
+      }
+      case "roll": {
+        try {
+          const result = rollNotation(node.notation, ctx.rng, numericVars());
+          bindRoll(node, result.total, result.dice);
+        } catch {
+          applyPolicy(node.onError, `roll "${node.notation}"`, (v) => bindRoll(node, Number(v), []), "number");
+        }
         return;
       }
       case "branch": {
