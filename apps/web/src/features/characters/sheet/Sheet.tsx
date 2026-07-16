@@ -92,6 +92,7 @@ import {
   SwordIcon,
   TrashIcon,
 } from './icons';
+import { resolveListOverride } from './overrides';
 
 /**
  * Full read-only Pathway character sheet.
@@ -956,20 +957,25 @@ function LeftColumn({
   // heritage-aware — same as the builder); otherwise the ancestry+heritage
   // lookup, preferring the denormalized `ancestry_name`/`heritage_name` columns
   // which stay accurate even after Pathbuilder re-imports.
+  // A bot/sheet override only wins when it's actually set. The overlay seeds
+  // these edit lists to `[]`, and `[] ?? fallback` keeps the empty array (??
+  // only falls through on null/undefined) — which would blank out every
+  // web-built character's senses & languages. Treat an empty edit as "no
+  // override" and fall through to the derived / build values.
   const derivedSenses = coreSenses(build);
-  const senses =
-    overlay.pathway_bot_state?.edits?.senses ??
-    (derivedSenses.length > 0
+  const senses = resolveListOverride(
+    overlay.pathway_bot_state?.edits?.senses,
+    derivedSenses.length > 0
       ? derivedSenses.map(formatSenseLabel)
       : computeSensesFromAncestry(
           character.ancestry_name ?? build.ancestry,
           character.heritage_name ?? build.heritage,
-        ));
+        ),
+  );
   // Damage resistances from the core engine (empty for imported/bot characters,
   // and for low levels where they round to 0).
   const resistances = coreResistances(build);
-  const languages =
-    overlay.pathway_bot_state?.edits?.languages ?? build.languages ?? [];
+  const languages = resolveListOverride(overlay.pathway_bot_state?.edits?.languages, build.languages ?? []);
   return (
     <aside className="space-y-4">
       <Portrait
