@@ -74,6 +74,16 @@ export * from './effects.js';
 // typed buckets. OUR schema — the homebrew builder emits it, Foundry maps into it.
 export * from './passive.js';
 
+// Seeded deterministic PRNG (mulberry32) — the only randomness source the Layer-2
+// automation interpreter uses, so an invocation is replayable and testable.
+export * from './rng.js';
+
+// Layer 2 — the automation tree interpreter (skeleton slice): the execution model
+// (context + outcome = narration log + intended mutations), the uniform error
+// policy, and the rules-free nodes (text/variable/branch). Pure; the rest of the
+// node vocabulary lands one slice at a time on top of this contract.
+export * from './automation.js';
+
 // Content envelope shared by every stored PF2e entity (id + pinned version,
 // official/homebrew, rarity, source). The template the content schemas extend.
 export * from './content.js';
