@@ -373,6 +373,17 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    clone so spends compound within one invocation without touching the caller's state.
    `requireAvailable` blocks a partial spend; `lastCounter…` refs remove the corpus's "dummy
    counter as a variable store" hack. The spellcasting specialization stays deferred (decision 4).
+   **Slice 6 landed 2026-07-15** (the `target` scoping node + `rollMode`). `ExecutionContext.target`
+   became `targets: ResolvedCharacter[]`; the interpreter tracks a current scope (default
+   `targets[0]`), and `target {mode: all|self|position, index?, children}` re-scopes it per
+   creature. Mutations now carry resolved attribution: `target: {kind:"self"} | {kind:"target",
+   index}`. **The multi-target axis is the RANDOM ROLL, not the comparison**: `rollMode:
+   "per-target" | "shared"` (default per-target) on the ACTOR-rolled nodes (attack/check/damage) —
+   `save` has none, since a save is rolled BY each target. A shared roll is cached per target-scope
+   iteration; the DC/AC lookup, degree, and multiplier stay per target. This is what expresses both
+   *fireball* (each target rolls its own save; one shared 6d6 scaled by each result) and a
+   *one-attack-roll-vs-many-ACs feat* (one d20 → different degrees per AC; one shared damage roll).
+   Both are locked as tests. Area/template geometry stays the host's concern.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
