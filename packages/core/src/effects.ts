@@ -102,12 +102,16 @@ export interface RankGrant {
 }
 
 /**
- * A single applied effect, attributed to its source, for "why did this change?"
- * display. `stat` is the affected stat key ("hp", "perception", a skill slug, …);
- * `summary` is a ready-to-show phrase ("+5 HP", "Trained in Thievery",
+ * One resolved sheet adjustment, attributed to its source, for "why did this
+ * change?" display. `stat` is the affected stat key ("hp", "perception", a skill
+ * slug, …); `summary` is a ready-to-show phrase ("+5 HP", "Trained in Thievery",
  * "+2 circumstance to Perception").
+ *
+ * NOT to be confused with `AppliedEffect` in applied.ts — that is the Layer-1.5
+ * combat entity (the doc's "applied effect"). This is a display record from the
+ * transitional Foundry-ingest path.
  */
-export interface AppliedEffect {
+export interface EffectProvenance {
   source: string;
   stat: string;
   summary: string;
@@ -132,7 +136,7 @@ export interface SheetEffects {
    */
   statModifiers: Map<string, Modifier[]>;
   /** Every applied effect, attributed to its source, for provenance display. */
-  applied: AppliedEffect[];
+  applied: EffectProvenance[];
   /**
    * Count of rule elements that would affect the sheet but fall outside this
    * increment's scope (choice-driven, unparseable value, strikes, ability/

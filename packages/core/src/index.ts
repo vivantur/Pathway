@@ -74,6 +74,12 @@ export * from './effects.js';
 // typed buckets. OUR schema — the homebrew builder emits it, Foundry maps into it.
 export * from './passive.js';
 
+// Layer 1.5 — the applied effect: the bridge carrying Layer-1 passives onto a
+// creature during play, plus the duration/tick vocabulary (`TurnMoment`) and the
+// pure resolvers (`advanceDuration`/`tickFires`/`sustainEffect`) that keep effect
+// timing off-by-one-free. Core owns the semantics; the host's tracker owns the clock.
+export * from './applied.js';
+
 // Seeded deterministic PRNG (mulberry32) — the only randomness source the Layer-2
 // automation interpreter uses, so an invocation is replayable and testable.
 export * from './rng.js';

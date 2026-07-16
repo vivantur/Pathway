@@ -26,7 +26,7 @@ import {
   proficiencyRankAtLevel,
   RANK_LABEL,
   stackModifiers,
-  type AppliedEffect,
+  type EffectProvenance,
   type AttackCategory,
   type Modifier,
   type ProficiencyTrack,
@@ -366,7 +366,7 @@ export interface DerivedCharacter {
     unarmoredDefense: ProficiencyRank;
   };
   /** Feat-granted effects applied to this sheet, attributed to their source. */
-  effectNotes: AppliedEffect[];
+  effectNotes: EffectProvenance[];
 }
 
 /**
