@@ -353,8 +353,13 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    `automation.ts`): the execution model (context → outcome = log + intended mutations), the
    uniform error policy (ignore/warn/value/raise), and the rules-free nodes text/variable/branch.
    Slice 2 (`dice.ts` + the `roll` node): a dice parser/evaluator with full basic arithmetic
-   (`+ - * /`, parens, variable terms) over the seeded RNG. `mutations` is empty until slice 4's
-   `damage` — the union grows one kind per slice. Slice 3 is next and needs pasted rules text.
+   (`+ - * /`, parens, variable terms) over the seeded RNG. **Slice 3 landed 2026-07-15**
+   (`checks.ts` + the `save`/`attack`/`check` nodes): `rollCheck` (d20+mod vs DC → degree via
+   `degree.ts`), `dcFromModifier` (the pasted `10 + modifier` rule), a `Dc` type (flat or
+   target-stat-derived), a single `ExecutionContext.target`, per-degree child lists
+   (`onCriticalSuccess`/…/`onCriticalFailure`) + degree execution-state refs. `basicSave` is
+   carried as metadata; its none/half/full/double damage scale is applied by slice 4's `damage`.
+   `mutations` is still empty until slice 4 — the union grows one kind per slice.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
