@@ -368,6 +368,11 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    is DEFERRED to its own slice — needs a cast-rank input the context lacks + ties to the
    spellcasting layer; rules text recorded. Resistance/weakness resolution is also deferred (with
    a "minimum 1" note for feat-granted resistance).
+   **Slice 5 landed 2026-07-15** (the `counter` node over `counter.ts`): the purity seam is a
+   read-only `ExecutionContext.counters` snapshot in, a `counter` mutation out; the run works on a
+   clone so spends compound within one invocation without touching the caller's state.
+   `requireAvailable` blocks a partial spend; `lastCounter…` refs remove the corpus's "dummy
+   counter as a variable store" hack. The spellcasting specialization stays deferred (decision 4).
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
