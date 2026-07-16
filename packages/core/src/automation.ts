@@ -18,6 +18,8 @@
 //   • damage / temphp — roll typed damage (dice.ts + damage.ts), optionally scale
 //                by a resolved degree (crit doubles, basic save none/half/full/
 //                double), and emit an intended `Mutation`. (slice 4)
+//   • counter  — spend/restore a resource (counter.ts) read from the context's
+//                snapshot, emitting a `counter` mutation. (slice 5)
 //   • branch   — evaluate a boolean expression and run one of two child lists.
 // Only save/attack/check carry PF2e rules, and only via the pasted-text primitives
 // in checks.ts/degree.ts (the DC=10+modifier formula, the degree bands); this
@@ -37,6 +39,7 @@ import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
 import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import { applyCounter, canSpend, type Counter } from "./counter.js";
 import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
 import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
@@ -131,6 +134,7 @@ export type AutomationNode =
   | ({ kind: "check"; check: Selector; dc: Dc; onError?: ErrorPolicy } & DegreeChildren)
   | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
+  | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
 
 /** Zod schema for a node (recursive via `z.lazy`, since nodes nest node lists). */
@@ -144,6 +148,7 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     checkNodeSchema,
     damageNodeSchema,
     tempHpNodeSchema,
+    counterNodeSchema,
     branchNodeSchema,
   ]),
 );
@@ -247,6 +252,23 @@ const tempHpNodeSchema = z
   })
   .strict();
 
+const counterNodeSchema = z
+  .object({
+    kind: z.literal("counter"),
+    /** The counter's id in the context snapshot (e.g. "focus", "wand-charges"). */
+    counter: z.string().min(1),
+    /** Units to SPEND: positive spends, negative recharges (the counter.ts convention). */
+    amount: exprSchema,
+    /** Let the result pass its bounds instead of clamping into [min, max]. */
+    allowOverflow: z.boolean().optional(),
+    /** Require the FULL amount to be spendable; otherwise emit nothing and apply the error policy. */
+    requireAvailable: z.boolean().optional(),
+    /** Optional prefix for this node's execution-state refs (always also bound to `lastCounter…`). */
+    name: z.string().min(1).optional(),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
 const branchNodeSchema = z
   .object({
     kind: z.literal("branch"),
@@ -283,7 +305,8 @@ export type LogEntry =
  */
 export type Mutation =
   | { kind: "damage"; target: "self" | "target"; healing: boolean; amount: number; instances: DamageInstance[] }
-  | { kind: "temphp"; target: "self" | "target"; amount: number };
+  | { kind: "temphp"; target: "self" | "target"; amount: number }
+  | { kind: "counter"; counter: string; spent: number; remaining: number };
 
 export interface Outcome {
   /** Narration produced, in order. */
@@ -306,6 +329,15 @@ export interface ExecutionContext {
    * fails through the error policy.
    */
   target?: ResolvedCharacter;
+  /**
+   * A read-only snapshot of the actor's named counters (focus points, item
+   * charges, …), supplied by the HOST — this interpreter owns no persistent
+   * state. The run mutates only a working copy, so two `counter` nodes touching
+   * the same counter compound correctly; the resulting spends are reported as
+   * `counter` mutations for the host to apply. (Current focus points are play
+   * state, not on `ResolvedCharacter`, which carries only `focusPoints.max`.)
+   */
+  counters?: Record<string, Counter>;
   /** The seeded RNG — the ONLY randomness source, so the run is replayable. */
   rng: Rng;
   /** Default error policy for nodes that don't carry their own. Defaults to `ignore`. */
@@ -331,6 +363,10 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
   const outcome: Outcome = { log: [], mutations: [], warnings: [], aborted: false };
   const charScope = characterScope(ctx.actor);
   const execVars: Record<string, ExprValue> = {};
+  // A working copy of the host's counter snapshot: spends within one run compound,
+  // but the caller's objects are never mutated.
+  const counters: Record<string, Counter> = {};
+  for (const [id, c] of Object.entries(ctx.counters ?? {})) counters[id] = { ...c };
   const scope = (): ExprScope => ({ vars: { ...charScope.vars, ...execVars }, functions: charScope.functions });
 
   /**
@@ -457,6 +493,22 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     return childrenFor(node, result.degree);
   };
 
+  /**
+   * Bind a counter result to the execution scope under `lastCounter…` (and the
+   * node's name, if given). Exposing these cleanly is what removes the need for
+   * the "dummy counter as a variable store" hack seen in the Avrae corpus.
+   */
+  const bindCounter = (name: string | undefined, requested: number, spent: number, remaining: number, clamped: boolean): void => {
+    const set = (prefix: string) => {
+      execVars[`${prefix}Requested`] = requested;
+      execVars[`${prefix}Spent`] = spent;
+      execVars[`${prefix}Remaining`] = remaining;
+      execVars[`${prefix}Clamped`] = clamped;
+    };
+    set("lastCounter");
+    if (name) set(name);
+  };
+
   /** The degree-based damage multiplier for a scaling spec, reading the named degree ref. */
   const scalingFactor = (scaling: DamageScaling): number => {
     const from = scaling.from ?? "last";
@@ -561,6 +613,28 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, "temphp");
         }
+        return;
+      }
+      case "counter": {
+        const current = counters[node.counter];
+        if (!current) {
+          applyPolicy(node.onError, `counter "${node.counter}" (unknown)`);
+          return;
+        }
+        const r = tryEval(node.amount, "number", node.onError, `counter "${node.counter}" amount`);
+        if (!r.ok) return;
+        const amount = r.value as number;
+        if (node.requireAvailable === true && !canSpend(current, amount)) {
+          applyPolicy(node.onError, `counter "${node.counter}" (not enough available)`);
+          return;
+        }
+        const result = applyCounter(current, {
+          amount,
+          ...(node.allowOverflow !== undefined ? { allowOverflow: node.allowOverflow } : {}),
+        });
+        counters[node.counter] = result.counter; // later nodes see the spend
+        bindCounter(node.name, result.requested, result.spent, result.remaining, result.clamped);
+        outcome.mutations.push({ kind: "counter", counter: node.counter, spent: result.spent, remaining: result.remaining });
         return;
       }
       case "branch": {

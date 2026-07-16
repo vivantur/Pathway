@@ -436,6 +436,95 @@ describe("temphp node", () => {
   });
 });
 
+describe("counter node", () => {
+  const focus = () => ({ focus: { current: 2, max: 3 } });
+
+  it("spends and emits a counter mutation, binding lastCounter refs", () => {
+    const out = runAutomation(
+      [
+        { kind: "counter", counter: "focus", amount: lit(1) },
+        { kind: "branch", condition: call("eq", v("lastCounterRemaining"), lit(1)), onTrue: [{ kind: "text", body: "1 left" }], onFalse: [] },
+      ],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([{ kind: "counter", counter: "focus", spent: 1, remaining: 1 }]);
+    expect(out.log.some((e) => e.kind === "text" && e.body === "1 left")).toBe(true);
+  });
+
+  it("a negative amount recharges, clamping at max", () => {
+    const out = runAutomation([{ kind: "counter", counter: "focus", amount: lit(-5) }], ctx({ counters: focus(), rng: seqRng(1) }));
+    // current 2, recharge 5 → clamped to max 3, so only 1 restored (spent = -1)
+    expect(out.mutations).toEqual([{ kind: "counter", counter: "focus", spent: -1, remaining: 3 }]);
+  });
+
+  it("two spends in one run compound, and never mutate the caller's snapshot", () => {
+    const snapshot = focus();
+    const out = runAutomation(
+      [
+        { kind: "counter", counter: "focus", amount: lit(1) },
+        { kind: "counter", counter: "focus", amount: lit(1) },
+      ],
+      ctx({ counters: snapshot, rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([
+      { kind: "counter", counter: "focus", spent: 1, remaining: 1 },
+      { kind: "counter", counter: "focus", spent: 1, remaining: 0 },
+    ]);
+    expect(snapshot.focus.current).toBe(2); // caller's object untouched
+  });
+
+  it("clamps an over-spend and reports it via lastCounterClamped", () => {
+    const out = runAutomation(
+      [
+        { kind: "counter", counter: "focus", amount: lit(5) },
+        { kind: "branch", condition: v("lastCounterClamped"), onTrue: [{ kind: "text", body: "clamped" }], onFalse: [] },
+      ],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    // current 2, spend 5 → clamps at min 0, so only 2 spent
+    expect(out.mutations).toEqual([{ kind: "counter", counter: "focus", spent: 2, remaining: 0 }]);
+    expect(out.log.some((e) => e.kind === "text" && e.body === "clamped")).toBe(true);
+  });
+
+  it("requireAvailable blocks a partial spend: no mutation, error policy applies", () => {
+    const out = runAutomation(
+      [{ kind: "counter", counter: "focus", amount: lit(5), requireAvailable: true, onError: { on: "warn" } }],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([]);
+    expect(out.warnings.some((w) => /not enough available/.test(w))).toBe(true);
+  });
+
+  it("allowOverflow lets a spend pass the lower bound", () => {
+    const out = runAutomation(
+      [{ kind: "counter", counter: "focus", amount: lit(5), allowOverflow: true }],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    expect(out.mutations).toEqual([{ kind: "counter", counter: "focus", spent: 5, remaining: -3 }]);
+  });
+
+  it("an unknown counter obeys the error policy (raise aborts)", () => {
+    const out = runAutomation(
+      [{ kind: "counter", counter: "nope", amount: lit(1), onError: { on: "raise" } }, { kind: "text", body: "after" }],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    expect(out.aborted).toBe(true);
+    expect(out.mutations).toEqual([]);
+    expect(out.log).toEqual([]);
+  });
+
+  it("a named counter node binds its own refs too", () => {
+    const out = runAutomation(
+      [
+        { kind: "counter", counter: "focus", amount: lit(2), name: "spend" },
+        { kind: "branch", condition: call("eq", v("spendSpent"), lit(2)), onTrue: [{ kind: "text", body: "spent 2" }], onFalse: [] },
+      ],
+      ctx({ counters: focus(), rng: seqRng(1) }),
+    );
+    expect(out.log.some((e) => e.kind === "text" && e.body === "spent 2")).toBe(true);
+  });
+});
+
 describe("automationSchema", () => {
   it("parses a valid nested tree", () => {
     const tree = [
@@ -489,6 +578,16 @@ describe("automationSchema", () => {
     ).toBe(true);
     expect(automationSchema.safeParse([{ kind: "damage", components: [{ formula: "1d8" }] }]).success).toBe(true); // untyped ok
     expect(automationSchema.safeParse([{ kind: "temphp", formula: "1d6 + 2" }]).success).toBe(true);
+  });
+
+  it("validates a counter node and rejects an empty counter id", () => {
+    expect(
+      automationSchema.safeParse([
+        { kind: "counter", counter: "focus", amount: { kind: "lit", value: 1 }, requireAvailable: true, allowOverflow: false, name: "spend" },
+      ]).success,
+    ).toBe(true);
+    expect(automationSchema.safeParse([{ kind: "counter", counter: "", amount: { kind: "lit", value: 1 } }]).success).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "counter", counter: "focus" }]).success).toBe(false); // amount required
   });
 
   it("rejects a bad damage type, empty components, and a bad temphp formula", () => {
