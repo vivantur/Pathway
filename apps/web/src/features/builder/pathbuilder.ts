@@ -115,10 +115,16 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   push(state.ancestryParagonFeatId, 'Ancestry', 1); // Ancestry Paragon bonus feat
   push(state.classFeatId, 'Class', 1);
   if (background?.skillFeat) push(background.skillFeat, 'Skill', 1);
-  // Bonus feats granted by another choice (Natural Ambition → class, General
-  // Training / Versatile Human → general).
+  // Bonus feats granted by another choice (Natural Ambition, General Training,
+  // Ancestral Paragon, Multitalented, …), tagged by kind and granting level.
+  const BONUS_KIND_TYPE: Record<string, string> = {
+    class: 'Class',
+    general: 'General',
+    ancestry: 'Ancestry',
+    dedication: 'Archetype',
+  };
   for (const slot of bonusFeatSlots(state)) {
-    push(state.bonusFeatChoices?.[slot.key], slot.kind === 'class' ? 'Class' : 'General', 1);
+    push(state.bonusFeatChoices?.[slot.key], BONUS_KIND_TYPE[slot.kind] ?? 'Class', slot.level);
   }
   // Levels 2–20 (from the progression record).
   for (const [lvlStr, gains] of Object.entries(state.progression)) {

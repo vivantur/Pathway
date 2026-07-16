@@ -546,12 +546,18 @@ function sourceFeatIds(state: BuilderState): Set<string> {
 }
 
 // --- bonus feats granted by another choice ---------------------------------
-// A few options hand you an *extra* feat to choose: Natural Ambition (a class
-// feat), General Training (a general feat), and the Versatile Human heritage (a
-// general feat). Each surfaces as its own picker; the choice is stored under a
-// stable slot key so it survives edits and is honoured only while its source is.
+// Several options hand you an *extra* feat to choose. Each surfaces as its own
+// picker; the choice is stored under a stable, level-scoped slot key so it
+// survives edits and is honoured only while its granting choice is active.
 
-export type BonusFeatKind = 'class' | 'general';
+export type BonusFeatKind = 'class' | 'general' | 'ancestry' | 'dedication';
+
+export const BONUS_FEAT_KIND_LABEL: Record<BonusFeatKind, string> = {
+  class: 'Class',
+  general: 'General',
+  ancestry: 'Ancestry',
+  dedication: 'Dedication',
+};
 
 export interface BonusFeatSlot {
   /** Stable key the chosen feat is stored under in `state.bonusFeatChoices`. */
@@ -559,21 +565,81 @@ export interface BonusFeatSlot {
   kind: BonusFeatKind;
   /** What granted the feat, for the picker's heading. */
   source: string;
+  /** Character level at which the granting choice sits (drives which step shows it). */
+  level: number;
+  /** Highest feat level the grant allows (e.g. "a 3rd-level general feat"). */
+  featLevel: number;
 }
 
 const VERSATILE_HUMAN_HERITAGE = 'versatile-human';
 
+/** Feats that grant a bonus feat: id → what kind, and the granted feat's level. */
+const BONUS_FEAT_GRANTS: Record<string, { kind: BonusFeatKind; source: string; featLevel: number }> = {
+  'natural-ambition': { kind: 'class', source: 'Natural Ambition', featLevel: 1 },
+  'general-training': { kind: 'general', source: 'General Training', featLevel: 1 },
+  'advanced-general-training': { kind: 'general', source: 'Advanced General Training', featLevel: 3 },
+  'ancestral-paragon': { kind: 'ancestry', source: 'Ancestral Paragon', featLevel: 1 },
+  runtsage: { kind: 'ancestry', source: 'Runtsage', featLevel: 1 },
+  multitalented: { kind: 'dedication', source: 'Multitalented', featLevel: 2 },
+  'multifarious-muse': { kind: 'class', source: 'Multifarious Muse', featLevel: 1 },
+};
+
+/** Levels at which a feat id sits in the fixed (non-bonus) build slots. */
+function featLevels(state: BuilderState, featId: string): number[] {
+  const levels: number[] = [];
+  if (state.ancestryFeatId === featId) levels.push(1);
+  if (state.ancestryParagonFeatId === featId) levels.push(1);
+  if (state.classFeatId === featId) levels.push(1);
+  const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
+  if (bg?.skillFeat === featId) levels.push(1);
+  for (const [lvlStr, g] of Object.entries(state.progression)) {
+    const lvl = Number(lvlStr);
+    if (
+      g.classFeatId === featId ||
+      g.ancestryFeatId === featId ||
+      g.skillFeatId === featId ||
+      g.generalFeatId === featId ||
+      g.archetypeFeatId === featId
+    )
+      levels.push(lvl);
+  }
+  return levels;
+}
+
 /** The bonus-feat pickers a build currently has, from its granting choices. */
 export function bonusFeatSlots(state: BuilderState): BonusFeatSlot[] {
-  const src = sourceFeatIds(state);
   const slots: BonusFeatSlot[] = [];
   if (state.heritageId === VERSATILE_HUMAN_HERITAGE)
-    slots.push({ key: 'versatile-human', kind: 'general', source: 'Versatile Human heritage' });
-  if (src.has('natural-ambition'))
-    slots.push({ key: 'natural-ambition', kind: 'class', source: 'Natural Ambition' });
-  if (src.has('general-training'))
-    slots.push({ key: 'general-training', kind: 'general', source: 'General Training' });
+    slots.push({ key: 'versatile-human', kind: 'general', source: 'Versatile Human heritage', level: 1, featLevel: 1 });
+  for (const [id, def] of Object.entries(BONUS_FEAT_GRANTS)) {
+    for (const lvl of featLevels(state, id)) {
+      slots.push({ key: `${id}@${lvl}`, kind: def.kind, source: def.source, level: lvl, featLevel: def.featLevel });
+    }
+  }
   return slots;
+}
+
+/** The feats eligible for a bonus-feat slot (by kind, capped at its feat level). */
+export function bonusFeatOptions(state: BuilderState, slot: BonusFeatSlot): Feat[] {
+  const feats = getDataset().feats;
+  const cap = slot.featLevel;
+  switch (slot.kind) {
+    case 'class': {
+      const cid = state.classId ?? '';
+      return feats.filter((f) => f.type === 'class' && f.level <= cap && (f.classIds ?? []).includes(cid));
+    }
+    case 'general':
+      // A general-feat grant may be filled by a general OR skill feat.
+      return feats.filter((f) => (f.type === 'general' || f.type === 'skill') && f.level <= cap);
+    case 'ancestry': {
+      const aid = state.ancestryId ?? '';
+      return feats.filter((f) => f.type === 'ancestry' && f.level <= cap && f.ancestryId === aid);
+    }
+    case 'dedication':
+      return feats.filter(
+        (f) => f.type === 'archetype' && f.level <= cap && (f.traits ?? []).includes('dedication'),
+      );
+  }
 }
 
 /** Every feat id on the build: the fixed slots plus active bonus-feat grants. */

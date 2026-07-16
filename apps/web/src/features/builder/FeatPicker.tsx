@@ -109,6 +109,16 @@ function FeatCard({
  * reasons), a Beginner-Mode "Not sure?" nudge, and search + theme filters over
  * the full list. Reused for level-1 feats and every level-up feat choice.
  */
+/** Rare/unique feats need GM permission and are hidden unless explicitly allowed. */
+function isRareFeat(f: Feat): boolean {
+  const r = f.rarity;
+  return r === 'rare' || r === 'unique' || f.traits.includes('rare') || f.traits.includes('unique');
+}
+
+// Cap how many "other" feats render at once — some slots (archetype/class) draw
+// from thousands of feats, and mounting them all would jank. Search narrows it.
+const OTHERS_RENDER_CAP = 80;
+
 export function FeatPicker({
   feats,
   recommendations = [],
@@ -116,6 +126,7 @@ export function FeatPicker({
   onSelect,
   emptyLabel = 'No options in the current dataset.',
   takenIds,
+  allowRare = false,
 }: {
   feats: Feat[];
   recommendations?: Recommendation[];
@@ -124,6 +135,8 @@ export function FeatPicker({
   emptyLabel?: string;
   /** Feat ids already chosen elsewhere in the build — shown as "Taken". */
   takenIds?: Set<string>;
+  /** Show rare/unique feats (the "Display rare feats" option). Default hidden. */
+  allowRare?: boolean;
 }) {
   const beginner = useApp((s) => s.beginner);
   const isTaken = (id: string) => Boolean(takenIds?.has(id)) && id !== selectedId;
@@ -140,14 +153,18 @@ export function FeatPicker({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return feats.filter((f) => {
+      // Rare feats stay hidden unless allowed — but never hide one already chosen.
+      if (!allowRare && isRareFeat(f) && f.id !== selectedId) return false;
       if (theme !== 'All' && !featThemes(f).includes(theme)) return false;
       if (q && !`${f.name} ${f.description}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [feats, query, theme]);
+  }, [feats, query, theme, allowRare, selectedId]);
 
   const recommended = filtered.filter((f) => reasonById.has(f.id));
-  const others = filtered.filter((f) => !reasonById.has(f.id));
+  const allOthers = filtered.filter((f) => !reasonById.has(f.id));
+  const others = allOthers.slice(0, OTHERS_RENDER_CAP);
+  const hiddenCount = allOthers.length - others.length;
 
   if (!feats.length) {
     return <p className="font-ui text-sm text-parchment/50">{emptyLabel}</p>;
@@ -235,18 +252,25 @@ export function FeatPicker({
           </div>
         )}
         {others.length ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {others.map((f) => (
-              <FeatCard
-                key={f.id}
-                feat={f}
-                selected={selectedId === f.id}
-                taken={isTaken(f.id)}
-                prereq={checkFeat(ctx, f)}
-                onSelect={() => onSelect(f.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {others.map((f) => (
+                <FeatCard
+                  key={f.id}
+                  feat={f}
+                  selected={selectedId === f.id}
+                  taken={isTaken(f.id)}
+                  prereq={checkFeat(ctx, f)}
+                  onSelect={() => onSelect(f.id)}
+                />
+              ))}
+            </div>
+            {hiddenCount > 0 && (
+              <p className="font-ui text-xs text-parchment/50">
+                +{hiddenCount} more — refine your search to narrow the list.
+              </p>
+            )}
+          </>
         ) : (
           <p className="font-ui text-sm text-parchment/50">No feats match your search.</p>
         )}

@@ -7,17 +7,19 @@ import {
   findClass,
 } from '@/features/builder/data';
 import { useBuilder } from '../store';
-import { bonusFeatSlots, chosenFeatIds, opt } from '../rules';
+import { bonusFeatOptions, bonusFeatSlots, chosenFeatIds, opt } from '../rules';
 import { OPT } from '../options/config';
 import { plainText } from '../contentText';
 import { FeatPicker } from '../FeatPicker';
 import { FeatChoicesPanel } from '../FeatChoicesPanel';
+import { BONUS_FEAT_KIND_LABEL } from '../rules';
 
 export function FeatsStep() {
   const state = useBuilder((s) => s.state);
   const update = useBuilder((s) => s.update);
   const setBonusFeat = useBuilder((s) => s.setBonusFeat);
   const taken = chosenFeatIds(state);
+  const allowRare = opt(state, OPT.showRareFeats);
 
   const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
   const klass = state.classId ? findClass(state.classId) : undefined;
@@ -30,13 +32,10 @@ export function FeatsStep() {
   const classFeats = feats.filter(
     (f) => f.type === 'class' && f.level === 1 && (f.classIds ?? []).includes(klass?.id ?? ''),
   );
-  // A "general feat" grant may be filled by a general OR skill feat (skill feats
-  // are valid in general slots), so offer both.
-  const generalFeats = feats.filter(
-    (f) => (f.type === 'general' || f.type === 'skill') && f.level === 1,
-  );
   const bgFeat = background?.skillFeat ? feats.find((f) => f.id === background.skillFeat) : undefined;
-  const bonusSlots = bonusFeatSlots(state);
+  // Bonus feats whose granting choice sits at level 1 show here; higher-level
+  // grants (Ancestral Paragon, etc.) render in the matching Advancement level.
+  const bonusSlots = bonusFeatSlots(state).filter((s) => s.level === 1);
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,6 +61,7 @@ export function FeatsStep() {
           onSelect={(id) => update({ ancestryFeatId: id })}
           emptyLabel="Choose an ancestry first."
           takenIds={taken}
+          allowRare={allowRare}
         />
       </section>
 
@@ -83,6 +83,7 @@ export function FeatsStep() {
             onSelect={(id) => update({ ancestryParagonFeatId: id })}
             emptyLabel="Choose an ancestry first."
             takenIds={taken}
+            allowRare={allowRare}
           />
         </section>
       )}
@@ -101,24 +102,24 @@ export function FeatsStep() {
           onSelect={(id) => update({ classFeatId: id })}
           emptyLabel="Choose a class first."
           takenIds={taken}
+          allowRare={allowRare}
         />
       </section>
 
       {bonusSlots.map((slot) => (
         <section key={slot.key} className="panel flex flex-col gap-4 p-5">
           <div>
-            <h4 className="font-display text-lg text-gold-400">
-              Bonus {slot.kind === 'class' ? 'Class' : 'General'} Feat
-            </h4>
+            <h4 className="font-display text-lg text-gold-400">Bonus {BONUS_FEAT_KIND_LABEL[slot.kind]} Feat</h4>
             <p className="font-ui text-sm text-parchment/70">Granted by {slot.source}.</p>
           </div>
           <FeatPicker
-            feats={slot.kind === 'class' ? classFeats : generalFeats}
+            feats={bonusFeatOptions(state, slot)}
             recommendations={[]}
             selectedId={state.bonusFeatChoices?.[slot.key]}
             onSelect={(id) => setBonusFeat(slot.key, id)}
-            emptyLabel={slot.kind === 'class' ? 'Choose a class first.' : 'Choose an ancestry first.'}
+            emptyLabel="No eligible feats — pick your ancestry/class first."
             takenIds={taken}
+            allowRare={opt(state, OPT.showRareFeats)}
           />
         </section>
       ))}

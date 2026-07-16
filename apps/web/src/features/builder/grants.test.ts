@@ -8,6 +8,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { allLanguages, getDataset, loadDataset } from '@/features/builder/data';
 import {
+  bonusFeatOptions,
   bonusFeatSlots,
   chosenFeatIds,
   deriveCharacter,
@@ -15,7 +16,7 @@ import {
   loreId,
 } from '@/features/builder/rules';
 import { subclassGrantedSkillIds } from '@/features/builder/subclassEffects';
-import { emptyBuilderState, type BuilderState } from '@/features/builder/types';
+import { emptyBuilderState, emptyLevelGains, type BuilderState } from '@/features/builder/types';
 
 beforeAll(async () => {
   await loadDataset();
@@ -72,13 +73,26 @@ describe('bonus feats granted by another choice', () => {
     expect(slots.some((s) => s.key === 'versatile-human' && s.kind === 'general')).toBe(true);
   });
   it('Natural Ambition opens a class-feat slot; General Training a general one', () => {
-    const slots = bonusFeatSlots(
-      base({ ancestryFeatId: 'natural-ambition', heritageId: 'skilled-human' }),
-    );
-    expect(slots.some((s) => s.key === 'natural-ambition' && s.kind === 'class')).toBe(true);
+    const na = bonusFeatSlots(base({ ancestryFeatId: 'natural-ambition', heritageId: 'skilled-human' }));
+    expect(na.some((s) => s.source === 'Natural Ambition' && s.kind === 'class' && s.level === 1)).toBe(true);
 
     const gt = bonusFeatSlots(base({ ancestryFeatId: 'general-training', heritageId: 'skilled-human' }));
-    expect(gt.some((s) => s.key === 'general-training' && s.kind === 'general')).toBe(true);
+    expect(gt.some((s) => s.source === 'General Training' && s.kind === 'general')).toBe(true);
+  });
+  it('higher-level grants surface at the level they were taken', () => {
+    // Ancestral Paragon (a general feat) taken at level 3 → a bonus ANCESTRY feat there.
+    const state = base({
+      level: 3,
+      progression: { 3: { ...emptyLevelGains(), generalFeatId: 'ancestral-paragon' } },
+    });
+    const slot = bonusFeatSlots(state).find((s) => s.source === 'Ancestral Paragon');
+    expect(slot).toBeTruthy();
+    expect(slot?.kind).toBe('ancestry');
+    expect(slot?.level).toBe(3);
+    // Its picker offers this ancestry's feats.
+    const opts = bonusFeatOptions(state, slot!);
+    expect(opts.length).toBeGreaterThan(0);
+    expect(opts.every((f) => f.type === 'ancestry')).toBe(true);
   });
   it('a bonus feat counts as chosen only while its granting slot is active', () => {
     // Choice stored, but no Versatile Human heritage → slot inactive → ignored.
