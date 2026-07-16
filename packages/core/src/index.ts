@@ -59,6 +59,11 @@ export * from './damage.js';
 // language reads. Pure and input-only (no rules math). See character.ts.
 export * from './character.js';
 
+// Passive-effect predicate — the `when?` condition vocabulary (a boolean tree
+// over a finite tag set) + its evaluator + static-tag derivation. Layer 1 of the
+// effects engine; one evaluator, two contexts (static sheet now, combat later).
+export * from './predicate.js';
+
 // Effects engine: resolves the machine-readable rule elements on chosen feats
 // into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
 export * from './effects.js';

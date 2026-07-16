@@ -56,6 +56,14 @@ export interface ResolvedCharacter {
   level: number;
   scores: Record<Ability, number>;
   mods: Record<Ability, number>;
+  /**
+   * The character's OWN traits (ancestry, heritage, class, and any granted) —
+   * the static-conditional surface a Layer-1 passive effect's `when?` predicate
+   * reads (`self:trait:elf`). Optional and defaulted-empty so emitters can adopt
+   * it incrementally; see `staticTags` in predicate.ts. Not resolved into any
+   * number, so no rules-math lives here.
+   */
+  traits?: string[];
   /** The class key ability (its mod feeds `keyAbilityMod`); null if unset/unknown. */
   keyAbility?: Ability | null;
   hp: { max: number };
