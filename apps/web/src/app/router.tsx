@@ -22,10 +22,17 @@ import { NotFoundPage } from '@/routes/NotFoundPage';
 
 export const router = createBrowserRouter([
   {
+    // The landing page sits OUTSIDE AppLayout: it is full-bleed and supplies
+    // its own header/footer, which AppLayout's centered, padded <main> would
+    // fight. Everything else keeps the shared grimoire shell below.
+    path: '/',
+    element: <LandingPage />,
+    errorElement: <RouteError />,
+  },
+  {
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <LandingPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'roadmap', element: <RoadmapPage /> },
       { path: 'rules', element: <RulesLibraryPage /> },

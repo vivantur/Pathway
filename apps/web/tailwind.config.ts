@@ -12,6 +12,11 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      screens: {
+        // The landing page's own breakpoint: below this the sync showcase and
+        // the archives grid stack, and the onboarding steps fold to 2×2.
+        wide: '900px',
+      },
       colors: {
         // Every palette color is backed by a CSS variable (RGB channel
         // triplet) defined in index.css. Dark values live in :root; a `.light`
@@ -61,35 +66,82 @@ export default {
         silver: 'rgb(var(--c-silver) / <alpha-value>)',
         // Body-text alias used by the ported builder (maps to the silver token).
         parchment: 'rgb(var(--c-silver) / <alpha-value>)',
+
+        // Composite tokens (see index.css). These bake in their own alpha, so
+        // unlike the palette above they take no `/<alpha-value>` modifier.
+        line: {
+          DEFAULT: 'var(--line)',
+          strong: 'var(--line-strong)',
+        },
+        dim: 'var(--text-dim)',
+        faint: 'var(--text-faint)',
+        page: 'var(--bg0)',
+        surface: 'var(--bg2)',
       },
       fontFamily: {
         // Display: an engraved, grimoire feel. Body: highly readable serif.
         display: ['"Cinzel"', 'Georgia', 'serif'],
-        serif: ['"EB Garamond"', 'Georgia', 'serif'],
+        serif: ['"Alegreya"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
         // Aliases used by the ported character builder.
-        body: ['"EB Garamond"', 'Georgia', 'serif'],
+        body: ['"Alegreya"', 'Georgia', 'serif'],
         ui: ['"Inter"', 'system-ui', 'sans-serif'],
+        // Stat readouts and URLs in the sync showcase.
+        mono: ['ui-monospace', 'Menlo', 'monospace'],
       },
       boxShadow: {
         arcane: '0 0 24px -4px rgba(57, 214, 232, 0.35)',
         gilded: '0 1px 0 0 rgba(212, 175, 55, 0.4), 0 8px 30px -12px rgba(0,0,0,0.7)',
         rune: '0 0 0 1px rgba(212,175,55,0.25), 0 8px 30px -8px rgba(0,0,0,0.7)',
+        card: 'var(--card-shadow)',
       },
       backgroundImage: {
         'grimoire-radial':
           'radial-gradient(120% 120% at 50% -10%, rgba(47,58,92,0.55) 0%, rgba(11,16,38,0.0) 55%)',
         'gilded-rule':
           'linear-gradient(90deg, transparent, rgba(212,175,55,0.6) 20%, rgba(212,175,55,0.9) 50%, rgba(212,175,55,0.6) 80%, transparent)',
+        'hero-radial': 'var(--hero-radial)',
+        'h1-grad': 'var(--h1-grad)',
       },
       keyframes: {
         'rune-pulse': {
           '0%, 100%': { opacity: '0.45', filter: 'drop-shadow(0 0 2px rgba(57,214,232,0.4))' },
           '50%': { opacity: '1', filter: 'drop-shadow(0 0 8px rgba(57,214,232,0.8))' },
         },
+        twinkle: {
+          '0%, 100%': { opacity: '0.2' },
+          '50%': { opacity: '1' },
+        },
+        spin: {
+          to: { transform: 'rotate(360deg)' },
+        },
+        spinrev: {
+          to: { transform: 'rotate(-360deg)' },
+        },
+        sigilpulse: {
+          '0%, 100%': { filter: 'drop-shadow(0 0 6px rgba(57,214,232,0.25))' },
+          '50%': { filter: 'drop-shadow(0 0 22px rgba(57,214,232,0.6))' },
+        },
+        ember: {
+          '0%': { transform: 'translateY(0) translateX(0)', opacity: '0' },
+          '12%': { opacity: '0.9' },
+          '60%': { opacity: '0.5' },
+          '100%': { transform: 'translateY(-42vh) translateX(24px)', opacity: '0' },
+        },
+        cursorblink: {
+          '0%, 49%': { opacity: '1' },
+          '50%, 100%': { opacity: '0' },
+        },
       },
       animation: {
         'rune-pulse': 'rune-pulse 4s ease-in-out infinite',
+        twinkle: 'twinkle 3.4s ease-in-out infinite',
+        // The orbit rings turn slowly enough to read as drift, not spin.
+        orbit: 'spin 160s linear infinite',
+        'orbit-rev': 'spinrev 110s linear infinite',
+        sigilpulse: 'sigilpulse 5s ease-in-out infinite',
+        ember: 'ember 9s ease-out infinite',
+        cursorblink: 'cursorblink 1.1s infinite',
       },
     },
   },

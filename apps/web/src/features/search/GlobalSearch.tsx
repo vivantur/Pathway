@@ -6,8 +6,12 @@ import { useGlobalSearch } from './useGlobalSearch';
  * Site-wide search: a command-palette overlay that fans out across the Rules
  * Library and the player's characters. Opens from the header button or
  * ⌘K / Ctrl+K; Esc closes; ↑/↓ move the selection and Enter opens it.
+ *
+ * `variant` styles only the trigger; the overlay is identical either way.
+ * - `default` — the app header's labelled button.
+ * - `pill` — the landing page's compact glyph + ⌘K chip, on landing tokens.
  */
-export function GlobalSearch() {
+export function GlobalSearch({ variant = 'default' }: { variant?: 'default' | 'pill' } = {}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -21,17 +25,29 @@ export function GlobalSearch() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const pill = variant === 'pill';
+
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Search Pathway"
-        className="flex items-center gap-2 rounded-md border border-gold/25 px-2.5 py-1.5 text-silver/70 transition-colors hover:border-gold/50 hover:text-gold"
+        className={
+          pill
+            ? 'inline-flex items-center gap-2 rounded-md border border-line px-3 py-[7px] text-faint transition-colors hover:border-line-strong'
+            : 'flex items-center gap-2 rounded-md border border-gold/25 px-2.5 py-1.5 text-silver/70 transition-colors hover:border-gold/50 hover:text-gold'
+        }
       >
-        <SearchGlyph />
-        <span className="hidden text-sm sm:inline">Search</span>
-        <span className="hidden rounded border border-gold/20 px-1 text-[0.6rem] uppercase tracking-widest text-silver/40 md:inline">
+        <SearchGlyph size={pill ? 13 : undefined} />
+        {!pill && <span className="hidden text-sm sm:inline">Search</span>}
+        <span
+          className={
+            pill
+              ? 'rounded-[3px] border border-line px-1 text-[11px] tracking-[0.05em]'
+              : 'hidden rounded border border-gold/20 px-1 text-[0.6rem] uppercase tracking-widest text-silver/40 md:inline'
+          }
+        >
           ⌘K
         </span>
       </button>
@@ -167,11 +183,11 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-function SearchGlyph() {
+function SearchGlyph({ size = 16 }: { size?: number }) {
   return (
     <svg
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

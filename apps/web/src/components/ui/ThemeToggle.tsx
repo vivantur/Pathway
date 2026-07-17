@@ -7,7 +7,10 @@ import { getStoredTheme, setTheme, type Theme } from '@/lib/theme';
  * flips the stored value. Shows a moon in dark mode (tap for light) and a sun
  * in light mode (tap for dark).
  */
-export function ThemeToggle() {
+export function ThemeToggle({
+  /** `landing` renders the 34px bordered square on the landing page's tokens. */
+  variant = 'default',
+}: { variant?: 'default' | 'landing' } = {}) {
   const [theme, setThemeState] = useState<Theme>('dark');
 
   // Sync to whatever the pre-render script already applied.
@@ -27,7 +30,11 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="rounded-md border border-gold/25 p-2 text-silver/70 transition-colors hover:border-gold/50 hover:text-gold"
+      className={
+        variant === 'landing'
+          ? 'inline-flex h-[34px] w-[34px] items-center justify-center rounded-md border border-line text-dim transition-colors hover:border-line-strong hover:text-gold'
+          : 'rounded-md border border-gold/25 p-2 text-silver/70 transition-colors hover:border-gold/50 hover:text-gold'
+      }
     >
       {theme === 'dark' ? (
         // Moon

@@ -31,6 +31,26 @@
     --c-arcane: 57 214 232;
     --c-arcane-soft: 139 233 242;
     --c-silver: 201 209 224;
+
+    /* Composite tokens — gradients, alpha'd hairlines and glows that can't be
+       expressed as a bare RGB triplet. Derived from the triplets above wherever
+       possible so a palette edit still propagates. */
+    --line: rgb(var(--c-gold) / 0.18);
+    --line-strong: rgb(var(--c-gold) / 0.4);
+    --glow: rgb(var(--c-gold) / 0.35);
+    --text-dim: rgb(var(--c-silver) / 0.72);
+    --text-faint: rgb(var(--c-silver) / 0.45);
+    --bg0: #05070f;
+    --bg2: rgb(var(--c-midnight-700) / 0.55);
+    --h1-grad: linear-gradient(180deg, #f5e6b8 20%, #e8cf7e 45%, #c39a2e 75%, #a8842a);
+    --hero-radial: radial-gradient(
+      85% 60% at 50% 0%,
+      rgb(var(--c-midnight-500) / 0.5) 0%,
+      transparent 60%
+    );
+    /* Star layers stay fully lit on the midnight page. */
+    --stars-op: 1;
+    --card-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.9);
   }
 
   /* Light theme — "aged parchment". Surfaces invert to warm creams; the
@@ -62,12 +82,50 @@
     --c-arcane: 22 128 142;
     --c-arcane-soft: 20 112 126;
     --c-silver: 43 40 32;
+
+    /* Composite tokens, light. Hairlines and text carry slightly more alpha
+       than dark — the same ratios read fainter against parchment. */
+    --line: rgb(var(--c-gold) / 0.28);
+    --line-strong: rgb(var(--c-gold) / 0.5);
+    --glow: rgb(var(--c-gold) / 0.25);
+    --text-dim: rgb(var(--c-silver) / 0.75);
+    --text-faint: rgb(var(--c-silver) / 0.5);
+    --bg0: #faf7f0;
+    --bg2: rgba(255, 253, 248, 0.8);
+    --h1-grad: linear-gradient(180deg, #8a6c1c 15%, #96761a 55%, #6d5415);
+    --hero-radial: radial-gradient(85% 60% at 50% 0%, rgba(212, 175, 55, 0.14) 0%, transparent 60%);
+    /* Stars dim to a hint on parchment, but never vanish. */
+    --stars-op: 0.12;
+    --card-shadow: 0 20px 50px -30px rgba(87, 73, 58, 0.4);
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   html,
   body,
   #root {
     height: 100%;
+  }
+
+  /* Honour the OS "reduce motion" setting globally: the landing page's orbit
+     rings, embers and parallax are decorative, and its scroll reveals must not
+     be the only thing standing between a reader and the copy. JS reveal/
+     parallax hooks check the same query and bail out; this covers the CSS. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   body {
