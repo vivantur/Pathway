@@ -157,11 +157,16 @@ export interface Feat {
   /** Rarity when not common ('uncommon' | 'rare' | 'unique'). */
   rarity?: string;
   /**
-   * Foundry machine-readable effect rules (FlatModifier, ChoiceSet, GrantItem, …).
-   * DORMANT — carried by the ingest for the future effects engine; nothing reads
-   * it yet. Deliberately untyped until that engine defines the shape it consumes.
+   * OUR Layer-1 passive effects (`PassiveEffect[]` from @pathway/core), mapped from
+   * Foundry's rule elements AT INGEST by scripts/remap-effects.mjs. `characterEffects`
+   * in rules.ts is the consumer.
+   *
+   * This replaced a `rules?: unknown[]` field that carried Foundry's own shape and
+   * was interpreted at runtime — their schema is import feedstock, not our contract.
+   * Foundry's raw elements now live only in the admin-only `effect-ingest-report.json`
+   * sidecar, which is deliberately NOT imported here: it must not ship to players.
    */
-  rules?: unknown[];
+  effects?: unknown[];
   /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
   legacy?: boolean;
   source: string;

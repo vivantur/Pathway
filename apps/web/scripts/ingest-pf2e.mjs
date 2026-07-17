@@ -36,7 +36,15 @@
  *   node scripts/ingest-pf2e.mjs --src <path-to-foundry-pf2e-clone> [--out <data-dir>] [--dry]
  */
 
+import { mapFoundryRules, summarizeReports } from '@pathway/core';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+
+/**
+ * The upstream snapshot this ingest reads. Recorded onto the effect sidecar so a
+ * later re-map can state which Foundry revision its rule elements came from, and
+ * diff against a newer one. Keep in step with the header's pinned commit.
+ */
+const PINNED_SOURCE = 'foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d';
 import { join, basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -283,8 +291,56 @@ function transformFeat(path, doc, uuidById, knownClassIds) {
     ...(rarity ? { rarity } : {}),
     source: sourceOf(s),
     description: enrich(s.description?.value ?? '', uuidById),
-    // Dormant machine effects — carried for the future effects engine, unused today.
-    ...(Array.isArray(s.rules) && s.rules.length ? { rules: s.rules } : {}),
+    // Foundry's `system.rules[]` is NOT carried onto the feat. It is mapped into our
+    // own PassiveEffect schema below (mapEffects) and the raw elements are quarantined
+    // in the admin-only sidecar. Their shape must not be a field on our content, and
+    // must never reach a runtime consumer — see packages/core/src/foundry.ts.
+    ...(Array.isArray(s.rules) && s.rules.length ? { _rawRules: s.rules } : {}),
+  };
+}
+
+/**
+ * Map every feat's Foundry rule elements into our `PassiveEffect[]`, strip the raw,
+ * and build the admin-only sidecar (raw + per-element report + coverage summary).
+ *
+ * Mirrors scripts/remap-effects.mjs, which does this WITHOUT a Foundry clone once the
+ * raw is in the sidecar. That script is the one to re-run as the mapper improves; this
+ * path only matters when content itself is re-ingested.
+ */
+function mapEffects(feats) {
+  const entities = [];
+  const reports = [];
+  let withEffects = 0;
+  for (const feat of feats) {
+    const raw = feat._rawRules;
+    delete feat._rawRules;
+    if (!Array.isArray(raw) || raw.length === 0) continue;
+    const { effects, report } = mapFoundryRules(raw);
+    reports.push(report);
+    if (effects.length > 0) {
+      feat.effects = effects;
+      withEffects += 1;
+    }
+    entities.push({ id: feat.id, name: feat.name, raw, report });
+  }
+  const summary = summarizeReports(reports);
+  return {
+    sidecar: {
+      sourceCommit: PINNED_SOURCE,
+      mappedAt: new Date().toISOString(),
+      summary: {
+        entities: entities.length,
+        entitiesWithEffects: withEffects,
+        elements: summary.elements,
+        mapped: summary.mapped,
+        effectsProduced: summary.effects,
+        unsupported: summary.unsupported,
+        byReason: summary.byReason,
+        byKey: summary.byKey,
+      },
+      entities,
+    },
+    summary,
   };
 }
 
@@ -479,10 +535,23 @@ function main() {
     }
   }
 
+  // Map Foundry's rule elements into our schema and strip the raw off the feats.
+  // After this point no Foundry-shaped data remains on any content record.
+  const { sidecar, summary: effectSummary } = mapEffects(feats);
+
   const newFeatIds = new Set(feats.map((f) => f.id));
   const newSpellIds = new Set(spells.map((s) => s.id));
   const report = {
     generatedFrom: 'foundryvtt/pf2e packs/pf2e',
+    effects: {
+      entities: sidecar.summary.entities,
+      entitiesWithEffects: sidecar.summary.entitiesWithEffects,
+      elements: effectSummary.elements,
+      mapped: effectSummary.mapped,
+      effectsProduced: effectSummary.effects,
+      unsupported: effectSummary.unsupported,
+      byReason: effectSummary.byReason,
+    },
     feats: {
       raw: featsBefore,
       total: feats.length,
@@ -528,6 +597,9 @@ function main() {
   write('recommendations.json', recommendations);
   writeFileSync(join(out, 'ingest-report.json'), JSON.stringify(report, null, 2));
   log('wrote ingest-report.json');
+  // Admin-only: Foundry's raw elements + the per-element mapping report. NOT imported
+  // by the builder — it must not ship to a player's browser.
+  write('effect-ingest-report.json', sidecar);
 }
 
 main();

@@ -39,7 +39,6 @@ describe('coerceFeat — worked examples', () => {
       featType: 'skill',
       prerequisites: 'trained in Acrobatics',
       classIds: [],
-      rules: [],
       description: 'You can roll an Acrobatics check instead of a Performance check when using Perform.',
     });
   });
@@ -130,8 +129,25 @@ describe('coerceFeat — worked examples', () => {
   });
 });
 
-describe('coerceFeat — dormant rules feedstock + rejections', () => {
-  it('carries the Foundry rules array unmodeled', () => {
+describe('coerceFeat — effects + rejections', () => {
+  it('carries OUR mapped effects', () => {
+    const f = feat({
+      name: 'Toughness',
+      level: 1,
+      traits: 'General',
+      source: 'Player Core pg. 258',
+      description: 'You can withstand more punishment.',
+      effects: [{ kind: 'modifier', target: 'hp', bonusType: 'untyped', value: { kind: 'var', name: 'level' } }],
+    });
+    expect(f.effects).toEqual([
+      { kind: 'modifier', target: 'hp', bonusType: 'untyped', value: { kind: 'var', name: 'level' } },
+    ]);
+  });
+
+  it('does NOT carry a Foundry `rules` array — their shape is not a field on our content', () => {
+    // It used to, as "dormant feedstock", and collectSheetEffects read it at runtime.
+    // Rule elements are now mapped to `effects` at ingest and the raw is quarantined
+    // in the admin-only sidecar; an incoming row's `rules` is simply ignored.
     const f = feat({
       name: 'Toughness',
       level: 1,
@@ -140,7 +156,8 @@ describe('coerceFeat — dormant rules feedstock + rejections', () => {
       description: 'You can withstand more punishment.',
       rules: [{ key: 'FlatModifier', selector: 'hp', value: '@actor.level', type: 'untyped' }],
     });
-    expect(f.rules).toEqual([{ key: 'FlatModifier', selector: 'hp', value: '@actor.level', type: 'untyped' }]);
+    expect(f).not.toHaveProperty('rules');
+    expect(f.effects).toBeUndefined();
   });
 
   it('coerces a level-0 feat-like (some data stores deity boons at level 0)', () => {

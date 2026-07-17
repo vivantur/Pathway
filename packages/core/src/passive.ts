@@ -29,10 +29,11 @@ import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope } from "./character.js";
 import { evaluate, exprSchema, type Expr } from "./expr.js";
-import { stackModifiers, type BonusType, type Modifier } from "./effects.js";
+import { stackModifiers, type BonusType, type EffectContext, type Modifier, type SheetEffects } from "./effects.js";
 import { predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
 import type { ProficiencyRank } from "./proficiency.js";
-import { isSelector, type Selector } from "./selectors.js";
+import { isSelector, isSkillSlug, type Selector } from "./selectors.js";
+import { RANK_LABEL } from "./stats.js";
 
 // ---------------------------------------------------------------------------
 // sub-vocabularies
@@ -140,6 +141,159 @@ export type ProficiencyEffect = z.infer<typeof proficiencyEffectSchema>;
 export type GrantEffect = z.infer<typeof grantEffectSchema>;
 export type RollAdjustEffect = z.infer<typeof rollAdjustEffectSchema>;
 export type NoteEffect = z.infer<typeof noteEffectSchema>;
+
+// ---------------------------------------------------------------------------
+// collection into the derivation bag
+// ---------------------------------------------------------------------------
+//
+// `collectPassiveSheetEffects` is the sibling of `applyPassiveEffects`, and the two
+// exist because there are two DIFFERENT moments to consume a passive effect:
+//
+//   • applyPassiveEffects — POST-hoc. Folds modifiers onto an already-resolved
+//     sheet. Cannot apply a `proficiency` grant, because a raised rank changes the
+//     derivation that produced the sheet.
+//   • collectPassiveSheetEffects (this one) — PRE-derivation. Gathers effects into
+//     the flat `SheetEffects` bag a builder consumes WHILE deriving, so rank grants
+//     land before proficiency is computed rather than after.
+//
+// It replaces `collectSheetEffects`, which read FOUNDRY's rule elements at runtime.
+// Same output contract, so `deriveCharacter` is untouched — the only change is the
+// input: OUR `PassiveEffect[]`, mapped at ingest, instead of their shape.
+//
+// The broadcast selectors are gone by construction: Foundry's `saving-throw` and
+// `skill-check` fan out to the individual stats AT INGEST (foundry.ts), so a caller
+// gathers `fortitude`, not `saving-throw` + `fortitude`.
+
+/** Human label for a selector, for provenance summaries. */
+function selectorLabel(target: Selector): string {
+  switch (target) {
+    case "ac":
+      return "AC";
+    case "hp":
+      return "HP";
+    case "speed:land":
+      return "Speed";
+    case "class-dc":
+      return "class DC";
+    case "spell-dc":
+      return "spell DC";
+    case "spell-attack":
+      return "spell attack";
+    default:
+      return target.replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
+/**
+ * Gather a character's chosen items' passive effects into the flat sheet bag a
+ * builder derives from. `itemEffects` is one effect array per chosen feat/feature;
+ * `labels[i]` names item `i` for the attributed `applied` list.
+ *
+ * WHAT IT DELIBERATELY DOES NOT DO — each counted in `skipped`, never guessed:
+ *   • CONDITIONAL effects (`when`). Predicates evaluate against a tag set, and there
+ *     is no character or combat context yet at derivation time — that is the whole
+ *     point of this being the PRE-derivation collector. Applying a conditional
+ *     unconditionally would turn a situational bonus into a permanent one.
+ *   • `grant` (senses/resistances/speeds) — the derived sheet has no field for them.
+ *   • `rollAdjust` — Layer 2 consumes it at a check; it is not a sheet number.
+ * `note` effects are display text, not sheet numbers: ignored here, not counted.
+ */
+export function collectPassiveSheetEffects(
+  itemEffects: readonly (readonly PassiveEffect[])[],
+  ctx: EffectContext,
+  labels: readonly string[] = [],
+): SheetEffects {
+  const out: SheetEffects = {
+    hpBonus: 0,
+    skillRanks: new Map(),
+    saveRanks: new Map(),
+    perceptionRank: null,
+    statModifiers: new Map(),
+    applied: [],
+    skipped: 0,
+  };
+
+  const raise = (map: Map<string, ProficiencyRank>, key: string, rank: ProficiencyRank) => {
+    const cur = map.get(key) ?? 0;
+    if (rank > cur) map.set(key, rank);
+  };
+
+  itemEffects.forEach((effects, itemIndex) => {
+    const source = labels[itemIndex] ?? "";
+    const note = (stat: string, summary: string) => out.applied.push({ source, stat, summary });
+    if (!Array.isArray(effects)) return;
+
+    for (const effect of effects) {
+      if (effect.when !== undefined) {
+        out.skipped += 1;
+        continue;
+      }
+
+      switch (effect.kind) {
+        case "modifier": {
+          let value: number;
+          try {
+            value = evaluate(effect.value, { vars: { level: ctx.level } }, "number") as number;
+          } catch {
+            out.skipped += 1;
+            continue;
+          }
+          if (value === 0) continue;
+          // HP is not a stacked stat on the derived sheet — the builder takes a
+          // single flat `bonusHp`. Untyped bonuses all stack, so they sum; a TYPED
+          // HP bonus has nowhere to go without changing derivation, so it is
+          // counted rather than silently folded in as if untyped.
+          if (effect.target === "hp") {
+            if (effect.bonusType !== "untyped") {
+              out.skipped += 1;
+              continue;
+            }
+            out.hpBonus += value;
+            note("hp", `${value >= 0 ? "+" : ""}${value} HP`);
+            continue;
+          }
+          const mod: Modifier = { type: effect.bonusType, value };
+          const list = out.statModifiers.get(effect.target);
+          if (list) list.push(mod);
+          else out.statModifiers.set(effect.target, [mod]);
+          note(effect.target, `${value >= 0 ? "+" : ""}${value} ${effect.bonusType} to ${selectorLabel(effect.target)}`);
+          continue;
+        }
+        case "proficiency": {
+          // `set` would need to LOWER a rank as well as raise it, which this bag
+          // (a highest-wins map) cannot express. Only `upgrade` is applied.
+          if (effect.mode !== "upgrade") {
+            out.skipped += 1;
+            continue;
+          }
+          const target: Selector = effect.target;
+          const rank: ProficiencyRank = effect.rank;
+          if (target === "perception") {
+            if (out.perceptionRank === null || rank > out.perceptionRank) out.perceptionRank = rank;
+            note("perception", `${RANK_LABEL[rank]} Perception`);
+          } else if (target === "fortitude" || target === "reflex" || target === "will") {
+            raise(out.saveRanks, target, rank);
+            note(target, `${RANK_LABEL[rank]} ${selectorLabel(target)}`);
+          } else if (isSkillSlug(target)) {
+            raise(out.skillRanks, target, rank);
+            note(target, `${RANK_LABEL[rank]} in ${selectorLabel(target)}`);
+          } else {
+            out.skipped += 1; // a rank on a stat the bag has no slot for
+          }
+          continue;
+        }
+        case "grant":
+        case "rollAdjust":
+          out.skipped += 1;
+          continue;
+        case "note":
+          continue;
+      }
+    }
+  });
+
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // application

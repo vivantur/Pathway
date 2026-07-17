@@ -37,16 +37,11 @@ export const featSchema = z.object({
   classIds: z.array(z.string()),
   /** Ancestry id for ancestry feats. */
   ancestryId: z.string().optional(),
-  /**
-   * DORMANT effect feedstock — the Foundry rule-element array, carried unmodeled.
-   *
-   * TRANSITIONAL. This is Foundry's shape as a first-class field on our entity, and
-   * `collectSheetEffects` still interprets it at runtime — the coupling the ingest
-   * refactor exists to remove. Its replacement is `ingest.raw` (opaque provenance) +
-   * `effects` (ours). It is retired once the runtime read is gone; until then both
-   * exist so the migration can land in slices.
-   */
-  rules: z.array(z.unknown()),
+  // A `rules: unknown[]` field used to live here — Foundry's rule-element array,
+  // carried verbatim as "dormant feedstock" and interpreted at runtime by
+  // collectSheetEffects. It is GONE: their shape is no longer a field on our
+  // content. `effects` (ours, mapped at ingest) replaces it, and the raw elements
+  // are quarantined in `ingest.raw` as opaque provenance nothing at runtime reads.
   ...effectBearingShape,
   description: z.string().min(1),
 });
@@ -157,7 +152,9 @@ export function coerceFeat(raw: unknown): CoerceFeatResult {
     frequency: firstStr(rec, 'frequency'),
     classIds: splitList(rec.classIds ?? rec.class_ids),
     ancestryId: firstStr(rec, 'ancestryId', 'ancestry_id'),
-    rules: Array.isArray(rec.rules) ? rec.rules : [],
+    // `rec.rules` (Foundry's shape) is deliberately NOT read: an ingested row's rule
+    // elements are mapped to `effects` by the ingest, not carried onto the entity.
+    ...(Array.isArray(rec.effects) ? { effects: rec.effects } : {}),
     description: firstStr(rec, 'description', 'summary'),
   };
 

@@ -1,13 +1,18 @@
-// Feat effects → character sheet (increment 1: HP bonuses + proficiency grants).
+// Feat effects → character sheet.
 //
-// The rule-element interpretation itself is unit-tested in @pathway/core; these
-// tests lock the WIRING: that deriveCharacter feeds a build's chosen feats through
-// core and reflects the result on the derived sheet, against the real dataset.
+// The effect schema and the Foundry mapping are unit-tested in @pathway/core; these
+// tests lock the WIRING against the REAL dataset: that deriveCharacter feeds a build's
+// chosen feats through core and reflects the result on the derived sheet.
+//
+// These sheet numbers are also the parity check for the ingest refactor. They passed
+// unchanged when the input flipped from Foundry's rule elements (read at runtime) to
+// our own PassiveEffects (mapped at ingest) — same feats, same sheet.
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { loadDataset } from '@/features/builder/data';
 import { characterEffects, deriveCharacter } from './rules';
 import { emptyBuilderState, type BuilderState } from './types';
+import ingestReport from '@/features/builder/data/effect-ingest-report.json';
 
 beforeAll(async () => {
   await loadDataset();
@@ -41,12 +46,33 @@ describe('feat effects on the derived sheet', () => {
     expect(trained.skills.find((s) => s.id === 'thievery')?.rank).toBe(1);
   });
 
-  it('counts (does not silently apply) effects outside increment-1 scope', () => {
-    // Untrained Improvisation is a typed skill-check FlatModifier with infix math —
-    // deferred until the stacking-rules pass, so it must be skipped, not guessed.
+  it('does not guess an effect it cannot express, and NAMES it in the ingest report', () => {
+    // Untrained Improvisation is a `proficiency`-typed skill-check FlatModifier — a
+    // bonus type outside our circumstance/status/item/untyped vocabulary.
+    //
+    // The honesty here MOVED. It used to be a runtime `skipped` count, because the app
+    // read Foundry's elements live. Now an unmappable element never becomes a
+    // PassiveEffect at all: it is rejected at ingest, with a reason, and the feat
+    // simply carries no effect. So the property is checked in both halves — absent
+    // from the sheet, and accounted for in the report.
     const e = characterEffects({ ...fighter(), classFeatId: 'untrained-improvisation' });
-    expect(e.skipped).toBeGreaterThanOrEqual(1);
     expect(e.skillRanks.size).toBe(0);
+    expect(e.statModifiers.size).toBe(0);
+    expect(e.hpBonus).toBe(0);
+
+    const entry = ingestReport.entities.find((x) => x.id === 'untrained-improvisation');
+    expect(entry?.report).toMatchObject([{ outcome: 'unsupported', reason: 'unsupported-bonus-type' }]);
+  });
+
+  it('accounts for every ingested rule element — nothing is silently dropped', () => {
+    // The invariant that makes the report trustworthy, asserted over the real corpus:
+    // one report entry per source element, for every entity. A count that quietly
+    // omits most of what it missed (the old `skipped`) is worse than no count.
+    for (const entity of ingestReport.entities) {
+      expect(entity.report).toHaveLength(entity.raw.length);
+    }
+    const { elements, mapped, unsupported } = ingestReport.summary;
+    expect(mapped + unsupported).toBe(elements);
   });
 
   it('leaves a featless build unchanged', () => {

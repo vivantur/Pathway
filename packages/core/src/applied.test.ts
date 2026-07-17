@@ -8,9 +8,12 @@ import {
   effectTickButton,
   tickFires,
   type AppliedEffect,
-  type Duration,
   type TurnEvent,
 } from "./applied.js";
+// `Duration` is AUTHORED vocabulary, so it lives in automation.ts — applied.ts
+// imports it one-way and never re-exports (re-exporting would make the barrel's
+// `export *` ambiguous). See the module-split note at the top of applied.ts.
+import type { Duration } from "./automation.js";
 
 const CASTER = "caster";
 const TARGET = "target";

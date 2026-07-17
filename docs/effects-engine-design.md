@@ -562,6 +562,53 @@ measuring the code against them produced the shape:
      sandboxed evaluator is its own slice. (Note `dice.ts` already has full infix; the two
      grammars are inconsistent.)
 
+### Ingest slices B + C landed 2026-07-16 — POINT 1 IS CLOSED
+
+B and C shipped together because they are one migration: writing effects nobody reads, or
+reading effects that do not exist, are each incomplete halves.
+
+- **The boundary check now passes.** `grep -rl RuleElement packages/core/src apps/web/src` →
+  only `foundry.ts` + its test. Nothing else in the codebase knows Foundry's shape exists.
+  Verified in the PRODUCTION BUNDLE too: `FlatModifier` = 0 hits, `mapFoundryRules` = 0 hits
+  (the mapper tree-shakes out). Their vocabulary no longer reaches a browser. (Three Zod enum
+  strings from `featSchema`'s optional `ingest`/`review` remain — inert metadata, a few
+  hundred bytes, not a coupling.)
+- **`collectSheetEffects` → `collectPassiveSheetEffects`** (passive.ts). Same `SheetEffects`
+  output contract, so `deriveCharacter` is untouched; the only change is the INPUT — our
+  `PassiveEffect[]` instead of their rule elements. It is the sibling of `applyPassiveEffects`,
+  and both exist because there are two moments: `apply` is POST-hoc (folds onto a resolved
+  sheet, cannot apply a rank grant); `collect` is PRE-derivation (rank grants land before
+  proficiency is computed). `evalNumeric` and `collectSheetEffects` are DELETED — the first
+  existed only to evaluate Foundry's value strings at runtime.
+- **Foundry's broadcast selectors are gone by construction**: `saving-throw`/`skill-check` fan
+  out to individual stats AT INGEST, so `statBonus` gathers `fortitude`, not `saving-throw` +
+  `fortitude`. `land-speed` → `speed:land`.
+- **PARITY IS THE PROOF.** The web's real-dataset sheet tests passed UNCHANGED across the swap:
+  Toughness +5 HP at L5, Adroit Manipulation → trained Thievery, Superior Sight → +2 Perception,
+  featless build unchanged. Same feats, same sheet, different pipeline.
+- **`feats.json` 6.35 MB → 4.65 MB.** Removing Foundry's rule elements from the shipped data
+  makes the client ~1.7 MB lighter — the coupling was costing players bandwidth.
+- **`scripts/remap-effects.mjs` is the durable win.** It re-runs the MAPPER over rule elements
+  we already hold (from the sidecar's `raw`), so coverage improves as the mapper improves —
+  **without a Foundry clone, ever again**. `ingest-pf2e.mjs` (needs the clone) is only for when
+  CONTENT itself is re-ingested. That split is the concrete form of "use them once": when
+  expr.ts learns infix, run remap and coverage rises. Foundry is not in the loop.
+- **The sidecar `effect-ingest-report.json` (3.0 MB) is ADMIN-ONLY** — raw + per-element report
+  + summary, deliberately not imported by the builder, so none of it reaches a player. Slice D
+  (the coverage view) is a UI over this file; it exists and is browsable now.
+- One web test had to change, and the change is the architecture moving: it asserted a runtime
+  `skipped` count for Untrained Improvisation. The runtime no longer SEES unmappable elements —
+  they are rejected at ingest with a reason (`unsupported-bonus-type: type "proficiency"`). The
+  test now checks both halves: absent from the sheet AND named in the report. `SheetEffects.skipped`
+  now means only "passive effects we hold that this derivation cannot apply".
+- ⚠️ **CI's `packages/core run typecheck` had been RED since 2026-07-15** and nobody noticed:
+  `build` excludes `*.test.ts` and `vitest` does not typecheck, so a type error in a core test
+  is invisible to both. Two errors pre-dated this session (`applied.test.ts` importing `Duration`
+  from `applied.js`, which only imports it one-way from automation.ts and never re-exports; a
+  strict-undefined in `passive.test.ts` from the Layer 1 slice) and one was mine from ingest
+  slice A (the grant widening). All three fixed. **Run `npm --workspace packages/core run
+  typecheck` — `npm test` will not catch this class of break.**
+
 ---
 
 ## Decisions (resolved 2026-07-13)

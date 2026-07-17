@@ -18,7 +18,7 @@ import {
   abilityModifier,
   armorClass,
   attackRankAtLevel,
-  collectSheetEffects,
+  collectPassiveSheetEffects,
   maxHitPoints,
   proficiencyBonus,
   proficientDC,
@@ -29,9 +29,9 @@ import {
   type EffectProvenance,
   type AttackCategory,
   type Modifier,
+  type PassiveEffect,
   type ProficiencyTrack,
   type ResolvedCharacter,
-  type RuleElement,
   type SheetEffects,
   type SkillStat,
 } from '@pathway/core';
@@ -212,22 +212,26 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
 }
 
 /**
- * Sheet effects granted by the character's chosen feats — HP bonuses and
- * proficiency-rank grants resolved from each feat's ingested rule elements by
- * `@pathway/core`. Recomputed on demand; the underlying collection is cheap.
+ * Sheet effects granted by the character's chosen feats — HP bonuses, proficiency
+ * grants and typed stat modifiers, resolved by `@pathway/core`.
+ *
+ * These are OUR `PassiveEffect`s, mapped from Foundry's rule elements AT INGEST
+ * (scripts/remap-effects.mjs → core's foundry.ts). This app no longer reads Foundry's
+ * shape at runtime, which is the whole point: their schema is import feedstock, not
+ * our contract. Recomputed on demand; the collection is cheap.
  */
 export function characterEffects(state: BuilderState): SheetEffects {
   const level = state.level || 1;
-  const itemRules: RuleElement[][] = [];
+  const itemEffects: PassiveEffect[][] = [];
   const labels: string[] = [];
   for (const id of chosenFeatIds(state)) {
     const feat = findFeat(id);
-    if (feat && Array.isArray(feat.rules)) {
-      itemRules.push(feat.rules as RuleElement[]);
+    if (feat && Array.isArray(feat.effects) && feat.effects.length) {
+      itemEffects.push(feat.effects as PassiveEffect[]);
       labels.push(feat.name);
     }
   }
-  return collectSheetEffects(itemRules, { level }, labels);
+  return collectPassiveSheetEffects(itemEffects, { level }, labels);
 }
 
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
@@ -410,17 +414,22 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   const abp = opt(state, OPT.automaticBonusProgression);
 
   // Feat-granted sheet effects (HP bonuses, proficiency-rank grants, typed stat
-  // modifiers), resolved from each chosen feat's rule elements by @pathway/core.
+  // modifiers), resolved from each chosen feat's PassiveEffects by @pathway/core.
   const effects = characterEffects(state);
 
   // Net bonus for a stat: the stat's own fundamental item bonus (rune / ABP) plus
-  // any feat modifiers on the given selector buckets, run through the PF2e
-  // stacking rules (so, e.g., a rune's item bonus and a feat's item bonus don't
-  // both count — only the higher does). With no feats and no runes this returns
-  // the plain item bonus, so baseline sheets are unchanged.
-  const statBonus = (itemBonus: number, ...buckets: string[]): number => {
+  // any feat modifiers on the given selectors, run through the PF2e stacking rules
+  // (so, e.g., a rune's item bonus and a feat's item bonus don't both count — only
+  // the higher does). With no feats and no runes this returns the plain item bonus,
+  // so baseline sheets are unchanged.
+  //
+  // Selectors are core's read vocabulary now, not Foundry's import names. Foundry's
+  // BROADCAST selectors are gone: `saving-throw` and `skill-check` fan out to the
+  // individual stats at ingest, so a save gathers `fortitude` alone rather than
+  // `saving-throw` + `fortitude`.
+  const statBonus = (itemBonus: number, ...selectors: string[]): number => {
     const mods: Modifier[] = itemBonus ? [{ type: 'item', value: itemBonus }] : [];
-    for (const b of buckets) for (const m of effects.statModifiers.get(b) ?? []) mods.push(m);
+    for (const s of selectors) for (const m of effects.statModifiers.get(s) ?? []) mods.push(m);
     return stackModifiers(mods);
   };
 
@@ -513,7 +522,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       level,
       withoutLevel: pwl,
       // 'saving-throw' modifiers hit all saves; the save-specific bucket only this one.
-      itemBonus: statBonus(saveItemBonus, 'saving-throw', saveId),
+      itemBonus: statBonus(saveItemBonus, saveId),
     });
 
   const ranks = skillRankMap(state);
@@ -533,7 +542,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
         withoutLevel: pwl,
         // Feat modifiers to all skills ('skill-check') and to this skill; the
         // armor check penalty stays a separate untyped term.
-        itemBonus: statBonus(0, 'skill-check', s.id),
+        itemBonus: statBonus(0, s.id),
         otherBonus: penalty,
       }),
     };
@@ -617,7 +626,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       withoutLevel: pwl,
     }),
     // Base Speed + armor penalty + feat modifiers to land Speed (e.g. +5 status).
-    speed: (ancestry?.speed ?? 25) + speedPenalty + statBonus(0, 'land-speed'),
+    speed: (ancestry?.speed ?? 25) + speedPenalty + statBonus(0, 'speed:land'),
     // Focus pool: the number of focus spells the build knows (feat- or
     // subclass-granted, chosen on the Spells step), capped at 3 per the focus
     // rules; the level-1 subclass grant is the floor.

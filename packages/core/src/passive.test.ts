@@ -3,6 +3,7 @@ import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
 import {
   applyPassiveEffects,
+  collectPassiveSheetEffects,
   passiveEffectSchema,
   type PassiveEffect,
 } from "./passive.js";
@@ -60,7 +61,7 @@ describe("applyPassiveEffects — modifier folding + stacking", () => {
       mod("athletics", "circumstance", -1),
     ]);
     // +1 status +2 item -1 circumstance = +2 net over base 12
-    expect(out.character.skills.athletics.modifier).toBe(14);
+    expect(out.character.skills.athletics?.modifier).toBe(14);
   });
 
   it("untyped bonuses all stack (unlike typed)", () => {
@@ -139,7 +140,7 @@ describe("applyPassiveEffects — non-modifier kinds are collected, not folded",
   it("grant effects are collected (predicate-gated)", () => {
     const out = applyPassiveEffects(base, [
       { kind: "grant", grant: { type: "sense", name: "darkvision" } },
-      { kind: "grant", grant: { type: "speed", movement: "fly", value: 30 }, when: { tag: "self:trait:dwarf" } },
+      { kind: "grant", grant: { type: "speed", movement: "fly", value: lit(30) }, when: { tag: "self:trait:dwarf" } },
     ]);
     expect(out.grants).toEqual([{ type: "sense", name: "darkvision" }]); // dwarf-gated one filtered out
   });
@@ -219,5 +220,166 @@ describe("passiveEffectSchema", () => {
   it("rejects an unknown discriminator and extra fields", () => {
     expect(passiveEffectSchema.safeParse({ kind: "teleport", target: "ac" }).success).toBe(false);
     expect(passiveEffectSchema.safeParse({ kind: "note", target: "ac", text: "x", extra: 1 }).success).toBe(false);
+  });
+});
+
+// These carry over the behaviors the deleted `collectSheetEffects` tests protected.
+// That function read FOUNDRY's rule elements at runtime; this one reads OUR effects,
+// mapped at ingest. The mapping half is covered in foundry.test.ts — what is locked
+// here is the COLLECTION: how effects fold into the bag a builder derives from.
+describe("collectPassiveSheetEffects", () => {
+  const lit = (value: number): Expr => ({ kind: "lit", value });
+  const ctx = { level: 5 };
+
+  it("sums untyped HP bonuses (Toughness → +level)", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "hp", bonusType: "untyped", value: { kind: "var", name: "level" } }]],
+      { level: 8 },
+    );
+    expect(e.hpBonus).toBe(8);
+    expect(e.skipped).toBe(0);
+  });
+
+  it("counts a TYPED HP bonus rather than folding it in as untyped", () => {
+    // The bag takes a single flat bonusHp; a typed bonus has nowhere to stack, so it
+    // is reported, not quietly treated as if it were untyped.
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "hp", bonusType: "status", value: lit(5) }]],
+      ctx,
+    );
+    expect(e.hpBonus).toBe(0);
+    expect(e.skipped).toBe(1);
+  });
+
+  it("collects typed modifiers per selector, unstacked (stacking happens at use)", () => {
+    const e = collectPassiveSheetEffects(
+      [
+        [
+          { kind: "modifier", target: "perception", bonusType: "status", value: lit(2) },
+          { kind: "modifier", target: "perception", bonusType: "circumstance", value: lit(1) },
+          { kind: "modifier", target: "ac", bonusType: "item", value: lit(1) },
+        ],
+      ],
+      ctx,
+    );
+    expect(e.statModifiers.get("perception")).toEqual([
+      { type: "status", value: 2 },
+      { type: "circumstance", value: 1 },
+    ]);
+    expect(e.statModifiers.get("ac")).toEqual([{ type: "item", value: 1 }]);
+  });
+
+  it("evaluates a value expression against the character level", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "will", bonusType: "status", value: { kind: "var", name: "level" } }]],
+      { level: 3 },
+    );
+    expect(e.statModifiers.get("will")).toEqual([{ type: "status", value: 3 }]);
+  });
+
+  it("counts an unevaluable value instead of guessing", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "will", bonusType: "status", value: { kind: "var", name: "nope" } }]],
+      ctx,
+    );
+    expect(e.statModifiers.size).toBe(0);
+    expect(e.skipped).toBe(1);
+  });
+
+  it("takes the HIGHEST rank when several items grant the same skill", () => {
+    const e = collectPassiveSheetEffects(
+      [
+        [{ kind: "proficiency", target: "thievery", rank: 1, mode: "upgrade" }],
+        [{ kind: "proficiency", target: "thievery", rank: 3, mode: "upgrade" }],
+        [{ kind: "proficiency", target: "thievery", rank: 2, mode: "upgrade" }],
+      ],
+      ctx,
+    );
+    expect(e.skillRanks.get("thievery")).toBe(3);
+  });
+
+  it("grants save and Perception ranks", () => {
+    const e = collectPassiveSheetEffects(
+      [
+        [
+          { kind: "proficiency", target: "fortitude", rank: 3, mode: "upgrade" },
+          { kind: "proficiency", target: "perception", rank: 2, mode: "upgrade" },
+        ],
+      ],
+      ctx,
+    );
+    expect(e.saveRanks.get("fortitude")).toBe(3);
+    expect(e.perceptionRank).toBe(2);
+  });
+
+  it("counts a `set` proficiency — the bag is highest-wins and cannot lower a rank", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "proficiency", target: "thievery", rank: 1, mode: "set" }]],
+      ctx,
+    );
+    expect(e.skillRanks.size).toBe(0);
+    expect(e.skipped).toBe(1);
+  });
+
+  it("attributes each applied effect to its source label", () => {
+    const e = collectPassiveSheetEffects(
+      [
+        [{ kind: "modifier", target: "hp", bonusType: "untyped", value: lit(3) }],
+        [{ kind: "proficiency", target: "thievery", rank: 1, mode: "upgrade" }],
+      ],
+      ctx,
+      ["Toughness", "Adroit Manipulation"],
+    );
+    expect(e.applied).toEqual([
+      { source: "Toughness", stat: "hp", summary: "+3 HP" },
+      { source: "Adroit Manipulation", stat: "thievery", summary: "Trained in Thievery" },
+    ]);
+  });
+
+  it("REFUSES a conditional effect — there is no tag context at derivation time", () => {
+    // Applying it unconditionally would turn a situational bonus into a permanent one.
+    const e = collectPassiveSheetEffects(
+      [
+        [
+          {
+            kind: "modifier",
+            target: "will",
+            bonusType: "status",
+            value: lit(1),
+            when: { tag: "self:trait:elf" },
+          },
+        ],
+      ],
+      ctx,
+    );
+    expect(e.statModifiers.size).toBe(0);
+    expect(e.skipped).toBe(1);
+  });
+
+  it("counts grants and rollAdjusts — the derived sheet has no slot for them", () => {
+    const e = collectPassiveSheetEffects(
+      [
+        [
+          { kind: "grant", grant: { type: "sense", name: "darkvision" } },
+          { kind: "rollAdjust", target: "will", adjust: { type: "degree", direction: "improve" } },
+        ],
+      ],
+      ctx,
+    );
+    expect(e.skipped).toBe(2);
+  });
+
+  it("ignores notes without counting them — display text, not a sheet number", () => {
+    const e = collectPassiveSheetEffects([[{ kind: "note", target: "athletics", text: "x" }]], ctx);
+    expect(e.skipped).toBe(0);
+    expect(e.statModifiers.size).toBe(0);
+  });
+
+  it("leaves an effectless build completely untouched", () => {
+    const e = collectPassiveSheetEffects([], ctx);
+    expect(e).toMatchObject({ hpBonus: 0, perceptionRank: null, skipped: 0, applied: [] });
+    expect(e.statModifiers.size).toBe(0);
+    expect(e.skillRanks.size).toBe(0);
+    expect(e.saveRanks.size).toBe(0);
   });
 });
