@@ -4,13 +4,20 @@ import { GlobalSearch } from '@/features/search/GlobalSearch';
 import { useAuth } from '@/features/auth/useAuth';
 import { Sigil } from './Sigil';
 
-/** In-page section anchors — this header only ever renders on the landing route. */
-const SECTIONS = [
-  { href: '#forge', label: 'The Forge' },
-  { href: '#table', label: 'At the Table' },
-  { href: '#archives', label: 'The Archives' },
-  { href: '#begin', label: 'Begin' },
+/**
+ * Nav items are a mix: `to` navigates to a route, `href` jumps to a section of
+ * this page. The Forge and The Archives point at the real tools they name; the
+ * other two stay in-page (this header only renders on the landing route).
+ */
+const NAV: Array<{ label: string; to?: string; href?: string }> = [
+  { label: 'The Forge', to: '/vault/create' },
+  { label: 'At the Table', href: '#table' },
+  { label: 'The Archives', to: '/rules' },
+  { label: 'Begin', href: '#begin' },
 ];
+
+const navClass =
+  'whitespace-nowrap px-[9px] py-2 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-dim transition-colors hover:text-gold';
 
 export function LandingHeader() {
   const { user } = useAuth();
@@ -25,15 +32,17 @@ export function LandingHeader() {
       </Link>
 
       <nav className="flex flex-wrap items-center justify-end gap-x-1 gap-y-2">
-        {SECTIONS.map((s) => (
-          <a
-            key={s.href}
-            href={s.href}
-            className="whitespace-nowrap px-[9px] py-2 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-dim transition-colors hover:text-gold"
-          >
-            {s.label}
-          </a>
-        ))}
+        {NAV.map((item) =>
+          item.to ? (
+            <Link key={item.label} to={item.to} className={navClass}>
+              {item.label}
+            </Link>
+          ) : (
+            <a key={item.label} href={item.href} className={navClass}>
+              {item.label}
+            </a>
+          ),
+        )}
 
         <GlobalSearch variant="pill" />
         <ThemeToggle variant="landing" />
