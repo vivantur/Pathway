@@ -41,7 +41,13 @@ interface BuilderStore {
   chooseBackground: (id: string) => void;
   chooseClass: (id: string) => void;
   toggleSkill: (id: string, maxFree: number) => void;
+  addLore: (subject: string, max: number) => void;
+  removeLore: (subject: string) => void;
+  setBonusFeat: (slotKey: string, featId: string | undefined) => void;
+  setSubclassSkillChoice: (key: string, skillId: string) => void;
+  setSkillOverride: (skillId: string, rank: number | null) => void;
   toggleLanguage: (name: string, max: number) => void;
+  setFeatChoice: (featId: string, flag: string, value: string) => void;
 
   setLevel: (level: number) => void;
   levelUp: () => void;
@@ -90,6 +96,7 @@ export const useBuilder = create<BuilderStore>((set) => ({
           heritageId: undefined, // reset heritage when ancestry changes
           ancestryBoostChoices: Array(slots).fill(null),
           ancestryFeatId: undefined,
+          ancestryParagonFeatId: undefined,
           languageChoices: [],
         },
       };
@@ -115,6 +122,7 @@ export const useBuilder = create<BuilderStore>((set) => ({
           subclassId: undefined,
           classFeatId: undefined,
           skillChoices: [],
+          loreChoices: [],
         },
       };
     }),
@@ -130,6 +138,50 @@ export const useBuilder = create<BuilderStore>((set) => ({
       return { state: { ...s.state, skillChoices: [...chosen] } };
     }),
 
+  addLore: (subject, max) =>
+    set((s) => {
+      const clean = subject.trim();
+      const cur = s.state.loreChoices ?? [];
+      // No blanks, no duplicate subjects, and never past the shared free-skill cap.
+      if (!clean || cur.length >= max) return { state: s.state };
+      if (cur.some((l) => l.toLowerCase() === clean.toLowerCase())) return { state: s.state };
+      return { state: { ...s.state, loreChoices: [...cur, clean] } };
+    }),
+
+  removeLore: (subject) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        loreChoices: (s.state.loreChoices ?? []).filter(
+          (l) => l.toLowerCase() !== subject.trim().toLowerCase(),
+        ),
+      },
+    })),
+
+  setBonusFeat: (slotKey, featId) =>
+    set((s) => {
+      const next = { ...(s.state.bonusFeatChoices ?? {}) };
+      if (featId) next[slotKey] = featId;
+      else delete next[slotKey];
+      return { state: { ...s.state, bonusFeatChoices: next } };
+    }),
+
+  setSubclassSkillChoice: (key, skillId) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        subclassSkillChoices: { ...(s.state.subclassSkillChoices ?? {}), [key]: skillId },
+      },
+    })),
+
+  setSkillOverride: (skillId, rank) =>
+    set((s) => {
+      const next = { ...(s.state.skillOverrides ?? {}) };
+      if (rank && rank > 0) next[skillId] = rank;
+      else delete next[skillId];
+      return { state: { ...s.state, skillOverrides: next } };
+    }),
+
   toggleLanguage: (name, max) =>
     set((s) => {
       const chosen = new Set(s.state.languageChoices);
@@ -137,6 +189,17 @@ export const useBuilder = create<BuilderStore>((set) => ({
       else if (chosen.size < max) chosen.add(name);
       return { state: { ...s.state, languageChoices: [...chosen] } };
     }),
+
+  setFeatChoice: (featId, flag, value) =>
+    set((s) => ({
+      state: {
+        ...s.state,
+        featChoices: {
+          ...s.state.featChoices,
+          [featId]: { ...(s.state.featChoices?.[featId] ?? {}), [flag]: value },
+        },
+      },
+    })),
 
   setLevel: (level) =>
     set((s) => ({

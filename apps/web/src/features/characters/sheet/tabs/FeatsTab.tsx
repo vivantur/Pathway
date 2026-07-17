@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFeatsByNames } from '@/features/characters/useFeatsByNames';
+import { useFeatFallback, resolveFallbackRow } from '@/features/characters/useFeatFallback';
 import type { FeatRow } from '@/features/characters/types';
 import type { PathbuilderBuild } from '@/features/characters/pathbuilder';
 import { Panel } from '../Sheet';
@@ -51,20 +52,42 @@ export function FeatsTab({ build }: { build: PathbuilderBuild }) {
   const names = useMemo(() => entries.map((e) => e[0]).filter(Boolean), [entries]);
   const { data: rows, isLoading } = useFeatsByNames(names);
 
+  // Names the reference table didn't cover — hydrate those from the app's own
+  // enriched builder dataset (legacy feats it lacks, heritages exported into the
+  // feats list, …). Only loads the dataset chunk when something is unmatched.
+  const dbByLowerName = useMemo(() => {
+    const m = new Map<string, FeatRow>();
+    for (const r of rows ?? []) m.set(r.name.toLowerCase(), r);
+    return m;
+  }, [rows]);
+  const unmatched = useMemo(
+    () => names.filter((n) => !dbByLowerName.has(n.trim().toLowerCase())),
+    [names, dbByLowerName],
+  );
+  const { data: fallback, isLoading: fallbackLoading } = useFeatFallback(unmatched);
+
+  // Disambiguation hints for suffixed feats ("Blessed Blood (Sorcerer)").
+  const hints = useMemo(
+    () => [build.class, build.ancestry, build.heritage].filter((s): s is string => !!s),
+    [build.class, build.ancestry, build.heritage],
+  );
+
   const merged: FeatEntry[] = useMemo(() => {
-    const byLowerName = new Map<string, FeatRow>();
-    for (const r of rows ?? []) byLowerName.set(r.name.toLowerCase(), r);
     return entries.map(([name, , categoryRaw, levelAcquired]) => {
       const category = normalizeCategory(categoryRaw);
+      const key = name.trim().toLowerCase();
+      const row =
+        dbByLowerName.get(key) ??
+        (fallback ? resolveFallbackRow(fallback, name, hints) : null);
       return {
         name,
         category,
         categoryKey: category.toLowerCase(),
         levelAcquired: levelAcquired ?? 1,
-        row: byLowerName.get(name.trim().toLowerCase()) ?? null,
+        row,
       };
     });
-  }, [entries, rows]);
+  }, [entries, dbByLowerName, fallback, hints]);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
@@ -114,7 +137,7 @@ export function FeatsTab({ build }: { build: PathbuilderBuild }) {
         ))}
       </div>
 
-      {isLoading && (
+      {(isLoading || fallbackLoading) && (
         <div className="py-6">
           <Spinner label="Fetching feat details…" />
         </div>

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  acTotal,
   damageTypeLabel,
   totalGp,
   type Armor,
@@ -8,6 +7,7 @@ import {
   type PathbuilderBuild,
   type Weapon,
 } from '@/features/characters/pathbuilder';
+import { acTotal } from '../sheetStats';
 import type { BagItem, CharacterRow } from '@/features/characters/types';
 import { mergeWeapons } from '@/features/characters/weapons';
 import { searchItemsForPicker, type ItemPickResult } from '@/features/characters/api';

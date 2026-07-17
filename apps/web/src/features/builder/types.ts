@@ -51,8 +51,47 @@ export interface BuilderState {
   /** Skills the player chose to train (class free picks + Intelligence bonus). */
   skillChoices: string[];
 
+  /**
+   * Custom Lore skill subjects the player trained with free skill slots, e.g.
+   * "Warfare" (rendered as "Warfare Lore"). Draws from the same free-skill pool
+   * as {@link skillChoices}. The Lore a background grants is derived separately.
+   */
+  loreChoices: string[];
+
+  /**
+   * ChoiceSet selections for feats that ask the player to pick (Canny Acumen's
+   * save/Perception, Natural Skill's two skills, …). Keyed by feat id → a map of
+   * the feat's ChoiceSet flag name → the chosen value (a rank target path for
+   * whole-path choices, or a skill slug for embedded choices). Read by
+   * `characterEffects` to resolve `{item|flags.system.rulesSelections.<flag>}`.
+   */
+  featChoices: Record<string, Record<string, string>>;
+
   ancestryFeatId?: string;
+  /** Second level-1 ancestry feat granted by the Ancestry Paragon variant. */
+  ancestryParagonFeatId?: string;
   classFeatId?: string;
+
+  /**
+   * Extra feats granted by another choice (Natural Ambition → a class feat,
+   * General Training / Versatile Human heritage → a general feat). Keyed by a
+   * stable grant-slot key (see `bonusFeatSlots`) → the chosen feat id. Only
+   * choices whose slot is currently active are honoured.
+   */
+  bonusFeatChoices: Record<string, string>;
+
+  /**
+   * Skill choices a subclass grants at level 1 (e.g. Gunslinger's Way of the
+   * Pistolero picks Deception or Intimidation). Keyed by a grant key → skill id.
+   */
+  subclassSkillChoices: Record<string, string>;
+
+  /**
+   * Manual proficiency-rank overrides for skills — homebrew or GM-granted
+   * training the rules engine wouldn't otherwise produce. skill id (or `lore:*`)
+   * → rank 1–4. Applied as a floor: it only ever raises a skill's proficiency.
+   */
+  skillOverrides: Record<string, number>;
 
   /** Additional languages chosen (Int-gated + ancestry bonus). */
   languageChoices: string[];
@@ -171,6 +210,11 @@ export function emptyBuilderState(): BuilderState {
     backgroundBoostChoices: [],
     freeBoosts: [null, null, null, null],
     skillChoices: [],
+    loreChoices: [],
+    featChoices: {},
+    bonusFeatChoices: {},
+    subclassSkillChoices: {},
+    skillOverrides: {},
     languageChoices: [],
     progression: {},
     inventory: [],

@@ -27,3 +27,6 @@ packages/core/dist/
 node_modules/
 .env
 .claude/
+
+# Bot hosting secrets (Docker env file — never commit)
+bot.env

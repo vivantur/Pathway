@@ -3,14 +3,12 @@ import {
   ABILITY_ORDER,
   abilityMod,
   fmtMod,
-  perceptionBonus,
-  saveBonus,
-  skillBonus,
   SKILL_ABILITY,
   SKILL_ORDER,
   type Ability,
   type PathbuilderBuild,
 } from '@/features/characters/pathbuilder';
+import { perceptionBonus, saveBonus, skillBonus } from '../sheetStats';
 import { Panel } from '../Sheet';
 import { AbilitiesIcon } from '../icons';
 

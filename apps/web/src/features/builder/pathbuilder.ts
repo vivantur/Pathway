@@ -21,7 +21,7 @@ import {
   resolveCasterTradition,
 } from './spellcasting';
 import { focusPoints } from './subclassEffects';
-import { abilityModifier, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
+import { abilityModifier, bonusFeatSlots, deriveCharacter, trainedSkillIds } from '@/features/builder/rules';
 import type { BuilderState, InnateSpellEntry, SpellTradition } from '@/features/builder/types';
 
 const TRADITIONS: SpellTradition[] = ['arcane', 'divine', 'occult', 'primal'];
@@ -94,7 +94,12 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   const trained = trainedSkillIds(state);
 
   const skillProf: Record<string, number> = {};
-  for (const s of derived.skills) skillProf[s.id] = p(s.rank);
+  // Lore skills carry `lore:*` ids and belong in the `lores` array below, not
+  // in the standard skill-proficiency map.
+  for (const s of derived.skills) {
+    if (s.id.startsWith('lore:')) continue;
+    skillProf[s.id] = p(s.rank);
+  }
 
   const specials: string[] = [];
   if (heritage) specials.push(heritage.name);
@@ -107,8 +112,20 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
   };
   // Level 1 (from the creation steps).
   push(state.ancestryFeatId, 'Ancestry', 1);
+  push(state.ancestryParagonFeatId, 'Ancestry', 1); // Ancestry Paragon bonus feat
   push(state.classFeatId, 'Class', 1);
   if (background?.skillFeat) push(background.skillFeat, 'Skill', 1);
+  // Bonus feats granted by another choice (Natural Ambition, General Training,
+  // Ancestral Paragon, Multitalented, …), tagged by kind and granting level.
+  const BONUS_KIND_TYPE: Record<string, string> = {
+    class: 'Class',
+    general: 'General',
+    ancestry: 'Ancestry',
+    dedication: 'Archetype',
+  };
+  for (const slot of bonusFeatSlots(state)) {
+    push(state.bonusFeatChoices?.[slot.key], BONUS_KIND_TYPE[slot.kind] ?? 'Class', slot.level);
+  }
   // Levels 2–20 (from the progression record).
   for (const [lvlStr, gains] of Object.entries(state.progression)) {
     const lvl = Number(lvlStr);
@@ -120,9 +137,11 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
     push(gains.archetypeFeatId, 'Archetype', lvl);
   }
 
-  const lores: [string, number][] = background?.loreSkill
-    ? [[background.loreSkill, p(1)]]
-    : [];
+  // Every trained Lore (background-granted + player-chosen), named the
+  // Pathbuilder way (subject without a trailing "Lore") with its proficiency.
+  const lores: [string, number][] = derived.skills
+    .filter((s) => s.id.startsWith('lore:'))
+    .map((s) => [s.name.replace(/\s+Lore$/i, ''), p(s.rank)]);
 
   const proficiencies: Record<string, number> = {
     classDC: p(ip?.classDC ?? 0),

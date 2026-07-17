@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ResolvedCharacter } from "./character.js";
-import type { Expr } from "./expr.js";
+import { parseExpr, type Expr } from "./expr.js";
 import {
   applyPassiveEffects,
   collectPassiveSheetEffects,
+  collectTraits,
   passiveEffectSchema,
+  resolveRankValue,
   type PassiveEffect,
 } from "./passive.js";
 
@@ -381,5 +383,140 @@ describe("collectPassiveSheetEffects", () => {
     expect(e.statModifiers.size).toBe(0);
     expect(e.skillRanks.size).toBe(0);
     expect(e.saveRanks.size).toBe(0);
+  });
+});
+
+// The grant slice: what `applyPassiveEffects` and `collectPassiveSheetEffects`
+// both deliberately punt on. These are the ancestry/heritage senses and
+// resistances the sheet shows.
+describe("collectTraits (senses & resistances)", () => {
+  const halfLevel = parseExpr("max(1,floor(@actor.level/2))");
+
+  const sense = (name: string, extra: Record<string, unknown> = {}): PassiveEffect =>
+    ({ kind: "grant", grant: { type: "sense", name, ...extra } }) as PassiveEffect;
+  const resist = (damageType: string, value: Expr): PassiveEffect =>
+    ({ kind: "grant", grant: { type: "resistance", damageType, value } }) as PassiveEffect;
+
+  it("collects a simple sense and an acuity/range sense, attributed to their source", () => {
+    const t = collectTraits(
+      [[sense("darkvision")], [sense("scent", { acuity: "imprecise", range: 30 })]],
+      { level: 1 },
+      ["Cavern Elf", "Hunting Catfolk"],
+    );
+    expect(t.senses).toEqual([
+      { type: "darkvision", source: "Cavern Elf" },
+      { type: "scent", acuity: "imprecise", range: 30, source: "Hunting Catfolk" },
+    ]);
+    expect(t.skipped).toBe(0);
+  });
+
+  it("evaluates a level-scaled resistance per character — the real corpus expression", () => {
+    // `max(1,floor(@actor.level/2))` is 31 of the 32 resistance values in the data.
+    expect(collectTraits([[resist("cold", halfLevel)]], { level: 6 }).resistances).toEqual([
+      { type: "cold", value: 3, source: "" },
+    ]);
+    // The max(1,…) clamp is why these apply from level 1.
+    expect(collectTraits([[resist("cold", halfLevel)]], { level: 1 }).resistances).toEqual([
+      { type: "cold", value: 1, source: "" },
+    ]);
+  });
+
+  it("drops a resistance that rounds to 0 rather than showing 'resistance 0'", () => {
+    const unclamped = parseExpr("floor(@actor.level/2)");
+    expect(collectTraits([[resist("cold", unclamped)]], { level: 1 }).resistances).toEqual([]);
+    expect(collectTraits([[resist("cold", unclamped)]], { level: 6 }).resistances).toEqual([
+      { type: "cold", value: 3, source: "" },
+    ]);
+  });
+
+  it("keeps the higher resistance and the more useful sense when they collide", () => {
+    const t = collectTraits(
+      [
+        [resist("fire", { kind: "lit", value: 2 })],
+        [resist("fire", { kind: "lit", value: 5 })],
+        [sense("darkvision", { range: 30 })],
+        [sense("darkvision")], // unlimited range wins
+        [sense("scent", { acuity: "vague", range: 30 })],
+        [sense("scent", { acuity: "imprecise", range: 30 })], // better acuity wins
+      ],
+      { level: 1 },
+    );
+    expect(t.resistances).toEqual([{ type: "fire", value: 5, source: "" }]);
+    expect(t.senses).toEqual([
+      { type: "darkvision", source: "" },
+      { type: "scent", acuity: "imprecise", range: 30, source: "" },
+    ]);
+  });
+
+  it("skips and counts a CONDITIONAL grant instead of showing it as permanent", () => {
+    const conditional: PassiveEffect = {
+      kind: "grant",
+      grant: { type: "resistance", damageType: "fire", value: { kind: "lit", value: 5 } },
+      when: { tag: "self:condition:frightened" },
+    } as PassiveEffect;
+    const t = collectTraits([[conditional]], { level: 6 });
+    expect(t.resistances).toEqual([]);
+    expect(t.skipped).toBe(1);
+  });
+
+  it("counts a resistance whose expression cannot be evaluated, never guessing a value", () => {
+    const t = collectTraits([[resist("cold", { kind: "var", name: "nonesuch" })]], { level: 6 });
+    expect(t.resistances).toEqual([]);
+    expect(t.skipped).toBe(1);
+  });
+
+  it("ignores the other collectors' slices without counting them as misses", () => {
+    const t = collectTraits(
+      [
+        [
+          { kind: "modifier", target: "ac", bonusType: "item", value: { kind: "lit", value: 2 } },
+          { kind: "proficiency", target: "athletics", rank: 1, mode: "upgrade" },
+          { kind: "grant", grant: { type: "immunity", to: "fire" } },
+          sense("scent"),
+        ] as PassiveEffect[],
+      ],
+      { level: 1 },
+    );
+    expect(t.senses).toEqual([{ type: "scent", source: "" }]);
+    expect(t.skipped).toBe(0);
+  });
+});
+
+// A rank that varies by level (Canny Acumen: expert, master at 17th). The literal
+// stays the common case; this is the expression path.
+describe("resolveRankValue — level-scaled proficiency", () => {
+  const canny = parseExpr("ternary(gte(@actor.level,17),3,2)");
+
+  it("reads a literal rank straight through", () => {
+    expect(resolveRankValue(2, 20)).toBe(2);
+  });
+
+  it("evaluates a level-scaled rank at the character's level", () => {
+    expect(resolveRankValue(canny, 1)).toBe(2);
+    expect(resolveRankValue(canny, 16)).toBe(2);
+    expect(resolveRankValue(canny, 17)).toBe(3);
+    expect(resolveRankValue(canny, 20)).toBe(3);
+  });
+
+  it("throws rather than clamping a rank outside 0-4", () => {
+    expect(() => resolveRankValue({ kind: "lit", value: 7 }, 1)).toThrow(/outside/);
+  });
+
+  it("collectPassiveSheetEffects folds a level-scaled rank at the right level", () => {
+    const effect: PassiveEffect = { kind: "proficiency", target: "will", rank: canny, mode: "upgrade" };
+    expect(collectPassiveSheetEffects([[effect]], { level: 16 }).saveRanks.get("will")).toBe(2);
+    expect(collectPassiveSheetEffects([[effect]], { level: 17 }).saveRanks.get("will")).toBe(3);
+  });
+
+  it("counts an unresolvable rank instead of guessing one", () => {
+    const bad: PassiveEffect = {
+      kind: "proficiency",
+      target: "will",
+      rank: { kind: "var", name: "nonesuch" },
+      mode: "upgrade",
+    };
+    const out = collectPassiveSheetEffects([[bad]], { level: 5 });
+    expect(out.saveRanks.size).toBe(0);
+    expect(out.skipped).toBe(1);
   });
 });

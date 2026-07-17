@@ -438,7 +438,7 @@ async function loadReferenceDatabasesFromSupabase(dbs) {
     throw new Error(
       '[startup] FATAL: Supabase is unavailable — reference databases cannot be loaded. ' +
       'The bot requires a live Supabase connection at startup. ' +
-      'Check SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.'
+      'Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.'
     );
   }
 

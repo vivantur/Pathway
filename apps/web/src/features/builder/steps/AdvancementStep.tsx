@@ -11,7 +11,18 @@ import {
   type AbilityKey,
 } from '@/features/builder/data';
 import { MAX_LEVEL, useBuilder } from '../store';
-import { chosenFeatIds, gainsForLevel, skillRankMap, unmetAtLevel, RANK_LABEL } from '../rules';
+import {
+  BONUS_FEAT_KIND_LABEL,
+  bonusFeatOptions,
+  bonusFeatSlots,
+  chosenFeatIds,
+  gainsForLevel,
+  opt,
+  skillRankMap,
+  unmetAtLevel,
+  RANK_LABEL,
+} from '../rules';
+import { OPT } from '../options/config';
 import { emptyLevelGains } from '../types';
 import { FeatPicker } from '../FeatPicker';
 
@@ -27,9 +38,13 @@ function SlotBlock({ title, children }: { title: string; children: ReactNode }) 
 function LevelCard({ level }: { level: number }) {
   const state = useBuilder((s) => s.state);
   const updateLevelGains = useBuilder((s) => s.updateLevelGains);
+  const setBonusFeat = useBuilder((s) => s.setBonusFeat);
   const slots = gainsForLevel(level, state.options);
   const gains = state.progression[level] ?? emptyLevelGains();
   const taken = chosenFeatIds(state);
+  const allowRare = opt(state, OPT.showRareFeats);
+  // Bonus feats granted by a choice taken AT this level (Ancestral Paragon, etc.).
+  const levelBonusSlots = bonusFeatSlots(state).filter((s) => s.level === level);
   const unmet = unmetAtLevel(state, level);
   const feats = getDataset().feats;
   const klass = state.classId ? findClass(state.classId) : undefined;
@@ -128,11 +143,14 @@ function LevelCard({ level }: { level: number }) {
         {slots.classFeat && (
           <SlotBlock title="Class Feat">
             <FeatPicker
-              feats={classFeats}
+              // A class-feat slot may also be spent on an archetype/multiclass
+              // dedication or archetype feat (not only under Free Archetype).
+              feats={[...classFeats, ...archetypeFeats]}
               recommendations={level <= 4 ? classRecommendations(klass?.id) : []}
               selectedId={gains.classFeatId}
               onSelect={(id) => updateLevelGains(level, { classFeatId: id })}
               takenIds={taken}
+              allowRare={allowRare}
             />
           </SlotBlock>
         )}
@@ -145,6 +163,7 @@ function LevelCard({ level }: { level: number }) {
               selectedId={gains.ancestryFeatId}
               onSelect={(id) => updateLevelGains(level, { ancestryFeatId: id })}
               takenIds={taken}
+              allowRare={allowRare}
             />
           </SlotBlock>
         )}
@@ -156,6 +175,7 @@ function LevelCard({ level }: { level: number }) {
               selectedId={gains.skillFeatId}
               onSelect={(id) => updateLevelGains(level, { skillFeatId: id })}
               takenIds={taken}
+              allowRare={allowRare}
             />
           </SlotBlock>
         )}
@@ -167,6 +187,7 @@ function LevelCard({ level }: { level: number }) {
               selectedId={gains.generalFeatId}
               onSelect={(id) => updateLevelGains(level, { generalFeatId: id })}
               takenIds={taken}
+              allowRare={allowRare}
             />
           </SlotBlock>
         )}
@@ -179,9 +200,23 @@ function LevelCard({ level }: { level: number }) {
               onSelect={(id) => updateLevelGains(level, { archetypeFeatId: id })}
               emptyLabel="No archetype feats available at this level."
               takenIds={taken}
+              allowRare={allowRare}
             />
           </SlotBlock>
         )}
+
+        {levelBonusSlots.map((slot) => (
+          <SlotBlock key={slot.key} title={`Bonus ${BONUS_FEAT_KIND_LABEL[slot.kind]} Feat — ${slot.source}`}>
+            <FeatPicker
+              feats={bonusFeatOptions(state, slot)}
+              selectedId={state.bonusFeatChoices?.[slot.key]}
+              onSelect={(id) => setBonusFeat(slot.key, id)}
+              emptyLabel="No eligible feats for this grant."
+              takenIds={taken}
+              allowRare={allowRare}
+            />
+          </SlotBlock>
+        ))}
       </div>
     </details>
   );

@@ -474,10 +474,35 @@ function main() {
   // Only the `description` text is replaced; mechanical fields are untouched.
   log('Enriching descriptions for ancestries / heritages / backgrounds / classes…');
   const descIndex = new Map(); // slug -> enriched description
+  // slug -> the level a class grants (Greater) Weapon Specialization, read from
+  // the class doc's system.items progression (authoritative per-class levels).
+  const wsLevels = new Map();
+  // slug -> { vision?, rules? } for ancestries/heritages — base vision plus the
+  // trait-relevant subset of rule elements (Sense/Resistance) the effects engine
+  // reads. Everything else on those docs is intentionally left out.
+  const traitIndex = new Map();
+  const traitRules = (doc) =>
+    (doc.system?.rules ?? []).filter((r) => r && (r.key === 'Sense' || r.key === 'Resistance'));
   for (const type of ['ancestries', 'heritages', 'backgrounds', 'classes']) {
     for (const p of walkJson(join(packsRoot, type))) {
       const doc = readDoc(p);
-      descIndex.set(slugOf(p), enrich(doc.system?.description?.value ?? '', uuidById));
+      const slug = slugOf(p);
+      descIndex.set(slug, enrich(doc.system?.description?.value ?? '', uuidById));
+      if (type === 'classes') {
+        const items = Object.values(doc.system?.items ?? {});
+        const lvlOf = (name) => items.find((i) => i.name === name)?.level;
+        wsLevels.set(slug, {
+          weaponSpecialization: lvlOf('Weapon Specialization'),
+          greaterWeaponSpecialization: lvlOf('Greater Weapon Specialization'),
+        });
+      }
+      if (type === 'ancestries' || type === 'heritages') {
+        const entry = {};
+        const rules = traitRules(doc);
+        if (rules.length) entry.rules = rules;
+        if (type === 'ancestries' && typeof doc.system?.vision === 'string') entry.vision = doc.system.vision;
+        traitIndex.set(slug, entry);
+      }
     }
   }
   const enrichDescriptions = (list) => {
@@ -508,6 +533,40 @@ function main() {
   herHit += enrichDescriptions(versatileHeritages);
   const bgHit = enrichDescriptions(backgrounds);
   const clsHit = enrichDescriptions(classes);
+  // Weapon Specialization grant levels (mechanical field — additive, never clobbers).
+  for (const c of classes) {
+    const ws = wsLevels.get(c.id);
+    if (ws?.weaponSpecialization != null) c.weaponSpecialization = ws.weaponSpecialization;
+    else delete c.weaponSpecialization;
+    if (ws?.greaterWeaponSpecialization != null) c.greaterWeaponSpecialization = ws.greaterWeaponSpecialization;
+    else delete c.greaterWeaponSpecialization;
+  }
+
+  // Base vision + trait rules (Sense/Resistance) for ancestries and heritages —
+  // additive mechanical fields, re-applied idempotently (deleted when absent so a
+  // re-ingest never leaves stale data).
+  let visionHit = 0;
+  let traitRuleHit = 0;
+  const applyTraits = (item) => {
+    const entry = traitIndex.get(item.id);
+    if (entry?.vision) {
+      item.vision = entry.vision;
+      visionHit += 1;
+    } else if ('vision' in item) {
+      delete item.vision;
+    }
+    if (entry?.rules?.length) {
+      item.rules = entry.rules;
+      traitRuleHit += 1;
+    } else if ('rules' in item) {
+      delete item.rules;
+    }
+  };
+  for (const anc of ancestries) {
+    applyTraits(anc);
+    for (const h of anc.heritages ?? []) applyTraits(h);
+  }
+  for (const h of versatileHeritages) applyTraits(h);
 
   // ---- reconciliation: alias consolidated ids, preserve Foundry-absent ones ----
   const priorAliases = existsSync(join(out, 'content-aliases.json'))
@@ -572,6 +631,7 @@ function main() {
     legacyPreservedSample: featRecon.preserved.slice(0, 8).map((f) => f.id),
     recommendationsRewritten: recRewritten,
     descriptionsEnriched: { ancestries: ancHit, heritages: herHit, backgrounds: bgHit, classes: clsHit },
+    traits: { vision: visionHit, senseResistanceRules: traitRuleHit },
   };
   log('\n=== ingest report ===');
   log(JSON.stringify(report, null, 2));

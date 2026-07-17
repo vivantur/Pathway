@@ -9,8 +9,8 @@
 // our own PassiveEffects (mapped at ingest) — same feats, same sheet.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadDataset } from '@/features/builder/data';
-import { characterEffects, deriveCharacter } from './rules';
+import { findFeat, loadDataset } from '@/features/builder/data';
+import { characterEffects, characterTraits, deriveCharacter, featChoicePrompts, pendingFeatChoices } from './rules';
 import { emptyBuilderState, type BuilderState } from './types';
 import ingestReport from '@/features/builder/data/effect-ingest-report.json';
 
@@ -73,6 +73,110 @@ describe('feat effects on the derived sheet', () => {
     }
     const { elements, mapped, unsupported } = ingestReport.summary;
     expect(mapped + unsupported).toBe(elements);
+  });
+
+  it('Weapon Specialization adds the weapon proficiency rank to damage (fighter, expert)', () => {
+    // Level-1 fighter is expert (rank 2) in martial weapons. Weapon Specialization
+    // is granted at level 7 → +2 damage; before that, nothing.
+    const equipLongsword = (level: number): BuilderState => ({
+      ...fighter(level),
+      inventory: [{ itemId: 'longsword', equipped: true, qty: 1 }],
+    });
+    const before = deriveCharacter(equipLongsword(6));
+    const after = deriveCharacter(equipLongsword(7));
+    const dmg = (c: ReturnType<typeof deriveCharacter>) =>
+      c.weapons.find((w) => w.id === 'longsword')!.damageMod;
+    expect(dmg(after) - dmg(before)).toBe(2);
+    expect(after.effectNotes.some((n) => n.source === 'Weapon Specialization')).toBe(true);
+  });
+
+  it('applies a choice-driven feat once the player stores a selection (Canny Acumen)', () => {
+    // An UNMADE choice grants nothing, and is not "skipped" either: `skipped` counts
+    // effects we hold but cannot apply, and an unmade choice is not one — it is a
+    // pending prompt, which is what `pendingFeatChoices` reports. (This assertion used
+    // to expect skipped >= 1, back when the runtime read Foundry's unresolved
+    // ActiveEffectLike and counted it.)
+    const noChoice = characterEffects({ ...fighter(), classFeatId: 'canny-acumen' });
+    expect(noChoice.saveRanks.size).toBe(0);
+    expect(noChoice.skipped).toBe(0);
+    expect(pendingFeatChoices({ ...fighter(), classFeatId: 'canny-acumen' }).map((p) => p.feat.id)).toEqual([
+      'canny-acumen',
+    ]);
+
+    const chosen = characterEffects({
+      ...fighter(),
+      classFeatId: 'canny-acumen',
+      featChoices: { 'canny-acumen': { cannyAcumen: 'will' } },
+    });
+    // Canny Acumen grants expert (rank 2) until 17th level.
+    expect(chosen.saveRanks.get('will')).toBe(2);
+  });
+
+  it('grants master at 17th, where Canny Acumen\'s rank expression steps up', () => {
+    // The rank is `ternary(gte(@actor.level,17),3,2)` — an expression evaluated per
+    // character, not a literal baked in at ingest.
+    const at = (level: number) =>
+      characterEffects({
+        ...fighter(),
+        level,
+        classFeatId: 'canny-acumen',
+        featChoices: { 'canny-acumen': { cannyAcumen: 'will' } },
+      }).saveRanks.get('will');
+    expect(at(16)).toBe(2); // expert
+    expect(at(17)).toBe(3); // master
+  });
+
+  it('still honors a choice stored in the pre-migration Foundry path form', () => {
+    // Characters saved before options were keyed by our selector stored Foundry's
+    // rank path. Those must keep working, or a feat silently stops granting.
+    const legacy = characterEffects({
+      ...fighter(),
+      classFeatId: 'canny-acumen',
+      featChoices: { 'canny-acumen': { cannyAcumen: 'system.saves.will.rank' } },
+    });
+    expect(legacy.saveRanks.get('will')).toBe(2);
+  });
+
+  it('surfaces the right prompts/options for choice-driven feats', () => {
+    const canny = featChoicePrompts(findFeat('canny-acumen'));
+    expect(canny).toHaveLength(1);
+    expect(canny[0]!.flag).toBe('cannyAcumen');
+    // Three saves + Perception are mappable; the rest of the ChoiceSet is dropped.
+    expect(canny[0]!.options.map((o) => o.label).sort()).toEqual([
+      'Fortitude',
+      'Perception',
+      'Reflex',
+      'Will',
+    ]);
+
+    const natural = featChoicePrompts(findFeat('natural-skill'));
+    expect(natural).toHaveLength(2); // skillOne + skillTwo
+    expect(natural.every((p) => p.options.length === 16)).toBe(true);
+  });
+
+  it('derives ancestry base vision as a sense (Dwarf → darkvision)', () => {
+    const d = deriveCharacter({ ...fighter(), ancestryId: 'dwarf' });
+    expect(d.senses.some((s) => s.type === 'darkvision')).toBe(true);
+  });
+
+  it('derives a heritage resistance, level-scaled (Forge Dwarf → fire)', () => {
+    const build = (level: number): BuilderState => ({
+      ...fighter(level),
+      ancestryId: 'dwarf',
+      heritageId: 'forge-dwarf',
+    });
+    // max(1, floor(level/2)): 1 at level 1, 3 at level 6.
+    expect(characterTraits(build(1)).resistances).toEqual([
+      { type: 'fire', value: 1, source: 'Forge Dwarf' },
+    ]);
+    expect(characterTraits(build(6)).resistances[0]?.value).toBe(3);
+  });
+
+  it('lets a heritage sense upgrade the ancestry vision (Cavern Elf → darkvision, no low-light)', () => {
+    const t = characterTraits({ ...fighter(), ancestryId: 'elf', heritageId: 'cavern-elf' });
+    const types = t.senses.map((s) => s.type);
+    expect(types).toContain('darkvision');
+    expect(types).not.toContain('low-light-vision'); // superseded by darkvision
   });
 
   it('leaves a featless build unchanged', () => {

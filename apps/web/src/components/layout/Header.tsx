@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
+import { useIsAdmin } from '@/features/admin/useAdmin';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { GlobalSearch } from '@/features/search/GlobalSearch';
 
@@ -10,7 +11,10 @@ const NAV_LINKS = [
   { to: '/roadmap', label: 'Roadmap' },
   { to: '/rules', label: 'Rules' },
   { to: '/vault', label: 'Vault' },
+  { to: '/campaigns', label: 'Campaigns' },
 ];
+
+const ADMIN_LINK = { to: '/admin', label: 'Admin', end: false };
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -20,8 +24,13 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const location = useLocation();
+
+  // The Admin link only appears for flagged admins (the route + server RPCs
+  // enforce access regardless; this just keeps the nav clean for everyone else).
+  const navLinks = isAdmin ? [...NAV_LINKS, ADMIN_LINK] : NAV_LINKS;
 
   // Close the mobile menu on any route change (covers navigations that don't
   // go through a link's onClick, e.g. redirects).
@@ -44,7 +53,7 @@ export function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end} className={navClass}>
               {l.label}
             </NavLink>
@@ -80,7 +89,7 @@ export function Header() {
       {open && (
         <nav className="border-t border-gold/15 bg-midnight-900/95 md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-            {NAV_LINKS.map((l) => (
+            {navLinks.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}

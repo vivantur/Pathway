@@ -557,10 +557,15 @@ measuring the code against them produced the shape:
   2. ✅ **`hp` was missing from `FIXED_SELECTORS`** (the doc's selector list names it) →
      added, `resolveSelector` → `hp.max`. Without it the mapper couldn't do Toughness and
      would have *regressed* against `collectSheetEffects`.
-  3. ⬜ **`expr.ts` is a NO-INFIX grammar**, so `floor(@actor.level/2)` — the "half your level"
-     idiom, ~30+ corpus values — doesn't parse. Reported as `unsupported-value`; widening the
-     sandboxed evaluator is its own slice. (Note `dice.ts` already has full infix; the two
-     grammars are inconsistent.)
+  3. ✅ **`expr.ts` was a NO-INFIX grammar** → **fixed 2026-07-17** during the main merge, which
+     forced it: every one of the 32 ancestry/heritage resistance values in the corpus is
+     `max(1,floor(@actor.level/2))` or `floor(@actor.level/2)`, so porting `collectTraits` onto
+     the engine without infix would have silently deleted every resistance from the sheet.
+     Infix DESUGARS TO THE EXISTING CALL NODES (`a/2` → `divide(a,2)`), so `Expr`, `exprSchema`
+     and every stored effect were untouched — a parser surface, not a value shape; only
+     `divide` was new vocabulary. The mapper needed **no change at all**: widening the grammar
+     moved a whole reason-bucket into coverage by itself, which is exactly what the reason
+     tallies are for. Also ends the `dice.ts`/`expr.ts` two-grammar inconsistency.
 
 ### Ingest slices B + C landed 2026-07-16 — POINT 1 IS CLOSED
 
@@ -684,6 +689,74 @@ into 27 shapes; 12 shapes cover 89%.** That is the review UI's spec.
 
 **Next:** the parser proper (`prose.ts`, sibling to `foundry.ts`), then the review UI, then the
 authoring interface.
+
+## The `main` merge — absorbing the sheet features (2026-07-17)
+
+`main` had diverged 30 commits while `test` built the engine, and it had built MORE on the
+Foundry-at-runtime mechanism the engine exists to replace. Owner policy going in: *keep their
+features, discard their mechanism.* Every feature was kept; the mechanism is gone.
+
+**Two runtime Foundry interpreters were absorbed, not two halves of one:**
+- `collectTraits(itemRules: RuleElement[][], …)` → now `collectTraits(itemEffects, ctx, labels)`
+  in `passive.ts`, the THIRD consumer of `PassiveEffect[]` beside `applyPassiveEffects` and
+  `collectPassiveSheetEffects`. It reads the `grant` slice the other two deliberately punt on —
+  the doc's "no senses/resistances field on the model yet" was exactly what main built.
+  Attribution comes from the CALLER, because provenance lives on the content envelope, never on
+  an effect.
+- `featChoicePrompts`/`resolveChoiceGrants` — a SECOND interpreter the handoff hadn't named,
+  reading Foundry's `ChoiceSet`/`ActiveEffectLike` and substituting
+  `{item|flags.system.rulesSelections.<flag>}` at runtime. Its input (`feat.rules`) no longer
+  existed on `test`. Replaced by `EffectChoice` (passive.ts) + `mapChoiceGroups` (foundry.ts):
+  **the options and their effects are content, resolved at ingest; only the pick is runtime.**
+
+**The insight that collapsed the choice mapper:** what looked like three shapes (Canny Acumen's
+whole-path options, Skill Training's `{config:'skills'}`, Fighter Dedication's bare-slug list) is
+ONE rule — *substitute the selection into the AEL's path, then resolve it as a rank path* —
+because substitution IS Foundry's mechanism. An option that doesn't resolve is dropped, which is
+what makes the rule safe to apply broadly. Only Clan Lore's nested sub-field selections are a
+genuine exception. This maps **30 feats, including ~18 `main` silently dropped** (its
+`mappableRankPath` filter rejected bare slugs).
+
+**Two model gaps the merge exposed, both decision 1 ("every value IS an expression") unapplied:**
+1. ✅ infix — see gap 3 above.
+2. ✅ **`proficiency.rank` was a literal 0–4** → now `RankValue` (`rankSchema | exprSchema`),
+   resolved by `resolveRankValue(rank, level)`. Canny Acumen grants *expert, or master at 17th*
+   (`ternary(gte(@actor.level,17),3,2)`); a literal made that unrepresentable, and mapping it as
+   a flat 2 is a wrong sheet at 17+. The literal stays first in the union, so every stored rank
+   but one validates unchanged and reads back as a number. Ripple was 2 call sites (both already
+   had a level); the feared `candidate.ts` coupling was imaginary — its `rank?: number` is its
+   own draft field. A `needs-rank-expression` reason was added, then removed once the fix landed
+   and made it unreachable.
+
+**Also folded in, because the merge made them true:**
+- `remap-effects.mjs` generalized from feats-only to a DATASET table. Rules live on the NESTED
+  `heritages[]` inside `ancestries.json` (49) and on `versatile-heritages.json` (20) — walking
+  only the top level finds zero. Sidecar entities are keyed `kind:id` so a heritage id cannot
+  shadow a feat id.
+- The **darkvision-supersedes-low-light** sense rule was implemented TWICE on main (builder +
+  imported sheet). It moved into core's `collectTraits` — a sense rule implemented twice is the
+  exact duplication core exists to prevent.
+- `/admin/effect-coverage` is now gated by `RequireAuth`+`RequireAdmin`. Its own comment said
+  "wrap it the day roles exist"; main's admin dashboard is that day.
+- Choice picks are stored in OUR vocabulary (`will`), not Foundry's path (`system.saves.will.rank`).
+  Pre-migration saves are normalized on READ (`featChoicesFor`) — a feat quietly ceasing to grant
+  is exactly the failure nobody notices.
+
+**Coverage: 306 → 457 mapped (5.9% → 8.8%), 467 effects, 30 entities with choices, 0 silently
+lost.** The mapper itself barely changed; most of that came from widening the MODEL, which is the
+remap script's whole thesis — coverage rises without Foundry in the loop.
+
+**The boundary still holds, verified in the production bundle:** `grep -rl RuleElement
+packages/core/src apps/web/src` → only `foundry.ts` + its test. `FlatModifier`/`ActiveEffectLike`/
+`ChoiceSet` appear ONLY in the lazily-loaded, admin-gated `effect-ingest-report` chunk (the raw
+quarantine, by design); `mapFoundryRules`/`mapChoiceGroups` tree-shake out entirely. `rulesSelections`
+went from main's 317 to 2 — and those 2 are Foundry template artifacts in Paizo DESCRIPTION PROSE
+(*Invoke the Elements*, *Heart of the Kaiju*), pre-existing on `test`, cosmetic, not a coupling.
+Worth cleaning at ingest someday.
+
+**763 tests green** (core 478 · bot 209 · web 61 · db 15), web typecheck + lint + production build
+clean. Main's real-dataset sheet tests — including `sheetStats.test.ts`'s imported-character
+senses/resistances — passed UNCHANGED through the rewired pipeline. That is the parity proof.
 
 ## Decisions (resolved 2026-07-13)
 

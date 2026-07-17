@@ -11,7 +11,7 @@ import {
   findSkill,
   findSpell,
 } from '@/features/builder/data';
-import { deriveCharacter } from './rules';
+import { backgroundLoreSubject, deriveCharacter, formatSenseLabel, loreDisplayName } from './rules';
 import { casterConfig, spellStats } from './spellcasting';
 import { grantedFocusSpell } from './subclassEffects';
 import type { BuilderState } from './types';
@@ -119,7 +119,10 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
             <div>
               <span className="text-gold-400">{background.name}:</span> trained in{' '}
               {findSkill(background.trainedSkill)?.name ?? background.trainedSkill} and{' '}
-              {background.loreSkill}
+              {(() => {
+                const lore = backgroundLoreSubject(state);
+                return lore ? loreDisplayName(lore) : 'a Lore of your choice';
+              })()}
               {background.skillFeat ? `; ${findFeat(background.skillFeat)?.name ?? ''} feat` : ''}
             </div>
           )}
@@ -161,6 +164,35 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
           </p>
         )}
       </Section>
+
+      {(d.senses.length > 0 || d.resistances.length > 0) && (
+        <Section title="Senses & Resistances">
+          <div className="flex flex-col gap-3">
+            {d.senses.length > 0 && (
+              <div>
+                <div className="mb-1 font-ui text-xs uppercase tracking-wider text-parchment/50">Senses</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.senses.map((s) => (
+                    <Chip key={s.type}>{formatSenseLabel(s)}</Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+            {d.resistances.length > 0 && (
+              <div>
+                <div className="mb-1 font-ui text-xs uppercase tracking-wider text-parchment/50">Resistances</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.resistances.map((r) => (
+                    <Chip key={r.type}>
+                      {r.type[0].toUpperCase() + r.type.slice(1)} {r.value}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       {trained.length > 0 && (
         <Section title={`Trained Skills (${trained.length})`}>

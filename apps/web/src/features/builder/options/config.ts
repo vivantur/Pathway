@@ -30,7 +30,7 @@ export const OPTION_GROUPS: OptionGroup[] = [
       { id: 'separateAdventurersKit', label: "Separate Adventurer's Kit into individual inventory items?", scope: 'character', implemented: false, note: 'Needs the inventory feature (Increment 3).' },
       { id: 'genericCompanion', label: 'Add generic companion (used by 3rd party custom packs)', scope: 'character', implemented: false, note: 'Needs the companion feature.' },
       { id: 'genericCaster', label: 'Add generic caster for staves etc?', scope: 'character', implemented: false, note: 'Needs the spellcasting feature.' },
-      { id: 'showRareFeats', label: 'Display rare Aftermath and Deviant feats?', scope: 'character', implemented: false, note: 'Needs those feats in the dataset (full data import).' },
+      { id: 'showRareFeats', label: 'Display rare feats (Aftermath, Deviant, etc.)?', scope: 'character', implemented: true, note: 'Rare feats are hidden from the feat pickers by default (they need GM permission); turn this on to choose them.' },
     ],
   },
   {
@@ -74,6 +74,7 @@ export const OPTION_GROUPS: OptionGroup[] = [
 export const OPT = {
   freeArchetype: 'freeArchetype',
   ancestryParagon: 'ancestryParagon',
+  showRareFeats: 'showRareFeats',
   proficiencyWithoutLevel: 'proficiencyWithoutLevel',
   gradualAbilityBoosts: 'gradualAbilityBoosts',
   automaticBonusProgression: 'automaticBonusProgression',

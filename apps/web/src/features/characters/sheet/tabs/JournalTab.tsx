@@ -4,7 +4,8 @@ import { useCharacterNotes } from '@/features/characters/useCharacterNotes';
 import { useUpdateCharacterNotes } from '@/features/characters/useUpdateCharacterNotes';
 import { useCharacterDowntime } from '@/features/characters/useCharacterDowntime';
 import { useUpdateCharacterDowntime } from '@/features/characters/useUpdateCharacterDowntime';
-import { useXpLog } from '@/features/characters/useXpLog';
+import { useXpLog, useXpLogMutations } from '@/features/characters/useXpLog';
+import type { XpLogRow as XpLogTableRow } from '@/features/characters/xpLog';
 import type {
   CharacterNoteEntry,
   CharacterRow,
@@ -28,21 +29,14 @@ export function JournalTab({
   edit: EditControls;
 }) {
   const { data: notes, isLoading: notesLoading } = useCharacterNotes(character.char_key);
-  // Read the shared character_xp_log table (the bot's live store), mapping rows
-  // onto the display shape. Falls back to the legacy overlay copy if the table
-  // query is empty (older characters whose log predates the dedicated table).
+  // Read the shared character_xp_log table (the bot's live store). Table rows can
+  // be removed here (they have a stable id); a false entry is one Remove click
+  // away. Older characters whose log predates the table fall back to the legacy
+  // overlay copy, which is display-only (no id to delete).
   const { data: xpRows = [] } = useXpLog(character.char_key);
+  const { remove } = useXpLogMutations(character.char_key);
   const legacyXp = character.overlay?.pathway_bot_state?.xpLog ?? [];
-  const xpLog: XpLogEntry[] = xpRows.length
-    ? xpRows.map((r) => ({
-        at: r.created_at,
-        amount: r.amount,
-        reason: r.reason ?? undefined,
-        oldXp: r.old_xp,
-        newXp: r.new_xp,
-        awardedBy: r.awarded_by_discord_id ?? undefined,
-      }))
-    : legacyXp;
+  const xpCount = xpRows.length || legacyXp.length;
 
   return (
     <div className="space-y-4">
@@ -57,15 +51,26 @@ export function JournalTab({
 
       <DowntimePanel charKey={character.char_key} canEdit={edit.enabled} />
 
-      <Panel title={`XP History${xpLog.length ? ` (${xpLog.length})` : ''}`} icon={<StarIcon />}>
-        {xpLog.length === 0 ? (
+      <Panel title={`XP History${xpCount ? ` (${xpCount})` : ''}`} icon={<StarIcon />}>
+        {xpCount === 0 ? (
           <EmptyBlock>
             No XP awards on record yet. Play a session — every /xp the bot logs
             will appear here with date, amount, and reason.
           </EmptyBlock>
+        ) : xpRows.length ? (
+          <ol className="space-y-2">
+            {xpRows.map((row) => (
+              <XpLogRow
+                key={row.id}
+                entry={rowToEntry(row)}
+                onDelete={edit.enabled ? () => remove.mutate(row) : undefined}
+                deleting={remove.isPending}
+              />
+            ))}
+          </ol>
         ) : (
           <ol className="space-y-2">
-            {[...xpLog].sort(byNewestFirst).map((entry, i) => (
+            {[...legacyXp].sort(byNewestFirst).map((entry, i) => (
               <XpLogRow key={`${entry.at ?? ''}:${entry.amount ?? ''}:${i}`} entry={entry} />
             ))}
           </ol>
@@ -302,7 +307,7 @@ function NoteEditor({
 /** Downtime bank: spendable days + audit log, with grant/spend in edit mode. */
 function DowntimePanel({ charKey, canEdit }: { charKey: string; canEdit: boolean }) {
   const { data, isLoading } = useCharacterDowntime(charKey);
-  const { grant, spend, isPending } = useUpdateCharacterDowntime(charKey);
+  const { grant, spend, isPending, isError, error } = useUpdateCharacterDowntime(charKey);
   const [days, setDays] = useState('');
   const [reason, setReason] = useState('');
 
@@ -368,6 +373,12 @@ function DowntimePanel({ charKey, canEdit }: { charKey: string; canEdit: boolean
             </div>
           )}
 
+          {isError && (
+            <p className="mt-2 text-xs text-red-300">
+              Couldn’t save downtime: {error?.message ?? 'unknown error'}
+            </p>
+          )}
+
           {recent.length > 0 && (
             <ul className="mt-3 space-y-1.5">
               {recent.map((e, i) => (
@@ -402,7 +413,27 @@ function DowntimeLogRow({ entry }: { entry: DowntimeLogEntry }) {
   );
 }
 
-function XpLogRow({ entry }: { entry: XpLogEntry }) {
+/** Map a character_xp_log table row to the display shape XpLogRow renders. */
+function rowToEntry(r: XpLogTableRow): XpLogEntry {
+  return {
+    at: r.created_at,
+    amount: r.amount,
+    reason: r.reason ?? undefined,
+    oldXp: r.old_xp,
+    newXp: r.new_xp,
+    awardedBy: r.awarded_by_discord_id ?? undefined,
+  };
+}
+
+function XpLogRow({
+  entry,
+  onDelete,
+  deleting,
+}: {
+  entry: XpLogEntry;
+  onDelete?: () => void;
+  deleting?: boolean;
+}) {
   const date = entry.at ? new Date(entry.at) : null;
   const dateOk = date && !Number.isNaN(date.getTime());
   const amount = entry.amount ?? 0;
@@ -438,6 +469,17 @@ function XpLogRow({ entry }: { entry: XpLogEntry }) {
           )}
         </div>
       </div>
+      {onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          title="Remove this XP entry (adjusts your total and syncs to the bot)"
+          className="shrink-0 self-center rounded border border-red-400/30 px-2 py-0.5 text-xs text-red-300/80 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          Remove
+        </button>
+      )}
     </li>
   );
 }

@@ -5,7 +5,16 @@
     "name": "Aiuvarin",
     "description": "You have elves, or possibly other aiuvarins, in your family tree. You have pointed ears and other telltale signs of elf heritage. You gain the elf trait, the aiuvarin trait, and low-light vision. In addition, when you gain an ancestry feat, you can choose from aiuvarin and elf feats in addition to those from your ancestry.",
     "source": "Pathfinder Player Core",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "ardande",
@@ -13,7 +22,16 @@
     "name": "Ardande",
     "description": "You descend from wood elementals or have some other heritage influenced by the elemental Plane of Wood. You might have green, mossy skin, vines that grow from your head instead of hair, or thin appendages that resemble twigs. You gain the ardande trait, in addition to the traits from your ancestry. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision.\n\nYou can choose from ardande feats, geniekin feats, and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Rage of Elements",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "beastkin",
@@ -29,7 +47,16 @@
     "name": "Changeling",
     "description": "Your mother was a hag. Your eyes' heterochromia is the most obvious signifier of this parentage, but you likely also have a slighter build, paler skin, and darker hair than most members of your other parent's ancestry. You gain the changeling trait. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. You can select from changeling feats and feats from your other parent's ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Player Core",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "dhampir",
@@ -37,7 +64,16 @@
     "name": "Dhampir",
     "description": "You are the scion of a vampire, half living and half undead, gifted with uncanny charm and grace, a bloodless pallor, and elongated incisors. You gain the dhampir trait, in addition to the traits from your ancestry. You have the void healing ability, which means you are harmed by vitality damage and healed by void effects as if you were undead. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. You can select from dhampir feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Player Core 2",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "dragonblood",
@@ -53,7 +89,16 @@
     "name": "Dromaar",
     "description": "Orcish strength emboldens your bloodline. You have a green tinge to your skin and other indicators of orc heritage. You gain the orc trait, the dromaar trait, and low-light vision. When you gain an ancestry feat, you can choose from dromaar and orc feats in addition to those from your ancestry.",
     "source": "Pathfinder Player Core",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "duskwalker",
@@ -61,7 +106,16 @@
     "name": "Duskwalker",
     "description": "Thanks to an ancient bargain, your soul has been reborn as a duskwalker, a planar scion with a connection to psychopomps and the Boneyard. You gain the duskwalker trait. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. Neither your body nor your spirit can ever become undead. You can select from duskwalker feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Player Core 2",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "hungerseed",
@@ -77,7 +131,46 @@
     "name": "Naari",
     "description": "You descend from fire elementals or bear the mark of the Inner Spheres, and your features illustrate the influence that elemental fire has over you. You gain the naari trait, in addition to the traits from your ancestry. You gain resistance to fire equal to half your level (minimum 1), and you treat environmental heat effects as if they were one step less severe (incredible heat becomes extreme, extreme heat becomes severe, and so on). You can choose from naari feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "resistance",
+          "damageType": "fire",
+          "value": {
+            "kind": "call",
+            "fn": "max",
+            "args": [
+              {
+                "kind": "lit",
+                "value": 1
+              },
+              {
+                "kind": "call",
+                "fn": "floor",
+                "args": [
+                  {
+                    "kind": "call",
+                    "fn": "divide",
+                    "args": [
+                      {
+                        "kind": "var",
+                        "name": "level"
+                      },
+                      {
+                        "kind": "lit",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
   },
   {
     "id": "nephilim",
@@ -85,7 +178,16 @@
     "name": "Nephilim",
     "description": "Your nature is influenced by celestials, fiends, or monitors. This manifests as a combination of features that belie your heritage, such as golden eyes, a halo, horns, or a tail. You gain the nephilim trait, in addition to the traits from your ancestry. You gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. You can choose from nephilim feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Player Core",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "oread",
@@ -93,7 +195,16 @@
     "name": "Oread",
     "description": "An earth elemental ancestor has influenced your bloodline, and your features highlight this elemental planar connection. You might have a crystalline or metallic sheen to your skin or hair, rough and stony flesh, or glittering gemstone eyes. You gain the oread trait, in addition to the traits from your ancestry. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. You can choose from oread feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "reflection",
@@ -109,7 +220,16 @@
     "name": "Suli",
     "description": "You are descended from a janni or otherwise embody a dichotomy of opposing elemental planar forces. You gain the suli trait, in addition to the traits from your ancestry. You also gain low-light vision, or you gain darkvision if your ancestry already has low-light vision. You can choose from suli feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "sylph",
@@ -117,7 +237,16 @@
     "name": "Sylph",
     "description": "You are descended from air elementals or were born under the element's influence. You gain the sylph trait, in addition to the traits from your ancestry. You also gain low-light vision or darkvision if your ancestry already has low-light vision. You can choose from sylph feats and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Lost Omens Ancestry Guide",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "sense",
+          "name": "low-light-vision"
+        }
+      }
+    ]
   },
   {
     "id": "talos",
@@ -125,7 +254,46 @@
     "name": "Talos",
     "description": "Your physical features reflect the influence a zuhra or other metal elemental has had over your bloodline. Your skin likely has a metallic sheen, ranging from the dull luster of raw ore to the gleaming polish of a new blade, with the wear of age or hardship taking the form of tarnish, rust, or scouring. Your hair might resemble spun gold, coiled steel, copper wiring, or braided chains. You gain the talos trait, in addition to the traits from your ancestry. You gain resistance to electricity equal to half your level (minimum 1). You can cast the Detect Metal cantrip as an arcane innate spell at will. A cantrip is heightened to a spell rank equal to half your level rounded up.\n\nYou can choose from talos feats, geniekin feats, and feats from your ancestry whenever you gain an ancestry feat.",
     "source": "Pathfinder Rage of Elements",
-    "versatile": true
+    "versatile": true,
+    "effects": [
+      {
+        "kind": "grant",
+        "grant": {
+          "type": "resistance",
+          "damageType": "electricity",
+          "value": {
+            "kind": "call",
+            "fn": "max",
+            "args": [
+              {
+                "kind": "lit",
+                "value": 1
+              },
+              {
+                "kind": "call",
+                "fn": "floor",
+                "args": [
+                  {
+                    "kind": "call",
+                    "fn": "divide",
+                    "args": [
+                      {
+                        "kind": "var",
+                        "name": "level"
+                      },
+                      {
+                        "kind": "lit",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
   },
   {
     "id": "undine",

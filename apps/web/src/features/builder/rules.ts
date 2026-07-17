@@ -4,11 +4,13 @@ import {
   findBackground,
   findClass,
   findFeat,
+  findHeritage,
   findItem,
   getDataset,
   type AbilityKey,
   type Armor,
   type Boost,
+  type Feat,
   type ProficiencyRank,
   type Shield,
   type Weapon,
@@ -19,15 +21,21 @@ import {
   armorClass,
   attackRankAtLevel,
   collectPassiveSheetEffects,
+  collectTraits,
+  isSkillSlug,
   maxHitPoints,
   proficiencyBonus,
   proficientDC,
   proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
+  resolveChoiceEffects,
   stackModifiers,
+  type EffectChoice,
   type EffectProvenance,
   type AttackCategory,
+  type CharacterTraits,
+  type GrantedSense,
   type Modifier,
   type PassiveEffect,
   type ProficiencyTrack,
@@ -45,6 +53,8 @@ import {
   focusPoints,
   monkPathSaveRank,
   subclassArmorRank,
+  subclassGrantedSkillIds,
+  subclassSkillGrant,
 } from './subclassEffects';
 import type { BuilderState } from './types';
 
@@ -59,7 +69,13 @@ export function opt(state: BuilderState, id: string): boolean {
 // Level 1's class feat + ancestry feat + skill feat live in the creation steps.
 const CLASS_FEAT_LEVELS = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 const ANCESTRY_FEAT_LEVELS = [1, 5, 9, 13, 17];
-const ANCESTRY_PARAGON_LEVELS = [1, 3, 7, 11, 15, 19];
+// Ancestry Paragon ADDS bonus ancestry feats (1, 3, 7, 11, 15, 19) ON TOP of the
+// normal schedule (1, 5, 9, 13, 17) — so an ancestry feat lands at every odd
+// level. Their union (below) drives the Advancement step for levels 2+. Level 1
+// grants TWO ancestry feats: the normal creation feat plus a paragon bonus,
+// which is stored separately (`ancestryParagonFeatId`) and picked in the Feats
+// step, since the boolean-per-level slot model can't represent two at once.
+const ANCESTRY_PARAGON_LEVELS = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
 const SKILL_FEAT_LEVELS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 const GENERAL_FEAT_LEVELS = [3, 7, 11, 15, 19];
 const SKILL_INCREASE_LEVELS = [3, 5, 7, 9, 11, 13, 15, 17, 19];
@@ -226,12 +242,130 @@ export function characterEffects(state: BuilderState): SheetEffects {
   const labels: string[] = [];
   for (const id of chosenFeatIds(state)) {
     const feat = findFeat(id);
-    if (feat && Array.isArray(feat.effects) && feat.effects.length) {
-      itemEffects.push(feat.effects as PassiveEffect[]);
-      labels.push(feat.name);
-    }
+    if (!feat) continue;
+    // A feat's unconditional effects, plus whatever its player choices resolve to.
+    // The choice's OPTIONS and their effects were fixed at ingest; only the pick is
+    // the player's, so this is a lookup, not an interpretation.
+    const effects = [
+      ...((feat.effects ?? []) as PassiveEffect[]),
+      ...resolveChoiceEffects(feat.choices as EffectChoice[] | undefined, featChoicesFor(state, id)),
+    ];
+    if (!effects.length) continue;
+    itemEffects.push(effects);
+    labels.push(feat.name);
   }
   return collectPassiveSheetEffects(itemEffects, { level }, labels);
+}
+
+// --- choice-driven feats: player prompts ------------------------------------
+//
+// Some feats don't know their own effect until the player picks something (Canny
+// Acumen's save, Skill Training's skill). The OPTIONS and what each one grants are
+// content, resolved at ingest into `feat.choices` by scripts/remap-effects.mjs. This
+// app only stores the pick and looks it up — it does not interpret a rule element.
+//
+// This replaced a runtime interpreter that read Foundry's ChoiceSet/ActiveEffectLike
+// and substituted `{item|flags.system.rulesSelections.<flag>}` into their paths on
+// every derive. That mechanism is gone with the rest of the Foundry-at-runtime read.
+
+/**
+ * The player's stored picks for a feat, normalized.
+ *
+ * BACK-COMPAT: choices used to be stored as Foundry's own rank path
+ * (`system.saves.will.rank`) because the option values came straight from their
+ * ChoiceSet. Options are now keyed by OUR selector (`will`), so a character saved
+ * before this migration would silently lose its choice — a feat quietly ceasing to
+ * grant is exactly the kind of failure nobody notices. Old values are translated on
+ * read; nothing needs migrating, and new saves are written in our vocabulary.
+ */
+const LEGACY_RANK_PATH = /^system\.(?:skills|saves)\.([a-z]+)\.rank$|^system\.(?:attributes\.)?(perception)\.rank$/;
+
+export function featChoicesFor(state: BuilderState, featId: string): Record<string, string> {
+  const stored = state.featChoices?.[featId];
+  if (!stored) return {};
+  const out: Record<string, string> = {};
+  for (const [flag, value] of Object.entries(stored)) {
+    const m = LEGACY_RANK_PATH.exec(value);
+    out[flag] = m ? (m[1] ?? m[2] ?? value) : value;
+  }
+  return out;
+}
+
+/** The prompts a feat needs from the player, in order. Empty when it needs none. */
+export function featChoicePrompts(feat: Feat | undefined): EffectChoice[] {
+  return (feat?.choices as EffectChoice[] | undefined) ?? [];
+}
+
+/** Skill ids trained by a resolved feat choice — used by the Skills step. */
+export function featChosenSkillIds(state: BuilderState): string[] {
+  const out: string[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    for (const effect of resolveChoiceEffects(feat.choices as EffectChoice[] | undefined, featChoicesFor(state, id))) {
+      if (effect.kind === 'proficiency' && isSkillSlug(effect.target)) out.push(effect.target);
+    }
+  }
+  return out;
+}
+
+/** Every chosen feat that still needs one or more player choices, with prompts. */
+export function pendingFeatChoices(state: BuilderState): { feat: Feat; prompts: EffectChoice[] }[] {
+  const out: { feat: Feat; prompts: EffectChoice[] }[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    const prompts = featChoicePrompts(feat);
+    if (prompts.length) out.push({ feat, prompts });
+  }
+  return out;
+}
+
+// --- ancestry / heritage traits: senses & resistances -----------------------
+
+/**
+ * Special senses and damage resistances the character's ancestry and heritage
+ * grant, resolved (and level-scaled) by `@pathway/core`. The ancestry's base
+ * vision is modeled as a sense so it dedupes/upgrades against heritage senses.
+ */
+export function characterTraits(state: BuilderState): CharacterTraits {
+  const level = state.level || 1;
+  const ancestry = state.ancestryId ? findAncestry(state.ancestryId) : undefined;
+  const heritage = findHeritage(state.ancestryId, state.heritageId);
+  const itemEffects: PassiveEffect[][] = [];
+  const labels: string[] = [];
+
+  if (ancestry?.vision && ancestry.vision !== 'normal') {
+    // The ancestry's base vision is a plain field on our schema, not an ingested
+    // effect. Expressing it as a sense GRANT lets it dedupe and upgrade against the
+    // heritage's senses through the same path as everything else.
+    itemEffects.push([{ kind: 'grant', grant: { type: 'sense', name: ancestry.vision } }]);
+    labels.push(ancestry.name);
+  }
+  if (ancestry && Array.isArray(ancestry.effects)) {
+    itemEffects.push(ancestry.effects as PassiveEffect[]);
+    labels.push(ancestry.name);
+  }
+  if (heritage && Array.isArray(heritage.effects)) {
+    itemEffects.push(heritage.effects as PassiveEffect[]);
+    labels.push(heritage.name);
+  }
+
+  // Sense dedupe (including darkvision superseding low-light vision) is core's, so
+  // this and the imported-character sheet cannot drift apart on it.
+  return collectTraits(itemEffects, { level }, labels);
+}
+
+/** Human-readable label for a granted sense, e.g. "Scent (imprecise, 30 ft)". */
+export function formatSenseLabel(sense: GrantedSense): string {
+  const name = sense.type
+    .split('-')
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w))
+    .join('-');
+  const parts: string[] = [];
+  if (sense.acuity) parts.push(sense.acuity);
+  if (sense.range) parts.push(`${sense.range} ft`);
+  return parts.length ? `${name} (${parts.join(', ')})` : name;
 }
 
 /** Final proficiency rank of every skill, factoring in per-level skill increases. */
@@ -240,6 +374,9 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
   const trained = trainedSkillIds(state);
   const ranks = new Map<string, ProficiencyRank>();
   for (const s of getDataset().skills) ranks.set(s.id, trained.has(s.id) ? 1 : 0);
+  // Trained Lore subjects (background + chosen) start at trained; per-level
+  // increases below can raise them like any other skill.
+  for (const subject of trainedLoreSubjects(state)) ranks.set(loreId(subject), 1);
 
   for (const [lvlStr, gains] of Object.entries(state.progression)) {
     if (Number(lvlStr) > level) continue;
@@ -258,6 +395,22 @@ export function skillRankMap(state: BuilderState): Map<string, ProficiencyRank> 
   // is not subject to the increase cap — apply it after, taking the higher rank.
   for (const [skillId, grant] of characterEffects(state).skillRanks) {
     ranks.set(skillId, Math.max(ranks.get(skillId) ?? 0, grant) as ProficiencyRank);
+  }
+
+  // Subclass-granted training (e.g. a Gunslinger Way trains you in its skill).
+  for (const id of subclassGrantedSkillIds(state)) {
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, 1) as ProficiencyRank);
+  }
+
+  // Object-valued feat choices that train skills (Clan Lore, Aldori/Eldritch).
+  for (const id of featChosenSkillIds(state)) {
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, 1) as ProficiencyRank);
+  }
+
+  // Manual overrides (homebrew / GM grants) raise a skill to the chosen rank.
+  for (const [id, rank] of Object.entries(state.skillOverrides ?? {})) {
+    const r = Math.max(0, Math.min(4, Math.floor(rank))) as ProficiencyRank;
+    ranks.set(id, Math.max(ranks.get(id) ?? 0, r) as ProficiencyRank);
   }
   return ranks;
 }
@@ -281,13 +434,69 @@ export function trainedSkillIds(state: BuilderState): Set<string> {
   return set;
 }
 
-/** Every feat id chosen anywhere on the build (all levels + creation slots). */
-export function chosenFeatIds(state: BuilderState): Set<string> {
+// --- Lore skills -----------------------------------------------------------
+// Lore is an Intelligence skill with a player-named subject ("Warfare Lore").
+// A build can carry any number of distinct subjects; each is its own skill with
+// its own proficiency. We key them by a `lore:<slug>` id so they slot into the
+// same rank/derive machinery as the 16 standard skills.
+
+const LORE_PREFIX = 'lore:';
+
+/** Stable id for a Lore subject, e.g. "Warfare" → "lore:warfare". */
+export function loreId(subject: string): string {
+  return LORE_PREFIX + subject.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+/** Display name for a Lore subject, normalised to end in a single "Lore". */
+export function loreDisplayName(subject: string): string {
+  const base = subject.trim().replace(/(\s+lore)+\s*$/i, '').trim();
+  return base ? `${base} Lore` : 'Lore';
+}
+
+/**
+ * The Lore subject a background grants, cleaned of the free-text noise in the
+ * source data ("Academia Lore Lore", trailing "Lore", …). Returns null when the
+ * source leaves the subject to the player ("your choice", "GM choice"), so those
+ * backgrounds simply let the player add a Lore of their own instead.
+ */
+export function backgroundLoreSubject(state: BuilderState): string | null {
+  const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
+  const raw = bg?.loreSkill?.trim();
+  if (!raw) return null;
+  if (/choice|choose|\bgm\b/i.test(raw)) return null;
+  const subject = raw.replace(/(\s+lore)+\s*$/i, '').trim();
+  return subject || null;
+}
+
+/**
+ * Every trained Lore subject on the build: the background's granted Lore plus
+ * the player's chosen Lores, de-duplicated case-insensitively (first spelling
+ * wins). Background Lore is free; chosen Lores draw from the free-skill pool.
+ */
+export function trainedLoreSubjects(state: BuilderState): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (s: string | null | undefined) => {
+    const v = s?.trim();
+    if (!v) return;
+    const k = v.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push(v);
+  };
+  push(backgroundLoreSubject(state));
+  for (const l of state.loreChoices ?? []) push(l);
+  return out;
+}
+
+/** Feats from the fixed build slots (creation + per-level), excluding grants. */
+function sourceFeatIds(state: BuilderState): Set<string> {
   const ids = new Set<string>();
   const add = (id?: string) => {
     if (id) ids.add(id);
   };
   add(state.ancestryFeatId);
+  add(state.ancestryParagonFeatId);
   add(state.classFeatId);
   const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
   add(bg?.skillFeat);
@@ -299,6 +508,139 @@ export function chosenFeatIds(state: BuilderState): Set<string> {
     add(g.archetypeFeatId);
   }
   return ids;
+}
+
+// --- bonus feats granted by another choice ---------------------------------
+// Several options hand you an *extra* feat to choose. Each surfaces as its own
+// picker; the choice is stored under a stable, level-scoped slot key so it
+// survives edits and is honoured only while its granting choice is active.
+
+export type BonusFeatKind = 'class' | 'general' | 'ancestry' | 'dedication';
+
+export const BONUS_FEAT_KIND_LABEL: Record<BonusFeatKind, string> = {
+  class: 'Class',
+  general: 'General',
+  ancestry: 'Ancestry',
+  dedication: 'Dedication',
+};
+
+export interface BonusFeatSlot {
+  /** Stable key the chosen feat is stored under in `state.bonusFeatChoices`. */
+  key: string;
+  kind: BonusFeatKind;
+  /** What granted the feat, for the picker's heading. */
+  source: string;
+  /** Character level at which the granting choice sits (drives which step shows it). */
+  level: number;
+  /** Highest feat level the grant allows (e.g. "a 3rd-level general feat"). */
+  featLevel: number;
+}
+
+const VERSATILE_HUMAN_HERITAGE = 'versatile-human';
+
+/** Feats that grant a bonus feat: id → what kind, and the granted feat's level. */
+const BONUS_FEAT_GRANTS: Record<string, { kind: BonusFeatKind; source: string; featLevel: number }> = {
+  'natural-ambition': { kind: 'class', source: 'Natural Ambition', featLevel: 1 },
+  'general-training': { kind: 'general', source: 'General Training', featLevel: 1 },
+  'advanced-general-training': { kind: 'general', source: 'Advanced General Training', featLevel: 3 },
+  'ancestral-paragon': { kind: 'ancestry', source: 'Ancestral Paragon', featLevel: 1 },
+  runtsage: { kind: 'ancestry', source: 'Runtsage', featLevel: 1 },
+  multitalented: { kind: 'dedication', source: 'Multitalented', featLevel: 2 },
+  'multifarious-muse': { kind: 'class', source: 'Multifarious Muse', featLevel: 1 },
+};
+
+/** Levels at which a feat id sits in the fixed (non-bonus) build slots. */
+function featLevels(state: BuilderState, featId: string): number[] {
+  const levels: number[] = [];
+  if (state.ancestryFeatId === featId) levels.push(1);
+  if (state.ancestryParagonFeatId === featId) levels.push(1);
+  if (state.classFeatId === featId) levels.push(1);
+  const bg = state.backgroundId ? findBackground(state.backgroundId) : undefined;
+  if (bg?.skillFeat === featId) levels.push(1);
+  for (const [lvlStr, g] of Object.entries(state.progression)) {
+    const lvl = Number(lvlStr);
+    if (
+      g.classFeatId === featId ||
+      g.ancestryFeatId === featId ||
+      g.skillFeatId === featId ||
+      g.generalFeatId === featId ||
+      g.archetypeFeatId === featId
+    )
+      levels.push(lvl);
+  }
+  return levels;
+}
+
+/** The bonus-feat pickers a build currently has, from its granting choices. */
+export function bonusFeatSlots(state: BuilderState): BonusFeatSlot[] {
+  const slots: BonusFeatSlot[] = [];
+  if (state.heritageId === VERSATILE_HUMAN_HERITAGE)
+    slots.push({ key: 'versatile-human', kind: 'general', source: 'Versatile Human heritage', level: 1, featLevel: 1 });
+  for (const [id, def] of Object.entries(BONUS_FEAT_GRANTS)) {
+    for (const lvl of featLevels(state, id)) {
+      slots.push({ key: `${id}@${lvl}`, kind: def.kind, source: def.source, level: lvl, featLevel: def.featLevel });
+    }
+  }
+  return slots;
+}
+
+/** The feats eligible for a bonus-feat slot (by kind, capped at its feat level). */
+export function bonusFeatOptions(state: BuilderState, slot: BonusFeatSlot): Feat[] {
+  const feats = getDataset().feats;
+  const cap = slot.featLevel;
+  switch (slot.kind) {
+    case 'class': {
+      const cid = state.classId ?? '';
+      return feats.filter((f) => f.type === 'class' && f.level <= cap && (f.classIds ?? []).includes(cid));
+    }
+    case 'general':
+      // A general-feat grant may be filled by a general OR skill feat.
+      return feats.filter((f) => (f.type === 'general' || f.type === 'skill') && f.level <= cap);
+    case 'ancestry': {
+      const aid = state.ancestryId ?? '';
+      return feats.filter((f) => f.type === 'ancestry' && f.level <= cap && f.ancestryId === aid);
+    }
+    case 'dedication':
+      return feats.filter(
+        (f) => f.type === 'archetype' && f.level <= cap && (f.traits ?? []).includes('dedication'),
+      );
+  }
+}
+
+/** Every feat id on the build: the fixed slots plus active bonus-feat grants. */
+export function chosenFeatIds(state: BuilderState): Set<string> {
+  const ids = sourceFeatIds(state);
+  // Only honour a stored bonus choice while its granting slot is still active,
+  // so removing Natural Ambition (etc.) also drops the feat it granted.
+  for (const slot of bonusFeatSlots(state)) {
+    const id = state.bonusFeatChoices?.[slot.key];
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+/** How many times a feat id is taken on the build (repeatable feats), counting
+ *  fixed slots AND filled bonus-feat grants. */
+function countFeatOccurrences(state: BuilderState, featId: string): number {
+  let n = featLevels(state, featId).length;
+  for (const slot of bonusFeatSlots(state)) {
+    if (state.bonusFeatChoices?.[slot.key] === featId) n += 1;
+  }
+  return n;
+}
+
+/**
+ * Extra language slots granted by feats. Multilingual (Player Core p.258):
+ * "You learn two new languages … an additional if you are or become a master in
+ * Society, and again if legendary." It's repeatable, so each instance grants
+ * its own 2 + master + legendary. Society rank is read from the derived build.
+ */
+export function featLanguageSlots(state: BuilderState): number {
+  const count = countFeatOccurrences(state, 'multilingual');
+  if (!count) return 0;
+  const society = skillRankMap(state).get('society') ?? 0;
+  const perInstance = 2 + (society >= 3 ? 1 : 0) + (society >= 4 ? 1 : 0);
+  return count * perInstance;
 }
 
 /** Total number of free skills the player may pick (class count + Int bonus).
@@ -370,7 +712,13 @@ export interface DerivedCharacter {
     unarmoredDefense: ProficiencyRank;
   };
   /** Feat-granted effects applied to this sheet, attributed to their source. */
+  // `AppliedEffect` was renamed `EffectProvenance` in core — the doc-canonical name
+  // now belongs to the Layer-1.5 runtime shape.
   effectNotes: EffectProvenance[];
+  /** Special senses granted by ancestry/heritage (darkvision, scent, …). */
+  senses: GrantedSense[];
+  /** Damage resistances granted by ancestry/heritage, resolved at this level. */
+  resistances: CharacterTraits['resistances'];
 }
 
 /**
@@ -416,6 +764,8 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
   // Feat-granted sheet effects (HP bonuses, proficiency-rank grants, typed stat
   // modifiers), resolved from each chosen feat's PassiveEffects by @pathway/core.
   const effects = characterEffects(state);
+  // Ancestry/heritage senses & resistances (level-scaled) from the same engine.
+  const traits = characterTraits(state);
 
   // Net bonus for a stat: the stat's own fundamental item bonus (rune / ABP) plus
   // any feat modifiers on the given selectors, run through the PF2e stacking rules
@@ -548,6 +898,36 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     };
   });
 
+  // Lore skills (Intelligence-based, player-named) live alongside the standard
+  // skills so the sheet, overview, and exports treat them uniformly.
+  for (const subject of trainedLoreSubjects(state)) {
+    const id = loreId(subject);
+    const rank = ranks.get(id) ?? 1;
+    skills.push({
+      id,
+      name: loreDisplayName(subject),
+      ability: 'int',
+      rank,
+      modifier: proficientModifier({
+        abilityMod: mods.int,
+        rank,
+        level,
+        withoutLevel: pwl,
+        itemBonus: statBonus(0, 'skill-check', id),
+        otherBonus: 0,
+      }),
+    });
+  }
+
+  // Weapon Specialization (a class feature granted at a class-specific level):
+  // +2/+3/+4 to a weapon's damage when you're expert/master/legendary in it, per
+  // the Foundry weapon-specialization.json rule elements (base 2, upgraded to 3
+  // at master and 4 at legendary). Greater Weapon Specialization doubles it.
+  const hasWeaponSpec = klass?.weaponSpecialization != null && level >= klass.weaponSpecialization;
+  const hasGreaterWeaponSpec =
+    klass?.greaterWeaponSpecialization != null && level >= klass.greaterWeaponSpecialization;
+  const weaponSpecNotes: EffectProvenance[] = [];
+
   const weapons: EquippedWeapon[] = equippedWeapons.map((w) => {
     // Attack proficiency: the class's level-1 rank, raised by its weapon
     // expertise/mastery features (category-, list-, and group-scoped — the
@@ -587,6 +967,17 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     const wRunes = runesFor(w.id);
     const potency = abp ? 0 : Math.max(0, Math.min(3, wRunes?.potency ?? 0));
     const striking = abp ? 0 : Math.max(0, Math.min(3, wRunes?.striking ?? 0));
+    // Applies only at expert+ (rank ≥ 2); the value equals the rank, doubled by
+    // Greater Weapon Specialization.
+    const weaponSpecBonus =
+      hasWeaponSpec && catRank >= 2 ? catRank * (hasGreaterWeaponSpec ? 2 : 1) : 0;
+    if (weaponSpecBonus > 0) {
+      weaponSpecNotes.push({
+        source: hasGreaterWeaponSpec ? 'Greater Weapon Specialization' : 'Weapon Specialization',
+        stat: w.id,
+        summary: `+${weaponSpecBonus} ${w.name} damage`,
+      });
+    }
     return {
       id: w.id,
       name: w.name,
@@ -599,7 +990,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       }),
       dice: abp ? abpDamageDice(level) : 1 + striking,
       damageDie: w.damageDie,
-      damageMod,
+      damageMod: damageMod + weaponSpecBonus,
       damageType: w.damageType,
       ranged: w.ranged,
       range: w.range,
@@ -655,7 +1046,9 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       classDC: classDCRank,
       unarmoredDefense,
     },
-    effectNotes: effects.applied,
+    effectNotes: [...effects.applied, ...weaponSpecNotes],
+    senses: traits.senses,
+    resistances: traits.resistances,
   };
 }
 
@@ -728,13 +1121,24 @@ export function validate(state: BuilderState): string[] {
     problems.push('The four free boosts must each target a different ability.');
 
   const freePicks = freeSkillCount(state);
-  const chosen = state.skillChoices.length;
+  // Chosen Lores draw from the same free-skill pool as trained skills.
+  const chosen = state.skillChoices.length + (state.loreChoices?.length ?? 0);
   if (chosen < freePicks) problems.push(`Choose ${freePicks - chosen} more trained skill(s).`);
   // Also flag TOO MANY — e.g. picked at Int +3 then a boost moved off Int, so the
   // free-skill count shrank but the extra picks weren't trimmed. Without this the
   // build validates as complete and exports an illegal extra trained skill.
   if (chosen > freePicks)
     problems.push(`Deselect ${chosen - freePicks} trained skill(s) — more than your free skills allow (an Intelligence change likely reduced them).`);
+
+  // Bonus feats granted by another choice must be filled in.
+  for (const slot of bonusFeatSlots(state)) {
+    if (!state.bonusFeatChoices?.[slot.key])
+      problems.push(`Choose the ${slot.kind} feat granted by ${slot.source}.`);
+  }
+  // A subclass skill choice (e.g. Gunslinger Pistolero) must be resolved.
+  const wayChoice = subclassSkillGrant(state)?.choose;
+  if (wayChoice && !state.subclassSkillChoices?.[wayChoice.key])
+    problems.push('Choose the skill your subclass trains.');
 
   for (let lvl = 2; lvl <= (state.level || 1); lvl += 1) {
     for (const msg of unmetAtLevel(state, lvl)) problems.push(`Level ${lvl}: ${msg}`);

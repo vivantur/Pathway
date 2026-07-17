@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { mapFoundryRules, summarizeReports, type RuleElement } from "./foundry.js";
+import { evaluate, type Expr } from "./expr.js";
 import { featSchema } from "./feat.js";
 
 describe("mapFoundryRules — the report invariant", () => {
@@ -130,13 +131,18 @@ describe("mapFoundryRules — FlatModifier", () => {
     expect(report[0]).toMatchObject({ reason: "unsupported-selector" });
   });
 
-  it("reports the infix `floor(@actor.level/2)` idiom, which expr.ts cannot parse yet", () => {
-    // ~30 corpus values look like this. Named here so the gap is a tracked roadmap
-    // item rather than a silent absence: it needs infix arithmetic in expr.ts.
-    const { report } = mapFoundryRules([
+  it("maps the infix half-your-level idiom now that expr.ts parses arithmetic", () => {
+    // This was a tracked gap (~30 corpus values reported `unsupported-value`) until
+    // expr.ts gained infix. The mapper needed no change — widening the grammar
+    // turned a whole reason-bucket into mapped effects, which is exactly what the
+    // reason tallies are for.
+    const { effects, report } = mapFoundryRules([
       { key: "FlatModifier", selector: "hp", type: "untyped", value: "floor(@actor.level/2)" },
     ]);
-    expect(report[0]).toMatchObject({ reason: "unsupported-value" });
+    expect(report[0]).toMatchObject({ outcome: "mapped" });
+    expect(effects[0]).toMatchObject({ kind: "modifier", target: "hp", bonusType: "untyped" });
+    // The value is carried as an AST and evaluated per character, not at ingest.
+    expect(evaluate((effects[0] as { value: Expr }).value, { vars: { level: 7 } }, "number")).toBe(3);
   });
 
   it("reports a deep Foundry actor-data ref — mapping it would import their schema", () => {
@@ -347,5 +353,141 @@ describe("summarizeReports", () => {
     });
     expect(s.byReason).toEqual({ "needs-combat-tags": 2, "needs-item-model": 1 });
     expect(s.byKey).toEqual({ RollOption: 1, ItemAlteration: 1, FlatModifier: 1 });
+  });
+});
+
+// Choice groups span several elements (a ChoiceSet plus the ActiveEffectLike(s) its
+// flag is substituted into), so they are mapped as a group. Every fixture below is
+// the REAL rules array from the corpus.
+describe("mapFoundryRules — choice-driven rank grants", () => {
+  it("maps a `config: skills` shorthand to one option per skill (Skill Training)", () => {
+    const { choices, report } = mapFoundryRules([
+      { key: "ChoiceSet", flag: "skill", choices: { config: "skills", predicate: ["skill:{choice|value}:rank:0"] } },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.skill}.rank", value: 1 },
+    ] as unknown as RuleElement[]);
+
+    expect(choices).toHaveLength(1);
+    expect(choices[0]!.flag).toBe("skill");
+    expect(choices[0]!.prompt).toBe("Skill");
+    expect(choices[0]!.options).toHaveLength(16);
+    // The stored value is OUR slug, never Foundry's `system.skills.x.rank` path.
+    expect(choices[0]!.options[0]).toEqual({
+      value: "acrobatics",
+      label: "Acrobatics",
+      effects: [{ kind: "proficiency", target: "acrobatics", rank: 1, mode: "upgrade" }],
+    });
+    // BOTH elements are consumed by the group — the report stays 1:1 with the input.
+    expect(report).toHaveLength(2);
+    expect(report.every((r) => r.outcome === "mapped")).toBe(true);
+  });
+
+  it("maps whole-path options and drops ones the engine can't apply", () => {
+    // Canny Acumen's own SHAPE, with a literal rank substituted for its ternary. Here
+    // the AEL's path IS the placeholder, so the option value is a complete rank path.
+    const { choices } = mapFoundryRules([
+      {
+        key: "ChoiceSet",
+        flag: "cannyAcumen",
+        choices: [
+          { label: "PF2E.SavesFortitude", value: "system.saves.fortitude.rank" },
+          { label: "PF2E.PerceptionLabel", value: "system.perception.rank" },
+          { label: "Nonsense", value: "system.details.nonsense.rank" }, // not a stat we apply
+        ],
+      },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "{item|flags.system.rulesSelections.cannyAcumen}", value: 2 },
+    ] as unknown as RuleElement[]);
+
+    expect(choices[0]!.prompt).toBe("Proficiency");
+    // The unmappable option is OMITTED, not shown as a dropdown entry that does nothing.
+    expect(choices[0]!.options.map((o) => o.value)).toEqual(["fortitude", "perception"]);
+    expect(choices[0]!.options[0]!.effects).toEqual([
+      { kind: "proficiency", target: "fortitude", rank: 2, mode: "upgrade" },
+    ]);
+  });
+
+  it("maps a RESTRICTED list of bare slugs by substituting each into the path", () => {
+    // Fighter Dedication: "trained in Acrobatics or Athletics". The selection is a
+    // bare slug substituted INTO the path — the same rule as the whole-path case,
+    // which is why both are one code path.
+    const { choices } = mapFoundryRules([
+      {
+        key: "ChoiceSet",
+        flag: "skill",
+        choices: [{ value: "acrobatics" }, { value: "athletics" }],
+      },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.skill}.rank", value: 1 },
+    ] as unknown as RuleElement[]);
+
+    expect(choices[0]!.prompt).toBe("Skill");
+    expect(choices[0]!.options.map((o) => o.value)).toEqual(["acrobatics", "athletics"]);
+  });
+
+  it("yields no option when a selection doesn't substitute to a stat we apply", () => {
+    // Fighter Dedication's OTHER ChoiceSet picks an attribute. Substituting "str"
+    // gives `system.abilities.str.rank`, which is not a rank path — so the choice is
+    // dropped rather than offered as a dropdown that does nothing.
+    const { choices } = mapFoundryRules([
+      { key: "ChoiceSet", flag: "attribute", choices: [{ value: "str" }, { value: "dex" }] },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.abilities.{item|flags.system.rulesSelections.attribute}.rank", value: 1 },
+    ] as unknown as RuleElement[]);
+    expect(choices).toEqual([]);
+  });
+
+  it("maps object-valued options whose sub-fields name skills (Clan Lore)", () => {
+    const { choices, report } = mapFoundryRules([
+      {
+        key: "ChoiceSet",
+        flag: "clan",
+        choices: [
+          { label: "…Aringeld", value: { clan: "aringeld", skillOne: "diplomacy", skillTwo: "society" } },
+          { label: "…Breakiron", value: { clan: "breakiron", skillOne: "crafting", skillTwo: "survival" } },
+          { label: "…Tolorr", value: { clan: "tolorr", skillOne: "diplomacy", skillTwo: "society" } },
+        ],
+      },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.clan.skillOne}.rank", value: 1 },
+      { key: "ActiveEffectLike", mode: "upgrade", path: "system.skills.{item|flags.system.rulesSelections.clan.skillTwo}.rank", value: 1 },
+    ] as unknown as RuleElement[]);
+
+    expect(choices[0]!.prompt).toBe("Trains");
+    // Aringeld and Tolorr train the SAME pair — one option, not two identical ones.
+    expect(choices[0]!.options).toHaveLength(2);
+    expect(choices[0]!.options[0]).toEqual({
+      value: "diplomacy,society",
+      label: "Diplomacy, Society",
+      effects: [
+        { kind: "proficiency", target: "diplomacy", rank: 1, mode: "upgrade" },
+        { kind: "proficiency", target: "society", rank: 1, mode: "upgrade" },
+      ],
+    });
+    expect(report).toHaveLength(3);
+    expect(report.every((r) => r.outcome === "mapped")).toBe(true);
+  });
+
+  it("carries a LEVEL-SCALED rank through as an expression (Canny Acumen)", () => {
+    // Canny Acumen verbatim: expert, upgrading to master at 17th. The rank is not a
+    // literal, so it stays an AST and is evaluated per character — mapping it as a
+    // flat 2 would be a wrong sheet at level 17+.
+    const { choices } = mapFoundryRules([
+      { key: "ChoiceSet", flag: "cannyAcumen", choices: [{ label: "F", value: "system.saves.fortitude.rank" }] },
+      {
+        key: "ActiveEffectLike",
+        mode: "upgrade",
+        path: "{item|flags.system.rulesSelections.cannyAcumen}",
+        value: "ternary(gte(@actor.level,17),3,2)",
+      },
+    ] as unknown as RuleElement[]);
+
+    const effect = choices[0]!.options[0]!.effects[0] as { rank: Expr };
+    expect(typeof effect.rank).toBe("object"); // an expression, not a number
+    expect(evaluate(effect.rank, { vars: { level: 16 } }, "number")).toBe(2); // expert
+    expect(evaluate(effect.rank, { vars: { level: 17 } }, "number")).toBe(3); // master
+  });
+
+  it("leaves a ChoiceSet that drives no rank grant to the normal per-element pass", () => {
+    const { choices, report } = mapFoundryRules([
+      { key: "ChoiceSet", flag: "weapon", choices: { config: "weapons" } },
+    ] as unknown as RuleElement[]);
+    expect(choices).toEqual([]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-runtime-choice" });
   });
 });

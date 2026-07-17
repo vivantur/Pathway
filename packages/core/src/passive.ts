@@ -44,8 +44,36 @@ const bonusTypeSchema = z.enum(["circumstance", "status", "item", "untyped"]);
 const selectorSchema = z.custom<Selector>((v) => isSelector(v), { message: "unknown stat selector" });
 const rankSchema = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 
+/**
+ * A granted rank: a literal 0–4, or an EXPRESSION for the ranks that vary by level
+ * (Canny Acumen grants expert, or master at 17th). Decision 1 — "every value IS an
+ * expression" — applied to `rank`, and for the same reason it was applied to a
+ * grant's numeric payload: the rank is authored/ingested with no character in hand,
+ * so a literal would make a level-scaled rank literally unrepresentable.
+ *
+ * The literal stays first in the union so all existing stored data (every rank in
+ * the corpus but one) validates unchanged and reads back as a plain number.
+ */
+const rankValueSchema = z.union([rankSchema, exprSchema]);
+export type RankValue = z.infer<typeof rankValueSchema>;
+
+/**
+ * Resolve a granted rank VALUE against a level. Distinct from character.ts's
+ * `resolveRank`, which reads a rank OFF a character — this evaluates one authored
+ * BY content. Throws when it lands outside 0–4 rather than clamping: a rank the
+ * model can't represent is a content bug, and callers count it (`skipped`) instead
+ * of applying a guess.
+ */
+export function resolveRankValue(rank: RankValue, level: number): ProficiencyRank {
+  if (typeof rank === "number") return rank;
+  const n = evaluate(rank, { vars: { level } }, "number") as number;
+  if (!Number.isInteger(n) || n < 0 || n > 4) throw new Error(`rank evaluated to ${n}, outside 0–4`);
+  return n as ProficiencyRank;
+}
+
 const movementSchema = z.enum(["land", "fly", "swim", "climb", "burrow"]);
 const senseAcuitySchema = z.enum(["precise", "imprecise", "vague"]);
+export type SenseAcuity = z.infer<typeof senseAcuitySchema>;
 
 /**
  * A `grant`'s payload — a structured, closed vocabulary of the non-numeric things
@@ -101,7 +129,8 @@ const modifierEffectSchema = z.object({
 const proficiencyEffectSchema = z.object({
   kind: z.literal("proficiency"),
   target: selectorSchema,
-  rank: rankSchema,
+  /** A literal 0–4, or an expression for a level-scaled rank. See `resolveRankValue`. */
+  rank: rankValueSchema,
   /** `upgrade` raises to at least `rank` (max); `set` overrides to exactly `rank`. */
   mode: z.enum(["upgrade", "set"]),
 }).strict();
@@ -141,6 +170,65 @@ export type ProficiencyEffect = z.infer<typeof proficiencyEffectSchema>;
 export type GrantEffect = z.infer<typeof grantEffectSchema>;
 export type RollAdjustEffect = z.infer<typeof rollAdjustEffectSchema>;
 export type NoteEffect = z.infer<typeof noteEffectSchema>;
+
+// ---------------------------------------------------------------------------
+// authored player choices
+// ---------------------------------------------------------------------------
+//
+// Some content does not know its own effect until a player picks something: Canny
+// Acumen raises a save OR Perception; Skill Training trains a skill of your choice.
+// The CHOICE is the player's, but the OPTIONS and what each one does are fixed by
+// the content — so they are resolved at ingest and stored, exactly like any other
+// effect. Only the selection happens at runtime.
+//
+// This is what keeps the Foundry boundary closed. Their encoding of the same idea
+// (a `ChoiceSet` whose flag is string-substituted into an `ActiveEffectLike` path,
+// `system.skills.{item|flags.system.rulesSelections.skillOne}.rank`) is a runtime
+// template-substitution engine. Ours is a list of options, each holding finished
+// `PassiveEffect`s. The interpretation happens once, at ingest, in foundry.ts.
+
+const effectChoiceOptionSchema = z
+  .object({
+    /** Stored in the character's state to record the pick. OUR vocabulary. */
+    value: z.string().min(1),
+    /** What the player sees in the dropdown. */
+    label: z.string().min(1),
+    /** What picking this option does — already-finished effects, resolved at ingest. */
+    effects: z.array(passiveEffectSchema).min(1),
+  })
+  .strict();
+
+export const effectChoiceSchema = z
+  .object({
+    /** Key the selection is stored under, unique within the entity. */
+    flag: z.string().min(1),
+    /** Short dropdown label ("Proficiency", "Skill", "Save"). */
+    prompt: z.string().min(1),
+    options: z.array(effectChoiceOptionSchema).min(1),
+  })
+  .strict();
+export type EffectChoice = z.infer<typeof effectChoiceSchema>;
+export type EffectChoiceOption = z.infer<typeof effectChoiceOptionSchema>;
+
+/**
+ * The effects a set of authored choices yields, given the player's stored picks
+ * (`flag → option value`). An absent or unrecognized pick contributes nothing —
+ * an unmade choice is not an error, it is simply not yet made.
+ */
+export function resolveChoiceEffects(
+  choices: readonly EffectChoice[] | undefined,
+  picks: Readonly<Record<string, string>> | undefined,
+): PassiveEffect[] {
+  if (!choices?.length || !picks) return [];
+  const out: PassiveEffect[] = [];
+  for (const choice of choices) {
+    const picked = picks[choice.flag];
+    if (!picked) continue;
+    const option = choice.options.find((o) => o.value === picked);
+    if (option) out.push(...option.effects);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // collection into the derivation bag
@@ -267,7 +355,13 @@ export function collectPassiveSheetEffects(
             continue;
           }
           const target: Selector = effect.target;
-          const rank: ProficiencyRank = effect.rank;
+          let rank: ProficiencyRank;
+          try {
+            rank = resolveRankValue(effect.rank, ctx.level);
+          } catch {
+            out.skipped += 1; // a level-scaled rank we can't resolve — never guessed
+            continue;
+          }
           if (target === "perception") {
             if (out.perceptionRank === null || rank > out.perceptionRank) out.perceptionRank = rank;
             note("perception", `${RANK_LABEL[rank]} Perception`);
@@ -293,6 +387,146 @@ export function collectPassiveSheetEffects(
   });
 
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// trait collection (senses & resistances)
+// ---------------------------------------------------------------------------
+
+/** A special sense granted to the character (darkvision, scent, tremorsense, …). */
+export interface GrantedSense {
+  /** Sense name, e.g. "darkvision", "low-light-vision", "scent", "wavesense". */
+  type: string;
+  /** Acuity, when the sense specifies one. */
+  acuity?: SenseAcuity;
+  /** Range in feet, when the sense is limited. */
+  range?: number;
+  /** Attribution (the ancestry/heritage/feat that granted it). */
+  source: string;
+}
+
+/** A damage resistance granted to the character, resolved at the character's level. */
+export interface GrantedResistance {
+  /** Damage type resisted, e.g. "cold", "fire", "poison". */
+  type: string;
+  /** Resistance amount at the character's level (always ≥ 1). */
+  value: number;
+  /** Attribution (the ancestry/heritage/feat that granted it). */
+  source: string;
+}
+
+export interface CharacterTraits {
+  senses: GrantedSense[];
+  resistances: GrantedResistance[];
+  /** Count of sense/resistance grants that couldn't be resolved. */
+  skipped: number;
+}
+
+/**
+ * How "strong" a sense acuity is, for DISPLAY DEDUPING only — this is not a rules
+ * claim, it is the heuristic that decides which of two same-named senses to show.
+ * An absent acuity ranks lowest so an explicit one always wins.
+ */
+const ACUITY_RANK: Record<string, number> = { precise: 3, imprecise: 2, vague: 1 };
+
+/**
+ * Resolve the special senses and damage resistances granted by a character's items
+ * (an ancestry's effects, a heritage's, …). `itemEffects` is one effect array per
+ * item; `labels[i]` attributes item `i`.
+ *
+ * This is the third consumer of `PassiveEffect[]`, alongside `applyPassiveEffects`
+ * and `collectPassiveSheetEffects`, and it exists for the same reason they do — it
+ * reads a DIFFERENT slice at a different moment. Both of those deliberately punt on
+ * `grant` (the derived sheet has no senses/resistances field); this one consumes
+ * exactly that kind and nothing else.
+ *
+ * Attribution comes from the caller, not the effect: provenance lives on the content
+ * envelope, never on a passive effect (design doc, "Layer 1").
+ *
+ * Senses dedupe by name keeping the more useful (by acuity, then longer range);
+ * resistances dedupe by type keeping the highest value. CONDITIONAL grants (`when`)
+ * are skipped, not applied — a situational resistance shown as permanent is a wrong
+ * sheet, which is worse than an absent one.
+ */
+export function collectTraits(
+  itemEffects: readonly (readonly PassiveEffect[])[],
+  ctx: EffectContext,
+  labels: readonly string[] = [],
+): CharacterTraits {
+  const senses = new Map<string, GrantedSense>();
+  const resistances = new Map<string, GrantedResistance>();
+  let skipped = 0;
+
+  const senseBetter = (a: GrantedSense, b: GrantedSense): boolean => {
+    const ra = ACUITY_RANK[a.acuity ?? ""] ?? 0;
+    const rb = ACUITY_RANK[b.acuity ?? ""] ?? 0;
+    if (ra !== rb) return ra > rb;
+    // Unlimited range (undefined) beats any finite range; otherwise longer wins.
+    if ((a.range ?? Infinity) !== (b.range ?? Infinity)) return (a.range ?? Infinity) > (b.range ?? Infinity);
+    return false;
+  };
+
+  itemEffects.forEach((effects, itemIndex) => {
+    const source = labels[itemIndex] ?? "";
+    if (!Array.isArray(effects)) return;
+
+    for (const effect of effects) {
+      if (effect.kind !== "grant") continue; // another collector's slice, not a miss
+      if (effect.when !== undefined) {
+        skipped += 1;
+        continue;
+      }
+      const grant = effect.grant;
+
+      if (grant.type === "sense") {
+        const next: GrantedSense = {
+          type: grant.name,
+          source,
+          ...(grant.acuity ? { acuity: grant.acuity } : {}),
+          ...(grant.range ? { range: grant.range } : {}),
+        };
+        const cur = senses.get(grant.name);
+        if (!cur || senseBetter(next, cur)) senses.set(grant.name, next);
+        continue;
+      }
+
+      if (grant.type === "resistance") {
+        // A grant's numeric payload is an EXPRESSION ("resistance equal to half your
+        // level"), evaluated per character at read time — which is this moment.
+        let value: number;
+        try {
+          value = evaluate(grant.value, { vars: { level: ctx.level } }, "number") as number;
+        } catch {
+          skipped += 1;
+          continue;
+        }
+        value = Math.floor(value);
+        if (value < 1) continue; // a resistance that rounds to 0 doesn't apply yet
+        const cur = resistances.get(grant.damageType);
+        if (!cur || value > cur.value) resistances.set(grant.damageType, { type: grant.damageType, value, source });
+        continue;
+      }
+      // speed/weakness/immunity/trait/action grants are carried by the model but
+      // have no home on this view yet; they are not this collector's slice.
+    }
+  });
+
+  // Darkvision supersedes low-light vision — it does everything low-light does, so
+  // listing both is noise when a heritage upgrades an ancestry's vision. Like the
+  // acuity ranking above this is a DISPLAY rule, not a rules-text claim; it lives
+  // here because both the builder and the imported-character sheet need it, and a
+  // sense rule implemented twice is the exact duplication core exists to prevent.
+  let senseList = [...senses.values()];
+  if (senseList.some((s) => s.type === "darkvision")) {
+    senseList = senseList.filter((s) => s.type !== "low-light-vision");
+  }
+
+  const byType = (a: { type: string }, b: { type: string }) => a.type.localeCompare(b.type);
+  return {
+    senses: senseList.sort(byType),
+    resistances: [...resistances.values()].sort(byType),
+    skipped,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -391,7 +625,11 @@ export function applyPassiveEffects(
         break;
       }
       case "proficiency":
-        rankGrants.push({ target: effect.target, rank: effect.rank, mode: effect.mode });
+        try {
+          rankGrants.push({ target: effect.target, rank: resolveRankValue(effect.rank, rc.level), mode: effect.mode });
+        } catch {
+          skipped += 1;
+        }
         break;
       case "grant":
         if (predicateHolds(effect.when, tags)) grants.push(effect.grant);

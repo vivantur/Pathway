@@ -79,11 +79,66 @@ describe("parseExpr (string grammar → AST)", () => {
     });
   });
 
-  it("rejects infix, unknown @-refs, braces, and trailing tokens", () => {
-    expect(() => parseExpr("@actor.level + 1")).toThrow();
+  it("rejects unknown @-refs, braces, and trailing tokens", () => {
     expect(() => parseExpr("@actor.system.proficiencies.rank")).toThrow();
     expect(() => parseExpr("{item|flags}")).toThrow();
     expect(() => parseExpr("max(1,2)extra")).toThrow();
+  });
+});
+
+// Infix desugars to the SAME call nodes a structured builder emits, so the stored
+// AST and `exprSchema` are untouched by this grammar — it is a parser surface, not
+// a value shape.
+describe("parseExpr (infix arithmetic)", () => {
+  it("desugars the four operators to their pure functions", () => {
+    expect(parseExpr("1+2")).toEqual({
+      kind: "call",
+      fn: "add",
+      args: [{ kind: "lit", value: 1 }, { kind: "lit", value: 2 }],
+    });
+    expect(parseExpr("@actor.level/2")).toEqual({
+      kind: "call",
+      fn: "divide",
+      args: [{ kind: "var", name: "level" }, { kind: "lit", value: 2 }],
+    });
+  });
+
+  it("honors precedence and left-associativity", () => {
+    // 1 + 2*3 → add(1, multiply(2,3)), not multiply(add(1,2),3)
+    expect(parseExpr("1+2*3")).toEqual({
+      kind: "call",
+      fn: "add",
+      args: [
+        { kind: "lit", value: 1 },
+        { kind: "call", fn: "multiply", args: [{ kind: "lit", value: 2 }, { kind: "lit", value: 3 }] },
+      ],
+    });
+    // 10-3-2 → subtract(subtract(10,3),2) = 5, NOT subtract(10,subtract(3,2)) = 9
+    expect(evaluateString("10-3-2", {}, "number")).toBe(5);
+    expect(evaluateString("12/3/2", {}, "number")).toBe(2);
+    expect(evaluateString("(1+2)*3", {}, "number")).toBe(9);
+  });
+
+  it("distinguishes a negative literal from subtraction", () => {
+    expect(parseExpr("-2")).toEqual({ kind: "lit", value: -2 });
+    expect(evaluateString("5-3", {}, "number")).toBe(2);
+    expect(evaluateString("max(-2,-5)", {}, "number")).toBe(-2);
+    // Unary minus on a non-literal.
+    expect(evaluateString("-@actor.level", { vars: { level: 3 } }, "number")).toBe(-3);
+  });
+
+  it("parses the half-your-level idiom — every ancestry resistance in the corpus", () => {
+    const expr = "max(1,floor(@actor.level/2))";
+    expect(evaluateString(expr, { vars: { level: 6 } }, "number")).toBe(3);
+    expect(evaluateString(expr, { vars: { level: 5 } }, "number")).toBe(2);
+    // The max(1,…) floor is why these resistances apply from level 1.
+    expect(evaluateString(expr, { vars: { level: 1 } }, "number")).toBe(1);
+    // The un-clamped variant genuinely rounds to 0 at level 1.
+    expect(evaluateString("floor(@actor.level/2)", { vars: { level: 1 } }, "number")).toBe(0);
+  });
+
+  it("throws on division by zero rather than yielding Infinity", () => {
+    expect(() => evaluateString("1/0", {}, "number")).toThrow(/division by zero/);
   });
 });
 

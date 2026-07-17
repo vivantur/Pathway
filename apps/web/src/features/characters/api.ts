@@ -328,7 +328,12 @@ export async function updateCharacterDowntime(input: {
       user_id: userId,
       char_key: charKey,
       bank: next.bank,
-      last_accrual_date: next.lastAccrualDate,
+      // Seed today's date on a first write (mirrors the bot's getCharRecord).
+      // A fresh record has no accrual date; the column is a NOT-NULL `date`, so
+      // sending null made the very first grant (a character with no downtime row
+      // yet — "0 days banked") fail its INSERT and silently revert. Anchoring to
+      // today also means no accrual windfall on first use.
+      last_accrual_date: next.lastAccrualDate ?? new Date().toISOString().slice(0, 10),
       log: next.log,
       updated_at: new Date().toISOString(),
     };

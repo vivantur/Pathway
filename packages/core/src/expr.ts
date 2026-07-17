@@ -88,6 +88,14 @@ const PURE_FUNCS: Record<string, (a: ExprValue[]) => ExprValue> = {
   add: (a) => a.reduce<number>((s, n) => s + asNum(n), 0),
   subtract: (a) => asNum(at(a, 0)) - asNum(at(a, 1)),
   multiply: (a) => a.reduce<number>((s, n) => s * asNum(n), 1),
+  // Division by zero throws rather than yielding Infinity: a NaN/Infinity leaking
+  // into a sheet number is a silent wrong answer, while a throw is caught by the
+  // callers' error policy and counted (`skipped`) rather than displayed.
+  divide: (a) => {
+    const d = asNum(at(a, 1));
+    if (d === 0) throw new Error("division by zero");
+    return asNum(at(a, 0)) / d;
+  },
 };
 
 /** The names of the pure functions, for editors / validation. */
@@ -133,16 +141,32 @@ export function evaluate(
 
 // --- string grammar → AST ---------------------------------------------------
 //
-// Parses the bounded, no-infix function-call grammar (numbers, quoted strings,
-// `@actor.level`, bare identifiers as variables, and `fn(args)` calls) into an
+// Parses the bounded grammar (numbers, quoted strings, `@actor.level`, bare
+// identifiers as variables, `fn(args)` calls, and infix arithmetic) into an
 // `Expr`. Foundry-ingest string values and any serialized value funnel through
 // here into the same AST that a structured builder emits.
+//
+// INFIX DESUGARS TO CALL NODES — `a/2` is `divide(a, 2)` — so the stored `Expr`
+// union (lit | var | call) and `exprSchema` are UNCHANGED by this grammar, and no
+// stored effect needs migrating. Infix is a surface convenience of the string
+// parser, not a new value shape. It was added because the half-your-level idiom
+// (`max(1,floor(@actor.level/2))`, every ancestry resistance in the corpus) is
+// unrepresentable without it; `dice.ts` already had full infix, so this also ends
+// the two-grammars inconsistency.
+
+type Op = "+" | "-" | "*" | "/";
+
+/** Infix operator → the pure function it desugars to. */
+const OP_FN: Record<Op, string> = { "+": "add", "-": "subtract", "*": "multiply", "/": "divide" };
+/** Binding power; higher binds tighter. All four are left-associative. */
+const OP_PREC: Record<Op, number> = { "+": 1, "-": 1, "*": 2, "/": 2 };
 
 type Token =
   | { t: "num"; v: number }
   | { t: "str"; v: string }
   | { t: "ref"; name: string }
   | { t: "ident"; v: string }
+  | { t: "op"; v: Op }
   | { t: "punc"; v: "(" | ")" | "," };
 
 function tokenize(src: string): Token[] {
@@ -174,10 +198,23 @@ function tokenize(src: string): Token[] {
       i = end + 1;
       continue;
     }
-    let m = /^-?\d+(?:\.\d+)?/.exec(src.slice(i));
+    // A leading `-` is part of the NUMBER only in prefix position (start, or after
+    // an operator / "(" / ","); elsewhere it is the subtraction operator. Without
+    // this, "5-3" would lex as [5, -3] and the parser would see two adjacent values.
+    const prev = tokens[tokens.length - 1];
+    const prefixPos =
+      prev === undefined ||
+      prev.t === "op" ||
+      (prev.t === "punc" && (prev.v === "(" || prev.v === ","));
+    let m = (prefixPos ? /^-?\d+(?:\.\d+)?/ : /^\d+(?:\.\d+)?/).exec(src.slice(i));
     if (m) {
       tokens.push({ t: "num", v: Number(m[0]) });
       i += m[0].length;
+      continue;
+    }
+    if (c === "+" || c === "-" || c === "*" || c === "/") {
+      tokens.push({ t: "op", v: c });
+      i += 1;
       continue;
     }
     m = /^[a-zA-Z][a-zA-Z0-9]*/.exec(src.slice(i));
@@ -204,6 +241,12 @@ export function parseExpr(src: string): Expr {
     if (tok.t === "num") return { kind: "lit", value: tok.v };
     if (tok.t === "str") return { kind: "lit", value: tok.v };
     if (tok.t === "ref") return { kind: "var", name: tok.name };
+    if (tok.t === "punc" && tok.v === "(") {
+      const inner = parseBinary(1);
+      const close = next();
+      if (!close || close.t !== "punc" || close.v !== ")") throw new Error(`expected ) in "${src}"`);
+      return inner;
+    }
     if (tok.t === "ident") {
       const p = peek();
       if (p && p.t === "punc" && p.v === "(") {
@@ -211,11 +254,13 @@ export function parseExpr(src: string): Expr {
         const args: Expr[] = [];
         let q = peek();
         if (q && !(q.t === "punc" && q.v === ")")) {
-          args.push(parsePrimary());
+          // Arguments are FULL expressions, not primaries — this is what lets
+          // `floor(@actor.level/2)` parse.
+          args.push(parseBinary(1));
           q = peek();
           while (q && q.t === "punc" && q.v === ",") {
             next();
-            args.push(parsePrimary());
+            args.push(parseBinary(1));
             q = peek();
           }
         }
@@ -228,7 +273,32 @@ export function parseExpr(src: string): Expr {
     throw new Error(`unexpected token in "${src}"`);
   }
 
-  const expr = parsePrimary();
+  /** Unary minus on a non-literal (`-level`) → `subtract(0, x)`. */
+  function parseUnary(): Expr {
+    const p = peek();
+    if (p && p.t === "op" && p.v === "-") {
+      next();
+      return { kind: "call", fn: "subtract", args: [{ kind: "lit", value: 0 }, parseUnary()] };
+    }
+    return parsePrimary();
+  }
+
+  /** Precedence climbing over the four left-associative arithmetic operators. */
+  function parseBinary(minPrec: number): Expr {
+    let left = parseUnary();
+    for (;;) {
+      const p = peek();
+      if (!p || p.t !== "op") break;
+      const prec = OP_PREC[p.v];
+      if (prec < minPrec) break;
+      next();
+      const right = parseBinary(prec + 1); // left-associative
+      left = { kind: "call", fn: OP_FN[p.v], args: [left, right] };
+    }
+    return left;
+  }
+
+  const expr = parseBinary(1);
   if (pos !== tokens.length) throw new Error(`trailing tokens in "${src}"`);
   return expr;
 }

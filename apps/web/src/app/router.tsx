@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RouteError } from '@/components/RouteError';
 import { RequireAuth } from '@/components/RequireAuth';
+import { RequireAdmin } from '@/components/RequireAdmin';
 import { LandingPage } from '@/routes/LandingPage';
 import { AboutPage } from '@/routes/AboutPage';
 import { RoadmapPage } from '@/routes/RoadmapPage';
@@ -14,6 +15,10 @@ import { CharacterBuilderPage } from '@/routes/CharacterBuilderPage';
 import { ContentGate } from '@/features/builder/ContentGate';
 import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
+import { AdminPage } from '@/routes/AdminPage';
+import { ContactPage } from '@/routes/ContactPage';
+import { CampaignsPage } from '@/routes/CampaignsPage';
+import { CampaignPage } from '@/routes/CampaignPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
 // The only LAZY route. Its ~3 MB ingest report is admin diagnostic data, so neither
@@ -25,23 +30,35 @@ const EffectCoveragePage = lazy(() =>
 
 export const router = createBrowserRouter([
   {
+    // The landing page sits OUTSIDE AppLayout: it is full-bleed and supplies
+    // its own header/footer, which AppLayout's centered, padded <main> would
+    // fight. Everything else keeps the shared grimoire shell below.
+    path: '/',
+    element: <LandingPage />,
+    errorElement: <RouteError />,
+  },
+  {
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <LandingPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'roadmap', element: <RoadmapPage /> },
       { path: 'rules', element: <RulesLibraryPage /> },
+      { path: 'contact', element: <ContactPage /> },
       {
         // Admin diagnostic: what the Foundry ingest mapped into our effect schema,
-        // and what it could not. Unlinked from the nav and ungated — there is no
-        // role system yet, and v1 deliberately has no permissions tiering (design
-        // doc, decision 5). Wrap in RequireAuth the day roles exist.
+        // and what it could not. Unlinked from the nav. Gated the same way as the
+        // admin dashboard — its ~3 MB ingest report is diagnostic data, not player
+        // content.
         path: 'admin/effect-coverage',
         element: (
-          <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
-            <EffectCoveragePage />
-          </Suspense>
+          <RequireAuth>
+            <RequireAdmin>
+              <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
+                <EffectCoveragePage />
+              </Suspense>
+            </RequireAdmin>
+          </RequireAuth>
         ),
       },
       { path: 'login', element: <LoginPage /> },
@@ -100,6 +117,35 @@ export const router = createBrowserRouter([
         // include a policy allowing `is_public = true` for anon reads.
         path: 'share/:shareId',
         element: <PublicSharePage />,
+      },
+      {
+        path: 'campaigns',
+        element: (
+          <RequireAuth>
+            <CampaignsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'campaigns/:campaignId',
+        element: (
+          <RequireAuth>
+            <CampaignPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        // Admin dashboard. Signed-in AND admin-flagged; the server RPCs it
+        // calls re-check is_admin(), so the guard is defence-in-depth, not the
+        // security boundary.
+        path: 'admin',
+        element: (
+          <RequireAuth>
+            <RequireAdmin>
+              <AdminPage />
+            </RequireAdmin>
+          </RequireAuth>
+        ),
       },
       { path: '*', element: <NotFoundPage /> },
     ],

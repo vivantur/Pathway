@@ -43,6 +43,13 @@ export interface Heritage {
   versatile?: boolean;
   /** Optional extra languages, senses, etc. — free text summaries for now. */
   grants?: string[];
+  /**
+   * OUR Layer-1 passive effects (`PassiveEffect[]` from @pathway/core) — the senses
+   * and resistances this heritage grants, mapped from Foundry's rule elements AT
+   * INGEST by scripts/remap-effects.mjs. `characterTraits` in rules.ts is the
+   * consumer. Replaced a `rules?: unknown[]` field carrying Foundry's own shape.
+   */
+  effects?: unknown[];
 }
 
 export interface Ancestry {
@@ -63,6 +70,13 @@ export interface Ancestry {
   bonusLanguageChoices: string[];
   traits: string[];
   heritages: Heritage[];
+  /** Base visual sense: 'normal', 'low-light-vision', or 'darkvision'. */
+  vision?: 'normal' | 'low-light-vision' | 'darkvision';
+  /**
+   * OUR Layer-1 passive effects, mapped at ingest — see `Heritage.effects`. Empty in
+   * practice: the corpus puts every ancestry's senses/resistances on its heritages.
+   */
+  effects?: unknown[];
   source: string;
   description: string;
 }
@@ -126,6 +140,10 @@ export interface CharacterClass {
   subclasses?: Subclass[];
   /** Named class features granted automatically at level 1. */
   features?: string[];
+  /** Level at which this class grants Weapon Specialization (undefined = never). */
+  weaponSpecialization?: number;
+  /** Level at which this class grants Greater Weapon Specialization. */
+  greaterWeaponSpecialization?: number;
   source: string;
   description: string;
 }
@@ -167,6 +185,14 @@ export interface Feat {
    * sidecar, which is deliberately NOT imported here: it must not ship to players.
    */
   effects?: unknown[];
+  /**
+   * Effects the player must CHOOSE between (`EffectChoice[]` from @pathway/core) —
+   * Canny Acumen's save, Skill Training's skill. The options and what each grants are
+   * fixed content, resolved at ingest; only the selection is runtime, and it is
+   * stored in `BuilderState.featChoices`. Kept separate from `effects` because these
+   * apply only once picked — folding them in would grant every option at once.
+   */
+  choices?: unknown[];
   /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
   legacy?: boolean;
   source: string;

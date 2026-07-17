@@ -2,15 +2,13 @@ import {
   ABILITY_LABELS,
   abilityMod,
   fmtMod,
-  perceptionBonus,
   profLabel,
-  saveBonus,
-  skillBonus,
   SKILL_ABILITY,
   SKILL_ORDER,
   type Ability,
   type PathbuilderBuild,
 } from '@/features/characters/pathbuilder';
+import { perceptionBonus, saveBonus, skillBonus } from '../sheetStats';
 import { Panel } from '../Sheet';
 import { BrainIcon, EyeIcon, RunningIcon, ShieldPlusIcon, SkillsIcon } from '../icons';
 

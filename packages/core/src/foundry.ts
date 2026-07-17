@@ -28,7 +28,15 @@
 
 import { z } from "zod";
 import { parseExpr, type Expr } from "./expr.js";
-import { passiveEffectSchema, type Grant, type PassiveEffect } from "./passive.js";
+import {
+  effectChoiceSchema,
+  passiveEffectSchema,
+  type EffectChoice,
+  type EffectChoiceOption,
+  type Grant,
+  type PassiveEffect,
+  type RankValue,
+} from "./passive.js";
 import { isSelector, isSkillSlug, SAVE_SELECTORS, SKILL_SLUGS, type Selector } from "./selectors.js";
 
 /** A Foundry rule element. Only the fields we read are typed; the rest is open. */
@@ -86,6 +94,11 @@ export type MappingEntry = z.infer<typeof mappingEntrySchema>;
 
 export interface MappingResult {
   effects: PassiveEffect[];
+  /**
+   * Player choices whose OPTIONS are fixed by the content — resolved here, at
+   * ingest, so no runtime consumer ever interprets a `ChoiceSet`.
+   */
+  choices: EffectChoice[];
   report: MappingEntry[];
 }
 
@@ -140,6 +153,13 @@ export type EffectReview = z.infer<typeof effectReviewSchema>;
 export const effectBearingShape = {
   /** OUR schema. The only one a runtime consumer may read. */
   effects: z.array(passiveEffectSchema).optional(),
+  /**
+   * Effects the player must choose between (Canny Acumen's save, Skill Training's
+   * skill). Options and their effects are fixed content, resolved at ingest; only
+   * the selection is runtime. Kept separate from `effects` because these apply only
+   * once picked — folding them in would grant every option at once.
+   */
+  choices: z.array(effectChoiceSchema).optional(),
   ingest: ingestRecordSchema.optional(),
   review: effectReviewSchema.optional(),
 };
@@ -336,6 +356,195 @@ function mapActiveEffectLike(rule: RuleElement): PassiveEffect[] {
   return [{ kind: "proficiency", target: selector, rank: toRank(rule.value), mode: ourMode }];
 }
 
+// ---------------------------------------------------------------------------
+// choice groups — a ChoiceSet plus the rank grants its flag drives
+// ---------------------------------------------------------------------------
+//
+// Foundry expresses "a proficiency you choose" as string substitution: a ChoiceSet
+// stores a selection under a flag, and an ActiveEffectLike interpolates that flag
+// into its `path` (or IS the path). Reading that at runtime means shipping their
+// template engine; instead we enumerate the options here, once, and attach finished
+// effects to each. 30 feats in the corpus (Canny Acumen, Skill Training, Clan Lore…).
+//
+// ONE RULE COVERS ALMOST ALL OF IT: substitute the selection into the AEL's path,
+// then resolve the result as a rank path. That single rule absorbs what look like
+// three different shapes, because Foundry's own mechanism IS substitution:
+//
+//   Canny Acumen   path `{item|…cannyAcumen}` + value `system.saves.fortitude.rank`
+//                  → `system.saves.fortitude.rank`      → fortitude
+//   Fighter Ded.   path `system.skills.{item|…}.rank`  + value `acrobatics`
+//                  → `system.skills.acrobatics.rank`    → acrobatics
+//   Skill Training the same, with `{config:'skills'}` standing in for all 16 slugs
+//
+// An option whose substitution doesn't resolve to a stat we apply is DROPPED, which
+// is what makes the rule safe to apply broadly: Fighter Dedication's second
+// ChoiceSet picks an attribute ("str"), substitutes to a path that is not a rank,
+// and simply yields no option rather than a dead dropdown.
+//
+// The one genuine exception is NESTED-FIELD selections (Clan Lore), where the path
+// reads a SUB-field of the chosen object (`…{item|…clan.skillOne}.rank`) — there the
+// option is an object, not the substituted value, so it is handled separately.
+
+/** `{item|flags.system.rulesSelections.<flag>}` — with an optional `.subfield`. */
+const SELECTION_REF = /\{item\|flags\.system\.rulesSelections\.([a-zA-Z]+)(?:\.([a-zA-Z]+))?\}/;
+
+/** Title-case a slug for display: "athletics" → "Athletics". */
+const titleCase = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/** A rank path → our selector, or undefined when it is not one we apply. */
+function selectorForRankPath(path: string): Selector | undefined {
+  for (const p of RANK_PATHS) {
+    const m = path.match(p.re);
+    if (m) {
+      const sel = p.selector(m);
+      if (isSelector(sel)) return sel;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The rank an AEL writes: a literal 0–4, or an EXPRESSION for a level-scaled rank
+ * (Canny Acumen's `ternary(gte(@actor.level,17),3,2)` — expert, master at 17th).
+ * Throws a MapError naming the blocker when it is neither.
+ */
+function rankGrantFor(rule: RuleElement): { rank: RankValue; mode: "upgrade" | "set" } {
+  const mode = String(rule.mode ?? "");
+  const ourMode = mode === "upgrade" ? "upgrade" : mode === "override" ? "set" : undefined;
+  if (!ourMode) throw new MapError("unsupported-shape", `mode "${mode}" on a rank path`);
+  const raw = rule.value;
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (Number.isInteger(n) && n >= 0 && n <= 4) return { rank: n as 0 | 1 | 2 | 3 | 4, mode: ourMode };
+  // Not a literal — the value must be an expression we can evaluate per character.
+  // `toExpr` rejects Foundry's own actor/item refs, which stay unmappable.
+  return { rank: toExpr(raw), mode: ourMode };
+}
+
+/**
+ * Resolve every choice-driven rank grant in `rules`. Returns the authored choices
+ * plus `consumed`: element index → how many choices it contributed to, so the
+ * per-element report can mark exactly those as mapped.
+ *
+ * Anything that doesn't fit one of the three shapes is simply not consumed — it
+ * falls through to the normal pass and is reported unsupported there. A dropdown
+ * whose selection would silently do nothing is worse than no dropdown.
+ */
+function mapChoiceGroups(rules: readonly RuleElement[]): {
+  choices: EffectChoice[];
+  consumed: Map<number, number>;
+  blocked: Map<number, { reason: UnsupportedReason; detail: string }>;
+} {
+  const choices: EffectChoice[] = [];
+  const consumed = new Map<number, number>();
+  const blocked = new Map<number, { reason: UnsupportedReason; detail: string }>();
+
+  rules.forEach((choiceSet, csIndex) => {
+    if (String(choiceSet?.key ?? "") !== "ChoiceSet") return;
+    const flag = typeof choiceSet.flag === "string" ? choiceSet.flag : undefined;
+    if (!flag) return;
+
+    // The AEL(s) this flag drives, with the sub-field (if any) each one reads.
+    const driven: { index: number; rule: RuleElement; subfield?: string }[] = [];
+    rules.forEach((rule, index) => {
+      if (String(rule?.key ?? "") !== "ActiveEffectLike") return;
+      const path = typeof rule.path === "string" ? rule.path : "";
+      const m = SELECTION_REF.exec(path);
+      if (!m || m[1] !== flag) return;
+      driven.push({ index, rule, ...(m[2] ? { subfield: m[2] } : {}) });
+    });
+    if (driven.length === 0) return; // not a rank-driving ChoiceSet; leave it alone
+
+    const groupIndices = [csIndex, ...driven.map((d) => d.index)];
+    try {
+      const options: EffectChoiceOption[] = [];
+      let prompt = "Choice";
+      const rawChoices = choiceSet.choices;
+
+      // ── shape 3: nested sub-field selections (Clan Lore) ────────────────────
+      const subfields = driven.filter((d) => d.subfield !== undefined);
+      if (subfields.length > 0 && Array.isArray(rawChoices)) {
+        prompt = "Trains";
+        const seen = new Set<string>();
+        for (const c of rawChoices as { value?: unknown }[]) {
+          const val = c?.value;
+          if (!val || typeof val !== "object") continue;
+          const picked: { slug: string; rank: RankValue; mode: "upgrade" | "set" }[] = [];
+          for (const d of subfields) {
+            const slug = (val as Record<string, unknown>)[d.subfield!];
+            if (typeof slug !== "string" || !isSkillSlug(slug)) continue;
+            const grant = rankGrantFor(d.rule);
+            picked.push({ slug, ...grant });
+          }
+          if (!picked.length) continue;
+          // The stored value is OUR vocabulary — the skill ids, comma-joined.
+          const value = picked.map((p) => p.slug).join(",");
+          if (seen.has(value)) continue;
+          seen.add(value);
+          options.push({
+            value,
+            label: picked.map((p) => titleCase(p.slug)).join(", "),
+            effects: picked.map((p) => ({ kind: "proficiency", target: p.slug as Selector, rank: p.rank, mode: p.mode })),
+          });
+        }
+      } else {
+        // ── the substitution rule: selection → into the path → a rank path ────
+        const { rule, index: _i } = driven[0]!;
+        void _i;
+        const path = typeof rule.path === "string" ? rule.path : "";
+        const refRe = new RegExp(`\\{item\\|flags\\.system\\.rulesSelections\\.${flag}\\}`, "g");
+        const targetFor = (selection: string): Selector | undefined =>
+          selectorForRankPath(path.replace(refRe, selection));
+
+        // The candidate selections: an explicit list, or a `config` shorthand for a
+        // whole vocabulary. Anything else (weapons, itemType filters) isn't a rank.
+        let selections: string[] | undefined;
+        if (Array.isArray(rawChoices)) {
+          selections = (rawChoices as { value?: unknown }[])
+            .map((c) => c?.value)
+            .filter((v): v is string => typeof v === "string");
+        } else if (rawChoices && typeof rawChoices === "object") {
+          const config = (rawChoices as { config?: unknown }).config;
+          if (config === "skills") selections = [...SKILL_SLUGS];
+          else if (config === "saves") selections = [...SAVE_SELECTORS];
+        }
+        if (!selections?.length) return;
+
+        const grant = rankGrantFor(rule);
+        const seen = new Set<string>();
+        for (const selection of selections) {
+          const target = targetFor(selection);
+          if (!target || seen.has(target)) continue; // unmappable → omitted, not a dead entry
+          seen.add(target);
+          options.push({
+            value: target,
+            label: titleCase(target),
+            effects: [{ kind: "proficiency", target, rank: grant.rank, mode: grant.mode }],
+          });
+        }
+        // Name the prompt after what it actually offers.
+        prompt = options.every((o) => isSkillSlug(o.value)) ? "Skill" : "Proficiency";
+      }
+
+      if (options.length === 0) return;
+      choices.push({ flag, prompt, options });
+      // Credit the ChoiceSet and every AEL it drives, so the report marks them mapped.
+      for (const i of groupIndices) consumed.set(i, (consumed.get(i) ?? 0) + 1);
+    } catch (e) {
+      // The group IS a choice-driven rank grant, but something in it is beyond the
+      // model. Report the real blocker on every element of the group rather than
+      // letting them fall through to the generic `needs-runtime-choice`, which would
+      // hide a tracked roadmap item behind an untracked one.
+      const b =
+        e instanceof MapError
+          ? { reason: e.reason, detail: e.detail }
+          : { reason: "unsupported-shape" as UnsupportedReason, detail: `choice mapper threw: ${String(e)}` };
+      for (const i of groupIndices) blocked.set(i, b);
+    }
+  });
+
+  return { choices, consumed, blocked };
+}
+
 function mapNote(rule: RuleElement): PassiveEffect[] {
   // A Foundry Note bound to specific degrees is a degree-conditional display; our
   // `note` has no outcome field, so mapping it would drop the condition silently.
@@ -447,11 +656,29 @@ export function mapFoundryRules(rules: readonly RuleElement[]): MappingResult {
   const effects: PassiveEffect[] = [];
   const report: MappingEntry[] = [];
 
+  // PRE-PASS: choice groups span SEVERAL elements (a ChoiceSet plus the
+  // ActiveEffectLike(s) its flag feeds), so they cannot be mapped one element at a
+  // time. Resolving them first lets the per-element pass below report each consumed
+  // element as `mapped` and skip re-mapping it — the report stays one entry per
+  // element, and nothing is counted twice.
+  const { choices, consumed, blocked } = mapChoiceGroups(rules);
+
   rules.forEach((rule, index) => {
     const key = String(rule?.key ?? "");
     const unsupported = (reason: UnsupportedReason, detail: string): void => {
       report.push({ index, key, outcome: "unsupported", reason, detail });
     };
+
+    const asChoice = consumed.get(index);
+    if (asChoice !== undefined) {
+      report.push({ index, key, outcome: "mapped", produced: asChoice });
+      return;
+    }
+    const block = blocked.get(index);
+    if (block) {
+      unsupported(block.reason, block.detail);
+      return;
+    }
 
     const known = KNOWN_UNMAPPED[key];
     if (known) {
@@ -505,7 +732,7 @@ export function mapFoundryRules(rules: readonly RuleElement[]): MappingResult {
     }
   });
 
-  return { effects, report };
+  return { effects, choices, report };
 }
 
 /** Reason tallies across a set of reports — the corpus-level coverage roadmap. */

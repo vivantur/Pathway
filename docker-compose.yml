@@ -1,0 +1,23 @@
+# One-command hosting for the Pathway Discord bot on any VPS with Docker.
+#
+#   cp bot.env.example bot.env   # then fill in the secrets
+#   docker compose up -d         # start (auto-restarts on crash + reboot)
+#   docker compose logs -f bot   # watch it come up
+#
+# See DEPLOY.md for the full runbook.
+services:
+  bot:
+    build: .
+    image: pathway-bot
+    container_name: pathway-bot
+    # Survive crashes AND host reboots — the bot should always be running.
+    restart: unless-stopped
+    env_file:
+      - bot.env
+    # Outbound-only (WebSocket to Discord + HTTPS to Supabase); nothing to expose.
+    # Bound log size so a long-running container can't fill the disk.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

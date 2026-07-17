@@ -3,6 +3,7 @@ import { validate } from '../rules';
 import { prerequisiteProblems } from '../prerequisites';
 import { useBuilder } from '../store';
 import { CharacterOverview } from '../CharacterOverview';
+import { FeatChoicesPanel } from '../FeatChoicesPanel';
 import { toPathbuilder } from '@/features/builder/pathbuilder';
 
 export function ReviewStep() {
@@ -54,6 +55,8 @@ export function ReviewStep() {
           Your character is complete and valid.
         </div>
       )}
+
+      <FeatChoicesPanel />
 
       <CharacterOverview state={state} />
 
