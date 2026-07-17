@@ -41,18 +41,22 @@ function parseArgs(argv) {
   return out;
 }
 
+// The effect families the parser targets so far. Each is measured separately: the parser
+// grows one family per slice, and a blended number would hide a per-family regression.
+const MEASURED_KINDS = ['proficiency', 'modifier'];
+
 /**
- * Foundry's DIRECT proficiency grants for a feat → producer proposals (the ground truth).
+ * Foundry's DIRECT effects for a feat → producer proposals (the ground truth), for the
+ * measured kinds only.
  *
  * Choice-driven grants (`feat.choices` — Skill Training's "a skill of your choice", 16
- * options) are deliberately EXCLUDED: they are a different shape slice 1 does not target,
- * and folding their 16-options-each into the denominator would drown the recall number in
- * effects the parser was never meant to find. They are reported separately as context.
+ * options) are deliberately EXCLUDED: a different shape, and folding their 16-options-each
+ * into the denominator would drown the recall number. Reported separately as context.
  */
 function foundryProposals(feat) {
   const proposals = [];
   for (const e of feat.effects ?? []) {
-    if (e.kind === 'proficiency') proposals.push({ draft: e });
+    if (MEASURED_KINDS.includes(e.kind)) proposals.push({ draft: e });
   }
   return { source: 'foundry', proposals };
 }
@@ -72,62 +76,62 @@ function main() {
   const args = parseArgs(process.argv);
   const feats = JSON.parse(readFileSync(join(DATA, 'feats.json'), 'utf8'));
 
-  let corroborated = 0;
-  let parserOnly = 0;
-  let foundryOnly = 0;
+  // Tallies per measured kind, plus a gap tally (the parser's partial extractions).
+  const tally = Object.fromEntries(
+    MEASURED_KINDS.map((k) => [k, { corroborated: 0, parserOnly: 0, foundryOnly: 0, gappedParserOnly: 0 }]),
+  );
   const conflicts = [];
-
-  let featsWithProse = 0;
   let choiceGrants = 0;
+
   for (const feat of feats) {
     if (!feat.description) continue;
     choiceGrants += choiceGrantCount(feat);
     const parser = parseProse(feat.description);
     const foundry = foundryProposals(feat);
-    // Only measure feats where AT LEAST ONE producer proposed a proficiency effect.
-    const anyProf =
-      parser.proposals.some((p) => p.draft.kind === 'proficiency') || foundry.proposals.length > 0;
-    if (!anyProf) continue;
-    featsWithProse += 1;
 
     for (const c of reconcile(feat.id, [parser, foundry])) {
-      if (c.draft.kind !== 'proficiency') continue;
+      const t = tally[c.draft.kind];
+      if (!t) continue;
       switch (c.agreement) {
         case 'corroborated':
-          corroborated += 1;
+          t.corroborated += 1;
           break;
         case 'parser-only':
-          parserOnly += 1;
+          t.parserOnly += 1;
+          if (c.gaps.length) t.gappedParserOnly += 1;
           break;
         case 'foundry-only':
-          foundryOnly += 1;
+          t.foundryOnly += 1;
           break;
         case 'conflicting':
-          conflicts.push({ id: feat.id, name: feat.name, draft: c.draft, alternatives: c.alternatives });
+          conflicts.push({ id: feat.id, name: feat.name, kind: c.draft.kind, draft: c.draft, alternatives: c.alternatives });
           break;
       }
     }
   }
 
-  const foundryTotal = corroborated + foundryOnly + conflicts.length;
-  const recall = foundryTotal ? ((corroborated / foundryTotal) * 100).toFixed(1) : 'n/a';
-
-  console.log('prose parser vs Foundry (proficiency grants)');
-  console.log('─'.repeat(52));
-  console.log(`feats measured        : ${featsWithProse}`);
-  console.log(`corroborated (agree)  : ${corroborated}`);
-  console.log(`parser-only           : ${parserOnly}   (prose caught what Foundry didn't — or a false positive)`);
-  console.log(`foundry-only (missed) : ${foundryOnly}`);
-  console.log(`conflicts             : ${conflicts.length}   (one producer is wrong — the review queue's top priority)`);
-  console.log(`\nRECALL vs Foundry     : ${recall}%  (corroborated / Foundry's DIRECT grants)`);
+  console.log('prose parser vs Foundry — a labeled test set');
+  console.log('═'.repeat(58));
+  for (const kind of MEASURED_KINDS) {
+    const t = tally[kind];
+    const kindConflicts = conflicts.filter((c) => c.kind === kind).length;
+    const foundryTotal = t.corroborated + t.foundryOnly + kindConflicts;
+    const recall = foundryTotal ? ((t.corroborated / foundryTotal) * 100).toFixed(1) : 'n/a';
+    console.log(`\n${kind.toUpperCase()}`);
+    console.log(`  corroborated (agree)  : ${t.corroborated}`);
+    console.log(`  parser-only           : ${t.parserOnly}   (of which gapped: ${t.gappedParserOnly})`);
+    console.log(`  foundry-only (missed) : ${t.foundryOnly}`);
+    console.log(`  conflicts             : ${kindConflicts}`);
+    console.log(`  RECALL vs Foundry     : ${recall}%   (corroborated / Foundry's direct grants)`);
+  }
   console.log(
-    `\n(context: ${choiceGrants} choice-driven grants excluded — "a skill of your choice",\n a different shape slice 1 does not target.)`,
+    `\n(context: ${choiceGrants} choice-driven proficiency grants excluded — "a skill of\n your choice", a different shape the parser does not target here.)`,
   );
 
   if (args.conflicts && conflicts.length) {
     console.log(`\nconflicts (first ${Math.min(args.limit, conflicts.length)}):`);
     for (const c of conflicts.slice(0, args.limit)) {
-      console.log(`  ${c.name} (${c.id})`);
+      console.log(`  [${c.kind}] ${c.name} (${c.id})`);
       console.log(`    parser  : ${JSON.stringify(c.draft)}`);
       console.log(`    foundry : ${JSON.stringify(c.alternatives ?? [])}`);
     }

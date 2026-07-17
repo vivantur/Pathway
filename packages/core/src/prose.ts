@@ -100,6 +100,13 @@ export interface Clause {
   text: string;
   /** The subordinating conjunction that introduces it, if any — the Lepidstadt gate. */
   governor?: Governor;
+  /**
+   * A condition that FOLLOWS this clause in the same sentence: "you gain +1 … WHILE you
+   * are raging" splits the modifier (here, ungoverned) from its trailing `while` clause.
+   * A modifier conditioned by a trailing clause is still conditional, so the extractor
+   * carries it as a gap rather than emitting an unconditional (wrong) draft.
+   */
+  trailingCondition?: string;
   /** Character offset of `text` in the ORIGINAL (post-normalization) string, for evidence spans. */
   start: number;
   end: number;
@@ -149,14 +156,20 @@ export function segment(normalized: string): Clause[] {
     const tail = part.text.slice(last);
     if (tail.trim()) pushes.push({ text: tail, governor: currentGov, offset: last });
 
-    for (const p of pushes) {
+    for (let i = 0; i < pushes.length; i += 1) {
+      const p = pushes[i]!;
       const rawText = p.text;
       const leadTrim = rawText.length - rawText.trimStart().length;
       const text = rawText.trim();
       const start = part.start + p.offset + leadTrim;
+      // If the NEXT part of this sentence is governed, its condition scopes back onto this
+      // (ungoverned) clause — "modifier … while condition".
+      const next = pushes[i + 1];
+      const trailing = !p.governor && next?.governor ? `${next.governor} ${next.text.trim()}`.trim() : undefined;
       clauses.push({
         text,
         ...(p.governor ? { governor: p.governor } : {}),
+        ...(trailing ? { trailingCondition: trailing } : {}),
         start,
         end: start + text.length,
       });
@@ -170,6 +183,7 @@ export function segment(normalized: string): Clause[] {
 // ---------------------------------------------------------------------------
 
 import type { DraftEffect, Gap, SourceProposals } from "./candidate.js";
+import type { Selector } from "./selectors.js";
 
 /** One extracted proposal, before it is wrapped as a producer's `SourceProposals`. */
 export interface Extraction {
@@ -276,5 +290,170 @@ export const proficiencyExtractor: Extractor = (clause) => {
   return out;
 };
 
+// ---------------------------------------------------------------------------
+// 5. the modifier extractor (slice 2)
+// ---------------------------------------------------------------------------
+//
+// "+2 circumstance bonus to X" is the biggest single shape in the corpus: 915 phrases
+// across 792 feats (probe). Three things the probe settled:
+//   • The bonus TYPE is almost always stated (only 36/915 unstated) — read it, don't
+//     guess it. circumstance 648 · status 201 · item 30.
+//   • The VALUE is a plain integer here; "a bonus equal to your level" and friends are a
+//     later slice, and fall through cleanly (the regex needs a digit).
+//   • The TARGET is the whole game, and splits three ways — this is where the gap
+//     machinery finally earns its place (design doc: ~24% of extractions know the value
+//     and type but not the target). See `resolveTarget`.
+//
+// BROADLY EFFECTIVE, NOT EXHAUSTIVE (owner). We nail the high-frequency shapes and let the
+// tail fall into GAPS for a human, never into wrong content. Chasing every one-off phrasing
+// just breaks the common ones on the next feat.
+
+const BONUS_TYPES = new Set(["circumstance", "status", "item", "untyped"]);
+
+// "+2 circumstance bonus to X" / "a status bonus on X" / "take a –2 penalty to X". The
+// value is optional-signed; the type is optional (defaults untyped); target runs to the
+// next clause boundary. `until`/`against`/`for`/… end the target so a duration or a
+// condition tail is not swallowed into it.
+const MOD_RE =
+  /([+-]?\d+)\s+(circumstance|status|item|untyped)?\s*(bonus|penalty)\s+(?:to|on)\s+([a-z][\w\s'-]{0,40}?)(?=[.,;:]|\s+\b(?:when|if|while|until|against|to|for|and|equal|from|on|made|instead)\b|$)/gi;
+
+/**
+ * The target-resolution vocabulary: a phrase (after stripping articles/possessives and
+ * "check"/"roll"/"dc"/"save" noise) → the read selector(s) it means. A plural/general
+ * class fans out to every stat it covers, exactly as Foundry's broadcast selectors do at
+ * ingest — which is also what makes the two producers corroborate on "+1 to all saves".
+ */
+const TARGET_MAP: Record<string, Selector[]> = {
+  ac: ["ac"],
+  "armor class": ["ac"],
+  perception: ["perception"],
+  initiative: ["initiative"],
+  fortitude: ["fortitude"],
+  reflex: ["reflex"],
+  will: ["will"],
+  attack: ["attack"],
+  damage: ["damage"],
+  // broadcast classes (plural / general) → the stats they cover
+  save: ["fortitude", "reflex", "will"],
+  saves: ["fortitude", "reflex", "will"],
+  "saving throw": ["fortitude", "reflex", "will"],
+  "saving throws": ["fortitude", "reflex", "will"],
+  "skill check": [...SKILLS] as Selector[],
+  "skill checks": [...SKILLS] as Selector[],
+};
+for (const s of SKILLS) TARGET_MAP[s] = [s as Selector];
+
+/** Leading articles/possessives to strip: "your Reflex", "the check". */
+const LEADING = /^(?:the|your|this|that|its|their|his|her|a|an|all|each|any|every)\s+/i;
+/** Trailing role nouns that don't change the stat: "reflex SAVE", "perception DC". */
+const TRAILING = /\s+(?:dcs?|checks?|rolls?|saves?|saving\s+throws?|attack\s+rolls?)$/i;
+
+/** Words that mark an ANAPHORIC target — a reference to a check/roll/save with no stat. */
+const ANAPHORA_NOUN = /^(?:check|checks|roll|rolls|save|saves|dc|dcs|attack|attacks|saving\s+throws?)$/i;
+
+type TargetResolution =
+  | { kind: "resolved"; selectors: Selector[] }
+  | { kind: "anaphoric"; raw: string }
+  | { kind: "skip" };
+
+/**
+ * Resolve a raw modifier target to selector(s), an anaphoric gap, or nothing.
+ *
+ *   "your Reflex"        → resolved [reflex]
+ *   "all saving throws"  → resolved [fortitude, reflex, will]   (broadcast fan-out)
+ *   "the attack roll"    → resolved [attack]                    ("attack roll" names a stat)
+ *   "your check"         → anaphoric ("check" names no stat — a human picks which)
+ *   "an impression…"     → skip                                 (regex over-matched)
+ */
+function resolveTarget(rawTarget: string): TargetResolution {
+  const raw = rawTarget.trim();
+  const stripped = raw
+    .toLowerCase()
+    .replace(LEADING, "")
+    .replace(TRAILING, "")
+    .trim();
+
+  if (stripped && TARGET_MAP[stripped]) return { kind: "resolved", selectors: TARGET_MAP[stripped]! };
+
+  // Nothing resolvable. If what's left (or the raw phrase) is a bare check/roll/save
+  // reference, it is anaphoric — the value is known, the target points elsewhere, and a
+  // human resolves it. Otherwise the regex caught non-modifier prose; drop it.
+  const leftover = stripped || raw.toLowerCase().replace(LEADING, "").trim();
+  if (ANAPHORA_NOUN.test(leftover) || ANAPHORA_NOUN.test(raw.toLowerCase().replace(LEADING, "").trim())) {
+    return { kind: "anaphoric", raw };
+  }
+  return { kind: "skip" };
+}
+
+/**
+ * Extract typed bonus/penalty modifiers from a clause.
+ *
+ * A resolved target yields one draft per selector (a broadcast fans out). An anaphoric
+ * target yields ONE gapped draft — value and bonus type filled, `target` absent, with a
+ * `Gap` naming the unresolved phrase — so it enters the review queue as a real item a
+ * human completes, and `promote` refuses it until then (a bonus on the wrong stat is a
+ * wrong sheet). Governed clauses are still extracted here: "+1 to attacks WHILE raging"
+ * is a real conditional modifier, unlike a governed proficiency phrase; its condition
+ * becomes a `when` gap, not a reason to drop it.
+ */
+/**
+ * A scope that narrows a modifier, appearing right after the target: "…to saves AGAINST
+ * magic", "…to Athletics checks TO Climb". The target still resolves, but the effect is
+ * conditional and the scope must not be silently dropped (a narrow bonus shown as blanket
+ * is a wrong sheet). At this position — immediately after a resolved target — a leading
+ * "to <verb>" is reliably a purpose scope, since the target's own "to"/"on" is consumed.
+ */
+const SCOPE_RE = /^\s*((?:against|to)\s+[a-z][^.,;:]{2,60})/i;
+
+export const modifierExtractor: Extractor = (clause) => {
+  const out: Extraction[] = [];
+  const span = { start: clause.start, end: clause.end, text: clause.text };
+  let m: RegExpExecArray | null;
+  MOD_RE.lastIndex = 0;
+  while ((m = MOD_RE.exec(clause.text))) {
+    const magnitude = Math.abs(Number(m[1]));
+    if (!Number.isFinite(magnitude) || magnitude === 0) continue;
+    const bonusType = m[2]?.toLowerCase() && BONUS_TYPES.has(m[2].toLowerCase()) ? m[2].toLowerCase() : "untyped";
+    const signed = m[3]!.toLowerCase() === "penalty" ? -magnitude : magnitude;
+    const value = { kind: "lit" as const, value: signed };
+
+    // Conditions on the modifier come from three places, and NONE may be dropped — a
+    // situational bonus emitted as unconditional is a wrong sheet (the whole design's
+    // recurring hazard):
+    //   • a governing clause          — "while raging, +1 …"
+    //   • a trailing governed clause  — "+1 … while raging"
+    //   • a SCOPE right after the target — "+1 to saves AGAINST magic", which also fans a
+    //     broadcast target, so without this every "saves against X" becomes a blanket
+    //     all-saves bonus. Measured: this is the single biggest precision hazard.
+    const scopeMatch = SCOPE_RE.exec(clause.text.slice(m.index + m[0].length));
+    const condition = clause.governor
+      ? `${clause.governor} ${clause.text}`
+      : (clause.trailingCondition ?? scopeMatch?.[1]);
+    const conditionGap: Gap[] = condition
+      ? [{ field: "when", reason: "conditional-unmapped", raw: condition.slice(0, 80) }]
+      : [];
+
+    const resolution = resolveTarget(m[4]!);
+    if (resolution.kind === "skip") continue;
+
+    if (resolution.kind === "anaphoric") {
+      out.push({
+        draft: { kind: "modifier", bonusType, value },
+        gaps: [{ field: "target", reason: "anaphoric", raw: resolution.raw }, ...conditionGap],
+        span,
+      });
+      continue;
+    }
+    for (const target of resolution.selectors) {
+      out.push({
+        draft: { kind: "modifier", target, bonusType, value },
+        gaps: conditionGap,
+        span,
+      });
+    }
+  }
+  return out;
+};
+
 /** The default producer extractor set. Grows one family per slice. */
-export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor];
+export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor];

@@ -731,9 +731,51 @@ Pipeline: `normalize → segment (clause + governor) → extractors`.
   Thievery" — a capability, not a grant) and **subject detection** ("this *animal* is
   trained in Performance" — not the character). Neither is in slice 1's scope.
 
-**Next prose slices:** the modifier family ("+2 circumstance bonus to X"), which is where
-anaphora lives (~24% of extractions know the value but not the target — "the check", "the
-save"); then `require`/subject governors; then the review UI over the reconciled candidates.
+### `prose.ts` slice 2 landed 2026-07-17 — the modifier extractor + the gap machinery
+
+"+2 circumstance bonus to X" is the biggest single shape (probe: 915 phrases across 792
+feats). This slice is where the GAP machinery finally earns its place: the target — not the
+value or type — is the hard part, and honest partial extraction is the whole architecture.
+
+- **Value and bonus type are read, not guessed.** The type is stated in all but 36/915
+  cases (circumstance 648 · status 201 · item 30); unstated → untyped. A "penalty" negates
+  the value. Non-numeric values ("a bonus equal to your level") need a digit and fall
+  through cleanly to a later slice.
+- **The target resolves three ways, and this is the point:**
+  - *resolved* → one draft per selector, after stripping possessives/`dc`/`roll`/`save`
+    noise ("your Reflex save" → reflex) and FANNING broadcast classes ("all saving throws"
+    → the three saves; "skill checks" → the 16 skills), the same fan-out Foundry does at
+    ingest — which is what lets the two producers corroborate on "+1 to all saves".
+  - *anaphoric* → a GAPPED draft: value + type filled, `target` absent, a `Gap{anaphoric}`
+    quoting the phrase ("the check"). It enters the queue as a real work item and `promote`
+    refuses it until a human fills the target. This is the ~24% the doc predicted, and it
+    is the CORRECT output, not a failure — a guessed target is a bonus on the wrong stat.
+  - *neither* (regex over-matched into prose) → skipped, not emitted as garbage.
+- **Conditions are never dropped — the recurring hazard, handled in one rule.** A modifier
+  is conditional when (a) its clause is governed ("while raging, +1 …"), (b) a trailing
+  clause governs it ("+1 … while raging" — segmentation splits these, so a `trailingCondition`
+  is threaded back onto the modifier clause), or (c) a SCOPE follows the target ("+1 to
+  saves AGAINST magic", "+1 to Athletics checks TO Climb"). Each carries a
+  `conditional-unmapped` gap. Case (c) was the single biggest precision hazard found by the
+  probe: without it every "saves against X" fans to a BLANKET all-saves bonus. After the
+  fix, 886 of 1042 modifier extractions are gapped (conditional or anaphoric) and only 156
+  are clean-unconditional.
+- **Foundry is a WEAK labeled set for modifiers, and that itself proves the pivot.** Its
+  FlatModifiers are overwhelmingly predicated, so the mapper (correctly) reports them
+  `needs-combat-tags` — only 26 modifier effects survive to `feat.effects`. The parser finds
+  1042. Prose contains vastly more than the rule elements here; the recall number
+  (corroborated / Foundry's 26) is not meaningful for this family and is reported per-kind
+  so it does not blend with proficiency's honest 73%.
+- **Known residual, deliberately not chased (owner guidance — broadly effective, not
+  exhaustive):** COMPOUND TARGETS. "+2 to Perception checks and saving throws", "saves and
+  AC against spells" — the parser extracts the first target correctly and unconditionally,
+  missing the conjoined ones (and, when an "against" trails the whole list, its scope). ~52
+  of 1042, all safe reviewable candidates. A distinct, more complex shape = a later slice;
+  chasing it now would risk the clean single-target path.
+
+**Next prose slices:** compound targets; `require`/subject governors (the two slice-1 false
+positives); then the review UI over the reconciled candidates (the review UI's spec is
+already measured — 12 shapes cover 89% of what needs a human).
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 

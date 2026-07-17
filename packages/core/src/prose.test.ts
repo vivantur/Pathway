@@ -6,12 +6,13 @@
 import { describe, expect, it } from "vitest";
 import {
   extractFromProse,
+  modifierExtractor,
   parseProse,
   proficiencyExtractor,
   segment,
   type Clause,
 } from "./prose.js";
-import { reconcile } from "./candidate.js";
+import { promote, reconcile } from "./candidate.js";
 
 // A clause built by hand, for extractor-level tests.
 const clause = (text: string, governor?: Clause["governor"]): Clause => ({
@@ -94,6 +95,97 @@ describe("proficiencyExtractor — semantic pieces, not sentence templates", () 
     expect(proficiencyExtractor(clause("you are legendary in Medicine", "when"))).toEqual([]);
     // ungoverned, the same words ARE a grant
     expect(proficiencyExtractor(clause("you are legendary in Medicine"))).toHaveLength(1);
+  });
+});
+
+describe("modifierExtractor", () => {
+  const mods = (text: string) => extractFromProse(text, [modifierExtractor]);
+
+  it("reads value + stated bonus type + a resolvable target", () => {
+    const ex = mods("You gain a +2 circumstance bonus to Stealth.");
+    expect(ex).toHaveLength(1);
+    expect(ex[0]!.draft).toEqual({
+      kind: "modifier",
+      target: "stealth",
+      bonusType: "circumstance",
+      value: { kind: "lit", value: 2 },
+    });
+    expect(ex[0]!.gaps).toEqual([]);
+  });
+
+  it("makes a penalty negative", () => {
+    const ex = mods("You take a -1 status penalty to attack rolls.");
+    expect(ex[0]!.draft).toMatchObject({ target: "attack", bonusType: "status", value: { kind: "lit", value: -1 } });
+  });
+
+  it("strips a possessive and a role noun to reach the stat", () => {
+    expect(mods("a +1 circumstance bonus to your Reflex saves")[0]!.draft).toMatchObject({ target: "reflex" });
+    expect(mods("a +2 status bonus to your Perception DC")[0]!.draft).toMatchObject({ target: "perception" });
+    expect(mods("a +1 circumstance bonus to the attack roll")[0]!.draft).toMatchObject({ target: "attack" });
+  });
+
+  it("fans a broadcast target out to every stat it covers", () => {
+    // "+1 to all saving throws" is +1 to each of the three saves — the same fan-out
+    // Foundry does at ingest, which is what lets the two producers corroborate.
+    const ex = mods("You gain a +1 status bonus to all saving throws.");
+    expect(ex.map((e) => e.draft.target).sort()).toEqual(["fortitude", "reflex", "will"]);
+    expect(ex.every((e) => e.draft.bonusType === "status")).toBe(true);
+  });
+
+  it("defaults an unstated bonus type to untyped", () => {
+    expect(mods("You gain a +1 bonus to Athletics.")[0]!.draft).toMatchObject({ target: "athletics", bonusType: "untyped" });
+  });
+
+  // ── the gap machinery: anaphora is the point, not an error path ──────────────
+  it("emits a GAPPED draft when the target is anaphoric, never a guess", () => {
+    // "the check" names no stat — the value and type are known, the target points at an
+    // earlier clause. A human resolves it; the draft cannot promote until they do.
+    const ex = mods("You gain a +2 circumstance bonus to the check.");
+    expect(ex).toHaveLength(1);
+    expect(ex[0]!.draft.target).toBeUndefined();
+    expect(ex[0]!.draft).toMatchObject({ kind: "modifier", bonusType: "circumstance", value: { kind: "lit", value: 2 } });
+    expect(ex[0]!.gaps).toEqual([{ field: "target", reason: "anaphoric", raw: "the check" }]);
+  });
+
+  it("an anaphoric draft is REFUSED by promote until the target is filled", () => {
+    const candidate = {
+      entityId: "x",
+      draft: mods("a +2 circumstance bonus to your check")[0]!.draft,
+      gaps: mods("a +2 circumstance bonus to your check")[0]!.gaps,
+      agreement: "parser-only" as const,
+      key: "modifier:?:circumstance",
+      signature: "modifier:?:circumstance",
+      evidence: [],
+    };
+    const result = promote(candidate);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.blocked).toBe("gaps");
+  });
+
+  it("carries an 'against X' scope as a condition, never a blanket bonus", () => {
+    // "+1 to saving throws against magic" is +1 to each save WHEN against magic — the fan
+    // is fine, but dropping "against magic" would turn a narrow bonus into a blanket one.
+    const ex = mods("You gain a +1 circumstance bonus to saving throws against magic.");
+    expect(ex.map((e) => e.draft.target).sort()).toEqual(["fortitude", "reflex", "will"]);
+    expect(ex.every((e) => e.gaps.some((g) => g.field === "when" && /against magic/i.test(g.raw ?? "")))).toBe(true);
+  });
+
+  it("carries a governed clause's condition as a gap instead of dropping it", () => {
+    // Unlike a proficiency phrase, "+1 to attacks while raging" is a real conditional
+    // modifier — kept, with the condition as a when-gap.
+    const ex = extractFromProse("You gain a +1 status bonus to attack rolls while you are raging.", [
+      modifierExtractor,
+    ]);
+    const governed = ex.find((e) => e.draft.target === "attack");
+    expect(governed?.gaps.some((g) => g.field === "when" && g.reason === "conditional-unmapped")).toBe(true);
+  });
+
+  it("skips regex noise that is not a real modifier target", () => {
+    // The clause boundary keeps the target from swallowing following prose; a target that
+    // resolves to neither a stat nor an anaphor is dropped, not emitted as garbage.
+    const ex = mods("You gain a +2 circumstance bonus to Make an Impression on such animals.");
+    // "make an impression on such animals" is neither a stat nor a bare check ref.
+    expect(ex).toEqual([]);
   });
 });
 
