@@ -9,14 +9,31 @@ This is an **npm-workspaces monorepo** (root `package.json` → `workspaces`).
 
 | Path | What it is |
 | --- | --- |
-| `packages/core` | Pure PF2e domain — content schema, character model, derived-stat engine. No I/O, no DB, no network. The single source of rules truth. |
-| `packages/db` | Data layer (Supabase client, generated types, queries). Currently a placeholder — nothing imports it yet. |
-| `apps/bot` | The discord.js bot. CommonJS, no build step. |
+| `packages/core` | Pure PF2e domain — content schemas, character model, derived stats, and the effects engine. No I/O, no DB, no network. The single source of rules truth, and where most of the work is. |
+| `packages/db` | Data layer (Supabase client, generated types, queries). Built, but **not yet wired** — nothing outside it imports it; the web app still reads JSON datasets. |
+| `apps/bot` | The discord.js bot. CommonJS, no build step. Frozen for architecture (hotfixes fine). |
 | `apps/web` | The Vite + React + React Router + React Query web app. |
 
 **The one rule that matters:** there is exactly one implementation of the PF2e domain,
 and it lives in `packages/core`. Never compute a rules value in `apps/web` or
 `apps/bot`. See [CLAUDE.md](CLAUDE.md) for the architecture and the migration status.
+
+**Branches:** work happens on **`test`**. `main` is what deploys — the web app
+auto-deploys from it. Branch off `test`, and promote to `main` deliberately.
+
+### New here? Read in this order
+
+1. **[CLAUDE.md](CLAUDE.md)** — the architecture, the one rule, and the honest
+   migration status. Everything else assumes it.
+2. **[docs/effects-engine-design.md](docs/effects-engine-design.md)** — the effects
+   engine: two layers, the Foundry boundary, every locked decision and why. It is the
+   plan of record for the current work and is kept current.
+3. **[apps/bot/CLAUDE.md](apps/bot/CLAUDE.md)** — only if you're touching the bot.
+
+Two rules that will bite you if you skip them: **never implement a PF2e rule from
+memory** (only from rules text someone pasted — model-remembered rules have been
+subtly wrong here before), and **`npm run typecheck` at the root**, because `npm test`
+cannot see type errors in core's test files.
 
 ## Requirements
 
@@ -66,7 +83,7 @@ npm run deploy            # register slash commands globally (~1h propagation)
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # every workspace's tests (core + bot)
+npm test                  # every workspace's tests
 npm run typecheck         # every workspace's typecheck
 ```
 
@@ -97,14 +114,20 @@ npm run build:core     # one-shot rebuild
 
 ## Deployment
 
-Each app deploys from its own directory (its platform "root directory" setting):
+| App | Platform | How |
+| --- | --- | --- |
+| Bot | **Self-hosted VPS, Docker** | Manual: `git pull && docker compose up -d --build` on the box. See **[DEPLOY.md](DEPLOY.md)**. |
+| Web | Vercel, root directory `apps/web` | `npm run build` (Vite). Auto-deploys on push to `main`. |
 
-| App | Platform | Root directory | Command |
-| --- | --- | --- | --- |
-| Bot | Railway | `apps/bot` | `npm start` |
-| Web | Vercel | `apps/web` | `npm run build` (Vite) |
+### The bot is not on Railway any more (2026-07-14)
 
-Railway auto-deploys on push to `main`.
+Discord rate-limited Railway's **shared** egress IPs (Cloudflare 1015) and the bot kept
+dropping its gateway connection. It needs a dedicated outbound IP and a persistent
+process; any small VPS gives both. The repo ships a root `Dockerfile` +
+`docker-compose.yml`, so hosting is the same three commands anywhere and moving hosts
+is minutes (the bot is stateless — Supabase holds everything).
+
+**Pushing to `main` does not deploy the bot.** Only the web app auto-deploys.
 
 ### ⚠️ The web deploy depends on a Vercel dashboard setting
 
@@ -134,18 +157,33 @@ production deploys (`701a572`). Do not add comments to it.
 ## Testing
 
 ```bash
-npm test    # core (60 tests) + bot (162 tests)
+npm test         # core 478 · bot 209 · web 61 · db 15
+npm run typecheck  # every workspace — see the warning below
 ```
 
-`packages/core` is I/O-free and trivially unit-testable. The bot's suite locks its pure
-`rules/` layer — dice, degree of success, MAP, proficiency math, conditions, spell
-heightening, the dying/recovery engine, and combat v2. **Run it after touching anything
-under `apps/bot/src/rules/` or `apps/bot/src/lib/` — those tests guard player-visible
-game math.**
+`packages/core` is I/O-free and trivially unit-testable; every function in it ships
+with tests, and the tests are the contract. The bot's suite locks its pure `rules/`
+layer — dice, degree of success, MAP, proficiency math, conditions, spell heightening,
+the dying/recovery engine, and combat v2. **Run it after touching anything under
+`apps/bot/src/rules/` or `apps/bot/src/lib/` — those tests guard player-visible game
+math.**
+
+### ⚠️ `npm test` cannot catch a type error in a core test file
+
+`tsconfig.build.json` excludes `*.test.ts`, and Vitest does not typecheck. So a type
+error in `packages/core/src/*.test.ts` is invisible to **both** `npm test` and
+`npm run build` — CI was red for a day before anyone noticed. `npm run typecheck` at
+the root covers core (tests included), db, and web. Run it before you push.
+
+Vitest 4 sometimes flakes on a first cold run; re-run before investigating.
 
 ## Further reading
 
-- [CLAUDE.md](CLAUDE.md) — architecture, conventions, migration status
+- [CLAUDE.md](CLAUDE.md) — architecture, conventions, migration status. **Start here.**
+- [docs/effects-engine-design.md](docs/effects-engine-design.md) — the effects engine:
+  design, locked decisions, and the current work. The plan of record.
+- [DEPLOY.md](DEPLOY.md) — the bot hosting runbook (self-hosted Docker).
 - [apps/bot/CLAUDE.md](apps/bot/CLAUDE.md) — bot architecture (state pattern, command pattern)
-- [apps/bot/HANDOFF.md](apps/bot/HANDOFF.md) — what's been done in the bot refactor
+- [apps/bot/HANDOFF.md](apps/bot/HANDOFF.md) — the bot refactor's history (partly
+  superseded; see its banner)
 - [docs/avrae-pathbuilder-roadmap.md](docs/avrae-pathbuilder-roadmap.md) — capability review and roadmap

@@ -1,5 +1,17 @@
 # System Architecture
 
+> ### ⚠️ Historical document — read `CLAUDE.md` for current state
+>
+> Written 2026-07-02, before `packages/core` existed, kept as the record of *why* things are the way they are. It has
+> **not** been rewritten as the project moved on. Where it disagrees with
+> [`CLAUDE.md`](../../../../CLAUDE.md) or [`docs/effects-engine-design.md`](../../../../docs/effects-engine-design.md), CLAUDE.md wins.
+>
+> **Since:** `packages/core` is now the single rules implementation (27 modules,
+> 478 tests) and holds the effects engine; the bot moved off Railway to self-hosted
+> Docker; `packages/db` exists but is not yet wired.
+
+
+
 > Status: **Revised after reading the live bot** · Companion to the
 > [Master Specification](../../PATHWAY_MASTER_SPEC.md) and the
 > [Web ⇄ Bot Sync Contract](./web-bot-sync.md).

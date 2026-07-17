@@ -1,5 +1,16 @@
 # Data Model — The Existing Supabase Schema
 
+> ### ⚠️ Historical document — read `CLAUDE.md` for current state
+>
+> Written 2026-07-02, reverse-engineered from the live bot, kept as the record of *why* things are the way they are. It has
+> **not** been rewritten as the project moved on. Where it disagrees with
+> [`CLAUDE.md`](../../../../CLAUDE.md), CLAUDE.md wins.
+>
+> **Since:** still broadly useful for the Supabase shape, but `packages/db` and core's
+> Zod content schemas are now the typed source of truth. Verify against the code.
+
+
+
 > Status: **Reverse-engineered from the live bot** (`vivantur/pathway`,
 > `Pathwayv2/`). Companion to [System Architecture](./system-architecture.md)
 > and the [Web ⇄ Bot Sync Contract](./web-bot-sync.md).

@@ -1,11 +1,25 @@
 # Pathwayv2 Refactor — Handoff Doc
 
+> ### ⚠️ Historical document — read the root `CLAUDE.md` for current state
+>
+> This is the record of the **v2 refactor**, kept for the *why*. It has not been
+> rewritten as the project moved on. Where it disagrees with
+> [`../../CLAUDE.md`](../../CLAUDE.md), CLAUDE.md wins.
+>
 > **Update 2026-07-06**: this doc predates the monorepo move. The bot now lives at
 > `apps/bot/` (the "Project Geography" below describes the old `Pathway/Pathwayv2/`
 > layout), the legacy v1 single-file bot has been removed from the repo, and
-> **v2 is live in production on Railway** (root directory `apps/bot`, `npm start`).
-> The cutover described under "Suggested Next Steps" is complete; what remains is
-> post-cutover cleanup.
+> **v2 is live in production**. The cutover described under "Suggested Next Steps" is
+> complete; what remains is post-cutover cleanup.
+>
+> **Update 2026-07-17**, what has changed since:
+> - **The bot is NOT on Railway.** It moved to a self-hosted VPS (Docker) on
+>   2026-07-14 after Discord rate-limited Railway's shared IPs. Deploys are manual.
+>   Runbook: [`../../DEPLOY.md`](../../DEPLOY.md).
+> - **`packages/core` now owns the rules math**, and the bot consumes it.
+>   `rules/pf2eMath.js` is an adapter over core, not an implementation.
+> - **`apps/bot` is frozen for architecture** — hotfixes yes, restructuring no. The
+>   "next steps" below are largely superseded by that freeze.
 
 **Status as of this handoff**: Phase 3 extraction complete. 85 slash command entries moved to feature folders. Bot is functional; legacy single-file dispatcher in `src/index.js` remains the entry point while startup/autocomplete/button scaffolding is audited. ~~**Nothing has been deployed to production from this branch**~~ *(superseded — see update above: v2 is deployed)*.
 

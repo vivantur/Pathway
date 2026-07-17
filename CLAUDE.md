@@ -26,53 +26,70 @@ packages/
             (Vitest). The heart of the project.
   db/     ← Supabase client, generated DB types, queries. Depends on core;
             validation happens here at the edges using core's Zod schemas.
-            Currently a SKELETON — nothing imports it yet.
+            BUILT but NOT YET WIRED — nothing outside it imports it (see status).
 apps/
   web/    ← the Vite + React + React Router + React Query web app (was web/).
             Depends on core + db (once wired). Keep Vite — do NOT rebuild on Next.js.
   bot/    ← the discord.js bot (was Pathwayv2/). CommonJS JS, no build step.
 ```
 
+**Branches:** work happens on `test`; `main` is what deploys (the web app auto-deploys
+from it on Vercel). Promote `test` → `main` deliberately, not by habit.
+
 ### Status of the migration
 
-*(Last reconciled against the code on 2026-07-09.)*
+*(Last reconciled against the code on 2026-07-17. If you change this, re-verify —
+this section has been wrong before, and a stale status is worse than none.)*
 
 - ✅ **Structure** — monorepo layout + npm workspaces in place; `apps/bot` and
   `apps/web` moved.
-- 🔶 **Build core** — three real slices exist, locked by 60 Vitest tests:
-  `stats.ts` (ability modifier, proficiency bonus incl. Proficiency Without Level,
-  rank encoding), `proficiency.ts` (27-class save/Perception/class-DC/armor
-  progression + weapon-attack progression), `companion.ts` (animal companion
-  catalog + derived-stat engine). Still missing: the Zod content schema and the
-  character model.
-- 🔶 **Point web at core** — `apps/web` imports `@pathway/core` from five files and
-  the vendored copies are deleted, so the *scalar primitives* and the proficiency
-  tables now have exactly one implementation. **Not yet done:** the derived stats.
-  `features/builder/rules.ts` (`deriveCharacter`) and
-  `features/characters/pathbuilder.ts` still each compute max HP, AC, saves,
-  Perception, and class DC independently, over different input models. The sheet
-  should become a thin adapter over core, not a second engine.
 - ✅ **Core packaging** (2026-07-09) — core builds to `dist/` and both consumers are
   proven against it: the web app typechecks/builds against `dist`, and a CommonJS
   `require('@pathway/core')` returns working rules math. ESM was never the obstacle
   (Node ≥22.12 `require(esm)` works); shipping raw `.ts` was.
-- ⬜ **Migrate bot** — `apps/bot/src/rules/pf2eMath.js` + `lib/format.js` remain a
-  third implementation of the proficiency/ability math. The packaging is ready; the
-  remaining blocker is a **deploy** one, symmetric to the web app's:
-  `apps/bot` does not declare `@pathway/core` as a dependency, and it currently
-  resolves only by walking up to the repo-root `node_modules`. Railway builds the
-  bot with root directory `apps/bot`. Before adding the dependency, confirm Railway
-  checks out the whole repo and installs from the root — otherwise `@pathway/core: "*"`
-  will 404 against the registry exactly as it did on Vercel (see the Deployment
-  section). Verify this on a branch deploy first, not on `main`.
+- ✅ **Build core** — no longer three slices; **27 modules, 478 tests**. Roughly:
+  - *scalar rules* — `stats.ts`, `proficiency.ts`, `derived.ts`, `companion.ts`
+  - *content schemas* (Zod) — `content.ts` envelope + `spell` `ancestry` `background`
+    `feat`
+  - *character model* — `character.ts` (`ResolvedCharacter`, the engine's read
+    surface) + `selectors.ts` (the canonical selector vocabulary)
+  - *effects Layer 1* — `expr.ts` (sandboxed value AST, no `eval`), `predicate.ts`,
+    `passive.ts` (`PassiveEffect` + apply/collect/traits)
+  - *effects Layer 2* — `automation.ts`, `checks.ts`, `degree.ts`, `damage.ts`,
+    `dice.ts`, `rng.ts`, `counter.ts`, `applied.ts`, `heightening.ts`
+  - *ingest* — `foundry.ts` (the Foundry boundary), `candidate.ts` (the parser-pivot
+    review model)
 
-`packages/core` no longer declares `zod` — the content schema is still unwritten, so
-add the dependency back when it lands.
+  See `docs/effects-engine-design.md` — that doc is the effects engine's plan of
+  record and is current. Read it before touching effects.
+- 🔶 **Point web at core** — the *scalars* are consolidated and the second sheet
+  engine is gone: `deriveCharacter` (`features/builder/rules.ts`) is now THE engine,
+  and the character sheet consumes it (`sheet/sheetStats.ts`) rather than
+  recomputing. 16 web files import `@pathway/core`. **What's left:** the
+  *orchestration* — which ranks/abilities feed which stat — still lives in
+  `deriveCharacter` rather than core, and `features/characters/pathbuilder.ts` keeps
+  a parallel path for characters IMPORTED from Pathbuilder (no `_pathwayBuild`),
+  where Pathbuilder's own numbers are authoritative and recomputing risks
+  disagreeing with it. That fallback is deliberate; the orchestration is not.
+- 🔶 **Migrate bot** — **the packaging blocker is gone.** `apps/bot` declares
+  `@pathway/core: "*"`, imports it, and `rules/pf2eMath.js` is no longer a third
+  implementation — it delegates the arithmetic to core and owns only the
+  character-aware part (decoding Pathbuilder's `2/4/6/8` vs native `1/2/3/4`
+  proficiency conventions). That is a legitimate adapter. Remaining: the rest of the
+  bot's rules modules, opportunistically.
+- 🔶 **`packages/db`** — no longer a skeleton: a content store plus `spells`,
+  `feats`, `ancestries`, `backgrounds` (15 tests). But **nothing outside `packages/db`
+  imports it yet** — the web app still reads the JSON datasets in
+  `apps/web/src/features/builder/data/`. Wiring it up is real, unstarted work.
+  (See "all content ends up in the DB" — the JSON files are transitional.)
+
+`packages/core` declares `zod` (^4.4.3) — the content schemas use it.
 
 Combat v2's rules were welded to its persistence; that was split on 2026-07-09.
 `apps/bot/src/rules/combatV2/model.js` is now pure (requires only `./rolls`) and
 the encounter Map plus every Supabase write live in `apps/bot/src/state/combat.js`.
-Its 197-test suite drives the rules both directly and through the store.
+Its 82 tests (`test/combatV2.test.js` + `test/combatV2Model.test.js`) drive the rules
+both directly and through the store.
 
 Still impure, despite the bot's own CLAUDE.md declaring `rules/` pure: `calendar.js`,
 `weather.js`, `settings.js`, `eberronCalendar.js`, and `eberronWeather.js` import
@@ -122,9 +139,11 @@ data loss) are fine — "frozen" means "don't restructure," not "don't fix."
   advisory) once existed, but `@discordjs/rest`/`@discordjs/ws` pin undici to
   **exactly `6.24.1`**, and forcing 6.27.0 hung discord.js's REST call at
   `GET /gateway/bot` — the bot connected to nothing, behind a green deploy. The
-  override only ever reached the bot's *runtime* once Railway moved to the
-  root-directory workspace build (PR #27); before that the bot's own lockfile
-  shielded it, which is why this surfaced suddenly. undici is a **bot-only**
+  override only ever reached the bot's *runtime* once the build moved to a
+  root-directory workspace install (PR #27, back when the bot was on Railway); before
+  that the bot's own lockfile shielded it, which is why this surfaced suddenly. **The
+  Docker build installs from the root too, so the exposure is the same today.**
+  undici is a **bot-only**
   dependency (discord.js is the sole consumer; the browser web app never runs it)
   and it only ever talks to **discord.com over TLS** — while the advisories require
   a *malicious server*, so they are not reachable in this bot's threat model.
@@ -180,6 +199,40 @@ review found several model-remembered rules implemented incorrectly. Implement o
 rules text provided in the prompt. The stat engine is data-driven and locked by tests
 against human-verified worked examples. When unsure about a rule, stop and ask.
 
+## The effects engine — where most of the work is
+
+The largest thing in `core`, and the current focus. **`docs/effects-engine-design.md`
+is its plan of record and is kept current — read it before touching effects.** The
+short version:
+
+- **Two layers.** Layer 1 = *passive* effects (declarative: what is ON an actor and
+  modifies its numbers). Layer 2 = *automation* (imperative: what happens when you DO
+  the thing — a pure tree interpreter over a seeded RNG). They meet at Layer 1.5, the
+  *applied effect*. Both layers' node vocabularies are complete and tested.
+- **We build our own schema.** Foundry VTT's `pf2e` rule elements are *import
+  feedstock, never our contract* — their encodings are their work, and a commercial
+  Pathway could not derive from them anyway. `packages/core/src/foundry.ts` is the ONE
+  module allowed to know their shape, and it maps **at ingest**. The boundary is
+  checkable, so check it:
+
+  ```bash
+  grep -rl "RuleElement" packages/core/src apps/web/src   # only foundry.ts + its test
+  ```
+
+- **Honesty is the product.** The mapper never guesses: an element either maps to an
+  effect we can stand behind, or it is reported unsupported **with a reason** from a
+  closed vocabulary, named after the *blocker*. Coverage is ~8.8% of the Foundry
+  corpus and **that number is not the point** — the point is the other 91% is named,
+  and the tallies are the roadmap. Never map an element by dropping a condition it
+  can't express: a situational bonus shown as permanent is a wrong sheet, which is
+  worse than an absent effect.
+- **`scripts/remap-effects.mjs` re-maps from data we already hold** — coverage rises
+  as the model improves, with no Foundry clone, ever again. `ingest-pf2e.mjs` (which
+  needs the clone) is only for re-ingesting CONTENT.
+- **Next up: `prose.ts`** — a parser over PF2e rules *prose*, which strictly contains
+  more than the rule elements, is licence-clean, and is source-agnostic. Foundry
+  becomes a corroborator. `candidate.ts` is its landed review model. See the doc.
+
 ## Working conventions
 
 - On any non-trivial task, propose a plan and wait for approval before writing files.
@@ -188,33 +241,64 @@ against human-verified worked examples. When unsure about a rule, stop and ask.
 - Characters reference content by id AND a pinned version — never embed a copy, never
   reference live. Content updates are an explicit action, not a silent mutation.
 - Official and homebrew content share ONE schema, differing only by an owner/source field.
+- **Verify claims against the code, including this file's.** Every "status" here has
+  been wrong at least once. Prefer a grep over a memory.
 
 ## Commands
 
 ```bash
 npm install               # install all workspaces (run at repo root)
-npm start                 # run the bot (delegates to apps/bot)
+npm start                 # run the bot locally (delegates to apps/bot)
 npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core: 60, bot: 162)
+npm test                  # ALL workspace tests (core 478 · bot 209 · web 61 · db 15)
+npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only
-npm --workspace apps/web run typecheck   # web type check
 npm --workspace apps/web run lint        # web lint
+node apps/web/scripts/remap-effects.mjs --dry   # re-map ingested effects (no clone needed)
 ```
 
-Deeper bot architecture notes live in `apps/bot/CLAUDE.md` and `apps/bot/HANDOFF.md`.
-Secrets stay in `.env` (git-ignored) at the repo root or inside `apps/bot`.
+### `npm test` cannot catch a type error in a core test file
+
+`tsconfig.build.json` excludes `*.test.ts` and Vitest does not typecheck, so a type
+error inside `packages/core/src/*.test.ts` is invisible to BOTH `npm test` and
+`npm run build`. **CI went red for a day** before anyone noticed. `npm run typecheck`
+at the root covers core (tests included), db, and web — run it before you push.
+
+Vitest 4 occasionally flakes on a first cold run; re-run before investigating.
+
+Deeper bot architecture notes live in `apps/bot/CLAUDE.md` and `apps/bot/HANDOFF.md`
+(both partly historical — see their banners). `DEPLOY.md` is the bot hosting runbook.
+`docs/effects-engine-design.md` is the effects engine's plan of record.
+Secrets stay in `.env` (git-ignored) at the repo root or inside `apps/bot`; the bot's
+production secrets live in `bot.env` on the VPS only.
 
 ## Deployment
 
-Each app deploys from its own directory (its platform "root directory" setting):
-- **Bot** → Railway, root directory `apps/bot`, `npm start`.
-- **Web** → Vercel, root directory `apps/web`, `npm run build` (Vite).
+- **Bot** → **self-hosted on a small VPS via Docker.** NOT Railway — see below.
+- **Web** → Vercel, root directory `apps/web`, `npm run build` (Vite). Auto-deploys
+  on push to `main`.
 
-Railway auto-deploys on push to `main`.
+### The bot left Railway (2026-07-14) — don't send it back
+
+Discord rate-limited Railway's **shared** egress IPs (Cloudflare error 1015) and the
+bot kept dropping its gateway connection. A Discord bot needs a **dedicated outbound
+IP** and a **persistent process** (it holds a WebSocket); Railway gave neither. There
+is no Railway config in the repo any more.
+
+It now runs from the repo-root `Dockerfile` + `docker-compose.yml` on any VPS
+(DigitalOcean/Hetzner/Oracle). **`DEPLOY.md` is the runbook** — read it before
+touching bot hosting. Consequences worth knowing:
+- **Deploys are manual**: `git pull && docker compose up -d --build` on the box.
+  Pushing to `main` does NOT deploy the bot. (The web app still auto-deploys.)
+- The image builds from the **repo root**, not `apps/bot`, because the bot depends on
+  the `@pathway/core` workspace and there is one root lockfile. `--include=dev` is
+  required so core's `prepare` can emit `dist/`.
+- The bot is stateless (Supabase holds everything), so moving hosts is "run it on a
+  new box", not a migration.
 
 ### The web deploy depends on an unversioned Vercel setting
 

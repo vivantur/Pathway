@@ -1,17 +1,43 @@
 # Pathway Discord Bot (v2)
 
-PF2e companion bot for Discord — handles combat, characters, spells, inventory, downtime, companions, notes. The web app at `../web/` provides a UI over the same Supabase data; this bot owns the game logic and Discord interactions.
+PF2e companion bot for Discord — handles combat, characters, spells, inventory, downtime, companions, notes. The web app at `../web/` provides a UI over the same Supabase data; this bot owns the Discord interactions.
 
 This is the **v2 rewrite** of the bot, organized into feature folders (Phase 3 extraction complete — 85 slash command entries in `src/commands/<name>/`). The legacy v1 single-file bot has been deleted from the repo, and **v2 is live in production** (since 2026-07-06).
+
+> **Read `../../CLAUDE.md` first.** Two things there govern this app:
+> 1. **The one rule** — PF2e rules logic lives in `packages/core`, and the bot
+>    consumes it. This doc says the bot "owns the game logic"; that is now only true
+>    of what hasn't migrated yet. Don't add rules math here.
+> 2. **`apps/bot` is frozen for architecture** — don't restructure it or add new rules
+>    logic. Targeted hotfixes to live bugs (crashes, wrong rules, data loss) are fine;
+>    "frozen" means "don't restructure," not "don't fix."
 
 ## Stack
 
 - **Runtime**: Node.js (CommonJS, no TypeScript, no build step)
 - **Discord**: discord.js v14 — slash commands, buttons, modals
-- **Database**: Supabase (PostgreSQL 16), project IDs:
-  - **prod**: `cmmwirlrvqmjqbydlqks`
-  - **develop**: `nqnswvuqszpkntnjzomv`
-- **Deployment**: Railway — single process, no volume needed (Supabase is authoritative)
+- **Database**: Supabase (PostgreSQL 16). **ONE project: `udefzabsnuqwcwqevtpd`**
+  (`https://udefzabsnuqwcwqevtpd.supabase.co`) — the bot AND the web app share it
+  (verified from both `.env` files, 2026-07-17). There is no separate develop project
+  yet. Migrations live in `apps/web/supabase/migrations/`, applied via the Supabase
+  CLI or the dashboard SQL editor.
+  *(Two project IDs — `cmmwirlrvqmjqbydlqks` / `nqnswvuqszpkntnjzomv` — were listed
+  here until 2026-07-17. They are STALE pre-migration values; don't use them.)*
+- **Service key env var**: `lib/supabase.js` accepts **`SUPABASE_SERVICE_ROLE_KEY`
+  first, falling back to `SUPABASE_SERVICE_KEY`**. Either works; prefer the ROLE name.
+  It bypasses RLS — never commit it.
+- **Deployment**: **self-hosted on a small VPS via Docker** — single process, no volume
+  needed (Supabase is authoritative). NOT Railway: Discord rate-limited its shared
+  egress IPs (Cloudflare 1015) and the gateway kept dropping, so the bot moved to a
+  box with a dedicated IP on 2026-07-14. Deploys are **manual** (`git pull &&
+  docker compose up -d --build`); pushing to `main` does not deploy the bot. The image
+  builds from the **repo root** (the bot depends on the `@pathway/core` workspace).
+  Runbook: `DEPLOY.md` at the repo root.
+- **Rules math**: the bot consumes **`@pathway/core`** (declared in its
+  `package.json`, `require()`d — works on Node 22.12+). `rules/pf2eMath.js` is an
+  *adapter*, not an implementation: core owns the arithmetic, pf2eMath owns only the
+  character-aware convention decoding (Pathbuilder's `2/4/6/8` vs native `1/2/3/4`).
+  Per the root CLAUDE.md's one rule, never add rules math here — put it in core.
 - **Entry point**: `src/index.js` — what's left of the original dispatcher (~3,000 lines: env, client, startup, autocomplete, buttons/modals, one-line command dispatch)
 
 ## Project Layout

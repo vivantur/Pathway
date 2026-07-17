@@ -1,5 +1,16 @@
 # Web ⇄ Bot Sync Contract
 
+> ### ⚠️ Historical document — read `CLAUDE.md` for current state
+>
+> Written 2026-07-02 as a draft, kept as the record of *why* things are the way they are. It has
+> **not** been rewritten as the project moved on. Where it disagrees with
+> [`CLAUDE.md`](../../../../CLAUDE.md), CLAUDE.md wins.
+>
+> **Since:** the sync story is now "both clients consume `packages/core`" — see
+> CLAUDE.md's one architectural rule.
+
+
+
 > Status: **Draft for review** · The concrete answer to *"the bot just needs to
 > be in sync with the website."* Companion to
 > [System Architecture](./system-architecture.md) and

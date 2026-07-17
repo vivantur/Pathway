@@ -31,7 +31,7 @@ The `node:22` base image is multi-arch, so the exact same setup runs on x86
 
 3. **Get the code + secrets:**
    ```bash
-   git clone https://github.com/vivantur/pathway-website.git pathway
+   git clone https://github.com/vivantur/Pathway.git pathway
    cd pathway
    cp bot.env.example bot.env
    nano bot.env            # paste your Discord + Supabase values

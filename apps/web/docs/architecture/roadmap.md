@@ -1,5 +1,16 @@
 # Roadmap
 
+> ### ⚠️ Historical document — read `CLAUDE.md` for current state
+>
+> Written 2026-07-04, kept as the record of *why* things are the way they are. It has
+> **not** been rewritten as the project moved on. Where it disagrees with
+> [`CLAUDE.md`](../../../../CLAUDE.md), CLAUDE.md wins.
+>
+> **Since:** the sequencing here is largely overtaken. The real plan of record for the
+> current work is [`docs/effects-engine-design.md`](../../../../docs/effects-engine-design.md).
+
+
+
 > Status: **Revised after reading the live bot.** Re-sequenced around the real
 > situation: the Discord bot and its Supabase backend already exist; the website
 > is a new client that must join them and stay in sync.
