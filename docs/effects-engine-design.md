@@ -433,6 +433,45 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
    node union; `applied.ts` holds the runtime shape + timing resolvers and imports **one-way**
    (no cycle). A later cleanup could extract a `schema.ts` (option B) if `automation.ts` grows
    unwieldy.
+   **HEIGHTENING landed 2026-07-16** (`heightening.ts` + `ctx.spell` + `damage.heightening` +
+   the `heightened` node), from pasted Heightened Spells / Cantrips / Focus Spells text. The
+   organizing insight: heightening is THREE shapes with three costs, and only one needed new
+   machinery.
+   - **`ctx.spell {baseRank, castRank}`** — the input the context lacked. The HOST resolves
+     `castRank` (the slot used, or `autoHeightenRank(level)` for a cantrip/focus spell) and
+     re-supplies it when building a button's press-time context; core owns the rules
+     (`autoHeightenRank` = ⌈level/2⌉; `heightenIncrements` = `max(0, floor((cast-base)/step))`).
+     Both ranks are exposed as ambient scope vars `castRank`/`baseRank` — the typed field stays
+     authoritative for the arithmetic, exactly as `resolveDc` reads the real creature not a var.
+   - **Flat heightening** ("the temporary HP increase by 5") → falls out of `castRank` in scope
+     as plain arithmetic. **Zero new vocabulary.**
+   - **At-rank heightening** ("Heightened (5th) …") → the `heightened` node. **OWNER CORRECTION
+     (2026-07-16), the trap here:** an entry is a **floor, not an exact match** — it applies from
+     its rank UP, and with several entries you read the **highest applicable one, never stacked**
+     (Mystic Armor: entries at 2nd/5th/7th cast at 8th → the 7th; cast at 4th → the 2nd). The
+     rules text's "read the entry only for the rank you're using" means *don't stack*, and its
+     "those benefits will be included in the entry" is *why* entries are self-contained. Reading
+     it as an exact match leaves a 4th-rank cast unheightened. Hence `minRank`, and selection by
+     max — so authored order carries no meaning and cannot be got wrong. A `branch` chain can
+     express this, but only descending, where authoring it ascending fails silently; that is why
+     it is structured (locked decision #1) rather than left to authors and the ingest adapter.
+   - **Interval heightening** ("Heightened (+1) The damage increases by 2d6") → the ONLY case
+     needing new machinery: `damage.heightening {step, components}`, roll the per-increment
+     components once per earned increment and sum. It sits inside the shared-roll cache (so a
+     fireball heightens once and still scales per target's own save) and BEFORE the degree
+     multiplier, keeping the single floor at the end. The fireball ladder from the rules text
+     (6d6/8d6/10d6) is the anchor test.
+   - **The `dice.ts` variable-dice-count deferral is CLOSED — superseded, not implemented.** It
+     was deferred "pending rules text" for exactly this slice, but repeat-rolling is the better
+     tool: `2d6` twice IS `4d6` (same distribution), it stays correct for a mixed `1d4+1` where
+     scaling only the die count would leave the flat term behind, and it keeps the authored
+     "+N per increment" structure the builder needs instead of pushing authors into hand-written
+     rank arithmetic in a formula box. What remains is *non-heightening* level-scaled dice (a
+     class feature or monster ability rolling dice per level) — **no consumer, not blocked**.
+   - **Deferred, unchanged:** casting LEGALITY (a focus spell whose minimum rank exceeds half
+     your level; a spontaneous caster needing the spell known at that rank) — rules-checking that
+     belongs to the spellcasting layer (decision 4), not the damage math. Rules text is pasted in
+     this session's history if needed.
 3. **Homebrew authoring** — the builder UI that emits our schema, once the schema is proven
    on official content.
 
