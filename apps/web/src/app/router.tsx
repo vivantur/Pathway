@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RouteError } from '@/components/RouteError';
@@ -15,6 +16,13 @@ import { CharacterPage } from '@/routes/CharacterPage';
 import { PublicSharePage } from '@/routes/PublicSharePage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
+// The only LAZY route. Its ~3 MB ingest report is admin diagnostic data, so neither
+// the page nor the report may sit in a bundle a player downloads; a dynamic import
+// puts both in their own chunk, fetched only if this page is opened.
+const EffectCoveragePage = lazy(() =>
+  import('@/routes/EffectCoveragePage').then((m) => ({ default: m.EffectCoveragePage })),
+);
+
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
@@ -24,6 +32,18 @@ export const router = createBrowserRouter([
       { path: 'about', element: <AboutPage /> },
       { path: 'roadmap', element: <RoadmapPage /> },
       { path: 'rules', element: <RulesLibraryPage /> },
+      {
+        // Admin diagnostic: what the Foundry ingest mapped into our effect schema,
+        // and what it could not. Unlinked from the nav and ungated — there is no
+        // role system yet, and v1 deliberately has no permissions tiering (design
+        // doc, decision 5). Wrap in RequireAuth the day roles exist.
+        path: 'admin/effect-coverage',
+        element: (
+          <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
+            <EffectCoveragePage />
+          </Suspense>
+        ),
+      },
       { path: 'login', element: <LoginPage /> },
       {
         path: 'vault',
