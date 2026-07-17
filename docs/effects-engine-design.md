@@ -611,6 +611,80 @@ reading effects that do not exist, are each incomplete halves.
 
 ---
 
+## The prose-first pivot + the candidate/review model (2026-07-16)
+
+**Owner direction:** Foundry is no longer the primary ingest route. A text parser over PF2e
+rules prose becomes the main producer; Foundry stays as a **corroborator**. Reasons, in order
+of weight:
+
+1. **Prose strictly contains more than the rule elements.** *Adroit Manipulation*'s text says
+   "trained in Thievery **(or another skill of your choice, if you're already trained in
+   Thievery)**"; its entire rule-element array is one `ActiveEffectLike`. Foundry drops the
+   fallback clause. So the mapper has a **ceiling below the rules** — you cannot map what was
+   never encoded. 126 feats carry that prose pattern.
+2. **Licensing.** Foundry's `system.rules[]` encodings are *Foundry's own work* (locked
+   decision, top of this doc) — not Paizo ORC content. A commercial Pathway cannot derive its
+   effects from them. A parser over **rules prose** is clean ORC material and is
+   **source-agnostic**: same parser on AoN today, Paizo's ORC release later. This removes a
+   commercialization blocker the mapper can never remove. (Get the IP review anyway.)
+3. Coverage: 7 crude extractors reach **1,051 feats (17.2%)** vs the whole Foundry mapper's
+   **251**.
+
+**Why Foundry stays** (do not delete it): its elements are *human-authored* — high precision,
+low recall; the parser is the inverse. Two independent derivations agreeing is **evidence**.
+It is also a free **labeled test set**: measured parser recall vs its skill-rank grants is
+~79% (171 agreed / 45 missed) — and on the first real run a conflict caught the parser reading
+"when you are **legendary in Medicine**" (a *condition*) as a *grant*, on a feat whose actual
+text is "you become an expert in Medicine". Without the second opinion that ships silently.
+
+### Probe findings (2026-07-16) — measured, not assumed
+
+- **Sentence templating FAILS.** 96% of sentence templates are one-offs; the top 1,000 cover
+  21.7% of mechanical sentences. A template-matching parser drowns in the tail.
+- **Effect templating COLLAPSES.** The same extractions fall into **57 effect shapes**; top 5 =
+  60%, **top 20 = 90%**. The prose hides the redundancy ("gain the trained proficiency rank in
+  {skill}" / "are trained in {skill}" / "become trained in {skill}" are one effect in five
+  costumes). ⇒ **the parser must work at CLAUSE level with a semantic target, never sentence
+  templates**, and review is "confirm this shape across 150 feats", not 150 forms.
+- **The bottleneck is ANAPHORA, not vocabulary.** ~24% of extractions know the value and bonus
+  type but not the target, and the top unresolved targets are *"the check"*, *"your check"*,
+  *"the attack roll"*, *"the save"* — pronouns pointing at an earlier clause. No dictionary
+  fixes it. ⇒ partial extraction + human resolution is the CORRECT architecture here, not a
+  workaround for a weak parser.
+- 67.3% of feats have mechanical prose (the recall ceiling); 6,116 feats total.
+
+### The model — `candidate.ts` (landed 2026-07-16)
+
+**THE SPINE: candidates are not content.**
+`producers → candidates (a work queue) → promote → effects (content, versioned, applied)`.
+Separate stores, because candidates regenerate whenever a producer improves and content is
+pinned by characters — if candidates lived on the entity, a parser tweak would bump every
+`version` and force a content update on every character. It is also what makes the owner's
+"guess if it's close" safe: a guess is *structurally incapable* of reaching a sheet. No
+regression, either — today's 306 Foundry effects are already in `effects` and keep applying.
+
+- **Agreement is EARNED, not scored** — deliberately no numeric confidence (a parser does not
+  know how right it is; a score invites false precision). `corroborated` / `conflicting` /
+  `parser-only` / `foundry-only` are *facts about the producers*.
+- **The schema IS the completeness check.** `promote()` runs `passiveEffectSchema.safeParse`;
+  there is no second "is this finished?" predicate to drift. `gaps` exist to EXPLAIN a hole to
+  a human. Promotion refuses gaps (a bonus on the wrong stat, or a situational bonus gone
+  permanent) and refuses conflicts (no coin-flip winners).
+- **`effectSignature` powers bulk**: generalizes `proficiency:thievery` → `proficiency:skill:trained`.
+- **Auto-promote = corroborated + complete** (owner, 2026-07-16); listed and reversible.
+- **Decisions point at (entityId, key), not at a candidate** — candidates are ephemeral; an
+  `accept` carries the FINAL effect so a human's judgment outlives the proposal.
+- **Storage-agnostic on purpose** (owner: everything ends up in the DB eventually; don't
+  overbuild on files). Pure functions over values; the file/DB edge lives outside the module.
+  v1 sink = an exported decisions file, committed, folded in by `remap-effects.mjs`.
+
+**Measured on the real corpus, both real producers**: 1,102 candidates → 173 auto-promote
+(15.7%, zero review), 1 conflict, 395 gapped, 533 single-source. **929 needing a human fall
+into 27 shapes; 12 shapes cover 89%.** That is the review UI's spec.
+
+**Next:** the parser proper (`prose.ts`, sibling to `foundry.ts`), then the review UI, then the
+authoring interface.
+
 ## Decisions (resolved 2026-07-13)
 
 1. **Value model → structured now, forward-compatible to expressions.** Store the canonical

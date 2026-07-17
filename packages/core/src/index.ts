@@ -95,6 +95,12 @@ export * from './dice.js';
 // primitive; the resolution nodes consume it.
 export * from './checks.js';
 
+// The candidate/review model — how a PROPOSED effect becomes a real one.
+// Candidates are a work queue, never content: producers → candidates → promote →
+// effects. Storage-agnostic (pure functions over values), so moving content into the
+// database later replaces the edge and touches none of this.
+export * from './candidate.js';
+
 // The Foundry ingest boundary — the ONE module allowed to know Foundry's
 // rule-element shape, plus `mapFoundryRules` (their encoding → our PassiveEffect[])
 // and its per-element report. Runs at ingest, offline; never on the runtime path.
