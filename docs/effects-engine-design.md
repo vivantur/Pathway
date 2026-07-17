@@ -508,6 +508,60 @@ already produce. The full *review-and-edit* surface rides on stage 3 (homebrew a
 since it reuses that editor. Not a v1-Layer-1 blocker, but a first-class part of trusting the
 official-content effects, so it belongs in the plan of record.
 
+### Ingest slice A landed 2026-07-16 — `foundry.ts` (the mapper + the report)
+
+Sliced A (mapper+report, core) → B (wire the ingest script) → C (retire the runtime read) →
+D (admin coverage view). **Owner reiterated the two constraints this exists to satisfy**, and
+measuring the code against them produced the shape:
+
+- **"Use Foundry once; don't rely on them continuously" — two dependencies, not one.** The
+  *data-source* dependency was ALREADY fine (`ingest-pf2e.mjs` is manual + offline against a
+  local clone pinned at `ea40c94`; only generated JSON is committed). The *schema* dependency
+  was NOT: `feat.rules` stores their shape verbatim and `collectSheetEffects` interprets it
+  **live on every sheet derive**. `foundry.ts` is now the one module allowed to know that
+  shape, so the boundary is a file, not a convention. **Point 1 is not closed until slice C**
+  removes the runtime read — `grep -rl RuleElement packages/core/src apps/web/src` is the
+  check: when only `foundry.ts` matches, it's done.
+- **"Review what was fetched/missed, then fix it up" — the old `skipped` scalar could not.**
+  Measured over the corpus: of **5,143** rule elements on 2,429 feats, the old path produced
+  ~239 effects, counted 1,284 `skipped`, and **3,620 (70%) were neither — silently inert**.
+  In fairness `skipped` was never a coverage metric (it counts only 8 `DEFERRED_SHEET_KINDS`
+  + unparseable values), but the practical effect was a number that read as far better
+  coverage than existed. Replaced by a **per-element report**, invariant
+  `report.length === rules.length` — nothing can fall through.
+- **Reasons are named after the BLOCKER, not the symptom**, so tallies are a roadmap.
+  Post-slice-A corpus: **306/5,143 mapped (5.9%) → 312 PassiveEffects; 4,837 unsupported;
+  0 silently dropped.** By reason: `needs-combat-tags` 1606 · `needs-item-model` 1446 ·
+  `needs-granting` 620 · `unsupported-shape` 396 · `unsupported-selector` 394 ·
+  `needs-runtime-choice` 297 · `unsupported-value` 75 · `unsupported-bonus-type` 3.
+  **5.9% is the honest number and the point of the slice is not to raise it** — it is that the
+  other 94% is now named. (My pre-build estimate of ~1,500 mappable was ~5x optimistic: 91% of
+  FlatModifiers are predicated, and 40 of the biggest value idiom are deep Foundry actor refs.)
+- **Conditional elements are reported, never mapped-with-the-condition-dropped** — that would
+  turn a situational bonus into a permanent one (a wrong sheet), which is worse than an absent
+  effect. 540 of 592 FlatModifiers are predicated; Foundry's predicates need the combat tags
+  deferred in decision 3 and use numeric leaves our tag model deliberately excludes.
+- **Provenance model settled now, editor still stage 3** (owner call). `effects` (ours, the
+  ONLY thing runtime reads) + `ingest {raw, report, sourceCommit}` + `review {status}`, via
+  `effectBearingShape`, spread into `featSchema`. Two deliberate properties: `ingest.raw` is
+  typed **`unknown[]`, not `RuleElement[]`** — the *content* schema doesn't know Foundry's type
+  at all, the strongest form of the quarantine; and `review.status` is a message to the
+  **re-ingest** ("`overridden` ⇒ don't replace `effects`"), never to the sheet. An admin edit
+  bumps `version` per the pin invariant.
+- **THREE LAYER-1 GAPS THE INGEST EXPOSED** (2 fixed, 1 deferred):
+  1. ✅ **`grant`'s numeric payloads were `z.number()`** → now `exprSchema`, like
+     `modifier.value`. "Fire resistance equal to half your level" was *unrepresentable*: a
+     grant is ingested with no character in hand, so there is nothing to evaluate against.
+     Contradicted decision 1 ("every value IS an expression"); nothing consumed grants, so the
+     fix had zero blast radius.
+  2. ✅ **`hp` was missing from `FIXED_SELECTORS`** (the doc's selector list names it) →
+     added, `resolveSelector` → `hp.max`. Without it the mapper couldn't do Toughness and
+     would have *regressed* against `collectSheetEffects`.
+  3. ⬜ **`expr.ts` is a NO-INFIX grammar**, so `floor(@actor.level/2)` — the "half your level"
+     idiom, ~30+ corpus values — doesn't parse. Reported as `unsupported-value`; widening the
+     sandboxed evaluator is its own slice. (Note `dice.ts` already has full infix; the two
+     grammars are inconsistent.)
+
 ---
 
 ## Decisions (resolved 2026-07-13)

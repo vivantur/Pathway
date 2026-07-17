@@ -51,12 +51,20 @@ const senseAcuitySchema = z.enum(["precise", "imprecise", "vague"]);
  * a passive effect can bestow (the doc's sense/speed/resistance/weakness/immunity/
  * trait/action list). DATA ONLY in v1: validated and carried, not resolved onto
  * the sheet (the resolved model has no senses/resistances field yet).
+ *
+ * NUMERIC PAYLOADS ARE EXPRESSIONS (`exprSchema`), not plain numbers, exactly like
+ * `modifier`'s value — per the doc's decision 1, every value IS an expression under
+ * the hood and a plain number is just `{kind:"lit"}`. This is not speculative
+ * generality: "fire resistance equal to half your level" is common content, and a
+ * grant is authored/ingested with NO character in hand, so there is nothing to
+ * evaluate against at write time. A number here would make level-scaled grants
+ * literally unrepresentable. Evaluation happens per character, at read time.
  */
 export const grantSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("sense"), name: z.string().min(1), range: z.number().int().nonnegative().optional(), acuity: senseAcuitySchema.optional() }).strict(),
-  z.object({ type: z.literal("speed"), movement: movementSchema, value: z.number().int() }).strict(),
-  z.object({ type: z.literal("resistance"), damageType: z.string().min(1), value: z.number().int().nonnegative(), exceptions: z.array(z.string()).optional() }).strict(),
-  z.object({ type: z.literal("weakness"), damageType: z.string().min(1), value: z.number().int().nonnegative() }).strict(),
+  z.object({ type: z.literal("speed"), movement: movementSchema, value: exprSchema }).strict(),
+  z.object({ type: z.literal("resistance"), damageType: z.string().min(1), value: exprSchema, exceptions: z.array(z.string()).optional() }).strict(),
+  z.object({ type: z.literal("weakness"), damageType: z.string().min(1), value: exprSchema }).strict(),
   z.object({ type: z.literal("immunity"), to: z.string().min(1) }).strict(),
   z.object({ type: z.literal("trait"), trait: z.string().min(1) }).strict(),
   z.object({ type: z.literal("action"), ref: z.string().min(1) }).strict(),

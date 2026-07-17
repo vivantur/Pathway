@@ -184,11 +184,30 @@ describe("passiveEffectSchema", () => {
       { kind: "modifier", target: "ac", bonusType: "status", value: { kind: "lit", value: 1 } },
       { kind: "modifier", target: "will", bonusType: "circumstance", value: { kind: "lit", value: 2 }, when: { tag: "self:trait:elf" } },
       { kind: "proficiency", target: "athletics", rank: 2, mode: "upgrade" },
-      { kind: "grant", grant: { type: "resistance", damageType: "fire", value: 5 } },
+      { kind: "grant", grant: { type: "resistance", damageType: "fire", value: { kind: "lit", value: 5 } } },
       { kind: "rollAdjust", target: "will", adjust: { type: "degree", direction: "improve" } },
       { kind: "note", target: "perception", text: "Can't be flat-footed to hidden creatures." },
     ];
     for (const s of samples) expect(passiveEffectSchema.safeParse(s).success).toBe(true);
+  });
+
+  it("takes an EXPRESSION for a grant's numeric payload, not a bare number", () => {
+    // "fire resistance equal to half your level" is ordinary content, and a grant is
+    // authored/ingested with no character in hand — so a plain number could not
+    // represent it. Values are expression ASTs everywhere (doc decision 1); a bare
+    // number is rejected rather than silently coerced.
+    const levelScaled = {
+      kind: "grant",
+      grant: { type: "resistance", damageType: "fire", value: { kind: "var", name: "level" } },
+    };
+    expect(passiveEffectSchema.safeParse(levelScaled).success).toBe(true);
+    expect(
+      passiveEffectSchema.safeParse({ kind: "grant", grant: { type: "resistance", damageType: "fire", value: 5 } })
+        .success,
+    ).toBe(false);
+    expect(
+      passiveEffectSchema.safeParse({ kind: "grant", grant: { type: "speed", movement: "fly", value: 15 } }).success,
+    ).toBe(false);
   });
 
   it("rejects an unknown selector, bonus type, and rank out of range", () => {

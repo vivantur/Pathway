@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import { contentBaseSchema, slugify, RARITIES, type Rarity, type Source } from './content.js';
+import { effectBearingShape } from './foundry.js';
 import { actionCostSchema, parseActionCostText, type ActionCost } from './spell.js';
 
 export const featTypeSchema = z.enum(['general', 'skill', 'ancestry', 'class', 'archetype']);
@@ -38,9 +39,15 @@ export const featSchema = z.object({
   ancestryId: z.string().optional(),
   /**
    * DORMANT effect feedstock — the Foundry rule-element array, carried unmodeled.
-   * The effect engine reads/maps this; the feat slice never interprets it.
+   *
+   * TRANSITIONAL. This is Foundry's shape as a first-class field on our entity, and
+   * `collectSheetEffects` still interprets it at runtime — the coupling the ingest
+   * refactor exists to remove. Its replacement is `ingest.raw` (opaque provenance) +
+   * `effects` (ours). It is retired once the runtime read is gone; until then both
+   * exist so the migration can land in slices.
    */
   rules: z.array(z.unknown()),
+  ...effectBearingShape,
   description: z.string().min(1),
 });
 export type Feat = z.infer<typeof featSchema>;

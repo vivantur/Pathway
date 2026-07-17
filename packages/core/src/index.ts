@@ -95,6 +95,11 @@ export * from './dice.js';
 // primitive; the resolution nodes consume it.
 export * from './checks.js';
 
+// The Foundry ingest boundary — the ONE module allowed to know Foundry's
+// rule-element shape, plus `mapFoundryRules` (their encoding → our PassiveEffect[])
+// and its per-element report. Runs at ingest, offline; never on the runtime path.
+export * from './foundry.js';
+
 // Spell heightening rules: the cantrip/focus auto-rank (half your level, rounded up)
 // and the "+N per increment" count. The host resolves which rank a spell was cast at
 // and passes it to the interpreter; these two rules are core's.

@@ -102,6 +102,11 @@ export function resolveSelector(rc: ResolvedCharacter, selector: Selector): numb
       return rc.saves[selector].modifier;
     case "perception":
       return rc.perception.modifier;
+    case "hp":
+      // A `modifier` on `hp` is a bonus to MAXIMUM HP (Toughness's +level) — the
+      // only HP number a passive effect targets. Current HP is play state and is
+      // not on the resolved model.
+      return rc.hp.max;
     case "class-dc":
       return rc.classDc?.modifier ?? 0;
     case "spell-dc":
@@ -142,6 +147,7 @@ export function resolveRank(rc: ResolvedCharacter, selector: Selector): Proficie
     case "spell-attack":
       return rc.spellcasting?.[0]?.spellAttack.rank ?? 0;
     case "ac":
+    case "hp":
     case "speed:land":
     case "attack":
     case "damage":

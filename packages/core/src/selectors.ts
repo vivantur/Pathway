@@ -63,6 +63,7 @@ export const FIXED_SELECTORS = [
   "ac",
   ...SAVE_SELECTORS,
   "perception",
+  "hp",
   "class-dc",
   "spell-dc",
   "spell-attack",

@@ -23,15 +23,16 @@
 // skipped and counted, never guessed.
 
 import { evaluate, parseExpr } from "./expr.js";
+import type { RuleElement } from "./foundry.js";
 import type { ProficiencyRank } from "./proficiency.js";
 import { isSkillSlug } from "./selectors.js";
 import { RANK_LABEL } from "./stats.js";
 
-/** A Foundry rule element. Only the fields we read are typed; the rest is open. */
-export interface RuleElement {
-  key: string;
-  [field: string]: unknown;
-}
+// `RuleElement` (Foundry's shape) now lives in foundry.ts, the ingest boundary —
+// one definition, correctly located. This module's use of it is the transitional
+// runtime read that the ingest refactor retires; re-exported so existing consumers
+// keep resolving until then.
+export type { RuleElement };
 
 // ---------------------------------------------------------------------------
 // PF2e bonus & penalty stacking
