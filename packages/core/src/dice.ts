@@ -16,9 +16,21 @@
 // numbers"). PF2e's own round-down / halve-on-save / crit rules are NOT here — they
 // belong to the damage/save nodes, applied to this integer total.
 //
-// DEFERRED (its own later slice, needs rules text): expression-valued dice COUNTS
-// (`{level}d6`, dice that scale) — here a dice term's count and sides are integer
-// literals. A variable may be an additive/arithmetic term, just not the die count.
+// STILL NOT SUPPORTED: expression-valued dice COUNTS (`{level}d6`, dice that scale) —
+// a dice term's count and sides are integer literals. A variable may be an additive or
+// arithmetic term, just not the die count.
+//
+// This was once deferred "pending rules text" for spell HEIGHTENING, the case that
+// makes spell dice scale. The heightening slice has since landed and does NOT need it:
+// `damage.heightening` rolls a per-increment component once per earned increment and
+// sums, which is the same dice (`2d6` twice IS `4d6`) while staying correct for a mixed
+// `1d4+1` — where scaling only the die count would leave the flat term behind. It also
+// keeps the authored "+N per increment" structure the builder needs, instead of pushing
+// authors into hand-written rank arithmetic in a formula box (locked decision #1).
+//
+// So what remains here is NOT blocked on rules text — it has no consumer. Reopen it only
+// if NON-heightening dice scaling turns up (a class feature or monster ability rolling
+// dice per level), and re-check then whether it beats a structured field.
 //
 // PURE + seeded: every die is rolled through the passed `Rng` (rng.ts), so a roll
 // is replayable and unit-testable.

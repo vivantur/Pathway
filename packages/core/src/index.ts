@@ -95,6 +95,11 @@ export * from './dice.js';
 // primitive; the resolution nodes consume it.
 export * from './checks.js';
 
+// Spell heightening rules: the cantrip/focus auto-rank (half your level, rounded up)
+// and the "+N per increment" count. The host resolves which rank a spell was cast at
+// and passes it to the interpreter; these two rules are core's.
+export * from './heightening.js';
+
 // Layer 2 — the automation tree interpreter (skeleton slice): the execution model
 // (context + outcome = narration log + intended mutations), the uniform error
 // policy, and the rules-free nodes (text/variable/branch). Pure; the rest of the

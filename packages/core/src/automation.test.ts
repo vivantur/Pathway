@@ -7,9 +7,11 @@ import {
   type Button,
   type EffectTemplate,
   type ExecutionContext,
+  type Outcome,
 } from "./automation.js";
 import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
+import { autoHeightenRank } from "./heightening.js";
 import { makeRng } from "./rng.js";
 
 const actor: ResolvedCharacter = {
@@ -1007,6 +1009,245 @@ describe("automationSchema", () => {
   it("rejects an unknown error-policy option", () => {
     expect(
       automationSchema.safeParse([{ kind: "variable", name: "n", value: { kind: "lit", value: 1 }, onError: { on: "explode" } }]).success,
+    ).toBe(false);
+  });
+});
+
+describe("interval heightening (damage.heightening)", () => {
+  // seqRng(1) makes every die roll 1 whatever its size, so a damage total EQUALS the
+  // number of dice rolled — which lets these assert dice counts directly.
+  const fireball = (castRank: number, over: Partial<ExecutionContext> = {}) =>
+    runAutomation(
+      [
+        {
+          kind: "damage",
+          components: [{ formula: "6d6", type: "fire" }],
+          heightening: { step: 1, components: [{ formula: "2d6", type: "fire" }] },
+        },
+      ],
+      ctx({ targets: [target], rng: seqRng(1), spell: { baseRank: 3, castRank }, ...over }),
+    );
+
+  it("walks the fireball ladder from the rules text: 6d6 -> 8d6 -> 10d6", () => {
+    expect(fireball(3).mutations[0]).toMatchObject({ kind: "damage", amount: 6 });
+    expect(fireball(4).mutations[0]).toMatchObject({ kind: "damage", amount: 8 });
+    expect(fireball(5).mutations[0]).toMatchObject({ kind: "damage", amount: 10 });
+    expect(fireball(10).mutations[0]).toMatchObject({ kind: "damage", amount: 20 });
+  });
+
+  it("is unheightened at the base rank and below", () => {
+    expect(fireball(3).mutations[0]).toMatchObject({ amount: 6 });
+    expect(fireball(1).mutations[0]).toMatchObject({ amount: 6 });
+  });
+
+  it("floors a partial increment: a +2 spell gains nothing one rank up", () => {
+    const step2 = (castRank: number) =>
+      runAutomation(
+        [
+          {
+            kind: "damage",
+            components: [{ formula: "1d6" }],
+            heightening: { step: 2, components: [{ formula: "1d6" }] },
+          },
+        ],
+        ctx({ targets: [target], rng: seqRng(1), spell: { baseRank: 1, castRank } }),
+      ).mutations[0];
+    expect(step2(2)).toMatchObject({ amount: 1 });
+    expect(step2(3)).toMatchObject({ amount: 2 });
+    expect(step2(5)).toMatchObject({ amount: 3 });
+  });
+
+  it("scales a mixed formula's FLAT term too, not just its dice", () => {
+    // The reason heightening repeat-rolls rather than scaling a dice count: one
+    // increment of `1d4+1` is 2 here, so two increments must add 4, not 3.
+    const out = runAutomation(
+      [
+        {
+          kind: "damage",
+          components: [{ formula: "1d4+1" }],
+          heightening: { step: 1, components: [{ formula: "1d4+1" }] },
+        },
+      ],
+      ctx({ targets: [target], rng: seqRng(1), spell: { baseRank: 1, castRank: 3 } }),
+    );
+    expect(out.mutations[0]).toMatchObject({ amount: 6 }); // 2 base + 2 + 2
+  });
+
+  it("keeps ONE instance per component, so resistance applies once per type", () => {
+    expect(fireball(5).mutations[0]).toMatchObject({
+      kind: "damage",
+      amount: 10,
+      instances: [
+        { amount: 6, type: "fire" },
+        { amount: 4, type: "fire" }, // both increments, merged into one instance
+      ],
+    });
+  });
+
+  it("warns and deals unheightened damage when the context carries no spell", () => {
+    const out = fireball(5, { spell: undefined });
+    expect(out.mutations[0]).toMatchObject({ amount: 6 });
+    expect(out.warnings).toContain("damage heightening: no spell rank in context");
+  });
+
+  it("heightens a SHARED roll once, then scales it by each target's own save", () => {
+    // Fireball proper: every creature rolls its own save, but the 10d6 is rolled once
+    // and shared — each target's degree then scales that same total independently.
+    const a: ResolvedCharacter = { ...target, saves: { ...target.saves, reflex: { modifier: 20, rank: 2 } } };
+    const b: ResolvedCharacter = { ...target, saves: { ...target.saves, reflex: { modifier: -5, rank: 0 } } };
+    const out = runAutomation(
+      [
+        {
+          kind: "target",
+          mode: "all",
+          children: [
+            { kind: "save", save: "reflex", dc: { kind: "flat", value: lit(20) }, basicSave: true },
+            {
+              kind: "damage",
+              components: [{ formula: "6d6", type: "fire" }],
+              heightening: { step: 1, components: [{ formula: "2d6", type: "fire" }] },
+              scaling: { by: "basic-save" },
+              rollMode: "shared",
+            },
+          ],
+        },
+      ],
+      ctx({ targets: [a, b], rng: fixedd20(10), spell: { baseRank: 3, castRank: 5 } }),
+    );
+    // fixedd20 makes every die a 10 → the shared roll is 10 dice x 10 = 100.
+    // a: +20 vs DC 20 → critical success → none. b: -5 → critical failure → double.
+    expect(out.mutations).toMatchObject([
+      { kind: "damage", target: { kind: "target", index: 0 }, amount: 0 },
+      { kind: "damage", target: { kind: "target", index: 1 }, amount: 200 },
+    ]);
+  });
+});
+
+describe("flat heightening (castRank in scope)", () => {
+  it("needs no new vocabulary — it is arithmetic over castRank/baseRank", () => {
+    const out = runAutomation(
+      [{ kind: "temphp", formula: "5 + 5 * (castRank - baseRank)" }],
+      ctx({ spell: { baseRank: 1, castRank: 4 } }),
+    );
+    expect(out.mutations[0]).toMatchObject({ kind: "temphp", amount: 20 });
+  });
+
+  it("exposes the ranks to expressions, not only to dice", () => {
+    const out = runAutomation(
+      [{ kind: "variable", name: "n", value: v("castRank") }, { kind: "temphp", formula: "n" }],
+      ctx({ spell: { baseRank: 2, castRank: 6 } }),
+    );
+    expect(out.mutations[0]).toMatchObject({ kind: "temphp", amount: 6 });
+  });
+});
+
+describe("at-rank heightening (the heightened node)", () => {
+  // Mystic Armor's shape: several "Heightened (Nth)" entries, of which exactly ONE is
+  // read — the highest the cast reaches.
+  const mysticArmor = (castRank: number, over: Partial<ExecutionContext> = {}) =>
+    runAutomation(
+      [
+        {
+          kind: "heightened",
+          entries: [
+            { minRank: 2, children: [{ kind: "text", body: "+1 AC" }] },
+            { minRank: 5, children: [{ kind: "text", body: "+2 AC" }] },
+            { minRank: 7, children: [{ kind: "text", body: "+3 AC" }] },
+          ],
+        },
+      ],
+      ctx({ spell: { baseRank: 1, castRank }, ...over }),
+    );
+  const bodies = (out: Outcome) =>
+    out.log.flatMap((e) => (e.kind === "text" ? [e.body] : []));
+
+  it("uses the highest applicable entry", () => {
+    expect(bodies(mysticArmor(8))).toEqual(["+3 AC"]);
+    expect(bodies(mysticArmor(7))).toEqual(["+3 AC"]);
+  });
+
+  it("treats an entry as a FLOOR, not an exact match: 4th rank still gets the 2nd entry", () => {
+    // The trap: reading "the entry for the rank you're using" as an exact match would
+    // leave a 4th-rank cast with no heightening at all.
+    expect(bodies(mysticArmor(4))).toEqual(["+1 AC"]);
+    expect(bodies(mysticArmor(6))).toEqual(["+2 AC"]);
+  });
+
+  it("never stacks entries — exactly one is read", () => {
+    expect(bodies(mysticArmor(9))).toHaveLength(1);
+  });
+
+  it("is independent of authored order", () => {
+    const descending = runAutomation(
+      [
+        {
+          kind: "heightened",
+          entries: [
+            { minRank: 7, children: [{ kind: "text", body: "+3 AC" }] },
+            { minRank: 5, children: [{ kind: "text", body: "+2 AC" }] },
+            { minRank: 2, children: [{ kind: "text", body: "+1 AC" }] },
+          ],
+        },
+      ],
+      ctx({ spell: { baseRank: 1, castRank: 6 } }),
+    );
+    expect(bodies(descending)).toEqual(["+2 AC"]);
+  });
+
+  it("gains nothing below the lowest entry, without erroring", () => {
+    const out = mysticArmor(1);
+    expect(bodies(out)).toEqual([]);
+    expect(out.warnings).toEqual([]);
+    expect(out.aborted).toBe(false);
+  });
+
+  it("falls through the error policy when the context carries no spell", () => {
+    const out = mysticArmor(5, { spell: undefined, onError: { on: "warn" } });
+    expect(bodies(out)).toEqual([]);
+    expect(out.warnings).toContain("heightened (no spell rank in context) failed");
+  });
+
+  it("composes with a cantrip's auto-heightened rank", () => {
+    // A level-5 caster's cantrips are 3rd rank (half level, rounded up).
+    const out = runAutomation(
+      [
+        {
+          kind: "heightened",
+          entries: [
+            { minRank: 3, children: [{ kind: "text", body: "bigger" }] },
+            { minRank: 9, children: [{ kind: "text", body: "biggest" }] },
+          ],
+        },
+      ],
+      ctx({ spell: { baseRank: 1, castRank: autoHeightenRank(actor.level) } }),
+    );
+    expect(bodies(out)).toEqual(["bigger"]);
+  });
+});
+
+describe("heightening schema", () => {
+  it("accepts both heightening shapes", () => {
+    expect(
+      automationSchema.safeParse([
+        {
+          kind: "damage",
+          components: [{ formula: "6d6", type: "fire" }],
+          heightening: { step: 1, components: [{ formula: "2d6", type: "fire" }] },
+        },
+        { kind: "heightened", entries: [{ minRank: 5, children: [{ kind: "text", body: "x" }] }] },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it("rejects a step below 1, an empty entry list, and a non-integer rank", () => {
+    expect(
+      automationSchema.safeParse([
+        { kind: "damage", components: [{ formula: "1d6" }], heightening: { step: 0, components: [{ formula: "1d6" }] } },
+      ]).success,
+    ).toBe(false);
+    expect(automationSchema.safeParse([{ kind: "heightened", entries: [] }]).success).toBe(false);
+    expect(
+      automationSchema.safeParse([{ kind: "heightened", entries: [{ minRank: 2.5, children: [] }] }]).success,
     ).toBe(false);
   });
 });

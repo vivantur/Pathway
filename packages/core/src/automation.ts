@@ -51,6 +51,7 @@ import { isDamageType, type DamageCategory, type DamageType } from "./damage.js"
 import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
+import { heightenIncrements } from "./heightening.js";
 import type { Rng } from "./rng.js";
 import { passiveEffectSchema } from "./passive.js";
 import { isSelector, type SaveSelector, type Selector } from "./selectors.js";
@@ -121,6 +122,26 @@ export interface DamageScaling {
 }
 
 /**
+ * INTERVAL heightening on a `damage` node — the stat block's "Heightened (+N) The
+ * damage increases by 2d6". `step` is the N (the rank interval); `components` is what
+ * ONE increment adds. The interpreter rolls them once per earned increment and sums,
+ * which is what "the benefit is cumulative" means.
+ *
+ * WHY REPEAT-ROLL RATHER THAN A SCALED DICE COUNT: a per-increment `2d6` rolled twice
+ * IS `4d6` — same dice, same distribution — and it stays correct for a mixed formula
+ * like `1d4+1`, where multiplying only the dice count would silently leave the flat
+ * term unscaled. It also needs no variable dice count in the grammar (see dice.ts).
+ *
+ * The other two heightening shapes deliberately need no field here: a FLAT increase is
+ * plain arithmetic over the in-scope `castRank`/`baseRank` vars, and AT-RANK
+ * heightening ("Heightened (5th) …") selects a subtree, which is the `heightened` node.
+ */
+export interface DamageHeightening {
+  step: number;
+  components: DamageComponent[];
+}
+
+/**
  * Whether an ACTOR-rolled node re-rolls for every target or rolls once and shares
  * the result across an enclosing `target` scope's iterations. Default
  * `per-target` — explicit beats magic.
@@ -156,13 +177,27 @@ export type AutomationNode =
   | ({ kind: "save"; save: SaveSelector; dc: Dc; basicSave?: boolean; onError?: ErrorPolicy } & DegreeChildren)
   | ({ kind: "attack"; bonus: Expr; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
   | ({ kind: "check"; check: Selector; dc: Dc; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
-  | { kind: "damage"; components: DamageComponent[]; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
+  | { kind: "damage"; components: DamageComponent[]; heightening?: DamageHeightening; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
   | { kind: "applyEffect"; effect: EffectTemplate; target?: "self" | "target"; linkGroup?: string; capture?: Record<string, Expr>; onError?: ErrorPolicy }
   | { kind: "removeEffect"; name: string; target?: "self" | "target"; cascade?: boolean; onError?: ErrorPolicy }
   | { kind: "target"; mode: "all" | "self" | "position"; index?: number; children: AutomationNode[]; onError?: ErrorPolicy }
+  | { kind: "heightened"; entries: HeightenedEntry[]; onError?: ErrorPolicy }
   | { kind: "branch"; condition: Expr; onTrue: AutomationNode[]; onFalse: AutomationNode[]; onError?: ErrorPolicy };
+
+/**
+ * One AT-RANK heightening entry on a `heightened` node — the stat block's "Heightened
+ * (5th) …". `minRank` is the rank the entry starts applying at, and it keeps applying
+ * at every higher rank until a higher entry takes over.
+ *
+ * `minRank`, not `rank`: an entry is a FLOOR, not an exact match. A spell with entries
+ * at 2nd/5th/7th cast at 8th rank uses the 7th entry, and cast at 4th uses the 2nd.
+ */
+export interface HeightenedEntry {
+  minRank: number;
+  children: AutomationNode[];
+}
 
 /** Zod schema for a node (recursive via `z.lazy`, since nodes nest node lists). */
 export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
@@ -179,6 +214,7 @@ export const automationNodeSchema: z.ZodType<AutomationNode> = z.lazy(() =>
     applyEffectNodeSchema,
     removeEffectNodeSchema,
     targetNodeSchema,
+    heightenedNodeSchema,
     branchNodeSchema,
   ]),
 );
@@ -390,6 +426,10 @@ const damageNodeSchema = z
   .object({
     kind: z.literal("damage"),
     components: z.array(damageComponentSchema).min(1),
+    heightening: z
+      .object({ step: z.number().int().min(1), components: z.array(damageComponentSchema).min(1) })
+      .strict()
+      .optional(),
     scaling: z.object({ by: z.enum(["attack", "basic-save"]), from: z.string().min(1).optional() }).strict().optional(),
     healing: z.boolean().optional(),
     target: z.enum(["self", "target"]).optional(),
@@ -468,6 +508,16 @@ const targetNodeSchema = z
     /** Required by `position` mode; ignored otherwise. */
     index: z.number().int().nonnegative().optional(),
     children: z.array(automationNodeSchema),
+    onError: errorPolicySchema.optional(),
+  })
+  .strict();
+
+const heightenedNodeSchema = z
+  .object({
+    kind: z.literal("heightened"),
+    entries: z
+      .array(z.object({ minRank: z.number().int().min(0).max(10), children: z.array(automationNodeSchema) }).strict())
+      .min(1),
     onError: errorPolicySchema.optional(),
   })
   .strict();
@@ -553,6 +603,19 @@ export interface ExecutionContext {
    * state, not on `ResolvedCharacter`, which carries only `focusPoints.max`.)
    */
   counters?: Record<string, Counter>;
+  /**
+   * The spell ranks behind this invocation, when there is one — `baseRank` is the
+   * spell's lowest rank, `castRank` the rank it was actually cast at. Both are
+   * exposed to expressions and dice as `baseRank` / `castRank`, which is what lets
+   * flat heightening ("the temporary HP increase by 5") be plain arithmetic and
+   * at-rank heightening be a `heightened` node — no extra vocabulary for either.
+   *
+   * The HOST resolves `castRank` (the slot used, or `autoHeightenRank(level)` for a
+   * cantrip or focus spell — heightening.ts owns that rule) and re-supplies it when
+   * building a button's fresh press-time context. Absent for non-spell automation;
+   * a `damage` node's `heightening` then warns and deals unheightened damage.
+   */
+  spell?: { baseRank: number; castRank: number };
   /** The seeded RNG — the ONLY randomness source, so the run is replayable. */
   rng: Rng;
   /**
@@ -588,7 +651,20 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
   // but the caller's objects are never mutated.
   const counters: Record<string, Counter> = {};
   for (const [id, c] of Object.entries(ctx.counters ?? {})) counters[id] = { ...c };
-  const scope = (): ExprScope => ({ vars: { ...charScope.vars, ...execVars }, functions: charScope.functions });
+  // The invocation's spell ranks read as ambient vars, so flat heightening is plain
+  // arithmetic (`5 + 5 * (castRank - baseRank)`) and a `heightened` node's selection
+  // needs no new expression vocabulary. They sit with the character scope — ambient
+  // facts an explicit `variable` node may shadow in expressions, exactly as it may
+  // shadow `strengthMod`. The typed `ctx.spell` stays authoritative for the rules
+  // arithmetic itself, mirroring how `resolveDc` reads the real creature rather than
+  // a scope var.
+  const spellVars: Record<string, ExprValue> = ctx.spell
+    ? { castRank: ctx.spell.castRank, baseRank: ctx.spell.baseRank }
+    : {};
+  const scope = (): ExprScope => ({
+    vars: { ...charScope.vars, ...spellVars, ...execVars },
+    functions: charScope.functions,
+  });
 
   /**
    * The single error-policy handler (the doc's uniform model). Called after a
@@ -840,16 +916,32 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
             const vars = numericVars();
             const instances: DamageInstance[] = [];
             let subtotal = 0;
-            for (const c of node.components) {
-              const r = rollNotation(c.formula, ctx.rng, vars);
-              subtotal += r.total;
+            const rollComponent = (c: DamageComponent, times: number): void => {
+              if (times < 1) return;
+              // One instance per component, even when heightening rolls it several
+              // times: the repeats are the SAME typed damage, and the deferred
+              // resistance slice applies resistance once per descriptor.
+              let amount = 0;
+              for (let i = 0; i < times; i += 1) amount += rollNotation(c.formula, ctx.rng, vars).total;
+              subtotal += amount;
               instances.push({
-                amount: r.total,
+                amount,
                 ...(c.type !== undefined ? { type: c.type } : {}),
                 ...(c.material !== undefined ? { material: c.material } : {}),
                 ...(c.categories !== undefined ? { categories: c.categories } : {}),
                 ...(c.label !== undefined ? { label: c.label } : {}),
               });
+            };
+            for (const c of node.components) rollComponent(c, 1);
+            if (node.heightening) {
+              // "The listed effect applies for every increment of ranks by which the
+              // spell is heightened above its lowest spell rank, and the benefit is
+              // cumulative" — so roll the per-increment components once per increment.
+              const increments = ctx.spell
+                ? heightenIncrements({ ...ctx.spell, step: node.heightening.step })
+                : 0;
+              if (!ctx.spell) outcome.warnings.push("damage heightening: no spell rank in context");
+              for (const c of node.heightening.components) rollComponent(c, increments);
             }
             rolled = { instances, subtotal };
             putShared(node, node.rollMode, rolled);
@@ -961,6 +1053,27 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           current = saved;
           sharedRolls = savedShared;
         }
+        return;
+      }
+      case "heightened": {
+        // AT-RANK heightening: read exactly ONE entry — the highest whose minRank the
+        // cast reaches — and never stack them. Entries are self-contained by the rules
+        // text ("if its benefits are meant to include any of the effects of a
+        // lower-rank heightened entry, those benefits will be included in the entry"),
+        // precisely because only one is ever read. Selecting by max here means the
+        // authored order carries no meaning and cannot be got wrong.
+        if (!ctx.spell) {
+          applyPolicy(node.onError, "heightened (no spell rank in context)");
+          return;
+        }
+        const castRank = ctx.spell.castRank;
+        let best: HeightenedEntry | undefined;
+        for (const e of node.entries) {
+          if (e.minRank <= castRank && (best === undefined || e.minRank > best.minRank)) best = e;
+        }
+        // No entry reached is not an error: a spell cast below its lowest heightened
+        // entry simply gains nothing.
+        if (best) runNodes(best.children);
         return;
       }
       case "branch": {
