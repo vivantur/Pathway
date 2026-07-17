@@ -690,6 +690,51 @@ into 27 shapes; 12 shapes cover 89%.** That is the review UI's spec.
 **Next:** the parser proper (`prose.ts`, sibling to `foundry.ts`), then the review UI, then the
 authoring interface.
 
+### `prose.ts` slice 1 landed 2026-07-17 — pipeline + the proficiency extractor
+
+The parser is a candidate.ts **producer** (`source: "parser"`), sibling to `foundry.ts`. It
+emits `DraftEffect` + `Gap[]` + an evidence span, NEVER a `PassiveEffect` — a guess is
+structurally incapable of reaching a sheet, which is exactly what frees the parser to guess.
+Pipeline: `normalize → segment (clause + governor) → extractors`.
+
+- **Normalization built against the REAL markup, not assumptions.** A probe found the
+  descriptions are already HTML/macro-free, but carry markdown structure (`**Effect**`
+  headers, `---` rules, `\n\n`) and a tail of Foundry roll debris (`[[/act …]]`,
+  `(@actor.system…)))` formula fragments). Structure → hard clause boundaries; debris →
+  stripped (a stray `)))` mid-sentence otherwise splits a clause wrongly).
+- **The governor gate IS the Lepidstadt regression.** Clauses are split on subordinating
+  conjunctions (`when`/`if`/`while`/…), and the proficiency extractor DECLINES a governed
+  clause: "you become an expert in Medicine" is a grant; "…increases by 10 when you are
+  **legendary in Medicine**" is a condition, not a grant with a hole. Measured: a
+  governor-blind parser emits 25 false grants across 23 feats; the gate removes all 25.
+  Lepidstadt Surgeon (grant in clause 1, same skill as a condition in clause 3) is the
+  locked regression test.
+- **Extractors key on SEMANTIC PIECES, never sentence templates** (the probe's core
+  finding). "gain the trained proficiency rank in Thievery", "are trained in Stealth",
+  "become an expert in Medicine" are one effect in five costumes — one `rank + in + skill`
+  pattern reads them all.
+- **Foundry as a labeled test set — `scripts/prose-recall.mjs`** (committed, rerunnable,
+  the parser's analogue of `remap-effects.mjs`). Runs both producers over the corpus,
+  reconciles, reports recall/conflicts. Current: **73.1% recall vs Foundry's direct skill
+  grants** (158 corroborated / 216), **0 conflicts, 42 parser-only, 58 missed**.
+  Choice-driven grants ("a skill of your choice", 238 of them) are excluded from the
+  denominator — a different shape, not slice 1's target.
+- **A conflict caught a real parser bug during the slice.** "increase your proficiency
+  **from trained to expert** in Diplomacy" (Pactbinder Dedication) grants EXPERT; the naive
+  regex grabbed the first rank word (`trained`). Foundry disagreed → surfaced as a conflict
+  → fixed (consume an optional `from <rank> to` prefix). This is the second producer paying
+  for itself on day one, exactly as designed.
+- **Spot-checked parser-only precision.** Most are genuine grants Foundry maps as a choice
+  or drops — the parser's value (prose contains more). Two are honest false positives that
+  point at slice-2 work, and both land safely as `parser-only` candidates a human resolves,
+  never as content: **`require`** as a threshold word ("traps that *require* master in
+  Thievery" — a capability, not a grant) and **subject detection** ("this *animal* is
+  trained in Performance" — not the character). Neither is in slice 1's scope.
+
+**Next prose slices:** the modifier family ("+2 circumstance bonus to X"), which is where
+anaphora lives (~24% of extractions know the value but not the target — "the check", "the
+save"); then `require`/subject governors; then the review UI over the reconciled candidates.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the

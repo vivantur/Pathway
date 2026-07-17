@@ -106,6 +106,11 @@ export * from './candidate.js';
 // and its per-element report. Runs at ingest, offline; never on the runtime path.
 export * from './foundry.js';
 
+// The prose parser — a candidate.ts PRODUCER, sibling to foundry.ts. Reads PF2e rules
+// prose and proposes DRAFT effects (never applied content). The primary ingest route;
+// Foundry corroborates. Runs at ingest, offline.
+export * from './prose.js';
+
 // Spell heightening rules: the cantrip/focus auto-rank (half your level, rounded up)
 // and the "+N per increment" count. The host resolves which rank a spell was cast at
 // and passes it to the interpreter; these two rules are core's.
