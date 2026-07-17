@@ -766,16 +766,30 @@ value or type — is the hard part, and honest partial extraction is the whole a
   1042. Prose contains vastly more than the rule elements here; the recall number
   (corroborated / Foundry's 26) is not meaningful for this family and is reported per-kind
   so it does not blend with proficiency's honest 73%.
-- **Known residual, deliberately not chased (owner guidance — broadly effective, not
-  exhaustive):** COMPOUND TARGETS. "+2 to Perception checks and saving throws", "saves and
-  AC against spells" — the parser extracts the first target correctly and unconditionally,
-  missing the conjoined ones (and, when an "against" trails the whole list, its scope). ~52
-  of 1042, all safe reviewable candidates. A distinct, more complex shape = a later slice;
-  chasing it now would risk the clean single-target path.
+### `prose.ts` slice 3 landed 2026-07-17 — compound targets
 
-**Next prose slices:** compound targets; `require`/subject governors (the two slice-1 false
-positives); then the review UI over the reconciled candidates (the review UI's spec is
-already measured — 12 shapes cover 89% of what needs a human).
+The slice-2 residual (compound targets) turned out to be 176 phrases, worth handling. "+1 to
+Intimidation, Perception, and Survival" / "saves and AC against spells" now fan into one
+draft per stat. The change was contained: broaden the target capture to keep internal
+`,`/`and`/`or`, split on those (Oxford comma included), and resolve each element through the
+existing single-target resolver. A fragment that resolves to neither a stat nor an anaphor
+(the run over-captured into a following clause — "Reflex saves and is Off-Guard") is dropped,
+so the resolvable half still lands and the junk half does not. A shared trailing scope
+("against spells") conditions EVERY element, so a compound never becomes a blanket bonus.
+Verified on the real feats: Avowed Insight → AC + 3 saves, Avenge in Glory → attack + damage,
+Web Walker → 3 saves + AC all conditional. Proficiency recall unchanged (73.1%, 0 conflicts);
+modifier drafts 1042 → 1270.
+
+- **Deliberately still not chased (broadly effective, not exhaustive):** weapon-scoped
+  targets ("damage with weapons and unarmed attacks"), Lore skills, and DC-vs-check nuance.
+  These drop to review rather than mis-resolving — the right place for a long tail.
+
+**Next prose slices:** `require`/subject governors (the two slice-1 false positives — "traps
+that require master in Thievery"; "this animal is trained in …"); then the review UI over the
+reconciled candidates. The review UI's spec is already measured — 12 gap/effect shapes cover
+89% of what needs a human — and it will reveal which recurring gaps deserve a parser rule vs a
+one-time confirm. Build it on the merged "Gilded Observatory" theme (the `admin` surface +
+`CornerBrackets`/`GildedRule`/`panel` primitives), extending `EffectCoveragePage`.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 

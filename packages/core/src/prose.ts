@@ -310,12 +310,16 @@ export const proficiencyExtractor: Extractor = (clause) => {
 
 const BONUS_TYPES = new Set(["circumstance", "status", "item", "untyped"]);
 
-// "+2 circumstance bonus to X" / "a status bonus on X" / "take a –2 penalty to X". The
-// value is optional-signed; the type is optional (defaults untyped); target runs to the
-// next clause boundary. `until`/`against`/`for`/… end the target so a duration or a
-// condition tail is not swallowed into it.
+// "+2 circumstance bonus to X" / "a status bonus on X" / "take a –2 penalty to X, Y, and
+// Z". The value is optional-signed; the type is optional (defaults untyped). The target
+// run allows internal commas + and/or so a COMPOUND list is captured whole; it stops at a
+// hard boundary or a scope/condition keyword, so a duration, condition, or following clause
+// is not swallowed. `and`/`or`/`,` are list separators, NOT stops.
 const MOD_RE =
-  /([+-]?\d+)\s+(circumstance|status|item|untyped)?\s*(bonus|penalty)\s+(?:to|on)\s+([a-z][\w\s'-]{0,40}?)(?=[.,;:]|\s+\b(?:when|if|while|until|against|to|for|and|equal|from|on|made|instead)\b|$)/gi;
+  /([+-]?\d+)\s+(circumstance|status|item|untyped)?\s*(bonus|penalty)\s+(?:to|on)\s+([a-z][\w\s,'&/-]{0,80}?)(?=\s*(?:[.;:]|$|\b(?:when|if|while|until|unless|but|against|to|for|from|equal|on|made|instead)\b))/gi;
+
+/** List separators inside a compound target: commas and and/or, incl. the Oxford ", and". */
+const LIST_SEP = /\s*(?:,|\band\b|\bor\b)\s*/i;
 
 /**
  * The target-resolution vocabulary: a phrase (after stripping articles/possessives and
@@ -332,6 +336,7 @@ const TARGET_MAP: Record<string, Selector[]> = {
   reflex: ["reflex"],
   will: ["will"],
   attack: ["attack"],
+  attacks: ["attack"],
   damage: ["damage"],
   // broadcast classes (plural / general) → the stats they cover
   save: ["fortitude", "reflex", "will"],
@@ -386,17 +391,6 @@ function resolveTarget(rawTarget: string): TargetResolution {
 }
 
 /**
- * Extract typed bonus/penalty modifiers from a clause.
- *
- * A resolved target yields one draft per selector (a broadcast fans out). An anaphoric
- * target yields ONE gapped draft — value and bonus type filled, `target` absent, with a
- * `Gap` naming the unresolved phrase — so it enters the review queue as a real item a
- * human completes, and `promote` refuses it until then (a bonus on the wrong stat is a
- * wrong sheet). Governed clauses are still extracted here: "+1 to attacks WHILE raging"
- * is a real conditional modifier, unlike a governed proficiency phrase; its condition
- * becomes a `when` gap, not a reason to drop it.
- */
-/**
  * A scope that narrows a modifier, appearing right after the target: "…to saves AGAINST
  * magic", "…to Athletics checks TO Climb". The target still resolves, but the effect is
  * conditional and the scope must not be silently dropped (a narrow bonus shown as blanket
@@ -405,6 +399,44 @@ function resolveTarget(rawTarget: string): TargetResolution {
  */
 const SCOPE_RE = /^\s*((?:against|to)\s+[a-z][^.,;:]{2,60})/i;
 
+/**
+ * Resolve a possibly-COMPOUND target run ("Nature, Society, and Reflex saves") into the
+ * selectors it names and any anaphoric fragments. Each element resolves independently via
+ * `resolveTarget`; a fragment that is neither a stat nor an anaphor (the run over-captured
+ * into a following clause) is dropped — which keeps "Reflex saves and is Off-Guard" from
+ * emitting garbage for its second half. Selectors dedupe (a broadcast may repeat one).
+ */
+function resolveTargetList(run: string): { selectors: Selector[]; anaphoric: string[] } {
+  const selectors: Selector[] = [];
+  const anaphoric: string[] = [];
+  const seen = new Set<string>();
+  for (const part of run.split(LIST_SEP)) {
+    if (!part.trim()) continue;
+    const r = resolveTarget(part);
+    if (r.kind === "resolved") {
+      for (const s of r.selectors) {
+        if (!seen.has(s)) {
+          seen.add(s);
+          selectors.push(s);
+        }
+      }
+    } else if (r.kind === "anaphoric") {
+      anaphoric.push(r.raw);
+    }
+  }
+  return { selectors, anaphoric };
+}
+
+/**
+ * Extract typed bonus/penalty modifiers from a clause.
+ *
+ * A resolved target yields one draft per selector — a broadcast fans out and a COMPOUND
+ * list ("Deception and Diplomacy") yields one per element. An anaphoric target yields a
+ * gapped draft (value + type filled, `target` absent) so a human completes it and `promote`
+ * refuses it meanwhile (a bonus on the wrong stat is a wrong sheet). Governed clauses ARE
+ * extracted — "+1 to attacks while raging" is a real conditional modifier, its condition
+ * carried as a gap, unlike a governed proficiency phrase which is declined outright.
+ */
 export const modifierExtractor: Extractor = (clause) => {
   const out: Extraction[] = [];
   const span = { start: clause.start, end: clause.end, text: clause.text };
@@ -433,21 +465,19 @@ export const modifierExtractor: Extractor = (clause) => {
       ? [{ field: "when", reason: "conditional-unmapped", raw: condition.slice(0, 80) }]
       : [];
 
-    const resolution = resolveTarget(m[4]!);
-    if (resolution.kind === "skip") continue;
+    // The target may be a list ("Deception and Diplomacy"); each resolved selector becomes
+    // its own draft (a broadcast fans out too), and each anaphoric fragment its own gapped
+    // draft. A run that resolves to nothing at all is regex noise — skip it.
+    const { selectors, anaphoric } = resolveTargetList(m[4]!);
+    if (selectors.length === 0 && anaphoric.length === 0) continue;
 
-    if (resolution.kind === "anaphoric") {
+    for (const target of selectors) {
+      out.push({ draft: { kind: "modifier", target, bonusType, value }, gaps: [...conditionGap], span });
+    }
+    for (const raw of anaphoric) {
       out.push({
         draft: { kind: "modifier", bonusType, value },
-        gaps: [{ field: "target", reason: "anaphoric", raw: resolution.raw }, ...conditionGap],
-        span,
-      });
-      continue;
-    }
-    for (const target of resolution.selectors) {
-      out.push({
-        draft: { kind: "modifier", target, bonusType, value },
-        gaps: conditionGap,
+        gaps: [{ field: "target", reason: "anaphoric", raw }, ...conditionGap],
         span,
       });
     }

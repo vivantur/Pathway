@@ -22,6 +22,9 @@ const clause = (text: string, governor?: Clause["governor"]): Clause => ({
   end: text.length,
 });
 
+/** Read a draft's lit value (DraftEffect.value is `unknown` — a draft may be half-built). */
+const litValue = (v: unknown): number => (v as { value: number }).value;
+
 describe("normalize + segment", () => {
   it("strips Foundry roll debris but keeps the prose around it", () => {
     // Lepidstadt Surgeon's real tail: a formula fragment with an unbalanced `)))`.
@@ -178,6 +181,35 @@ describe("modifierExtractor", () => {
     ]);
     const governed = ex.find((e) => e.draft.target === "attack");
     expect(governed?.gaps.some((g) => g.field === "when" && g.reason === "conditional-unmapped")).toBe(true);
+  });
+
+  it("splits a compound target into one draft per stat (Oxford comma too)", () => {
+    // "+1 to Intimidation, Perception, and Survival" — three stats, one value/type each.
+    const ex = mods("You gain a +1 circumstance bonus to Intimidation, Perception, and Survival.");
+    expect(ex.map((e) => e.draft.target).sort()).toEqual(["intimidation", "perception", "survival"]);
+    expect(ex.every((e) => litValue(e.draft.value) === 1 && e.draft.bonusType === "circumstance" && !e.gaps.length)).toBe(true);
+  });
+
+  it("fans a compound where one element is itself a broadcast class", () => {
+    // "AC and saving throws" → AC + the three saves (Avowed Insight's real shape).
+    const ex = mods("You gain a +1 status bonus to AC and saving throws.");
+    expect(ex.map((e) => e.draft.target).sort()).toEqual(["ac", "fortitude", "reflex", "will"]);
+  });
+
+  it("keeps the resolvable elements of a compound and drops the junk half", () => {
+    // "Reflex saves and is Off-Guard" (Catfolk Dance): the second half is a different
+    // effect, not a target — the reflex bonus still lands, the junk is dropped.
+    const ex = mods("The target takes a -1 circumstance penalty to Reflex saves and is Off-Guard.");
+    expect(ex.map((e) => e.draft.target)).toEqual(["reflex"]);
+    expect(litValue(ex[0]!.draft.value)).toBe(-1);
+  });
+
+  it("applies a shared trailing scope to every element of a compound", () => {
+    // "saves and AC against spells" (Soulforger): the "against spells" scope conditions
+    // the whole list, so every fanned draft carries it — never a blanket bonus.
+    const ex = mods("You gain a +2 status bonus to saving throws and AC against spells.");
+    expect(ex.map((e) => e.draft.target).sort()).toEqual(["ac", "fortitude", "reflex", "will"]);
+    expect(ex.every((e) => e.gaps.some((g) => g.field === "when" && /against spells/i.test(g.raw ?? "")))).toBe(true);
   });
 
   it("skips regex noise that is not a real modifier target", () => {
