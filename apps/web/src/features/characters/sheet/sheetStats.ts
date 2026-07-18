@@ -70,9 +70,12 @@ export function isCoreDerived(build: PathbuilderBuild): boolean {
   return derived(build) !== null;
 }
 
-export function maxHp(build: PathbuilderBuild): number | undefined {
+export function maxHp(build: PathbuilderBuild, adj?: ConditionAdjustments): number | undefined {
   const d = derived(build);
-  return d ? d.maxHp : pb.maxHp(build);
+  const base = d ? d.maxHp : pb.maxHp(build);
+  // Drained reduces MAXIMUM Hit Points (level x value), so it lands here rather than
+  // on a check. Floored at 0 — a max HP below zero is not a number worth showing.
+  return base === undefined ? undefined : Math.max(0, adjust(base, adj, 'hp'));
 }
 
 export function acTotal(build: PathbuilderBuild, adj?: ConditionAdjustments): number | undefined {

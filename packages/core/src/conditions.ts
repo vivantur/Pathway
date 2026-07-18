@@ -43,6 +43,7 @@ import { z } from "zod";
 import { evaluate } from "./expr.js";
 import { stackModifiers, type Modifier } from "./effects.js";
 import type { PassiveEffect } from "./passive.js";
+import { predicateHolds } from "./predicate.js";
 import { SKILL_SLUGS, SAVE_SELECTORS, skillsForAbilities, type Selector } from "./selectors.js";
 
 // ---------------------------------------------------------------------------
@@ -206,8 +207,13 @@ const DEFS: readonly ConditionDef[] = [
     valued: false,
     group: "senses",
     overrides: ["dazzled"],
-    // The −4 to Perception is conditional ("if vision is your only precise sense"),
-    // so nothing is emitted — a conditional penalty shown as flat is a wrong sheet.
+    // "If vision is your only precise sense, you take a −4 status penalty to
+    // Perception." Expressed as a predicate rather than dropped: it applies unless the
+    // character has a precise NON-VISUAL sense (see `PRECISE_NONVISUAL_TAG`), which is
+    // the only way the rules' proviso can fail. Absent that, it applies — which is the
+    // case for every character the current content can build.
+    passives: () => [{ ...penalty("perception", 4), when: { not: { tag: PRECISE_NONVISUAL_TAG } } }],
+    // Still unmodelled: the automatic critical failure on sight-based Perception.
     unmodeled: ["sense-conditional", "detection", "movement", "immunity"],
     summary: "You can't see. All normal terrain is difficult terrain; you're immune to visual effects.",
   },
@@ -264,8 +270,11 @@ const DEFS: readonly ConditionDef[] = [
     name: "Deafened",
     valued: false,
     group: "senses",
-    // The −2 is scoped to initiative and sound-related checks — check-type scoping we
-    // cannot express, so it is named rather than approximated across all Perception.
+    // "-2 status penalty to Perception checks for initiative and checks that involve
+    // sound". INITIATIVE is unconditional, so it is emitted. The sound-related half is
+    // check-type scoping we cannot express, and stays named rather than approximated
+    // across all Perception.
+    passives: () => [penalty("initiative", 2)],
     unmodeled: ["sense-conditional", "flat-check", "immunity"],
     summary: "You can't hear; auditory actions require a DC 5 flat check. Immune to auditory effects.",
   },
@@ -282,9 +291,25 @@ const DEFS: readonly ConditionDef[] = [
     name: "Drained",
     valued: true,
     group: "lowered-abilities",
-    passives: (v) => [penalty("fortitude", v)],
-    // The HP loss (level x value, and the same reduction to maximum HP) is not a
-    // modifier — it changes max HP, which the sheet bag has no typed slot for.
+    // "You lose a number of Hit Points equal to your level (minimum 1) times the
+    // drained value, and your maximum Hit Points are reduced by the same amount."
+    // The MAXIMUM-HP reduction is a modifier on `hp`, level-scaled — so it is an
+    // expression, evaluated per character (it needs `level` in the context).
+    passives: (v) => [
+      penalty("fortitude", v),
+      {
+        kind: "modifier",
+        target: "hp",
+        bonusType: "untyped",
+        value: {
+          kind: "call",
+          fn: "multiply",
+          args: [{ kind: "call", fn: "max", args: [{ kind: "lit", value: 1 }, { kind: "var", name: "level" }] }, { kind: "lit", value: -v }],
+        },
+      },
+    ],
+    // Still unmodelled: the one-time loss of CURRENT Hit Points, which is an event
+    // rather than a standing modifier, and the nightly recovery.
     unmodeled: ["hp-alteration", "recovery"],
     summary: "Status penalty equal to the value on Constitution-based rolls and DCs; reduces max HP.",
   },
@@ -632,6 +657,45 @@ export function conditionPassives(held: readonly HeldCondition[]): PassiveEffect
 }
 
 /**
+ * The tag asserting the bearer has a PRECISE sense that is not vision. Blinded's
+ * Perception penalty applies unless this holds — "if vision is your only precise
+ * sense" can fail in exactly one way, and this names it.
+ *
+ * Stated as the EXCEPTION rather than the rule so the common case needs no tag at all:
+ * a caller that knows nothing about senses gets the penalty, which is correct for every
+ * character the current content can build (no ancestry grants a precise non-visual
+ * sense — darkvision and low-light vision carry no acuity, and scent/wavesense/
+ * magicsense are imprecise or vague).
+ */
+export const PRECISE_NONVISUAL_TAG = "self:precise-sense:nonvisual";
+
+/**
+ * Tags derived from a character's granted senses, for `conditionModifiers`. Emits
+ * `PRECISE_NONVISUAL_TAG` when any granted sense is precise and is not a vision sense.
+ *
+ * "Vision sense" is decided by NAME containing "vision" (darkvision, low-light-vision,
+ * greater darkvision) — the convention the content actually uses, rather than a
+ * remembered classification of which senses are visual.
+ */
+export function senseTags(senses: readonly { type: string; acuity?: string }[]): Set<string> {
+  const tags = new Set<string>();
+  for (const s of senses) {
+    if (s.acuity !== "precise") continue;
+    if (s.type.toLowerCase().includes("vision")) continue;
+    tags.add(PRECISE_NONVISUAL_TAG);
+  }
+  return tags;
+}
+
+/** What a caller can tell `conditionModifiers` about the character in question. */
+export interface ConditionContext {
+  /** Character level — required by level-scaled values (Drained's max-HP reduction). */
+  level?: number;
+  /** Active tags for predicate evaluation, e.g. from `senseTags`. */
+  tags?: Iterable<string>;
+}
+
+/**
  * The NET modifier each stat takes from a set of held conditions — the number a sheet
  * shows. Conditions are resolved (implications, overrides), turned into passives, then
  * stacked per stat by `stackModifiers`, which is where the owner's rules 1 and 2 are
@@ -641,12 +705,29 @@ export function conditionPassives(held: readonly HeldCondition[]): PassiveEffect
  * the map are unaffected; a stat whose modifiers cancel to 0 is omitted too, so a
  * caller can treat "present in the map" as "conditions are changing this number".
  */
-export function conditionModifiers(held: readonly HeldCondition[]): Map<Selector, number> {
+export function conditionModifiers(
+  held: readonly HeldCondition[],
+  ctx: ConditionContext = {},
+): Map<Selector, number> {
+  const tags = new Set(ctx.tags ?? []);
+  const vars: Record<string, number> = ctx.level === undefined ? {} : { level: ctx.level };
+
   const byTarget = new Map<Selector, Modifier[]>();
   for (const effect of conditionPassives(held)) {
     if (effect.kind !== "modifier") continue;
+    // A conditional condition-passive (Blinded's sense-gated Perception penalty)
+    // applies only when its predicate holds against the supplied tags.
+    if (!predicateHolds(effect.when, tags)) continue;
+    let value: number;
+    try {
+      value = evaluate(effect.value, { vars }, "number") as number;
+    } catch {
+      // A level-scaled value with no level in context (Drained's max-HP reduction on a
+      // caller that did not supply one). Skipped rather than guessed at level 0.
+      continue;
+    }
     const list = byTarget.get(effect.target);
-    const mod: Modifier = { type: effect.bonusType, value: evaluate(effect.value, { vars: {} }, "number") as number };
+    const mod: Modifier = { type: effect.bonusType, value };
     if (list) list.push(mod);
     else byTarget.set(effect.target, [mod]);
   }

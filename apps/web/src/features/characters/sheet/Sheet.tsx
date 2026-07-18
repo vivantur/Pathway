@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { conditionGaps, conditionModifiers } from '@pathway/core';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ConditionAdjContext, useConditionAdj } from './conditionContext';
+import { conditionGaps, conditionModifiers, senseTags } from '@pathway/core';
 import { useQuery } from '@tanstack/react-query';
 import { safeHttpUrl } from "@/lib/safeUrl";
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -73,7 +74,6 @@ import {
   shieldBonus,
   skillBonus,
   speed,
-  type ConditionAdjustments,
 } from './sheetStats';
 import { formatSenseLabel } from '@/features/builder/rules';
 import {
@@ -187,8 +187,15 @@ export function Sheet({
           dying: character.dying,
           wounded: character.wounded,
         }),
+        {
+          // Drained's maximum-HP reduction is level-scaled, and Blinded's Perception
+          // penalty is gated on whether vision is your only precise sense — so both
+          // the level and the character's senses have to reach core.
+          level: build.level ?? 1,
+          tags: senseTags(coreSenses(build)),
+        },
       ),
-    [character.overlay?.web_edits?.conditions, character.dying, character.wounded],
+    [character.overlay?.web_edits?.conditions, character.dying, character.wounded, build],
   );
 
   return (
@@ -211,16 +218,7 @@ export function Sheet({
   );
 }
 
-/**
- * Net condition modifiers per stat, ambient to the stat cards.
- *
- * A context rather than a prop because this is cross-cutting — AC, saves, Perception,
- * class DC and every skill need the same map, and threading it through six component
- * signatures would obscure more than it revealed. Read-only, computed once per render
- * of the sheet.
- */
-const ConditionAdjContext = createContext<ConditionAdjustments | undefined>(undefined);
-const useConditionAdj = () => useContext(ConditionAdjContext);
+
 
 /**
  * Live-state editing controls threaded to the components that expose them.
@@ -1221,8 +1219,8 @@ function StatRow({
   build: PathbuilderBuild;
   edit: EditControls;
 }) {
-  const max = maxHp(build);
   const adj = useConditionAdj();
+  const max = maxHp(build, adj);
   const hero = character.hero_points ?? character.overlay?.daily?.hero_points ?? 0;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">

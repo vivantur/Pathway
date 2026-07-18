@@ -8,6 +8,7 @@ import {
   type Weapon,
 } from '@/features/characters/pathbuilder';
 import { acTotal } from '../sheetStats';
+import { useConditionAdj } from '../conditionContext';
 import type { BagItem, CharacterRow } from '@/features/characters/types';
 import { mergeWeapons } from '@/features/characters/weapons';
 import { searchItemsForPicker, type ItemPickResult } from '@/features/characters/api';
@@ -298,6 +299,11 @@ function WeaponsPanel({ weapons }: { weapons: Weapon[] }) {
 }
 
 function WeaponRow({ weapon: w }: { weapon: Weapon }) {
+  // Conditions that penalise attack rolls (Frightened, Prone, Sickened) reach the
+  // weapon rows here — the `attack` selector has no stat card of its own, so without
+  // this the penalty would be computed by core and then shown nowhere.
+  const adj = useConditionAdj();
+  const attack = w.attack != null ? w.attack + (adj?.get('attack') ?? 0) : null;
   const runes = (w.runes ?? []).filter((r) => typeof r === 'string' && r.trim().length > 0);
   // Overlay-side weapons stash traits under an untyped `traits` field on the
   // merged shape; guard the untyped read here so both sources render cleanly.
@@ -322,7 +328,7 @@ function WeaponRow({ weapon: w }: { weapon: Weapon }) {
         )}
       </td>
       <td className="py-2 pr-3 text-center font-display tabular-nums text-arcane">
-        {w.attack != null ? fmtSigned(w.attack) : '—'}
+        {attack != null ? fmtSigned(attack) : '—'}
       </td>
       <td className="py-2 pr-3 font-display text-silver">
         {formatDamage(w)}

@@ -10,6 +10,7 @@ import type { PathbuilderBuild } from './pathbuilder';
 import * as pb from './pathbuilder';
 import * as sheetStats from './sheet/sheetStats';
 import { loadTraitIndex } from './sheet/pathbuilderTraits';
+import { conditionModifiers, senseTags } from '@pathway/core';
 
 beforeAll(async () => {
   await loadDataset();
@@ -95,5 +96,73 @@ describe('sheetStats', () => {
 
     // No duplication — core adds nothing when Pathbuilder already has resistances.
     expect(sheetStats.resistances(build)).toEqual([]);
+  });
+});
+
+describe('condition adjustments through the façade', () => {
+  // Verifies the claim that conditions do NOT reach skills or attacks. Skills DO
+  // flow; `attack` genuinely does not, because the sheet has no attack stat — the
+  // selector is reserved and weapons compute their own numbers.
+  const held = [
+    { slug: 'clumsy', value: 1 },
+    { slug: 'frightened', value: 2 },
+  ] as const;
+
+  it('reaches skills on a site-built character', () => {
+    const state = fighterState();
+    const build = { _pathwayBuild: state } as unknown as PathbuilderBuild;
+    const adj = conditionModifiers([...held]);
+
+    const base = sheetStats.skillBonus(build, 'stealth');
+    // Clumsy 1 and Frightened 2 are both status penalties to Stealth → worst wins.
+    expect(adj.get('stealth')).toBe(-2);
+    expect(sheetStats.skillBonus(build, 'stealth', adj)).toBe(base - 2);
+  });
+
+  it('reaches skills on an IMPORTED character too (the pathbuilder path)', () => {
+    const build = { level: 5, abilities: { dex: 16 }, proficiencies: { stealth: 4 } } as PathbuilderBuild;
+    const adj = conditionModifiers([...held]);
+    expect(sheetStats.skillBonus(build, 'stealth', adj)).toBe(sheetStats.skillBonus(build, 'stealth') - 2);
+  });
+
+  it('reaches AC, saves and Perception', () => {
+    const state = fighterState();
+    const build = { _pathwayBuild: state } as unknown as PathbuilderBuild;
+    const adj = conditionModifiers([...held]);
+    expect(sheetStats.acTotal(build, adj)).toBe((sheetStats.acTotal(build) ?? 0) - 2);
+    expect(sheetStats.saveBonus(build, 'reflex', adj)).toBe(sheetStats.saveBonus(build, 'reflex') - 2);
+    expect(sheetStats.perceptionBonus(build, adj)).toBe(sheetStats.perceptionBonus(build) - 2);
+  });
+
+  it('is a no-op when no condition touches the stat', () => {
+    const state = fighterState();
+    const build = { _pathwayBuild: state } as unknown as PathbuilderBuild;
+    const adj = conditionModifiers([{ slug: 'clumsy', value: 1 }]);
+    expect(sheetStats.skillBonus(build, 'athletics', adj)).toBe(sheetStats.skillBonus(build, 'athletics'));
+  });
+});
+
+describe('the level- and sense-dependent conditions on the sheet', () => {
+  it('Drained reduces max HP by level x value', () => {
+    const state = fighterState(); // level 5
+    const build = { _pathwayBuild: state } as unknown as PathbuilderBuild;
+    const base = sheetStats.maxHp(build) ?? 0;
+    const adj = conditionModifiers([{ slug: 'drained', value: 2 }], { level: 5 });
+    expect(sheetStats.maxHp(build, adj)).toBe(base - 10);
+  });
+
+  it('floors max HP at 0 rather than going negative', () => {
+    const build = { _pathwayBuild: fighterState() } as unknown as PathbuilderBuild;
+    const adj = conditionModifiers([{ slug: 'drained', value: 99 }], { level: 99 });
+    expect(sheetStats.maxHp(build, adj)).toBe(0);
+  });
+
+  it('Blinded penalises Perception for a character with no precise non-visual sense', () => {
+    const state = fighterState();
+    const build = { _pathwayBuild: state } as unknown as PathbuilderBuild;
+    // A dwarf has darkvision, which is a vision sense — the proviso still holds.
+    const tags = senseTags(sheetStats.senses(build));
+    const adj = conditionModifiers([{ slug: 'blinded' }], { tags });
+    expect(sheetStats.perceptionBonus(build, adj)).toBe(sheetStats.perceptionBonus(build) - 4);
   });
 });

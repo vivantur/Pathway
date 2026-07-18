@@ -12,6 +12,8 @@ import {
   applyCondition,
   conditionGaps,
   conditionModifiers,
+  senseTags,
+  PRECISE_NONVISUAL_TAG,
   conditionPassives,
   isConditionSlug,
   removeCondition,
@@ -291,6 +293,49 @@ describe("conditionModifiers — the numbers a sheet shows", () => {
   it("is empty for no conditions, and for conditions with no expressible effect", () => {
     expect(conditionModifiers([]).size).toBe(0);
     expect(conditionModifiers([{ slug: "slowed", value: 2 }]).size).toBe(0);
+  });
+});
+
+describe("sense-gated and level-scaled conditions", () => {
+  it("Blinded penalises Perception by default — vision IS your only precise sense", () => {
+    // No content currently grants a precise non-visual sense, so the proviso holds for
+    // every character we can build; stating the EXCEPTION means callers get this right
+    // without knowing anything about senses.
+    expect(conditionModifiers([{ slug: "blinded" }]).get("perception")).toBe(-4);
+  });
+
+  it("Blinded does NOT penalise Perception when a precise non-visual sense is present", () => {
+    const tags = senseTags([{ type: "tremorsense", acuity: "precise" }]);
+    expect(tags.has(PRECISE_NONVISUAL_TAG)).toBe(true);
+    expect(conditionModifiers([{ slug: "blinded" }], { tags }).has("perception")).toBe(false);
+  });
+
+  it("does not count vision senses or imprecise ones as a precise non-visual sense", () => {
+    expect(senseTags([{ type: "darkvision" }]).size).toBe(0);
+    expect(senseTags([{ type: "greater darkvision", acuity: "precise" }]).size).toBe(0);
+    expect(senseTags([{ type: "scent", acuity: "imprecise" }]).size).toBe(0);
+  });
+
+  it("Deafened penalises initiative unconditionally", () => {
+    expect(conditionModifiers([{ slug: "deafened" }]).get("initiative")).toBe(-2);
+    // But NOT Perception at large — the rest of its penalty is sound-scoped.
+    expect(conditionModifiers([{ slug: "deafened" }]).has("perception")).toBe(false);
+  });
+
+  it("Drained reduces maximum HP by level x value", () => {
+    // A 5th-level character drained 2 loses 10 maximum HP.
+    expect(conditionModifiers([{ slug: "drained", value: 2 }], { level: 5 }).get("hp")).toBe(-10);
+    expect(conditionModifiers([{ slug: "drained", value: 1 }], { level: 3 }).get("hp")).toBe(-3);
+  });
+
+  it("applies the rules' level minimum of 1", () => {
+    expect(conditionModifiers([{ slug: "drained", value: 2 }], { level: 0 }).get("hp")).toBe(-2);
+  });
+
+  it("SKIPS the HP reduction when no level is supplied, rather than guessing zero", () => {
+    const m = conditionModifiers([{ slug: "drained", value: 2 }]);
+    expect(m.has("hp")).toBe(false);
+    expect(m.get("fortitude")).toBe(-2); // the rest of the condition still applies
   });
 });
 
