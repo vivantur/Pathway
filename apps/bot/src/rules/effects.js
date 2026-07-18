@@ -27,9 +27,10 @@ const PRESETS = {
   frightened: {
     name: 'Frightened',
     scaling: true,
+    // No damageBonus: the rule is "a status penalty to all your checks and DCs",
+    // and a damage roll is neither a check nor a DC.
     build: (value) => ({
       attackBonus: neg(value),
-      damageBonus: neg(value),
       acBonus: neg(value),
       saveBonus: neg(value),
       skillBonus: neg(value),
@@ -49,9 +50,9 @@ const PRESETS = {
   sickened: {
     name: 'Sickened',
     scaling: true,
+    // No damageBonus — same reason as Frightened: checks and DCs only.
     build: (value) => ({
       attackBonus: neg(value),
-      damageBonus: neg(value),
       acBonus: neg(value),
       saveBonus: neg(value),
       skillBonus: neg(value),
@@ -92,7 +93,7 @@ const PRESETS = {
     scaling: false,
     build: () => ({
       acBonus: -2,
-      description: '-2 status penalty to AC. Flanked, prone, and certain conditions cause Off-Guard.',
+      description: '-2 circumstance penalty to AC. Flanked, prone, and certain conditions cause Off-Guard.',
     }),
   },
   prone: {
