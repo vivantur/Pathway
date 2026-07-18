@@ -791,6 +791,43 @@ reconciled candidates. The review UI's spec is already measured — 12 gap/effec
 one-time confirm. Build it on the merged "Gilded Observatory" theme (the `admin` surface +
 `CornerBrackets`/`GildedRule`/`panel` primitives), extending `EffectCoveragePage`.
 
+### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
+
+The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.
+Scope (owner-approved): render the reconciled candidates, let a human accept/reject them
+into an exported `EffectDecision[]`, and DEFER the gap/conflict editor to the stage-3
+authoring surface. Purely additive — zero change to shipped content; a decision here goes
+to a downloaded JSON, folded into content by a LATER slice, never straight to a sheet.
+
+- **`scripts/build-candidates.mjs` → `effect-candidates.json`** — the web analogue of
+  `prose-recall.mjs`: where that MEASURES the two producers, this FREEZES the reconciled
+  result. Runs `parseProse` + the feat's mapped `effects` through `reconcile` over the whole
+  feats corpus and writes an ADMIN-ONLY sidecar (the flat `EffectCandidate[]` + the triage
+  summary). It carries NO descriptions — the page reads those from `feats.json`, already
+  bundled for the builder, so the sidecar stays ~1 MB. Foundry proposals include ALL kinds,
+  not just the parser's proficiency/modifier: a foundry-only `grant` is a legitimate review
+  item. **Measured now: 1,563 candidates → 163 auto-promote, 0 conflicts, 1,058 gapped, 342
+  review, 0 invalid** (the modifier drafts grew the queue since candidate.ts's first count).
+- **`EffectReviewPage` (`admin/effect-review`)** — lazy + admin-gated exactly like
+  `effect-coverage`; its sidecar is its own chunk (789 kB / 71 kB gz), out of the player
+  bundle. `triage`/`groupBySignature`/`promote` run CLIENT-SIDE from `@pathway/core`, so the
+  bucketing policy stays in core, not re-implemented in the UI. Bucket tabs (review / gapped /
+  conflicts / auto-promoted / invalid) → signature groups largest-first ("confirm this shape
+  across 150 feats") → candidate rows with the described effect, agreement chip, gaps, and
+  evidence (the parser's quoted span; Foundry's element index). Accept is enabled ONLY when
+  `promote(c).ok` — so gapped/conflict candidates can be rejected but not accepted, which is
+  the editor deferral made structural rather than a rule to remember. Bulk accept/reject per
+  group. Decisions accumulate in state; Export downloads `effect-decisions.json`, Import
+  resumes a session. Both diagnostics are now linked from the admin dashboard (`EffectEnginePanel`).
+- **Verified**: web typecheck + lint + production build clean; the boundary grep still shows
+  only `foundry.ts` (+ its test); and every one of the 342 `review` candidates promotes OK
+  while all 1,058 gapped are correctly blocked, exercised over the real sidecar.
+
+**Next**: the fold-in slice (teach `remap-effects.mjs` to read a committed
+`effect-decisions.json` and `resolveEntity` accepts into `feat.effects` — the parser's output
+reaching a real sheet for the first time), then the gap/conflict editor on the stage-3
+authoring surface.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the

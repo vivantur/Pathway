@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAdminCharacters, useAdminStats, useAdminUsers } from '@/features/admin/useAdmin';
 import type { AdminCharacterRow, AdminUserRow } from '@/features/admin/api';
@@ -36,7 +37,46 @@ export function AdminPage() {
       <UsersPanel query={users} />
       <CharactersPanel query={characters} />
       <ContentGapsPanel />
+      <EffectEnginePanel />
     </div>
+  );
+}
+
+// --- effect engine ---------------------------------------------------------
+
+/**
+ * Links to the admin-only effect diagnostics. Both are unlinked from the nav and
+ * lazy-loaded (their sidecars are diagnostic data, not player content), so this is
+ * where an admin reaches them.
+ */
+function EffectEnginePanel() {
+  const tools = [
+    {
+      to: '/admin/effect-coverage',
+      title: 'Ingest coverage',
+      body: 'Every Foundry rule element and what our mapper made of it — mapped, or reported with the reason it could not be.',
+    },
+    {
+      to: '/admin/effect-review',
+      title: 'Review queue',
+      body: 'Reconciled proposals from the parser and Foundry, triaged for a human to accept or reject into content.',
+    },
+  ];
+  return (
+    <Panel title="Effect engine" subtitle="Admin-only diagnostics over auto-mapped content.">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {tools.map((t) => (
+          <Link
+            key={t.to}
+            to={t.to}
+            className="rounded-lg border border-gold/15 bg-midnight-800/40 p-4 transition-colors hover:border-gold/40"
+          >
+            <div className="font-display text-gold">{t.title}</div>
+            <p className="mt-1 text-sm text-silver/70">{t.body}</p>
+          </Link>
+        ))}
+      </div>
+    </Panel>
   );
 }
 

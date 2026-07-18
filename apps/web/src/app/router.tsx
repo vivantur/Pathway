@@ -21,11 +21,15 @@ import { CampaignsPage } from '@/routes/CampaignsPage';
 import { CampaignPage } from '@/routes/CampaignPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 
-// The only LAZY route. Its ~3 MB ingest report is admin diagnostic data, so neither
-// the page nor the report may sit in a bundle a player downloads; a dynamic import
-// puts both in their own chunk, fetched only if this page is opened.
+// The LAZY admin diagnostics. Each carries a ~1–3 MB sidecar (the Foundry ingest report,
+// the reconciled candidate queue) that is admin-only data and must not sit in a bundle a
+// player downloads; a dynamic import puts each page and its sidecar in their own chunk,
+// fetched only if the page is opened.
 const EffectCoveragePage = lazy(() =>
   import('@/routes/EffectCoveragePage').then((m) => ({ default: m.EffectCoveragePage })),
+);
+const EffectReviewPage = lazy(() =>
+  import('@/routes/EffectReviewPage').then((m) => ({ default: m.EffectReviewPage })),
 );
 
 export const router = createBrowserRouter([
@@ -56,6 +60,21 @@ export const router = createBrowserRouter([
             <RequireAdmin>
               <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
                 <EffectCoveragePage />
+              </Suspense>
+            </RequireAdmin>
+          </RequireAuth>
+        ),
+      },
+      {
+        // Admin review queue: the reconciled candidate proposals a human turns into
+        // content. Gated and lazy for the same reason as effect-coverage — its ~1 MB
+        // candidate sidecar is diagnostic data, not player content.
+        path: 'admin/effect-review',
+        element: (
+          <RequireAuth>
+            <RequireAdmin>
+              <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
+                <EffectReviewPage />
               </Suspense>
             </RequireAdmin>
           </RequireAuth>
