@@ -886,6 +886,28 @@ feats, watch what fails, and learn where the data structure needs expanding.
   + build clean. **Slice 2** is the automation-tree editor (the node vocabulary as a nestable
   tree) — where granted actions and cross-creature `applyEffect` get built.
 
+**Slice 2 landed 2026-07-17 — the automation-tree editor.** A RECURSIVE node editor over the
+Layer-2 vocabulary (`features/authoring/AutomationEditor.tsx`), added as a "Granted actions"
+section on the page. Slice-1 fields were extracted to `features/authoring/fields.tsx` so the
+`applyEffect` EffectTemplate reuses the SAME passive forms — one implementation.
+- **Recursion**: nodes nest through `children` (target), `onTrue`/`onFalse` (branch), and the
+  per-degree lists (save/attack/check → onCriticalSuccess/…); `ChildList` renders `AutomationTree`
+  again, so the tree is arbitrarily deep. Each node is validated live against `automationNodeSchema`
+  (red when invalid), the whole action against `grantedActionSchema`.
+- **Expressions are the core grammar, not a text blob**: `ExprField` runs the input through
+  `parseExpr` — a bad formula is a red field with the parser's message, a good one becomes the AST.
+  DCs edit as flat-expr or "10 + a creature's stat" (`{who, selector}`), which is what expresses a
+  Trip's *check vs the target's Reflex*.
+- **Cross-creature is buildable and PROVEN**: an authored `target → check(vs target's stat) →
+  onFailure: applyEffect(on target) / onCriticalFailure: damage` validates against
+  `grantedActionSchema` (verified). The `applyEffect` EffectTemplate editor covers name + duration
+  (all six kinds incl. "until end of your next turn") + Layer-1 passives; `linkGroup` is an input,
+  so the Grapple two-actor pair is authorable.
+- **Deliberately deferred** (shown as "not yet"): spell `heightened`, an applyEffect's nested
+  buttons/granted actions, and `capture`. Nothing consumes `runAutomation` in `apps/` yet —
+  runtime execution stays a separate, later track. **The editor is now the tool to find data-model
+  gaps by trying to build real class feats.**
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.
