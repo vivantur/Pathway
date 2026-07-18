@@ -17,11 +17,14 @@
 //     `rollTags` (the opposed context of a roll — who you are rolling against).
 //     A caller unions them; a combat tracker unions its own state tags on top.
 //
-// STILL DEFERRED: tags describing the conditions an incoming effect would CAUSE
-// ("against effects that would make you fatigued"). Not blocked on this module but
-// on the content model — core has no condition vocabulary at all, so there is
-// nothing for such a tag to read. (Effect TRAITS are no longer blocked:
-// `EffectTemplate.traits` landed, and `effect:trait:<t>` reads it.)
+// The effect namespaces are both live: `effect:trait:<t>` reads
+// `EffectTemplate.traits` ("against death effects") and `effect:causes:<c>` reads
+// `EffectTemplate.conditions` ("against effects that would make you enfeebled").
+// Both are DECLARATIVE reads — you roll the save before the effect resolves, so
+// neither may depend on executing the automation tree.
+//
+// STILL DEFERRED: momentary combat state (flanking, off-guard, stances). `rollTags`
+// passes host `extra` tags through verbatim as the seam for it.
 //
 // PURE: a boolean tree + a set-membership test + a tag derivation. No PF2e rules
 // math, no I/O — so there is no rules-from-memory risk here.
@@ -148,6 +151,21 @@ export interface CreatureRef {
  */
 export interface EffectRef {
   traits?: readonly string[];
+  /**
+   * The conditions the effect would inflict (`EffectTemplate.conditions`), emitted as
+   * `effect:causes:<slug>` — what "+2 to saves against effects that would make you
+   * enfeebled" tests.
+   *
+   * Structurally typed (`{slug}`) rather than importing `HeldCondition`, because
+   * conditions.ts imports THIS module for `predicateHolds`; a type import back would
+   * be a cycle. `HeldCondition[]` satisfies it.
+   *
+   * The VALUE is accepted but deliberately NOT in the tag. "Enfeebled 2 or more" is a
+   * numeric threshold, and the tag model is membership-only by design (decision 3) —
+   * numeric comparisons belong to Layer 2's `branch`. It is part of the type so a
+   * caller can pass its `HeldCondition[]` straight through without stripping it.
+   */
+  conditions?: readonly { slug: string; value?: number }[];
 }
 
 /**
@@ -200,6 +218,12 @@ export function rollTags(ctx: RollContext): Set<string> {
     const slug = tagSlug(t);
     if (slug) tags.add(`effect:trait:${slug}`);
   }
+  // …and the conditions it would inflict. Value-free by design: the tag says WHICH
+  // condition, not how much of it.
+  for (const c of ctx.effect?.conditions ?? []) {
+    const slug = tagSlug(c.slug);
+    if (slug) tags.add(`effect:causes:${slug}`);
+  }
   for (const t of ctx.extra ?? []) tags.add(t);
   return tags;
 }
@@ -238,6 +262,9 @@ function describeTag(tag: string): TagPhrase {
       if (scope === "origin") return { prefix: "vs effects from ", term, suffix: "" };
       if (scope === "self") return { prefix: "when ", term, suffix: "" };
       if (scope === "effect") return { prefix: "vs ", term, suffix: " effects" };
+    }
+    if (category === "causes" && scope === "effect") {
+      return { prefix: "vs effects that cause ", term: label(value), suffix: "" };
     }
   }
   return { prefix: "", term: tag, suffix: "" };

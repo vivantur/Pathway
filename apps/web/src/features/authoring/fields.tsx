@@ -4,6 +4,8 @@ import {
   parseExpr,
   describePredicate,
   tagSlug,
+  CONDITIONS,
+  CONDITION_SLUGS,
   FIXED_SELECTORS,
   SKILL_SLUGS,
   SAVE_SELECTORS,
@@ -172,23 +174,35 @@ export function ValueField({ value, onValue }: { value: unknown; onValue: (v: un
 // condition, which is the same failure as mapping an effect by dropping a condition.
 // A full recursive editor is on the roadmap (docs, "Deferred").
 
-export type PredicateScope = 'opponent' | 'target' | 'origin' | 'self' | 'effect';
+/**
+ * A term's namespace — `scope:category`, matching the tag prefix it builds. It carries
+ * the CATEGORY too (not just the scope) because the vocabulary now has two: a trait, and
+ * a condition an effect would cause.
+ */
+export type PredicateScope =
+  | 'opponent:trait'
+  | 'target:trait'
+  | 'origin:trait'
+  | 'effect:trait'
+  | 'effect:causes'
+  | 'self:trait';
+
 export interface PredicateTerm {
   scope: PredicateScope;
-  trait: string;
+  /** The trait or condition slug — whichever the scope's category names. */
+  value: string;
   negate: boolean;
 }
 
 const SCOPE_LABELS: { scope: PredicateScope; label: string }[] = [
-  { scope: 'opponent', label: 'vs a creature with' },
-  { scope: 'target', label: 'vs a creature you target with' },
-  { scope: 'origin', label: 'vs effects from a creature with' },
-  { scope: 'effect', label: 'vs an effect with' },
-  { scope: 'self', label: 'when you have' },
+  { scope: 'opponent:trait', label: 'vs a creature with' },
+  { scope: 'target:trait', label: 'vs a creature you target with' },
+  { scope: 'origin:trait', label: 'vs effects from a creature with' },
+  { scope: 'effect:trait', label: 'vs an effect with' },
+  { scope: 'effect:causes', label: 'vs an effect that would cause' },
+  { scope: 'self:trait', label: 'when you have' },
 ];
 const SCOPES = SCOPE_LABELS.map((s) => s.scope);
-/** `effect:` names a KIND of effect; the others name a creature. Drives which suggestions show. */
-const isEffectScope = (s: PredicateScope) => s === 'effect';
 
 /**
  * Creature/self traits observed in the Foundry corpus's own predicates — a datalist
@@ -236,9 +250,9 @@ export const EFFECT_TRAITS = [
 /** Build a predicate from flat terms. Blank traits are ignored; no terms ⇒ unconditional. */
 export function buildPredicate(terms: readonly PredicateTerm[], join: 'all' | 'any'): Predicate | undefined {
   const leaves = terms
-    .filter((t) => t.trait.trim())
+    .filter((t) => t.value.trim())
     .map((t): Predicate => {
-      const leaf: Predicate = { tag: `${t.scope}:trait:${tagSlug(t.trait)}` };
+      const leaf: Predicate = { tag: `${t.scope}:${tagSlug(t.value)}` };
       return t.negate ? { not: leaf } : leaf;
     });
   if (leaves.length === 0) return undefined;
@@ -255,10 +269,10 @@ function readTerm(node: unknown): PredicateTerm | null {
   }
   if (!n || typeof n !== 'object' || typeof n.tag !== 'string') return null;
   const parts = n.tag.split(':');
-  if (parts.length !== 3 || parts[1] !== 'trait') return null;
-  const scope = parts[0] as PredicateScope;
-  if (!SCOPES.includes(scope) || !parts[2]) return null;
-  return { scope, trait: parts[2], negate: false };
+  if (parts.length !== 3 || !parts[2]) return null;
+  const scope = `${parts[0]}:${parts[1]}` as PredicateScope;
+  if (!SCOPES.includes(scope)) return null;
+  return { scope, value: parts[2], negate: false };
 }
 
 /**
@@ -333,13 +347,24 @@ export function PredicateField({ value, onChange }: { value: unknown; onChange: 
           >
             not
           </button>
-          <input className={`${inputCls} w-36`} list={isEffectScope(t.scope) ? 'effect-traits' : 'predicate-traits'} placeholder="trait" value={t.trait} onChange={(e) => patch(i, { trait: e.target.value })} />
+          {t.scope === 'effect:causes' ? (
+            // Conditions are a CLOSED 41-slug vocabulary, so this is a real select — a
+            // typo here would otherwise build a predicate that silently never matches.
+            <select className={`${inputCls} w-36`} value={t.value} onChange={(e) => patch(i, { value: e.target.value })}>
+              <option value="">condition…</option>
+              {CONDITION_SLUGS.map((c) => (
+                <option key={c} value={c}>{CONDITIONS[c].name}</option>
+              ))}
+            </select>
+          ) : (
+            <input className={`${inputCls} w-36`} list={t.scope === 'effect:trait' ? 'effect-traits' : 'predicate-traits'} placeholder="trait" value={t.value} onChange={(e) => patch(i, { value: e.target.value })} />
+          )}
           <button onClick={() => push(terms.filter((_, j) => j !== i))} className="text-parchment/40 hover:text-red-300" title="remove">✕</button>
         </div>
       ))}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => push([...terms, { scope: 'opponent', trait: '', negate: false }])}
+          onClick={() => push([...terms, { scope: 'opponent:trait', value: '', negate: false }])}
           className="w-fit rounded border border-gold/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-midnight-900/60"
         >
           + condition

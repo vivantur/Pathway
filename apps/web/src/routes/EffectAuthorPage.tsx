@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { effectChoiceSchema, grantedActionSchema, SKILL_SLUGS } from '@pathway/core';
+import { CONDITION_SLUGS, effectChoiceSchema, grantedActionSchema, SKILL_SLUGS } from '@pathway/core';
 import featData from '@/features/builder/data/feats.json';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
@@ -263,6 +263,9 @@ export function EffectAuthorPage() {
       </datalist>
       <datalist id="effect-traits">
         {EFFECT_TRAITS.map((t) => <option key={t} value={t} />)}
+      </datalist>
+      <datalist id="condition-slugs">
+        {CONDITION_SLUGS.map((c) => <option key={c} value={c} />)}
       </datalist>
 
       <p className="mt-8 text-xs text-parchment/40">

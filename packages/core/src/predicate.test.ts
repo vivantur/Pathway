@@ -160,6 +160,31 @@ describe("rollTags — the opposed context", () => {
     expect(evaluatePredicate({ tag: "effect:trait:death" }, t)).toBe(true);
   });
 
+  it("emits effect:causes: from the conditions an effect would inflict", () => {
+    // "+2 circumstance to saves against effects that would make you enfeebled" — the
+    // shape EffectTemplate.conditions exists to make representable.
+    const t = rollTags({ effect: { conditions: [{ slug: "enfeebled" }, { slug: "clumsy" }] } });
+    expect(t.has("effect:causes:enfeebled")).toBe(true);
+    expect(t.has("effect:causes:clumsy")).toBe(true);
+    expect(evaluatePredicate({ tag: "effect:causes:enfeebled" }, t)).toBe(true);
+    expect(evaluatePredicate({ tag: "effect:causes:drained" }, t)).toBe(false);
+  });
+
+  it("ignores the condition VALUE — the tag says which, not how much", () => {
+    // Membership-only by design: "enfeebled 2 or more" is a numeric threshold and
+    // belongs to Layer 2's branch, not the tag model.
+    const t = rollTags({ effect: { conditions: [{ slug: "enfeebled", value: 3 }] } });
+    expect([...t]).toEqual(["effect:causes:enfeebled"]);
+  });
+
+  it("keeps an effect's traits and the conditions it causes in separate namespaces", () => {
+    const t = rollTags({ effect: { traits: ["death"], conditions: [{ slug: "drained" }] } });
+    expect(t.has("effect:trait:death")).toBe(true);
+    expect(t.has("effect:causes:drained")).toBe(true);
+    expect(t.has("effect:trait:drained")).toBe(false);
+    expect(t.has("effect:causes:death")).toBe(false);
+  });
+
   it("does NOT give an effect an opponent: union — an effect is not a creature", () => {
     const t = rollTags({ effect: { traits: ["death"] } });
     expect(t.has("opponent:trait:death")).toBe(false);
@@ -218,6 +243,12 @@ describe("describePredicate — display prose", () => {
     expect(describePredicate({ tag: "effect:trait:death" })).toBe("vs death effects");
     const p: Predicate = { any: [{ tag: "effect:trait:death" }, { tag: "effect:trait:fear" }] };
     expect(describePredicate(p)).toBe("vs death or fear effects");
+  });
+
+  it("renders a caused condition, and collapses a group of them", () => {
+    expect(describePredicate({ tag: "effect:causes:enfeebled" })).toBe("vs effects that cause enfeebled");
+    const p: Predicate = { any: [{ tag: "effect:causes:enfeebled" }, { tag: "effect:causes:clumsy" }] };
+    expect(describePredicate(p)).toBe("vs effects that cause enfeebled or clumsy");
   });
 
   it("does not collapse a creature trait with an effect trait — different nouns", () => {

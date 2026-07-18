@@ -46,6 +46,7 @@ import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
 import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
+import { heldConditionSchema } from "./conditions.js";
 import { applyCounter, canSpend, type Counter } from "./counter.js";
 import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
 import { DEGREES, type DegreeOfSuccess } from "./degree.js";
@@ -343,6 +344,20 @@ export const effectTemplateSchema = z
      * absence of a declaration is not evidence of a trait).
      */
     traits: z.array(z.string().min(1)).optional(),
+    /**
+     * The conditions this effect INFLICTS — the declaration behind "+2 circumstance to
+     * saves against effects that would make you enfeebled".
+     *
+     * DECLARATIVE ON PURPOSE, not derived from the automation tree. The predicate says
+     * "would give you", and you roll the save BEFORE the effect resolves — so this has
+     * to be readable at rest, without executing anything. Exactly the role `traits`
+     * plays for "against <trait> effects".
+     *
+     * It is a claim about what the effect does, not a mechanism that applies it: the
+     * runtime still applies conditions through its own path. Keeping them separate is
+     * why a save can be modified by an effect that never lands.
+     */
+    conditions: z.array(heldConditionSchema).optional(),
     duration: durationSchema,
     /**
      * Whether this effect can be Sustained — INDEPENDENT of `duration`. `extends`

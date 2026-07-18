@@ -165,6 +165,35 @@ function EffectTemplateField({ template, onChange }: { template: Record<string, 
           }}
         />
       </div>
+      {/* The conditions this effect INFLICTS — the read side of `vs an effect that
+          would cause <condition>`. `slug` or `slug N` ("enfeebled 2"), comma-separated.
+          Invalid slugs are kept as typed so the schema reports them as a red row rather
+          than this input silently discarding what was written. */}
+      <div className="mt-1.5 flex items-center gap-2">
+        <span className="text-xs text-parchment/40">causes</span>
+        <input
+          className={`${inputCls} w-72`}
+          list="condition-slugs"
+          placeholder="e.g. enfeebled 2, clumsy"
+          value={((template.conditions as { slug: string; value?: number }[]) ?? [])
+            .map((c) => (c.value ? `${c.slug} ${c.value}` : c.slug))
+            .join(', ')}
+          onChange={(e) => {
+            const conditions = e.target.value
+              .split(',')
+              .map((raw) => raw.trim().toLowerCase())
+              .filter(Boolean)
+              .map((raw) => {
+                const m = raw.match(/^(.*?)\s+(\d+)$/);
+                return m ? { slug: m[1]!, value: Number(m[2]) } : { slug: raw };
+              });
+            const next = { ...template };
+            if (conditions.length) next.conditions = conditions;
+            else delete next.conditions;
+            onChange(next);
+          }}
+        />
+      </div>
       <div className="mt-2 pl-2">
         <div className="text-xs uppercase tracking-wide text-parchment/40">while active</div>
         {passives.map((d) => {

@@ -1134,7 +1134,7 @@ senses/resistances — passed UNCHANGED through the rewired pipeline. That is th
    mechanism) all work without the combat tags. Deferring combat tags only defers passives
    that hinge on momentary combat state (flanking, off-guard).
 
-   **PARTIALLY RESOLVED 2026-07-18 — creature tags landed.** `predicate.ts` now carries a
+   **RESOLVED 2026-07-18 (all three capabilities) — creature tags landed first.** `predicate.ts` now carries a
    second producer, `rollTags(ctx)`, for the *opposed* context of a roll, in three
    namespaces: `target:trait:<t>` (the creature you roll against), `origin:trait:<t>` (the
    creature behind an incoming effect), and `opponent:trait:<t>` — **either of the above**.
@@ -1160,15 +1160,31 @@ senses/resistances — passed UNCHANGED through the rewired pipeline. That is th
    to "the effect at issue" and the producer supplies whichever that is — no new namespace, no
    migration. Not modelled now because no such content is in hand.
 
-   **Still deferred, and NOT blocked on this module — blocked on the content model:**
-   - *"against effects that would cause `<condition>`"* needs a **condition vocabulary**,
-     which core does not have at all — nothing declares what an effect inflicts, so such a
-     tag would have nothing to read. This is the largest of the three and needs the condition
-     rules text supplied (rules-from-source rule).
-   - Momentary combat state (flanking, off-guard, stances) — still unproduced; `rollTags`
-     passes host `extra` tags through verbatim as the seam for it.
+   **FULLY RESOLVED 2026-07-18 — caused conditions.** `EffectTemplate.conditions`
+   (`HeldCondition[]`, validated against the closed 41-slug vocabulary) is read by
+   `effect:causes:<c>`, so *"+2 circumstance to saves against effects that would make you
+   enfeebled"* is representable end to end. All three of the owner's conditional
+   capabilities are now built.
 
-   **Nothing produces a `when` yet** — see the note under "Conditional authoring" below.
+   *Declarative, not an automation node* — the same constraint `traits` has, and the
+   reason it is a field rather than an `applyCondition` node: the predicate says "**would**
+   give you", and the save is rolled BEFORE the effect resolves, so the tag must be
+   readable at rest without executing the tree. The declaration is a claim about what the
+   effect does, not the mechanism that applies it; keeping them apart is what lets a save
+   be modified by an effect that never lands.
+
+   *The value is accepted but not in the tag.* "Enfeebled 2 or more" is a numeric
+   threshold and the tag model is membership-only (see the top of this decision); numeric
+   comparisons belong to Layer 2's `branch`.
+
+   Because conditions are a CLOSED vocabulary (unlike traits, which are free text), the
+   editor offers a real dropdown and the schema rejects a typo — a misspelled condition is
+   a parse error rather than a predicate that silently never matches.
+
+   **Still deferred:** momentary combat state (flanking, off-guard, stances) — still
+   unproduced; `rollTags` passes host `extra` tags through verbatim as the seam for it.
+
+   A `when` control in the effect editor is the producer — see "Conditional authoring" below.
 4. **Spell-slot modeling → general counter primitive + specialized spellcasting layer.** The
    counter is the primitive; spellcasting resources (focus points, per-rank slots,
    prepared vs spontaneous) are a specialized layer the same spend/restore verbs target.

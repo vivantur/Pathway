@@ -19,8 +19,8 @@ import {
 import { buildPredicate, readPredicate, type PredicateTerm } from './fields';
 
 const term = (p: Partial<PredicateTerm> = {}): PredicateTerm => ({
-  scope: 'opponent',
-  trait: 'undead',
+  scope: 'opponent:trait',
+  value: 'undead',
   negate: false,
   ...p,
 });
@@ -41,7 +41,7 @@ describe('buildPredicate', () => {
   });
 
   it('groups several terms under the chosen joiner', () => {
-    const terms = [term(), term({ trait: 'fiend' })];
+    const terms = [term(), term({ value: 'fiend' })];
     expect(buildPredicate(terms, 'any')).toEqual({
       any: [{ tag: 'opponent:trait:undead' }, { tag: 'opponent:trait:fiend' }],
     });
@@ -51,20 +51,20 @@ describe('buildPredicate', () => {
   });
 
   it('slugifies the typed trait, so "Swarm Mind" and "swarm-mind" agree', () => {
-    expect(buildPredicate([term({ trait: '  Swarm Mind ' })], 'any')).toEqual({
+    expect(buildPredicate([term({ value: '  Swarm Mind ' })], 'any')).toEqual({
       tag: 'opponent:trait:swarm-mind',
     });
   });
 
   it('ignores a blank term — a half-typed row must not emit a garbage tag', () => {
-    expect(buildPredicate([term(), term({ trait: '  ' })], 'any')).toEqual({
+    expect(buildPredicate([term(), term({ value: '  ' })], 'any')).toEqual({
       tag: 'opponent:trait:undead',
     });
   });
 
   it('carries each scope through to its namespace', () => {
-    for (const scope of ['opponent', 'target', 'origin', 'self', 'effect'] as const) {
-      expect(buildPredicate([term({ scope })], 'any')).toEqual({ tag: `${scope}:trait:undead` });
+    for (const scope of ['opponent:trait', 'target:trait', 'origin:trait', 'self:trait', 'effect:trait'] as const) {
+      expect(buildPredicate([term({ scope })], 'any')).toEqual({ tag: `${scope}:undead` });
     }
   });
 
@@ -74,7 +74,7 @@ describe('buildPredicate', () => {
       target: 'will',
       bonusType: 'status',
       value: { kind: 'lit', value: 1 },
-      when: buildPredicate([term(), term({ trait: 'fiend', negate: true })], 'any'),
+      when: buildPredicate([term(), term({ value: 'fiend', negate: true })], 'any'),
     });
     expect(parsed.success).toBe(true);
   });
@@ -89,8 +89,8 @@ describe('readPredicate — loading an existing condition for editing', () => {
     for (const [terms, join] of [
       [[term()], 'any'],
       [[term({ negate: true })], 'any'],
-      [[term(), term({ trait: 'fiend', scope: 'origin' })], 'all'],
-      [[term({ scope: 'self', trait: 'elf' }), term({ trait: 'dragon', negate: true })], 'any'],
+      [[term(), term({ value: 'fiend', scope: 'origin:trait' })], 'all'],
+      [[term({ scope: 'self:trait', value: 'elf' }), term({ value: 'dragon', negate: true })], 'any'],
     ] as const) {
       const built = buildPredicate(terms, join);
       expect(readPredicate(built)).toEqual({ terms: [...terms], join });
@@ -127,8 +127,8 @@ describe('the authoring → sheet loop', () => {
       value: { kind: 'lit', value: 1 },
       when: buildPredicate(
         [
-          { scope: 'opponent', trait: 'undead', negate: false },
-          { scope: 'opponent', trait: 'fiend', negate: false },
+          { scope: 'opponent:trait', value: 'undead', negate: false },
+          { scope: 'opponent:trait', value: 'fiend', negate: false },
         ],
         'any',
       ),
@@ -149,12 +149,43 @@ describe('the authoring → sheet loop', () => {
     expect(sheet.skipped).toBe(0);
   });
 
+  it('authors "+2 circumstance against effects that would make you enfeebled"', () => {
+    // The third conditional capability, end to end: the condition an author writes,
+    // and the effect declaration it will be tested against.
+    const when = buildPredicate([{ scope: 'effect:causes', value: 'enfeebled', negate: false }], 'any');
+    expect(when).toEqual({ tag: 'effect:causes:enfeebled' });
+
+    const sheet = collectPassiveSheetEffects(
+      [[{ kind: 'modifier', target: 'fortitude', bonusType: 'circumstance', value: { kind: 'lit', value: 2 }, when }]],
+      { level: 5 },
+      ['Iron Constitution'],
+    );
+    expect(sheet.conditional[0]).toEqual({
+      source: 'Iron Constitution',
+      stat: 'fortitude',
+      summary: '+2 circumstance to Fortitude',
+      condition: 'vs effects that cause enfeebled',
+    });
+
+    // The read side: an effect declaring it inflicts Enfeebled 2 satisfies the tag.
+    const inflicting: EffectTemplate = {
+      name: 'Sap Vitality',
+      conditions: [{ slug: 'enfeebled', value: 2 }],
+      duration: { kind: 'unlimited' },
+      passives: [],
+    };
+    expect(effectTemplateSchema.safeParse(inflicting).success).toBe(true);
+    expect(evaluatePredicate(when!, rollTags({ effect: { conditions: inflicting.conditions } }))).toBe(true);
+    // An effect that inflicts something else does not.
+    expect(evaluatePredicate(when!, rollTags({ effect: { conditions: [{ slug: 'clumsy' }] } }))).toBe(false);
+  });
+
   it('authors "+1 to saves against death effects" — the shape EffectTemplate.traits unlocks', () => {
     // This is the capability that was unrepresentable before the traits field: not
     // because the predicate grammar lacked anything, but because no effect DECLARED
     // what kind of effect it was. Both halves are asserted — the condition an author
     // writes, and the declaration on the effect it will be tested against.
-    const when = buildPredicate([{ scope: 'effect', trait: 'death', negate: false }], 'any');
+    const when = buildPredicate([{ scope: 'effect:trait', value: 'death', negate: false }], 'any');
     expect(when).toEqual({ tag: 'effect:trait:death' });
 
     const sheet = collectPassiveSheetEffects(

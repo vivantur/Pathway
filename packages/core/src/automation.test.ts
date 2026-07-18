@@ -722,6 +722,24 @@ describe("applyEffect / removeEffect", () => {
     expect(evaluatePredicate({ tag: "effect:trait:death" }, tags)).toBe(false);
   });
 
+  it("declares the conditions it inflicts, validated against the closed vocabulary", () => {
+    // The read side of "+2 to saves against effects that would make you enfeebled".
+    // Unlike traits (free text), conditions are a closed 41-slug list — so a typo is a
+    // PARSE ERROR rather than a predicate that silently never matches.
+    const withConditions: EffectTemplate = {
+      ...frightened,
+      conditions: [{ slug: "enfeebled", value: 2 }, { slug: "clumsy" }],
+    };
+    expect(effectTemplateSchema.safeParse(withConditions).success).toBe(true);
+    expect(effectTemplateSchema.safeParse({ ...frightened, conditions: [{ slug: "enfeebeld" }] }).success).toBe(false);
+    expect(effectTemplateSchema.safeParse({ ...frightened, conditions: [{ slug: "enfeebled", value: 0 }] }).success).toBe(false);
+
+    // And the declaration reaches a tag set a predicate resolves against.
+    const tags = rollTags({ effect: { conditions: withConditions.conditions } });
+    expect(evaluatePredicate({ tag: "effect:causes:enfeebled" }, tags)).toBe(true);
+    expect(evaluatePredicate({ tag: "effect:causes:drained" }, tags)).toBe(false);
+  });
+
   it("emits an applyEffect mutation carrying the template, defaulting to the current target", () => {
     const out = runAutomation([{ kind: "applyEffect", effect: frightened }], ctx({ targets: [target], rng: seqRng(1) }));
     expect(out.mutations).toEqual([
