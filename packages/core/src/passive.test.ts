@@ -242,6 +242,19 @@ describe("collectPassiveSheetEffects", () => {
     expect(e.skipped).toBe(0);
   });
 
+  it("resolves an ability-mod variable in a value when abilityMods are supplied", () => {
+    // "+strengthMod circumstance to Athletics" — a variable modifier. It resolves only when
+    // the collect scope carries the ability mods; without them it falls back to being skipped.
+    const eff = [[{ kind: "modifier" as const, target: "athletics" as const, bonusType: "circumstance" as const, value: { kind: "var" as const, name: "strengthMod" } }]];
+    const withMods = collectPassiveSheetEffects(eff, { level: 5, abilityMods: { str: 4, dex: 1, con: 2, int: 0, wis: 0, cha: -1 } });
+    expect(withMods.statModifiers.get("athletics")?.[0]?.value).toBe(4);
+    expect(withMods.skipped).toBe(0);
+    // level-only scope: strengthMod is unknown, so the effect is skipped (not guessed).
+    const withoutMods = collectPassiveSheetEffects(eff, { level: 5 });
+    expect(withoutMods.statModifiers.get("athletics")).toBeUndefined();
+    expect(withoutMods.skipped).toBe(1);
+  });
+
   it("counts a TYPED HP bonus rather than folding it in as untyped", () => {
     // The bag takes a single flat bonusHp; a typed bonus has nowhere to stack, so it
     // is reported, not quietly treated as if it were untyped.

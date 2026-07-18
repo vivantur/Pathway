@@ -228,6 +228,19 @@ export function computeAbilityScores(state: BuilderState): AbilityScores {
 }
 
 /**
+ * The ability modifiers a collect-time value expression may read (`strengthMod`, …).
+ * These are base inputs — known before the passive effects are derived — so exposing them
+ * to `collectPassiveSheetEffects`/`collectTraits` is not circular.
+ */
+function abilityModsFor(state: BuilderState): { str: number; dex: number; con: number; int: number; wis: number; cha: number } {
+  const s = computeAbilityScores(state);
+  return {
+    str: abilityModifier(s.str), dex: abilityModifier(s.dex), con: abilityModifier(s.con),
+    int: abilityModifier(s.int), wis: abilityModifier(s.wis), cha: abilityModifier(s.cha),
+  };
+}
+
+/**
  * Sheet effects granted by the character's chosen feats — HP bonuses, proficiency
  * grants and typed stat modifiers, resolved by `@pathway/core`.
  *
@@ -254,7 +267,7 @@ export function characterEffects(state: BuilderState): SheetEffects {
     itemEffects.push(effects);
     labels.push(feat.name);
   }
-  return collectPassiveSheetEffects(itemEffects, { level }, labels);
+  return collectPassiveSheetEffects(itemEffects, { level, abilityMods: abilityModsFor(state) }, labels);
 }
 
 // --- choice-driven feats: player prompts ------------------------------------
@@ -353,7 +366,7 @@ export function characterTraits(state: BuilderState): CharacterTraits {
 
   // Sense dedupe (including darkvision superseding low-light vision) is core's, so
   // this and the imported-character sheet cannot drift apart on it.
-  return collectTraits(itemEffects, { level }, labels);
+  return collectTraits(itemEffects, { level, abilityMods: abilityModsFor(state) }, labels);
 }
 
 /** Human-readable label for a granted sense, e.g. "Scent (imprecise, 30 ft)". */

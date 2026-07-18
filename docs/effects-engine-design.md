@@ -908,6 +908,25 @@ section on the page. Slice-1 fields were extracted to `features/authoring/fields
   runtime execution stays a separate, later track. **The editor is now the tool to find data-model
   gaps by trying to build real class feats.**
 
+**Gaps the editor surfaced, closed 2026-07-17** (owner, from using it):
+- **VARIABLE MODIFIERS now resolve on the sheet.** A value like `strengthMod + 2` always parsed
+  and evaluated (it's in `characterNamespace`, and `applyPassiveEffects` uses the full scope), but
+  the SHEET's collect path (`collectPassiveSheetEffects`/`collectTraits`) only exposed `{level}`,
+  so a `strengthMod` modifier threw → was skipped. `EffectContext` gained an optional `abilityMods`,
+  and the collect scope now carries the six ability mods under the `characterNamespace` names.
+  Deliberately ONLY ability mods + level — at collect (pre-derivation) time those base inputs exist,
+  but derived stats (proficiencyBonus, a skill total) do not, and a value referencing one would be
+  circular. The web builder passes `abilityModsFor(state)` (computed from the same `computeAbilityScores`).
+  The authoring value editor gained an **"an expression…"** mode (a `parseExpr` field) so these are
+  authorable, alongside the flat/half-level idioms.
+- **BROADCAST authoring convenience.** The model stays per-stat (broadcast selectors are fanned out
+  at ingest), but the editor's modifier target offers "all saves"/"all skills", which fan the one
+  effect into one-per-stat (copying its type/value) on select — so "+1 to all saves" is one action,
+  three stored effects.
+- **CONDITIONAL effects (`when`) remain deferred** (owner: "coming soon") — the collect path skips
+  any effect with a `when`, and the "against \<trait/damage-type\>" scope needs the deferred combat
+  tags (decision 3). "+1 to saves against magic" is a conditional, not a targeting gap.
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.

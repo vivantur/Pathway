@@ -286,6 +286,18 @@ function selectorLabel(target: Selector): string {
  *   • `rollAdjust` — Layer 2 consumes it at a check; it is not a sheet number.
  * `note` effects are display text, not sheet numbers: ignored here, not counted.
  */
+/**
+ * The variable scope a COLLECT-time value expression may read: `level` + the ability mods,
+ * under the same names `characterNamespace` uses, so `strengthMod` resolves here exactly as
+ * it does under `applyPassiveEffects`. Derived stats are deliberately absent — at collect
+ * (pre-derivation) time they don't exist yet, and a value referencing one would be circular.
+ */
+function collectVars(ctx: EffectContext): Record<string, number> {
+  const m = ctx.abilityMods;
+  if (!m) return { level: ctx.level };
+  return { level: ctx.level, strengthMod: m.str, dexterityMod: m.dex, constitutionMod: m.con, intelligenceMod: m.int, wisdomMod: m.wis, charismaMod: m.cha };
+}
+
 export function collectPassiveSheetEffects(
   itemEffects: readonly (readonly PassiveEffect[])[],
   ctx: EffectContext,
@@ -321,7 +333,7 @@ export function collectPassiveSheetEffects(
         case "modifier": {
           let value: number;
           try {
-            value = evaluate(effect.value, { vars: { level: ctx.level } }, "number") as number;
+            value = evaluate(effect.value, { vars: collectVars(ctx) }, "number") as number;
           } catch {
             out.skipped += 1;
             continue;
@@ -495,7 +507,7 @@ export function collectTraits(
         // level"), evaluated per character at read time — which is this moment.
         let value: number;
         try {
-          value = evaluate(grant.value, { vars: { level: ctx.level } }, "number") as number;
+          value = evaluate(grant.value, { vars: collectVars(ctx) }, "number") as number;
         } catch {
           skipped += 1;
           continue;

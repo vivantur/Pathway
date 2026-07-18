@@ -4,7 +4,7 @@ import featData from '@/features/builder/data/feats.json';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import {
-  inputCls, cap, withId, strip, nextId, RANK_LABELS, EFFECT_KINDS, RESIST_TYPES,
+  inputCls, cap, withId, strip, nextId, RANK_LABELS, EFFECT_KINDS, RESIST_TYPES, BROADCAST,
   EffectForm, validatePassive, type Draft,
 } from '@/features/authoring/fields';
 import { AutomationTree, stripDeep } from '@/features/authoring/AutomationEditor';
@@ -77,7 +77,23 @@ export function EffectAuthorPage() {
     setActions([]);
   };
 
-  const patchEffect = (id: number, p: Record<string, unknown>) => setEffects((prev) => prev.map((d) => (d._id === id ? { ...d, ...p } : d)));
+  const patchEffect = (id: number, p: Record<string, unknown>) => {
+    // A broadcast target ("all saves"/"all skills") is an authoring convenience: replace the
+    // one effect with one PER STAT, copying its other fields. The stored model stays per-stat
+    // (broadcast selectors are fanned out at ingest too), so this just saves the clicks.
+    const fan = BROADCAST[p.target as keyof typeof BROADCAST];
+    if (fan) {
+      setEffects((prev) => {
+        const i = prev.findIndex((d) => d._id === id);
+        if (i < 0) return prev;
+        const base = strip(prev[i]!);
+        const expanded = fan.map((t) => withId({ ...base, target: t }));
+        return [...prev.slice(0, i), ...expanded, ...prev.slice(i + 1)];
+      });
+      return;
+    }
+    setEffects((prev) => prev.map((d) => (d._id === id ? { ...d, ...p } : d)));
+  };
   const patchChoice = (id: number, p: Partial<ChoiceDraft>) => setChoices((prev) => prev.map((c) => (c._id === id ? { ...c, ...p } : c)));
   const toggleSkill = (id: number, skill: string) =>
     setChoices((prev) => prev.map((c) => (c._id === id ? { ...c, skills: c.skills.includes(skill) ? c.skills.filter((s) => s !== skill) : [...c.skills, skill] } : c)));
@@ -157,7 +173,7 @@ export function EffectAuthorPage() {
               <div className="flex items-start gap-3">
                 <span className="mt-1 w-20 shrink-0 font-ui text-sm text-gold">{String(d.kind)}</span>
                 <div className="flex-1">
-                  <EffectForm draft={d} onPatch={(p) => patchEffect(d._id, p)} />
+                  <EffectForm draft={d} onPatch={(p) => patchEffect(d._id, p)} allowBroadcast />
                   {issues.map((iss, i) => <div key={i} className="mt-1 text-xs text-red-300/80">{iss}</div>)}
                 </div>
                 <button onClick={() => setEffects((prev) => prev.filter((x) => x._id !== d._id))} className="text-parchment/40 hover:text-red-300">✕</button>

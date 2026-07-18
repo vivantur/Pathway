@@ -70,8 +70,16 @@ export function stackModifiers(mods: Modifier[]): number {
 }
 
 export interface EffectContext {
-  /** Character level — the only actor value the supported expressions reference. */
+  /** Character level. */
   level: number;
+  /**
+   * Ability modifiers, if known — so a value expression can reference `strengthMod`,
+   * `dexterityMod`, … (the `characterNamespace` names). Deliberately ONLY the ability
+   * mods and level: at collect time (pre-derivation) these base inputs exist, but derived
+   * stats (proficiencyBonus, a skill total) do not — a value that referenced one would be
+   * circular. Absent → level-only scope, as before.
+   */
+  abilityMods?: { str: number; dex: number; con: number; int: number; wis: number; cha: number };
 }
 
 /** A proficiency-rank grant resolved from a feat. */

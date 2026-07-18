@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { parseExpr, automationNodeSchema, SKILL_SLUGS, FIXED_SELECTORS, DAMAGE_TYPES } from '@pathway/core';
-import { inputCls, withId, nextId, EffectForm, validatePassive, type Draft } from './fields';
+import { automationNodeSchema, SKILL_SLUGS, FIXED_SELECTORS, DAMAGE_TYPES } from '@pathway/core';
+import { inputCls, withId, nextId, EffectForm, ExprField, validatePassive, type Draft } from './fields';
 
 /**
  * The automation-tree editor (authoring UI slice 2). A RECURSIVE node editor over the Layer-2
@@ -46,30 +45,6 @@ function blankNode(kind: string): Draft {
     removeEffect: { name: '' },
   };
   return withId({ kind, ...(base[kind] ?? {}) });
-}
-
-// ── expression field: a string parsed by the core grammar ────────────────────
-export function ExprField({ value, onChange, placeholder = 'e.g. floor(level/2)' }: { value: unknown; onChange: (v: unknown) => void; placeholder?: string }) {
-  const [text, setText] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-  const set = (t: string) => {
-    setText(t);
-    if (!t.trim()) { setErr(null); onChange(undefined); return; }
-    try {
-      onChange(parseExpr(t));
-      setErr(null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'parse error');
-      onChange({ _invalidExpr: t }); // forces schema-invalid so the node reads red
-    }
-  };
-  return (
-    <span className="inline-flex flex-col">
-      <input className={`${inputCls} w-48`} placeholder={placeholder} value={text} onChange={(e) => set(e.target.value)} />
-      {err && <span className="text-[10px] text-red-300/80">{err}</span>}
-      {!err && value !== undefined && !text && <span className="text-[10px] text-parchment/40">set</span>}
-    </span>
-  );
 }
 
 function SelectorPick({ value, onChange }: { value: string; onChange: (v: string) => void }) {

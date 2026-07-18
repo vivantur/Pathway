@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import {
   passiveEffectSchema,
+  parseExpr,
   FIXED_SELECTORS,
   SKILL_SLUGS,
   SAVE_SELECTORS,
@@ -43,13 +45,46 @@ export const RESIST_TYPES = [
   ...DAMAGE_MATERIALS,
 ];
 
-// ── value AST (the level-scaled idioms + a flat number), both directions ─────
-export type ValueMode = 'flat' | 'halfLevel' | 'halfLevelMin1' | 'level';
+// ── expression field: a string parsed by the core grammar ────────────────────
+/** Render a value AST back to compact infix text, so an existing expression is editable. */
+export function exprToText(v: unknown): string {
+  if (v === null || v === undefined || typeof v !== 'object') return String(v ?? '');
+  const e = v as { kind?: string; value?: unknown; name?: string; fn?: string; args?: unknown[] };
+  if (e.kind === 'lit') return String(e.value);
+  if (e.kind === 'var') return e.name ?? '';
+  if (e.kind === 'call') {
+    const infix: Record<string, string> = { add: '+', subtract: '-', multiply: '*', divide: '/' };
+    if (e.fn && infix[e.fn] && e.args?.length === 2) return `${exprToText(e.args[0])} ${infix[e.fn]} ${exprToText(e.args[1])}`;
+    return `${e.fn}(${(e.args ?? []).map(exprToText).join(', ')})`;
+  }
+  return '';
+}
+
+export function ExprField({ value, onChange, placeholder = 'e.g. floor(level/2)' }: { value: unknown; onChange: (v: unknown) => void; placeholder?: string }) {
+  const [text, setText] = useState(() => exprToText(value));
+  const [err, setErr] = useState<string | null>(null);
+  const set = (t: string) => {
+    setText(t);
+    if (!t.trim()) { setErr(null); onChange(undefined); return; }
+    try { onChange(parseExpr(t)); setErr(null); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'parse error'); onChange({ _invalidExpr: t }); }
+  };
+  return (
+    <span className="inline-flex flex-col">
+      <input className={`${inputCls} w-48`} placeholder={placeholder} value={text} onChange={(e) => set(e.target.value)} />
+      {err && <span className="text-[10px] text-red-300/80">{err}</span>}
+    </span>
+  );
+}
+
+// ── value AST (level-scaled idioms, a flat number, or a raw expression) ──────
+export type ValueMode = 'flat' | 'halfLevel' | 'halfLevelMin1' | 'level' | 'expression';
 const VALUE_MODES: { mode: ValueMode; label: string }[] = [
   { mode: 'flat', label: 'a fixed number' },
   { mode: 'halfLevel', label: 'half your level' },
   { mode: 'halfLevelMin1', label: 'half your level (min 1)' },
   { mode: 'level', label: 'your level' },
+  { mode: 'expression', label: 'an expression…' },
 ];
 const HALF = { kind: 'call', fn: 'floor', args: [{ kind: 'call', fn: 'divide', args: [{ kind: 'var', name: 'level' }, { kind: 'lit', value: 2 }] }] };
 export function buildValue(mode: ValueMode, n: number): unknown {
@@ -58,23 +93,34 @@ export function buildValue(mode: ValueMode, n: number): unknown {
     case 'halfLevel': return HALF;
     case 'halfLevelMin1': return { kind: 'call', fn: 'max', args: [{ kind: 'lit', value: 1 }, HALF] };
     case 'level': return { kind: 'var', name: 'level' };
+    case 'expression': return undefined; // filled by the ExprField
   }
 }
-function readValue(v: unknown): { mode: ValueMode; n: number } | null {
+function readValue(v: unknown): { mode: ValueMode; n: number } {
   const s = JSON.stringify(v);
   if (s === JSON.stringify(HALF)) return { mode: 'halfLevel', n: 0 };
   if (s === JSON.stringify(buildValue('halfLevelMin1', 0))) return { mode: 'halfLevelMin1', n: 0 };
   if (s === JSON.stringify(buildValue('level', 0))) return { mode: 'level', n: 0 };
   const lit = v as { kind?: string; value?: number } | undefined;
   if (lit?.kind === 'lit' && typeof lit.value === 'number') return { mode: 'flat', n: lit.value };
-  return null;
+  if (v !== undefined) return { mode: 'expression', n: 0 }; // any other AST → editable expression
+  return { mode: 'flat', n: 0 };
 }
 
 // ── inputs ────────────────────────────────────────────────────────────────────
-export function SelectorField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+/** The two BROADCAST tokens; the page fans them out to per-stat effects on select. */
+export const BROADCAST = { 'all-saves': [...SAVE_SELECTORS], 'all-skills': [...SKILL_SLUGS] } as const;
+
+export function SelectorField({ value, onChange, allowBroadcast }: { value: string; onChange: (v: string) => void; allowBroadcast?: boolean }) {
   return (
     <select className={inputCls} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">target…</option>
+      {allowBroadcast && (
+        <optgroup label="Broadcast (fans out)">
+          <option value="all-saves">all saves</option>
+          <option value="all-skills">all skills</option>
+        </optgroup>
+      )}
       {SELECTOR_GROUPS.map((g) => (
         <optgroup key={g.label} label={g.label}>
           {g.options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -84,28 +130,34 @@ export function SelectorField({ value, onChange }: { value: string; onChange: (v
   );
 }
 
-/** A value editor: a mode dropdown + a number when "a fixed number". `value` in, patch out. */
+/**
+ * A value editor: a mode dropdown + a number ("fixed") or a parsed expression. The mode is
+ * derived from the value, but "expression" needs a local override — an unfilled expression is
+ * indistinguishable from a default flat 0 by value alone.
+ */
 export function ValueField({ value, onValue }: { value: unknown; onValue: (v: unknown) => void }) {
-  const parsed = readValue(value);
-  const mode = parsed?.mode ?? 'flat';
-  const n = parsed?.n ?? 0;
-  if (value !== undefined && parsed === null) {
-    return <span className="text-xs text-brass" title={JSON.stringify(value)}>advanced expression (edit as JSON)</span>;
-  }
+  const derived = readValue(value);
+  const [override, setOverride] = useState<ValueMode | null>(null);
+  const mode = override ?? derived.mode;
+  const pick = (m: ValueMode) => {
+    setOverride(m);
+    if (m !== 'expression') onValue(buildValue(m, derived.n)); // keep the value for the ExprField
+  };
   return (
     <span className="inline-flex items-center gap-1">
-      <select className={inputCls} value={mode} onChange={(e) => onValue(buildValue(e.target.value as ValueMode, n))}>
+      <select className={inputCls} value={mode} onChange={(e) => pick(e.target.value as ValueMode)}>
         {VALUE_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.label}</option>)}
       </select>
       {mode === 'flat' && (
-        <input type="number" className={`${inputCls} w-16`} value={n} onChange={(e) => onValue(buildValue('flat', Number(e.target.value)))} />
+        <input type="number" className={`${inputCls} w-16`} value={derived.n} onChange={(e) => onValue(buildValue('flat', Number(e.target.value)))} />
       )}
+      {mode === 'expression' && <ExprField value={value} onChange={onValue} placeholder="e.g. strengthMod + 2" />}
     </span>
   );
 }
 
 // ── the per-kind passive-effect form ─────────────────────────────────────────
-export function EffectForm({ draft, onPatch }: { draft: Draft; onPatch: (p: Record<string, unknown>) => void }) {
+export function EffectForm({ draft, onPatch, allowBroadcast }: { draft: Draft; onPatch: (p: Record<string, unknown>) => void; allowBroadcast?: boolean }) {
   const grant = (draft.grant as Record<string, unknown>) ?? {};
   const patchGrant = (p: Record<string, unknown>) => onPatch({ grant: { ...grant, ...p } });
   const adjust = (draft.adjust as Record<string, unknown>) ?? {};
@@ -114,7 +166,7 @@ export function EffectForm({ draft, onPatch }: { draft: Draft; onPatch: (p: Reco
     case 'modifier':
       return (
         <div className="flex flex-wrap items-center gap-2">
-          <SelectorField value={(draft.target as string) ?? ''} onChange={(v) => onPatch({ target: v })} />
+          <SelectorField value={(draft.target as string) ?? ''} onChange={(v) => onPatch({ target: v })} allowBroadcast={allowBroadcast} />
           <select className={inputCls} value={(draft.bonusType as string) ?? ''} onChange={(e) => onPatch({ bonusType: e.target.value })}>
             <option value="">type…</option>
             {['circumstance', 'status', 'item', 'untyped'].map((t) => <option key={t} value={t}>{t}</option>)}
