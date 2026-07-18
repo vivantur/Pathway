@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { conditionGaps, conditionModifiers } from '@pathway/core';
 import { useQuery } from '@tanstack/react-query';
 import { safeHttpUrl } from "@/lib/safeUrl";
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -18,6 +19,7 @@ import { useFavoriteSpells } from '@/features/characters/useFavoriteSpells';
 import {
   PF2E_CONDITIONS,
   conditionDef,
+  heldConditions,
   isValuedCondition,
   type ConditionDef,
 } from '@/features/characters/conditions';
@@ -71,6 +73,7 @@ import {
   shieldBonus,
   skillBonus,
   speed,
+  type ConditionAdjustments,
 } from './sheetStats';
 import { formatSenseLabel } from '@/features/builder/rules';
 import {
@@ -174,7 +177,22 @@ export function Sheet({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Net stat changes from every condition in force — computed by core (which applies
+  // the PF2e stacking rules), read by the stat cards through context. Both condition
+  // sources feed it: the web-owned tracker AND the bot-managed dying/wounded columns.
+  const conditionAdj = useMemo(
+    () =>
+      conditionModifiers(
+        heldConditions(character.overlay?.web_edits?.conditions, {
+          dying: character.dying,
+          wounded: character.wounded,
+        }),
+      ),
+    [character.overlay?.web_edits?.conditions, character.dying, character.wounded],
+  );
+
   return (
+    <ConditionAdjContext.Provider value={conditionAdj}>
     <div className="space-y-4">
       <SheetHeader character={character} build={build} readOnly={readOnly} live={live} edit={edit} />
       <div className="grid gap-4 xl:grid-cols-[288px_1fr_240px]">
@@ -189,8 +207,20 @@ export function Sheet({
         <RightColumn build={build} character={character} edit={edit} />
       </div>
     </div>
+    </ConditionAdjContext.Provider>
   );
 }
+
+/**
+ * Net condition modifiers per stat, ambient to the stat cards.
+ *
+ * A context rather than a prop because this is cross-cutting — AC, saves, Perception,
+ * class DC and every skill need the same map, and threading it through six component
+ * signatures would obscure more than it revealed. Read-only, computed once per render
+ * of the sheet.
+ */
+const ConditionAdjContext = createContext<ConditionAdjustments | undefined>(undefined);
+const useConditionAdj = () => useContext(ConditionAdjContext);
 
 /**
  * Live-state editing controls threaded to the components that expose them.
@@ -1192,19 +1222,21 @@ function StatRow({
   edit: EditControls;
 }) {
   const max = maxHp(build);
+  const adj = useConditionAdj();
   const hero = character.hero_points ?? character.overlay?.daily?.hero_points ?? 0;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       <HpCard current={character.current_hp} max={max ?? null} edit={edit} />
       <AcCard key={character.id} build={build} edit={edit} />
-      <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude'))} />
-      <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex'))} />
-      <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will'))} />
+      <StatCard label="Fortitude" icon={<ShieldPlusIcon />} value={fmtMod(saveBonus(build, 'fortitude', adj))} affected={adj?.has('fortitude')} />
+      <StatCard label="Reflex" icon={<RunningIcon />} value={fmtMod(saveBonus(build, 'reflex', adj))} affected={adj?.has('reflex')} />
+      <StatCard label="Will" icon={<BrainIcon />} value={fmtMod(saveBonus(build, 'will', adj))} affected={adj?.has('will')} />
       <StatCard
         label="Perception"
         icon={<EyeIcon />}
-        value={fmtMod(perceptionBonus(build))}
-        sub={`Init ${fmtMod(perceptionBonus(build))}`}
+        value={fmtMod(perceptionBonus(build, adj))}
+        sub={`Init ${fmtMod(perceptionBonus(build, adj))}`}
+        affected={adj?.has('perception')}
       />
       <HeroPointsCard value={hero} edit={edit} />
     </div>
@@ -1303,21 +1335,24 @@ function StatCard({
   icon,
   value,
   sub,
+  affected,
 }: {
   label: string;
   icon: ReactNode;
   value: ReactNode;
   /** Small caption under the value (e.g. Perception's Initiative modifier). */
   sub?: ReactNode;
+  /** True when a condition is changing this number — tints it so it reads as temporary. */
+  affected?: boolean;
 }) {
   return (
-    <div className="relative rounded-md border border-gold/30 bg-midnight-900/70 px-3 py-3 text-center shadow-gilded">
+    <div className={`relative rounded-md border bg-midnight-900/70 px-3 py-3 text-center shadow-gilded ${affected ? 'border-rose-400/40' : 'border-gold/30'}`}>
       <CornerAccents />
       <div className="text-[0.65rem] font-display uppercase tracking-widest text-gold/90">
         {label}
       </div>
       <div className="my-1 flex justify-center text-xl text-gold">{icon}</div>
-      <div className="font-display text-2xl text-silver">{value}</div>
+      <div className={`font-display text-2xl ${affected ? 'text-rose-200' : 'text-silver'}`} title={affected ? 'Modified by an active condition' : undefined}>{value}</div>
       {sub && (
         <div className="mt-1 border-t border-gold/15 pt-1 text-[0.62rem] font-display uppercase tracking-wide text-arcane/90">
           {sub}
@@ -1336,7 +1371,8 @@ function StatCard({
  * persisted stat, and it never writes to the DB or overlay.
  */
 function AcCard({ build, edit }: { build: PathbuilderBuild; edit: EditControls }) {
-  const base = acTotal(build);
+  const adj = useConditionAdj();
+  const base = acTotal(build, adj);
   const shield = shieldBonus(build);
   const [raised, setRaised] = useState(false);
   const canRaise = edit.enabled && shield > 0;
@@ -1345,7 +1381,7 @@ function AcCard({ build, edit }: { build: PathbuilderBuild; edit: EditControls }
   return (
     <div
       className={`relative rounded-md border bg-midnight-900/70 px-3 py-3 text-center shadow-gilded ${
-        raised ? 'border-arcane/70' : 'border-gold/30'
+        raised ? 'border-arcane/70' : adj?.has('ac') ? 'border-rose-400/40' : 'border-gold/30'
       }`}
     >
       <CornerAccents />
@@ -1455,9 +1491,12 @@ function ConditionsBlock({
 
   if (!edit.enabled) {
     const active = renderConditions(character, webConditions);
+    // A public share shows condition-adjusted numbers like any other view, so it needs
+    // the same caveat about what those numbers leave out.
     return (
       <FramedBlock title="Conditions">
         <p className="text-sm text-silver/85">{active.join(' · ') || '—'}</p>
+        <ConditionGaps character={character} web={webConditions} />
       </FramedBlock>
     );
   }
@@ -1502,8 +1541,48 @@ function ConditionsBlock({
           );
         })}
         <AddConditionSelect available={available} onAdd={addCondition} />
+        <ConditionGaps character={character} web={webConditions} />
       </div>
     </FramedBlock>
+  );
+}
+
+/** Human phrasing for each blocker core reports. Display only. */
+const GAP_LABELS: Record<string, string> = {
+  'action-economy': 'your available actions',
+  'action-restriction': 'which actions you can use',
+  detection: 'what can see or target you',
+  'flat-check': 'flat checks to act or be targeted',
+  'death-track': 'the dying/wounded track',
+  movement: 'your Speed or terrain',
+  'hp-alteration': 'your Hit Points',
+  immunity: 'immunities',
+  'sense-conditional': 'checks that rely on a particular sense',
+  'needs-selector': 'attack or damage rolls of a specific kind',
+  recovery: 'how the condition wears off',
+  'gm-adjudicated': 'GM adjudication',
+  'object-only': 'objects rather than creatures',
+};
+
+/**
+ * What the adjusted numbers above do NOT capture.
+ *
+ * The stat cards can only show what reduces to a modifier, and most conditions do
+ * more than that (or something else entirely — Slowed changes nothing numeric).
+ * Without this line the sheet would quietly present a partial answer as a complete
+ * one: a Slowed character would look untouched. Core reports the blockers; this
+ * renders them.
+ */
+function ConditionGaps({ character, web }: { character: CharacterRow; web: ActiveCondition[] }) {
+  const gaps = conditionGaps(
+    heldConditions(web, { dying: character.dying, wounded: character.wounded }),
+  );
+  if (gaps.length === 0) return null;
+  const labels = gaps.map((g) => GAP_LABELS[g] ?? g);
+  return (
+    <p className="border-t border-gold/15 pt-2 text-[0.7rem] leading-relaxed text-silver/60">
+      Also affects {labels.join(', ')} — not reflected in the numbers above.
+    </p>
   );
 }
 
@@ -1661,6 +1740,7 @@ function renderConditions(c: CharacterRow, web: ActiveCondition[]): string[] {
 // ---- Skills panel ----------------------------------------------
 
 function SkillsPanel({ build }: { build: PathbuilderBuild }) {
+  const adj = useConditionAdj();
   return (
     <Panel title="Skills">
       <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1.5 text-sm">
@@ -1671,7 +1751,7 @@ function SkillsPanel({ build }: { build: PathbuilderBuild }) {
         {SKILL_ORDER.map((s) => {
           const rank = build.proficiencies?.[s];
           const trained = (rank ?? 0) > 0;
-          const bonus = skillBonus(build, s);
+          const bonus = skillBonus(build, s, adj);
           const ab = SKILL_ABILITY[s] as Ability;
           const abMod = abilityMod(build.abilities?.[ab]);
           return (
@@ -1875,7 +1955,8 @@ function RightColumn({
   character: CharacterRow;
   edit: EditControls;
 }) {
-  const cdc = classDC(build);
+  const adj = useConditionAdj();
+  const cdc = classDC(build, adj);
   const primaryCaster = (build.spellCasters ?? []).find((c) => !c.innate);
   const spellAttack = primaryCaster ? spellAttackTotal(build, primaryCaster) : undefined;
   // Resistances / weaknesses / immunities live in the Defenses box; the

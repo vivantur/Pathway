@@ -28,6 +28,21 @@ import { pathbuilderTraits } from './pathbuilderTraits';
 const derivedCache = new WeakMap<object, DerivedCharacter>();
 const derivedFailed = new WeakSet<object>();
 
+/**
+ * Net condition modifiers per stat, from `@pathway/core`'s `conditionModifiers`.
+ *
+ * Applied HERE, at the one façade both paths funnel through, so a condition changes the
+ * sheet identically whether the numbers came from our engine or from Pathbuilder's. That
+ * is safe for the imported path specifically because Pathbuilder has no notion of a
+ * condition — its export carries build data (attributes, ranks, gear) and no active
+ * conditions — so there is nothing to double-count. Conditions are a play-time layer on
+ * top of whatever base we display, not a recomputation of it.
+ */
+export type ConditionAdjustments = ReadonlyMap<string, number>;
+
+const adjust = (n: number, adj: ConditionAdjustments | undefined, key: string): number =>
+  n + (adj?.get(key) ?? 0);
+
 /** The core-derived character for a site-built build, or null to fall back. */
 function derived(build: PathbuilderBuild): DerivedCharacter | null {
   const embedded = (build as { _pathwayBuild?: BuilderState })._pathwayBuild;
@@ -60,9 +75,10 @@ export function maxHp(build: PathbuilderBuild): number | undefined {
   return d ? d.maxHp : pb.maxHp(build);
 }
 
-export function acTotal(build: PathbuilderBuild): number | undefined {
+export function acTotal(build: PathbuilderBuild, adj?: ConditionAdjustments): number | undefined {
   const d = derived(build);
-  return d ? d.ac : pb.acTotal(build);
+  const base = d ? d.ac : pb.acTotal(build);
+  return base === undefined ? undefined : adjust(base, adj, 'ac');
 }
 
 export function shieldBonus(build: PathbuilderBuild): number {
@@ -70,19 +86,20 @@ export function shieldBonus(build: PathbuilderBuild): number {
   return d ? d.shieldBonus : pb.shieldBonus(build);
 }
 
-export function saveBonus(build: PathbuilderBuild, save: 'fortitude' | 'reflex' | 'will'): number {
+export function saveBonus(build: PathbuilderBuild, save: 'fortitude' | 'reflex' | 'will', adj?: ConditionAdjustments): number {
   const d = derived(build);
-  return d ? d.saves[save] : pb.saveBonus(build, save);
+  return adjust(d ? d.saves[save] : pb.saveBonus(build, save), adj, save);
 }
 
-export function perceptionBonus(build: PathbuilderBuild): number {
+export function perceptionBonus(build: PathbuilderBuild, adj?: ConditionAdjustments): number {
   const d = derived(build);
-  return d ? d.perception : pb.perceptionBonus(build);
+  return adjust(d ? d.perception : pb.perceptionBonus(build), adj, 'perception');
 }
 
-export function classDC(build: PathbuilderBuild): number | undefined {
+export function classDC(build: PathbuilderBuild, adj?: ConditionAdjustments): number | undefined {
   const d = derived(build);
-  return d ? d.classDc : pb.classDC(build);
+  const base = d ? d.classDc : pb.classDC(build);
+  return base === undefined ? undefined : adjust(base, adj, 'class-dc');
 }
 
 export function speed(build: PathbuilderBuild): number {
@@ -95,15 +112,16 @@ export function focusPoolMax(build: PathbuilderBuild): number {
   return d ? d.focusPoints : pb.focusPoolMax(build);
 }
 
-export function skillBonus(build: PathbuilderBuild, skillName: string): number {
+export function skillBonus(build: PathbuilderBuild, skillName: string, adj?: ConditionAdjustments): number {
+  const key = skillName.toLowerCase();
   const d = derived(build);
   if (d) {
     // Core models the 16 standard skills by lowercase id. Lore skills aren't in
     // core, so those fall through to the pathbuilder math below.
-    const hit = d.skills.find((s) => s.id === skillName.toLowerCase());
-    if (hit) return hit.modifier;
+    const hit = d.skills.find((s) => s.id === key);
+    if (hit) return adjust(hit.modifier, adj, key);
   }
-  return pb.skillBonus(build, skillName);
+  return adjust(pb.skillBonus(build, skillName), adj, key);
 }
 
 /**

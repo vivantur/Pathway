@@ -40,6 +40,8 @@
 // PURE: a data table plus set operations. No I/O.
 
 import { z } from "zod";
+import { evaluate } from "./expr.js";
+import { stackModifiers, type Modifier } from "./effects.js";
 import type { PassiveEffect } from "./passive.js";
 import { SKILL_SLUGS, SAVE_SELECTORS, skillsForAbilities, type Selector } from "./selectors.js";
 
@@ -625,6 +627,34 @@ export function conditionPassives(held: readonly HeldCondition[]): PassiveEffect
   for (const h of active) {
     const def = CONDITIONS[h.slug];
     if (def.passives) out.push(...def.passives(h.value ?? 1));
+  }
+  return out;
+}
+
+/**
+ * The NET modifier each stat takes from a set of held conditions — the number a sheet
+ * shows. Conditions are resolved (implications, overrides), turned into passives, then
+ * stacked per stat by `stackModifiers`, which is where the owner's rules 1 and 2 are
+ * actually enforced: Clumsy 1 + Frightened 2 lands here as a single −2 on AC, never −3.
+ *
+ * Lives in core rather than the sheet because it is rules math. Selectors absent from
+ * the map are unaffected; a stat whose modifiers cancel to 0 is omitted too, so a
+ * caller can treat "present in the map" as "conditions are changing this number".
+ */
+export function conditionModifiers(held: readonly HeldCondition[]): Map<Selector, number> {
+  const byTarget = new Map<Selector, Modifier[]>();
+  for (const effect of conditionPassives(held)) {
+    if (effect.kind !== "modifier") continue;
+    const list = byTarget.get(effect.target);
+    const mod: Modifier = { type: effect.bonusType, value: evaluate(effect.value, { vars: {} }, "number") as number };
+    if (list) list.push(mod);
+    else byTarget.set(effect.target, [mod]);
+  }
+
+  const out = new Map<Selector, number>();
+  for (const [target, mods] of byTarget) {
+    const net = stackModifiers(mods);
+    if (net !== 0) out.set(target, net);
   }
   return out;
 }

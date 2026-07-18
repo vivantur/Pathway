@@ -11,6 +11,7 @@ import {
   CONDITION_SLUGS,
   applyCondition,
   conditionGaps,
+  conditionModifiers,
   conditionPassives,
   isConditionSlug,
   removeCondition,
@@ -258,6 +259,38 @@ describe("overrides — the three explicit statements in the rules", () => {
     const held = applyCondition(applyCondition([], "grabbed"), "restrained");
     expect(resolveConditions(held).active.map((h) => h.slug)).not.toContain("grabbed");
     expect(resolveConditions(removeCondition(held, "restrained")).active.map((h) => h.slug)).toContain("grabbed");
+  });
+});
+
+describe("conditionModifiers — the numbers a sheet shows", () => {
+  it("nets the owner's worked example to a single -2 on AC", () => {
+    const m = conditionModifiers([
+      { slug: "clumsy", value: 1 },
+      { slug: "frightened", value: 2 },
+    ]);
+    expect(m.get("ac")).toBe(-2);
+    expect(m.get("reflex")).toBe(-2);
+  });
+
+  it("adds a circumstance penalty on top of a status one", () => {
+    expect(conditionModifiers([{ slug: "off-guard" }, { slug: "frightened", value: 1 }]).get("ac")).toBe(-3);
+  });
+
+  it("includes penalties arriving via implications", () => {
+    // Unconscious: -4 status AC, plus the off-guard it implies at -2 circumstance.
+    expect(conditionModifiers([{ slug: "unconscious" }]).get("ac")).toBe(-6);
+  });
+
+  it("omits stats no condition touches, so presence means 'this number changed'", () => {
+    const m = conditionModifiers([{ slug: "clumsy", value: 2 }]);
+    expect(m.has("ac")).toBe(true);
+    expect(m.has("will")).toBe(false);
+    expect(m.has("athletics")).toBe(false);
+  });
+
+  it("is empty for no conditions, and for conditions with no expressible effect", () => {
+    expect(conditionModifiers([]).size).toBe(0);
+    expect(conditionModifiers([{ slug: "slowed", value: 2 }]).size).toBe(0);
   });
 });
 
