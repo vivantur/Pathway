@@ -939,6 +939,26 @@ section on the page. Slice-1 fields were extracted to `features/authoring/fields
   2. **A `when` control in the effect editor**, which makes homebrew conditionals authorable
      immediately and doesn't depend on Foundry's encoding at all.
 
+  **Option 2 landed 2026-07-18 — the first producer.** `PredicateField` (features/authoring/
+  fields.tsx) builds a `when` from a FLAT list of trait terms: scope (`opponent` / `target` /
+  `origin` / `self`) × trait × a per-term `not`, joined by all/any, with a live
+  `describePredicate` preview so the author reads the same prose the player will. Offered on
+  `modifier`/`grant`/`rollAdjust`/`note` and **not** `proficiency` — which has no `when` in the
+  schema, because a raised rank is permanent, not momentary. Trait suggestions are a datalist
+  derived from the 52 traits the Foundry corpus's own predicates use (free text still authors
+  fine). Tested end-to-end: an authored condition reaches `SheetEffects.conditional` with the
+  expected prose.
+
+  **DEFERRED — the full recursive predicate editor.** The flat builder cannot express nesting
+  (`all: [A, any: [B, C]]`), which is a deliberate deviation from decision 5 ("expose the full
+  node set"), taken because no such content exists yet. The cost is paid honestly rather than
+  hidden: `readPredicate` returns `null` for any tree it cannot represent and the field renders
+  it **read-only** instead of flattening it — flattening would corrupt the author's condition,
+  the same failure class as mapping an effect by dropping a condition. Build the recursive
+  editor (reusing `AutomationEditor`'s pattern) when nested predicates actually turn up —
+  most likely alongside the condition/effect-trait tags, which will widen the leaf vocabulary
+  past traits and make combinations worth writing.
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.
