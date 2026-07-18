@@ -13,6 +13,7 @@ import {
 import featData from '@/features/builder/data/feats.json';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { CornerBrackets } from '@/components/ui/CornerBrackets';
+import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 
 /**
  * Effect review — the admin surface where a human turns auto-mapped PROPOSALS into
@@ -143,28 +144,28 @@ function StatTile({ label, value, hint }: { label: string; value: string; hint?:
 function EvidenceLine({ ev }: { ev: Evidence }) {
   if (ev.source === 'parser' && ev.span) {
     return (
-      <div className="text-xs text-parchment/60">
-        <span className="text-arcane">parser</span> read “<span className="text-parchment/80">{ev.span.text}</span>”
+      <div className="text-sm text-parchment/65">
+        <span className="text-arcane">parser</span> read “<span className="text-parchment/85">{ev.span.text}</span>”
       </div>
     );
   }
   if (ev.source === 'foundry') {
     return (
-      <div className="text-xs text-parchment/60">
+      <div className="text-sm text-parchment/65">
         <span className="text-gold">foundry</span> rule element
         {ev.ruleElementIndex !== undefined ? ` #${ev.ruleElementIndex}` : ''}
       </div>
     );
   }
-  return <div className="text-xs text-parchment/60">{ev.source}</div>;
+  return <div className="text-sm text-parchment/65">{ev.source}</div>;
 }
 
 function GapLine({ gap }: { gap: Gap }) {
   return (
-    <div className="text-xs text-brass">
-      gap · <span className="text-parchment/80">{gap.field}</span> — {gap.reason}
+    <div className="text-sm text-brass">
+      gap · <span className="text-parchment/85">{gap.field}</span> — {gap.reason}
       {gap.raw && <> (“{gap.raw}”)</>}
-      <span className="text-parchment/45"> · {GAP_MEANING[gap.reason] ?? ''}</span>
+      <span className="text-parchment/50"> · {GAP_MEANING[gap.reason] ?? ''}</span>
     </div>
   );
 }
@@ -185,7 +186,8 @@ const BUCKET_HINT: Record<Bucket, string> = {
   review: 'One producer, complete — the interactive core. Confirm the shape, accept in bulk.',
   gapped: 'Complete but for a hole. Read-only here — filling it reuses the authoring editor (later slice).',
   conflicts: 'Producers disagree. One is wrong — the most informative thing in the queue.',
-  autoPromote: 'Corroborated + complete: promoted with no human. Listed and reversible.',
+  autoPromote:
+    'Corroborated + complete: both producers agreed, so these become content with no human needed. Accept is optional here — it records a durable "a human confirmed this" that survives a re-run; Reject reverses the auto-promotion.',
   invalid: 'Complete-looking but schema-invalid — a producer bug, not a content problem.',
 };
 
@@ -194,6 +196,7 @@ export function EffectReviewPage() {
   const [failed, setFailed] = useState(false);
   const [bucket, setBucket] = useState<Bucket>('review');
   const [openSig, setOpenSig] = useState<string | null>(null);
+  const [showText, setShowText] = useState(false);
   const [decisions, setDecisions] = useState<Map<string, EffectDecision>>(new Map());
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -335,6 +338,10 @@ export function EffectReviewPage() {
             Clear
           </button>
         )}
+        <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm text-parchment/70">
+          <input type="checkbox" checked={showText} onChange={(e) => setShowText(e.target.checked)} />
+          Show feat text
+        </label>
       </div>
 
       {/* bucket tabs */}
@@ -400,6 +407,7 @@ export function EffectReviewPage() {
                         key={decisionId(c)}
                         candidate={c}
                         decision={decisions.get(decisionId(c))}
+                        showText={showText}
                         onAccept={() => accept(c)}
                         onReject={() => reject(c)}
                         onClear={() => setDecision(c, null)}
@@ -425,12 +433,14 @@ export function EffectReviewPage() {
 function CandidateRow({
   candidate: c,
   decision,
+  showText,
   onAccept,
   onReject,
   onClear,
 }: {
   candidate: EffectCandidate;
   decision: EffectDecision | undefined;
+  showText: boolean;
   onAccept: () => void;
   onReject: () => void;
   onClear: () => void;
@@ -441,7 +451,7 @@ function CandidateRow({
 
   return (
     <div
-      className={`rounded-md border p-2.5 ${
+      className={`rounded-md border p-3 ${
         decided === 'accept'
           ? 'border-emerald/30 bg-emerald/5'
           : decided === 'reject'
@@ -450,15 +460,15 @@ function CandidateRow({
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-ui text-sm text-parchment">{feat?.name ?? c.entityId}</span>
-        <span className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${AGREEMENT_STYLE[c.agreement] ?? 'border-gold/20 text-parchment/70'}`}>
+        <span className="font-ui text-base text-parchment">{feat?.name ?? c.entityId}</span>
+        <span className={`rounded border px-1.5 py-0.5 text-xs ${AGREEMENT_STYLE[c.agreement] ?? 'border-gold/20 text-parchment/70'}`}>
           {c.agreement}
         </span>
-        <span className="text-xs text-parchment/70">{describeEffect(c.draft)}</span>
+        <span className="text-sm text-parchment/80">{describeEffect(c.draft)}</span>
 
         <div className="ml-auto flex items-center gap-1.5">
           {decided ? (
-            <button onClick={onClear} className="rounded border border-gold/20 px-2 py-0.5 text-xs text-parchment/60 hover:text-gold">
+            <button onClick={onClear} className="rounded border border-gold/20 px-2 py-0.5 text-sm text-parchment/60 hover:text-gold">
               {decided === 'accept' ? '✓ accepted' : '✕ rejected'} · undo
             </button>
           ) : (
@@ -467,11 +477,11 @@ function CandidateRow({
                 onClick={onAccept}
                 disabled={!canAccept}
                 title={canAccept ? 'Accept as content' : 'Not acceptable yet — resolve its gap/conflict in the editor (later slice)'}
-                className="rounded border border-emerald/30 px-2 py-0.5 text-xs text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded border border-emerald/30 px-2.5 py-0.5 text-sm text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 Accept
               </button>
-              <button onClick={onReject} className="rounded border border-red-500/25 px-2 py-0.5 text-xs text-red-300/80 hover:bg-red-500/10">
+              <button onClick={onReject} className="rounded border border-red-500/25 px-2.5 py-0.5 text-sm text-red-300/80 hover:bg-red-500/10">
                 Reject
               </button>
             </>
@@ -481,12 +491,12 @@ function CandidateRow({
 
       {/* conflict: show every reading, since one is wrong */}
       {c.agreement === 'conflicting' && c.alternatives && (
-        <div className="mt-1.5 text-xs text-red-300/80">
+        <div className="mt-2 text-sm text-red-300/80">
           also read as: {c.alternatives.map((a, i) => <span key={i}>{describeEffect(a)}{i < c.alternatives!.length - 1 ? '; ' : ''}</span>)}
         </div>
       )}
 
-      <div className="mt-1.5 space-y-0.5">
+      <div className="mt-2 space-y-1">
         {c.gaps.map((g, i) => (
           <GapLine key={i} gap={g} />
         ))}
@@ -494,6 +504,14 @@ function CandidateRow({
           <EvidenceLine key={i} ev={ev} />
         ))}
       </div>
+
+      {/* Full feat text, on demand — read and confirm in place, especially for
+          foundry-only rows where the parser left no quoted span. */}
+      {showText && feat?.description && (
+        <div className="mt-3 max-h-96 overflow-y-auto rounded-md border border-gold/15 bg-midnight-950/70 p-3">
+          <GrimoireMarkdown strip={['access', 'source']}>{feat.description}</GrimoireMarkdown>
+        </div>
+      )}
     </div>
   );
 }
