@@ -31,6 +31,9 @@ const EffectCoveragePage = lazy(() =>
 const EffectReviewPage = lazy(() =>
   import('@/routes/EffectReviewPage').then((m) => ({ default: m.EffectReviewPage })),
 );
+const EffectAuthorPage = lazy(() =>
+  import('@/routes/EffectAuthorPage').then((m) => ({ default: m.EffectAuthorPage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -75,6 +78,19 @@ export const router = createBrowserRouter([
             <RequireAdmin>
               <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
                 <EffectReviewPage />
+              </Suspense>
+            </RequireAdmin>
+          </RequireAuth>
+        ),
+      },
+      {
+        // Admin authoring: the homebrew effect editor (stage 3). Gated + lazy like its siblings.
+        path: 'admin/effect-author',
+        element: (
+          <RequireAuth>
+            <RequireAdmin>
+              <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
+                <EffectAuthorPage />
               </Suspense>
             </RequireAdmin>
           </RequireAuth>

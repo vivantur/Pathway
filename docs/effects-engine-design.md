@@ -858,6 +858,34 @@ choices deferred).
   skill). Accept routes `promote().choice` into `EffectDecision.choice`, so a choice reaches the
   right `resolveEntity` output. 64 choice candidates now review cleanly alongside the effects.
 
+### Authoring UI (stage 3) slice 1 landed 2026-07-17 — passives + choices
+
+**Why now, and why it's the ANSWER to granted actions** (owner call): granted-action feats
+(a huge chunk of class feats) can't be auto-ingested — Foundry's rule elements don't encode
+the activity and prose→automation is not a tractable parse — so they must be AUTHORED. The
+engine can already REPRESENT them (Layer 2 `target`→`applyEffect`→`linkGroup`, the Grapple
+two-actor pair is a locked test), and nothing cross-creature is the blocker; the missing piece
+is the authoring surface. The owner also wants the editor as a DIAGNOSTIC: try to build real
+feats, watch what fails, and learn where the data structure needs expanding.
+
+- **Content slot added** (`effectBearingShape.actions?: GrantedAction[]`, foundry.ts) — the
+  first "expand the data structure" step, so a feat can carry a granted action. Additive,
+  optional, zero migration. The automation-tree editor that fills it is slice 2.
+- **`EffectAuthorPage` (`admin/effect-author`)** — the homebrew editor, gated + lazy like its
+  siblings. SCHEMA-DRIVEN, AND THE SCHEMA IS THE DIAGNOSTIC: every form emits a draft validated
+  live against `passiveEffectSchema`/`effectChoiceSchema` — the same schema the sheet reads — so
+  "this feat can't be built" surfaces as a red validation row or a missing field, exactly the
+  gap-hunt the owner wants. Slice 1 covers the five Layer-1 passive kinds + skill-proficiency
+  choices. A value editor offers the level-scaled idioms (flat / half-level / half-level-min-1 /
+  your level) that map to the exact expr AST Foundry uses, plus an "advanced expression" read-out
+  for anything it doesn't recognize. Loads an existing feat's effects to edit (the same surface
+  the review UI's deferred "edit" action will embed), or authors blank. Output is authored-content
+  JSON (file sink, like decisions), folded into the entity later.
+- **Verified**: every form output validates against the real schemas (all five kinds, the
+  resistance min-1 idiom, a skill choice), a real feat's effects round-trip, web typecheck + lint
+  + build clean. **Slice 2** is the automation-tree editor (the node vocabulary as a nestable
+  tree) — where granted actions and cross-creature `applyEffect` get built.
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.

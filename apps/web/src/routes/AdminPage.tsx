@@ -61,6 +61,11 @@ function EffectEnginePanel() {
       title: 'Review queue',
       body: 'Reconciled proposals from the parser and Foundry, triaged for a human to accept or reject into content.',
     },
+    {
+      to: '/admin/effect-author',
+      title: 'Effect authoring',
+      body: "Build an entity's effects by hand — the homebrew editor, validated live against the schema.",
+    },
   ];
   return (
     <Panel title="Effect engine" subtitle="Admin-only diagnostics over auto-mapped content.">

@@ -38,6 +38,7 @@ import {
   type RankValue,
 } from "./passive.js";
 import { isSelector, isSkillSlug, SAVE_SELECTORS, SKILL_SLUGS, type Selector } from "./selectors.js";
+import { grantedActionSchema } from "./automation.js";
 
 /** A Foundry rule element. Only the fields we read are typed; the rest is open. */
 export interface RuleElement {
@@ -160,6 +161,14 @@ export const effectBearingShape = {
    * once picked — folding them in would grant every option at once.
    */
   choices: z.array(effectChoiceSchema).optional(),
+  /**
+   * GRANTED ACTIONS — full activities a feat bestows (a stance's strike, an Escape),
+   * each carrying a Layer-2 automation tree. Unlike `effects`/`choices` these are NOT
+   * auto-derivable: Foundry's rule elements don't encode the activity and prose→automation
+   * is not a tractable parse, so this slot is filled by the AUTHORING surface, not ingest.
+   * Additive + optional — existing content without it validates unchanged.
+   */
+  actions: z.array(grantedActionSchema).optional(),
   ingest: ingestRecordSchema.optional(),
   review: effectReviewSchema.optional(),
 };
