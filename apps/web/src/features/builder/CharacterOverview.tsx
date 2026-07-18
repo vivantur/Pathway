@@ -237,6 +237,26 @@ export function CharacterOverview({ state }: { state: BuilderState }) {
         </Section>
       )}
 
+      {d.situational.length > 0 && (
+        <Section title={`Situational (${d.situational.length})`}>
+          {/* NOT included in the totals above — these apply only in their listed
+              situation, so the player applies them at the table. */}
+          <div className="flex flex-col gap-1">
+            {d.situational.map((c, i) => (
+              <div
+                key={`${c.source}-${c.stat}-${i}`}
+                className="flex items-baseline justify-between gap-2 font-ui text-sm"
+              >
+                <span className="text-parchment">{c.source}</span>
+                <span className="text-gold-400/90">
+                  {c.summary} <span className="text-parchment/60">{c.condition}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {cfg && (
         <Section title="Spells">
           <div className="mb-2 flex flex-wrap gap-2">

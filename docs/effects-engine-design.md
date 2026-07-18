@@ -116,9 +116,10 @@ automation**. Persistent damage, escape-grapple, sustained spells all live in th
 > not guess — `proficiency` → `rankGrants` (re-deriving a modifier from a raised rank is the
 > content-blocked orchestration), `grant` → `grants` (no senses/resistances field on the model
 > yet), `rollAdjust` → `rollAdjusts` (consumed at Layer 2). Predicates evaluate against the
-> character's `staticTags` unioned with caller-supplied combat tags — *one evaluator, two
-> contexts*. **Not yet built:** the `set`/override full-stat mode (polymorph; validation-run
-> item), grant/rollAdjust *behavior*, combat-tag production, the `collectSheetEffects`→
+> character's `staticTags` unioned with `rollTags` (the opposed context of a roll) and any
+> caller-supplied combat tags — *one evaluator, N producers*. **Not yet built:** the
+> `set`/override full-stat mode (polymorph; validation-run
+> item), grant/rollAdjust *behavior*, combat-state tag production, the `collectSheetEffects`→
 > `PassiveEffect[]` ingest refactor, and retiring the duplicate builder/pathbuilder
 > orchestration (all still additive-blocked or their own slice).
 
@@ -923,9 +924,20 @@ section on the page. Slice-1 fields were extracted to `features/authoring/fields
   at ingest), but the editor's modifier target offers "all saves"/"all skills", which fan the one
   effect into one-per-stat (copying its type/value) on select — so "+1 to all saves" is one action,
   three stored effects.
-- **CONDITIONAL effects (`when`) remain deferred** (owner: "coming soon") — the collect path skips
-  any effect with a `when`, and the "against \<trait/damage-type\>" scope needs the deferred combat
-  tags (decision 3). "+1 to saves against magic" is a conditional, not a targeting gap.
+- **Conditional authoring — the vocabulary exists, no PRODUCER does (2026-07-18).** Creature tags
+  landed (decision 3, partially resolved) and the sheet now *displays* conditional modifiers as
+  **Situational** instead of discarding them: `collectPassiveSheetEffects` returns them in
+  `SheetEffects.conditional` with `describePredicate` prose ("+1 status to Will · vs undead"),
+  never folded into a total. But **no producer emits a `when` today** — measured on the current
+  corpus, 0 of 6,116 feats carry one, because `foundry.ts` reports every conditional element as
+  `needs-combat-tags` and the authoring UI has no `when` control. So the Situational section is
+  correct, wiring-tested, and **dormant**. Two ways to switch it on, either sufficient:
+  1. **Map Foundry predicates** when *every* leaf is expressible in our vocabulary (keep
+     reporting `needs-combat-tags` otherwise). Ceiling ≈171 elements — `target:trait` 112,
+     `origin:trait` 21, `self:trait` 38 — realistically fewer, since many predicates mix an
+     expressible leaf with a numeric or `action:` one.
+  2. **A `when` control in the effect editor**, which makes homebrew conditionals authorable
+     immediately and doesn't depend on Foundry's encoding at all.
 
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
@@ -1049,6 +1061,31 @@ senses/resistances — passed UNCHANGED through the rewired pipeline. That is th
    Layer 2 automation tree (whose `branch` conditions are boolean *expressions*, a separate
    mechanism) all work without the combat tags. Deferring combat tags only defers passives
    that hinge on momentary combat state (flanking, off-guard).
+
+   **PARTIALLY RESOLVED 2026-07-18 — creature tags landed.** `predicate.ts` now carries a
+   second producer, `rollTags(ctx)`, for the *opposed* context of a roll, in three
+   namespaces: `target:trait:<t>` (the creature you roll against), `origin:trait:<t>` (the
+   creature behind an incoming effect), and `opponent:trait:<t>` — **either of the above**.
+   `rollTags` emits the precise namespace *and* the union for every creature present.
+
+   *Why the union.* Rules prose says "against undead" and almost never states the direction,
+   because the direction is already fixed by **which stat the effect targets** — a `when` on
+   `will` is inherently incoming, one on `attack` inherently outgoing. So the selector carries
+   direction and the predicate only answers "who is the other creature". Authors write
+   `opponent:`; `target:`/`origin:` remain for content that genuinely cares, and are what the
+   Foundry corpus encodes (it separates the two), so ingest can map without reinterpreting.
+
+   **Still deferred, and NOT blocked on this module — blocked on the content model:**
+   - *"against effects with `<trait>`"* needs `EffectTemplate` (automation.ts) to carry
+     `traits`. It does not. Small additive change.
+   - *"against effects that would cause `<condition>`"* needs a **condition vocabulary**,
+     which core does not have at all — nothing declares what an effect inflicts, so such a
+     tag would have nothing to read. This is the largest of the three and needs the condition
+     rules text supplied (rules-from-source rule).
+   - Momentary combat state (flanking, off-guard, stances) — still unproduced; `rollTags`
+     passes host `extra` tags through verbatim as the seam for it.
+
+   **Nothing produces a `when` yet** — see the note under "Conditional authoring" below.
 4. **Spell-slot modeling → general counter primitive + specialized spellcasting layer.** The
    counter is the primitive; spellcasting resources (focus points, per-rank slots,
    prepared vs spontaneous) are a specialized layer the same spend/restore verbs target.

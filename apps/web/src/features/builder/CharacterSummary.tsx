@@ -163,6 +163,29 @@ export function CharacterSummary() {
           </ul>
         </div>
       )}
+
+      {d.situational.length > 0 && (
+        <div>
+          <div className="mb-1 font-ui text-[10px] uppercase tracking-widest text-parchment/60">
+            Situational
+          </div>
+          {/* Excluded from the totals on purpose — they apply only when their
+              condition is met, so the player adds them at the table. */}
+          <ul className="flex flex-col gap-1">
+            {d.situational.map((c, i) => (
+              <li
+                key={`${c.source}-${c.stat}-${i}`}
+                className="flex items-baseline justify-between gap-2 rounded border border-gold-500/15 bg-midnight-800/40 px-2 py-1 font-ui text-xs"
+              >
+                <span className="text-gold-400/90">{c.source}</span>
+                <span className="text-right text-parchment/70">
+                  {c.summary} <span className="text-parchment/50">{c.condition}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </aside>
   );
 }

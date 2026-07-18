@@ -351,8 +351,10 @@ describe("collectPassiveSheetEffects", () => {
     ]);
   });
 
-  it("REFUSES a conditional effect — there is no tag context at derivation time", () => {
-    // Applying it unconditionally would turn a situational bonus into a permanent one.
+  it("NEVER folds a conditional modifier into a total — but surfaces it for display", () => {
+    // Folding it in would turn a situational bonus into a permanent one (a wrong
+    // sheet). Discarding it would hide a bonus the player really has. So: shown,
+    // not summed.
     const e = collectPassiveSheetEffects(
       [
         [
@@ -361,14 +363,77 @@ describe("collectPassiveSheetEffects", () => {
             target: "will",
             bonusType: "status",
             value: lit(1),
-            when: { tag: "self:trait:elf" },
+            when: { tag: "opponent:trait:undead" },
           },
         ],
       ],
       ctx,
+      ["Blessed One"],
     );
     expect(e.statModifiers.size).toBe(0);
+    expect(e.applied).toEqual([]);
+    expect(e.conditional).toEqual([
+      { source: "Blessed One", stat: "will", summary: "+1 status to Will", condition: "vs undead" },
+    ]);
+    // It is displayed, so it is NOT an unexplained omission.
+    expect(e.skipped).toBe(0);
+  });
+
+  it("renders a negative conditional modifier with its sign", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "ac", bonusType: "circumstance", value: lit(-2), when: { tag: "opponent:trait:dragon" } }]],
+      ctx,
+      ["Cursed"],
+    );
+    expect(e.conditional[0]).toEqual({
+      source: "Cursed",
+      stat: "ac",
+      summary: "-2 circumstance to AC",
+      condition: "vs dragon",
+    });
+  });
+
+  it("still COUNTS a conditional effect that has no display form", () => {
+    // A conditional grant/rollAdjust/proficiency has nowhere to be shown on this
+    // bag, so it stays an honest `skipped` rather than a silent drop.
+    const e = collectPassiveSheetEffects(
+      [
+        [
+          { kind: "grant", grant: { type: "sense", name: "darkvision" }, when: { tag: "opponent:trait:undead" } },
+          { kind: "rollAdjust", target: "will", adjust: { type: "degree", direction: "improve" }, when: { tag: "opponent:trait:undead" } },
+        ],
+      ],
+      ctx,
+    );
+    expect(e.conditional).toEqual([]);
+    expect(e.skipped).toBe(2);
+  });
+
+  it("counts a conditional modifier whose VALUE will not evaluate, rather than showing a guess", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "will", bonusType: "status", value: { kind: "var", name: "nonsense" }, when: { tag: "opponent:trait:undead" } }]],
+      ctx,
+    );
+    expect(e.conditional).toEqual([]);
     expect(e.skipped).toBe(1);
+  });
+
+  it("drops a conditional modifier that evaluates to zero", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "will", bonusType: "status", value: lit(0), when: { tag: "opponent:trait:undead" } }]],
+      ctx,
+    );
+    expect(e.conditional).toEqual([]);
+    expect(e.skipped).toBe(0);
+  });
+
+  it("leaves `conditional` empty when nothing is conditional", () => {
+    const e = collectPassiveSheetEffects(
+      [[{ kind: "modifier", target: "will", bonusType: "status", value: lit(1) }]],
+      ctx,
+    );
+    expect(e.conditional).toEqual([]);
+    expect(e.statModifiers.get("will")?.[0]?.value).toBe(1);
   });
 
   it("counts grants and rollAdjusts — the derived sheet has no slot for them", () => {

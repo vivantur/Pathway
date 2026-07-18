@@ -339,8 +339,11 @@ describe("grantExtractor — senses + speeds", () => {
   it("fans a COMMA-separated compound resistance list (Skeletal Resistance), not just the first", () => {
     // A bare comma is a list separator, not a stop — else the list truncates to "cold".
     const ex = grants("You gain resistance 2 to cold, electricity, fire, piercing, and slashing.");
-    expect(ex.map((e) => e.draft.grant.damageType)).toEqual(["cold", "electricity", "fire", "piercing", "slashing"]);
-    expect(ex.every((e) => (e.draft.grant.value as { value: number }).value === 2)).toBe(true);
+    // `DraftEffect.grant` is `unknown` on purpose (a draft may be nonsense), so a
+    // test that reads into it narrows explicitly.
+    const asGrant = (g: unknown) => g as { damageType: string; value: { value: number } };
+    expect(ex.map((e) => asGrant(e.draft.grant).damageType)).toEqual(["cold", "electricity", "fire", "piercing", "slashing"]);
+    expect(ex.every((e) => asGrant(e.draft.grant).value.value === 2)).toBe(true);
   });
 
   it("reads a weakness in both orderings and canonicalizes the material ('cold iron' → cold-iron)", () => {
