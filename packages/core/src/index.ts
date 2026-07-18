@@ -148,3 +148,10 @@ export * from './background.js';
 // Feat entity (fourth content slice). Display/lookup scope; `rules` carried as
 // dormant effect feedstock for the future effect engine (never interpreted here).
 export * from './feat.js';
+
+// The Pathbuilder 2e boundary: the format description plus the readers that turn a
+// stored build into a `ResolvedCharacter`. Pathbuilder JSON is the STORAGE format
+// (the bot's `characters.pathbuilder_data`), not just an import format, so this is
+// the one reader every consumer shares — and it is what lets a bot character reach
+// the effects engine at all.
+export * from './pathbuilder.js';

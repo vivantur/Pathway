@@ -47,12 +47,14 @@ this section has been wrong before, and a stale status is worse than none.)*
   proven against it: the web app typechecks/builds against `dist`, and a CommonJS
   `require('@pathway/core')` returns working rules math. ESM was never the obstacle
   (Node ≥22.12 `require(esm)` works); shipping raw `.ts` was.
-- ✅ **Build core** — no longer three slices; **27 modules, 478 tests**. Roughly:
+- ✅ **Build core** — no longer three slices; **29 modules, 643 tests**. Roughly:
   - *scalar rules* — `stats.ts`, `proficiency.ts`, `derived.ts`, `companion.ts`
   - *content schemas* (Zod) — `content.ts` envelope + `spell` `ancestry` `background`
     `feat`
   - *character model* — `character.ts` (`ResolvedCharacter`, the engine's read
-    surface) + `selectors.ts` (the canonical selector vocabulary)
+    surface) + `selectors.ts` (the canonical selector vocabulary) + `pathbuilder.ts`
+    (the Pathbuilder boundary: the STORAGE format's types + the readers that reach
+    `ResolvedCharacter`; it is what lets a bot character feed the effects engine)
   - *effects Layer 1* — `expr.ts` (sandboxed value AST, no `eval`), `predicate.ts`,
     `passive.ts` (`PassiveEffect` + apply/collect/traits)
   - *effects Layer 2* — `automation.ts`, `checks.ts`, `degree.ts`, `damage.ts`,
@@ -77,6 +79,18 @@ this section has been wrong before, and a stale status is worse than none.)*
   character-aware part (decoding Pathbuilder's `2/4/6/8` vs native `1/2/3/4`
   proficiency conventions). That is a legitimate adapter. Remaining: the rest of the
   bot's rules modules, opportunistically.
+
+  **The automation host landed 2026-07-18** — `rules/automation.js` (pure: builds an
+  `ExecutionContext` from a stored character, runs core's interpreter, renders the
+  log) and `state/automation.js` (impure: seeds, and writes mutations back). So the
+  bot CAN now execute a Layer-2 tree. Two honest limits, both deliberate:
+  - **Only damage/healing and counters can land on a character.** Temp HP and
+    conditions live on a COMBATANT in an encounter, not on a character, so those
+    mutations come back in `skipped` with a reason. Combatant-scoped apply belongs
+    with targeting.
+  - **No content carries an automation tree yet.** The corpus is all Layer-1
+    passives and `remap-effects.mjs` only emits those, so the host currently runs
+    hand-authored trees. Content supplying trees is the decisions fold-in.
 - 🔶 **`packages/db`** — no longer a skeleton: a content store plus `spells`,
   `feats`, `ancestries`, `backgrounds` (15 tests). But **nothing outside `packages/db`
   imports it yet** — the web app still reads the JSON datasets in
@@ -96,9 +110,20 @@ Still impure, despite the bot's own CLAUDE.md declaring `rules/` pure: `calendar
 `lib/storage`, and `rules/combatV2/render.js` imports `discord.js`. Apply the same
 split when each is touched — nothing can move into an I/O-free core before it.
 
-`apps/bot` is otherwise **frozen for architecture**: don't restructure it or add new
-rules logic to it. Carve-out: targeted hotfixes to live bugs (crashes, wrong rules,
-data loss) are fine — "frozen" means "don't restructure," not "don't fix."
+**`apps/bot` was UN-FROZEN by the project owner on 2026-07-18.** It had been "frozen
+for architecture" (no restructuring, no new rules logic, hotfixes only). That rule is
+retired: the effects engine has to be consumed by the bot, and that is not possible
+without changing the bot. Restructuring it toward core is now expected work.
+
+What the un-freezing does NOT license:
+- **Rules logic still belongs in `packages/core`.** Un-frozen means the bot may be
+  reshaped to CONSUME core, not that it may grow its own rules again. A new
+  computation in `apps/bot/src/rules/` is still the bug this repo is organized to
+  prevent — the legitimate pattern is an adapter (see `pf2eMath.js`, which decodes
+  Pathbuilder's proficiency convention and delegates the arithmetic).
+- **Database structure.** The live bot on `main` expects the live DB shape, and one
+  Supabase project serves both. Schema changes need their own plan; code changes on
+  `test` do not put the live bot at risk, but a migration would.
 
 ## Stack
 
@@ -253,7 +278,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 478 · bot 209 · web 61 · db 15)
+npm test                  # ALL workspace tests (core 643 · bot 241 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only
