@@ -34,6 +34,9 @@ const EffectReviewPage = lazy(() =>
 const EffectAuthorPage = lazy(() =>
   import('@/routes/EffectAuthorPage').then((m) => ({ default: m.EffectAuthorPage })),
 );
+const ConditionCoveragePage = lazy(() =>
+  import('@/routes/ConditionCoveragePage').then((m) => ({ default: m.ConditionCoveragePage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +60,21 @@ export const router = createBrowserRouter([
         // and what it could not. Unlinked from the nav. Gated the same way as the
         // admin dashboard — its ~3 MB ingest report is diagnostic data, not player
         // content.
+        // Condition coverage: what each condition contributes to a sheet and what it
+        // does that we cannot express. Gated like its siblings, though its data is
+        // core's own table rather than an ingest sidecar.
+        path: 'admin/condition-coverage',
+        element: (
+          <RequireAuth>
+            <RequireAdmin>
+              <Suspense fallback={<div className="px-4 py-12 text-center text-parchment/60">Loading…</div>}>
+                <ConditionCoveragePage />
+              </Suspense>
+            </RequireAdmin>
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'admin/effect-coverage',
         element: (
           <RequireAuth>

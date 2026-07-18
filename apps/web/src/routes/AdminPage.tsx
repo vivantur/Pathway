@@ -66,6 +66,11 @@ function EffectEnginePanel() {
       title: 'Effect authoring',
       body: "Build an entity's effects by hand — the homebrew editor, validated live against the schema.",
     },
+    {
+      to: '/admin/condition-coverage',
+      title: 'Condition coverage',
+      body: 'What each PF2e condition contributes to a sheet, and what it does that we cannot yet express.',
+    },
   ];
   return (
     <Panel title="Effect engine" subtitle="Admin-only diagnostics over auto-mapped content.">
