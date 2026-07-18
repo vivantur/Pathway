@@ -32,6 +32,7 @@ import {
   resolveChoiceEffects,
   stackModifiers,
   type EffectChoice,
+  type ConditionalModifier,
   type EffectProvenance,
   type AttackCategory,
   type CharacterTraits,
@@ -728,6 +729,13 @@ export interface DerivedCharacter {
   // `AppliedEffect` was renamed `EffectProvenance` in core — the doc-canonical name
   // now belongs to the Layer-1.5 runtime shape.
   effectNotes: EffectProvenance[];
+  /**
+   * SITUATIONAL modifiers — real bonuses that apply only in a context the sheet
+   * cannot know ("+1 status to Will, vs undead"). Deliberately absent from every
+   * total above: folding one in would make a conditional bonus permanent. Shown
+   * so the player can apply it at the table.
+   */
+  situational: ConditionalModifier[];
   /** Special senses granted by ancestry/heritage (darkvision, scent, …). */
   senses: GrantedSense[];
   /** Damage resistances granted by ancestry/heritage, resolved at this level. */
@@ -1060,6 +1068,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       unarmoredDefense,
     },
     effectNotes: [...effects.applied, ...weaponSpecNotes],
+    situational: effects.conditional,
     senses: traits.senses,
     resistances: traits.resistances,
   };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   automationSchema,
+  effectTemplateSchema,
   runAutomation,
   runButton,
   type AutomationNode,
@@ -9,6 +10,7 @@ import {
   type ExecutionContext,
   type Outcome,
 } from "./automation.js";
+import { evaluatePredicate, rollTags } from "./predicate.js";
 import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
 import { autoHeightenRank } from "./heightening.js";
@@ -704,6 +706,21 @@ describe("applyEffect / removeEffect", () => {
     tickTiming: { when: "end", whose: "bearer" },
     passives: [{ kind: "modifier", target: "will", bonusType: "status", value: lit(-1) }],
   };
+
+  it("carries the effect's own traits, which a `when` predicate reads as effect:trait:", () => {
+    // The declaration that makes "+1 to saves against death effects" representable:
+    // without it there is nothing for such a predicate to test. Optional, so a
+    // template that declares none still validates — absence is not evidence.
+    const withTraits: EffectTemplate = { ...frightened, traits: ["emotion", "fear", "mental"] };
+    expect(effectTemplateSchema.safeParse(withTraits).success).toBe(true);
+    expect(effectTemplateSchema.safeParse(frightened).success).toBe(true);
+    expect(effectTemplateSchema.safeParse({ ...frightened, traits: [""] }).success).toBe(false);
+
+    // And the traits reach a tag set that a predicate resolves against.
+    const tags = rollTags({ effect: { traits: withTraits.traits } });
+    expect(evaluatePredicate({ tag: "effect:trait:fear" }, tags)).toBe(true);
+    expect(evaluatePredicate({ tag: "effect:trait:death" }, tags)).toBe(false);
+  });
 
   it("emits an applyEffect mutation carrying the template, defaulting to the current target", () => {
     const out = runAutomation([{ kind: "applyEffect", effect: frightened }], ctx({ targets: [target], rng: seqRng(1) }));

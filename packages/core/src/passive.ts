@@ -30,7 +30,7 @@ import type { ResolvedCharacter } from "./character.js";
 import { characterScope } from "./character.js";
 import { evaluate, exprSchema, type Expr } from "./expr.js";
 import { stackModifiers, type BonusType, type EffectContext, type Modifier, type SheetEffects } from "./effects.js";
-import { predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
+import { describePredicate, predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
 import type { ProficiencyRank } from "./proficiency.js";
 import { isSelector, isSkillSlug, type Selector } from "./selectors.js";
 import { RANK_LABEL } from "./stats.js";
@@ -277,11 +277,13 @@ function selectorLabel(target: Selector): string {
  * builder derives from. `itemEffects` is one effect array per chosen feat/feature;
  * `labels[i]` names item `i` for the attributed `applied` list.
  *
+ * CONDITIONAL effects (`when`) are never folded into a total — predicates evaluate
+ * against a roll context and there is none at derivation time, so applying one
+ * would turn a situational bonus into a permanent one. A conditional `modifier` is
+ * instead SURFACED in `conditional` for display; conditional effects of the other
+ * kinds have no display form here and are counted in `skipped`.
+ *
  * WHAT IT DELIBERATELY DOES NOT DO — each counted in `skipped`, never guessed:
- *   • CONDITIONAL effects (`when`). Predicates evaluate against a tag set, and there
- *     is no character or combat context yet at derivation time — that is the whole
- *     point of this being the PRE-derivation collector. Applying a conditional
- *     unconditionally would turn a situational bonus into a permanent one.
  *   • `grant` (senses/resistances/speeds) — the derived sheet has no field for them.
  *   • `rollAdjust` — Layer 2 consumes it at a check; it is not a sheet number.
  * `note` effects are display text, not sheet numbers: ignored here, not counted.
@@ -310,6 +312,7 @@ export function collectPassiveSheetEffects(
     perceptionRank: null,
     statModifiers: new Map(),
     applied: [],
+    conditional: [],
     skipped: 0,
   };
 
@@ -324,7 +327,30 @@ export function collectPassiveSheetEffects(
     if (!Array.isArray(effects)) return;
 
     for (const effect of effects) {
+      // A CONDITIONAL effect can never change a sheet TOTAL — predicates evaluate
+      // against a roll context, and this is the pre-derivation collector, so there
+      // isn't one. But "cannot fold it in" is not "throw it away": a situational
+      // `modifier` is carried to `conditional` with its condition rendered, because
+      // that is exactly how a player uses one (read it, apply it at the table).
+      // The other kinds have no display form here, so they stay counted.
       if (effect.when !== undefined) {
+        if (effect.kind === "modifier") {
+          let value: number;
+          try {
+            value = evaluate(effect.value, { vars: collectVars(ctx) }, "number") as number;
+          } catch {
+            out.skipped += 1;
+            continue;
+          }
+          if (value === 0) continue;
+          out.conditional.push({
+            source,
+            stat: effect.target,
+            summary: `${value >= 0 ? "+" : ""}${value} ${effect.bonusType} to ${selectorLabel(effect.target)}`,
+            condition: describePredicate(effect.when),
+          });
+          continue;
+        }
         out.skipped += 1;
         continue;
       }

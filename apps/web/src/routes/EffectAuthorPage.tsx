@@ -5,7 +5,7 @@ import { GildedRule } from '@/components/ui/GildedRule';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import {
   inputCls, cap, withId, strip, nextId, RANK_LABELS, EFFECT_KINDS, RESIST_TYPES, BROADCAST,
-  EffectForm, validatePassive, type Draft,
+  PREDICATE_TRAITS, EFFECT_TRAITS, EffectForm, validatePassive, type Draft,
 } from '@/features/authoring/fields';
 import { AutomationTree, stripDeep } from '@/features/authoring/AutomationEditor';
 
@@ -258,10 +258,18 @@ export function EffectAuthorPage() {
       <datalist id="resist-types">
         {RESIST_TYPES.map((t) => <option key={t} value={t} />)}
       </datalist>
+      <datalist id="predicate-traits">
+        {PREDICATE_TRAITS.map((t) => <option key={t} value={t} />)}
+      </datalist>
+      <datalist id="effect-traits">
+        {EFFECT_TRAITS.map((t) => <option key={t} value={t} />)}
+      </datalist>
 
       <p className="mt-8 text-xs text-parchment/40">
         Deliberately not yet in the tree editor: spell heightening, an applyEffect's nested
         buttons/granted actions, and capture. The EffectTemplate covers name + duration + passives.
+        Conditions build a flat list of trait terms; a nested predicate loaded from existing
+        content is shown read-only rather than flattened.
       </p>
     </div>
   );

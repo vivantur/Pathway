@@ -8,6 +8,7 @@
 // unchanged when the input flipped from Foundry's rule elements (read at runtime) to
 // our own PassiveEffects (mapped at ingest) — same feats, same sheet.
 
+import type { PassiveEffect } from '@pathway/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { findFeat, loadDataset } from '@/features/builder/data';
 import { characterEffects, characterTraits, deriveCharacter, featChoicePrompts, pendingFeatChoices } from './rules';
@@ -192,5 +193,34 @@ describe('feat effects on the derived sheet', () => {
     const base = deriveCharacter(fighter()).perception;
     const withFeat = deriveCharacter({ ...fighter(), ancestryFeatId: 'superior-sight' }).perception;
     expect(withFeat - base).toBe(2);
+  });
+
+  // NO FEAT IN THE DATASET IS CONDITIONAL YET. Every conditional rule element is
+  // reported `needs-combat-tags` at ingest and never mapped, so nothing currently
+  // produces a `when` — the sheet's Situational section is correct but dormant until
+  // a producer exists (the Foundry predicate mapping, or a `when` control in the
+  // authoring UI). This test therefore INJECTS a condition onto a real feat, so the
+  // wiring is proven now rather than assumed to work when the first producer lands.
+  it('shows a conditional modifier as situational instead of folding it into a total', () => {
+    const fleet = findFeat('fleet');
+    if (!fleet) throw new Error('fixture feat "fleet" is missing from the dataset');
+    const original = fleet.effects;
+    // Fleet is a flat +5 land Speed; gating it must move it OFF the Speed total.
+    const unconditional = deriveCharacter({ ...fighter(), classFeatId: 'fleet' });
+    expect(unconditional.speed - deriveCharacter(fighter()).speed).toBe(5);
+    expect(unconditional.situational).toEqual([]);
+
+    try {
+      fleet.effects = ((original ?? []) as PassiveEffect[]).map((e) =>
+        e.kind === 'modifier' ? { ...e, when: { tag: 'opponent:trait:undead' } } : e,
+      );
+      const conditional = deriveCharacter({ ...fighter(), classFeatId: 'fleet' });
+      expect(conditional.speed).toBe(deriveCharacter(fighter()).speed); // NOT folded in
+      expect(conditional.situational).toEqual([
+        { source: 'Fleet', stat: 'speed:land', summary: '+5 untyped to Speed', condition: 'vs undead' },
+      ]);
+    } finally {
+      fleet.effects = original;
+    }
   });
 });

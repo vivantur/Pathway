@@ -106,6 +106,27 @@ export interface EffectProvenance {
   summary: string;
 }
 
+/**
+ * A modifier that DOES apply, but only in a situation the sheet cannot know —
+ * "+1 circumstance to Will, vs undead". It is deliberately NOT folded into any
+ * total: there is no roll context at derivation time, and a situational bonus
+ * shown as permanent is a wrong sheet.
+ *
+ * It is carried rather than counted because a player uses a situational bonus by
+ * READING it and applying it at the table. `condition` is display prose from
+ * `describePredicate`; the predicate itself remains the meaning.
+ */
+export interface ConditionalModifier {
+  /** The feat/feature that granted it. */
+  source: string;
+  /** The affected stat key — same vocabulary as `EffectProvenance.stat`. */
+  stat: string;
+  /** The modifier itself, e.g. "+1 circumstance to Will". */
+  summary: string;
+  /** When it applies, e.g. "vs undead". */
+  condition: string;
+}
+
 export interface SheetEffects {
   /** Total flat HP bonus (summed untyped `hp` FlatModifiers). */
   hpBonus: number;
@@ -126,6 +147,11 @@ export interface SheetEffects {
   statModifiers: Map<string, Modifier[]>;
   /** Every applied effect, attributed to its source, for provenance display. */
   applied: EffectProvenance[];
+  /**
+   * Situational modifiers — real, displayed, never folded into a total. See
+   * `ConditionalModifier`. Empty when nothing conditional was collected.
+   */
+  conditional: ConditionalModifier[];
   /**
    * Count of rule elements that would affect the sheet but fall outside this
    * increment's scope (choice-driven, unparseable value, strikes, ability/

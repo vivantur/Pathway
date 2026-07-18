@@ -2,11 +2,14 @@ import { useState } from 'react';
 import {
   passiveEffectSchema,
   parseExpr,
+  describePredicate,
+  tagSlug,
   FIXED_SELECTORS,
   SKILL_SLUGS,
   SAVE_SELECTORS,
   DAMAGE_TYPES,
   DAMAGE_MATERIALS,
+  type Predicate,
 } from '@pathway/core';
 
 /**
@@ -156,8 +159,218 @@ export function ValueField({ value, onValue }: { value: unknown; onValue: (v: un
   );
 }
 
+// ── the `when` predicate ──────────────────────────────────────────────────────
+//
+// A FLAT builder over core's predicate tree: a list of trait terms, each optionally
+// negated, joined by all/any. That is deliberately less than the full grammar (it
+// cannot nest, e.g. `all: [A, any: [B, C]]`), and it is enough for every conditional
+// shape in the corpus — the tag vocabulary today is only creature and self traits.
+//
+// The honesty cost is paid explicitly: `readPredicate` returns null for any tree the
+// flat builder cannot represent, and the field then shows it READ-ONLY rather than
+// flattening it. Silently dropping a nesting level would corrupt the author's
+// condition, which is the same failure as mapping an effect by dropping a condition.
+// A full recursive editor is on the roadmap (docs, "Deferred").
+
+export type PredicateScope = 'opponent' | 'target' | 'origin' | 'self' | 'effect';
+export interface PredicateTerm {
+  scope: PredicateScope;
+  trait: string;
+  negate: boolean;
+}
+
+const SCOPE_LABELS: { scope: PredicateScope; label: string }[] = [
+  { scope: 'opponent', label: 'vs a creature with' },
+  { scope: 'target', label: 'vs a creature you target with' },
+  { scope: 'origin', label: 'vs effects from a creature with' },
+  { scope: 'effect', label: 'vs an effect with' },
+  { scope: 'self', label: 'when you have' },
+];
+const SCOPES = SCOPE_LABELS.map((s) => s.scope);
+/** `effect:` names a KIND of effect; the others name a creature. Drives which suggestions show. */
+const isEffectScope = (s: PredicateScope) => s === 'effect';
+
+/**
+ * Creature/self traits observed in the Foundry corpus's own predicates — a datalist
+ * of SUGGESTIONS, never a constraint (free text still authors fine). Derived from the
+ * data rather than written from memory, per the rules-from-source rule. Two entries
+ * are excluded on purpose: `contruct` (a misspelling in their data) and a
+ * `{item|flags…}` template artifact, neither of which is a trait.
+ */
+export const PREDICATE_TRAITS = [
+  'aberration', 'air', 'amphibious', 'animal', 'aquatic', 'astral', 'beast', 'celestial',
+  'chaotic', 'cleric', 'construct', 'demon', 'devil', 'dinosaur', 'dragon', 'earth',
+  'elemental', 'elf', 'enchanted', 'environmental', 'ethereal', 'fey', 'fiend', 'fire',
+  'fungus', 'giant', 'goblin', 'good', 'hag', 'haunt', 'holy', 'hryngar', 'human',
+  'humanoid', 'incorporeal', 'kaiju', 'kami', 'magical', 'metal', 'monitor', 'ooze',
+  'orc', 'plant', 'possessed', 'sakhil', 'spirit', 'sprite', 'stone', 'strix', 'trap',
+  'undead', 'unholy', 'vampire', 'water', 'wood',
+];
+
+/**
+ * Traits an EFFECT can carry (`effect:trait:` terms) — the raw trait vocabulary of the
+ * spell corpus, which is where effect traits actually live. Also suggestions only.
+ *
+ * Deliberately unfiltered. It includes entries nobody would write a save bonus against
+ * (`concentrate`, `uncommon`, class names), because the alternative is me deciding which
+ * traits are "really" effect traits — a rules judgement from memory, which the
+ * rules-from-source rule forbids. Noise in a filter-as-you-type list costs little;
+ * silently dropping a legitimate trait would cost more.
+ */
+export const EFFECT_TRAITS = [
+  'acid', 'air', 'animist', 'attack', 'auditory', 'aura', 'bard', 'beast', 'cantrip',
+  'champion', 'chaotic', 'cleric', 'cold', 'composition', 'concentrate', 'consecration',
+  'contingency', 'curse', 'cursebound', 'darkness', 'death', 'detection', 'disease',
+  'dream', 'druid', 'earth', 'eidolon', 'electricity', 'emotion', 'evil', 'exploration',
+  'extradimensional', 'fear', 'fire', 'focus', 'force', 'fortune', 'fungus', 'good',
+  'grave', 'healing', 'hex', 'holy', 'illusion', 'incapacitation', 'incarnate',
+  'incorporeal', 'light', 'linguistic', 'magus', 'manipulate', 'mental', 'metal',
+  'misfortune', 'monk', 'morph', 'move', 'mythic', 'necromancer', 'nonlethal', 'olfactory',
+  'oracle', 'plant', 'poison', 'polymorph', 'possession', 'prediction', 'psychic', 'ranger',
+  'rare', 'revelation', 'sanctified', 'scrying', 'shadow', 'sleep', 'sonic', 'sorcerer',
+  'spellshape', 'spirit', 'stance', 'structure', 'subtle', 'summon', 'summoner',
+  'teleportation', 'trial', 'true-name', 'uncommon', 'unholy', 'unique', 'visual',
+  'vitality', 'void', 'water', 'witch', 'wizard', 'wood',
+];
+
+/** Build a predicate from flat terms. Blank traits are ignored; no terms ⇒ unconditional. */
+export function buildPredicate(terms: readonly PredicateTerm[], join: 'all' | 'any'): Predicate | undefined {
+  const leaves = terms
+    .filter((t) => t.trait.trim())
+    .map((t): Predicate => {
+      const leaf: Predicate = { tag: `${t.scope}:trait:${tagSlug(t.trait)}` };
+      return t.negate ? { not: leaf } : leaf;
+    });
+  if (leaves.length === 0) return undefined;
+  if (leaves.length === 1) return leaves[0]!;
+  return join === 'all' ? { all: leaves } : { any: leaves };
+}
+
+/** One flat leaf (`tag` or `not`-of-`tag`) back into a term, or null if it isn't one. */
+function readTerm(node: unknown): PredicateTerm | null {
+  const n = node as { tag?: unknown; not?: unknown };
+  if (n && typeof n === 'object' && 'not' in n) {
+    const inner = readTerm(n.not);
+    return inner && !inner.negate ? { ...inner, negate: true } : null; // no double negation
+  }
+  if (!n || typeof n !== 'object' || typeof n.tag !== 'string') return null;
+  const parts = n.tag.split(':');
+  if (parts.length !== 3 || parts[1] !== 'trait') return null;
+  const scope = parts[0] as PredicateScope;
+  if (!SCOPES.includes(scope) || !parts[2]) return null;
+  return { scope, trait: parts[2], negate: false };
+}
+
+/**
+ * Read a predicate back into flat terms for editing. Returns `null` when the tree is
+ * beyond the flat builder — the caller must then show it read-only rather than edit
+ * it. An absent predicate reads as an empty (unconditional) term list.
+ */
+export function readPredicate(pred: unknown): { terms: PredicateTerm[]; join: 'all' | 'any' } | null {
+  if (pred === undefined || pred === null) return { terms: [], join: 'any' };
+  const p = pred as { all?: unknown; any?: unknown };
+  const group = Array.isArray(p.all) ? p.all : Array.isArray(p.any) ? p.any : null;
+  if (group === null) {
+    const single = readTerm(pred);
+    return single ? { terms: [single], join: 'any' } : null;
+  }
+  const terms: PredicateTerm[] = [];
+  for (const child of group) {
+    const t = readTerm(child);
+    if (!t) return null; // a nested group — not representable here
+    terms.push(t);
+  }
+  return { terms, join: Array.isArray(p.all) ? 'all' : 'any' };
+}
+
+/**
+ * The `when` editor. Shows the condition as the PLAYER will read it (core's
+ * `describePredicate`, the same prose the sheet renders), so an author can see that
+ * "vs undead or fiend" is what they built.
+ */
+export function PredicateField({ value, onChange }: { value: unknown; onChange: (v: Predicate | undefined) => void }) {
+  const parsed = readPredicate(value);
+  const [terms, setTerms] = useState<PredicateTerm[]>(() => parsed?.terms ?? []);
+  const [join, setJoin] = useState<'all' | 'any'>(() => parsed?.join ?? 'any');
+
+  // Beyond the flat builder — show it, refuse to mangle it.
+  if (parsed === null) {
+    return (
+      <div className="rounded border border-gold/15 bg-midnight-950/40 px-2 py-1.5">
+        <div className="text-[11px] text-parchment/50">
+          condition: too complex to edit here (nested) — left untouched
+        </div>
+        <pre className="mt-1 overflow-auto text-[10px] text-parchment/60">{JSON.stringify(value)}</pre>
+      </div>
+    );
+  }
+
+  const push = (nextTerms: PredicateTerm[], nextJoin: 'all' | 'any' = join) => {
+    setTerms(nextTerms);
+    setJoin(nextJoin);
+    onChange(buildPredicate(nextTerms, nextJoin));
+  };
+  const patch = (i: number, p: Partial<PredicateTerm>) => push(terms.map((t, j) => (j === i ? { ...t, ...p } : t)));
+  const built = buildPredicate(terms, join);
+
+  return (
+    <div className="flex flex-col gap-1">
+      {terms.map((t, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-1.5">
+          {i > 0 && (
+            <select className={`${inputCls} w-16`} value={join} onChange={(e) => push(terms, e.target.value as 'all' | 'any')}>
+              <option value="any">or</option>
+              <option value="all">and</option>
+            </select>
+          )}
+          <select className={inputCls} value={t.scope} onChange={(e) => patch(i, { scope: e.target.value as PredicateScope })}>
+            {SCOPE_LABELS.map((s) => <option key={s.scope} value={s.scope}>{s.label}</option>)}
+          </select>
+          <button
+            onClick={() => patch(i, { negate: !t.negate })}
+            className={`rounded border px-1.5 py-0.5 text-xs ${t.negate ? 'border-gold/50 bg-gold/10 text-gold' : 'border-gold/15 text-parchment/50 hover:text-parchment'}`}
+            title="negate this term"
+          >
+            not
+          </button>
+          <input className={`${inputCls} w-36`} list={isEffectScope(t.scope) ? 'effect-traits' : 'predicate-traits'} placeholder="trait" value={t.trait} onChange={(e) => patch(i, { trait: e.target.value })} />
+          <button onClick={() => push(terms.filter((_, j) => j !== i))} className="text-parchment/40 hover:text-red-300" title="remove">✕</button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => push([...terms, { scope: 'opponent', trait: '', negate: false }])}
+          className="w-fit rounded border border-gold/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-midnight-900/60"
+        >
+          + condition
+        </button>
+        {built && <span className="text-xs text-emerald-soft/80">{describePredicate(built)}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ── the per-kind passive-effect form ─────────────────────────────────────────
+/**
+ * The kinds that carry a `when` in the schema. `proficiency` is deliberately absent —
+ * a raised rank is a permanent property of the sheet, not momentary state, so
+ * `proficiencyEffectSchema` has no predicate. The form mirrors that distinction
+ * rather than offering a control the schema would reject.
+ */
+const WHEN_KINDS = new Set(['modifier', 'grant', 'rollAdjust', 'note']);
+
 export function EffectForm({ draft, onPatch, allowBroadcast }: { draft: Draft; onPatch: (p: Record<string, unknown>) => void; allowBroadcast?: boolean }) {
+  const body = KindFields({ draft, onPatch, allowBroadcast });
+  if (!WHEN_KINDS.has(String(draft.kind))) return body;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {body}
+      <PredicateField value={draft.when} onChange={(w) => onPatch({ when: w })} />
+    </div>
+  );
+}
+
+function KindFields({ draft, onPatch, allowBroadcast }: { draft: Draft; onPatch: (p: Record<string, unknown>) => void; allowBroadcast?: boolean }) {
   const grant = (draft.grant as Record<string, unknown>) ?? {};
   const patchGrant = (p: Record<string, unknown>) => onPatch({ grant: { ...grant, ...p } });
   const adjust = (draft.adjust as Record<string, unknown>) ?? {};
