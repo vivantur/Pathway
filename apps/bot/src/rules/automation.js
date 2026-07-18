@@ -67,6 +67,51 @@ function readCounters(charEntry) {
 }
 
 /**
+ * A `ResolvedCharacter`-shaped VIEW of a combat tracker combatant, so a tree can
+ * read a target's stats (`dc: { who: "target" }`, a check against its AC).
+ *
+ * A combatant is NOT a character: it has no Pathbuilder data, no ability scores,
+ * no proficiency ranks — just the flat numbers a GM typed or a stat block
+ * supplied. So this fills in what the combatant actually knows and leaves
+ * everything else at ZERO. That is not laziness, it is core's own convention:
+ * `resolveSelector` returns 0 for a valid-but-unbacked selector "rather than a
+ * guessed value". A fabricated ability score would be a rules claim about a
+ * creature nobody made.
+ *
+ * Read it as: numbers present here are real; zeros mean unknown, not zero.
+ */
+function combatantToResolved(combatant) {
+  const zeroStat = { modifier: 0, rank: 0 };
+  const stat = (v) => (Number.isFinite(v) ? { modifier: v, rank: 0 } : zeroStat);
+  const saves = combatant?.saves ?? {};
+
+  const skills = {};
+  for (const [slug, value] of Object.entries(combatant?.skills ?? {})) {
+    if (Number.isFinite(value)) skills[slug] = { modifier: value, rank: 0, ability: 'str' };
+  }
+
+  return {
+    // A combatant carries no level. 0 reads as "unknown" to every expression
+    // rather than asserting a creature level the tracker was never told.
+    level: 0,
+    scores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    mods: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
+    keyAbility: null,
+    hp: { max: Number.isFinite(combatant?.maxHp) ? combatant.maxHp : 0 },
+    ac: { value: Number.isFinite(combatant?.ac) ? combatant.ac : 0, shieldBonus: 0 },
+    perception: zeroStat,
+    saves: {
+      fortitude: stat(saves.fort),
+      reflex: stat(saves.ref),
+      will: stat(saves.will),
+    },
+    classDc: null,
+    speeds: { land: 0 },
+    skills,
+  };
+}
+
+/**
  * Build the `ExecutionContext` core's interpreter reads.
  *
  * `seed` is REQUIRED and not defaulted: a silently-random seed would make runs
@@ -98,8 +143,11 @@ function buildContext(charEntry, opts = {}) {
     onError: { on: 'warn' },
   };
 
+  // A target is either a stored character (resolve its Pathbuilder data) or a
+  // combat tracker combatant (a flat view). Both end up as ResolvedCharacter,
+  // which is the only shape the interpreter reads.
   if (targets.length > 0) {
-    ctx.targets = targets.map(t => core.resolvedFromPathbuilder(t?.data ?? {}));
+    ctx.targets = targets.map(t => (t?.data ? core.resolvedFromPathbuilder(t.data) : combatantToResolved(t)));
   }
   if (spell) ctx.spell = spell;
   if (vars) ctx.vars = vars;
@@ -197,22 +245,44 @@ function describeOutcome(outcome) {
  */
 function describeApplied(report) {
   const lines = [];
+  // `who` is set only for combatant-scoped mutations; its absence means the
+  // acting character's own sheet.
+  const who = (a) => (a.who ? `**${a.who}** ` : '');
 
   for (const a of report?.applied ?? []) {
     switch (a.kind) {
-      case 'damage':
-        lines.push(`💔 Took **${a.amount}** damage — ${a.before} → **${a.after}** HP${a.atZero ? ' (at 0)' : ''}`);
+      case 'damage': {
+        // Temp HP soaks first, so the HP numbers alone would read as a
+        // contradiction ("took 4 — 20 → 19"). Say where the rest went.
+        const soaked = a.absorbed > 0 ? ` _(${a.absorbed} absorbed by temp HP)_` : '';
+        lines.push(`💔 ${who(a)}took **${a.amount}** damage${soaked} — ${a.before} → **${a.after}** HP${a.atZero ? ' (at 0)' : ''}`);
         break;
+      }
       case 'healing': {
         // Report the real delta: healing past max is clamped, and saying
         // otherwise would misreport the character's own sheet back to them.
-        const gained = a.after - a.before;
+        const gained = Number.isFinite(a.before) && Number.isFinite(a.after) ? a.after - a.before : a.amount;
         const capped = gained < a.amount ? ` _(${a.amount} rolled, capped at max HP)_` : '';
-        lines.push(`💚 Healed **${gained}** — ${a.before} → **${a.after}** HP${capped}`);
+        lines.push(`💚 ${who(a)}healed **${gained}** — ${a.before} → **${a.after}** HP${capped}`);
         break;
       }
       case 'counter':
         lines.push(`🔸 Spent **${a.spent}** ${a.counter} — **${a.remaining}** remaining`);
+        break;
+      case 'temphp':
+        lines.push(`🛡️ ${who(a)}gained **${a.amount}** temporary HP`);
+        break;
+      case 'applyEffect': {
+        const value = a.value != null ? ` ${a.value}` : '';
+        const duration = a.duration != null ? ` for **${a.duration}** round${a.duration === 1 ? '' : 's'}` : '';
+        lines.push(`✨ ${who(a)}gained **${a.effect}${value}**${duration}`);
+        // A duration the tracker cannot expire on its own has to be said out
+        // loud, or it quietly never ends.
+        for (const note of a.notes ?? []) lines.push(`   ↳ _${note}_`);
+        break;
+      }
+      case 'removeEffect':
+        lines.push(`🚫 ${who(a)}lost **${a.effect}**`);
         break;
       default:
         lines.push(`• ${a.kind}`);
@@ -228,6 +298,7 @@ function describeApplied(report) {
 module.exports = {
   FOCUS_COUNTER,
   readCounters,
+  combatantToResolved,
   buildContext,
   runTree,
   run,

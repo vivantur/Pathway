@@ -346,6 +346,7 @@ const useCommand = new SlashCommandBuilder()
   .setName('use')
   .setDescription('Run an authored action through the effects engine.')
   .addStringOption(o => o.setName('action').setDescription('Which action to run').setRequired(true).setAutocomplete(true))
+  .addStringOption(o => o.setName('target').setDescription('Target combatant in this channel\'s encounter').setRequired(false))
   .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
 
 // ─────────────────────────────────────────────────────────────────────────────

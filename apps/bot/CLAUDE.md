@@ -8,9 +8,13 @@ This is the **v2 rewrite** of the bot, organized into feature folders (Phase 3 e
 > 1. **The one rule** — PF2e rules logic lives in `packages/core`, and the bot
 >    consumes it. This doc says the bot "owns the game logic"; that is now only true
 >    of what hasn't migrated yet. Don't add rules math here.
-> 2. **`apps/bot` is frozen for architecture** — don't restructure it or add new rules
->    logic. Targeted hotfixes to live bugs (crashes, wrong rules, data loss) are fine;
->    "frozen" means "don't restructure," not "don't fix."
+> 2. **`apps/bot` was UN-FROZEN on 2026-07-18** (owner decision). It had been frozen
+>    for architecture; that is retired, because the effects engine has to be consumed
+>    by the bot and that is impossible without changing the bot. Restructuring toward
+>    core is now expected work — but un-frozen does NOT relax rule 1. New rules math
+>    still belongs in core; the legitimate pattern here is an adapter (`pf2eMath.js`,
+>    `rules/automation.js`, `rules/effectTranslation.js`). The remaining no-touch is
+>    the DATABASE SCHEMA, which the live bot on `main` depends on.
 
 ## Stack
 

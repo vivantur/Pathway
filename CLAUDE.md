@@ -83,14 +83,29 @@ this section has been wrong before, and a stale status is worse than none.)*
   **The automation host landed 2026-07-18** — `rules/automation.js` (pure: builds an
   `ExecutionContext` from a stored character, runs core's interpreter, renders the
   log) and `state/automation.js` (impure: seeds, and writes mutations back). So the
-  bot CAN now execute a Layer-2 tree. Two honest limits, both deliberate:
-  - **Only damage/healing and counters can land on a character.** Temp HP and
-    conditions live on a COMBATANT in an encounter, not on a character, so those
-    mutations come back in `skipped` with a reason. Combatant-scoped apply belongs
-    with targeting.
-  - **No content carries an automation tree yet.** The corpus is all Layer-1
-    passives and `remap-effects.mjs` only emits those, so the host currently runs
-    hand-authored trees. Content supplying trees is the decisions fold-in.
+  bot CAN now execute a Layer-2 tree.
+
+  **Combat targeting landed 2026-07-18 too.** `/use target:<combatant>` binds the
+  run to the channel's encounter: damage routes through the tracker's `applyHp`
+  (which already owns temp-HP absorption and the dying rules — do not grow a
+  second one), and temp HP / conditions land on the combatant. Counters stay on
+  the character, because a combatant has none. Outside an encounter, only what a
+  character can hold applies and the rest is reported as skipped.
+
+  `rules/effectTranslation.js` maps core's `EffectTemplate` onto the tracker's
+  five flat modifier slots. **Its coverage is deliberately low.** The tracker is
+  untyped, unconditional, and has one `saveBonus` for all three saves and one
+  `skillBonus` for all sixteen skills — so a Fortitude-only penalty, a conditional
+  modifier, or an expression-valued one is reported in `unsupported` with a reason
+  instead of being approximated. A +1 to Fortitude rendered as `saveBonus` would
+  silently buff Reflex and Will: a wrong combatant is worse than an absent effect.
+  The honest fix is a richer combatant effect model, not a looser mapper. Note
+  that everything through this path inherits the bot's pre-existing UNTYPED
+  STACKING bug (a status and a circumstance bonus are summed).
+
+  **No content carries an automation tree yet.** The corpus is all Layer-1
+  passives and `remap-effects.mjs` only emits those, so the host currently runs
+  hand-authored trees. Content supplying trees is the decisions fold-in.
 
   **`/use` landed 2026-07-18** — the loop is closed end to end: core computes, the
   host adapts, mutations are written back, the player sees narration AND what
@@ -293,7 +308,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 643 · bot 263 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 643 · bot 297 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

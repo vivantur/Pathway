@@ -8,8 +8,10 @@
 // is the run replayable, and does everything that cannot land say so — not about
 // PF2e math, which is core's and is tested there.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createRequire } from 'node:module';
+
+afterEach(() => vi.restoreAllMocks());
 
 const require = createRequire(import.meta.url);
 const automation = require('../src/rules/automation');
@@ -224,14 +226,14 @@ describe('applyOutcome', () => {
     expect(entry.wounded).toBeUndefined();
   });
 
-  it('skips damage aimed at another creature, with a reason', () => {
+  it('skips damage aimed at another creature when there is no encounter', () => {
     const entry = charEntry({ hp: 76 });
     const report = applier.applyOutcome(entry, {
       mutations: [{ kind: 'damage', target: { kind: 'target', index: 0 }, healing: false, amount: 10, instances: [] }],
     });
     expect(entry.hp).toBe(76);
     expect(report.applied).toEqual([]);
-    expect(report.skipped[0].reason).toMatch(/another creature/);
+    expect(report.skipped[0].reason).toMatch(/no target combatant/);
   });
 
   it('writes the interpreter\'s counter result in rather than re-clamping it', () => {
@@ -277,6 +279,205 @@ describe('applyOutcome', () => {
     expect(entry.hp).toBe(72);
     expect(report.applied.map(a => a.kind)).toEqual(['damage', 'healing']);
     expect(applier.applyOutcome(entry, {})).toEqual({ applied: [], skipped: [] });
+  });
+});
+
+describe('combatantToResolved', () => {
+  const combatant = {
+    name: 'Goblin', maxHp: 20, ac: 16,
+    saves: { fort: 5, ref: 8, will: 2 },
+    skills: { stealth: 9 },
+  };
+
+  it('carries the numbers the combatant actually has', () => {
+    const rc = automation.combatantToResolved(combatant);
+    expect(rc.ac.value).toBe(16);
+    expect(rc.hp.max).toBe(20);
+    expect(rc.saves.reflex.modifier).toBe(8);
+    expect(rc.skills.stealth.modifier).toBe(9);
+  });
+
+  it('leaves unknown statistics at 0 rather than inventing them', () => {
+    // Core's own convention: an unbacked selector resolves to 0, not a guess. A
+    // combatant has no ability scores or level, and fabricating them would be a
+    // rules claim about a creature nobody made.
+    const rc = automation.combatantToResolved(combatant);
+    expect(rc.level).toBe(0);
+    expect(rc.mods).toEqual({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 });
+    expect(rc.perception.modifier).toBe(0);
+    expect(rc.classDc).toBeNull();
+  });
+
+  it('treats a null save as unknown, not as +0 that was measured', () => {
+    const rc = automation.combatantToResolved({ name: 'X', saves: { fort: null } });
+    expect(rc.saves.fortitude).toEqual({ modifier: 0, rank: 0 });
+  });
+
+  it('survives a bare combatant', () => {
+    const rc = automation.combatantToResolved({ name: 'X' });
+    expect(rc.ac.value).toBe(0);
+    expect(rc.skills).toEqual({});
+  });
+
+  it('is readable by a tree as a target', () => {
+    // The whole reason this shape exists: `dc: { who: 'target' }` must resolve
+    // against the TARGET. Core builds a DC from a modifier as 10 + modifier, so
+    // the goblin's AC 16 becomes 26 — and the actor's own AC 24 would have given
+    // 34, which is how we know it read the right creature.
+    const dcFor = (who) => {
+      const out = automation.run(
+        charEntry(),
+        [{ kind: 'save', save: 'reflex', dc: { kind: 'stat', who, selector: 'ac' }, onSuccess: [], onFailure: [] }],
+        { seed: 5, targets: [combatant] },
+      );
+      return out.log.find(l => l.kind === 'check').dc;
+    };
+    expect(dcFor('target')).toBe(26);
+    expect(dcFor('actor')).toBe(34);
+  });
+});
+
+describe('applyOutcome with a combat scope', () => {
+  const combat = require('../src/state/combat');
+
+  // Drive the REAL encounter store, the way test/combatV2.test.js does — the
+  // mutations go through combat.applyHp/addEffect, which read the store's own
+  // Map, so a stubbed getEncounter would not be exercising anything. No Supabase
+  // env is set under test, so persistence no-ops and this stays in memory.
+  let channelId;
+  let nextChannel = 0;
+
+  function encounterWith(...combatants) {
+    channelId = `auto-test-${nextChannel++}`;
+    combat.createEncounter(channelId, { gmId: 'gm-1' });
+    for (const c of combatants) combat.addCombatant(channelId, c);
+    return channelId;
+  }
+
+  /** Read a combatant back out of the store, so assertions see real state. */
+  function inPlay(name) {
+    return combat.findCombatant(combat.getEncounter(channelId), name);
+  }
+
+  afterEach(() => {
+    if (channelId) combat.endEncounter(channelId);
+    channelId = null;
+  });
+
+  function goblin(overrides = {}) {
+    return { name: 'Goblin', hp: 20, maxHp: 20, tempHp: 0, type: 'monster', ...overrides };
+  }
+
+  it('routes damage at a target through the tracker, which owns dying and temp HP', () => {
+    const ch = encounterWith(goblin({ tempHp: 3 }));
+    const report = applier.applyOutcome(charEntry(), {
+      mutations: [{ kind: 'damage', target: { kind: 'target', index: 0 }, healing: false, amount: 10, instances: [] }],
+    }, { channelId: ch, self: null, target: 'Goblin' });
+
+    // Temp HP absorbed 3 of the 10 — that rule lives in the tracker, not here.
+    const gob = inPlay('Goblin');
+    expect(gob.tempHp).toBe(0);
+    expect(gob.hp).toBe(13);
+    expect(report.applied[0]).toMatchObject({ kind: 'damage', who: 'Goblin', amount: 10, absorbed: 3 });
+
+    // …and the narration says where the missing 3 went, rather than reading as
+    // "took 10 damage — 20 → 13".
+    const { lines } = automation.describeApplied(report);
+    expect(lines[0]).toContain('absorbed by temp HP');
+  });
+
+  it('applies temp HP to a combatant', () => {
+    const ch = encounterWith(goblin());
+    const report = applier.applyOutcome(charEntry(), {
+      mutations: [{ kind: 'temphp', target: { kind: 'target', index: 0 }, amount: 5 }],
+    }, { channelId: ch, target: 'Goblin' });
+    expect(inPlay('Goblin').tempHp).toBe(5);
+    expect(report.applied[0]).toMatchObject({ kind: 'temphp', who: 'Goblin', amount: 5 });
+  });
+
+  it('translates and applies an effect the tracker can hold', () => {
+    const ch = encounterWith(goblin());
+    const report = applier.applyOutcome(charEntry(), {
+      mutations: [{
+        kind: 'applyEffect',
+        target: { kind: 'target', index: 0 },
+        effect: {
+          name: 'Rattled',
+          duration: { kind: 'rounds', count: 2 },
+          passives: [{ kind: 'modifier', target: 'ac', bonusType: 'circumstance', value: { kind: 'lit', value: -1 } }],
+        },
+      }],
+    }, { channelId: ch, target: 'Goblin' });
+
+    const gob = inPlay('Goblin');
+    expect(gob.effects).toHaveLength(1);
+    expect(gob.effects[0]).toMatchObject({ name: 'Rattled', duration: 2 });
+    expect(gob.effects[0].modifiers.acBonus).toBe(-1);
+    expect(report.applied[0]).toMatchObject({ kind: 'applyEffect', who: 'Goblin', effect: 'Rattled' });
+  });
+
+  it('reports the untranslatable parts of an effect instead of approximating them', () => {
+    const ch = encounterWith(goblin());
+    const report = applier.applyOutcome(charEntry(), {
+      mutations: [{
+        kind: 'applyEffect',
+        target: { kind: 'target', index: 0 },
+        effect: {
+          name: 'Mixed',
+          duration: { kind: 'rounds', count: 1 },
+          passives: [
+            { kind: 'modifier', target: 'ac', bonusType: 'status', value: { kind: 'lit', value: -1 } },
+            { kind: 'modifier', target: 'fortitude', bonusType: 'status', value: { kind: 'lit', value: -1 } },
+          ],
+        },
+      }],
+    }, { channelId: ch, target: 'Goblin' });
+
+    // The AC part landed; the Fortitude-only part was named, not silently
+    // widened into a penalty on all three saves.
+    const gob = inPlay('Goblin');
+    expect(gob.effects[0].modifiers.acBonus).toBe(-1);
+    expect(gob.effects[0].modifiers.saveBonus).toBe(0);
+    expect(report.skipped.some(s => /fortitude/.test(s.reason))).toBe(true);
+  });
+
+  it('removes an effect from a combatant', () => {
+    const ch = encounterWith(goblin({ effects: [{ id: 'rattled', name: 'Rattled', modifiers: {} }] }));
+    applier.applyOutcome(charEntry(), {
+      mutations: [{ kind: 'removeEffect', target: { kind: 'target', index: 0 }, name: 'Rattled', cascade: false }],
+    }, { channelId: ch, target: 'Goblin' });
+    expect(inPlay('Goblin').effects).toHaveLength(0);
+  });
+
+  it('sends self-damage to the tracker when the actor is in the encounter', () => {
+    // The tracker's copy is the one in play; writing to the sheet instead would
+    // leave the two disagreeing mid-fight.
+    const ch = encounterWith(goblin({ name: 'Kalindra', hp: 50, maxHp: 76, type: 'pc' }));
+    const entry = charEntry({ hp: 76 });
+    applier.applyOutcome(entry, {
+      mutations: [{ kind: 'damage', target: { kind: 'self' }, healing: false, amount: 10, instances: [] }],
+    }, { channelId: ch, self: 'Kalindra' });
+
+    expect(inPlay('Kalindra').hp).toBe(40);
+    expect(entry.hp).toBe(76); // the sheet is untouched
+  });
+
+  it('keeps counters on the character even in combat — a combatant has none', () => {
+    const ch = encounterWith(goblin());
+    const entry = charEntry({ overlay: { counters: { reagents: { current: 5, max: 8 } }, daily: {} } });
+    applier.applyOutcome(entry, {
+      mutations: [{ kind: 'counter', counter: 'reagents', spent: 2, remaining: 3 }],
+    }, { channelId: ch, target: 'Goblin' });
+    expect(entry.overlay.counters.reagents.current).toBe(3);
+  });
+
+  it('reports a target that does not resolve rather than throwing', () => {
+    const ch = encounterWith(goblin());
+    const report = applier.applyOutcome(charEntry(), {
+      mutations: [{ kind: 'temphp', target: { kind: 'target', index: 0 }, amount: 5 }],
+    }, { channelId: ch, target: 'Nobody' });
+    expect(report.applied).toEqual([]);
+    expect(report.skipped[0].reason).toMatch(/could not resolve/);
   });
 });
 

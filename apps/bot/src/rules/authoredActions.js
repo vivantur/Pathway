@@ -73,6 +73,32 @@ const AUTHORED = [
       { kind: 'damage', healing: true, target: 'self', components: [{ formula: '5' }] },
     ],
   },
+  {
+    id: 'demo-strike-target',
+    name: 'Demo: Hit A Target',
+    actionCost: { kind: 'actions', min: 1, max: 1 },
+    description:
+      'Demonstration only — deals a flat 4 damage to the targeted combatant and applies a demo condition to them. Requires an encounter and a target. The numbers are arbitrary, not a Pathfinder rule.',
+    automation: [
+      { kind: 'text', title: 'Demo: Hit A Target', body: 'Striking the target.' },
+      { kind: 'damage', target: 'target', components: [{ formula: '4' }] },
+      {
+        kind: 'applyEffect',
+        target: 'target',
+        effect: {
+          name: 'Demo Rattled',
+          duration: { kind: 'rounds', count: 2 },
+          // One modifier per slot the tracker can hold exactly. A save- or
+          // skill-specific penalty would be reported as unsupported instead —
+          // see rules/effectTranslation.js for why that is the correct outcome.
+          passives: [
+            { kind: 'modifier', target: 'ac', bonusType: 'circumstance', value: { kind: 'lit', value: -1 } },
+            { kind: 'modifier', target: 'attack', bonusType: 'circumstance', value: { kind: 'lit', value: -1 } },
+          ],
+        },
+      },
+    ],
+  },
 ];
 
 /**
@@ -116,6 +142,29 @@ function searchActions(query, limit = 25) {
   return matches.slice(0, limit);
 }
 
+/**
+ * Does this action need a target to work?
+ *
+ * Read off the tree rather than declared, so it cannot drift from what the
+ * automation actually does: any node aimed at `target`, or a `target` node that
+ * scopes to something other than self, needs one. Lets the command refuse up
+ * front with a clear message instead of running and reporting "damage failed".
+ */
+function requiresTarget(action) {
+  const walk = (nodes) => (nodes ?? []).some((node) => {
+    if (node.target === 'target') return true;
+    if (node.kind === 'target' && node.mode !== 'self') return true;
+    return (
+      walk(node.children) ||
+      walk(node.onTrue) ||
+      walk(node.onFalse) ||
+      (node.entries ?? []).some(e => walk(e.children)) ||
+      Object.values(node.degrees ?? {}).some(walk)
+    );
+  });
+  return walk(action?.automation);
+}
+
 /** `[1 action]`, `[reaction]`, … for display. Empty when the action has no cost. */
 function formatActionCost(cost) {
   if (!cost) return '';
@@ -139,5 +188,6 @@ module.exports = {
   listActions,
   findAction,
   searchActions,
+  requiresTarget,
   formatActionCost,
 };

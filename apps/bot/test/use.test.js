@@ -53,14 +53,37 @@ describe('the authored catalog', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('every authored tree actually runs against a real character', () => {
+  it('every authored tree actually runs, given what it needs', () => {
     // The point of the catalog is that it EXECUTES. An entry that validates but
-    // throws, aborts, or warns at runtime is a broken entry.
+    // throws, aborts, or warns at runtime is a broken entry. Target-requiring
+    // actions get a target — running one without is a caller error, not a
+    // broken tree, and the command refuses it up front.
+    const dummy = { name: 'Training Dummy', maxHp: 20, ac: 15, saves: { fort: 5, ref: 2, will: 0 }, skills: {} };
     for (const action of catalog.listActions()) {
-      const outcome = automation.run(charEntry(), action.automation, { seed: 99 });
+      const targets = catalog.requiresTarget(action) ? [dummy] : [];
+      const outcome = automation.run(charEntry(), action.automation, { seed: 99, targets });
       expect(outcome.aborted, `${action.id} aborted`).toBe(false);
       expect(outcome.warnings, `${action.id} warned`).toEqual([]);
     }
+  });
+
+  it('knows which actions need a target by reading the tree', () => {
+    expect(catalog.requiresTarget(catalog.findAction('demo-strike-target'))).toBe(true);
+    expect(catalog.requiresTarget(catalog.findAction('demo-roll'))).toBe(false);
+    expect(catalog.requiresTarget(catalog.findAction('demo-spend-focus'))).toBe(false);
+    expect(catalog.requiresTarget(undefined)).toBe(false);
+  });
+
+  it('finds a target requirement nested inside a branch', () => {
+    // Read off the tree, so it cannot drift from what the automation does.
+    expect(catalog.requiresTarget({
+      automation: [{
+        kind: 'branch',
+        condition: { kind: 'lit', value: true },
+        onTrue: [{ kind: 'damage', target: 'target', components: [{ formula: '1' }] }],
+        onFalse: [],
+      }],
+    })).toBe(true);
   });
 
   it('finds an action by id and by exact name, case-insensitively', () => {
@@ -117,7 +140,7 @@ describe('describeApplied', () => {
     const { lines } = automation.describeApplied({
       applied: [{ kind: 'healing', amount: 20, before: 70, after: 76, atZero: false }],
     });
-    expect(lines[0]).toContain('Healed **6**');
+    expect(lines[0]).toContain('healed **6**');
     expect(lines[0]).toContain('capped at max HP');
   });
 
@@ -125,7 +148,7 @@ describe('describeApplied', () => {
     const { lines } = automation.describeApplied({
       applied: [{ kind: 'healing', amount: 6, before: 40, after: 46, atZero: false }],
     });
-    expect(lines[0]).toContain('Healed **6**');
+    expect(lines[0]).toContain('healed **6**');
     expect(lines[0]).not.toContain('capped');
   });
 
@@ -187,7 +210,7 @@ describe('/use end to end', () => {
     const embed = reply.embeds[0].data;
     expect(embed.title).toContain('Demo: Spend Focus');
     const changed = embed.fields.find(f => f.name === 'What changed');
-    expect(changed.value).toContain('Healed **5**');
+    expect(changed.value).toContain('healed **5**');
     expect(changed.value).toContain('Spent **1** focus');
     // The seed is shown so the result can be reproduced.
     expect(embed.footer.text).toMatch(/seed \d+/);

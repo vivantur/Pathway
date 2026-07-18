@@ -25,7 +25,9 @@
 
 const { ensureOverlay } = require('../rules/characterOverlay');
 const { FOCUS_COUNTER } = require('../rules/automation');
+const { translateEffect } = require('../rules/effectTranslation');
 const { getCharacterHp, setCharacterHp } = require('./characters');
+const combat = require('./combat');
 
 /**
  * A fresh 32-bit seed for a run. Kept out of `rules/` so that module stays
@@ -90,33 +92,138 @@ function applyCounter(charEntry, m, report) {
 }
 
 const NO_HOME = {
-  temphp: 'temporary HP lives on a combatant, not a character — needs an encounter',
-  applyEffect: 'conditions live on a combatant, not a character — needs an encounter',
-  removeEffect: 'conditions live on a combatant, not a character — needs an encounter',
+  temphp: 'temporary HP lives on a combatant — run this in a channel with an encounter and a target',
+  applyEffect: 'conditions live on a combatant — run this in a channel with an encounter and a target',
+  removeEffect: 'conditions live on a combatant — run this in a channel with an encounter and a target',
 };
 
+// ── combatant-scoped application ────────────────────────────────────────────
+//
+// Temp HP and conditions only exist on a combatant, and damage to anyone but the
+// actor needs one too. When `/use` is run in a channel with a live encounter, a
+// `combat` scope resolves each mutation target to a tracker query.
+//
+// Damage deliberately goes through the tracker's own `applyHp` rather than a
+// second HP path: that function already absorbs temp HP and runs the dying rules,
+// both of which are tested. Re-implementing either here is how a third dying
+// implementation gets born.
+
+/** Resolve a mutation's target to a tracker query, or null if none is bound. */
+function queryFor(target, scope) {
+  if (!scope) return null;
+  if (!target || target.kind === 'self') return scope.self ?? null;
+  return scope.target ?? null;
+}
+
+function applyToCombatant(m, scope, report) {
+  const query = queryFor(m.target, scope);
+  if (!query) {
+    report.skipped.push({
+      kind: m.kind,
+      reason: m.target && m.target.kind !== 'self'
+        ? 'no target combatant was named'
+        : 'the acting character is not in this encounter',
+    });
+    return true;
+  }
+
+  try {
+    switch (m.kind) {
+      case 'damage': {
+        const result = combat.applyHp(scope.channelId, query, m.healing ? m.amount : -m.amount);
+        const c = result?.combatant;
+        // Temp HP soaks damage before real HP does, so the HP delta alone
+        // understates the hit. Report the absorption rather than letting
+        // "took 4 damage — 20 → 19" read as a contradiction.
+        const tempBefore = result?.before?.tempHp ?? 0;
+        const absorbed = Math.max(0, tempBefore - (c?.tempHp ?? 0));
+        report.applied.push({
+          kind: m.healing ? 'healing' : 'damage',
+          who: c?.name ?? query,
+          amount: m.amount,
+          before: result?.before?.hp,
+          after: c?.hp,
+          absorbed: m.healing ? 0 : absorbed,
+          atZero: c?.hp === 0,
+        });
+        return true;
+      }
+      case 'temphp': {
+        const result = combat.setTempHp(scope.channelId, query, m.amount);
+        report.applied.push({ kind: 'temphp', who: result?.combatant?.name ?? query, amount: m.amount });
+        return true;
+      }
+      case 'applyEffect': {
+        // The translation is where honesty lives: anything core's template can
+        // express and the tracker cannot comes back named, not dropped.
+        const { effect, unsupported, notes } = translateEffect(m.effect, { source: 'automation' });
+        for (const u of unsupported) {
+          report.skipped.push({ kind: 'applyEffect', reason: `${m.effect?.name ?? 'effect'} — ${u.what}: ${u.reason}` });
+        }
+        if (!effect) {
+          report.skipped.push({
+            kind: 'applyEffect',
+            reason: `${m.effect?.name ?? 'effect'} had nothing the tracker can represent, so it was not applied`,
+          });
+          return true;
+        }
+        const result = combat.addEffect(scope.channelId, query, effect);
+        report.applied.push({
+          kind: 'applyEffect',
+          who: result?.combatant?.name ?? query,
+          effect: effect.name,
+          value: effect.value,
+          duration: effect.duration,
+          notes,
+        });
+        return true;
+      }
+      case 'removeEffect': {
+        const result = combat.removeEffect(scope.channelId, query, m.name);
+        report.applied.push({ kind: 'removeEffect', who: result?.combatant?.name ?? query, effect: m.name });
+        return true;
+      }
+      default:
+        return false;
+    }
+  } catch (err) {
+    // requireCombatant throws when the query matches nothing or is ambiguous.
+    report.skipped.push({ kind: m.kind, reason: `could not resolve "${query}" in this encounter: ${err.message}` });
+    return true;
+  }
+}
+
 /**
- * Apply an outcome's mutations to `charEntry`, in order.
+ * Apply an outcome's mutations, in order.
+ *
+ * `combatScope` — `{ channelId, self, target }` — binds mutation targets to
+ * combatants in a live encounter. Without it, only what a character can hold
+ * (HP, counters) lands, and the rest is reported as skipped.
  *
  * Returns `{ applied, skipped }`. Everything that could not land is in `skipped`
- * with a reason, so a caller can show the player what did and did not happen.
- * The entry is mutated in place; the caller saves.
+ * with a reason. The character entry is mutated in place; the caller saves.
  */
-function applyOutcome(charEntry, outcome) {
+function applyOutcome(charEntry, outcome, combatScope = null) {
   const report = { applied: [], skipped: [] };
+  const scope = combatScope?.channelId ? combatScope : null;
 
   for (const m of outcome?.mutations ?? []) {
     switch (m.kind) {
       case 'damage':
-        applyDamage(charEntry, m, report);
+        // Damage to the actor stays on the character sheet unless the actor is
+        // also in the encounter — the tracker's copy is the one in play then.
+        if (isSelf(m.target) && !(scope && scope.self)) applyDamage(charEntry, m, report);
+        else applyToCombatant(m, scope, report);
         break;
       case 'counter':
+        // Counters are always the character's: a combatant has none.
         applyCounter(charEntry, m, report);
         break;
       case 'temphp':
       case 'applyEffect':
       case 'removeEffect':
-        report.skipped.push({ kind: m.kind, reason: NO_HOME[m.kind] });
+        if (scope) applyToCombatant(m, scope, report);
+        else report.skipped.push({ kind: m.kind, reason: NO_HOME[m.kind] });
         break;
       default:
         report.skipped.push({ kind: m.kind, reason: 'unrecognized mutation kind' });
