@@ -562,11 +562,85 @@ const SENSE_RE = new RegExp(
 );
 const ACUITY = new Set(["precise", "imprecise", "vague"]);
 
+// ── resistances / weaknesses / immunities (grant slice 2) ────────────────────
+//
+// The value is level-scaled or flat, and Foundry's AST must be matched EXACTLY to
+// corroborate: `floor(level/2)`, or `max(1, floor(level/2))` — but ONLY when the prose says
+// "(minimum 1)". FOLLOW THE PROSE (owner call): the feats that omit "(minimum 1)" are never
+// 1st-level feats, so half-your-level is never 0 by the time you can take them — the minimum
+// is unnecessary and the text says so. Applying min-1 anyway would DISAGREE with Foundry's own
+// bare-floor encoding on 18 feats. Where the prose does say it, min-1 is applied.
+//
+// The damageType is a broad free-string vocabulary (not just the base damage types —
+// resistances target poison/mental/bleed/holy/precision/… and materials like cold-iron), and
+// the emitted string must be Foundry's canonical hyphenated form ("cold iron" → "cold-iron").
+const RESIST_TYPES = new Set([
+  "bludgeoning", "piercing", "slashing", "physical",
+  "acid", "cold", "electricity", "fire", "sonic", "vitality", "void", "force",
+  "poison", "mental", "bleed", "spirit", "holy", "unholy", "precision", "critical-hits",
+  "silver", "cold-iron", "adamantine", "orichalcum", "darkwood", "dawnsilver", "duskwood", "sovereign-steel",
+]);
+// Immunity also covers a few conditions/effects the observed feats grant immunity to.
+const IMMUNITY_TYPES = new Set([...RESIST_TYPES, "disease", "sleep", "paralyzed"]);
+
+const RESIST_TYPE_ALT = [...RESIST_TYPES].sort((a, b) => b.length - a.length).map((t) => t.replace(/-/g, "[-\\s]")).join("|");
+/** Split a compound type run — "fire, cold, and acid" — on and/comma (Oxford comma first). */
+const TYPE_SEP = /\s*,\s*and\s+|\s*,\s*|\s+and\s+/i;
+
+// A) kind-first: "resistance 3 to fire and sonic", "resistance to poison equal to half your
+//    level", "resistance 2 to cold, electricity, fire, and slashing". Groups: 1 kind · 2 flat ·
+//    3 type-run · 4 scale · 5 min1.
+//
+// The type run is lazy and STOPS at "equal to", a sentence break, or "and <verb>" (a clause
+// continuation like "and gain a bonus") — but NOT at a bare comma, since commas separate the
+// TYPES of a compound list ("cold, electricity, fire"). Treating a comma as a hard stop
+// truncated every comma-separated list to its first type. The value clause is matched AFTER
+// the run and needs no trailing boundary — the match simply ends at the value.
+const RESIST_A_RE = new RegExp(
+  String.raw`\b(resistance|weakness)\s+(?:(\d+)\s+)?to\s+(?:both\s+)?([a-z][a-z\s,'-]*?)(?=\s+equal\s+to\b|[.;:]|$|\s+and\s+(?:reduce|gain|you|treat|the|but|a)\b|\s+even\b|\s+if\b|\s+when\b|\s+while\b|\s+for\b)(?:\s+equal\s+to\s+(half\s+your\s+level|your\s+level)\s*(\(minimum\s*1\))?)?`,
+  "gi",
+);
+// B) type-first: "fire resistance equal to half your level", "mental weakness 5". A value is
+//    REQUIRED (a bare "fire resistance" is not a grant here). Groups: 1 type · 2 kind · 3 flat · 4 scale · 5 min1.
+const RESIST_B_RE = new RegExp(
+  String.raw`\b(${RESIST_TYPE_ALT})\s+(resistance|weakness)\s+(?:(\d+)\b\s*)?(?:equal\s+to\s+(half\s+your\s+level|your\s+level)\s*(\(minimum\s*1\))?)?`,
+  "gi",
+);
+// "immune to poison and disease", "immunity to sleep effects", "immune to cold damage".
+// Commas stay list-separators (see RESIST_A_RE); the run stops at a clause break, not a comma.
+const IMMUNITY_RE = /\b(?:immune|immunity)\s+to\s+([a-z][a-z\s,'-]*?)(?=[.;:]|$|\s+and\s+(?:gain|you|the)\b|\s+even\b|\s+for\b|\s+but\b)/gi;
+
+/** Canonicalize a captured type phrase to Foundry's form, or "" if it is not a known type. */
+function normalizeType(raw: string, vocab: Set<string>): string {
+  const t = raw
+    .toLowerCase()
+    .replace(/^(?:both|persistent|all)\s+/, "")
+    .replace(/\s+(?:damage|effects?)$/, "")
+    .trim()
+    .replace(/\s+/g, "-");
+  return vocab.has(t) ? t : "";
+}
+
+/** Build the value AST Foundry uses. `min1` only when the prose stated "(minimum 1)". */
+function scaledValue(scale: string | undefined, min1: boolean, flat: string | undefined): unknown {
+  if (scale) {
+    const base = /half/i.test(scale)
+      ? { kind: "call", fn: "floor", args: [{ kind: "call", fn: "divide", args: [{ kind: "var", name: "level" }, { kind: "lit", value: 2 }] }] }
+      : { kind: "var", name: "level" };
+    return min1 ? { kind: "call", fn: "max", args: [{ kind: "lit", value: 1 }, base] } : base;
+  }
+  if (flat !== undefined) {
+    const n = Number(flat);
+    if (Number.isFinite(n) && n > 0) return { kind: "lit", value: n };
+  }
+  return undefined;
+}
+
 /**
- * Extract sense and speed GRANTS from a clause. Governed clauses are declined (a conditional
- * grant needs a predicate the parser can't build) — the same gate as the proficiency
- * extractor, and why Like a Fish's "+5 if you already have a swim Speed" is dropped rather
- * than emitted as permanent.
+ * Extract GRANTS from a clause — senses, speeds, and resistances/weaknesses/immunities.
+ * Governed clauses are declined (a conditional grant needs a predicate the parser can't build)
+ * — the same gate as the proficiency extractor, and why Like a Fish's "+5 if you already have
+ * a swim Speed" is dropped rather than emitted as permanent.
  */
 export const grantExtractor: Extractor = (clause) => {
   if (clause.governor) return [];
@@ -596,6 +670,29 @@ export const grantExtractor: Extractor = (clause) => {
       if (Number.isFinite(range) && range > 0) grant.range = range;
     }
     out.push({ draft: { kind: "grant", grant }, gaps: [], span });
+  }
+
+  // resistance / weakness — a compound type run fans out, one grant per type; the value AST
+  // is shared across the run (a single "resistance 3 to fire and sonic" is 3 to each).
+  const pushResist = (kind: string, value: unknown, typeRun: string) => {
+    if (value === undefined) return;
+    for (const part of typeRun.split(TYPE_SEP)) {
+      const damageType = normalizeType(part, RESIST_TYPES);
+      if (damageType) out.push({ draft: { kind: "grant", grant: { type: kind, damageType, value } }, gaps: [], span });
+    }
+  };
+  RESIST_A_RE.lastIndex = 0;
+  while ((m = RESIST_A_RE.exec(clause.text))) pushResist(m[1]!.toLowerCase(), scaledValue(m[4], !!m[5], m[2]), m[3]!);
+  RESIST_B_RE.lastIndex = 0;
+  while ((m = RESIST_B_RE.exec(clause.text))) pushResist(m[2]!.toLowerCase(), scaledValue(m[4], !!m[5], m[3]), m[1]!);
+
+  // immunity — value-free; a compound run fans out ("immune to poison and disease").
+  IMMUNITY_RE.lastIndex = 0;
+  while ((m = IMMUNITY_RE.exec(clause.text))) {
+    for (const part of m[1]!.split(TYPE_SEP)) {
+      const to = normalizeType(part, IMMUNITY_TYPES);
+      if (to) out.push({ draft: { kind: "grant", grant: { type: "immunity", to } }, gaps: [], span });
+    }
   }
 
   return out;

@@ -154,12 +154,33 @@ export function effectKey(draft: DraftEffect): string {
     case "rollAdjust":
       return `rollAdjust:${target}`;
     case "grant": {
-      const g = draft.grant as { type?: string } | undefined;
-      return `grant:${g?.type ?? "?"}`;
+      // A grant's identity needs its SUB-TARGET, not just its type: a feat that grants
+      // resistance to fire AND sonic is two different effects, and keying both as
+      // `grant:resistance` would collapse them into one bucket — reconcile would then
+      // report a false conflict for two producers that actually AGREE (each proposing the
+      // same pair). The discriminator is whichever field names what is granted.
+      const g = draft.grant as GrantShape | undefined;
+      return `grant:${g?.type ?? "?"}:${grantDiscriminator(g)}`;
     }
     default:
       return `${kind}:${target}`;
   }
+}
+
+/** The fields a grant uses to name WHAT it grants, across the grant sub-types. */
+interface GrantShape {
+  type?: string;
+  damageType?: string;
+  name?: string;
+  to?: string;
+  movement?: string;
+  trait?: string;
+  ref?: string;
+}
+
+/** What a grant is OF — damage type, sense name, immunity target, movement, … — for its key. */
+function grantDiscriminator(g: GrantShape | undefined): string {
+  return g?.damageType ?? g?.name ?? g?.to ?? g?.movement ?? g?.trait ?? g?.ref ?? "?";
 }
 
 /**

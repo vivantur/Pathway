@@ -791,6 +791,41 @@ reconciled candidates. The review UI's spec is already measured — 12 gap/effec
 one-time confirm. Build it on the merged "Gilded Observatory" theme (the `admin` surface +
 `CornerBrackets`/`GildedRule`/`panel` primitives), extending `EffectCoveragePage`.
 
+### Parser shape expansion driven by the review UI (2026-07-17)
+
+The review UI immediately paid for itself: browsing it surfaced parser gaps, each fixed as
+a shape. All in `prose.ts` + `candidate.ts`, measured by `prose-recall.mjs`.
+
+- **Compound proficiency grants** — the ancestry-Lore feats grant TWO skills ("trained in
+  Crafting AND Survival"); single-word capture silently dropped the second (52 feats). The
+  skill capture became a CHAIN over the 16 skill names joined by "and"/comma — so it stops at
+  the first non-skill word, keeping "your choice of Arcana, Nature, …" (the CHOICE shape, a
+  later slice) from fanning a pick-one into four grants. "or" is not a conjunction either.
+  Proficiency recall 73.1% → **96.3%**.
+- **Grant extractor (senses + speeds, then resistances/weaknesses/immunities)** — grants were
+  the biggest corroboration gap vs Foundry (86 foundry-only). SPEED reads every "results in
+  speed N" phrasing to one `grant:speed` (Foundry's `BaseSpeed`): "Speed of N", "increases to
+  N", "increases from X to N" (value after the final "to" — the from→to trap again), "Your
+  Speed is N", "a N-foot swim Speed". "increases BY N" is a different (additive, usually
+  conditional) effect, left to the governor gate — matching Foundry leaving it unmapped.
+  RESISTANCE/WEAKNESS match Foundry's value AST exactly: `floor(level/2)`, or `max(1,
+  floor(level/2))` **only when the prose says "(minimum 1)"** — FOLLOW THE PROSE (owner):
+  feats that omit it are never 1st-level, so half-your-level is never 0 when taken, and
+  applying min-1 anyway would disagree with Foundry's bare-floor encoding on 18 feats. The 7
+  where Foundry *added* min-1 the prose omits surface as (legitimate) conflicts. Grant recall
+  0 → **77%**; the parser also finds 177 grants Foundry never mapped (prose contains more).
+- **`effectKey` granularity fix (candidate.ts)** — a grant's key was `grant:${type}`, ignoring
+  WHAT is granted, so a feat granting fire AND sonic resistance collapsed into one bucket and
+  reconcile reported a false conflict for two producers that AGREED. The key now carries the
+  sub-target (`grant:resistance:fire`, `grant:sense:scent`, `grant:immunity:poison`,
+  `grant:speed:swim`). This split multi-grant feats into per-grant candidates and turned
+  ~4 false conflicts into corroborations. `effectSignature` stays coarse (the bulk-review shape).
+- **A conflict caught a real Foundry data gap**: Sensitive Nose's prose says "imprecise scent",
+  Foundry dropped the acuity its four sibling scent-feats carry — the parser being MORE correct
+  than the rule element, surfaced for a human. The second producer earning its keep, by design.
+
+Auto-promote (corroborated + complete, clears with no human): **163 → 287** across these.
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.

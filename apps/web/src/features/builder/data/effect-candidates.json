@@ -1,13 +1,13 @@
 {
- "generatedAt": "2026-07-18T01:45:25.893Z",
+ "generatedAt": "2026-07-18T02:06:43.363Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 1652,
-  "autoPromote": 261,
-  "conflicts": 1,
+  "candidates": 1756,
+  "autoPromote": 287,
+  "conflicts": 14,
   "gapped": 1058,
-  "review": 332,
+  "review": 397,
   "invalid": 0
  },
  "candidates": [
@@ -304,7 +304,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -490,7 +490,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -514,7 +514,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -524,7 +524,23 @@
       "end": 168,
       "text": "You gain low-light vision, or you gain darkvision"
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "aquatic-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense:darkvision",
+   "signature": "grant:sense",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -550,7 +566,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -600,7 +616,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -1574,7 +1590,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -2528,7 +2544,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -2881,7 +2897,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -3187,7 +3203,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -3197,7 +3213,23 @@
       "end": 110,
       "text": "You gain low-light vision, or you gain darkvision"
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "draconic-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense:darkvision",
+   "signature": "grant:sense",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -3859,7 +3891,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -3927,7 +3959,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -4099,7 +4131,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -4109,7 +4141,23 @@
       "end": 83,
       "text": "You gain low-light vision, or you gain darkvision"
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "embers-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense:darkvision",
+   "signature": "grant:sense",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -4504,7 +4552,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -4851,7 +4899,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -5323,6 +5371,34 @@
    ]
   },
   {
+   "entityId": "fresh-produce",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "void",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:void",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 334,
+      "end": 461,
+      "text": "The creature feels full for 10 minutes, during which it has resistance 2 to void damage and can't eat another piece of produce."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "friend-of-the-sea",
    "draft": {
     "kind": "grant",
@@ -5333,7 +5409,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -5386,10 +5462,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:poison",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 82,
+      "end": 149,
+      "text": "You gain resistance to poison equal to half your level (minimum 1)."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -5432,7 +5516,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:tremorsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -5544,7 +5628,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -5849,7 +5933,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -5969,7 +6053,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -6427,17 +6511,9 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
-    {
-     "source": "parser",
-     "span": {
-      "start": 64,
-      "end": 113,
-      "text": "You gain low-light vision, or you gain darkvision"
-     }
-    },
     {
      "source": "parser",
      "span": {
@@ -6452,6 +6528,30 @@
       "start": 161,
       "end": 260,
       "text": "You can select this feat twice, once to gain low-light vision and a second time to gain darkvision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "hungry-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense:darkvision",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 64,
+      "end": 113,
+      "text": "You gain low-light vision, or you gain darkvision"
      }
     },
     {
@@ -6900,7 +7000,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -7004,7 +7104,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -7223,7 +7323,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -7635,10 +7735,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:mental",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 177,
+      "text": "You gain resistance to mental damage equal to half your level (minimum 1)."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -8037,7 +8145,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8120,7 +8228,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8162,7 +8270,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8292,7 +8400,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8386,6 +8494,34 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "oceans-balm",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 179,
+      "text": "It regains level)-1)/2)+1)d8 healing HP and gains resistance 2 to fire for 1 minute."
+     }
     }
    ]
   },
@@ -8504,7 +8640,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8890,7 +9026,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -8899,14 +9035,6 @@
       "start": 834,
       "end": 914,
       "text": "Your pet has low-light vision and can gain additional senses from pet abilities."
-     }
-    },
-    {
-     "source": "parser",
-     "span": {
-      "start": 1829,
-      "end": 1849,
-      "text": "It gains darkvision."
      }
     }
    ]
@@ -8926,7 +9054,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -8936,7 +9064,27 @@
       "end": 954,
       "text": "Your pet has a Speed of 25 feet."
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:swim",
+   "signature": "grant:speed",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -8944,7 +9092,27 @@
       "end": 1111,
       "text": "You can choose to instead have an aquatic pet, which breathes in water instead of air and has the aquatic trait, no land Speed, and a swim Speed of 25 feet."
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "burrow",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:burrow",
+   "signature": "grant:speed",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -8952,7 +9120,27 @@
       "end": 1768,
       "text": "It gains a burrow Speed of 5 feet, allowing it to dig Tiny holes."
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:climb",
+   "signature": "grant:speed",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -8960,7 +9148,51 @@
       "end": 1814,
       "text": "It gains a climb Speed of 25 feet."
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense:darkvision",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 1829,
+      "end": 1849,
+      "text": "It gains darkvision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:fly",
+   "signature": "grant:speed",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -8982,7 +9214,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -9687,7 +9919,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -10239,10 +10471,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 81,
+      "end": 190,
+      "text": "You gain resistance to cold equal to half your level (minimum 1), and you treat environmental cold effects as"
+     }
+    },
     {
      "source": "foundry"
     }
@@ -10880,7 +11120,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -10911,7 +11151,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -11012,7 +11252,7 @@
      }
     }
    ],
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -11041,7 +11281,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -11836,6 +12076,10 @@
       "fn": "max",
       "args": [
        {
+        "kind": "lit",
+        "value": 1
+       },
+       {
         "kind": "call",
         "fn": "floor",
         "args": [
@@ -11854,20 +12098,63 @@
           ]
          }
         ]
-       },
-       {
-        "kind": "lit",
-        "value": 1
        }
       ]
      }
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "electricity",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 1
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:electricity",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 128,
+      "end": 200,
+      "text": "You gain resistance to electricity equal to half your level (minimum 1)."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -12158,7 +12445,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -12280,7 +12567,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -12399,7 +12686,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -12683,7 +12970,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:tremorsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -13207,7 +13494,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -14018,7 +14305,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -16285,6 +16572,54 @@
    ]
   },
   {
+   "entityId": "energy-fortification",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "vitality"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:vitality",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 392,
+      "end": 579,
+      "text": "A wood, earth, or water elemental medicine grants resistance to void damage and weakness to vitality damage, and a living recipient loses its immunity to vitality damage for the duration."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "energy-fortification",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "void"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:void",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 580,
+      "end": 756,
+      "text": "A fire or metal elemental medicine grants resistance to vitality damage and weakness to void damage, and an undead recipient loses its immunity to void damage for the duration."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "enjoy-the-show",
    "draft": {
     "kind": "modifier",
@@ -16632,7 +16967,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -16921,7 +17256,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -17761,10 +18096,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:weakness",
+   "agreement": "corroborated",
+   "key": "grant:weakness:fire",
    "signature": "grant:weakness",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 333,
+      "end": 410,
+      "text": "You gain the Toughness feat, but also fire weakness equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -17900,7 +18243,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -18140,10 +18483,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 162,
+      "end": 212,
+      "text": "You gain cold resistance equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -18416,10 +18767,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:poison",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 195,
+      "end": 312,
+      "text": "You gain poison resistance equal to half your level, and you gain a +1 status bonus to saving throws against poisons."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -20533,6 +20892,50 @@
    ]
   },
   {
+   "entityId": "werecreature-dedication",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "silver",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:silver",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 348,
+      "end": 431,
+      "text": "You gain the Toughness feat but also a weakness to silver equal to half your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "wild-mimic-dedication",
    "draft": {
     "kind": "modifier",
@@ -21755,7 +22158,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -21909,7 +22312,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -21968,7 +22371,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -22156,7 +22559,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -22277,7 +22680,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -22545,10 +22948,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:fire",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 234,
+      "text": "You gain fire resistance equal to half your level, and you gain a +1 circumstance bonus to saving throws against fire effects."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -22604,6 +23015,34 @@
       "start": 510,
       "end": 666,
       "text": "you fail this check or don't attempt the action within 1 minute, you instead take a -1 circumstance penalty on checks to attempt the same action for 1 hour."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "fly-swat",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 107,
+      "end": 203,
+      "text": "Your lash strikes ignore an amount of swarms' resistance to physical damage equal to your level."
      }
     }
    ]
@@ -24009,7 +24448,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -24055,10 +24494,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 246,
+      "end": 358,
+      "text": "You gain resistance to cold damage equal to half your level, and you're protected from severe cold temperatures."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -24276,7 +24723,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -24418,10 +24865,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:void",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 224,
+      "text": "You gain a +1 circumstance bonus to saves against necromancy effects and gain resistance to void damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -24553,10 +25008,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:void",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 234,
+      "text": "You gain a +1 circumstance bonus to saves against necromancy effects and gain resistance to void damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -24667,29 +25130,19 @@
      "damageType": "mental",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -24698,10 +25151,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "mental",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:mental",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 267,
+      "end": 436,
+      "text": "You gain mental resistance equal to half your level and a +2 circumstance bonus to saving throws against effects that attempt to read your mind or discern your location."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -25046,7 +25546,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:lifesense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -25494,7 +25994,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -26198,6 +26698,62 @@
    ]
   },
   {
+   "entityId": "thoughtform-summoning",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "force",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:force",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 217,
+      "end": 460,
+      "text": "This grants it resistance to physical damage equal to half its level, weakness 5 to force and mental damage, and the ability to pass through enemies' spaces without needing to Tumble Through (though it can't end its turn in an occupied space)."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "thoughtform-summoning",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "mental",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:mental",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 217,
+      "end": 460,
+      "text": "This grants it resistance to physical damage equal to half its level, weakness 5 to force and mental damage, and the ability to pass through enemies' spaces without needing to Tumble Through (though it can't end its turn in an occupied space)."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "trained-swimmer",
    "draft": {
     "kind": "grant",
@@ -26212,7 +26768,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -26623,7 +27179,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:tremorsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -26647,7 +27203,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -27066,12 +27622,48 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:fire",
    "signature": "grant:resistance",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 147,
+      "end": 187,
+      "text": "You gain resistance 3 to fire and sonic."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "blast-resistance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "sonic",
+     "value": {
+      "kind": "lit",
+      "value": 3
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:resistance:sonic",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 147,
+      "end": 187,
+      "text": "You gain resistance 3 to fire and sonic."
+     }
     },
     {
      "source": "foundry"
@@ -27123,7 +27715,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:wavesense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -27347,7 +27939,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -27374,7 +27966,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -27430,7 +28022,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -27456,7 +28048,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -27673,7 +28265,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -27892,7 +28484,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -28083,10 +28675,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:fire",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 35,
+      "end": 65,
+      "text": "You gain resistance 4 to fire."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -28333,7 +28933,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:lifesense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -28515,29 +29115,19 @@
      "damageType": "precision",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -28546,10 +29136,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "precision",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:precision",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 86,
+      "end": 151,
+      "text": "You gain resistance to precision damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -28602,7 +29239,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -28633,7 +29270,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -28832,7 +29469,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -28863,7 +29500,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -28962,7 +29599,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -28993,7 +29630,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -29024,7 +29661,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -29309,7 +29946,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -29491,7 +30128,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -29761,6 +30398,54 @@
    ]
   },
   {
+   "entityId": "barricade-snare",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 575,
+      "end": 759,
+      "text": "it provides standard cover, can be Climbed with a successful Athletics DC 12 check, has an AC of 10, Hardness 5, and 20 Hit Points, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "barricade-snare",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 575,
+      "end": 759,
+      "text": "it provides standard cover, can be Climbed with a successful Athletics DC 12 check, has an AC of 10, Hardness 5, and 20 Hit Points, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "bellflower-dedication",
    "draft": {
     "kind": "modifier",
@@ -29940,7 +30625,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -30026,6 +30711,30 @@
       "start": 1226,
       "end": 1309,
       "text": "The action is disrupted, and the creature takes a –2 status penalty to attack rolls"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "crawling-fire",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "fire"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:fire",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 621,
+      "end": 680,
+      "text": "It uses your statistics for defenses but is immune to fire."
      }
     }
    ]
@@ -30137,7 +30846,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -30372,10 +31081,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:void",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 279,
+      "text": "You gain resistance to void damage equal to half your level and a +1 status bonus to saving throws against effects with the void trait."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -31662,6 +32379,34 @@
    ]
   },
   {
+   "entityId": "invincible-army",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 295,
+      "end": 398,
+      "text": "On a success, the target gains resistance 5 to either bludgeoning, piercing, or slashing damage, chosen"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "iomedaes-valor",
    "draft": {
     "kind": "modifier",
@@ -31688,6 +32433,54 @@
    ]
   },
   {
+   "entityId": "jagged-berms",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 150,
+      "end": 245,
+      "text": "A mound has AC 10, Hardness 10, and 20 HP, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "jagged-berms",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 150,
+      "end": 245,
+      "text": "A mound has AC 10, Hardness 10, and 20 HP, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "jelly-body",
    "draft": {
     "kind": "grant",
@@ -31702,12 +32495,32 @@
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "key": "grant:resistance:critical-hits",
    "signature": "grant:resistance",
    "evidence": [
     {
      "source": "foundry"
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "jelly-body",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "precision",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "grant:resistance:precision",
+   "signature": "grant:resistance",
+   "evidence": [
     {
      "source": "foundry"
     }
@@ -31966,7 +32779,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -32308,29 +33121,19 @@
      "damageType": "mental",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -32339,10 +33142,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "mental",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:mental",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 50,
+      "end": 223,
+      "text": "You gain resistance to mental damage equal to half your level and a +1 circumstance bonus to saving throws against effects that would make you Clumsy, Drained, or Enfeebled."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -32572,6 +33422,54 @@
    "evidence": [
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "scrap-barricade",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 285,
+      "end": 426,
+      "text": "Each 10-foot-by-10-foot section of the wall has AC 10, Hardness 10, and 20 Hit Points, and it's immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "scrap-barricade",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 285,
+      "end": 426,
+      "text": "Each 10-foot-by-10-foot section of the wall has AC 10, Hardness 10, and 20 Hit Points, and it's immune to critical hits and precision damage."
+     }
     }
    ]
   },
@@ -33106,7 +34004,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -33115,6 +34013,34 @@
       "start": 115,
       "end": 293,
       "text": "You gain darkvision and low-light vision, and you can see Invisible creatures and objects as translucent shapes, though these shapes are indistinct enough to be Concealed to you."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "volatile-grease",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "fire",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:fire",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 273,
+      "end": 338,
+      "text": "The target is splattered with grease and gains weakness 2 to fire"
      }
     }
    ]
@@ -33274,6 +34200,54 @@
    ]
   },
   {
+   "entityId": "wooden-palisade",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 451,
+      "end": 590,
+      "text": "Each 10-foot-by-10-foot section of the wall has AC 10, Hardness 10, and 20 Hit Points, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "wooden-palisade",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 451,
+      "end": 590,
+      "text": "Each 10-foot-by-10-foot section of the wall has AC 10, Hardness 10, and 20 Hit Points, and is immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "aerobatics-mastery",
    "draft": {
     "kind": "modifier",
@@ -33386,7 +34360,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:bloodsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -33524,6 +34498,34 @@
       "start": 198,
       "end": 344,
       "text": "You gain a +1 circumstance bonus to your Thievery check to Steal as your tumbling make it difficult for your enemy to keep track of your movement."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "a-little-bird-told-me",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "physical",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:physical",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 517,
+      "end": 547,
+      "text": "Weakness 5 to physical damage."
      }
     }
    ]
@@ -33779,6 +34781,34 @@
    ]
   },
   {
+   "entityId": "conductive-sphere",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "electricity",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:electricity",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 115,
+      "end": 263,
+      "text": "Any of your allies adjacent to it gain resistance to electricity equal to your level and add the Shock rune to all their Strikes with metal objects."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "cultivators-keen-eye",
    "draft": {
     "kind": "grant",
@@ -33791,7 +34821,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:lifesense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -35023,6 +36053,50 @@
    ]
   },
   {
+   "entityId": "mutant-physique",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 446,
+      "end": 514,
+      "text": "You gain resistance to all physical damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "mythic-allies",
    "draft": {
     "kind": "modifier",
@@ -35231,6 +36305,138 @@
       "start": 138,
       "end": 183,
       "text": "That ally gains a +1 circumstance bonus to AC"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "protective-pose",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:cold",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 338,
+      "end": 496,
+      "text": "Creatures within range of either you or you eidolon gain resistance to your choice of acid, cold, electricity, fire, or sonic damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "protective-pose",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "electricity",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:electricity",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 338,
+      "end": 496,
+      "text": "Creatures within range of either you or you eidolon gain resistance to your choice of acid, cold, electricity, fire, or sonic damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "protective-pose",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 338,
+      "end": 496,
+      "text": "Creatures within range of either you or you eidolon gain resistance to your choice of acid, cold, electricity, fire, or sonic damage equal to half your level."
      }
     }
    ]
@@ -35903,7 +37109,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -36322,29 +37528,19 @@
      "damageType": "mental",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -36353,10 +37549,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "mental",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:mental",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 139,
+      "end": 216,
+      "text": "You and your mount gain resistance to mental damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36371,29 +37614,19 @@
      "damageType": "spirit",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -36402,10 +37635,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "spirit",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:spirit",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 64,
+      "end": 126,
+      "text": "You gain resistance to spirit damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36636,6 +37916,30 @@
    ]
   },
   {
+   "entityId": "wall-of-roses",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "fire"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:fire",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 194,
+      "end": 310,
+      "text": "The wall is immune to fire and the piercing damage its thorns deal counts as silver for the purposes of resistances."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "wind-seeker",
    "draft": {
     "kind": "modifier",
@@ -36712,7 +38016,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -36882,7 +38186,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -36913,7 +38217,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37004,7 +38308,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -37126,7 +38430,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:tremorsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -37328,7 +38632,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37359,7 +38663,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37390,7 +38694,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37489,7 +38793,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37706,7 +39010,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -37814,6 +39118,50 @@
       "start": 42,
       "end": 141,
       "text": "You gain a +1 circumstance bonus to saves against spells and magical effects at all times, not just"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "moisture-bath",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:cold",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 216,
+      "end": 302,
+      "text": "Additionally, you gain fire and cold resistance equal to half your level for 1 minute."
      }
     }
    ]
@@ -38174,7 +39522,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38205,7 +39553,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:swim",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38232,7 +39580,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -38285,67 +39633,412 @@
      "type": "resistance",
      "damageType": "cold",
      "value": {
-      "kind": "call",
-      "fn": "clamp",
-      "args": [
-       {
-        "kind": "call",
-        "fn": "floor",
-        "args": [
-         {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "call",
-            "fn": "subtract",
-            "args": [
-             {
-              "kind": "var",
-              "name": "level"
-             },
-             {
-              "kind": "lit",
-              "value": 1
-             }
-            ]
-           },
-           {
-            "kind": "lit",
-            "value": 4
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "kind": "lit",
-        "value": 2
-       },
-       {
-        "kind": "lit",
-        "value": 4
-       }
-      ]
+      "kind": "lit",
+      "value": 2
      }
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "cold",
+      "value": {
+       "kind": "call",
+       "fn": "clamp",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "call",
+             "fn": "subtract",
+             "args": [
+              {
+               "kind": "var",
+               "name": "level"
+              },
+              {
+               "kind": "lit",
+               "value": 1
+              }
+             ]
+            },
+            {
+             "kind": "lit",
+             "value": 4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 2
+        },
+        {
+         "kind": "lit",
+         "value": 4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
     {
-     "source": "foundry"
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 175,
+      "text": "You gain resistance 2 to cold, electricity, fire, piercing, and slashing damage."
+     }
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "skeletal-resistance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "electricity",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "electricity",
+      "value": {
+       "kind": "call",
+       "fn": "clamp",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "call",
+             "fn": "subtract",
+             "args": [
+              {
+               "kind": "var",
+               "name": "level"
+              },
+              {
+               "kind": "lit",
+               "value": 1
+              }
+             ]
+            },
+            {
+             "kind": "lit",
+             "value": 4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 2
+        },
+        {
+         "kind": "lit",
+         "value": 4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:electricity",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 175,
+      "text": "You gain resistance 2 to cold, electricity, fire, piercing, and slashing damage."
+     }
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "skeletal-resistance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "fire",
+      "value": {
+       "kind": "call",
+       "fn": "clamp",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "call",
+             "fn": "subtract",
+             "args": [
+              {
+               "kind": "var",
+               "name": "level"
+              },
+              {
+               "kind": "lit",
+               "value": 1
+              }
+             ]
+            },
+            {
+             "kind": "lit",
+             "value": 4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 2
+        },
+        {
+         "kind": "lit",
+         "value": 4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 175,
+      "text": "You gain resistance 2 to cold, electricity, fire, piercing, and slashing damage."
+     }
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "skeletal-resistance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "piercing",
+      "value": {
+       "kind": "call",
+       "fn": "clamp",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "call",
+             "fn": "subtract",
+             "args": [
+              {
+               "kind": "var",
+               "name": "level"
+              },
+              {
+               "kind": "lit",
+               "value": 1
+              }
+             ]
+            },
+            {
+             "kind": "lit",
+             "value": 4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 2
+        },
+        {
+         "kind": "lit",
+         "value": 4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 175,
+      "text": "You gain resistance 2 to cold, electricity, fire, piercing, and slashing damage."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "skeletal-resistance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "slashing",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "slashing",
+      "value": {
+       "kind": "call",
+       "fn": "clamp",
+       "args": [
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "call",
+             "fn": "subtract",
+             "args": [
+              {
+               "kind": "var",
+               "name": "level"
+              },
+              {
+               "kind": "lit",
+               "value": 1
+              }
+             ]
+            },
+            {
+             "kind": "lit",
+             "value": 4
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "lit",
+         "value": 2
+        },
+        {
+         "kind": "lit",
+         "value": 4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:slashing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 175,
+      "text": "You gain resistance 2 to cold, electricity, fire, piercing, and slashing damage."
+     }
     },
     {
      "source": "foundry"
@@ -38367,7 +40060,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38398,7 +40091,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38429,7 +40122,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38589,7 +40282,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38620,7 +40313,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -38689,6 +40382,34 @@
    ]
   },
   {
+   "entityId": "unleash-yaoguai-might",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 805,
+      "end": 940,
+      "text": "Your skin transmutes partially into an inorganic substance, granting resistance 5 to your choice of bludgeoning, piercing, or slashing."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "web-hunter",
    "draft": {
     "kind": "grant",
@@ -38701,7 +40422,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:sense",
+   "key": "grant:sense:tremorsense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -39078,7 +40799,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -39410,6 +41131,74 @@
    "draft": {
     "kind": "grant",
     "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 265,
+      "end": 364,
+      "text": "You gain resistance to physical damage equal to half your level and are immune to precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disperse-into-petals",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 265,
+      "end": 364,
+      "text": "You gain resistance to physical damage equal to half your level and are immune to precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disperse-into-petals",
+   "draft": {
+    "kind": "grant",
+    "grant": {
      "type": "speed",
      "movement": "fly",
      "value": {
@@ -39420,7 +41209,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -39750,6 +41539,34 @@
    ]
   },
   {
+   "entityId": "fly-on-shadowed-wings",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "precision",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:precision",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 155,
+      "end": 363,
+      "text": "for 10 minutes, you gain a fly Speed equal to your land Speed and resistance to precision damage equal to your level, but your chosen apparition is dispersed for the duration, automatically re-attuning to you"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "geobukseon-retaliation",
    "draft": {
     "kind": "modifier",
@@ -39770,6 +41587,90 @@
    "agreement": "parser-only",
    "key": "modifier:ac:circumstance",
    "signature": "modifier:ac:circumstance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 317,
+      "text": "Your armor has a retractable spike-covered shell reminiscent of Hwanggot's heavily armored geobukseon, or \"turtle ships.\" The shell unfolds across your body, giving you a +4 circumstance bonus to AC and resistance 2 to bludgeoning, piercing, and slashing damage"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "geobukseon-retaliation",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "bludgeoning",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:bludgeoning",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 317,
+      "text": "Your armor has a retractable spike-covered shell reminiscent of Hwanggot's heavily armored geobukseon, or \"turtle ships.\" The shell unfolds across your body, giving you a +4 circumstance bonus to AC and resistance 2 to bludgeoning, piercing, and slashing damage"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "geobukseon-retaliation",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 317,
+      "text": "Your armor has a retractable spike-covered shell reminiscent of Hwanggot's heavily armored geobukseon, or \"turtle ships.\" The shell unfolds across your body, giving you a +4 circumstance bonus to AC and resistance 2 to bludgeoning, piercing, and slashing damage"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "geobukseon-retaliation",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "slashing",
+     "value": {
+      "kind": "lit",
+      "value": 2
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:slashing",
+   "signature": "grant:resistance",
    "evidence": [
     {
      "source": "parser",
@@ -39814,6 +41715,114 @@
    ]
   },
   {
+   "entityId": "harden-flesh",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "lit",
+      "value": 3
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 122,
+      "end": 182,
+      "text": "You gain resistance 3 to physical damage, except adamantine,"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "heartless-debilitations",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "bleed",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:bleed",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 183,
+      "end": 238,
+      "text": "The target gains weakness 5 to bleed and poison damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "heartless-debilitations",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "poison",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:poison",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 183,
+      "end": 238,
+      "text": "The target gains weakness 5 to bleed and poison damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "hematocritical",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "bleed"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:bleed",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 14,
+      "end": 109,
+      "text": "Your last action was a Strike that critically hit a creature that isn't immune to bleed damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "heroic-recovery",
    "draft": {
     "kind": "modifier",
@@ -39850,7 +41859,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -39878,7 +41887,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -40479,6 +42488,54 @@
    ]
   },
   {
+   "entityId": "tectonic-stomp",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 616,
+      "end": 670,
+      "text": "They are immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "tectonic-stomp",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 616,
+      "end": 670,
+      "text": "They are immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "tillers-drive",
    "draft": {
     "kind": "modifier",
@@ -40546,7 +42603,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -40559,6 +42616,34 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "vicious-debilitations",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:piercing",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 173,
+      "end": 261,
+      "text": "The target gains weakness 5 to your choice of bludgeoning, piercing, or slashing damage."
+     }
     }
    ]
   },
@@ -40609,7 +42694,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -40795,10 +42880,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:bleed",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 339,
+      "text": "You also gain resistance 5 to persistent bleed damage and reduce the DC of checks to recover from persistent bleed damage to 11, or 6"
+     }
+    },
     {
      "source": "foundry"
     }
@@ -40935,6 +43028,53 @@
   {
    "entityId": "aura-of-confidence",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "mental",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:resistance:mental",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 88,
+      "end": 150,
+      "text": "You gain resistance to mental damage equal to half your level."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "aura-of-confidence",
+   "draft": {
     "kind": "modifier",
     "target": "fortitude",
     "bonusType": "status",
@@ -41025,45 +43165,6 @@
       "end": 248,
       "text": "You and all allies within 15 feet gain a +2 status bonus to saving throws against mental effects."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "aura-of-confidence",
-   "draft": {
-    "kind": "grant",
-    "grant": {
-     "type": "resistance",
-     "damageType": "mental",
-     "value": {
-      "kind": "call",
-      "fn": "floor",
-      "args": [
-       {
-        "kind": "call",
-        "fn": "divide",
-        "args": [
-         {
-          "kind": "var",
-          "name": "level"
-         },
-         {
-          "kind": "lit",
-          "value": 2
-         }
-        ]
-       }
-      ]
-     }
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
-   "signature": "grant:resistance",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -41241,7 +43342,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -41273,6 +43374,58 @@
       "start": 69,
       "end": 132,
       "text": "Your animal companion becomes trained in Performance (or expert"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "conjure-hell",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 304,
+      "end": 404,
+      "text": "This fire damage ignores an amount of fire resistance equal to your level, but not immunity to fire."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "conjure-hell",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "fire"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:fire",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 304,
+      "end": 404,
+      "text": "This fire damage ignores an amount of fire resistance equal to your level, but not immunity to fire."
      }
     }
    ]
@@ -42377,6 +44530,54 @@
    ]
   },
   {
+   "entityId": "glacial-prison",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 426,
+      "end": 547,
+      "text": "It can't act, its AC is 9, it has Hardness 5, and it's immune to other cold effects, critical hits, and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "glacial-prison",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 426,
+      "end": 547,
+      "text": "It can't act, its AC is 9, it has Hardness 5, and it's immune to other cold effects, critical hits, and precision damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "gladiators-roar",
    "draft": {
     "kind": "modifier",
@@ -42830,6 +45031,118 @@
    ]
   },
   {
+   "entityId": "overwhelming-spellstrike",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "acid",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:acid",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 266,
+      "text": "The spell you cast as part of the Spellstrike ignores an amount of the target's resistance to acid, cold, electricity, fire, or sonic damage equal to your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "overwhelming-spellstrike",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:cold",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 266,
+      "text": "The spell you cast as part of the Spellstrike ignores an amount of the target's resistance to acid, cold, electricity, fire, or sonic damage equal to your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "overwhelming-spellstrike",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "electricity",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:electricity",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 266,
+      "text": "The spell you cast as part of the Spellstrike ignores an amount of the target's resistance to acid, cold, electricity, fire, or sonic damage equal to your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "overwhelming-spellstrike",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 266,
+      "text": "The spell you cast as part of the Spellstrike ignores an amount of the target's resistance to acid, cold, electricity, fire, or sonic damage equal to your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "return-to-the-pit",
    "draft": {
     "kind": "modifier",
@@ -43042,7 +45355,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:lifesense",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -43453,7 +45766,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -43680,7 +45993,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -43708,7 +46021,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:climb",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -43718,7 +46031,27 @@
       "end": 146,
       "text": "You gain either a climb Speed of 20 feet or a swim Speed of 20 feet, your choice."
      }
-    },
+    }
+   ]
+  },
+  {
+   "entityId": "arcane-locomotion",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:swim",
+   "signature": "grant:speed",
+   "evidence": [
     {
      "source": "parser",
      "span": {
@@ -43797,7 +46130,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -43924,7 +46257,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -43955,7 +46288,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44005,6 +46338,37 @@
   {
    "entityId": "fey-skin",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "cold-iron",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:weakness:cold-iron",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 523,
+      "end": 565,
+      "text": "However, you gain weakness 5 to cold iron."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "fey-skin",
+   "draft": {
     "kind": "modifier",
     "target": "hp",
     "bonusType": "untyped",
@@ -44017,29 +46381,6 @@
    "agreement": "foundry-only",
    "key": "modifier:hp:untyped",
    "signature": "modifier:hp:untyped",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "fey-skin",
-   "draft": {
-    "kind": "grant",
-    "grant": {
-     "type": "weakness",
-     "damageType": "cold-iron",
-     "value": {
-      "kind": "lit",
-      "value": 5
-     }
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:weakness",
-   "signature": "grant:weakness",
    "evidence": [
     {
      "source": "foundry"
@@ -44061,7 +46402,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44092,7 +46433,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44191,7 +46532,7 @@
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
     {
@@ -44272,7 +46613,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44300,7 +46641,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44331,7 +46672,7 @@
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "key": "grant:resistance:void",
    "signature": "grant:resistance",
    "evidence": [
     {
@@ -44625,7 +46966,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:burrow",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -44924,6 +47265,34 @@
    ]
   },
   {
+   "entityId": "aura-of-life",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "void",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:void",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 50,
+      "end": 178,
+      "text": "You and all allies in your champion's aura gain resistance 5 to void damage and a +1 status bonus to saves against void effects."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "bloc-tactics",
    "draft": {
     "kind": "modifier",
@@ -45180,6 +47549,50 @@
    ]
   },
   {
+   "entityId": "channel-divine-spark",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 321,
+      "end": 443,
+      "text": "You gain a number of temporary Hit Points equal to your level, and resistance to physical damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "chosen-ward",
    "draft": {
     "kind": "modifier",
@@ -45239,6 +47652,78 @@
       "start": 210,
       "end": 341,
       "text": "either you or your united companion are adjacent to your ward, you grant them a +1 circumstance bonus to their AC and Reflex saves."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "curse-of-the-saumen-kar",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "cold"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:cold",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 637,
+      "end": 694,
+      "text": "it's immune to cold, critical hits, and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "curse-of-the-saumen-kar",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 637,
+      "end": 694,
+      "text": "it's immune to cold, critical hits, and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "curse-of-the-saumen-kar",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 637,
+      "end": 694,
+      "text": "it's immune to cold, critical hits, and precision damage."
      }
     }
    ]
@@ -45391,6 +47876,62 @@
       "start": 95,
       "end": 204,
       "text": "For the next minute, you gain a +2 circumstance bonus to Deception, Diplomacy, and Intimidation skill checks."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dormant-eruption",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:cold",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 99,
+      "end": 162,
+      "text": "You're hot to the touch, gaining resistance 5 to cold and fire."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dormant-eruption",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 99,
+      "end": 162,
+      "text": "You're hot to the touch, gaining resistance 5 to cold and fire."
      }
     }
    ]
@@ -45666,7 +48207,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -46026,6 +48567,62 @@
    ]
   },
   {
+   "entityId": "orchards-endurance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "bludgeoning",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:bludgeoning",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 66,
+      "end": 160,
+      "text": "You and your allies in your kinetic aura gain resistance 5 to bludgeoning and piercing damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "orchards-endurance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 66,
+      "end": 160,
+      "text": "You and your allies in your kinetic aura gain resistance 5 to bludgeoning and piercing damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "peculiar-anatomy",
    "draft": {
     "kind": "modifier",
@@ -46130,29 +48727,19 @@
      "damageType": "poison",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -46161,10 +48748,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "resistance",
+      "damageType": "poison",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:resistance:poison",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 87,
+      "end": 222,
+      "text": "You gain a +2 circumstance bonus to saving throws against disease and poison, and resistance to poison damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -46771,6 +49405,34 @@
    ]
   },
   {
+   "entityId": "shield-the-faithful",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "spirit",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:spirit",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 91,
+      "end": 208,
+      "text": "For 1 minute, you and all allies within 10 feet of you gain a +1 item bonus to AC and resistance 10 to spirit damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "sixth-pillar-mastery",
    "draft": {
     "kind": "modifier",
@@ -47054,6 +49716,90 @@
       "start": 72,
       "end": 134,
       "text": "It gains a +1 status bonus to all saving throws against magic."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "starlight-armor",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 7
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 183,
+      "text": "The armor grants you resistance 7 to piercing, bludgeoning, and slashing damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "starlight-armor",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "bludgeoning",
+     "value": {
+      "kind": "lit",
+      "value": 7
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:bludgeoning",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 183,
+      "text": "The armor grants you resistance 7 to piercing, bludgeoning, and slashing damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "starlight-armor",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "slashing",
+     "value": {
+      "kind": "lit",
+      "value": 7
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:slashing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 183,
+      "text": "The armor grants you resistance 7 to piercing, bludgeoning, and slashing damage."
      }
     }
    ]
@@ -47216,10 +49962,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:poison",
    "signature": "grant:resistance",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 17,
+      "end": 170,
+      "text": "In addition, you gain a +2 status bonus to saving throws against poisons and diseases, and you gain resistance to poison damage equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -47486,6 +50240,50 @@
    ]
   },
   {
+   "entityId": "winters-kiss",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 179,
+      "end": 294,
+      "text": "You are now protected from extreme cold and extreme heat, and you gain resistance to fire equal to half your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "legendary-leader",
    "draft": {
     "kind": "modifier",
@@ -47574,6 +50372,81 @@
    ]
   },
   {
+   "entityId": "abjure-harm",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 196,
+      "end": 328,
+      "text": "The triggering Strike becomes a regular hit instead of a critical hit and you gain resistance to physical damage equal to your level"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "bound-in-ice",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "fire",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:resistance:fire",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 117,
+      "end": 229,
+      "text": "Your cold resistance increases to be equal to your level, and you gain fire resistance equal to half your level."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
    "entityId": "bound-in-ice",
    "draft": {
     "kind": "grant",
@@ -47588,12 +50461,9 @@
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "key": "grant:resistance:cold",
    "signature": "grant:resistance",
    "evidence": [
-    {
-     "source": "foundry"
-    },
     {
      "source": "foundry"
     }
@@ -47730,6 +50600,34 @@
    ]
   },
   {
+   "entityId": "declare-anathema",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "spirit",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:spirit",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 474,
+      "end": 548,
+      "text": "In addition, the creature gains weakness 10 to spirit damage for 1 minute."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "deflecting-cloud",
    "draft": {
     "kind": "modifier",
@@ -47840,6 +50738,34 @@
    ]
   },
   {
+   "entityId": "electric-counter",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "electricity",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:electricity",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 76,
+      "end": 130,
+      "text": "You gain resistance to electricity equal to your level"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "enlightened-presence",
    "draft": {
     "kind": "modifier",
@@ -47893,6 +50819,34 @@
       "start": 601,
       "end": 717,
       "text": "For each range increment beyond the first, a creature gains a cumulative +2 circumstance bonus to their Reflex save."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "instrument-of-death",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "spirit",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:spirit",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 328,
+      "end": 376,
+      "text": "- The target gains weakness 10 to spirit damage."
      }
     }
    ]
@@ -48686,6 +51640,34 @@
    ]
   },
   {
+   "entityId": "wither-away",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "slashing",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:weakness:slashing",
+   "signature": "grant:weakness",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 701,
+      "end": 749,
+      "text": "The target gains weakness 10 to slashing damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "you-failed-to-account-for-this",
    "draft": {
     "kind": "modifier",
@@ -48753,7 +51735,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -48850,17 +51832,41 @@
     "kind": "grant",
     "grant": {
      "type": "immunity",
+     "to": "sleep"
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:immunity:sleep",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 194,
+      "end": 271,
+      "text": "You gain immunity to sleep effects and effects that would make you Paralyzed."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "dragonet-immunities",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
      "to": "paralyzed"
     }
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:immunity",
+   "key": "grant:immunity:paralyzed",
    "signature": "grant:immunity",
    "evidence": [
-    {
-     "source": "foundry"
-    },
     {
      "source": "foundry"
     }
@@ -48880,12 +51886,48 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:resistance:holy",
    "signature": "grant:resistance",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 176,
+      "end": 235,
+      "text": "In addition, you gain resistance 5 to both holy and unholy."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "favor-of-heaven",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "unholy",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:resistance:unholy",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 176,
+      "end": 235,
+      "text": "In addition, you gain resistance 5 to both holy and unholy."
+     }
     },
     {
      "source": "foundry"
@@ -48997,29 +52039,19 @@
      "damageType": "cold-iron",
      "value": {
       "kind": "call",
-      "fn": "max",
+      "fn": "floor",
       "args": [
        {
-        "kind": "lit",
-        "value": 1
-       },
-       {
         "kind": "call",
-        "fn": "floor",
+        "fn": "divide",
         "args": [
          {
-          "kind": "call",
-          "fn": "divide",
-          "args": [
-           {
-            "kind": "var",
-            "name": "level"
-           },
-           {
-            "kind": "lit",
-            "value": 2
-           }
-          ]
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
          }
         ]
        }
@@ -49028,10 +52060,57 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:weakness",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "weakness",
+      "damageType": "cold-iron",
+      "value": {
+       "kind": "call",
+       "fn": "max",
+       "args": [
+        {
+         "kind": "lit",
+         "value": 1
+        },
+        {
+         "kind": "call",
+         "fn": "floor",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "divide",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 2
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "key": "grant:weakness:cold-iron",
    "signature": "grant:weakness",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 434,
+      "end": 490,
+      "text": "You have weakness to cold iron equal to half your level."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -49052,7 +52131,7 @@
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:weakness",
+   "key": "grant:weakness:holy",
    "signature": "grant:weakness",
    "evidence": [
     {
@@ -49323,7 +52402,7 @@
    },
    "gaps": [],
    "agreement": "corroborated",
-   "key": "grant:speed",
+   "key": "grant:speed:fly",
    "signature": "grant:speed",
    "evidence": [
     {
@@ -49399,17 +52478,9 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
-    {
-     "source": "parser",
-     "span": {
-      "start": 269,
-      "end": 410,
-      "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
-     }
-    },
     {
      "source": "parser",
      "span": {
@@ -49429,6 +52500,130 @@
    ]
   },
   {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 60
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed:swim",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 269,
+      "end": 410,
+      "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "bleed"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:bleed",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 606,
+      "end": 682,
+      "text": "They're mindless and immune to bleed, healing, Paralyzed, poison, and sleep."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "paralyzed"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:paralyzed",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 606,
+      "end": 682,
+      "text": "They're mindless and immune to bleed, healing, Paralyzed, poison, and sleep."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "poison"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:poison",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 606,
+      "end": 682,
+      "text": "They're mindless and immune to bleed, healing, Paralyzed, poison, and sleep."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "sleep"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:sleep",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 606,
+      "end": 682,
+      "text": "They're mindless and immune to bleed, healing, Paralyzed, poison, and sleep."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "celestial-form",
    "draft": {
     "kind": "grant",
@@ -49439,7 +52634,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -49448,6 +52643,54 @@
       "start": 208,
       "end": 227,
       "text": "You gain darkvision"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "creature-of-myth",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "cold"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:cold",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 1632,
+      "end": 1720,
+      "text": "Your united companion becomes immune to your choice of acid, cold, electricity, or fire."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "creature-of-myth",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "electricity"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:electricity",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 1632,
+      "end": 1720,
+      "text": "Your united companion becomes immune to your choice of acid, cold, electricity, or fire."
      }
     }
    ]
@@ -49489,7 +52732,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -49699,7 +52942,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -49951,6 +53194,102 @@
    ]
   },
   {
+   "entityId": "on-my-best-day",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 370,
+      "end": 456,
+      "text": "You gain a +3 status bonus to AC and resistance to physical damage equal to your level"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pack-of-the-beast-lord",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "call",
+      "fn": "floor",
+      "args": [
+       {
+        "kind": "call",
+        "fn": "divide",
+        "args": [
+         {
+          "kind": "var",
+          "name": "level"
+         },
+         {
+          "kind": "lit",
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 243,
+      "end": 393,
+      "text": "It gains immunity to precision damage, resistance to physical damage equal to half your level, and a weakness to area damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pack-of-the-beast-lord",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 243,
+      "end": 393,
+      "text": "It gains immunity to precision damage, resistance to physical damage equal to half your level, and a weakness to area damage equal to half your level."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "pass-vengeful-judgment",
    "draft": {
     "kind": "modifier",
@@ -49978,6 +53317,54 @@
       "start": 1151,
       "end": 1271,
       "text": "For the next month, you and your hierophant gain a +2 status bonus to Intimidation checks against creatures in the area."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "rebirth-in-living-stone",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "critical-hits"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:critical-hits",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 158,
+      "end": 210,
+      "text": "You're immune to critical hits and precision damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "rebirth-in-living-stone",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "precision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:immunity:precision",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 158,
+      "end": 210,
+      "text": "You're immune to critical hits and precision damage."
      }
     }
    ]
@@ -50211,19 +53598,27 @@
    "draft": {
     "kind": "grant",
     "grant": {
-     "type": "resistance",
-     "damageType": "physical",
+     "type": "weakness",
+     "damageType": "mental",
      "value": {
       "kind": "lit",
-      "value": 10
+      "value": 5
      }
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:resistance",
-   "signature": "grant:resistance",
+   "agreement": "corroborated",
+   "key": "grant:weakness:mental",
+   "signature": "grant:weakness",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 179,
+      "text": "- You gain resistance 10 to physical damage but weakness 5 to mental damage."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -50234,18 +53629,18 @@
    "draft": {
     "kind": "grant",
     "grant": {
-     "type": "weakness",
-     "damageType": "mental",
+     "type": "resistance",
+     "damageType": "physical",
      "value": {
       "kind": "lit",
-      "value": 5
+      "value": 10
      }
     }
    },
    "gaps": [],
    "agreement": "foundry-only",
-   "key": "grant:weakness",
-   "signature": "grant:weakness",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
    "evidence": [
     {
      "source": "foundry"
@@ -50263,7 +53658,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -50286,12 +53681,44 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:immunity",
+   "agreement": "corroborated",
+   "key": "grant:immunity:poison",
    "signature": "grant:immunity",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 244,
+      "end": 284,
+      "text": "You become immune to poison and disease."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "celestial-rebirth",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:immunity:disease",
+   "signature": "grant:immunity",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 244,
+      "end": 284,
+      "text": "You become immune to poison and disease."
+     }
     },
     {
      "source": "foundry"
@@ -50505,6 +53932,34 @@
    ]
   },
   {
+   "entityId": "heart-of-the-kaiju",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:physical",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 508,
+      "end": 530,
+      "text": "physical resistance 5;"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "icy-apotheosis",
    "draft": {
     "kind": "grant",
@@ -50514,10 +53969,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:immunity",
+   "agreement": "corroborated",
+   "key": "grant:immunity:cold",
    "signature": "grant:immunity",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 74,
+      "end": 128,
+      "text": "You are immune to cold damage and gain the cold trait."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -50726,7 +54189,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -50772,6 +54235,90 @@
    ]
   },
   {
+   "entityId": "sacred-defender",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "bludgeoning",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:bludgeoning",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 160,
+      "text": "You gain resistance 5 to bludgeoning, piercing, and slashing damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "sacred-defender",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "piercing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:piercing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 160,
+      "text": "You gain resistance 5 to bludgeoning, piercing, and slashing damage."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "sacred-defender",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "slashing",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:resistance:slashing",
+   "signature": "grant:resistance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 160,
+      "text": "You gain resistance 5 to bludgeoning, piercing, and slashing damage."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "stalking-feline-mask",
    "draft": {
     "kind": "grant",
@@ -50782,7 +54329,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:greater darkvision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -50835,7 +54382,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:low-light vision",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -51033,7 +54580,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:sense",
+   "key": "grant:sense:scent",
    "signature": "grant:sense",
    "evidence": [
     {
@@ -51061,7 +54608,7 @@
    },
    "gaps": [],
    "agreement": "parser-only",
-   "key": "grant:speed",
+   "key": "grant:speed:land",
    "signature": "grant:speed",
    "evidence": [
     {

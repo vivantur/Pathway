@@ -50,6 +50,19 @@ describe("effectKey — the matching identity", () => {
   it("marks an unresolved field rather than colliding everything on undefined", () => {
     expect(effectKey({ kind: "modifier", bonusType: "circumstance" })).toBe("modifier:?:circumstance");
   });
+
+  it("separates grants by their SUB-TARGET, so a two-resistance feat is two effects", () => {
+    // Blast Resistance grants fire AND sonic; keying both as `grant:resistance` collapsed
+    // them and made two agreeing producers look like a conflict.
+    const fire = { kind: "grant" as const, grant: { type: "resistance", damageType: "fire", value: { kind: "lit", value: 3 } } };
+    const sonic = { kind: "grant" as const, grant: { type: "resistance", damageType: "sonic", value: { kind: "lit", value: 3 } } };
+    expect(effectKey(fire)).toBe("grant:resistance:fire");
+    expect(effectKey(fire)).not.toBe(effectKey(sonic));
+    // sense keys on its name, immunity on its target, speed on its movement
+    expect(effectKey({ kind: "grant", grant: { type: "sense", name: "scent" } })).toBe("grant:sense:scent");
+    expect(effectKey({ kind: "grant", grant: { type: "immunity", to: "poison" } })).toBe("grant:immunity:poison");
+    expect(effectKey({ kind: "grant", grant: { type: "speed", movement: "swim", value: { kind: "lit", value: 15 } } })).toBe("grant:speed:swim");
+  });
 });
 
 describe("effectSignature — the bulk-review shape", () => {

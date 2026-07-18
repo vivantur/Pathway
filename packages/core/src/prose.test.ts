@@ -308,6 +308,55 @@ describe("grantExtractor — senses + speeds", () => {
     const ex = grants("You gain a 15-foot swim Speed.");
     expect(ex.map((e) => e.draft)).toEqual([speed("swim", 15)]);
   });
+
+  // ── resistances / weaknesses / immunities (slice 2) ──────────────────────────
+  const half = { kind: "call", fn: "floor", args: [{ kind: "call", fn: "divide", args: [{ kind: "var", name: "level" }, { kind: "lit", value: 2 }] }] };
+  const halfMin1 = { kind: "call", fn: "max", args: [{ kind: "lit", value: 1 }, half] };
+
+  it("reads 'resistance to X equal to half your level (minimum 1)' as max(1, floor(level/2)) (Fumesoul)", () => {
+    const ex = grants("You gain resistance to poison equal to half your level (minimum 1).");
+    expect(ex.map((e) => e.draft)).toEqual([{ kind: "grant", grant: { type: "resistance", damageType: "poison", value: halfMin1 } }]);
+  });
+
+  it("FOLLOWS THE PROSE: no '(minimum 1)' → bare floor(level/2), matching Foundry (Fire Resistance)", () => {
+    // The owner's call: feats that omit "(minimum 1)" are never 1st-level, so half-your-level
+    // is never 0 when you take them. Applying min-1 anyway would disagree with Foundry's bare floor.
+    const ex = grants("You gain fire resistance equal to half your level.");
+    expect(ex.map((e) => e.draft)).toEqual([{ kind: "grant", grant: { type: "resistance", damageType: "fire", value: half } }]);
+  });
+
+  it("fans a compound flat resistance and strips the 'persistent'/'damage' noise", () => {
+    expect(grants("You gain resistance 3 to fire and sonic.").map((e) => e.draft.grant)).toEqual([
+      { type: "resistance", damageType: "fire", value: { kind: "lit", value: 3 } },
+      { type: "resistance", damageType: "sonic", value: { kind: "lit", value: 3 } },
+    ]);
+    expect(grants("You gain resistance 5 to persistent bleed damage.").map((e) => e.draft.grant)).toEqual([
+      { type: "resistance", damageType: "bleed", value: { kind: "lit", value: 5 } },
+    ]);
+  });
+
+  it("fans a COMMA-separated compound resistance list (Skeletal Resistance), not just the first", () => {
+    // A bare comma is a list separator, not a stop — else the list truncates to "cold".
+    const ex = grants("You gain resistance 2 to cold, electricity, fire, piercing, and slashing.");
+    expect(ex.map((e) => e.draft.grant.damageType)).toEqual(["cold", "electricity", "fire", "piercing", "slashing"]);
+    expect(ex.every((e) => (e.draft.grant.value as { value: number }).value === 2)).toBe(true);
+  });
+
+  it("reads a weakness in both orderings and canonicalizes the material ('cold iron' → cold-iron)", () => {
+    expect(grants("You gain weakness 5 to cold iron.").map((e) => e.draft.grant)).toEqual([
+      { type: "weakness", damageType: "cold-iron", value: { kind: "lit", value: 5 } },
+    ]);
+    expect(grants("You gain fire weakness equal to half your level.").map((e) => e.draft.grant)).toEqual([
+      { type: "weakness", damageType: "fire", value: half },
+    ]);
+  });
+
+  it("reads a value-free immunity, fanning a compound (Celestial Rebirth)", () => {
+    expect(grants("You become immune to poison and disease.").map((e) => e.draft.grant)).toEqual([
+      { type: "immunity", to: "poison" },
+      { type: "immunity", to: "disease" },
+    ]);
+  });
 });
 
 describe("parseProse — as a candidate.ts producer", () => {
