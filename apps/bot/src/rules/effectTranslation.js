@@ -93,13 +93,16 @@ function literalValue(expr) {
  */
 function collapseGroup(group, buckets, slotName, unsupported) {
   const present = group.filter(sel => buckets.has(sel));
-  if (present.length === 0) return 0;
+  if (present.length === 0) return { value: 0, type: null };
 
   const values = present.map(sel => buckets.get(sel).value);
+  const types = new Set(present.map(sel => buckets.get(sel).type));
   const allPresent = present.length === group.length;
   const allEqual = values.every(v => v === values[0]);
 
-  if (allPresent && allEqual) return values[0];
+  if (allPresent && allEqual) {
+    return { value: values[0], type: types.size === 1 ? [...types][0] : 'untyped' };
+  }
 
   for (const sel of present) {
     unsupported.push({
@@ -109,7 +112,7 @@ function collapseGroup(group, buckets, slotName, unsupported) {
         : `the tracker has one ${slotName} for the whole group — applying it would also affect ${group.filter(g => !present.includes(g)).join(', ')}`,
     });
   }
-  return 0;
+  return { value: 0, type: null };
 }
 
 /**
@@ -154,19 +157,33 @@ function translateEffect(template, { source = null } = {}) {
       });
       continue;
     }
-    // Two modifiers to the same selector: sum them. Same-selector stacking is the
-    // bot's untyped problem either way, and dropping one would be worse.
+    // Two modifiers to the same selector: sum them, and keep the type only while
+    // it agrees. A slot holds one type, so a genuine mix falls back to untyped
+    // rather than claiming a type core did not give for both.
     const prior = buckets.get(passive.target);
-    buckets.set(passive.target, { value: prior ? prior.value + value : value });
+    buckets.set(passive.target, {
+      value: prior ? prior.value + value : value,
+      type: prior && prior.type !== passive.bonusType ? 'untyped' : passive.bonusType,
+    });
   }
 
   const modifiers = { ...EMPTY_MODIFIERS };
+  // The bonus type per slot, so the tracker can stack these correctly instead of
+  // adding them. A slot with no type behaves as untyped, i.e. it adds — which is
+  // what the tracker did for everything before types existed.
+  const bonusTypes = {};
 
   for (const [selector, slot] of Object.entries(DIRECT_SLOT)) {
-    if (buckets.has(selector)) modifiers[slot] = buckets.get(selector).value;
+    if (!buckets.has(selector)) continue;
+    const { value, type } = buckets.get(selector);
+    modifiers[slot] = value;
+    if (type) bonusTypes[slot] = type;
   }
-  modifiers.saveBonus = collapseGroup(SAVES, buckets, 'saveBonus', unsupported);
-  modifiers.skillBonus = collapseGroup(SKILLS, buckets, 'skillBonus', unsupported);
+  for (const [group, slot, label] of [[SAVES, 'saveBonus', 'saveBonus'], [SKILLS, 'skillBonus', 'skillBonus']]) {
+    const { value, type } = collapseGroup(group, buckets, label, unsupported);
+    modifiers[slot] = value;
+    if (type) bonusTypes[slot] = type;
+  }
 
   // Everything the tracker has no slot for at all.
   const handled = new Set([...Object.keys(DIRECT_SLOT), ...SAVES, ...SKILLS]);
@@ -196,6 +213,7 @@ function translateEffect(template, { source = null } = {}) {
       value: valued ? valued.value : null,
       duration,
       modifiers,
+      bonusTypes,
       source,
     },
     unsupported,

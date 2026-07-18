@@ -19,6 +19,8 @@
 //   damageType: 'fire'        (for persistent damage)
 //   dc: 15                    (for persistent damage: DC of the flat check to end)
 
+const { slotBonusTypes } = require('./bonusTypes');
+
 // Helper: a penalty equal to -value
 const neg = v => -Math.abs(v);
 
@@ -328,7 +330,11 @@ function getPreset(name) {
     'on-fire': 'persistent-fire',
   };
   const resolvedKey = aliases[key] ?? key;
-  return PRESETS[resolvedKey] ? { key: resolvedKey, ...PRESETS[resolvedKey] } : null;
+  if (!PRESETS[resolvedKey]) return null;
+  // `bonusTypes` is DERIVED from core's condition data, never from the preset's
+  // own description strings — those were written from memory and at least one
+  // (prone, "-2 status penalty") disagrees with core. See rules/bonusTypes.js.
+  return { key: resolvedKey, ...PRESETS[resolvedKey], bonusTypes: slotBonusTypes(resolvedKey) };
 }
 
 // Return all preset names for the autocomplete/help listing

@@ -610,6 +610,10 @@ function addEffect(encounter, query, effect) {
     value: effect.value ?? null,
     duration: effect.duration ?? null,
     modifiers: { ...(effect.modifiers ?? {}) },
+    // Which bonus type each modifier slot carries, so stacking can resolve
+    // same-typed penalties instead of adding them. Absent = untyped, which is
+    // how every effect stored before this existed keeps its old behavior.
+    bonusTypes: { ...(effect.bonusTypes ?? {}) },
     hidden: effect.hidden ?? false,
     source: effect.source ?? null,
   };

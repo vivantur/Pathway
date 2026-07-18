@@ -47,7 +47,13 @@ function formatEffectContributions(effects, kind) {
     })
     .map(e => {
       const val = kind === 'attack' ? e.attackBonus : kind === 'damage' ? e.damageBonus : e.acBonus;
-      return `${e.name} ${fmt(val)}`;
+      const slot = kind === 'attack' ? 'attackBonus' : kind === 'damage' ? 'damageBonus' : 'acBonus';
+      // A modifier that lost to a better same-typed one is shown struck through:
+      // the GM should still see it is in force, without it looking like the
+      // total failed to add up.
+      return e.supersededSlots?.includes(slot)
+        ? `~~${e.name} ${fmt(val)}~~`
+        : `${e.name} ${fmt(val)}`;
     });
   return contributions.length > 0 ? ` (${contributions.join(', ')})` : '';
 }
@@ -565,6 +571,7 @@ async function execute(interaction) {
         value: preset.scaling ? (value ?? 1) : null,
         duration: duration ?? null,
         modifiers: preset.build(value ?? 1),
+        bonusTypes: preset.bonusTypes,
         source: 'preset',
       } : {
         name: effectName,

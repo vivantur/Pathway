@@ -99,9 +99,22 @@ this section has been wrong before, and a stale status is worse than none.)*
   modifier, or an expression-valued one is reported in `unsupported` with a reason
   instead of being approximated. A +1 to Fortitude rendered as `saveBonus` would
   silently buff Reflex and Will: a wrong combatant is worse than an absent effect.
-  The honest fix is a richer combatant effect model, not a looser mapper. Note
-  that everything through this path inherits the bot's pre-existing UNTYPED
-  STACKING bug (a status and a circumstance bonus are summed).
+  The honest fix is a richer combatant effect model, not a looser mapper.
+
+  **Typed stacking landed 2026-07-18** — `rules/combatEffects.js` used to ADD every
+  modifier, so two −2 *status* penalties to AC (Frightened + Sickened, an ordinary
+  pairing) came out as −4, and Prone + Off-Guard + Grabbed as −6. It now delegates
+  to core's `stackModifiers`. `rules/bonusTypes.js` DERIVES each slot's bonus type
+  from core's condition data rather than a hand-written table — the bot's own
+  preset text was wrong (`prone` says "status", core says circumstance), which is
+  precisely what deriving avoids. It declines to type a slot when core models no
+  modifier for it (Enfeebled's blanket attack penalty is an approximation core
+  does not make — that is blocked on scoped attack/damage selectors) or is
+  ambiguous (Unconscious hits AC with both a status and a circumstance penalty).
+  Backward compatible by construction: no `bonusTypes` = untyped = added, exactly
+  the old behavior, so effects stored in live encounters keep their numbers.
+  `bless`/`heroism` and the persistent-damage presets are NOT core conditions and
+  stay untyped — typing them needs rules text.
 
   **No content carries an automation tree yet.** The corpus is all Layer-1
   passives and `remap-effects.mjs` only emits those, so the host currently runs
@@ -308,7 +321,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 643 · bot 297 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 643 · bot 329 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

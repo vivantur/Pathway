@@ -130,7 +130,12 @@ function formatEffectContributions(effects, kind) {
     })
     .map(effect => {
       const val = kind === 'attack' ? effect.attackBonus : kind === 'damage' ? effect.damageBonus : effect.acBonus;
-      return effect.name + ' ' + fmt(val);
+      const slot = kind === 'attack' ? 'attackBonus' : kind === 'damage' ? 'damageBonus' : 'acBonus';
+      // Struck through when a better same-typed modifier superseded it, so the
+      // listed contributions explain the total instead of contradicting it.
+      return effect.supersededSlots?.includes(slot)
+        ? '~~' + effect.name + ' ' + fmt(val) + '~~'
+        : effect.name + ' ' + fmt(val);
     });
   return contributions.length > 0 ? ' (' + contributions.join(', ') + ')' : '';
 }
