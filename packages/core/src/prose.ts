@@ -698,5 +698,102 @@ export const grantExtractor: Extractor = (clause) => {
   return out;
 };
 
+// ---------------------------------------------------------------------------
+// 8. the choice extractor (slice — skill-proficiency choices)
+// ---------------------------------------------------------------------------
+//
+// A CHOICE is a second content type (`EffectChoice`), not a PassiveEffect: "a skill of
+// your choice" grants proficiency to ONE of several skills the player picks. Foundry
+// stores these in `feat.choices`; this emits a matching choice draft (`kind: "choice"`)
+// that reconcile keys on its OPTION SET (see candidate.ts), so the two producers
+// corroborate despite the parser not knowing Foundry's flag.
+//
+// SLICE SCOPE (owner): skill-proficiency choices only. The rank is read from the clause
+// (default trained). Save/perception choices with level-scaled ranks (Canny Acumen) and
+// paired choices (Clan Lore) are deferred.
+
+// "a skill of your choice" → a choice over ALL 16 skills (Skill Training).
+const SKILL_OF_CHOICE_RE = /\b(?:a|one|another|the)\s+skill\s+of\s+your\s+choice\b/gi;
+// "your choice of Arcana, Nature, Occultism, or Religion" → the listed skills. A run
+// containing "and"/"either" is a MIXED definite+choice phrase (Elemental Lore) — skipped
+// here and left to EITHER_RE, so a definite skill is never swept into the option set.
+const CHOICE_OF_RE = /\b(?:your|his|her|their)\s+choice\s+of\s+([a-z][a-z\s,'-]*?)(?=[.;:]|$|\s+(?:if|when|while|for|in\s+which)\b|\s+and\s+(?:gain|you)\b)/gi;
+// "either Arcana or Nature" → a two-skill choice (also catches the choice half of a mixed phrase).
+const EITHER_RE = /\beither\s+([a-z]+)\s+or\s+([a-z]+)\b/gi;
+/** Split a choice list on comma/or (Oxford ", or" first); "and" is handled by EITHER_RE. */
+const CHOICE_SEP = /\s*,\s*or\s+|\s*,\s*|\s+or\s+/i;
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** The rank a nearby preceding rank word states, or trained (1) — the dominant default. */
+function rankBefore(text: string, idx: number): 0 | 1 | 2 | 3 | 4 {
+  const words = text.slice(0, idx).toLowerCase().match(/\b(?:untrained|trained|expert|master|legendary)\b/g);
+  const last = words?.[words.length - 1];
+  return last ? RANK_WORDS[last]! : 1;
+}
+
+/** Build a skill-proficiency `EffectChoice` draft. `flag` is generated — reconcile keys on options. */
+function skillChoice(skills: readonly string[], rank: 0 | 1 | 2 | 3 | 4): DraftEffect {
+  return {
+    kind: "choice",
+    choice: {
+      flag: "skill-choice",
+      prompt: "Skill",
+      options: skills.map((s) => ({
+        value: s,
+        label: cap(s),
+        effects: [{ kind: "proficiency", target: s, rank, mode: "upgrade" }],
+      })),
+    },
+  };
+}
+
+/**
+ * Extract skill-proficiency CHOICES from a clause. Governed clauses are declined (a
+ * conditional choice needs a predicate we can't build), like the proficiency extractor.
+ */
+export const choiceExtractor: Extractor = (clause) => {
+  if (clause.governor) return [];
+  const out: Extraction[] = [];
+  const span = { start: clause.start, end: clause.end, text: clause.text };
+  const seen = new Set<string>();
+  const emit = (skills: string[], rank: 0 | 1 | 2 | 3 | 4) => {
+    const uniq = [...new Set(skills)].sort();
+    if (uniq.length < 2) return; // one option is a definite grant, not a choice
+    const key = uniq.join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ draft: skillChoice(uniq, rank), gaps: [], span });
+  };
+
+  // "you INSTEAD become trained in a skill of your choice" is a SUBSTITUTION fallback (you
+  // already had the granted skill), not a primary choice — decline it. The governor gate
+  // catches the "If you would…" phrasings; this catches the ungoverned "For each…" ones.
+  const substitution = (idx: number) => /\binstead\b/i.test(clause.text.slice(0, idx));
+
+  let m: RegExpExecArray | null;
+  SKILL_OF_CHOICE_RE.lastIndex = 0;
+  while ((m = SKILL_OF_CHOICE_RE.exec(clause.text))) {
+    if (!substitution(m.index)) emit([...SKILLS], rankBefore(clause.text, m.index));
+  }
+
+  CHOICE_OF_RE.lastIndex = 0;
+  while ((m = CHOICE_OF_RE.exec(clause.text))) {
+    const run = m[1]!;
+    if (/\band\b|\beither\b/i.test(run) || substitution(m.index)) continue; // mixed phrase or substitution
+    const skills = run.split(CHOICE_SEP).map((s) => s.trim().toLowerCase()).filter((s) => SKILLS.has(s));
+    emit(skills, rankBefore(clause.text, m.index));
+  }
+
+  EITHER_RE.lastIndex = 0;
+  while ((m = EITHER_RE.exec(clause.text))) {
+    const a = m[1]!.toLowerCase();
+    const b = m[2]!.toLowerCase();
+    if (SKILLS.has(a) && SKILLS.has(b)) emit([a, b], rankBefore(clause.text, m.index));
+  }
+
+  return out;
+};
+
 /** The default producer extractor set. Grows one family per slice. */
-export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor, grantExtractor];
+export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor, grantExtractor, choiceExtractor];

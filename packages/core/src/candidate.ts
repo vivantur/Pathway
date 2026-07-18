@@ -24,7 +24,7 @@
 // NO PF2e RULES LIVE HERE. This module arbitrates between producers; the rules are in
 // passive.ts / foundry.ts / the parser, each from source text.
 
-import { passiveEffectSchema, type PassiveEffect } from "./passive.js";
+import { passiveEffectSchema, effectChoiceSchema, type PassiveEffect, type EffectChoice } from "./passive.js";
 
 // ---------------------------------------------------------------------------
 // the model
@@ -87,7 +87,8 @@ export interface Evidence {
  * this type's job — see `promote`.
  */
 export interface DraftEffect {
-  kind?: PassiveEffect["kind"];
+  /** `"choice"` is a SECOND content type (an `EffectChoice`), not a PassiveEffect kind. */
+  kind?: PassiveEffect["kind"] | "choice";
   target?: string;
   bonusType?: string;
   value?: unknown;
@@ -97,6 +98,8 @@ export interface DraftEffect {
   adjust?: unknown;
   text?: string;
   when?: unknown;
+  /** Present when `kind === "choice"`: the draft `EffectChoice` (flag/prompt/options). */
+  choice?: unknown;
 }
 
 export interface EffectCandidate {
@@ -162,9 +165,22 @@ export function effectKey(draft: DraftEffect): string {
       const g = draft.grant as GrantShape | undefined;
       return `grant:${g?.type ?? "?"}:${grantDiscriminator(g)}`;
     }
+    case "choice":
+      // A choice is identified by the SET OF OPTIONS it offers, NOT its flag/prompt: the
+      // parser cannot know Foundry's flag ("elementalLore"), so keying on the flag would
+      // never let the two producers corroborate. The option set ("arcana|nature") is the
+      // shared identity; `sameDraft` then checks the option EFFECTS match too.
+      return `choice:${choiceOptionSet(draft.choice)}`;
     default:
       return `${kind}:${target}`;
   }
+}
+
+/** The sorted, de-duplicated option values of a choice draft — its matching identity. */
+function choiceOptionSet(choice: unknown): string {
+  const opts = (choice as { options?: { value?: string }[] } | undefined)?.options;
+  if (!opts?.length) return "?";
+  return [...new Set(opts.map((o) => o.value ?? "?"))].sort().join("|");
 }
 
 /** The fields a grant uses to name WHAT it grants, across the grant sub-types. */
@@ -206,6 +222,13 @@ export function effectSignature(draft: DraftEffect): string {
       const g = draft.grant as { type?: string } | undefined;
       return `grant:${g?.type ?? "?"}`;
     }
+    case "choice": {
+      // Coarser than the key: the KIND of thing being chosen, for bulk review — a skill
+      // proficiency choice groups with other skill proficiency choices regardless of which
+      // skills. Read the first option's first effect as the representative shape.
+      const first = (draft.choice as { options?: { effects?: DraftEffect[] }[] } | undefined)?.options?.[0]?.effects?.[0];
+      return `choice:${first ? effectSignature(first) : "?"}`;
+    }
     case undefined:
       return "?";
     default:
@@ -224,7 +247,20 @@ function stable(v: unknown): string {
 
 /** Whether two drafts are the same proposal, values and all. */
 export function sameDraft(a: DraftEffect, b: DraftEffect): boolean {
+  // Choices compare on MEANING, not cosmetics: the parser cannot know Foundry's `flag`
+  // or `prompt`, and the option labels are display text — so equality is the set of
+  // (option value → its effects), and a flag/prompt/label difference is NOT a conflict.
+  if (a.kind === "choice" || b.kind === "choice") return normalizeChoice(a.choice) === normalizeChoice(b.choice);
   return stable(a) === stable(b);
+}
+
+/** A choice's meaningful content: options sorted by value, each carrying only value + effects. */
+function normalizeChoice(choice: unknown): string {
+  const opts = (choice as { options?: { value?: string; effects?: unknown }[] } | undefined)?.options ?? [];
+  const norm = opts
+    .map((o) => ({ value: o.value ?? "?", effects: o.effects ?? [] }))
+    .sort((x, y) => x.value.localeCompare(y.value));
+  return stable(norm);
 }
 
 // ---------------------------------------------------------------------------
@@ -324,7 +360,9 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
 // ---------------------------------------------------------------------------
 
 export type PromoteResult =
-  | { ok: true; effect: PassiveEffect }
+  // Exactly ONE of `effect`/`choice` is set, per the candidate's content type. Both are
+  // optional so a PassiveEffect caller can keep reading `.effect` unchanged.
+  | { ok: true; effect?: PassiveEffect; choice?: EffectChoice }
   | { ok: false; blocked: "gaps" | "conflict" | "invalid"; issues: string[] };
 
 /**
@@ -348,6 +386,15 @@ export function promote(candidate: EffectCandidate): PromoteResult {
   }
   if (candidate.agreement === "conflicting") {
     return { ok: false, blocked: "conflict", issues: ["producers disagree; a human must choose"] };
+  }
+  // A choice validates against its OWN schema — the second content type. Same gate shape:
+  // the schema is the completeness check, no separate "is it finished?" predicate.
+  if (candidate.draft.kind === "choice") {
+    const parsed = effectChoiceSchema.safeParse(candidate.draft.choice);
+    if (!parsed.success) {
+      return { ok: false, blocked: "invalid", issues: parsed.error.issues.map((i) => `${i.path.length ? i.path.join(".") : "(root)"}: ${i.message}`) };
+    }
+    return { ok: true, choice: parsed.data };
   }
   const parsed = passiveEffectSchema.safeParse(candidate.draft);
   if (!parsed.success) {
@@ -439,8 +486,10 @@ export interface EffectDecision {
   /** The candidate's `key`. Stable across re-runs while the proposal is the same. */
   key: string;
   action: "accept" | "reject" | "edit";
-  /** Required for accept/edit — the effect that becomes content. */
+  /** Required for accept/edit of a passive-effect candidate — the effect that becomes content. */
   effect?: PassiveEffect;
+  /** Required for accept/edit of a CHOICE candidate — the choice that becomes content. */
+  choice?: EffectChoice;
   by?: string;
   at?: string;
   /** Why — especially for a reject, so a re-run's reviewer is not re-deciding blind. */
@@ -450,6 +499,8 @@ export interface EffectDecision {
 export interface ResolveResult {
   /** What becomes the entity's `effects`: decided accepts + auto-promoted candidates. */
   effects: PassiveEffect[];
+  /** What becomes the entity's `choices`: decided/auto-promoted choice candidates. */
+  choices: EffectChoice[];
   /** Candidates still needing a human. */
   pending: EffectCandidate[];
   /** Decisions that matched no candidate — a producer changed its mind since. */
@@ -472,6 +523,7 @@ export function resolveEntity(
   const used = new Set<string>();
 
   const effects: PassiveEffect[] = [];
+  const choices: EffectChoice[] = [];
   const pending: EffectCandidate[] = [];
 
   for (const c of candidates) {
@@ -481,14 +533,17 @@ export function resolveEntity(
       used.add(id);
       if (decision.action === "reject") continue;
       if (decision.effect) effects.push(decision.effect);
+      if (decision.choice) choices.push(decision.choice);
       continue;
     }
     // Undecided: auto-promote if it has earned it, else it waits for a human.
     const p = promote(c);
-    if (autoPromotable(c) && p.ok) effects.push(p.effect);
-    else pending.push(c);
+    if (autoPromotable(c) && p.ok) {
+      if (p.effect) effects.push(p.effect);
+      if (p.choice) choices.push(p.choice);
+    } else pending.push(c);
   }
 
   const staleDecisions = decisions.filter((d) => !used.has(`${d.entityId} ${d.key}`));
-  return { effects, pending, staleDecisions };
+  return { effects, choices, pending, staleDecisions };
 }

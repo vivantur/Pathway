@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  choiceExtractor,
   extractFromProse,
   grantExtractor,
   modifierExtractor,
@@ -356,6 +357,41 @@ describe("grantExtractor — senses + speeds", () => {
       { type: "immunity", to: "poison" },
       { type: "immunity", to: "disease" },
     ]);
+  });
+});
+
+describe("choiceExtractor — skill-proficiency choices", () => {
+  const choices = (text: string) => extractFromProse(text, [choiceExtractor]);
+  const opts = (ex: ReturnType<typeof choices>) =>
+    (ex[0]?.draft.choice as { options: { value: string; effects: { rank: number }[] }[] } | undefined)?.options.map((o) => o.value);
+
+  it("reads 'a skill of your choice' as a choice over all 16 skills (Skill Training)", () => {
+    const ex = choices("You become trained in the skill of your choice.");
+    expect(ex).toHaveLength(1);
+    expect(opts(ex)).toHaveLength(16);
+    expect(ex[0]!.draft.kind).toBe("choice");
+  });
+
+  it("reads an explicit 'your choice of X, Y, or Z' list (Dragonscaled Lore)", () => {
+    const ex = choices("You become trained in your choice of Arcana, Nature, Occultism, or Religion.");
+    expect(opts(ex)).toEqual(["arcana", "nature", "occultism", "religion"]);
+  });
+
+  it("reads the choice half of a mixed phrase via 'either X or Y' (Elemental Lore)", () => {
+    // "your choice of Survival and either Arcana or Nature" — the definite Survival is NOT
+    // swept into the option set; only the arcana/nature choice is captured.
+    const ex = choices("You gain the trained proficiency in your choice of Survival and either Arcana or Nature.");
+    expect(opts(ex)).toEqual(["arcana", "nature"]);
+  });
+
+  it("carries the stated rank, not always trained", () => {
+    const ex = choices("You become an expert in a skill of your choice.");
+    const rank = (ex[0]!.draft.choice as { options: { effects: { rank: number }[] }[] }).options[0]!.effects[0]!.rank;
+    expect(rank).toBe(2);
+  });
+
+  it("declines a SUBSTITUTION fallback ('you instead become trained in a skill of your choice')", () => {
+    expect(choices("For each of these skills you were already trained in, you instead become trained in a skill of your choice.")).toEqual([]);
   });
 });
 

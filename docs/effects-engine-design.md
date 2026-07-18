@@ -826,6 +826,34 @@ a shape. All in `prose.ts` + `candidate.ts`, measured by `prose-recall.mjs`.
 
 Auto-promote (corroborated + complete, clears with no human): **163 → 287** across these.
 
+### Choice candidates — a SECOND content type in the pipeline (slice A, 2026-07-17)
+
+Choices ("a skill of your choice") are not `PassiveEffect`s — Foundry stores them in
+`feat.choices` as `EffectChoice` (flag/prompt/options[], each option carrying its own
+`effects[]`). So the whole `DraftEffect → reconcile → promote → PassiveEffect` pipeline had
+to learn a second promotable content type. Owner-sequenced core+script first (this), web
+rendering as slice B. Skill-proficiency choices only for now (save/ternary-rank and paired
+choices deferred).
+
+- **`candidate.ts` carries choices.** `DraftEffect.kind` widened to include `"choice"` +
+  a `choice` payload; `promote` validates it against `effectChoiceSchema` (the same
+  schema-is-the-completeness-check rule) and returns it on a `choice` field; `resolveEntity`
+  routes it into a new `choices` output beside `effects`; `EffectDecision` gained a `choice`.
+- **THE KEY INSIGHT — choices reconcile on MEANING, not cosmetics.** The parser cannot know
+  Foundry's `flag` ("elementalLore"), so `effectKey` keys a choice on its OPTION SET
+  (`choice:arcana|nature`) and `sameDraft` compares only (option value → its effects),
+  ignoring flag/prompt/labels. Without this every choice would be a false conflict on the
+  flag; with it, Skill Training (16 options) and Elemental Lore (arcana/nature) corroborate.
+- **`choiceExtractor`** reads "a skill of your choice" (→ all 16), "your choice of X, Y, or Z"
+  (explicit list), and "either X or Y" — the last also catching the CHOICE half of a mixed
+  "your choice of Survival and either Arcana or Nature" (Elemental Lore) so the definite skill
+  is never swept in. Declines the SUBSTITUTION fallback ("you *instead* become trained in a
+  skill of your choice") — a conditional replacement, not a primary choice; the governor gate
+  catches its "If you would…" cousins, the `instead` marker catches the ungoverned "For each…".
+- **Measured:** choice recall vs Foundry **43.3%** (13 corroborated, 34 parser-only finds Foundry
+  never mapped, **0 conflicts**). Auto-promote **287 → 300**. Web renders choices generically
+  until slice B (proper option rendering + accept routing).
+
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 
 The review queue, kicked off as the read-and-decide surface WITHOUT the inline editor.

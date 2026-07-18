@@ -46,13 +46,15 @@ function parseArgs(argv) {
 }
 
 /**
- * A feat's already-mapped effects → foundry proposals (the ground truth half). ALL
- * kinds are included, not just the parser's proficiency/modifier families: the Review
- * UI verifies every auto-mapped effect, so a foundry-only `grant` (a heritage speed, a
- * resistance) is a legitimate review item, not noise.
+ * A feat's already-mapped effects AND choices → foundry proposals (the ground truth half).
+ * ALL kinds are included, not just the parser's families: the Review UI verifies every
+ * auto-mapped effect, so a foundry-only `grant` or `choice` is a legitimate review item.
+ * A choice becomes a `kind: "choice"` draft — the second content type reconcile handles.
  */
 function foundryProposals(feat) {
-  return { source: 'foundry', proposals: (feat.effects ?? []).map((draft) => ({ draft })) };
+  const proposals = (feat.effects ?? []).map((draft) => ({ draft }));
+  for (const choice of feat.choices ?? []) proposals.push({ draft: { kind: 'choice', choice } });
+  return { source: 'foundry', proposals };
 }
 
 function main() {

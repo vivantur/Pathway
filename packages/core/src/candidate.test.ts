@@ -63,6 +63,57 @@ describe("effectKey — the matching identity", () => {
     expect(effectKey({ kind: "grant", grant: { type: "immunity", to: "poison" } })).toBe("grant:immunity:poison");
     expect(effectKey({ kind: "grant", grant: { type: "speed", movement: "swim", value: { kind: "lit", value: 15 } } })).toBe("grant:speed:swim");
   });
+
+  it("keys a CHOICE on its option set, not its flag — so the two producers can corroborate", () => {
+    const parserChoice: DraftEffect = {
+      kind: "choice",
+      choice: { flag: "skill-choice", prompt: "Skill", options: [{ value: "nature", label: "Nature", effects: [{ kind: "proficiency", target: "nature", rank: 1, mode: "upgrade" }] }, { value: "arcana", label: "Arcana", effects: [{ kind: "proficiency", target: "arcana", rank: 1, mode: "upgrade" }] }] },
+    };
+    const foundryChoice: DraftEffect = {
+      kind: "choice",
+      choice: { flag: "elementalLore", prompt: "Skill", options: [{ value: "arcana", label: "Arcana", effects: [{ kind: "proficiency", target: "arcana", rank: 1, mode: "upgrade" }] }, { value: "nature", label: "Nature", effects: [{ kind: "proficiency", target: "nature", rank: 1, mode: "upgrade" }] }] },
+    };
+    // Same options (order-independent), different flag → same key AND equal (not a conflict).
+    expect(effectKey(parserChoice)).toBe("choice:arcana|nature");
+    expect(effectKey(parserChoice)).toBe(effectKey(foundryChoice));
+    expect(sameDraft(parserChoice, foundryChoice)).toBe(true);
+  });
+});
+
+describe("choice candidates — the second content type", () => {
+  const parserChoice: DraftEffect = {
+    kind: "choice",
+    choice: { flag: "skill-choice", prompt: "Skill", options: [{ value: "arcana", label: "Arcana", effects: [{ kind: "proficiency", target: "arcana", rank: 1, mode: "upgrade" }] }, { value: "nature", label: "Nature", effects: [{ kind: "proficiency", target: "nature", rank: 1, mode: "upgrade" }] }] },
+  };
+  const foundryChoice: DraftEffect = {
+    kind: "choice",
+    choice: { flag: "elementalLore", prompt: "Skill", options: [{ value: "arcana", label: "Arcana", effects: [{ kind: "proficiency", target: "arcana", rank: 1, mode: "upgrade" }] }, { value: "nature", label: "Nature", effects: [{ kind: "proficiency", target: "nature", rank: 1, mode: "upgrade" }] }] },
+  };
+
+  it("corroborates two producers proposing the same choice, and promotes it to a choice", () => {
+    const [c] = reconcile("elemental-lore", [
+      { source: "parser", proposals: [{ draft: parserChoice }] },
+      { source: "foundry", proposals: [{ draft: foundryChoice }] },
+    ]);
+    expect(c!.agreement).toBe("corroborated");
+    const p = promote(c!);
+    expect(p.ok).toBe(true);
+    if (p.ok) {
+      expect(p.effect).toBeUndefined();
+      expect(p.choice?.options).toHaveLength(2);
+    }
+  });
+
+  it("routes a promoted choice into resolveEntity's `choices`, not `effects`", () => {
+    const cands = reconcile("elemental-lore", [
+      { source: "parser", proposals: [{ draft: parserChoice }] },
+      { source: "foundry", proposals: [{ draft: foundryChoice }] },
+    ]);
+    const { effects, choices } = resolveEntity(cands, []);
+    expect(effects).toHaveLength(0);
+    expect(choices).toHaveLength(1);
+    expect(choices[0]!.options.map((o) => o.value)).toEqual(["arcana", "nature"]);
+  });
 });
 
 describe("effectSignature — the bulk-review shape", () => {

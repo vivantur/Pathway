@@ -43,7 +43,7 @@ function parseArgs(argv) {
 
 // The effect families the parser targets so far. Each is measured separately: the parser
 // grows one family per slice, and a blended number would hide a per-family regression.
-const MEASURED_KINDS = ['proficiency', 'modifier', 'grant'];
+const MEASURED_KINDS = ['proficiency', 'modifier', 'grant', 'choice'];
 
 /**
  * Foundry's DIRECT effects for a feat → producer proposals (the ground truth), for the
@@ -58,6 +58,8 @@ function foundryProposals(feat) {
   for (const e of feat.effects ?? []) {
     if (MEASURED_KINDS.includes(e.kind)) proposals.push({ draft: e });
   }
+  // Choices are a second content type (feat.choices), not feat.effects — a `kind:"choice"` draft.
+  for (const choice of feat.choices ?? []) proposals.push({ draft: { kind: 'choice', choice } });
   return { source: 'foundry', proposals };
 }
 
