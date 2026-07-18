@@ -851,8 +851,12 @@ choices deferred).
   skill of your choice") — a conditional replacement, not a primary choice; the governor gate
   catches its "If you would…" cousins, the `instead` marker catches the ungoverned "For each…".
 - **Measured:** choice recall vs Foundry **43.3%** (13 corroborated, 34 parser-only finds Foundry
-  never mapped, **0 conflicts**). Auto-promote **287 → 300**. Web renders choices generically
-  until slice B (proper option rendering + accept routing).
+  never mapped, **0 conflicts**). Auto-promote **287 → 300**.
+- **Slice B (web) landed 2026-07-17.** `EffectReviewPage` renders a choice candidate as its
+  option list — "Pick one · Skill: Arcana → trained, Nature → trained" — reusing `describeEffect`
+  per option (with the redundant leading target trimmed, since the option label already names the
+  skill). Accept routes `promote().choice` into `EffectDecision.choice`, so a choice reaches the
+  right `resolveEntity` output. 64 choice candidates now review cleanly alongside the effects.
 
 ### Review UI slice 1 landed 2026-07-17 — triage + accept/reject + export
 

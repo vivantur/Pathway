@@ -65,6 +65,13 @@ const FEAT_BY_ID = new Map(FEATS.map((f) => [f.id, f]));
 
 const RANK_WORD = ['untrained', 'trained', 'expert', 'master', 'legendary'];
 
+/** The shape of a choice draft's payload (see EffectChoice in @pathway/core). */
+interface DraftChoice {
+  flag?: string;
+  prompt?: string;
+  options?: { value: string; label: string; effects: DraftEffect[] }[];
+}
+
 /** Render an expression value AST as compact human text (a plain number is `lit`). */
 function exprText(v: unknown): string {
   if (v === null || typeof v !== 'object') return String(v);
@@ -106,9 +113,39 @@ function describeEffect(d: DraftEffect): string {
       return `note on ${d.target ?? '?'}`;
     case 'rollAdjust':
       return `adjust rolls on ${d.target ?? '?'}`;
+    case 'choice': {
+      const ch = d.choice as DraftChoice | undefined;
+      const n = ch?.options?.length ?? 0;
+      return `choose 1 of ${n}${ch?.prompt ? ` · ${ch.prompt.toLowerCase()}` : ''}`;
+    }
     default:
       return d.kind ? `${d.kind}` : '(incomplete)';
   }
+}
+
+/** The option list of a choice, each with the effect it grants — what a reviewer confirms. */
+function ChoiceOptions({ choice }: { choice: DraftChoice }) {
+  const options = choice.options ?? [];
+  return (
+    <div className="mt-2 rounded-md border border-gold/15 bg-midnight-950/50 p-2.5">
+      <div className="mb-1.5 text-xs uppercase tracking-wide text-parchment/50">
+        Pick one{choice.prompt ? ` · ${choice.prompt}` : ''}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {options.map((o) => {
+          // The label already names the skill; drop a leading target that just repeats it,
+          // so a proficiency option reads "Arcana → trained", not "Arcana → arcana to trained".
+          const detail = o.effects?.[0] ? describeEffect(o.effects[0]).replace(new RegExp(`^${o.value}\\s+(?:set )?to\\s+`, 'i'), '') : '';
+          return (
+            <span key={o.value} className="text-sm text-parchment/80">
+              <span className="text-gold">{o.label}</span>
+              {detail && <span className="text-parchment/50"> → {detail}</span>}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 const AGREEMENT_STYLE: Record<string, string> = {
@@ -232,7 +269,16 @@ export function EffectReviewPage() {
   const accept = (c: EffectCandidate) => {
     const p = promote(c);
     if (!p.ok) return; // guarded by the disabled button, but never trust the caller
-    setDecision(c, { entityId: c.entityId, key: c.key, action: 'accept', effect: p.effect, at: new Date().toISOString() });
+    // A candidate promotes to EITHER an effect OR a choice (the second content type) — carry
+    // whichever the schema produced so resolveEntity routes it to the right output.
+    setDecision(c, {
+      entityId: c.entityId,
+      key: c.key,
+      action: 'accept',
+      ...(p.effect ? { effect: p.effect } : {}),
+      ...(p.choice ? { choice: p.choice } : {}),
+      at: new Date().toISOString(),
+    });
   };
   const reject = (c: EffectCandidate) =>
     setDecision(c, { entityId: c.entityId, key: c.key, action: 'reject', at: new Date().toISOString() });
@@ -488,6 +534,9 @@ function CandidateRow({
           )}
         </div>
       </div>
+
+      {/* a choice's options — the primary content of a choice candidate */}
+      {c.draft.kind === 'choice' && <ChoiceOptions choice={c.draft.choice as DraftChoice} />}
 
       {/* conflict: show every reading, since one is wrong */}
       {c.agreement === 'conflicting' && c.alternatives && (
