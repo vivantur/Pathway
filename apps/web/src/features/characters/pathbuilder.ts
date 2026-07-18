@@ -14,6 +14,7 @@ import {
   proficientModifier,
   rankLabel,
   rawBonusToRank,
+  SKILL_ABILITY as CORE_SKILL_ABILITY,
   type ResolvedCharacter,
   type SkillStat,
 } from '@pathway/core';
@@ -210,25 +211,12 @@ export const ABILITY_LABELS: Record<Ability, string> = {
 
 export const ABILITY_ORDER: Ability[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
-/** Which ability governs each PF2e skill. */
-export const SKILL_ABILITY: Record<string, Ability> = {
-  acrobatics: 'dex',
-  arcana: 'int',
-  athletics: 'str',
-  crafting: 'int',
-  deception: 'cha',
-  diplomacy: 'cha',
-  intimidation: 'cha',
-  medicine: 'wis',
-  nature: 'wis',
-  occultism: 'int',
-  performance: 'cha',
-  religion: 'wis',
-  society: 'int',
-  stealth: 'dex',
-  survival: 'wis',
-  thievery: 'dex',
-};
+/**
+ * Which ability governs each PF2e skill — re-exported from core, which is now the one
+ * definition (a rule needed it in a third place, so it moved to `selectors.ts` rather
+ * than being copied again). Kept exported from here so existing importers are unchanged.
+ */
+export const SKILL_ABILITY: Record<string, Ability> = CORE_SKILL_ABILITY;
 
 export const SKILL_ORDER: string[] = [
   'acrobatics', 'arcana', 'athletics', 'crafting', 'deception', 'diplomacy',

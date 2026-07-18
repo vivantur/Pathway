@@ -44,6 +44,43 @@ export function isSkillSlug(x: unknown): x is SkillSlug {
   return typeof x === "string" && SKILL_SLUG_SET.has(x);
 }
 
+/** The attribute keys, in the order the resolved model carries them. */
+export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
+
+/**
+ * The attribute each skill is based on. Needed wherever a rule names an ATTRIBUTE
+ * rather than a skill — Stupefied penalises "skill checks that use Int, Wis, or Cha",
+ * which is a query over this map, not a list anyone should retype.
+ *
+ * It lives here because it was already written twice (companion.ts and the web's
+ * pathbuilder.ts) and a third copy is exactly the drift this package exists to end.
+ * Lores are open-ended and absent, like everywhere else in this module.
+ */
+export const SKILL_ABILITY: Readonly<Record<SkillSlug, AbilityKey>> = {
+  acrobatics: "dex",
+  arcana: "int",
+  athletics: "str",
+  crafting: "int",
+  deception: "cha",
+  diplomacy: "cha",
+  intimidation: "cha",
+  medicine: "wis",
+  nature: "wis",
+  occultism: "int",
+  performance: "cha",
+  religion: "wis",
+  society: "int",
+  stealth: "dex",
+  survival: "wis",
+  thievery: "dex",
+};
+
+/** The skills based on any of `abilities` — e.g. Stupefied's Int/Wis/Cha set. */
+export function skillsForAbilities(abilities: readonly AbilityKey[]): SkillSlug[] {
+  const wanted = new Set<AbilityKey>(abilities);
+  return SKILL_SLUGS.filter((s) => wanted.has(SKILL_ABILITY[s]));
+}
+
 /** The three saving throws. */
 export const SAVE_SELECTORS = ["fortitude", "reflex", "will"] as const;
 export type SaveSelector = (typeof SAVE_SELECTORS)[number];

@@ -68,6 +68,11 @@ export * from './predicate.js';
 // into concrete sheet adjustments (HP bonuses, proficiency-rank grants).
 export * from './effects.js';
 
+// The PF2e condition vocabulary — the 41 conditions, the passives the numeric ones
+// impose, the implication/override graph, and a CLOSED list of what each does that
+// we cannot yet express. Most conditions are not modifiers; the gaps are named.
+export * from './conditions.js';
+
 // Layer 1 — the canonical passive-effect union (modifier/proficiency/grant/
 // rollAdjust/note) + `applyPassiveEffects`, which folds modifiers onto a
 // ResolvedCharacter (via stackModifiers) and collects the deferred kinds into

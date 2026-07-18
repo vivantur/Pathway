@@ -477,6 +477,51 @@ the duplicate parser). The character namespace (`characterNamespace`/`characterS
 
 ---
 
+## Conditions — `conditions.ts` (slice 1 landed 2026-07-18)
+
+The 41 PF2e conditions, built from rules text supplied by the owner (Player Core 442–447).
+
+**The finding that shaped the module: most conditions are not modifiers.** Roughly a dozen
+reduce to typed penalties; the rest change action economy (Slowed, Stunned), detection state
+(Hidden, Invisible), or are GM adjudication (the five attitudes). So a condition is *not* "a
+bundle of PassiveEffects" — it MAY contribute passives and MUST name what it does beyond
+them, via a closed `UnmodeledReason` vocabulary. Same discipline as `foundry.ts`: an
+approximate penalty on a sheet is a wrong sheet, so a condition whose penalty we cannot
+express exactly emits nothing and says why. `conditionGaps()` reports those blockers so a
+caller cannot present a partial answer as a complete one.
+
+**The three general stacking rules come almost free.** Conditions emit `status`-typed
+modifiers, so `stackModifiers` already yields "only the worst penalty applies" (Clumsy 1 +
+Frightened 2 on AC is −2, never −3) and lets a status bonus coexist with a status penalty.
+Off-Guard and Prone are `circumstance`, so they stack *alongside* status penalties. Only the
+third rule needed new code: the same condition applied twice keeps the worst (Enfeebled 1 +
+Enfeebled 2 = Enfeebled 2), which is instance dedup in `applyCondition`, not modifier stacking.
+
+**Implications and overrides are a VIEW, not a mutation.** `resolveConditions` expands
+`implies` transitively (Dying → Unconscious → Blinded + Off-Guard) and then applies the three
+explicit overrides (blinded>dazzled, restrained>grabbed, stunned>slowed). Suppression is
+computed rather than stored, so Escaping a restraint correctly leaves you still Grabbed.
+
+**Two deliberate non-claims:**
+- **The death track is bot-owned.** Dying/Wounded/Doomed carry no passives and are marked
+  `death-track`. Their math lives in `apps/bot/src/rules/combatV2/model.js` under 82 tests,
+  and CLAUDE.md names dying/recovery drift as the bug that justified `packages/core`. Core
+  asserting a second version would recreate exactly that. Consolidation is its own slice.
+- **`apps/bot/src/rules/effects.js` is a second, partial condition table** (20 conditions in a
+  five-bucket attack/damage/ac/save/skill model). It cannot express "Dex-based skills only",
+  so it over-applies Clumsy/Enfeebled/Stupefied. Comparing it against the rules text also
+  found two divergences that are *not* granularity: **Frightened and Sickened penalise damage**
+  (the text says "checks and DCs"; a damage roll is neither), and **Off-Guard is described as
+  a status penalty where the text says circumstance** — which changes what it stacks with.
+  Reported, not fixed here. The end state is the bot delegating to this module, as
+  `rules/pf2eMath.js` already does for arithmetic.
+
+**Nothing consumes `conditions.ts` yet** — it is the vocabulary, not the wiring. The obvious
+next consumers are the sheet (show held conditions and their net effect) and, eventually, the
+bot. Slice 2+ is the systems the `unmodeled` tallies name: action economy, detection.
+
+---
+
 ## Ingest review — the admin verification surface (planned)
 
 Auto-mapping official content into our effect schema at ingest is **best-effort, not

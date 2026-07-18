@@ -29,6 +29,7 @@
 // (base type, form, overrides) is identical either way.
 
 import { proficiencyRankAtLevel, type ProficiencyRank } from "./proficiency.js";
+import { SKILL_ABILITY as CANONICAL_SKILL_ABILITY } from "./selectors.js";
 
 export type CompanionForm = 'young' | 'mature' | 'nimble' | 'savage';
 export const COMPANION_FORMS: readonly CompanionForm[] = ['young', 'mature', 'nimble', 'savage'];
@@ -689,24 +690,11 @@ export function findCompanionType(slug: string): CompanionType | undefined {
 // --------------------------------------------------------------------------
 
 const SIZE_ORDER = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'] as const;
-const SKILL_ABILITY: Record<string, keyof CompanionAbilityMods> = {
-  acrobatics: 'dex',
-  arcana: 'int',
-  athletics: 'str',
-  crafting: 'int',
-  deception: 'cha',
-  diplomacy: 'cha',
-  intimidation: 'cha',
-  medicine: 'wis',
-  nature: 'wis',
-  occultism: 'int',
-  performance: 'cha',
-  religion: 'wis',
-  society: 'int',
-  stealth: 'dex',
-  survival: 'wis',
-  thievery: 'dex',
-};
+// The skill→attribute map is canonical in selectors.ts — it was written here and in
+// the web app before a rule needed it in a third place, which is the drift this
+// package exists to end. Companion skills are open-ended (a companion can have a
+// skill outside the 16), so the lookup stays keyed by string and falls back below.
+const SKILL_ABILITY: Record<string, keyof CompanionAbilityMods> = CANONICAL_SKILL_ABILITY;
 
 /** Cumulative ability-mod increases each form adds over the young baseline. */
 const FORM_ABILITY_DELTA: Record<CompanionForm, Partial<CompanionAbilityMods>> = {
