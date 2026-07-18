@@ -81,6 +81,34 @@ describe("proficiencyExtractor — semantic pieces, not sentence templates", () 
     expect(extractFromProse("You are trained in heavy armor.", [proficiencyExtractor])).toEqual([]);
   });
 
+  // ── compound grants: "and" fans out, "choice of" does not ────────────────────
+  it("fans a compound 'X and Y' grant into one draft per skill (Anadi Lore)", () => {
+    // The ancestry-Lore feats grant TWO skills; single-word capture dropped the second.
+    const ex = extractFromProse("You gain the trained proficiency rank in Crafting and Survival.", [proficiencyExtractor]);
+    expect(ex.map((e) => e.draft.target)).toEqual(["crafting", "survival"]);
+    expect(ex.every((e) => e.draft.rank === 1 && e.draft.mode === "upgrade")).toBe(true);
+  });
+
+  it("fans a three-skill compound with an Oxford comma", () => {
+    const ex = extractFromProse("You are trained in Deception, Diplomacy, and Intimidation.", [proficiencyExtractor]);
+    expect(ex.map((e) => e.draft.target)).toEqual(["deception", "diplomacy", "intimidation"]);
+  });
+
+  it("does NOT fan a 'choice of' construction — grants the definite skill only (Dragonscaled Lore)", () => {
+    // "pick one of four" is the CHOICE shape (a later slice); fanning it into four grants
+    // is a wrong sheet. The chain stops at "your", so only the definite Intimidation lands.
+    const ex = extractFromProse(
+      "You become trained in Intimidation and your choice of Arcana, Nature, Occultism, or Religion.",
+      [proficiencyExtractor],
+    );
+    expect(ex.map((e) => e.draft.target)).toEqual(["intimidation"]);
+  });
+
+  it("does NOT chain across 'or' (a choice of one, not a conjunction)", () => {
+    const ex = extractFromProse("You become trained in Arcana or Occultism.", [proficiencyExtractor]);
+    expect(ex.map((e) => e.draft.target)).toEqual(["arcana"]);
+  });
+
   // ── THE REGRESSION: the Lepidstadt Surgeon conflict ──────────────────────────
   it("does NOT read a condition as a grant (Lepidstadt Surgeon)", () => {
     // The real feat: the FIRST clause is the grant; a LATER clause mentions the same

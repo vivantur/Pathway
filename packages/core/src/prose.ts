@@ -253,20 +253,42 @@ const SKILLS = new Set([
   "society", "stealth", "survival", "thievery",
 ]);
 
-// "<rank> in/of <Skill>", with a short window between them for "proficiency rank in".
+// A CONJUNCTION of skills — the target of a compound grant. "Crafting and Survival",
+// "Deception, Diplomacy, and Intimidation" (Oxford comma included). Joined ONLY by
+// "and"/comma — a TRUE conjunction (grant all of them). "or" and "your choice of" are the
+// CHOICE shape (grant ONE), a different slice, and are deliberately NOT chained: fanning a
+// "pick one of four" into four grants is a wrong sheet, worse than the choice being missed.
+// The alternation is the 16 real skill names, so the chain STOPS at the first non-skill
+// word — "Intimidation and your choice of Arcana…" captures "Intimidation" only, because
+// "your" is not a skill. That is what keeps a compound grant from swallowing a choice group.
+const SKILL_ALT = [...SKILLS].join("|");
+const SKILL_CONJ = String.raw`(?:\s*,\s*and\s+|\s*,\s*|\s+and\s+)`;
+const SKILL_CHAIN = `(?:${SKILL_ALT})(?:${SKILL_CONJ}(?:${SKILL_ALT}))*`;
+/** Split a matched chain back into its skills — the same connectors, "and" forms first. */
+const SKILL_SPLIT = /\s*,\s*and\s+|\s*,\s*|\s+and\s+/i;
+
+// "<rank> in/of <Skill chain>", with a short window between them for "proficiency rank in".
 //
 // THE "from X to Y" TRAP (caught as a real conflict on Pactbinder Dedication): "increase
 // your proficiency FROM trained TO expert in Diplomacy" grants EXPERT, not trained. The
 // granted rank is the one after "to". So an optional `from <rank> to` prefix is consumed
 // greedily, leaving the operative rank in the capture group. A plain "trained in Stealth"
 // has no prefix and matches directly.
-const PROF_RE =
-  /\b(?:from\s+(?:untrained|trained|expert|master|legendary)\s+)?(?:to\s+)?(untrained|trained|expert|master|legendary)\b(?:\s+\w+){0,2}?\s+(?:in|of)\s+([A-Za-z]+)/gi;
+//
+// The skill capture is a CHAIN (`SKILL_CHAIN`), not one word, so "trained in Crafting and
+// Survival" yields BOTH — the ancestry-Lore feats grant two skills, and single-word capture
+// silently dropped the second (52 feats). `\b` after the chain rejects a skill embedded in a
+// longer word.
+const PROF_RE = new RegExp(
+  String.raw`\b(?:from\s+(?:untrained|trained|expert|master|legendary)\s+)?(?:to\s+)?(untrained|trained|expert|master|legendary)\b(?:\s+\w+){0,2}?\s+(?:in|of)\s+(${SKILL_CHAIN})\b`,
+  "gi",
+);
 
 /**
  * Extract proficiency-rank grants from a clause. Declines when the clause is governed by
  * a subordinating conjunction ("when you are legendary in Medicine" is a condition on
- * some OTHER effect, not a grant) — that gate is the Lepidstadt Surgeon regression.
+ * some OTHER effect, not a grant) — that gate is the Lepidstadt Surgeon regression. A
+ * compound target ("Crafting and Survival") yields one draft per skill.
  */
 export const proficiencyExtractor: Extractor = (clause) => {
   // A governed clause's rank phrase is a CONDITION, not a grant. Emit nothing: it is not
@@ -279,13 +301,16 @@ export const proficiencyExtractor: Extractor = (clause) => {
   PROF_RE.lastIndex = 0;
   while ((m = PROF_RE.exec(clause.text))) {
     const rank = RANK_WORDS[m[1]!.toLowerCase()];
-    const skill = m[2]!.toLowerCase();
-    if (rank === undefined || !SKILLS.has(skill)) continue;
-    out.push({
-      draft: { kind: "proficiency", target: skill, rank, mode: "upgrade" },
-      gaps: [],
-      span: { start: clause.start, end: clause.end, text: clause.text },
-    });
+    if (rank === undefined) continue;
+    for (const part of m[2]!.toLowerCase().split(SKILL_SPLIT)) {
+      const skill = part.trim();
+      if (!SKILLS.has(skill)) continue;
+      out.push({
+        draft: { kind: "proficiency", target: skill, rank, mode: "upgrade" },
+        gaps: [],
+        span: { start: clause.start, end: clause.end, text: clause.text },
+      });
+    }
   }
   return out;
 };

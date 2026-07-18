@@ -1,13 +1,13 @@
 {
- "generatedAt": "2026-07-18T00:00:56.754Z",
+ "generatedAt": "2026-07-18T01:26:06.320Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 1563,
-  "autoPromote": 163,
+  "candidates": 1569,
+  "autoPromote": 213,
   "conflicts": 0,
   "gapped": 1058,
-  "review": 342,
+  "review": 298,
   "invalid": 0
  },
  "candidates": [
@@ -360,10 +360,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 168,
+      "text": "You gain the trained proficiency rank in Crafting and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -404,10 +412,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:thievery",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 119,
+      "text": "You gain the trained proficiency rank in Crafting and Thievery."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -562,10 +578,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 114,
+      "end": 176,
+      "text": "You gain the trained proficiency rank in Athletics and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -606,10 +630,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:crafting",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 97,
+      "end": 158,
+      "text": "You gain the trained proficiency rank in Arcana and Crafting."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -842,10 +874,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 117,
+      "end": 176,
+      "text": "You gain the trained proficiency rank in Arcana and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -886,10 +926,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:society",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 188,
+      "end": 251,
+      "text": "You gain the trained proficiency rank in Diplomacy and Society."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -930,10 +978,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 111,
+      "end": 154,
+      "text": "You become trained in Athletics and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -1507,10 +1563,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 185,
+      "text": "You gain the trained proficiency rank in Acrobatics and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -1647,10 +1711,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 76,
+      "end": 137,
+      "text": "You gain the trained proficiency rank in Medicine and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -1723,10 +1795,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:occultism",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 73,
+      "end": 138,
+      "text": "You gain the trained proficiency rank in Deception and Occultism."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -2132,10 +2212,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:occultism",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 66,
+      "end": 130,
+      "text": "You gain the trained proficiency rank in Crafting and Occultism."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -3078,10 +3166,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:intimidation",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 236,
+      "end": 304,
+      "text": "You gain the trained proficiency rank in Diplomacy and Intimidation."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -3369,10 +3465,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:religion",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 127,
+      "end": 190,
+      "text": "You gain the trained proficiency rank in Medicine and Religion."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -3439,10 +3543,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:religion",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 176,
+      "end": 239,
+      "text": "You gain the trained proficiency rank in Crafting and Religion."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -3579,10 +3691,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 93,
+      "end": 152,
+      "text": "You gain the trained proficiency rank in Arcana and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -3815,10 +3935,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:athletics",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 220,
+      "end": 263,
+      "text": "You become trained in Arcana and Athletics."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -4421,6 +4549,29 @@
    ]
   },
   {
+   "entityId": "fetchling-lore",
+   "draft": {
+    "kind": "proficiency",
+    "target": "stealth",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:stealth",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 61,
+      "end": 101,
+      "text": "You're trained in Occultism and Stealth."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "fey-fellowship",
    "draft": {
     "kind": "modifier",
@@ -4655,6 +4806,32 @@
   {
    "entityId": "folk-healer",
    "draft": {
+    "kind": "proficiency",
+    "target": "occultism",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "proficiency:occultism",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 140,
+      "end": 181,
+      "text": "You're trained in Medicine and Occultism."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "folk-healer",
+   "draft": {
     "kind": "modifier",
     "target": "medicine",
     "bonusType": "circumstance",
@@ -4681,24 +4858,6 @@
       "end": 433,
       "text": "You gain a +1 circumstance bonus to Medicine checks to Treat Wounds and Treat Disease."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "folk-healer",
-   "draft": {
-    "kind": "proficiency",
-    "target": "occultism",
-    "rank": 1,
-    "mode": "upgrade"
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "proficiency:occultism",
-   "signature": "proficiency:skill:trained",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -4908,10 +5067,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 142,
+      "end": 182,
+      "text": "You become trained in Arcana and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -5020,10 +5187,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 62,
+      "end": 122,
+      "text": "You gain the trained proficiency rank in Nature and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -5177,10 +5352,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 118,
+      "text": "You gain the trained proficiency rank in Stealth and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -5349,10 +5532,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 171,
+      "end": 235,
+      "text": "You gain the trained proficiency rank in Acrobatics and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -5627,10 +5818,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:crafting",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 102,
+      "end": 166,
+      "text": "You gain the trained proficiency rank in Athletics and Crafting."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6218,10 +6417,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 130,
+      "end": 175,
+      "text": "You become trained in Occultism and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6315,10 +6522,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 83,
+      "end": 145,
+      "text": "You gain the trained proficiency rank in Stealth and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6359,10 +6574,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:deception",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 63,
+      "end": 128,
+      "text": "You gain the trained proficiency rank in Diplomacy and Deception."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6403,10 +6626,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:thievery",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 73,
+      "end": 135,
+      "text": "You gain the trained proficiency rank in Stealth and Thievery."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6566,10 +6797,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 78,
+      "end": 138,
+      "text": "You gain the trained proficiency rank in Nature and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6867,10 +7106,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:society",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 52,
+      "end": 112,
+      "text": "You gain the trained proficiency rank in Arcana and Society."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -6911,10 +7158,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 109,
+      "end": 151,
+      "text": "You become trained in Society and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -7181,10 +7436,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:occultism",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 130,
+      "end": 194,
+      "text": "You gain the trained proficiency rank in Crafting and Occultism."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -7544,10 +7807,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 251,
+      "text": "You become trained in Athletics and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -8357,10 +8628,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:occultism",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 150,
+      "text": "You're trained in Deception and Occultism."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -8700,10 +8979,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 126,
+      "end": 190,
+      "text": "You gain the trained proficiency rank in Acrobatics and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -9550,10 +9837,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:religion",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 114,
+      "end": 175,
+      "text": "You gain the trained proficiency rank in Nature and Religion."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -9594,10 +9889,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:society",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 94,
+      "end": 156,
+      "text": "You gain the trained proficiency rank in Religion and Society."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -9638,10 +9941,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 70,
+      "end": 131,
+      "text": "You gain the trained proficiency rank in Nature and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -9932,10 +10243,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 117,
+      "end": 181,
+      "text": "You gain the trained proficiency rank in Diplomacy and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -10897,10 +11216,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:nature",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 161,
+      "end": 224,
+      "text": "You gain the trained proficiency rank in Acrobatics and Nature."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -11312,10 +11639,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:performance",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 50,
+      "end": 98,
+      "text": "You become trained in Deception and Performance."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -11356,10 +11691,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 80,
+      "end": 142,
+      "text": "You gain the trained proficiency rank in Society and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -11816,10 +12159,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 52,
+      "end": 107,
+      "text": "You gain the trained proficiency in Nature and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -12429,10 +12780,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:society",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 140,
+      "end": 179,
+      "text": "You're trained in Religion and Society."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -12473,10 +12832,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:thievery",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 136,
+      "text": "You become trained in Survival and Thievery."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -12549,10 +12916,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 68,
+      "end": 133,
+      "text": "You gain the trained proficiency rank in Performance and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -12770,10 +13145,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 78,
+      "end": 143,
+      "text": "You gain the trained proficiency rank in Performance and Stealth."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -13466,10 +13849,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:thievery",
    "signature": "proficiency:skill:expert",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 268,
+      "text": "You become an expert in Society and Thievery, and you gain a +1 circumstance bonus to Recall Knowledge about ancient history, peoples, and cultures."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -13700,10 +14091,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:performance",
    "signature": "proficiency:skill:trained",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 376,
+      "end": 424,
+      "text": "You become trained in Occultism and Performance;"
+     }
+    },
     {
      "source": "foundry"
     }
@@ -13870,6 +14269,29 @@
    "gaps": [],
    "agreement": "parser-only",
    "key": "proficiency:religion",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 152,
+      "end": 196,
+      "text": "You become trained in Religion and Survival;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "campfire-chronicler-dedication",
+   "draft": {
+    "kind": "proficiency",
+    "target": "survival",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:survival",
    "signature": "proficiency:skill:trained",
    "evidence": [
     {
@@ -14257,6 +14679,29 @@
    "gaps": [],
    "agreement": "parser-only",
    "key": "proficiency:deception",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 65,
+      "end": 109,
+      "text": "You become trained in Deception and Society;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dandy-dedication",
+   "draft": {
+    "kind": "proficiency",
+    "target": "society",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:society",
    "signature": "proficiency:skill:trained",
    "evidence": [
     {
@@ -17336,6 +17781,29 @@
    ]
   },
   {
+   "entityId": "rivethun-emissary-dedication",
+   "draft": {
+    "kind": "proficiency",
+    "target": "religion",
+    "rank": 2,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:religion",
+   "signature": "proficiency:skill:expert",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 168,
+      "end": 215,
+      "text": "You become an expert in Diplomacy and Religion."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "rivethun-invoker-dedication",
    "draft": {
     "kind": "proficiency",
@@ -17370,10 +17838,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:religion",
    "signature": "proficiency:skill:expert",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 183,
+      "end": 230,
+      "text": "You become an expert in Athletics and Religion."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -17414,10 +17890,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:religion",
    "signature": "proficiency:skill:expert",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 133,
+      "end": 177,
+      "text": "You become an expert in Nature and Religion."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -20129,6 +20613,29 @@
    "gaps": [],
    "agreement": "parser-only",
    "key": "proficiency:deception",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 70,
+      "end": 114,
+      "text": "You become trained in Deception and Stealth;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "butterfly-blade-dedication",
+   "draft": {
+    "kind": "proficiency",
+    "target": "stealth",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:stealth",
    "signature": "proficiency:skill:trained",
    "evidence": [
     {
@@ -29638,10 +30145,18 @@
     "mode": "upgrade"
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "proficiency:survival",
    "signature": "proficiency:skill:expert",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 84,
+      "end": 136,
+      "text": "You gain expert proficiency in Stealth and Survival."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -30245,6 +30760,29 @@
    "gaps": [],
    "agreement": "parser-only",
    "key": "proficiency:intimidation",
+   "signature": "proficiency:skill:trained",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 201,
+      "end": 249,
+      "text": "You become trained in Intimidation and Religion."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pure-legion-enforcer-dedication",
+   "draft": {
+    "kind": "proficiency",
+    "target": "religion",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "proficiency:religion",
    "signature": "proficiency:skill:trained",
    "evidence": [
     {
