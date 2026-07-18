@@ -340,6 +340,15 @@ const countersCommand = new SlashCommandBuilder()
   .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
+// /use — run an authored automation tree through @pathway/core
+// ─────────────────────────────────────────────────────────────────────────────
+const useCommand = new SlashCommandBuilder()
+  .setName('use')
+  .setDescription('Run an authored action through the effects engine.')
+  .addStringOption(o => o.setName('action').setDescription('Which action to run').setRequired(true).setAutocomplete(true))
+  .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
+
+// ─────────────────────────────────────────────────────────────────────────────
 // /spellbook  /prepared
 // ─────────────────────────────────────────────────────────────────────────────
 const spellbookCommand = new SlashCommandBuilder()
@@ -1593,6 +1602,7 @@ const commands = [
   cvarCommand,
   ccCommand,
   countersCommand,
+  useCommand,
   // Combat & rolls
   initCommand,
   iCommand,

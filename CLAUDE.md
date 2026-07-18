@@ -91,6 +91,21 @@ this section has been wrong before, and a stale status is worse than none.)*
   - **No content carries an automation tree yet.** The corpus is all Layer-1
     passives and `remap-effects.mjs` only emits those, so the host currently runs
     hand-authored trees. Content supplying trees is the decisions fold-in.
+
+  **`/use` landed 2026-07-18** — the loop is closed end to end: core computes, the
+  host adapts, mutations are written back, the player sees narration AND what
+  changed AND what didn't. `rules/authoredActions.js` is a TEMPORARY hand-authored
+  catalog in core's `GrantedAction` shape (validated against `grantedActionSchema`
+  at load); it exists only because no content carries a tree, and should be deleted
+  once the decisions fold-in supplies them. **Its entries are deliberately generic
+  demos that make no Pathfinder rules claims** — authoring real actions needs rules
+  text, per the rules-from-source rule.
+
+  One host decision worth knowing: core defaults an unhandled node failure to
+  `ignore`, which is right for a library and wrong for a host narrating to a
+  person (a spell whose cost silently failed would still hand out its effect).
+  `buildContext` therefore defaults `onError` to `warn`, and an authored node that
+  genuinely must not proceed — a COST — carries its own `raise`.
 - 🔶 **`packages/db`** — no longer a skeleton: a content store plus `spells`,
   `feats`, `ancestries`, `backgrounds` (15 tests). But **nothing outside `packages/db`
   imports it yet** — the web app still reads the JSON datasets in
@@ -278,7 +293,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 643 · bot 241 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 643 · bot 263 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

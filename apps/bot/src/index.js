@@ -86,6 +86,7 @@ const portraitCmd      = require('./commands/portrait/command');
 const heroCmd          = require('./commands/hero/command');
 const recoveryCmd      = require('./commands/recovery/command');
 const ccCmd            = require('./commands/cc/command');
+const useCmd           = require('./commands/use/command');
 const cvarCmd          = require('./commands/cvar/command');
 const spellsCmd        = require('./commands/spells/command');
 const spellbookCmd     = require('./commands/spellbook/command');
@@ -1456,6 +1457,12 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.commandName === 'calendar') {
           return await calendarCmd.handleCalendarAutocomplete(interaction);
         }
+        // ─── /use autocomplete ───
+        // Owns its own search over the authored action catalog, so it does not
+        // go through the pick() helper below.
+        if (interaction.commandName === 'use') {
+          return await useCmd.autocomplete(interaction);
+        }
 
         const focused = interaction.options.getFocused(true); // { name, value }
         const q = String(focused.value ?? '').toLowerCase().trim();
@@ -2295,6 +2302,13 @@ client.on('interactionCreate', async (interaction) => {
   // stratagem charges, etc.). Stored at overlay.counters.
   else if (commandName === 'cc') {
     await ccCmd.execute(interaction);
+  }
+
+  // ─── /use ────────────────────────────────────────────────────────
+  // Run an authored automation tree through @pathway/core's Layer-2
+  // interpreter. The rules live in core; this is only the entry point.
+  else if (commandName === 'use') {
+    await useCmd.execute(interaction);
   }
 
   // ─── /counters ───────────────────────────────────────────────────

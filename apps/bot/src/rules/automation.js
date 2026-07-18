@@ -89,6 +89,13 @@ function buildContext(charEntry, opts = {}) {
     actor: core.resolvedFromPathbuilder(charEntry?.data ?? {}),
     counters: readCounters(charEntry),
     rng: core.makeRng(seed),
+    // Core defaults an unhandled node failure to `ignore` — right for a library,
+    // wrong for a host that shows results to a person. Ignored means a spell
+    // whose focus cost silently failed still heals, and nobody is told. A HOST
+    // narrating to a player defaults to `warn` so every failure reaches the
+    // embed; an authored node that genuinely must not proceed carries its own
+    // `raise` (see the cost node in authoredActions.js).
+    onError: { on: 'warn' },
   };
 
   if (targets.length > 0) {
@@ -177,6 +184,47 @@ function describeOutcome(outcome) {
   };
 }
 
+/**
+ * Render what an apply actually DID — the other half of the story, from
+ * `state/automation.js`'s report.
+ *
+ * Reads the report rather than the mutations on purpose: a mutation is an
+ * intention, and the report knows what survived clamping. "Healed 6" is a lie if
+ * the character was 2 HP below full, and the report is what knows that.
+ *
+ * Returns `{ lines, skipped }`, both plain strings. Skipped entries stay separate
+ * so a caller cannot accidentally present a partial apply as a complete one.
+ */
+function describeApplied(report) {
+  const lines = [];
+
+  for (const a of report?.applied ?? []) {
+    switch (a.kind) {
+      case 'damage':
+        lines.push(`💔 Took **${a.amount}** damage — ${a.before} → **${a.after}** HP${a.atZero ? ' (at 0)' : ''}`);
+        break;
+      case 'healing': {
+        // Report the real delta: healing past max is clamped, and saying
+        // otherwise would misreport the character's own sheet back to them.
+        const gained = a.after - a.before;
+        const capped = gained < a.amount ? ` _(${a.amount} rolled, capped at max HP)_` : '';
+        lines.push(`💚 Healed **${gained}** — ${a.before} → **${a.after}** HP${capped}`);
+        break;
+      }
+      case 'counter':
+        lines.push(`🔸 Spent **${a.spent}** ${a.counter} — **${a.remaining}** remaining`);
+        break;
+      default:
+        lines.push(`• ${a.kind}`);
+    }
+  }
+
+  return {
+    lines,
+    skipped: (report?.skipped ?? []).map(s => `${s.kind}: ${s.reason}`),
+  };
+}
+
 module.exports = {
   FOCUS_COUNTER,
   readCounters,
@@ -184,4 +232,5 @@ module.exports = {
   runTree,
   run,
   describeOutcome,
+  describeApplied,
 };
