@@ -17,11 +17,11 @@
 //     `rollTags` (the opposed context of a roll — who you are rolling against).
 //     A caller unions them; a combat tracker unions its own state tags on top.
 //
-// STILL DEFERRED after the creature-tag slice: tags describing the INCOMING EFFECT
-// itself — "against effects with the death trait", "against effects that would
-// make you fatigued". Those are not blocked on this module but on the content
-// model: `EffectTemplate` (automation.ts) carries no traits, and core has no
-// condition vocabulary at all, so there is nothing for such a tag to read.
+// STILL DEFERRED: tags describing the conditions an incoming effect would CAUSE
+// ("against effects that would make you fatigued"). Not blocked on this module but
+// on the content model — core has no condition vocabulary at all, so there is
+// nothing for such a tag to read. (Effect TRAITS are no longer blocked:
+// `EffectTemplate.traits` landed, and `effect:trait:<t>` reads it.)
 //
 // PURE: a boolean tree + a set-membership test + a tag derivation. No PF2e rules
 // math, no I/O — so there is no rules-from-memory risk here.
@@ -142,6 +142,15 @@ export interface CreatureRef {
 }
 
 /**
+ * The traits of the EFFECT at issue in a roll — `EffectTemplate.traits`. Structurally
+ * identical to `CreatureRef`, named apart because the two answer different questions
+ * ("who is the other creature" vs "what kind of effect is this").
+ */
+export interface EffectRef {
+  traits?: readonly string[];
+}
+
+/**
  * The opposed context a roll happens in. Every field is optional: a roll with no
  * opponent (a flat check, a Recall Knowledge with nothing targeted) simply
  * produces no creature tags, and predicates that need one correctly fail.
@@ -151,6 +160,19 @@ export interface RollContext {
   target?: CreatureRef;
   /** The creature whose effect prompted this roll. */
   origin?: CreatureRef;
+  /**
+   * The effect being rolled against — a save vs a spell, a resistance check vs a
+   * disease. Emits `effect:trait:<t>`, which is what "+1 to saves against death
+   * effects" tests.
+   *
+   * ONE NAMESPACE, NOT A DIRECTIONAL PAIR, for the same reason `opponent:` collapses
+   * the creature directions: the SELECTOR already carries direction. A `when` on
+   * `will` is inherently about an incoming effect. If an outgoing shape ever needs
+   * this ("+1 to spell attack rolls with fire spells"), `effect:` widens to mean
+   * "the effect at issue" and the producer supplies whichever that is — no new
+   * namespace, no migration. Not modelled now because no such content is in hand.
+   */
+  effect?: EffectRef;
   /** Tags the host already knows (flanking, off-guard), unioned verbatim. */
   extra?: Iterable<string>;
 }
@@ -173,6 +195,11 @@ export function rollTags(ctx: RollContext): Set<string> {
   };
   add("target", ctx.target);
   add("origin", ctx.origin);
+  // The effect's own traits — no `opponent:` union, since an effect is not a creature.
+  for (const t of ctx.effect?.traits ?? []) {
+    const slug = tagSlug(t);
+    if (slug) tags.add(`effect:trait:${slug}`);
+  }
   for (const t of ctx.extra ?? []) tags.add(t);
   return tags;
 }
@@ -186,24 +213,34 @@ function label(value: string): string {
   return value.replace(/-/g, " ");
 }
 
+/** A tag rendered as fixed text around a variable term, so a group can collapse. */
+interface TagPhrase {
+  prefix: string;
+  term: string;
+  suffix: string;
+}
+
 /**
- * Render one tag as a `{prefix, term}` pair, so a group of leaves sharing a prefix
- * can be collapsed ("vs undead or dragon" rather than "vs undead or vs dragon").
- * A tag this vocabulary does not recognize renders AS ITSELF, with no prefix — the
- * same honesty rule the mapper follows. Showing a raw `self:effect:rage` is ugly;
+ * Render one tag as a `{prefix, term, suffix}` triple, so a group of leaves sharing
+ * its fixed parts can be collapsed ("vs undead or dragon" rather than "vs undead or
+ * vs dragon"; "vs death or fear effects" rather than repeating "effects").
+ * A tag this vocabulary does not recognize renders AS ITSELF, unadorned — the same
+ * honesty rule the mapper follows. Showing a raw `self:effect:rage` is ugly;
  * silently describing it as something it isn't would be wrong.
  */
-function describeTag(tag: string): { prefix: string; term: string } {
+function describeTag(tag: string): TagPhrase {
   const parts = tag.split(":");
   if (parts.length === 3) {
     const [scope, category, value] = parts as [string, string, string];
     if (category === "trait") {
-      if (scope === "opponent" || scope === "target") return { prefix: "vs ", term: label(value) };
-      if (scope === "origin") return { prefix: "vs effects from ", term: label(value) };
-      if (scope === "self") return { prefix: "when ", term: label(value) };
+      const term = label(value);
+      if (scope === "opponent" || scope === "target") return { prefix: "vs ", term, suffix: "" };
+      if (scope === "origin") return { prefix: "vs effects from ", term, suffix: "" };
+      if (scope === "self") return { prefix: "when ", term, suffix: "" };
+      if (scope === "effect") return { prefix: "vs ", term, suffix: " effects" };
     }
   }
-  return { prefix: "", term: tag };
+  return { prefix: "", term: tag, suffix: "" };
 }
 
 /**
@@ -216,8 +253,8 @@ function describeTag(tag: string): { prefix: string; term: string } {
  */
 export function describePredicate(pred: Predicate): string {
   if ("tag" in pred) {
-    const { prefix, term } = describeTag(pred.tag);
-    return `${prefix}${term}`;
+    const { prefix, term, suffix } = describeTag(pred.tag);
+    return `${prefix}${term}${suffix}`;
   }
   if ("not" in pred) return `not ${describePredicate(pred.not)}`;
 
@@ -226,10 +263,11 @@ export function describePredicate(pred: Predicate): string {
   if (children.length === 0) return "all" in pred ? "always" : "never";
   if (children.length === 1) return describePredicate(children[0]!);
 
-  // Collapse a shared prefix when every child is a leaf that agrees on one.
+  // Collapse the fixed text when every child is a leaf that agrees on it.
   const leaves = children.every((c) => "tag" in c) ? children.map((c) => describeTag((c as { tag: string }).tag)) : null;
-  if (leaves && leaves.every((l) => l.prefix === leaves[0]!.prefix) && leaves[0]!.prefix !== "") {
-    return `${leaves[0]!.prefix}${leaves.map((l) => l.term).join(join)}`;
+  const first = leaves?.[0];
+  if (leaves && first && leaves.every((l) => l.prefix === first.prefix && l.suffix === first.suffix) && first.prefix !== "") {
+    return `${first.prefix}${leaves.map((l) => l.term).join(join)}${first.suffix}`;
   }
   return children.map((c) => describePredicate(c)).join(join);
 }

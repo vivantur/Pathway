@@ -172,7 +172,7 @@ export function ValueField({ value, onValue }: { value: unknown; onValue: (v: un
 // condition, which is the same failure as mapping an effect by dropping a condition.
 // A full recursive editor is on the roadmap (docs, "Deferred").
 
-export type PredicateScope = 'opponent' | 'target' | 'origin' | 'self';
+export type PredicateScope = 'opponent' | 'target' | 'origin' | 'self' | 'effect';
 export interface PredicateTerm {
   scope: PredicateScope;
   trait: string;
@@ -183,9 +183,12 @@ const SCOPE_LABELS: { scope: PredicateScope; label: string }[] = [
   { scope: 'opponent', label: 'vs a creature with' },
   { scope: 'target', label: 'vs a creature you target with' },
   { scope: 'origin', label: 'vs effects from a creature with' },
+  { scope: 'effect', label: 'vs an effect with' },
   { scope: 'self', label: 'when you have' },
 ];
 const SCOPES = SCOPE_LABELS.map((s) => s.scope);
+/** `effect:` names a KIND of effect; the others name a creature. Drives which suggestions show. */
+const isEffectScope = (s: PredicateScope) => s === 'effect';
 
 /**
  * Creature/self traits observed in the Foundry corpus's own predicates — a datalist
@@ -202,6 +205,32 @@ export const PREDICATE_TRAITS = [
   'humanoid', 'incorporeal', 'kaiju', 'kami', 'magical', 'metal', 'monitor', 'ooze',
   'orc', 'plant', 'possessed', 'sakhil', 'spirit', 'sprite', 'stone', 'strix', 'trap',
   'undead', 'unholy', 'vampire', 'water', 'wood',
+];
+
+/**
+ * Traits an EFFECT can carry (`effect:trait:` terms) — the raw trait vocabulary of the
+ * spell corpus, which is where effect traits actually live. Also suggestions only.
+ *
+ * Deliberately unfiltered. It includes entries nobody would write a save bonus against
+ * (`concentrate`, `uncommon`, class names), because the alternative is me deciding which
+ * traits are "really" effect traits — a rules judgement from memory, which the
+ * rules-from-source rule forbids. Noise in a filter-as-you-type list costs little;
+ * silently dropping a legitimate trait would cost more.
+ */
+export const EFFECT_TRAITS = [
+  'acid', 'air', 'animist', 'attack', 'auditory', 'aura', 'bard', 'beast', 'cantrip',
+  'champion', 'chaotic', 'cleric', 'cold', 'composition', 'concentrate', 'consecration',
+  'contingency', 'curse', 'cursebound', 'darkness', 'death', 'detection', 'disease',
+  'dream', 'druid', 'earth', 'eidolon', 'electricity', 'emotion', 'evil', 'exploration',
+  'extradimensional', 'fear', 'fire', 'focus', 'force', 'fortune', 'fungus', 'good',
+  'grave', 'healing', 'hex', 'holy', 'illusion', 'incapacitation', 'incarnate',
+  'incorporeal', 'light', 'linguistic', 'magus', 'manipulate', 'mental', 'metal',
+  'misfortune', 'monk', 'morph', 'move', 'mythic', 'necromancer', 'nonlethal', 'olfactory',
+  'oracle', 'plant', 'poison', 'polymorph', 'possession', 'prediction', 'psychic', 'ranger',
+  'rare', 'revelation', 'sanctified', 'scrying', 'shadow', 'sleep', 'sonic', 'sorcerer',
+  'spellshape', 'spirit', 'stance', 'structure', 'subtle', 'summon', 'summoner',
+  'teleportation', 'trial', 'true-name', 'uncommon', 'unholy', 'unique', 'visual',
+  'vitality', 'void', 'water', 'witch', 'wizard', 'wood',
 ];
 
 /** Build a predicate from flat terms. Blank traits are ignored; no terms ⇒ unconditional. */
@@ -304,7 +333,7 @@ export function PredicateField({ value, onChange }: { value: unknown; onChange: 
           >
             not
           </button>
-          <input className={`${inputCls} w-36`} list="predicate-traits" placeholder="trait" value={t.trait} onChange={(e) => patch(i, { trait: e.target.value })} />
+          <input className={`${inputCls} w-36`} list={isEffectScope(t.scope) ? 'effect-traits' : 'predicate-traits'} placeholder="trait" value={t.trait} onChange={(e) => patch(i, { trait: e.target.value })} />
           <button onClick={() => push(terms.filter((_, j) => j !== i))} className="text-parchment/40 hover:text-red-300" title="remove">✕</button>
         </div>
       ))}

@@ -146,6 +146,25 @@ function EffectTemplateField({ template, onChange }: { template: Record<string, 
         <input className={`${inputCls} w-40`} placeholder="effect name (e.g. Frightened)" value={(template.name as string) ?? ''} onChange={(e) => onChange({ ...template, name: e.target.value })} />
         <DurationField duration={(template.duration as Record<string, unknown>) ?? { kind: 'unlimited' }} onChange={(d) => onChange({ ...template, duration: d })} />
       </div>
+      {/* The effect's OWN traits — the read side of a `vs an effect with <trait>`
+          condition. Comma-separated because traits are a short flat list; stored as
+          an array, and omitted entirely when blank (absence ≠ "no traits declared"). */}
+      <div className="mt-1.5 flex items-center gap-2">
+        <span className="text-xs text-parchment/40">traits</span>
+        <input
+          className={`${inputCls} w-72`}
+          list="effect-traits"
+          placeholder="e.g. emotion, fear, mental"
+          value={((template.traits as string[]) ?? []).join(', ')}
+          onChange={(e) => {
+            const traits = e.target.value.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+            const next = { ...template };
+            if (traits.length) next.traits = traits;
+            else delete next.traits;
+            onChange(next);
+          }}
+        />
+      </div>
       <div className="mt-2 pl-2">
         <div className="text-xs uppercase tracking-wide text-parchment/40">while active</div>
         {passives.map((d) => {

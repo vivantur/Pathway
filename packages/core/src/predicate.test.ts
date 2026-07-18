@@ -151,6 +151,30 @@ describe("rollTags — the opposed context", () => {
     expect(t.has("opponent:trait:undead")).toBe(true);
   });
 
+  it("emits effect:trait: from the effect being rolled against", () => {
+    // "+1 status to saves against death effects" — the shape EffectTemplate.traits
+    // exists to make representable.
+    const t = rollTags({ effect: { traits: ["death", "Magical"] } });
+    expect(t.has("effect:trait:death")).toBe(true);
+    expect(t.has("effect:trait:magical")).toBe(true);
+    expect(evaluatePredicate({ tag: "effect:trait:death" }, t)).toBe(true);
+  });
+
+  it("does NOT give an effect an opponent: union — an effect is not a creature", () => {
+    const t = rollTags({ effect: { traits: ["death"] } });
+    expect(t.has("opponent:trait:death")).toBe(false);
+    expect(t.size).toBe(1);
+  });
+
+  it("keeps creature and effect traits independent when a roll has both", () => {
+    // A save against an undead's death spell: the creature is undead, the effect is
+    // death. Neither tag may leak into the other's namespace.
+    const t = rollTags({ origin: { traits: ["undead"] }, effect: { traits: ["death"] } });
+    expect(evaluatePredicate({ all: [{ tag: "opponent:trait:undead" }, { tag: "effect:trait:death" }] }, t)).toBe(true);
+    expect(t.has("effect:trait:undead")).toBe(false);
+    expect(t.has("opponent:trait:death")).toBe(false);
+  });
+
   it("passes host `extra` tags through verbatim (the combat-tracker seam)", () => {
     expect(rollTags({ extra: ["self:condition:off-guard"] }).has("self:condition:off-guard")).toBe(true);
   });
@@ -188,6 +212,17 @@ describe("describePredicate — display prose", () => {
   it("collapses a shared prefix across a group", () => {
     const p: Predicate = { any: [{ tag: "opponent:trait:undead" }, { tag: "opponent:trait:fiend" }] };
     expect(describePredicate(p)).toBe("vs undead or fiend");
+  });
+
+  it("renders an effect trait with its noun, and collapses the noun across a group", () => {
+    expect(describePredicate({ tag: "effect:trait:death" })).toBe("vs death effects");
+    const p: Predicate = { any: [{ tag: "effect:trait:death" }, { tag: "effect:trait:fear" }] };
+    expect(describePredicate(p)).toBe("vs death or fear effects");
+  });
+
+  it("does not collapse a creature trait with an effect trait — different nouns", () => {
+    const p: Predicate = { all: [{ tag: "opponent:trait:undead" }, { tag: "effect:trait:death" }] };
+    expect(describePredicate(p)).toBe("vs undead and vs death effects");
   });
 
   it("does not collapse across differing prefixes", () => {

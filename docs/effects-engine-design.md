@@ -949,6 +949,13 @@ section on the page. Slice-1 fields were extracted to `features/authoring/fields
   fine). Tested end-to-end: an authored condition reaches `SheetEffects.conditional` with the
   expected prose.
 
+  **Effect traits in the editor (2026-07-18).** The condition scope list gained *"vs an effect
+  with"* (`effect:trait:`), and the `applyEffect` template form gained a **traits** input —
+  the read side, so an authored effect can declare itself a `death`/`emotion`/`fear` effect for
+  such a condition to test. Suggestions come from the spell corpus's own 97-trait vocabulary,
+  deliberately unfiltered: deciding which traits are "really" effect traits would be a rules
+  judgement from memory, and noise in a filter-as-you-type list is the cheaper error.
+
   **DEFERRED — the full recursive predicate editor.** The flat builder cannot express nesting
   (`all: [A, any: [B, C]]`), which is a deliberate deviation from decision 5 ("expose the full
   node set"), taken because no such content exists yet. The cost is paid honestly rather than
@@ -1095,9 +1102,20 @@ senses/resistances — passed UNCHANGED through the rewired pipeline. That is th
    `opponent:`; `target:`/`origin:` remain for content that genuinely cares, and are what the
    Foundry corpus encodes (it separates the two), so ingest can map without reinterpreting.
 
+   **RESOLVED 2026-07-18 — effect traits.** `EffectTemplate.traits` (automation.ts) landed,
+   optional and additive, and `rollTags` reads it into `effect:trait:<t>` — so "+1 to saves
+   against death effects" is representable end to end. `AppliedEffect` inherits the field for
+   free (its schema spreads the template's shape), so a runtime host can read an incoming
+   effect's traits without further model work.
+
+   *One namespace, not a directional pair.* `effect:` gets no `opponent:`-style union because
+   an effect is not a creature, and no incoming/outgoing split because the **selector already
+   carries direction** (a `when` on `will` is inherently about an incoming effect). If an
+   outgoing shape ever needs it ("+1 to spell attack rolls with fire spells"), `effect:` widens
+   to "the effect at issue" and the producer supplies whichever that is — no new namespace, no
+   migration. Not modelled now because no such content is in hand.
+
    **Still deferred, and NOT blocked on this module — blocked on the content model:**
-   - *"against effects with `<trait>`"* needs `EffectTemplate` (automation.ts) to carry
-     `traits`. It does not. Small additive change.
    - *"against effects that would cause `<condition>`"* needs a **condition vocabulary**,
      which core does not have at all — nothing declares what an effect inflicts, so such a
      tag would have nothing to read. This is the largest of the three and needs the condition

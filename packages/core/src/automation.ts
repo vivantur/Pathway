@@ -329,6 +329,20 @@ export type GrantedAction = z.infer<typeof grantedActionSchema>;
 export const effectTemplateSchema = z
   .object({
     name: z.string().min(1),
+    /**
+     * The effect's OWN traits (`death`, `mental`, `fire`, `incapacitation`, …).
+     *
+     * These exist so that content reading "a +1 status bonus to saves against death
+     * effects" has something to read: a `when` predicate can then test
+     * `effect:trait:death` against the effect a creature is rolling against. Without
+     * this field that whole family of content is unrepresentable — the predicate
+     * grammar was never the blocker, the missing declaration was.
+     *
+     * Optional and additive: every stored template validates unchanged, and an effect
+     * that declares no traits simply matches no trait predicate (which is correct —
+     * absence of a declaration is not evidence of a trait).
+     */
+    traits: z.array(z.string().min(1)).optional(),
     duration: durationSchema,
     /**
      * Whether this effect can be Sustained — INDEPENDENT of `duration`. `extends`

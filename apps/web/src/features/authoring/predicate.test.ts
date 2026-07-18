@@ -7,7 +7,15 @@
 // than silently flattened.
 
 import { describe, expect, it } from 'vitest';
-import { collectPassiveSheetEffects, passiveEffectSchema, type PassiveEffect } from '@pathway/core';
+import {
+  collectPassiveSheetEffects,
+  effectTemplateSchema,
+  evaluatePredicate,
+  passiveEffectSchema,
+  rollTags,
+  type EffectTemplate,
+  type PassiveEffect,
+} from '@pathway/core';
 import { buildPredicate, readPredicate, type PredicateTerm } from './fields';
 
 const term = (p: Partial<PredicateTerm> = {}): PredicateTerm => ({
@@ -55,7 +63,7 @@ describe('buildPredicate', () => {
   });
 
   it('carries each scope through to its namespace', () => {
-    for (const scope of ['opponent', 'target', 'origin', 'self'] as const) {
+    for (const scope of ['opponent', 'target', 'origin', 'self', 'effect'] as const) {
       expect(buildPredicate([term({ scope })], 'any')).toEqual({ tag: `${scope}:trait:undead` });
     }
   });
@@ -139,5 +147,38 @@ describe('the authoring → sheet loop', () => {
     // And it is NOT folded into any total.
     expect(sheet.statModifiers.size).toBe(0);
     expect(sheet.skipped).toBe(0);
+  });
+
+  it('authors "+1 to saves against death effects" — the shape EffectTemplate.traits unlocks', () => {
+    // This is the capability that was unrepresentable before the traits field: not
+    // because the predicate grammar lacked anything, but because no effect DECLARED
+    // what kind of effect it was. Both halves are asserted — the condition an author
+    // writes, and the declaration on the effect it will be tested against.
+    const when = buildPredicate([{ scope: 'effect', trait: 'death', negate: false }], 'any');
+    expect(when).toEqual({ tag: 'effect:trait:death' });
+
+    const sheet = collectPassiveSheetEffects(
+      [[{ kind: 'modifier', target: 'fortitude', bonusType: 'status', value: { kind: 'lit', value: 1 }, when }]],
+      { level: 5 },
+      ['Deny the Reaper'],
+    );
+    expect(sheet.conditional[0]).toEqual({
+      source: 'Deny the Reaper',
+      stat: 'fortitude',
+      summary: '+1 status to Fortitude',
+      condition: 'vs death effects',
+    });
+
+    // The other half: an effect declaring itself a death effect satisfies that tag.
+    const incoming: EffectTemplate = {
+      name: 'Slay Living',
+      traits: ['death', 'void'],
+      duration: { kind: 'unlimited' },
+      passives: [],
+    };
+    expect(effectTemplateSchema.safeParse(incoming).success).toBe(true);
+    expect(evaluatePredicate(when!, rollTags({ effect: { traits: incoming.traits } }))).toBe(true);
+    // An effect that is NOT a death effect does not satisfy it.
+    expect(evaluatePredicate(when!, rollTags({ effect: { traits: ['mental'] } }))).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ import { GildedRule } from '@/components/ui/GildedRule';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import {
   inputCls, cap, withId, strip, nextId, RANK_LABELS, EFFECT_KINDS, RESIST_TYPES, BROADCAST,
-  PREDICATE_TRAITS, EffectForm, validatePassive, type Draft,
+  PREDICATE_TRAITS, EFFECT_TRAITS, EffectForm, validatePassive, type Draft,
 } from '@/features/authoring/fields';
 import { AutomationTree, stripDeep } from '@/features/authoring/AutomationEditor';
 
@@ -260,6 +260,9 @@ export function EffectAuthorPage() {
       </datalist>
       <datalist id="predicate-traits">
         {PREDICATE_TRAITS.map((t) => <option key={t} value={t} />)}
+      </datalist>
+      <datalist id="effect-traits">
+        {EFFECT_TRAITS.map((t) => <option key={t} value={t} />)}
       </datalist>
 
       <p className="mt-8 text-xs text-parchment/40">
