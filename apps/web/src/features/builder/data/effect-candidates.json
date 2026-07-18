@@ -1,13 +1,13 @@
 {
- "generatedAt": "2026-07-18T01:26:06.320Z",
+ "generatedAt": "2026-07-18T01:45:25.893Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 1569,
-  "autoPromote": 213,
-  "conflicts": 0,
+  "candidates": 1652,
+  "autoPromote": 261,
+  "conflicts": 1,
   "gapped": 1058,
-  "review": 298,
+  "review": 332,
   "invalid": 0
  },
  "candidates": [
@@ -294,6 +294,30 @@
    ]
   },
   {
+   "entityId": "alabaster-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 125,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "alghollthu-bound",
    "draft": {
     "kind": "modifier",
@@ -456,6 +480,90 @@
    ]
   },
   {
+   "entityId": "animal-senses",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 132,
+      "end": 162,
+      "text": "You must have low-light vision"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "aquatic-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 119,
+      "end": 168,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 119,
+      "end": 168,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "aqueous-dragonblood",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 15
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 141,
+      "text": "You gain a swim Speed of 15 feet;"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "arcane-dragonblood",
    "draft": {
     "kind": "proficiency",
@@ -478,6 +586,30 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "arcane-eye",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 57,
+      "end": 77,
+      "text": "You gain darkvision."
+     }
     }
    ]
   },
@@ -1432,6 +1564,30 @@
    ]
   },
   {
+   "entityId": "canopy-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 98,
+      "end": 124,
+      "text": "You gain low-light vision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "caretakers-intuition",
    "draft": {
     "kind": "proficiency",
@@ -2362,6 +2518,30 @@
    ]
   },
   {
+   "entityId": "corgi-mount",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 330,
+      "end": 432,
+      "text": "It has the scent ability, which counts against your limit for familiar and master abilities as normal."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "courtly-graces",
    "draft": {
     "kind": "modifier",
@@ -2691,6 +2871,30 @@
    ]
   },
   {
+   "entityId": "deep-vision",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 52,
+      "end": 72,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "devils-advocate",
    "draft": {
     "kind": "modifier",
@@ -2968,6 +3172,38 @@
       "start": 75,
       "end": 151,
       "text": "raging, you gain a +2 status bonus to saving throws against emotion effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "draconic-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 61,
+      "end": 110,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 61,
+      "end": 110,
+      "text": "You gain low-light vision, or you gain darkvision"
      }
     }
    ]
@@ -3613,6 +3849,30 @@
    ]
   },
   {
+   "entityId": "elemental-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 55,
+      "end": 75,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "elemental-lore",
    "draft": {
     "kind": "proficiency",
@@ -3653,6 +3913,30 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "elucidating-vision",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 122,
+      "end": 142,
+      "text": "You gain darkvision."
+     }
     }
    ]
   },
@@ -3800,6 +4084,38 @@
       "start": 114,
       "end": 239,
       "text": "You gain a +1 circumstance bonus to saves against effects that would impose the Immobilized, Paralyzed, or Slowed conditions."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "embers-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 34,
+      "end": 83,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 34,
+      "end": 83,
+      "text": "You gain low-light vision, or you gain darkvision"
      }
     }
    ]
@@ -4177,6 +4493,31 @@
    ]
   },
   {
+   "entityId": "expanded-senses",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 40,
+      "end": 155,
+      "text": "Your eidolon gains low-light vision and darkvision, as well as scent as an imprecise sense with a range of 30 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "experienced-tracker",
    "draft": {
     "kind": "modifier",
@@ -4495,6 +4836,30 @@
       "start": 98,
       "end": 210,
       "text": "You become trained in Crafting and gain a +1 circumstance bonus on all Crafting checks made to Recall Knowledge."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "eyes-of-night",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 57,
+      "end": 77,
+      "text": "You gain darkvision."
      }
     }
    ]
@@ -4958,6 +5323,30 @@
    ]
   },
   {
+   "entityId": "friend-of-the-sea",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 162,
+      "end": 299,
+      "text": "Your pet must be aquatic, and it gains the darkvision and tough abilities in addition to the two abilities you normally choose for a pet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "fumesoul",
    "draft": {
     "kind": "grant",
@@ -5029,6 +5418,30 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "geologic-attunement",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "tremorsense"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 96,
+      "end": 150,
+      "text": "You gain tremorsense (imprecise) in your kinetic aura."
+     }
     }
    ]
   },
@@ -5116,6 +5529,30 @@
       "start": 130,
       "end": 319,
       "text": "You can attempt Society checks to Decipher Writing on a message that is only partially glimpsed, upside down or reversed from your perspective, and gain a +1 circumstance bonus to the check"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "gloomseer",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 134,
+      "text": "You gain low-light vision."
      }
     }
    ]
@@ -5402,6 +5839,30 @@
    ]
   },
   {
+   "entityId": "gravesight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 55,
+      "end": 75,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "grove-harbored",
    "draft": {
     "kind": "modifier",
@@ -5493,6 +5954,30 @@
       "start": 110,
       "end": 196,
       "text": "You gain a +1 circumstance bonus to saves against plant, poison, and wood effects, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "hags-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 95,
+      "end": 115,
+      "text": "You gain darkvision."
      }
     }
    ]
@@ -5932,6 +6417,54 @@
    ]
   },
   {
+   "entityId": "hungry-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 64,
+      "end": 113,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 64,
+      "end": 113,
+      "text": "You gain low-light vision, or you gain darkvision"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 161,
+      "end": 260,
+      "text": "You can select this feat twice, once to gain low-light vision and a second time to gain darkvision."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 161,
+      "end": 260,
+      "text": "You can select this feat twice, once to gain low-light vision and a second time to gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "hydraulic-deflection",
    "draft": {
     "kind": "modifier",
@@ -6357,6 +6890,30 @@
    ]
   },
   {
+   "entityId": "jotuns-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 56,
+      "end": 76,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "jotunborn-grappler",
    "draft": {
     "kind": "proficiency",
@@ -6437,6 +6994,35 @@
   {
    "entityId": "keen-nose",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 124,
+      "end": 185,
+      "text": "You gain scent as an imprecise sense with a range of 30 feet."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "keen-nose",
+   "draft": {
     "kind": "modifier",
     "target": "fortitude",
     "bonusType": "circumstance",
@@ -6463,27 +7049,6 @@
       "end": 303,
       "text": "You also gain a +1 circumstance bonus to Fortitude saves against olfactory effects that cause the sickened condition."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "keen-nose",
-   "draft": {
-    "kind": "grant",
-    "grant": {
-     "type": "sense",
-     "name": "scent",
-     "range": 30,
-     "acuity": "imprecise"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:sense",
-   "signature": "grant:sense",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -6657,10 +7222,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 46,
+      "end": 109,
+      "text": "You gain a land Speed of 20 and can breathe air for 10 minutes."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -7454,6 +8027,30 @@
    ]
   },
   {
+   "entityId": "nalinivatis-light",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 76,
+      "end": 96,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "natural-medicine",
    "draft": {
     "kind": "modifier",
@@ -7513,6 +8110,30 @@
    ]
   },
   {
+   "entityId": "nephilim-eyes",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 125,
+      "text": "You gain darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "nephilim-lore",
    "draft": {
     "kind": "proficiency",
@@ -7527,6 +8148,30 @@
    "evidence": [
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "nightvision-adaptation",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 107,
+      "end": 127,
+      "text": "You gain darkvision."
+     }
     }
    ]
   },
@@ -7632,6 +8277,30 @@
       "start": 164,
       "end": 318,
       "text": "you're not a humanoid), you gain a +1 circumstance bonus to Deception checks to Lie, and to Diplomacy checks to Gather Information and Make an Impression."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "nocturnal-tripkee",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 110,
+      "end": 217,
+      "text": "You gain darkvision, allowing you to see in darkness and dim light just as well as you can in bright light."
      }
     }
    ]
@@ -7821,6 +8490,30 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "orc-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 61,
+      "end": 168,
+      "text": "You gain darkvision, allowing you to see in darkness and dim light just as well as you can in bright light."
+     }
     }
    ]
   },
@@ -8183,6 +8876,122 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 834,
+      "end": 914,
+      "text": "Your pet has low-light vision and can gain additional senses from pet abilities."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 1829,
+      "end": 1849,
+      "text": "It gains darkvision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pet",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "land",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 922,
+      "end": 954,
+      "text": "Your pet has a Speed of 25 feet."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 955,
+      "end": 1111,
+      "text": "You can choose to instead have an aquatic pet, which breathes in water instead of air and has the aquatic trait, no land Speed, and a swim Speed of 25 feet."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 1703,
+      "end": 1768,
+      "text": "It gains a burrow Speed of 5 feet, allowing it to dig Tiny holes."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 1780,
+      "end": 1814,
+      "text": "It gains a climb Speed of 25 feet."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 2010,
+      "end": 2042,
+      "text": "It gains a fly Speed of 25 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "pierce-the-darkness",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 90,
+      "end": 197,
+      "text": "You gain darkvision, allowing you to see in darkness and dim light just as well as you can in bright light."
+     }
     }
    ]
   },
@@ -8877,10 +9686,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 59,
+      "end": 81,
+      "text": "Your Speed is 30 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -10062,10 +10879,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 88,
+      "end": 122,
+      "text": "You gain a Climb speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -10085,10 +10910,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 51,
+      "end": 125,
+      "text": "You gain a swim Speed of 10 feet and can breathe underwater for 5 minutes."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -10163,16 +10996,61 @@
     "grant": {
      "type": "sense",
      "name": "scent",
+     "acuity": "imprecise",
      "range": 30
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "grant",
+     "grant": {
+      "type": "sense",
+      "name": "scent",
+      "range": 30
+     }
+    }
+   ],
    "key": "grant:sense",
    "signature": "grant:sense",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 112,
+      "end": 161,
+      "text": "You gain imprecise scent with a range of 30 feet."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "serpents-tongue",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 84,
+      "end": 133,
+      "text": "You gain imprecise scent with a range of 30 feet."
+     }
     }
    ]
   },
@@ -11266,6 +12144,34 @@
    ]
   },
   {
+   "entityId": "sublime-mobility",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 109,
+      "end": 166,
+      "text": "You gain either a climb Speed or a swim Speed of 10 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "subtle-theft",
    "draft": {
     "kind": "modifier",
@@ -11360,6 +12266,34 @@
    ]
   },
   {
+   "entityId": "summiting-dragonblood",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 83,
+      "end": 117,
+      "text": "You gain a climb Speed of 20 feet;"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "surface-culture",
    "draft": {
     "kind": "proficiency",
@@ -11447,6 +12381,34 @@
    "evidence": [
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "swimmers-guidance",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 60,
+      "end": 169,
+      "text": "Any ally who starts their turn within 30 feet of you and in the same body of water gains a 10-foot swim Speed"
+     }
     }
    ]
   },
@@ -11705,6 +12667,32 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "terra-dragonblood",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "tremorsense",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 52,
+      "end": 117,
+      "text": "You gain tremorsense as an imprecise sense to a range of 30 feet;"
+     }
     }
    ]
   },
@@ -12204,6 +13192,30 @@
       "start": 319,
       "end": 544,
       "text": "you include a drop of blood, lock of hair, or other portion of a creature's body as part of the spell's material component, the summoned construct gains a +4 status bonus to Perception checks to sense or locate that creature."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "twilight-dweller",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 47,
+      "end": 73,
+      "text": "You gain low-light vision."
      }
     }
    ]
@@ -13005,10 +14017,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 130,
+      "end": 215,
+      "text": "You gain the Breath Control general feat as a bonus feat and a swim Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -15604,6 +16624,30 @@
   {
    "entityId": "eye-of-the-arclords",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 557,
+      "end": 579,
+      "text": "- you gain darkvision;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "eye-of-the-arclords",
+   "draft": {
     "kind": "modifier",
     "target": "perception",
     "bonusType": "status",
@@ -15862,6 +16906,30 @@
       "start": 164,
       "end": 288,
       "text": "In addition to the other benefits of Hunt Prey, you gain a +2 circumstance bonus to Stealth checks against your hunted prey."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "geomancer-dedication",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 2728,
+      "end": 2809,
+      "text": "For 1 round, you gain darkvision as well as imprecise tremorsense out to 15 feet."
      }
     }
    ]
@@ -16810,6 +17878,30 @@
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 129,
+      "end": 243,
+      "text": "You both gain darkvision and a +1 status bonus to saving throws against effects with the darkness or shadow trait."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "nidalese-horselord-dedication",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
    "evidence": [
     {
      "source": "parser",
@@ -20649,6 +21741,34 @@
    ]
   },
   {
+   "entityId": "canopy-predator",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 15
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 70,
+      "end": 103,
+      "text": "You gain a climb Speed of 15 feet"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "cavaliers-banner",
    "draft": {
     "kind": "modifier",
@@ -20788,10 +21908,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 25,
+      "end": 59,
+      "text": "You gain a climb Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -20825,6 +21953,30 @@
       "start": 319,
       "end": 467,
       "text": "in Cobra Stance, you gain a +1 circumstance bonus to Fortitude saves and your Fortitude DC, and you gain poison resistance equal to half your level."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "consolidated-overlay-panopticon",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 517,
+      "end": 639,
+      "text": "for the next minute, you gain darkvision and low-light vision, and you gain a +1 status bonus to visual Perception checks."
      }
     }
    ]
@@ -20994,6 +22146,32 @@
   {
    "entityId": "demon-hunting-companion",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 238,
+      "text": "You can choose any common animal companion, which gains scent as an imprecise sense with a range of 30 feet that can be used only to smell fiends."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "demon-hunting-companion",
+   "draft": {
     "kind": "modifier",
     "target": "perception",
     "bonusType": "circumstance",
@@ -21093,15 +22271,23 @@
     "grant": {
      "type": "sense",
      "name": "scent",
-     "range": 30,
-     "acuity": "imprecise"
+     "acuity": "imprecise",
+     "range": 30
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:sense",
    "signature": "grant:sense",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 54,
+      "end": 103,
+      "text": "You gain imprecise scent with a range of 30 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -22822,10 +24008,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 86,
+      "end": 167,
+      "text": "You gain a swim Speed of 15 feet, and you can hold your breath for twice as long."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -23081,10 +24275,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 76,
+      "end": 109,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -23833,6 +25035,31 @@
    ]
   },
   {
+   "entityId": "psychopomp-familiar",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "lifesense",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 542,
+      "end": 596,
+      "text": "Your familiar gains lifesense with a range of 30 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "push-back-the-dead",
    "draft": {
     "kind": "modifier",
@@ -24248,6 +25475,34 @@
       "start": 63,
       "end": 130,
       "text": "You gain a +2 circumstance bonus to all checks to perform a ritual."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "rope-runner",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 15
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 78,
+      "end": 121,
+      "text": "You gain a climb Speed of 15 feet, but only"
      }
     }
    ]
@@ -24956,10 +26211,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 77,
+      "end": 110,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -25343,6 +26606,56 @@
       "start": 149,
       "end": 363,
       "text": "the Strike is successful, the enemy takes a –2 circumstance penalty to their Fortitude DC to resist being Grappled, Repositioned, or Shoved and a –2 circumstance penalty to their Reflex DC to resist being Disarmed."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "vibration-sense",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "tremorsense",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 77,
+      "text": "Your eidolon gains Tremorsense as an imprecise sense with a range of 30 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "worm-sense",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 41,
+      "end": 113,
+      "text": "You gain darkvision and tremorsense as an imprecise sense within 5 feet."
      }
     }
    ]
@@ -25798,6 +27111,32 @@
    ]
   },
   {
+   "entityId": "briny-beverage",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "wavesense",
+     "acuity": "imprecise",
+     "range": 20
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 143,
+      "end": 305,
+      "text": "In addition, once per day, you can take a gulp of seawater using an Interact action to gain imprecise wavesense with a range of 20 feet, which lasts for 1 minute."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "bristle",
    "draft": {
     "kind": "modifier",
@@ -26007,12 +27346,44 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 50,
+      "end": 84,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "darkseer",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 131,
+      "end": 151,
+      "text": "You gain darkvision."
+     }
     }
    ]
   },
@@ -26049,21 +27420,53 @@
    ]
   },
   {
+   "entityId": "defy-the-darkness",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 155,
+      "end": 233,
+      "text": "You gain greater darkvision, enabling you to see through magical darkness even"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "draconic-scent",
    "draft": {
     "kind": "grant",
     "grant": {
      "type": "sense",
      "name": "scent",
-     "range": 30,
-     "acuity": "imprecise"
+     "acuity": "imprecise",
+     "range": 30
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:sense",
    "signature": "grant:sense",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 70,
+      "end": 119,
+      "text": "You gain imprecise scent with a range of 30 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -26269,10 +27672,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 63,
+      "end": 96,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -26466,6 +27877,30 @@
       "start": 272,
       "end": 475,
       "text": "you hold onto a participant's token, you can assume their form with your Change Shape ability, gaining a +4 status bonus to Deception checks to pass as that person and adding your level to the check even"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "growing-eel-friend",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 40,
+      "end": 130,
+      "text": "Your eel pet's size changes to Small, and the eel gains the Scent and Tough pet abilities."
      }
     }
    ]
@@ -26886,6 +28321,32 @@
    ]
   },
   {
+   "entityId": "lifesense",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "lifesense",
+     "acuity": "imprecise",
+     "range": 10
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 80,
+      "end": 145,
+      "text": "You gain lifesense as an imprecise sense with a range of 10 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "natural-ambassador",
    "draft": {
     "kind": "modifier",
@@ -27140,10 +28601,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 74,
+      "end": 107,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27163,10 +28632,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 75,
+      "end": 109,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27354,10 +28831,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 46,
+      "end": 80,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27377,10 +28862,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 59,
+      "end": 93,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27468,10 +28961,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 167,
+      "end": 204,
+      "text": "Your land Speed increases to 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27491,10 +28992,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 33,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27514,10 +29023,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 82,
+      "end": 115,
+      "text": "You gain a swim Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -27778,6 +29295,34 @@
    ]
   },
   {
+   "entityId": "tree-climber-goblin",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 102,
+      "end": 136,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "vandal",
    "draft": {
     "kind": "proficiency",
@@ -27945,10 +29490,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 80,
+      "end": 110,
+      "text": "You gain a 15-foot swim Speed."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -28377,6 +29930,30 @@
    ]
   },
   {
+   "entityId": "combine-elixirs",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 375,
+      "end": 618,
+      "text": "For example, you can combine two Lesser Elixirs of Life to create a combined elixir that heals twice the normal amount, or you can combine a Lesser Darkvision Elixir with a Lesser Eagle-Eye Elixir to both gain darkvision and find secret doors."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "commitment-to-protection",
    "draft": {
     "kind": "modifier",
@@ -28536,6 +30113,32 @@
    "agreement": "parser-only",
    "key": "modifier:stealth:circumstance",
    "signature": "modifier:skill:circumstance",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 224,
+      "end": 386,
+      "text": "You gain scent as an imprecise sense with a range of 30 feet and gain a +1 circumstance bonus to Stealth checks made to Sneak or Hide in areas of forest and snow."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "crown-of-the-saumen-kar",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
    "evidence": [
     {
      "source": "parser",
@@ -30349,6 +31952,34 @@
    ]
   },
   {
+   "entityId": "mobile-swarm",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "swim",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 86,
+      "end": 183,
+      "text": "Your swarm's land and climb Speeds increase to 20 feet, and the swarm gains a 20-foot Swim speed."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "mountain-stronghold",
    "draft": {
     "kind": "modifier",
@@ -31465,6 +33096,30 @@
    ]
   },
   {
+   "entityId": "visual-fidelity",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 115,
+      "end": 293,
+      "text": "You gain darkvision and low-light vision, and you can see Invisible creatures and objects as translucent shapes, though these shapes are indistinct enough to be Concealed to you."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "watch-your-back",
    "draft": {
     "kind": "modifier",
@@ -31725,15 +33380,23 @@
     "grant": {
      "type": "sense",
      "name": "bloodsense",
-     "range": 15,
-     "acuity": "imprecise"
+     "acuity": "imprecise",
+     "range": 15
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:sense",
    "signature": "grant:sense",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 59,
+      "end": 125,
+      "text": "You gain bloodsense as an imprecise sense with a range of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -32111,6 +33774,32 @@
       "start": 436,
       "end": 529,
       "text": "the end of your next turn, you gain a +2 status bonus to the damage from your Arcane Cascade."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cultivators-keen-eye",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "lifesense",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 100,
+      "text": "Attuned to all arrangements of qi, you gain lifesense as an imprecise sense with a range of 30 feet."
      }
     }
    ]
@@ -34206,6 +35895,30 @@
   {
    "entityId": "shadowdancer-dedication",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 159,
+      "end": 187,
+      "text": "You gain greater darkvision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "shadowdancer-dedication",
+   "draft": {
     "kind": "modifier",
     "target": "stealth",
     "bonusType": "circumstance",
@@ -34989,6 +36702,35 @@
   {
    "entityId": "you-dont-smell-right",
    "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 71,
+      "end": 177,
+      "text": "You gain scent as an imprecise sense with a range of 30 feet or extend the range of your scent by 30 feet."
+     }
+    },
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "you-dont-smell-right",
+   "draft": {
     "kind": "modifier",
     "target": "perception",
     "bonusType": "circumstance",
@@ -35015,27 +36757,6 @@
       "end": 582,
       "text": "you actively Seek a creature within range of your scent, you gain a +2 circumstance bonus to your Perception check to determine"
      }
-    }
-   ]
-  },
-  {
-   "entityId": "you-dont-smell-right",
-   "draft": {
-    "kind": "grant",
-    "grant": {
-     "type": "sense",
-     "name": "scent",
-     "range": 30,
-     "acuity": "imprecise"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:sense",
-   "signature": "grant:sense",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -35160,10 +36881,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 81,
+      "end": 115,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -35183,10 +36912,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 168,
+      "end": 202,
+      "text": "You gain a climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -35252,6 +36989,30 @@
       "start": 149,
       "end": 187,
       "text": "You gain a +1 circumstance bonus to AC"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dissolutions-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 149,
+      "text": "You gain greater darkvision for 1 minute."
      }
     }
    ]
@@ -35348,6 +37109,32 @@
       "start": 280,
       "end": 357,
       "text": "You gain a +1 circumstance bonus to all saving throws against divine effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "earthsense",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "tremorsense",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 132,
+      "end": 199,
+      "text": "You gain tremorsense as an imprecise sense with a range of 30 feet."
      }
     }
    ]
@@ -35540,10 +37327,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 71,
+      "end": 116,
+      "text": "You have a fly Speed of 25 feet at all times."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -35563,10 +37358,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 39,
+      "end": 84,
+      "text": "You have a fly Speed of 25 feet at all times."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -35586,10 +37389,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 81,
+      "end": 115,
+      "text": "You gain a climb Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -35660,6 +37471,37 @@
       "end": 434,
       "text": "you roll a critical failure on a check to Aid, you don't give your ally a -1 circumstance penalty to their check."
      }
+    }
+   ]
+  },
+  {
+   "entityId": "heros-wings",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "corroborated",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 96,
+      "end": 141,
+      "text": "You have a fly Speed of 25 feet at all times."
+     }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -35750,29 +37592,6 @@
       "end": 478,
       "text": "You gain a +2 circumstance bonus on all Diplomacy and Intimidation checks against sprites and gain the benefits of the Glad-Hand skill feat against other sprites, without taking a –5 penalty to your Diplomacy check."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "heros-wings",
-   "draft": {
-    "kind": "grant",
-    "grant": {
-     "type": "speed",
-     "movement": "fly",
-     "value": {
-      "kind": "lit",
-      "value": 25
-     }
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "grant:speed",
-   "signature": "grant:speed",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -35886,10 +37705,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 38,
+      "end": 83,
+      "text": "You have a fly Speed of 25 feet at all times."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36346,10 +38173,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 98,
+      "end": 132,
+      "text": "You gain a climb Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36369,12 +38204,44 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 147,
+      "end": 197,
+      "text": "Your swim Speed increases from 10 feet to 25 feet."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "shadow-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 161,
+      "text": "You gain greater darkvision for 1 minute."
+     }
     }
    ]
   },
@@ -36499,10 +38366,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 45,
+      "text": "You have a fly Speed of 20 feet at all times."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36522,12 +38397,48 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
     {
+     "source": "parser",
+     "span": {
+      "start": 54,
+      "end": 116,
+      "text": "You gain a burrow Speed of 10 feet through loose soil or dirt."
+     }
+    },
+    {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "strand-strider",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 67,
+      "end": 122,
+      "text": "You gain a climb speed of 25 feet in your spider shape."
+     }
     }
    ]
   },
@@ -36677,10 +38588,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 113,
+      "end": 147,
+      "text": "You gain a Climb Speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36700,10 +38619,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 74,
+      "end": 119,
+      "text": "You have a fly Speed of 20 feet at all times."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -36768,15 +38695,23 @@
     "grant": {
      "type": "sense",
      "name": "tremorsense",
-     "range": 15,
-     "acuity": "imprecise"
+     "acuity": "imprecise",
+     "range": 15
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:sense",
    "signature": "grant:sense",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 128,
+      "end": 181,
+      "text": "You gain imprecise tremorsense at a range of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -37129,6 +39064,34 @@
    ]
   },
   {
+   "entityId": "burrowing-form",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "burrow",
+     "value": {
+      "kind": "lit",
+      "value": 15
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 44,
+      "end": 89,
+      "text": "Your eidolon gains a burrow Speed of 15 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "corpse-killers-defiance",
    "draft": {
     "kind": "modifier",
@@ -37438,6 +39401,34 @@
       "start": 509,
       "end": 589,
       "text": "you're in Disarming Stance, you gain a +1 circumstance bonus to the attack roll."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disperse-into-petals",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 461,
+      "end": 493,
+      "text": "You gain a fly Speed of 10 feet."
      }
     }
    ]
@@ -37844,6 +39835,58 @@
       "start": 261,
       "end": 371,
       "text": "a +5-foot status bonus to its Speed, a +1 status bonus to attack rolls, and a +1 status bonus to damage rolls."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "horselords-bond",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 127,
+      "end": 170,
+      "text": "You and your horse gain greater darkvision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "klingegeist",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 30
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 625,
+      "end": 729,
+      "text": "You gain a Fly speed of 30 feet and can only take Strike and Fly actions, which don't trigger reactions."
      }
     }
    ]
@@ -38502,10 +40545,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 35,
+      "text": "You gain a burrow speed of 10 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -38539,6 +40590,34 @@
       "start": 149,
       "end": 187,
       "text": "You gain a +2 circumstance bonus to AC"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "wing-rider",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 25
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 104,
+      "end": 166,
+      "text": "Your dragon companion has a fly Speed of 25 feet at all times."
      }
     }
    ]
@@ -39143,6 +41222,34 @@
       "start": 424,
       "end": 557,
       "text": "The sigil acts as a magnet for your fiery attacks, granting the creature a –1 penalty to its saves and AC against your fire impulses."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "buzzing-death-cicadas",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 143,
+      "end": 221,
+      "text": "The inclusion of these death cicadas grants your swarm a fly Speed of 20 feet."
      }
     }
    ]
@@ -40923,6 +43030,32 @@
    ]
   },
   {
+   "entityId": "sense-ki",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "lifesense",
+     "acuity": "imprecise",
+     "range": 30
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 46,
+      "end": 101,
+      "text": "You gain imprecise lifesense out to a range of 30 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "shake-off-the-gods",
    "draft": {
     "kind": "modifier",
@@ -41319,10 +43452,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 181,
+      "end": 257,
+      "text": "You gain a burrow Speed of 15 feet and a tremorsense (imprecise) of 60 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -41525,6 +43666,70 @@
    ]
   },
   {
+   "entityId": "witchs-broom",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 377,
+      "end": 412,
+      "text": "It moves at a fly Speed of 20 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "arcane-locomotion",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "climb",
+     "value": {
+      "kind": "lit",
+      "value": 20
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 65,
+      "end": 146,
+      "text": "You gain either a climb Speed of 20 feet or a swim Speed of 20 feet, your choice."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 65,
+      "end": 146,
+      "text": "You gain either a climb Speed of 20 feet or a swim Speed of 20 feet, your choice."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "arcane-locomotion",
    "draft": {
     "kind": "modifier",
@@ -41591,10 +43796,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 87,
+      "end": 122,
+      "text": "You gain a burrow Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -41710,10 +43923,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 68,
+      "end": 130,
+      "text": "You gain a burrow Speed of 10 feet through loose soil or dirt."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -41733,10 +43954,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 57,
+      "end": 92,
+      "text": "You gain a burrow Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -41831,10 +44060,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 149,
+      "end": 184,
+      "text": "You gain a burrow speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -41854,10 +44091,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 38,
+      "end": 73,
+      "text": "You gain a burrow Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -42013,6 +44258,34 @@
    ]
   },
   {
+   "entityId": "march-the-mines",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "burrow",
+     "value": {
+      "kind": "lit",
+      "value": 15
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 52,
+      "end": 86,
+      "text": "You gain a burrow Speed of 15 feet"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "one-with-earth",
    "draft": {
     "kind": "grant",
@@ -42026,10 +44299,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 77,
+      "end": 112,
+      "text": "You gain a burrow Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -42343,10 +44624,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 75,
+      "end": 110,
+      "text": "You gain a burrow Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -43362,6 +45651,30 @@
       "start": 144,
       "end": 229,
       "text": "You gain the benefits of your iron sweep's parry trait (a +1 circumstance bonus to AC"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lightless-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 0,
+      "end": 19,
+      "text": "You gain darkvision"
      }
     }
    ]
@@ -46426,6 +48739,34 @@
    ]
   },
   {
+   "entityId": "bone-swarm",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "fly",
+     "value": {
+      "kind": "lit",
+      "value": 40
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 177,
+      "end": 248,
+      "text": "You become Huge, gain the swarm trait, and gain a fly Speed of 40 feet."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "doom-of-sailors",
    "draft": {
     "kind": "modifier",
@@ -46981,10 +49322,18 @@
     }
    },
    "gaps": [],
-   "agreement": "foundry-only",
+   "agreement": "corroborated",
    "key": "grant:speed",
    "signature": "grant:speed",
    "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 72,
+      "end": 104,
+      "text": "You gain a fly Speed of 15 feet."
+     }
+    },
     {
      "source": "foundry"
     }
@@ -47036,6 +49385,74 @@
    ]
   },
   {
+   "entityId": "beasts-of-slumbering-steel",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "land",
+     "value": {
+      "kind": "lit",
+      "value": 80
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 269,
+      "end": 410,
+      "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 269,
+      "end": 410,
+      "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 269,
+      "end": 410,
+      "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "celestial-form",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 208,
+      "end": 227,
+      "text": "You gain darkvision"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "creature-of-myth",
    "draft": {
     "kind": "modifier",
@@ -47057,6 +49474,30 @@
       "start": 1721,
       "end": 1876,
       "text": "Your companion gains a +1 status bonus to AC and saves that originate from creatures with the listed trait and to effects and spells with the listed trait."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "elemental-apotheosis",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 90,
+      "end": 181,
+      "text": "You gain any Speeds listed in the Elemental Form spell for your element and gain darkvision"
      }
     }
    ]
@@ -47243,6 +49684,30 @@
       "start": 195,
       "end": 332,
       "text": "Additionally, you gain a +2 circumstance bonus to Perception checks to Sense Motive and to Perception DCs against attempts to Lie to you."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "fiendish-form",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 200,
+      "end": 219,
+      "text": "You gain darkvision"
      }
     }
    ]
@@ -47788,6 +50253,30 @@
    ]
   },
   {
+   "entityId": "bloodline-mutation",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 246,
+      "end": 286,
+      "text": "You gain low-light vision or darkvision,"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "celestial-rebirth",
    "draft": {
     "kind": "grant",
@@ -48227,6 +50716,30 @@
    ]
   },
   {
+   "entityId": "patron-reborn",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 227,
+      "end": 356,
+      "text": "You gain darkvision, constant Truesight, and the ability to see into all other transitive planes that overlap the one you are in."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "protective-spirit-mask",
    "draft": {
     "kind": "modifier",
@@ -48259,6 +50772,30 @@
    ]
   },
   {
+   "entityId": "stalking-feline-mask",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "greater darkvision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 135,
+      "end": 163,
+      "text": "You gain greater darkvision."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "superior-sight",
    "draft": {
     "kind": "modifier",
@@ -48284,6 +50821,30 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "superior-sight",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "low-light vision"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 26,
+      "end": 111,
+      "text": "You gain a +2 circumstance bonus to Perception checks, and you gain low-light vision."
+     }
     }
    ]
   },
@@ -48455,6 +51016,60 @@
       "start": 168,
       "end": 278,
       "text": "A creature that Raises a Shield made with your Persistent Creation also gains a +2 item bonus to saving throws"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "vigilant-mask",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "sense",
+     "name": "scent",
+     "acuity": "precise",
+     "range": 60
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:sense",
+   "signature": "grant:sense",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 96,
+      "end": 152,
+      "text": "You gain scent as a precise sense to a range of 60 feet."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "witchs-hut",
+   "draft": {
+    "kind": "grant",
+    "grant": {
+     "type": "speed",
+     "movement": "land",
+     "value": {
+      "kind": "lit",
+      "value": 60
+     }
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "grant:speed",
+   "signature": "grant:speed",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 1271,
+      "end": 1337,
+      "text": "The hut gains a Speed of 60 feet, growing giant bird or bone legs,"
      }
     }
    ]

@@ -510,5 +510,96 @@ export const modifierExtractor: Extractor = (clause) => {
   return out;
 };
 
+// ---------------------------------------------------------------------------
+// 7. the grant extractor (slice — senses + speeds)
+// ---------------------------------------------------------------------------
+//
+// Grants are the biggest corroboration gap vs Foundry (86 foundry-only grants). This slice
+// takes the two structurally simple sub-shapes — SPEEDS (a flat integer) and SENSES
+// (value-free) — and defers resistances/weaknesses/immunities, whose values are level-scaled
+// expressions (`max(1, floor(level/2))`) tangled with the feat-granted-resistance min-1 rule.
+//
+// SPEED: Foundry maps EVERY "results in speed N" phrasing to one BaseSpeed → grant:speed, so
+// the parser must read all three to corroborate:
+//   "a swim Speed of 15 feet"                  → grant swim 15
+//   "your land Speed increases to 15 feet"     → grant land 15
+//   "your swim Speed increases from 10 to 25"  → grant swim 25   (value AFTER the final "to")
+// The "from X to N" trap is the proficiency "from trained to expert" trap again — the
+// operative number follows "to". "increases BY N" is a DIFFERENT effect (an additive
+// FlatModifier, usually conditional) and is deliberately NOT matched: a conditional one is
+// declined by the governor gate, exactly as Foundry leaves that +5 unmapped.
+
+const MOVEMENTS = ["land", "fly", "swim", "climb", "burrow"] as const;
+const MOVE_ALT = MOVEMENTS.join("|");
+
+// Movement optional (→ land). The value is the integer the speed BECOMES: after "of"/"is",
+// or after the final "to" (an optional "from X" is consumed first, so "from 10 to 25" → 25).
+const SPEED_RE = new RegExp(
+  String.raw`\b(?:(${MOVE_ALT})\s+)?speed\s+(?:of|is|increases\s+(?:from\s+\d+\s*(?:feet|foot|ft\.?)?\s+)?to)\s+(\d+)`,
+  "gi",
+);
+// The value-BEFORE phrasing: "a 15-foot swim Speed" (Wavetouched Paragon). Value then movement.
+const SPEED_FOOT_RE = new RegExp(
+  String.raw`\b(?:a|an)\s+(\d+)[\s-]*(?:foot|feet|ft\.?)\s+(${MOVE_ALT})\s+speed\b`,
+  "gi",
+);
+
+// The sense vocabulary — a closed set (the schema's `name` is a free string, but the parser
+// claims only senses it knows). `[-\s]` so "low-light vision"/"low-light-vision" both match;
+// alternation is longest-first so "greater darkvision" beats "darkvision".
+const SENSES = [
+  "greater darkvision", "low-light vision", "darkvision", "tremorsense", "bloodsense",
+  "lifesense", "wavesense", "echolocation", "scent",
+];
+const SENSE_ALT = SENSES.map((s) => s.replace(/[-\s]/g, "[-\\s]")).join("|");
+// "you gain darkvision", "gain imprecise scent … range of 30 feet", "scent as an imprecise
+// sense …". Acuity appears EITHER before the sense ("imprecise scent") or after ("as an
+// imprecise sense"); range as "range of N" or "at a range of N" (the "range of" tail matches
+// both). Groups: 1 acuity-before · 2 sense · 3 acuity-after · 4 range.
+const SENSE_RE = new RegExp(
+  String.raw`\b(?:gains?|have|has)\s+(?:the\s+)?(?:(precise|imprecise|vague)\s+)?(${SENSE_ALT})\b(?:\s+as\s+an?\s+(precise|imprecise|vague)\s+sense)?(?:[^.]*?\brange\s+of\s+(\d+))?`,
+  "gi",
+);
+const ACUITY = new Set(["precise", "imprecise", "vague"]);
+
+/**
+ * Extract sense and speed GRANTS from a clause. Governed clauses are declined (a conditional
+ * grant needs a predicate the parser can't build) — the same gate as the proficiency
+ * extractor, and why Like a Fish's "+5 if you already have a swim Speed" is dropped rather
+ * than emitted as permanent.
+ */
+export const grantExtractor: Extractor = (clause) => {
+  if (clause.governor) return [];
+  const out: Extraction[] = [];
+  const span = { start: clause.start, end: clause.end, text: clause.text };
+  let m: RegExpExecArray | null;
+
+  const pushSpeed = (move: string | undefined, raw: string) => {
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value <= 0) return;
+    const movement = (move?.toLowerCase() as (typeof MOVEMENTS)[number] | undefined) ?? "land";
+    out.push({ draft: { kind: "grant", grant: { type: "speed", movement, value: { kind: "lit", value } } }, gaps: [], span });
+  };
+  SPEED_RE.lastIndex = 0;
+  while ((m = SPEED_RE.exec(clause.text))) pushSpeed(m[1], m[2]!);
+  SPEED_FOOT_RE.lastIndex = 0;
+  while ((m = SPEED_FOOT_RE.exec(clause.text))) pushSpeed(m[2], m[1]!);
+
+  SENSE_RE.lastIndex = 0;
+  while ((m = SENSE_RE.exec(clause.text))) {
+    const name = m[2]!.toLowerCase().replace(/\s+/g, " ");
+    const acuity = (m[1] ?? m[3])?.toLowerCase();
+    const grant: Record<string, unknown> = { type: "sense", name };
+    if (acuity && ACUITY.has(acuity)) grant.acuity = acuity;
+    if (m[4]) {
+      const range = Number(m[4]);
+      if (Number.isFinite(range) && range > 0) grant.range = range;
+    }
+    out.push({ draft: { kind: "grant", grant }, gaps: [], span });
+  }
+
+  return out;
+};
+
 /** The default producer extractor set. Grows one family per slice. */
-export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor];
+export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor, grantExtractor];

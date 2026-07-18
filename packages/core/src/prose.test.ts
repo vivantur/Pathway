@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import {
   extractFromProse,
+  grantExtractor,
   modifierExtractor,
   parseProse,
   proficiencyExtractor,
@@ -246,6 +247,66 @@ describe("modifierExtractor", () => {
     const ex = mods("You gain a +2 circumstance bonus to Make an Impression on such animals.");
     // "make an impression on such animals" is neither a stat nor a bare check ref.
     expect(ex).toEqual([]);
+  });
+});
+
+describe("grantExtractor — senses + speeds", () => {
+  const grants = (text: string) => extractFromProse(text, [grantExtractor]);
+  const speed = (m: string, v: number) => ({ kind: "grant", grant: { type: "speed", movement: m, value: { kind: "lit", value: v } } });
+
+  it("reads 'a <movement> Speed of N' (Like a Fish in Water)", () => {
+    const ex = grants("You gain a swim Speed of 15 feet, and you can hold your breath for twice as long.");
+    expect(ex.map((e) => e.draft)).toEqual([speed("swim", 15)]);
+  });
+
+  it("reads 'Your Speed is N feet' as a land Speed (Quadruped)", () => {
+    const ex = grants("Your Speed is 30 feet.");
+    expect(ex.map((e) => e.draft)).toEqual([speed("land", 30)]);
+  });
+
+  it("reads 'increases to N' as the resulting Speed (Strong Tail)", () => {
+    const ex = grants("Your land Speed increases to 15 feet.");
+    expect(ex.map((e) => e.draft)).toEqual([speed("land", 15)]);
+  });
+
+  it("reads 'increases from X to N' as N, not X (Serpentine Swimmer, the from→to trap)", () => {
+    const ex = grants("Your swim Speed increases from 10 feet to 25 feet.");
+    expect(ex.map((e) => e.draft)).toEqual([speed("swim", 25)]);
+  });
+
+  it("does NOT read 'increases BY N' as a speed grant (that is an additive modifier)", () => {
+    // The conditional +5 in Like a Fish is a FlatModifier, not a BaseSpeed. Foundry leaves it
+    // unmapped; the parser must not emit it as a grant. (Ungoverned here, to isolate the shape.)
+    expect(grants("Your swim Speed increases by 5 feet.")).toEqual([]);
+  });
+
+  it("declines a governed (conditional) speed grant", () => {
+    // "If you already have a swim Speed, it increases by 5 feet" — governed by `if`.
+    expect(grantExtractor(clause("you gain a fly Speed of 20 feet", "while"))).toEqual([]);
+  });
+
+  it("reads a sense with acuity and range (Keen Nose)", () => {
+    const ex = grants("You gain scent as an imprecise sense with a range of 30 feet.");
+    expect(ex.map((e) => e.draft)).toEqual([
+      { kind: "grant", grant: { type: "sense", name: "scent", acuity: "imprecise", range: 30 } },
+    ]);
+  });
+
+  it("reads a bare sense grant", () => {
+    const ex = grants("You gain darkvision.");
+    expect(ex.map((e) => e.draft)).toEqual([{ kind: "grant", grant: { type: "sense", name: "darkvision" } }]);
+  });
+
+  it("reads acuity stated BEFORE the sense, and 'at a range of N' (Web Hunter)", () => {
+    const ex = grants("You gain imprecise tremorsense at a range of 15 feet.");
+    expect(ex.map((e) => e.draft)).toEqual([
+      { kind: "grant", grant: { type: "sense", name: "tremorsense", acuity: "imprecise", range: 15 } },
+    ]);
+  });
+
+  it("reads the value-before Speed phrasing 'a N-foot <movement> Speed' (Wavetouched Paragon)", () => {
+    const ex = grants("You gain a 15-foot swim Speed.");
+    expect(ex.map((e) => e.draft)).toEqual([speed("swim", 15)]);
   });
 });
 

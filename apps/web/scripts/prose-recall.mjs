@@ -43,7 +43,7 @@ function parseArgs(argv) {
 
 // The effect families the parser targets so far. Each is measured separately: the parser
 // grows one family per slice, and a blended number would hide a per-family regression.
-const MEASURED_KINDS = ['proficiency', 'modifier'];
+const MEASURED_KINDS = ['proficiency', 'modifier', 'grant'];
 
 /**
  * Foundry's DIRECT effects for a feat → producer proposals (the ground truth), for the
