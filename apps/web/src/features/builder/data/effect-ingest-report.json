@@ -1,27 +1,27 @@
 {
   "sourceCommit": "foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d",
-  "mappedAt": "2026-07-19T16:43:50.986Z",
+  "mappedAt": "2026-07-19T17:23:35.679Z",
   "summary": {
     "entities": 2490,
-    "entitiesWithEffects": 324,
+    "entitiesWithEffects": 338,
     "entitiesWithChoices": 30,
     "elements": 5212,
-    "mapped": 457,
-    "effectsProduced": 467,
-    "unsupported": 4755,
+    "mapped": 492,
+    "effectsProduced": 568,
+    "unsupported": 4720,
     "byReason": {
       "needs-granting": 620,
-      "unsupported-shape": 398,
-      "needs-combat-tags": 1613,
+      "needs-combat-tags": 1713,
       "needs-item-model": 1446,
       "needs-runtime-choice": 273,
       "unsupported-selector": 359,
+      "unsupported-shape": 263,
       "unsupported-bonus-type": 3,
       "unsupported-value": 43
     },
     "byKey": {
       "GrantItem": 620,
-      "AdjustDegreeOfSuccess": 135,
+      "AdjustDegreeOfSuccess": 100,
       "RollOption": 546,
       "Note": 266,
       "ItemAlteration": 949,
@@ -115,16 +115,15 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:disbelieve\"]"
         }
       ]
     },
@@ -192,8 +191,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"reveal-beasts\",\"target:trait:animal\",\"target:trait:beast\",\"target:trait:fungus\",\"target:trait:plant\"]}]"
         },
         {
           "index": 2,
@@ -257,8 +256,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:grapple\"]"
         }
       ]
     },
@@ -416,9 +415,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -482,9 +480,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -643,8 +640,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:pick-a-lock\"]"
         }
       ]
     },
@@ -945,8 +942,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"mental\",\"controlled\",{\"not\":\"alghollthu\"}]"
         }
       ]
     },
@@ -3313,9 +3310,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -3556,8 +3552,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:swim\"]"
         }
       ]
     },
@@ -3760,9 +3756,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -4778,9 +4773,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -7028,9 +7022,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -7793,8 +7786,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:elf\"]"
         }
       ]
     },
@@ -8248,8 +8241,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"pursue-a-lead\",\"action:recall-knowledge\"]"
         }
       ]
     },
@@ -8524,9 +8517,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -8577,9 +8569,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -9006,8 +8997,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"terrain:settlement\",{\"or\":[\"action:gather-information\",\"action:make-an-impression\"]}]"
         },
         {
           "index": 1,
@@ -9106,8 +9097,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:earn-income\"]"
         }
       ]
     },
@@ -9290,8 +9281,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         }
       ]
     },
@@ -9952,8 +9943,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:trait:olfactory\",\"feat:breath-control\"]"
         }
       ]
     },
@@ -10120,8 +10111,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         }
       ]
     },
@@ -10276,8 +10267,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:subsist\"]"
         },
         {
           "index": 1,
@@ -10345,9 +10336,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -11233,9 +11223,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -11379,9 +11368,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -11459,9 +11447,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -11898,9 +11885,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -12256,8 +12242,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"gte\":[\"skill:diplomacy:rank\",3]},\"action:gather-information\"]"
         }
       ]
     },
@@ -12681,8 +12667,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:repair\"]"
         }
       ]
     },
@@ -12834,9 +12820,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -13216,8 +13201,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:balance\",{\"or\":[\"terrain:foliage\",\"terrain:forest\"]}]"
         }
       ]
     },
@@ -13786,9 +13771,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -14650,8 +14634,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:repair\"]"
         }
       ]
     },
@@ -15238,8 +15222,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"item:trait:polymorph\",\"item:trait:morph\"]},\"origin:enemy\"]"
         }
       ]
     },
@@ -15900,8 +15884,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 2,
@@ -15914,8 +15898,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 4,
@@ -15928,8 +15912,8 @@
           "index": 5,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 6,
@@ -17498,9 +17482,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -17566,8 +17549,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"terrain:aquatic\",{\"or\":[\"action:sense-direction\",\"action:subsist\"]}]"
         },
         {
           "index": 2,
@@ -17873,8 +17856,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:shove\"]"
         }
       ]
     },
@@ -18996,8 +18979,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"risky-surgery\",\"action:treat-wounds\"]"
         }
       ]
     },
@@ -19100,8 +19083,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:balance\",{\"or\":[\"terrain:stone\",\"terrain:earth\"]}]"
         },
         {
           "index": 1,
@@ -20629,8 +20612,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         },
         {
           "index": 2,
@@ -20997,8 +20980,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:learn-a-spell\"]"
         }
       ]
     },
@@ -21071,15 +21054,15 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:sense-direction\"]"
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:climb\"]"
         }
       ]
     },
@@ -21650,8 +21633,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:balance\"]"
         }
       ]
     },
@@ -22128,15 +22111,15 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:decipher-writing\",\"student-of-the-canon\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:recall-knowledge\",\"student-of-the-canon\"]"
         }
       ]
     },
@@ -22375,15 +22358,15 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:balance\"]"
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:climb\"]"
         }
       ]
     },
@@ -23307,9 +23290,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -24557,9 +24539,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -24721,23 +24702,22 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         }
       ]
     },
@@ -24916,9 +24896,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -26053,8 +26032,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"action:sense-direction\",\"item:slug:quandary\"]}]"
         },
         {
           "index": 2,
@@ -26505,8 +26484,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"web-walker:webbing\"]"
         },
         {
           "index": 3,
@@ -26938,9 +26917,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -27169,9 +27147,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -27393,8 +27370,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"action:sense-direction\",\"action:subsist\",\"action:cover-tracks\"]},{\"or\":[\"terrain:forest\",\"terrain:jungle\"]}]"
         },
         {
           "index": 1,
@@ -28265,8 +28242,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:identify-magic\"]"
         },
         {
           "index": 1,
@@ -30604,16 +30581,15 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"feature:sacred-body\",{\"or\":[\"item:trait:disease\",\"item:trait:poison\"]}]"
         },
         {
           "index": 3,
@@ -35927,8 +35903,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:learn-a-spell\"]"
         },
         {
           "index": 1,
@@ -36005,8 +35981,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:swim\"]"
         }
       ]
     },
@@ -38354,15 +38330,15 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:aid\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:aid\"]"
         }
       ]
     },
@@ -38854,8 +38830,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:trick-magic-item\",\"item:trait:scroll\"]"
         }
       ]
     },
@@ -39101,22 +39077,22 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"self:effect:raise-a-shield\",{\"or\":[\"item:trait:light\",\"item:trait:visual\"]}]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"self:effect:raise-a-shield\",{\"or\":[\"item:trait:light\",\"item:trait:visual\"]}]"
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"self:effect:raise-a-shield\",{\"or\":[\"item:trait:light\",\"item:trait:visual\"]}]"
         },
         {
           "index": 4,
@@ -40476,8 +40452,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:swim\"]"
         }
       ]
     },
@@ -41583,8 +41559,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:recall-knowledge\"]"
         }
       ]
     },
@@ -46925,15 +46901,15 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:climb\",\"canopy-predator\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:balance\",\"canopy-predator\"]"
         },
         {
           "index": 3,
@@ -47382,8 +47358,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:decipher-writing\"]"
         },
         {
           "index": 1,
@@ -49202,8 +49178,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:trip\",\"flying-tackle\"]"
         }
       ]
     },
@@ -52415,8 +52391,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"rope-runner\",{\"or\":[{\"and\":[\"action:balance\",\"check:statistic:acrobatics\"]},{\"and\":[\"action:climb\",\"check:statistic:at"
         }
       ]
     },
@@ -55732,9 +55708,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -55843,15 +55818,15 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"ageless-patience\",\"check:total:natural:1\",{\"gte\":[\"check:total:delta\",-9]}]"
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"ageless-patience\",\"check:total:natural:1\",{\"gte\":[\"check:total:delta\",-9]}]"
         },
         {
           "index": 4,
@@ -56037,8 +56012,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         }
       ]
     },
@@ -56528,8 +56503,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"action:climb\",\"action:swim\"]}]"
         },
         {
           "index": 1,
@@ -56737,8 +56712,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"blast-resistance-adjustment\",\"inflicts:dazzled\",\"inflicts:deafened\"]}]"
         },
         {
           "index": 2,
@@ -57017,9 +56992,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -57760,8 +57734,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"area-effect\",{\"gte\":[\"origin:size\",4]}]"
         }
       ]
     },
@@ -58065,15 +58039,15 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"gt\":[\"self:level\",\"target:level\"]},{\"or\":[\"action:make-an-impression\",\"action:request\"]}]"
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:gather-information\"]"
         }
       ]
     },
@@ -58709,8 +58683,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         }
       ]
     },
@@ -58854,8 +58828,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:climb\",{\"not\":\"heritage:cliffscale-lizardfolk\"}]"
         },
         {
           "index": 2,
@@ -59410,9 +59384,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -59581,22 +59554,22 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:squeeze\"]"
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:escape\"]"
         },
         {
           "index": 3,
@@ -60084,8 +60057,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [{\"or\":[\"action:sense-direction\",\"action:track\"]}]"
         }
       ]
     },
@@ -60125,9 +60098,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -62212,8 +62184,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:trip\",\"tail-spin\"]"
         },
         {
           "index": 1,
@@ -63089,9 +63061,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -67167,8 +67138,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:force-open\"]"
         }
       ]
     },
@@ -69180,8 +69151,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"self:effect:deteriorated\",{\"or\":[\"emotion\",\"pain\"]}]"
         },
         {
           "index": 3,
@@ -73578,8 +73549,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"talent-envy\",\"action:demoralize\"]"
         }
       ]
     },
@@ -76683,8 +76654,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:sense-motive\",\"target:trait:humanoid\",{\"not\":\"target:trait:elf\"}]"
         }
       ]
     },
@@ -76915,8 +76886,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:command-an-animal\"]"
         }
       ]
     },
@@ -78087,8 +78058,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"necromancy\"]"
         },
         {
           "index": 1,
@@ -78684,8 +78655,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:aid\"]"
         }
       ]
     },
@@ -79100,15 +79071,15 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"scattering-in-spring\",\"action:feint\"]"
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"scattering-in-spring\",\"action:shove\"]"
         }
       ]
     },
@@ -81120,8 +81091,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:trait:mental\",{\"not\":\"damaging-effect\"}]"
         }
       ]
     },
@@ -82767,8 +82738,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:aid\",{\"or\":[\"proficiency:expert\",\"proficiency:master\",\"proficiency:legendary\"]}]"
         }
       ]
     },
@@ -85097,16 +85068,15 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:trait:emotion\",\"self:heritage:gutsy-halfling\"]"
         }
       ]
     },
@@ -85363,8 +85333,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:trait:divine\",\"call-on-ancient-blood\"]"
         },
         {
           "index": 1,
@@ -90629,8 +90599,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:type:spell\",\"origin:trait:fey\"]"
         },
         {
           "index": 1,
@@ -90996,9 +90966,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -91737,8 +91706,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"item:slug:nightmare\"]"
         }
       ]
     },
@@ -92656,8 +92625,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:sneak\"]"
         }
       ]
     },
@@ -96735,9 +96704,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -98254,8 +98222,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:make-an-impression\"]"
         }
       ]
     },
@@ -98688,15 +98656,15 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"grit-and-tenacity\"]"
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"grit-and-tenacity\"]"
         }
       ]
     },
@@ -100243,9 +100211,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -101039,8 +101006,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"hydraulic-maneuvers\",{\"or\":[\"action:disarm\",\"action:shove\",\"action:trip\"]}]"
         }
       ]
     },
@@ -105957,9 +105924,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -113794,8 +113760,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"check:roll:total:natural:19\",\"check:outcome:success\",\"item:tag:physical-ikon:{item|flags.system.rulesSelections.ikon}\""
         }
       ]
     },
@@ -115232,8 +115198,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"final-shot\",\"item:group:firearm\",\"target:range-increment:1\"]"
         },
         {
           "index": 2,
@@ -115802,8 +115768,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"check:roll:total:natural:19\",\"item:proficiency:rank:4\",{\"or\":[\"item:group:firearm\",\"item:group:crossbow\"]}]"
         }
       ]
     },
@@ -116012,8 +115978,8 @@
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"check:roll:total:natural:19\",\"item:proficiency:rank:4\"]"
         }
       ]
     },
@@ -117283,15 +117249,15 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:dance-of-intercession\",\"dance-of-intercession:2\"]"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:dance-of-intercession\",\"dance-of-intercession:1\"]"
         }
       ]
     },
@@ -117492,8 +117458,8 @@
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"fiend-eternal\",{\"or\":[\"action:recall-knowledge\",\"action:gather-information\"]}]"
         }
       ]
     },
@@ -117846,9 +117812,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -117998,8 +117963,8 @@
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "unsupported-shape",
-          "detail": "per-degree adjustment map; our rollAdjust is a blanket one-degree shift"
+          "reason": "needs-combat-tags",
+          "detail": "conditional: [\"action:recall-knowledge\"]"
         }
       ]
     },

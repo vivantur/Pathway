@@ -1,15 +1,15 @@
 {
- "generatedAt": "2026-07-19T16:43:50.643Z",
+ "generatedAt": "2026-07-19T17:22:40.922Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 2019,
-  "autoPromote": 300,
-  "conflicts": 14,
-  "gapped": 1045,
-  "review": 660,
+  "candidates": 2044,
+  "autoPromote": 342,
+  "conflicts": 48,
+  "gapped": 1017,
+  "review": 637,
   "invalid": 0,
-  "silent": 4956,
+  "silent": 4953,
   "actionFeatsInQueue": 302
  },
  "candidates": [
@@ -32,7 +32,30 @@
      "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:dream"
+       },
+       {
+        "tag": "effect:trait:illusion"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -43,6 +66,9 @@
       "end": 210,
       "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -65,7 +91,30 @@
      "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:dream"
+       },
+       {
+        "tag": "effect:trait:illusion"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -76,6 +125,9 @@
       "end": 210,
       "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -98,7 +150,30 @@
      "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:dream"
+       },
+       {
+        "tag": "effect:trait:illusion"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -109,6 +184,9 @@
       "end": 210,
       "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -284,7 +362,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -295,6 +373,9 @@
       "end": 374,
       "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -314,7 +395,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -325,6 +406,9 @@
       "end": 374,
       "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -344,7 +428,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -355,6 +439,9 @@
       "end": 374,
       "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -472,7 +559,22 @@
      "raw": "against such an effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "tag": "effect:trait:emotion"
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -483,6 +585,9 @@
       "end": 410,
       "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -3303,6 +3408,81 @@
    ]
   },
   {
+   "entityId": "breath-control",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:inhaled"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "breath-control",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:inhaled"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "breath-control",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:inhaled"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
    "entityId": "brightsoul",
    "draft": {
     "kind": "modifier",
@@ -3683,7 +3863,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -3694,6 +3896,9 @@
       "end": 229,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -3716,7 +3921,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -3727,6 +3954,9 @@
       "end": 229,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -3749,7 +3979,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -3760,6 +4012,9 @@
       "end": 229,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -4701,7 +4956,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -4712,6 +4967,9 @@
       "end": 263,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -4731,7 +4989,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -4742,6 +5000,9 @@
       "end": 263,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -4761,7 +5022,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -4772,6 +5033,9 @@
       "end": 263,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -6180,7 +6444,23 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "failure": "critical-failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "tag": "effect:trait:fear"
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -6191,6 +6471,9 @@
       "end": 219,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -6210,7 +6493,23 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "failure": "critical-failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "tag": "effect:trait:fear"
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -6221,6 +6520,9 @@
       "end": 219,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -6240,7 +6542,23 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "failure": "critical-failure",
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "tag": "effect:trait:fear"
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -6251,6 +6569,9 @@
       "end": 219,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7650,7 +7971,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7661,6 +7982,9 @@
       "end": 277,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7680,7 +8004,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7691,6 +8015,9 @@
       "end": 277,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7710,7 +8037,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7721,6 +8048,9 @@
       "end": 277,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7851,7 +8181,29 @@
      "raw": "against emotion or fear effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:emotion"
+       },
+       {
+        "tag": "effect:trait:fear"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7862,6 +8214,9 @@
       "end": 286,
       "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7884,7 +8239,29 @@
      "raw": "against emotion or fear effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:emotion"
+       },
+       {
+        "tag": "effect:trait:fear"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7895,6 +8272,9 @@
       "end": 286,
       "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -7917,7 +8297,29 @@
      "raw": "against emotion or fear effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:emotion"
+       },
+       {
+        "tag": "effect:trait:fear"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -7928,6 +8330,9 @@
       "end": 286,
       "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9248,7 +9653,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9259,6 +9664,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9278,7 +9686,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9289,6 +9697,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9308,7 +9719,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9319,6 +9730,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9816,7 +10230,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9827,6 +10241,9 @@
       "end": 180,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9846,7 +10263,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9857,6 +10274,9 @@
       "end": 180,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -9876,7 +10296,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -9887,6 +10307,9 @@
       "end": 180,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10093,7 +10516,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10104,6 +10527,9 @@
       "end": 262,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10123,7 +10549,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10134,6 +10560,9 @@
       "end": 262,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10153,7 +10582,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10164,6 +10593,9 @@
       "end": 262,
       "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10270,7 +10702,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10281,6 +10713,9 @@
       "end": 289,
       "text": "you roll a success on a save against a poison effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10300,7 +10735,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10311,6 +10746,9 @@
       "end": 289,
       "text": "you roll a success on a save against a poison effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10330,7 +10768,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -10341,6 +10779,9 @@
       "end": 289,
       "text": "you roll a success on a save against a poison effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -10539,6 +10980,38 @@
       "end": 196,
       "text": "Additionally, you gain a +1 circumstance bonus to initiative checks"
      }
+    }
+   ]
+  },
+  {
+   "entityId": "haughty-obstinacy",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "all": [
+      {
+       "tag": "effect:trait:mental"
+      },
+      {
+       "tag": "effect:causes:controlled"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -11522,7 +11995,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -11533,6 +12006,9 @@
       "end": 183,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -11552,7 +12028,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -11563,6 +12039,9 @@
       "end": 183,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -11582,7 +12061,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -11593,6 +12072,9 @@
       "end": 183,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -12117,7 +12599,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -12128,6 +12610,9 @@
       "end": 297,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -12147,7 +12632,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -12158,6 +12643,9 @@
       "end": 297,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -12177,7 +12665,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -12188,6 +12676,9 @@
       "end": 297,
       "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -14590,7 +15081,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -14601,6 +15092,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -14620,7 +15114,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -14631,6 +15125,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -14650,7 +15147,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -14661,6 +15158,9 @@
       "end": 281,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -20807,7 +21307,29 @@
      "raw": "against cold or water effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:cold"
+       },
+       {
+        "tag": "effect:trait:water"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -20818,6 +21340,9 @@
       "end": 216,
       "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -20840,7 +21365,29 @@
      "raw": "against cold or water effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:cold"
+       },
+       {
+        "tag": "effect:trait:water"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -20851,6 +21398,9 @@
       "end": 216,
       "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -20873,7 +21423,29 @@
      "raw": "against cold or water effect"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:cold"
+       },
+       {
+        "tag": "effect:trait:water"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -20884,6 +21456,9 @@
       "end": 216,
       "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -21731,7 +22306,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -21742,6 +22317,9 @@
       "end": 234,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -21761,7 +22339,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -21772,6 +22350,9 @@
       "end": 234,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -21791,7 +22372,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -21802,6 +22383,9 @@
       "end": 234,
       "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -21939,6 +22523,111 @@
    ]
   },
   {
+   "entityId": "unfettered-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:grabbed"
+      },
+      {
+       "tag": "effect:causes:immobilized"
+      },
+      {
+       "tag": "effect:causes:restrained"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "unfettered-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:grabbed"
+      },
+      {
+       "tag": "effect:causes:immobilized"
+      },
+      {
+       "tag": "effect:causes:restrained"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "unfettered-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:grabbed"
+      },
+      {
+       "tag": "effect:causes:immobilized"
+      },
+      {
+       "tag": "effect:causes:restrained"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
    "entityId": "unwavering-guide",
    "draft": {
     "kind": "modifier",
@@ -21967,6 +22656,87 @@
       "end": 178,
       "text": "you Scout, you grant your party a +2 circumstance bonus to initiative rolls instead of the normal +1."
      }
+    }
+   ]
+  },
+  {
+   "entityId": "unwavering-mien",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:sleep"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "unwavering-mien",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:sleep"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "unwavering-mien",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:sleep"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23148,7 +23918,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23159,6 +23929,9 @@
       "end": 251,
       "text": "you roll a success on a save against an air effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23178,7 +23951,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23189,6 +23962,9 @@
       "end": 251,
       "text": "you roll a success on a save against an air effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23208,7 +23984,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23219,6 +23995,9 @@
       "end": 251,
       "text": "you roll a success on a save against an air effect, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23549,7 +24328,29 @@
      "raw": "against curse or a spell cast by a witch or hag"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:curse"
+       },
+       {
+        "tag": "origin:trait:hag"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23560,6 +24361,9 @@
       "end": 479,
       "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23582,7 +24386,29 @@
      "raw": "against curse or a spell cast by a witch or hag"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:curse"
+       },
+       {
+        "tag": "origin:trait:hag"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23593,6 +24419,9 @@
       "end": 479,
       "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -23615,7 +24444,29 @@
      "raw": "against curse or a spell cast by a witch or hag"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:curse"
+       },
+       {
+        "tag": "origin:trait:hag"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -23626,6 +24477,9 @@
       "end": 479,
       "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -25499,7 +26353,39 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "fortitude"
+    },
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -25518,6 +26404,9 @@
       "end": 579,
       "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -25546,7 +26435,39 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "reflex"
+    },
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -25565,6 +26486,9 @@
       "end": 579,
       "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -25593,7 +26517,39 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "will"
+    },
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -25612,6 +26568,9 @@
       "end": 579,
       "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -39464,7 +40423,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -39475,6 +40456,9 @@
       "end": 245,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -39497,7 +40481,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -39508,6 +40514,9 @@
       "end": 245,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -39530,7 +40539,29 @@
      "raw": "against disease or poison"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -39541,6 +40572,9 @@
       "end": 245,
       "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -40303,7 +41337,29 @@
      "raw": "against mental effect that would make you Controlled"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "all": [
+       {
+        "tag": "effect:trait:mental"
+       },
+       {
+        "tag": "effect:causes:controlled"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -40314,6 +41370,9 @@
       "end": 323,
       "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -40336,7 +41395,29 @@
      "raw": "against mental effect that would make you Controlled"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "all": [
+       {
+        "tag": "effect:trait:mental"
+       },
+       {
+        "tag": "effect:causes:controlled"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -40347,6 +41428,9 @@
       "end": 323,
       "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -40369,7 +41453,29 @@
      "raw": "against mental effect that would make you Controlled"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "all": [
+       {
+        "tag": "effect:trait:mental"
+       },
+       {
+        "tag": "effect:causes:controlled"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -40380,6 +41486,9 @@
       "end": 323,
       "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -41655,7 +42764,29 @@
      "raw": "against poison or disease"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "fortitude",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -41666,6 +42797,9 @@
       "end": 384,
       "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -41688,7 +42822,29 @@
      "raw": "against poison or disease"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "reflex",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -41699,6 +42855,9 @@
       "end": 384,
       "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -41721,7 +42880,29 @@
      "raw": "against poison or disease"
     }
    ],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "target": "will",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "success": "critical-success"
+      }
+     },
+     "when": {
+      "any": [
+       {
+        "tag": "effect:trait:disease"
+       },
+       {
+        "tag": "effect:trait:poison"
+       }
+      ]
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -41732,6 +42913,9 @@
       "end": 384,
       "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -41997,7 +43181,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -42008,6 +43192,9 @@
       "end": 288,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -42027,7 +43214,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -42038,6 +43225,9 @@
       "end": 288,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -42057,7 +43247,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -42068,6 +43258,9 @@
       "end": 288,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -43514,7 +44707,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -43525,6 +44718,9 @@
       "end": 202,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -43544,7 +44740,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -43555,6 +44751,9 @@
       "end": 202,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -43574,7 +44773,7 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "corroborated",
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -43585,6 +44784,9 @@
       "end": 202,
       "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -53889,7 +55091,22 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "fortitude",
+     "when": {
+      "tag": "effect:trait:emotion"
+     }
+    }
+   ],
    "key": "rollAdjust:fortitude",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -53908,6 +55125,9 @@
       "end": 322,
       "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -53928,7 +55148,22 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "reflex",
+     "when": {
+      "tag": "effect:trait:emotion"
+     }
+    }
+   ],
    "key": "rollAdjust:reflex",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -53947,6 +55182,9 @@
       "end": 322,
       "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -53967,7 +55205,22 @@
     }
    },
    "gaps": [],
-   "agreement": "parser-only",
+   "agreement": "conflicting",
+   "alternatives": [
+    {
+     "kind": "rollAdjust",
+     "adjust": {
+      "type": "degreeMap",
+      "map": {
+       "critical-failure": "failure"
+      }
+     },
+     "target": "will",
+     "when": {
+      "tag": "effect:trait:emotion"
+     }
+    }
+   ],
    "key": "rollAdjust:will",
    "signature": "rollAdjust:save:improve",
    "evidence": [
@@ -53986,6 +55239,9 @@
       "end": 322,
       "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
      }
+    },
+    {
+     "source": "foundry"
     }
    ],
    "multiplicity": 2
@@ -56891,6 +58147,111 @@
       "end": 170,
       "text": "You and your horse gain greater darkvision."
      }
+    }
+   ]
+  },
+  {
+   "entityId": "horselords-bond",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:confused"
+      },
+      {
+       "tag": "effect:causes:controlled"
+      },
+      {
+       "tag": "effect:causes:fascinated"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "horselords-bond",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:confused"
+      },
+      {
+       "tag": "effect:causes:controlled"
+      },
+      {
+       "tag": "effect:causes:fascinated"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "horselords-bond",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:causes:confused"
+      },
+      {
+       "tag": "effect:causes:controlled"
+      },
+      {
+       "tag": "effect:causes:fascinated"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -60014,6 +61375,102 @@
    ]
   },
   {
+   "entityId": "living-stone",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "living-stone",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "living-stone",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
    "entityId": "no-stranger-to-death",
    "draft": {
     "kind": "modifier",
@@ -61537,6 +62994,102 @@
       "end": 344,
       "text": "you roll a critical failure against an emotion or fear effect, you get a failure instead."
      }
+    }
+   ]
+  },
+  {
+   "entityId": "eldritch-calm",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "eldritch-calm",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "eldritch-calm",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -63377,6 +64930,108 @@
       "end": 509,
       "text": "Elementals take a –2 circumstance penalty to their save."
      }
+    }
+   ]
+  },
+  {
+   "entityId": "iron-lung",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "all": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:inhaled"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "iron-lung",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "all": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:inhaled"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "iron-lung",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure",
+      "failure": "success",
+      "success": "critical-success"
+     }
+    },
+    "when": {
+     "all": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:inhaled"
+      }
+     ]
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
     }
    ]
   },
@@ -69411,6 +71066,84 @@
    ]
   },
   {
+   "entityId": "icy-apotheosis",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "fortitude",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "success",
+      "failure": "success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:cold"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "icy-apotheosis",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "reflex",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "success",
+      "failure": "success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:cold"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "icy-apotheosis",
+   "draft": {
+    "kind": "rollAdjust",
+    "target": "will",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "success",
+      "failure": "success"
+     }
+    },
+    "when": {
+     "tag": "effect:trait:cold"
+    }
+   },
+   "gaps": [],
+   "agreement": "foundry-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "foundry"
+    }
+   ]
+  },
+  {
    "entityId": "living-epic",
    "draft": {
     "kind": "modifier",
@@ -70320,11 +72053,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 2
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 3
     }
    ]
   },
@@ -71706,11 +73435,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 2
     }
    ]
   },
@@ -71875,11 +73600,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 2
     }
    ]
   },
@@ -72182,16 +73903,6 @@
    "blockers": [
     {
      "reason": "needs-item-model",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "haughty-obstinacy",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
      "count": 1
     }
    ]
@@ -72627,7 +74338,7 @@
      "count": 1
     },
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -74122,20 +75833,6 @@
    "blockers": [
     {
      "reason": "unsupported-selector",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "unwavering-mien",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
      "count": 1
     },
     {
@@ -75768,12 +77465,8 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
      "reason": "needs-combat-tags",
-     "count": 1
+     "count": 2
     }
    ]
   },
@@ -76339,11 +78032,11 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 4
     },
     {
-     "reason": "needs-combat-tags",
+     "reason": "unsupported-shape",
      "count": 1
     }
    ]
@@ -78925,11 +80618,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 2
     }
    ]
   },
@@ -81785,7 +83474,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 2
     }
    ]
@@ -87047,11 +88736,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 2
     }
    ]
   },
@@ -88256,7 +89941,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -92906,12 +94591,8 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
      "reason": "needs-combat-tags",
-     "count": 1
+     "count": 2
     },
     {
      "reason": "needs-item-model",
@@ -93431,7 +95112,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -96618,7 +98299,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -96727,7 +98408,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 2
     }
    ]
@@ -99184,24 +100865,6 @@
    "entityId": "invigorating-surge",
    "reason": "action-feat",
    "actionCost": "1"
-  },
-  {
-   "entityId": "iron-lung",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-selector",
-     "count": 1
-    },
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "it-was-me-all-along",
@@ -102508,7 +104171,7 @@
      "count": 1
     },
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -102839,11 +104502,7 @@
    "blockers": [
     {
      "reason": "needs-combat-tags",
-     "count": 3
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
+     "count": 4
     }
    ]
   },
@@ -103327,7 +104986,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -103457,7 +105116,7 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -103908,12 +105567,8 @@
    "actionCost": "3",
    "blockers": [
     {
-     "reason": "unsupported-shape",
-     "count": 2
-    },
-    {
      "reason": "needs-combat-tags",
-     "count": 1
+     "count": 3
     }
    ]
   },
@@ -104034,15 +105689,15 @@
    "reason": "all-unsupported",
    "blockers": [
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 2
     },
     {
-     "reason": "needs-runtime-choice",
+     "reason": "unsupported-shape",
      "count": 1
     },
     {
-     "reason": "needs-combat-tags",
+     "reason": "needs-runtime-choice",
      "count": 1
     }
    ]
@@ -104218,7 +105873,7 @@
      "count": 1
     },
     {
-     "reason": "unsupported-shape",
+     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -105122,23 +106777,23 @@
   },
   {
    "reason": "needs-combat-tags",
-   "count": 934
+   "count": 959
   },
   {
    "reason": "needs-granting",
-   "count": 415
+   "count": 414
   },
   {
    "reason": "unsupported-selector",
-   "count": 288
-  },
-  {
-   "reason": "unsupported-shape",
-   "count": 208
+   "count": 287
   },
   {
    "reason": "needs-runtime-choice",
    "count": 207
+  },
+  {
+   "reason": "unsupported-shape",
+   "count": 179
   },
   {
    "reason": "unsupported-value",
