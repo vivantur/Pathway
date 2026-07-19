@@ -11,7 +11,10 @@
  * output, folded into content by a LATER slice — never here.
  *
  * PRODUCERS (both from @pathway/core, run in the browser too — pure, no I/O):
- *   • parser  — parseProse(feat.description). Emits DraftEffect + gaps + a prose span.
+ *   • parser  — parseProse(feat.description, …, traitVocabulary). Emits DraftEffect +
+ *               gaps + a prose span. The trait vocabulary comes from the corpus (see
+ *               traitVocabulary), which is what lets "saves against mental effects"
+ *               resolve to a predicate instead of landing as a gap.
  *   • foundry — mapFoundryRules over the sidecar's quarantined `raw`. Human-authored
  *               upstream, high precision. Read from `raw` and NOT from `feat.effects`,
  *               which is now the pipeline's own output — see foundryProposals.
@@ -76,9 +79,37 @@ function foundryProposals(feat, rawById) {
   return { source: 'foundry', proposals };
 }
 
+/**
+ * The trait vocabulary the parser resolves scopes against, read from the corpus we
+ * already ship rather than hardcoded in core — traits are game content, and content
+ * supplied from the data can never drift out of date the way a constant would.
+ *
+ * TWO SETS, because they carry different risk:
+ *   • effectTraits (wide, spells + feats) is used only where the prose says
+ *     "effects"/"spells", which has already ruled out a creature reading.
+ *   • spellTraits (narrow) is used for a bare "against X", where nothing
+ *     disambiguates. Traits that appear on SPELLS admit "against poisons" and
+ *     exclude "against dragons" / "against humans" — creature types that would
+ *     otherwise become a bonus that can never fire.
+ */
+function traitVocabulary(dataDir) {
+  const read = (file) => {
+    const path = join(dataDir, file);
+    return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : [];
+  };
+  const spellTraits = new Set();
+  for (const s of read('spells.json')) for (const t of s.traits ?? []) spellTraits.add(String(t).toLowerCase());
+
+  const effectTraits = new Set(spellTraits);
+  for (const f of read('feats.json')) for (const t of f.traits ?? []) effectTraits.add(String(t).toLowerCase());
+
+  return { effectTraits, spellTraits };
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const feats = JSON.parse(readFileSync(join(args.data, 'feats.json'), 'utf8'));
+  const traits = traitVocabulary(args.data);
 
   // Foundry's untouched rule elements, keyed by feat id. See foundryProposals.
   const sidecarPath = join(args.data, SIDECAR);
@@ -95,7 +126,7 @@ function main() {
   for (const feat of feats) {
     if (!feat.description) continue;
     featsWithProse += 1;
-    const parser = parseProse(feat.description);
+    const parser = parseProse(feat.description, undefined, traits);
     const foundry = foundryProposals(feat, rawById);
     // Nothing to reconcile if neither producer proposed anything for this feat.
     if (parser.proposals.length === 0 && foundry.proposals.length === 0) continue;
@@ -119,6 +150,7 @@ function main() {
   console.log('effect-review candidates');
   console.log('='.repeat(40));
   console.log(`feats            : ${summary.feats} (${summary.featsWithProse} with prose)`);
+  console.log(`trait vocabulary : ${traits.effectTraits.size} effect / ${traits.spellTraits.size} spell (from the corpus)`);
   console.log(`candidates       : ${summary.candidates}`);
   console.log(`  auto-promote   : ${summary.autoPromote}  (corroborated + complete; no human)`);
   console.log(`  conflicts      : ${summary.conflicts}  (producers disagree; review first)`);

@@ -1074,9 +1074,38 @@ Three things had to be settled to make that safe, and each is worth remembering:
   many. Content: 341 → 328 effects (the 14 conflicts, minus one restored by multiplicity),
   choices 33 → 33.
 
-**Next**: the gap/conflict editor on the stage-3 authoring surface — the 14 conflicts and
-1,058 gapped candidates have no UI that can resolve them yet, which is now the binding
-constraint on coverage.
+### Parser predicates landed 2026-07-18 — trait scopes stop being gaps
+
+The parser emitted **no `when:` at all**, so every conditional became a
+`conditional-unmapped` gap *even when the model could already express it*. `effect:trait:<t>`
+had landed with predicate.ts and is exactly what "+1 to saves against death effects" needs;
+nothing proposed one. **Gapped 1,058 → 965; review 448 → 541. 93 gaps closed, and shipped
+content is byte-identical** — a closed gap moves a candidate from `gapped` to `review`
+(promotable, needs a human), never to auto-promote, which requires corroboration.
+
+**Two shapes, two vocabularies, and the split IS the safety argument:**
+
+| shape | vocabulary | why |
+|---|---|---|
+| `against <X> effects` / `<X> spells` | wide (spells + feats) | the noun already ruled out a creature reading, so `linguistic effects` is safe though `linguistic` is never a spell trait |
+| bare `against <X>` | spell traits only | measured, this shape contains BOTH `against poisons` (effect) and `against dragons` / `against humans` (creature types) |
+
+Reading "against humans" as `effect:trait:human` would attach a bonus that can never fire —
+silently wrong, and worse than the honest gap. Restricting the bare shape to traits that
+appear on SPELLS admits the first group and excludes the second; verified against the corpus.
+
+**The vocabulary is PASSED IN, not hardcoded** (`parseProse(raw, extractors, ctx)`). Traits
+are game content, content does not live in core, and the caller already holds the corpus —
+so `build-candidates.mjs` derives 230 effect / 97 spell traits from `spells.json` +
+`feats.json` and they cannot drift. Both default to EMPTY, and empty reproduces the old
+behavior exactly: a parser resolving against a stale built-in list would be worse than one
+that admits it does not know the word. Plurals de-pluralize only by checking the SINGULAR
+against the vocabulary ("diseases" → `disease`), never by a rule about English.
+
+**Next**: the gap/conflict editor on the stage-3 authoring surface — the 14 conflicts and 965
+gapped candidates still have no UI that can resolve them, which remains the binding constraint
+on coverage. The next parser slice, if one is wanted first, is the remaining ~340
+`against …` conditions that are not single-trait shapes.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 

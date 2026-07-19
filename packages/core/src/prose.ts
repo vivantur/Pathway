@@ -183,6 +183,7 @@ export function segment(normalized: string): Clause[] {
 // ---------------------------------------------------------------------------
 
 import type { DraftEffect, Gap, SourceProposals } from "./candidate.js";
+import type { Predicate } from "./predicate.js";
 import type { Selector } from "./selectors.js";
 
 /** One extracted proposal, before it is wrapped as a producer's `SourceProposals`. */
@@ -194,19 +195,55 @@ export interface Extraction {
 }
 
 /**
+ * Vocabulary the caller supplies so the parser can resolve trait scopes ("saves
+ * against mental effects") into a real predicate instead of a gap.
+ *
+ * PASSED IN, NOT HARDCODED. These are game CONTENT — the set of traits that exist —
+ * and content does not live in core (it is headed for the database; see the repo's
+ * content-storage rule). The caller already holds the corpus, so a vocabulary
+ * supplied from it can never drift out of date the way a constant here would.
+ *
+ * Both default to EMPTY, and empty means every conditional gaps exactly as it did
+ * before this existed. A parser that silently resolved scopes against a stale
+ * built-in list would be worse than one that admits it does not know the word.
+ */
+export interface ParseContext {
+  /**
+   * Traits an EFFECT can carry, used only where the prose itself says "effects" or
+   * "spells" — that noun is what makes the wide vocabulary safe. Feats' traits
+   * belong here too ("linguistic effects"), because the noun has already ruled out
+   * a creature reading.
+   */
+  effectTraits?: ReadonlySet<string>;
+  /**
+   * The NARROWER vocabulary used for a bare "against X", where nothing in the prose
+   * says whether X is an effect or a creature. Restricting it to traits that appear
+   * on SPELLS is what keeps "against dragons" and "against humans" out: those are
+   * creature types, and reading them as effect traits would produce a bonus that can
+   * never fire — a silently wrong sheet, which is worse than an honest gap.
+   */
+  spellTraits?: ReadonlySet<string>;
+}
+
+/**
  * An extractor reads ONE clause and returns any effects it proposes. It receives the
  * clause's governor so it can decline (a rank phrase under `when` is a condition, not a
- * grant — the Lepidstadt trap) or emit a conditional draft with a gap. Pure and
- * self-contained: extractors do not see each other's output.
+ * grant — the Lepidstadt trap) or emit a conditional draft with a gap, plus the parse
+ * context's vocabulary. Pure and self-contained: extractors do not see each other's
+ * output.
  */
-export type Extractor = (clause: Clause) => Extraction[];
+export type Extractor = (clause: Clause, ctx?: ParseContext) => Extraction[];
 
 /** Parse a raw description into extractions. The producer wrapper is `parseProse`. */
-export function extractFromProse(raw: string, extractors: readonly Extractor[]): Extraction[] {
+export function extractFromProse(
+  raw: string,
+  extractors: readonly Extractor[],
+  ctx: ParseContext = {},
+): Extraction[] {
   const clauses = segment(normalize(raw));
   const out: Extraction[] = [];
   for (const clause of clauses) {
-    for (const extractor of extractors) out.push(...extractor(clause));
+    for (const extractor of extractors) out.push(...extractor(clause, ctx));
   }
   return out;
 }
@@ -215,10 +252,14 @@ export function extractFromProse(raw: string, extractors: readonly Extractor[]):
  * The parser as a candidate.ts PRODUCER: raw description → `SourceProposals` ready for
  * `reconcile`. `source: "parser"` so Foundry's proposals corroborate or conflict with it.
  */
-export function parseProse(raw: string, extractors: readonly Extractor[] = DEFAULT_EXTRACTORS): SourceProposals {
+export function parseProse(
+  raw: string,
+  extractors: readonly Extractor[] = DEFAULT_EXTRACTORS,
+  ctx: ParseContext = {},
+): SourceProposals {
   return {
     source: "parser",
-    proposals: extractFromProse(raw, extractors).map((e) => ({
+    proposals: extractFromProse(raw, extractors, ctx).map((e) => ({
       draft: e.draft,
       gaps: e.gaps,
       evidence: { span: e.span },
@@ -424,6 +465,65 @@ function resolveTarget(rawTarget: string): TargetResolution {
  */
 const SCOPE_RE = /^\s*((?:against|to)\s+[a-z][^.,;:]{2,60})/i;
 
+// --- trait scopes: "against mental effects" -> when: effect:trait:mental -------
+//
+// The single biggest category of conditional the parser saw and could not express:
+// 1,108 conditional gaps, of which "against ..." is 434. The MODEL was never the
+// blocker — `effect:trait:<t>` landed with predicate.ts and is exactly what
+// "+1 to saves against death effects" needs — the parser simply never proposed one.
+//
+// TWO SHAPES, TWO VOCABULARIES, and the difference is the whole safety argument:
+//
+//   A. "against <X> effects" / "against <X> spells"  → the WIDE vocabulary.
+//      The noun has already told us X describes an effect, so "linguistic effects"
+//      is safe even though `linguistic` never appears on a spell.
+//
+//   B. bare "against <X>"                            → the SPELL-ONLY vocabulary.
+//      Nothing here says whether X is an effect or a creature. Measured on the
+//      corpus, this shape contains both: "against poisons" (an effect trait) and
+//      "against dragons" / "against humans" (creature types). Restricting to traits
+//      that appear on SPELLS admits the first and excludes the second. Reading
+//      "against humans" as `effect:trait:human` would attach a bonus that can never
+//      fire — silently wrong, and worse than leaving the gap.
+//
+// A plural is singularized only by checking the SINGULAR against the vocabulary
+// ("diseases" → `disease` because `disease` is a trait), never by a rule about
+// English — so a word that merely ends in "s" is not mangled into a false match.
+const TRAIT_SCOPE_NOUNED = /^against\s+([a-z][a-z-]*)\s+(?:effects?|spells?)$/i;
+const TRAIT_SCOPE_BARE = /^against\s+([a-z][a-z-]*)$/i;
+
+/** The word itself if it is in `vocab`, else its de-pluralized form if THAT is. */
+function resolveTraitWord(word: string, vocab: ReadonlySet<string> | undefined): string | null {
+  if (!vocab || vocab.size === 0) return null;
+  const w = word.toLowerCase();
+  if (vocab.has(w)) return w;
+  if (w.endsWith("es") && vocab.has(w.slice(0, -2))) return w.slice(0, -2);
+  if (w.endsWith("s") && vocab.has(w.slice(0, -1))) return w.slice(0, -1);
+  return null;
+}
+
+/**
+ * A condition phrase → an `effect:trait:<t>` predicate, or null when it is anything
+ * this cannot state with confidence (in which case the caller keeps its gap).
+ */
+export function resolveTraitScope(condition: string, ctx: ParseContext): Predicate | null {
+  const text = condition.trim().toLowerCase();
+
+  const nouned = TRAIT_SCOPE_NOUNED.exec(text);
+  if (nouned) {
+    const trait = resolveTraitWord(nouned[1]!, ctx.effectTraits);
+    return trait ? { tag: `effect:trait:${trait}` } : null;
+  }
+
+  const bare = TRAIT_SCOPE_BARE.exec(text);
+  if (bare) {
+    const trait = resolveTraitWord(bare[1]!, ctx.spellTraits);
+    return trait ? { tag: `effect:trait:${trait}` } : null;
+  }
+
+  return null;
+}
+
 /**
  * Resolve a possibly-COMPOUND target run ("Nature, Society, and Reflex saves") into the
  * selectors it names and any anaphoric fragments. Each element resolves independently via
@@ -462,7 +562,7 @@ function resolveTargetList(run: string): { selectors: Selector[]; anaphoric: str
  * extracted — "+1 to attacks while raging" is a real conditional modifier, its condition
  * carried as a gap, unlike a governed proficiency phrase which is declined outright.
  */
-export const modifierExtractor: Extractor = (clause) => {
+export const modifierExtractor: Extractor = (clause, ctx = {}) => {
   const out: Extraction[] = [];
   const span = { start: clause.start, end: clause.end, text: clause.text };
   let m: RegExpExecArray | null;
@@ -486,9 +586,14 @@ export const modifierExtractor: Extractor = (clause) => {
     const condition = clause.governor
       ? `${clause.governor} ${clause.text}`
       : (clause.trailingCondition ?? scopeMatch?.[1]);
-    const conditionGap: Gap[] = condition
+
+    // A condition we can STATE becomes a predicate; one we cannot becomes a gap.
+    // Never both, and never neither — dropping it silently is the wrong-sheet bug.
+    const when = condition ? resolveTraitScope(condition, ctx) : null;
+    const conditionGap: Gap[] = condition && !when
       ? [{ field: "when", reason: "conditional-unmapped", raw: condition.slice(0, 80) }]
       : [];
+    const whenField = when ? { when } : {};
 
     // The target may be a list ("Deception and Diplomacy"); each resolved selector becomes
     // its own draft (a broadcast fans out too), and each anaphoric fragment its own gapped
@@ -497,11 +602,11 @@ export const modifierExtractor: Extractor = (clause) => {
     if (selectors.length === 0 && anaphoric.length === 0) continue;
 
     for (const target of selectors) {
-      out.push({ draft: { kind: "modifier", target, bonusType, value }, gaps: [...conditionGap], span });
+      out.push({ draft: { kind: "modifier", target, bonusType, value, ...whenField }, gaps: [...conditionGap], span });
     }
     for (const raw of anaphoric) {
       out.push({
-        draft: { kind: "modifier", bonusType, value },
+        draft: { kind: "modifier", bonusType, value, ...whenField },
         gaps: [{ field: "target", reason: "anaphoric", raw }, ...conditionGap],
         span,
       });

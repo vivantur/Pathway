@@ -213,6 +213,100 @@ describe("modifierExtractor", () => {
     expect(governed?.gaps.some((g) => g.field === "when" && g.reason === "conditional-unmapped")).toBe(true);
   });
 
+  describe("trait scopes become a predicate, not a gap", () => {
+    // The vocabulary is supplied by the caller from the real corpus; these stand in
+    // for it. `linguistic` is deliberately only in the wide set (it is a feat trait,
+    // never a spell trait) and `human`/`dragon` only in the wide set too — they are
+    // what the narrow set has to keep out.
+    const ctx = {
+      effectTraits: new Set(["mental", "death", "emotion", "fire", "linguistic", "occult", "human"]),
+      spellTraits: new Set(["mental", "death", "emotion", "fire", "disease", "poison", "fear", "curse"]),
+    };
+    const withCtx = (text: string) => extractFromProse(text, [modifierExtractor], ctx);
+
+    it("resolves \"against <trait> effects\" to an effect:trait predicate", () => {
+      const ex = withCtx("You gain a +1 status bonus to saving throws against mental effects.");
+      const d = ex.find((e) => e.draft.target === "will");
+      expect(d?.draft.when).toEqual({ tag: "effect:trait:mental" });
+      expect(d?.gaps.some((g) => g.field === "when")).toBe(false);
+    });
+
+    it("uses the WIDE vocabulary when the prose says \"effects\"", () => {
+      // `linguistic` never appears on a spell, but "effects" has already told us this
+      // describes an effect, so the wide set is safe here.
+      const ex = withCtx("You gain a +2 circumstance bonus to Will saves against linguistic effects.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:trait:linguistic" });
+    });
+
+    it("resolves \"against <trait> spells\" too", () => {
+      const ex = withCtx("You gain a +1 status bonus to saving throws against occult spells.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:trait:occult" });
+    });
+
+    it("de-pluralizes only by checking the singular against the vocabulary", () => {
+      const ex = withCtx("You gain a +1 status bonus to Fortitude saves against diseases.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:trait:disease" });
+    });
+
+    it("resolves a bare \"against <trait>\" through the NARROW vocabulary", () => {
+      const ex = withCtx("You gain a +1 status bonus to saving throws against fear.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:trait:fear" });
+    });
+
+    it("REFUSES a bare creature type, which the narrow vocabulary excludes", () => {
+      // "against humans" is a creature, not an effect trait. Reading it as
+      // effect:trait:human would attach a bonus that can never fire — silently
+      // wrong, and worse than the honest gap.
+      const ex = withCtx("You gain a +1 circumstance bonus to attack rolls against humans.");
+      const d = ex.find((e) => e.draft.target === "attack");
+      expect(d?.draft.when).toBeUndefined();
+      expect(d?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("refuses a word that is in no vocabulary at all", () => {
+      const ex = withCtx("You gain a +1 status bonus to saving throws against magic.");
+      expect(ex[0]?.draft.when).toBeUndefined();
+      expect(ex[0]?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("still gaps a governor-style condition, which is not a trait scope", () => {
+      const ex = withCtx("You gain a +1 status bonus to attack rolls while you are raging.");
+      const d = ex.find((e) => e.draft.target === "attack");
+      expect(d?.draft.when).toBeUndefined();
+      expect(d?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("emits a predicate OR a gap, never both and never neither", () => {
+      for (const text of [
+        "You gain a +1 status bonus to saving throws against mental effects.",
+        "You gain a +1 status bonus to saving throws against magic.",
+        "You gain a +1 status bonus to Stealth.",
+      ]) {
+        for (const e of withCtx(text)) {
+          const gapped = e.gaps.some((g) => g.field === "when");
+          expect(gapped && e.draft.when !== undefined).toBe(false);
+        }
+      }
+    });
+
+    it("without a vocabulary, behaves exactly as before — everything gaps", () => {
+      // The default is empty on purpose: resolving against a stale built-in list
+      // would be worse than admitting the parser does not know the word.
+      const ex = extractFromProse("You gain a +1 status bonus to saving throws against mental effects.", [
+        modifierExtractor,
+      ]);
+      expect(ex[0]?.draft.when).toBeUndefined();
+      expect(ex[0]?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("carries the predicate onto an anaphoric draft as well", () => {
+      // A draft can be gapped on its TARGET and still have a resolved condition.
+      const ex = withCtx("You gain a +1 status bonus to the check against mental effects.");
+      const anaphoric = ex.find((e) => e.gaps.some((g) => g.reason === "anaphoric"));
+      if (anaphoric) expect(anaphoric.draft.when).toEqual({ tag: "effect:trait:mental" });
+    });
+  });
+
   it("splits a compound target into one draft per stat (Oxford comma too)", () => {
     // "+1 to Intimidation, Perception, and Survival" — three stats, one value/type each.
     const ex = mods("You gain a +1 circumstance bonus to Intimidation, Perception, and Survival.");

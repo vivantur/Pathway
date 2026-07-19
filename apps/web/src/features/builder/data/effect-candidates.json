@@ -1,13 +1,13 @@
 {
- "generatedAt": "2026-07-19T01:01:59.806Z",
+ "generatedAt": "2026-07-19T02:27:16.031Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
   "candidates": 1820,
   "autoPromote": 300,
   "conflicts": 14,
-  "gapped": 1058,
-  "review": 448,
+  "gapped": 965,
+  "review": 541,
   "invalid": 0
  },
  "candidates": [
@@ -20,15 +20,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:visual"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against visual effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -52,15 +49,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:visual"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against visual effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -84,15 +78,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:visual"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against visual effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6497,15 +6488,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6529,15 +6517,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6561,15 +6546,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6645,15 +6627,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6677,15 +6656,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6709,15 +6685,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -7822,15 +7795,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -7854,15 +7824,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -7886,15 +7853,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -9229,15 +9193,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:illusion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against illusions"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12368,15 +12329,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12400,15 +12358,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12432,15 +12387,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17766,15 +17718,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:linguistic"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against linguistic effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17798,15 +17747,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:linguistic"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against linguistic effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17830,15 +17776,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:linguistic"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against linguistic effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -18829,15 +18772,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -18861,15 +18801,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -18893,15 +18830,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -20266,15 +20200,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:curse"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against curses"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -20298,15 +20229,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:curse"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against curses"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -20330,15 +20258,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:curse"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against curses"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -24303,15 +24228,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -24335,15 +24257,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -24367,15 +24286,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -25405,15 +25321,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -25437,15 +25350,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -25469,15 +25379,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -25877,15 +25784,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -25909,15 +25813,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -25941,15 +25842,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -29412,15 +29310,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -29444,15 +29339,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -29476,15 +29368,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -29846,15 +29735,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -29877,6 +29763,9 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fear"
     }
    },
    "gaps": [
@@ -29884,11 +29773,6 @@
      "field": "target",
      "reason": "anaphoric",
      "raw": "DCs"
-    },
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fear effects"
     }
    ],
    "agreement": "parser-only",
@@ -30498,15 +30382,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -30530,15 +30411,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -30562,15 +30440,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:fire"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against fire effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -31403,15 +31278,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:attack:status",
    "signature": "modifier:attack:status",
@@ -31435,15 +31307,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -31467,15 +31336,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -31499,15 +31365,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -35930,15 +35793,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -37148,15 +37008,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -37180,15 +37037,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -37212,15 +37066,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38405,15 +38256,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38437,15 +38285,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38469,15 +38314,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38532,15 +38374,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38564,15 +38403,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38596,15 +38432,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41068,15 +40901,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:electricity"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against electricity"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:ac:circumstance",
    "signature": "modifier:ac:circumstance",
@@ -41100,15 +40930,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:electricity"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against electricity"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41132,15 +40959,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:electricity"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against electricity"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41164,15 +40988,12 @@
     "value": {
      "kind": "lit",
      "value": -1
+    },
+    "when": {
+     "tag": "effect:trait:electricity"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against electricity"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -45543,15 +45364,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -45575,15 +45393,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -45607,15 +45422,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -47222,15 +47034,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:divine"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against divine effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -47254,15 +47063,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:divine"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against divine effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -47286,15 +47092,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:divine"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against divine effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -47800,15 +47603,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -47832,15 +47632,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -47864,15 +47661,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:death"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against death effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -48088,15 +47882,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -48120,15 +47911,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -48152,15 +47940,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -48312,15 +48097,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult spells"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -48344,15 +48126,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult spells"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -48376,15 +48155,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:occult"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against occult spells"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -49036,15 +48812,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -49068,15 +48841,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -49100,15 +48870,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -52025,15 +51792,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -52057,15 +51821,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -52089,15 +51850,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -53761,15 +53519,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -53793,15 +53548,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -53825,15 +53577,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:disease"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -56090,15 +55839,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -56122,15 +55868,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -56154,15 +55897,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -56186,15 +55926,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against void effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -56218,15 +55955,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against void effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -56250,15 +55984,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against void effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -57393,15 +57124,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -57425,15 +57153,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -57457,15 +57182,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:poison"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -59787,15 +59509,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against mental effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
