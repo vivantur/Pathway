@@ -29,6 +29,7 @@ import { PredicateField, SelectorField, EffectForm, validatePassive, strip, with
 import { GildedRule } from '@/components/ui/GildedRule';
 import { CornerBrackets } from '@/components/ui/CornerBrackets';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
+import { fetchDecisions, saveDecisions, clearDecisions } from '@/features/effects/decisions';
 
 /**
  * Effect review — the admin surface where a human turns auto-mapped PROPOSALS into
@@ -411,6 +412,34 @@ function AddEffectPanel({
   );
 }
 
+/**
+ * Whether what is on screen has reached the database.
+ *
+ * An `error` here does NOT mean the reviewer's work is lost — local state keeps it and
+ * Export still writes it out — so the message says what to do rather than just what
+ * broke. Rolling local state back on a failed write would destroy real judgment to
+ * report a network problem.
+ */
+function SaveIndicator({ state, error, count }: { state: 'idle' | 'saving' | 'saved' | 'error'; error: string | null; count: number }) {
+  if (state === 'error') {
+    return (
+      <span
+        className="rounded-md border border-red-500/40 bg-red-500/10 px-2.5 py-1.5 text-sm text-red-200"
+        title={error ?? undefined}
+      >
+        ⚠ not saved — your work is still here; use Export to keep it
+      </span>
+    );
+  }
+  if (state === 'saving') {
+    return <span className="px-2.5 py-1.5 text-sm text-parchment/50">saving…</span>;
+  }
+  if (state === 'saved') {
+    return <span className="px-2.5 py-1.5 text-sm text-emerald-soft/80">✓ saved ({count})</span>;
+  }
+  return <span className="px-2.5 py-1.5 text-sm text-parchment/40">{count > 0 ? `${count} decided` : 'decisions save automatically'}</span>;
+}
+
 const REJECT_REASONS: { value: RejectReason; label: string; hint: string }[] = [
   {
     value: 'not-a-passive',
@@ -597,6 +626,22 @@ export function EffectReviewPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPatch, setBulkPatch] = useState<ResolutionPatch>({});
   const importRef = useRef<HTMLInputElement>(null);
+  /**
+   * Effects a human authored that NO producer proposed — the prose said something the
+   * parser cannot yet read. Held apart from `decisions` because they are addressed by a
+   * minted key rather than a candidate's (see core's `addEffect`), so they have no row
+   * in the queue to hang off. They export alongside the rest, and `resolveEntity` folds
+   * them into content without ever reporting them stale.
+   */
+  const [additions, setAdditions] = useState<EffectDecision[]>([]);
+  /**
+   * Whether what is on screen has reached the database. Surfaced rather than kept
+   * internal because the entire point of persisting is that the reviewer can trust
+   * their work is safe — a silent write failure would be worse than the old manual
+   * export, which at least never claimed to have saved.
+   */
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -612,20 +657,71 @@ export function EffectReviewPage() {
     };
   }, []);
 
+  // Load what was already decided. A failure here is NOT fatal — the queue is still
+  // reviewable and export still works — but it must be visible, because a reviewer
+  // who cannot see their prior decisions would otherwise re-decide from scratch.
+  useEffect(() => {
+    let live = true;
+    fetchDecisions()
+      .then((stored) => {
+        if (!live) return;
+        setDecisions(new Map(stored.filter((d) => d.action !== 'add').map((d) => [`${d.entityId} ${d.key}`, d])));
+        setAdditions(stored.filter((d) => d.action === 'add'));
+      })
+      .catch((e: unknown) => {
+        if (!live) return;
+        setSaveState('error');
+        setSaveError(e instanceof Error ? e.message : 'could not load saved decisions');
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const buckets = useMemo(() => (data ? triage(data.candidates) : null), [data]);
 
   // The signature groups for the selected bucket, largest shape first — "confirm this
   // across 150 feats", not 150 forms.
   const groups = useMemo(() => (buckets ? groupBySignature(buckets[bucket]) : []), [buckets, bucket]);
 
-  const setDecision = (c: EffectCandidate, decision: EffectDecision | null) => {
+  /**
+   * The ONE place local state and the database move together. Every decision path
+   * routes through it, so there is no way to add a control that updates the screen
+   * and forgets to persist — the bug this shape exists to prevent.
+   *
+   * Batched by construction: a group accept of 130 candidates is one call in one
+   * transaction, not 130 round trips that can half-apply.
+   */
+  const commit = (entries: readonly { c: EffectCandidate; decision: EffectDecision | null }[]) => {
+    if (entries.length === 0) return;
     setDecisions((prev) => {
       const next = new Map(prev);
-      if (decision) next.set(decisionId(c), decision);
-      else next.delete(decisionId(c));
+      for (const { c, decision } of entries) {
+        if (decision) next.set(decisionId(c), decision);
+        else next.delete(decisionId(c));
+      }
       return next;
     });
+    const saves = entries.flatMap((e) => (e.decision ? [e.decision] : []));
+    const clears = entries.flatMap((e) => (e.decision ? [] : [{ entityId: e.c.entityId, key: e.c.key }]));
+    persist(() => Promise.all([saveDecisions(saves), clearDecisions(clears)]));
   };
+
+  /** Run a write, reporting its outcome. Local state is NOT rolled back on failure:
+   *  the reviewer's judgment is still on screen and still exportable, and silently
+   *  reverting it would destroy work to report a network problem. */
+  const persist = (run: () => Promise<unknown>) => {
+    setSaveState('saving');
+    setSaveError(null);
+    run()
+      .then(() => setSaveState('saved'))
+      .catch((e: unknown) => {
+        setSaveState('error');
+        setSaveError(e instanceof Error ? e.message : 'save failed');
+      });
+  };
+
+  const setDecision = (c: EffectCandidate, decision: EffectDecision | null) => commit([{ c, decision }]);
 
   const accept = (c: EffectCandidate) => {
     const p = promote(c);
@@ -649,8 +745,33 @@ export function EffectReviewPage() {
         : { entityId: c.entityId, key: c.key, action: 'reject', at: new Date().toISOString() },
     );
 
-  const acceptGroup = (cands: EffectCandidate[]) => cands.forEach((c) => promote(c).ok && accept(c));
-  const rejectGroup = (cands: EffectCandidate[]) => cands.forEach((c) => reject(c));
+  /** Bulk accept/reject — one commit, so 130 rows are one transaction. */
+  const acceptGroup = (cands: EffectCandidate[]) =>
+    commit(
+      cands.flatMap((c) => {
+        const p = promote(c);
+        if (!p.ok) return [];
+        return [{
+          c,
+          decision: {
+            entityId: c.entityId,
+            key: c.key,
+            action: 'accept' as const,
+            ...(p.effect ? { effect: p.effect } : {}),
+            ...(p.choice ? { choice: p.choice } : {}),
+            at: new Date().toISOString(),
+          },
+        }];
+      }),
+    );
+
+  const rejectGroup = (cands: EffectCandidate[]) =>
+    commit(
+      cands.map((c) => ({
+        c,
+        decision: { entityId: c.entityId, key: c.key, action: 'reject' as const, at: new Date().toISOString() },
+      })),
+    );
 
   const setPatch = (c: EffectCandidate, patch: ResolutionPatch) =>
     setPatches((prev) => new Map(prev).set(decisionId(c), patch));
@@ -669,17 +790,14 @@ export function EffectReviewPage() {
   const applyBulkPatch = (cands: readonly EffectCandidate[]) => {
     const { decisions: made } = applyBulk(cands, bulkPatch, { at: new Date().toISOString() });
     if (made.length === 0) return;
-    setDecisions((prev) => {
-      const next = new Map(prev);
-      // applyBulk returns decisions in the order it was given the candidates, and it
-      // only emits for the ones that resolved — so re-derive each row's id from the
-      // candidate it came from rather than assuming the arrays line up.
-      for (const c of cands) {
+    // applyBulk returns decisions only for the ones that resolved — so re-derive each
+    // row from the candidate it came from rather than assuming the arrays line up.
+    commit(
+      cands.flatMap((c) => {
         const d = made.find((m) => m.entityId === c.entityId && m.key === c.key);
-        if (d) next.set(decisionId(c), d);
-      }
-      return next;
-    });
+        return d ? [{ c, decision: d }] : [];
+      }),
+    );
     setSelected(new Set());
   };
 
@@ -699,22 +817,20 @@ export function EffectReviewPage() {
     setBulkPatch({});
   };
 
-  /**
-   * Effects a human authored that NO producer proposed — the prose said something the
-   * parser cannot yet read. Held apart from `decisions` because they are addressed by a
-   * minted key rather than a candidate's (see core's `addEffect`), so they have no row
-   * in the queue to hang off. They export alongside the rest, and `resolveEntity` folds
-   * them into content without ever reporting them stale.
-   */
-  const [additions, setAdditions] = useState<EffectDecision[]>([]);
 
   const addTo = (entityId: string, draft: DraftEffect) => {
     const out = addEffect(entityId, draft, additions, { at: new Date().toISOString() });
-    if (out.ok) setAdditions((prev) => [...prev, out.decision]);
+    if (out.ok) {
+      setAdditions((prev) => [...prev, out.decision]);
+      persist(() => saveDecisions([out.decision]));
+    }
     return out;
   };
-  const removeAddition = (key: string) =>
+  const removeAddition = (key: string) => {
+    const gone = additions.find((a) => a.key === key);
     setAdditions((prev) => prev.filter((a) => a.key !== key));
+    if (gone) persist(() => clearDecisions([{ entityId: gone.entityId, key: gone.key }]));
+  };
 
   const exportDecisions = () => {
     const arr = [...decisions.values(), ...additions];
@@ -782,6 +898,10 @@ export function EffectReviewPage() {
 
       {/* decisions toolbar */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* Decisions save as you make them. Shown because the value of persisting is
+            that the reviewer can TRUST it — a silent write failure would be worse than
+            the old manual export, which never claimed to have saved. */}
+        <SaveIndicator state={saveState} error={saveError} count={decisions.size + additions.length} />
         <button
           onClick={exportDecisions}
           disabled={decisions.size === 0}

@@ -20,6 +20,8 @@
     "dev:web": "npm --workspace apps/web run dev",
     "prebuild:web": "npm run build:core",
     "build:web": "npm --workspace apps/web run build",
+    "pull:decisions": "node apps/web/scripts/pull-decisions.mjs",
+    "push:decisions": "node apps/web/scripts/push-decisions.mjs",
     "pretypecheck": "npm run build:core",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm --workspaces --if-present run typecheck"

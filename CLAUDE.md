@@ -361,7 +361,24 @@ npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only
 npm --workspace apps/web run lint        # web lint
 node apps/web/scripts/remap-effects.mjs --dry   # re-map ingested effects (no clone needed)
+npm run pull:decisions    # Supabase effect_decisions -> effect-decisions.json (before baking content)
+npm run push:decisions    # the inverse: seed/restore the table from the file
 ```
+
+### Review decisions live in Supabase; content stays committed
+
+The effect review queue writes its decisions to the `effect_decisions` table
+(migration `20260719000000_effect_decisions.sql`, admin-only by RLS) as you make them —
+they used to exist only in React state, so a closed tab lost everything un-exported.
+
+**Content does NOT move with them.** `feats.json` and friends stay committed so the
+Vercel build remains hermetic — no network, no credentials, reproducible from the commit
+alone. The web deploy already depends on one unversioned Vercel setting; a build-time DB
+dependency would be a second way for it to break. `pull:decisions` materializes the table
+into `effect-decisions.json` as an explicit step before `remap-effects.mjs` bakes content,
+so the input is recorded in git next to the output. Both scripts need
+`SUPABASE_SERVICE_ROLE_KEY` (the table is admin-only and a script has no session) — that
+key must never reach the browser bundle.
 
 ### `npm test` cannot catch a type error in a core test file
 
