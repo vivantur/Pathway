@@ -1,13 +1,13 @@
 {
- "generatedAt": "2026-07-19T02:27:16.031Z",
+ "generatedAt": "2026-07-19T02:48:41.354Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
   "candidates": 1820,
   "autoPromote": 300,
   "conflicts": 14,
-  "gapped": 965,
-  "review": 541,
+  "gapped": 910,
+  "review": 596,
   "invalid": 0
  },
  "candidates": [
@@ -415,15 +415,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow traits"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -447,15 +451,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow traits"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -479,15 +487,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow traits"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6344,15 +6356,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:immobilized"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would impose the Immobilized"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6376,15 +6385,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:immobilized"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would impose the Immobilized"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6408,15 +6414,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:immobilized"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would impose the Immobilized"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6714,15 +6717,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion and fear effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6746,15 +6753,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion and fear effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -6778,15 +6789,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:emotion"
+      },
+      {
+       "tag": "effect:trait:fear"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against emotion and fear effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -7419,7 +7434,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -8894,7 +8909,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -10344,7 +10359,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -10376,7 +10391,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -10408,7 +10423,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -11505,7 +11520,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -11875,7 +11890,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering spell or magical effect"
     }
    ],
@@ -11907,7 +11922,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering spell or magical effect"
     }
    ],
@@ -11939,7 +11954,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering spell or magical effect"
     }
    ],
@@ -12689,15 +12704,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:air"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the air trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12721,15 +12733,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:air"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the air trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12753,15 +12762,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:trait:air"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the air trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -12906,12 +12912,12 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     }
    ],
@@ -12952,12 +12958,12 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     }
    ],
@@ -12998,12 +13004,12 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the affliction"
     }
    ],
@@ -13117,15 +13123,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:controlled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to gain the controlled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -13149,15 +13152,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:controlled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to gain the controlled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -13181,15 +13181,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:controlled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to gain the controlled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17935,15 +17932,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:cold"
+      },
+      {
+       "tag": "effect:trait:water"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against cold and water effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17967,15 +17968,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:cold"
+      },
+      {
+       "tag": "effect:trait:water"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against cold and water effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -17999,15 +18004,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:cold"
+      },
+      {
+       "tag": "effect:trait:water"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against cold and water effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -19417,7 +19426,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Web spell"
     }
    ],
@@ -19449,7 +19458,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Web spell"
     }
    ],
@@ -19481,7 +19490,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Web spell"
     }
    ],
@@ -19513,7 +19522,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Web spell"
     }
    ],
@@ -19883,15 +19892,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:air"
+      },
+      {
+       "tag": "effect:trait:electricity"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against air and electricity effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -19915,15 +19928,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:air"
+      },
+      {
+       "tag": "effect:trait:electricity"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against air and electricity effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -19947,15 +19964,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:air"
+      },
+      {
+       "tag": "effect:trait:electricity"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against air and electricity effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -23200,7 +23221,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your hunted prey"
     }
    ],
@@ -24528,15 +24549,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -24560,15 +24585,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -24592,15 +24621,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:darkness"
+      },
+      {
+       "tag": "effect:trait:shadow"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the darkness or shadow trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -28937,7 +28970,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -30015,7 +30048,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -30355,7 +30388,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -30725,7 +30758,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -31251,7 +31284,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -35249,15 +35282,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases and poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -35281,15 +35318,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases and poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -35313,15 +35354,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against diseases and poisons"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -36014,7 +36059,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -36727,7 +36772,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against their abilities for the next minute"
     }
    ],
@@ -36759,7 +36804,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against their abilities for the next minute"
     }
    ],
@@ -36791,7 +36836,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against their abilities for the next minute"
     }
    ],
@@ -36818,15 +36863,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -36850,15 +36899,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -36882,15 +36935,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -37095,15 +37152,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:mental"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the mental trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -38750,7 +38804,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your attempts to challenge for 1 minute"
     }
    ],
@@ -38864,12 +38918,12 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the target creature's or hazard's next attack"
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the target creature's or hazard's next attack"
     }
    ],
@@ -39177,15 +39231,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the void trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -39209,15 +39260,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the void trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -39241,15 +39289,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:void"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects with the void trait"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -39421,7 +39466,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -39518,13 +39563,7 @@
      "value": 1
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -39557,15 +39596,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -39598,15 +39641,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -39771,7 +39818,7 @@
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against these effects instead"
     }
    ],
@@ -39817,7 +39864,7 @@
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against these effects instead"
     }
    ],
@@ -39863,7 +39910,7 @@
     },
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against these effects instead"
     }
    ],
@@ -40000,7 +40047,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Sickened condition"
     }
    ],
@@ -40032,7 +40079,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Sickened condition"
     }
    ],
@@ -40064,7 +40111,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the Sickened condition"
     }
    ],
@@ -40164,7 +40211,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -41301,15 +41348,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:clumsy"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would make you Clumsy"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41333,15 +41377,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:clumsy"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would make you Clumsy"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41365,15 +41406,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:clumsy"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would make you Clumsy"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -41488,7 +41526,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -41863,7 +41901,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -42251,7 +42289,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -42821,7 +42859,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering Strike"
     }
    ],
@@ -45241,7 +45279,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -45273,7 +45311,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -45305,7 +45343,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -45337,7 +45375,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering effect"
     }
    ],
@@ -45456,7 +45494,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -45686,7 +45724,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -49111,7 +49149,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against this creature"
     }
    ],
@@ -49143,7 +49181,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against this creature"
     }
    ],
@@ -49175,7 +49213,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against this creature"
     }
    ],
@@ -49207,7 +49245,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against this creature"
     }
    ],
@@ -49577,7 +49615,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -49641,7 +49679,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -50747,7 +50785,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -51148,7 +51186,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -51427,15 +51465,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:dazzled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that inflict the Dazzled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -51459,15 +51494,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:dazzled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that inflict the Dazzled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -51491,15 +51523,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:causes:dazzled"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that inflict the Dazzled condition"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -51916,7 +51945,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your fire impulses"
     }
    ],
@@ -51948,7 +51977,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your fire impulses"
     }
    ],
@@ -51980,7 +52009,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your fire impulses"
     }
    ],
@@ -52012,7 +52041,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against your fire impulses"
     }
    ],
@@ -52962,7 +52991,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the chosen creature"
     },
     {
@@ -53364,7 +53393,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the creature during that encounter"
     }
    ],
@@ -53396,7 +53425,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the creature during that encounter"
     }
    ],
@@ -53428,7 +53457,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the creature during that encounter"
     }
    ],
@@ -57363,15 +57392,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -57395,15 +57428,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -57427,15 +57464,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -57799,14 +57840,19 @@
     "value": {
      "kind": "lit",
      "value": 3
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
    "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    },
     {
      "field": "when",
      "reason": "conditional-unmapped",
@@ -57884,14 +57930,19 @@
     "value": {
      "kind": "lit",
      "value": 3
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
    "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    },
     {
      "field": "when",
      "reason": "conditional-unmapped",
@@ -57969,14 +58020,19 @@
     "value": {
      "kind": "lit",
      "value": 3
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:disease"
+      },
+      {
+       "tag": "effect:trait:poison"
+      }
+     ]
     }
    },
    "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against disease and poison effects"
-    },
     {
      "field": "when",
      "reason": "conditional-unmapped",
@@ -58277,7 +58333,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the spells and abilities of haunts and undead creatures for 1"
     }
    ],
@@ -58309,7 +58365,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the spells and abilities of haunts and undead creatures for 1"
     }
    ],
@@ -58341,7 +58397,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the spells and abilities of haunts and undead creatures for 1"
     }
    ],
@@ -58553,7 +58609,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -58580,15 +58636,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -58612,15 +58672,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -58644,15 +58708,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:poison"
+      },
+      {
+       "tag": "effect:trait:disease"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against poisons and diseases"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",
@@ -59376,7 +59444,7 @@
    "gaps": [
     {
      "field": "when",
-     "reason": "conditional-unmapped",
+     "reason": "anaphoric",
      "raw": "against the triggering attack"
     }
    ],
@@ -60188,15 +60256,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:causes:drained"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to become Drained"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -60220,15 +60285,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:causes:drained"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to become Drained"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -60252,15 +60314,12 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "tag": "effect:causes:drained"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against effects that would cause you to become Drained"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -60675,15 +60734,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:illusion"
+      },
+      {
+       "tag": "effect:trait:emotion"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against illusion and emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:status",
    "signature": "modifier:save:status",
@@ -60707,15 +60770,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:illusion"
+      },
+      {
+       "tag": "effect:trait:emotion"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against illusion and emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:status",
    "signature": "modifier:save:status",
@@ -60739,15 +60806,19 @@
     "value": {
      "kind": "lit",
      "value": 2
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:illusion"
+      },
+      {
+       "tag": "effect:trait:emotion"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "against illusion and emotion effects"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:status",
    "signature": "modifier:save:status",

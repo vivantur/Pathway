@@ -183,6 +183,7 @@ export function segment(normalized: string): Clause[] {
 // ---------------------------------------------------------------------------
 
 import type { DraftEffect, Gap, SourceProposals } from "./candidate.js";
+import { CONDITION_SLUGS } from "./conditions.js";
 import type { Predicate } from "./predicate.js";
 import type { Selector } from "./selectors.js";
 
@@ -489,8 +490,56 @@ const SCOPE_RE = /^\s*((?:against|to)\s+[a-z][^.,;:]{2,60})/i;
 // A plural is singularized only by checking the SINGULAR against the vocabulary
 // ("diseases" → `disease` because `disease` is a trait), never by a rule about
 // English — so a word that merely ends in "s" is not mangled into a false match.
+// THREE MORE SHAPES, measured on what was left after the single-trait pass:
+//
+//   C. "effects with the <X> trait" / "... the <X> or <Y> traits"  — the prose says
+//      "trait" outright, so this is the least ambiguous shape of all.
+//   D. "against <X> and <Y> effects" / "against <X>s and <Y>s"      — a coordinated
+//      pair. Read as ANY, not ALL: a bonus "against emotion and fear effects" applies
+//      to an emotion effect and to a fear effect, not only to one carrying both.
+//      That is a reading of English, and it is the reading the corpus supports.
+//   E. "effects that would impose/cause/inflict <condition>"        — `effect:causes:`,
+//      whose vocabulary is core's own CONDITION_SLUGS: a closed, owner-supplied list,
+//      so no caller vocabulary is needed and nothing can drift.
+//
+// Everything past these stays gapped, and deliberately: creature scopes ("against
+// dragons") need `opponent:trait:` plus a creature-trait vocabulary no dataset here
+// carries, and "against magic" / "against spells and other magical effects from the
+// same tradition as yours" are not single predicates at all.
 const TRAIT_SCOPE_NOUNED = /^against\s+([a-z][a-z-]*)\s+(?:effects?|spells?)$/i;
 const TRAIT_SCOPE_BARE = /^against\s+([a-z][a-z-]*)$/i;
+const TRAIT_SCOPE_EXPLICIT = /^against\s+(?:effects?|spells?)\s+with\s+the\s+([a-z][a-z\s,-]*?)\s+traits?$/i;
+const TRAIT_SCOPE_PAIR = /^against\s+([a-z][a-z-]*?)s?\s+and\s+([a-z][a-z-]*?)s?(?:\s+effects?|\s+spells?)?$/i;
+const CAUSES_SCOPE = /^against\s+effects?\s+that\s+(?:would\s+)?(?:impose|cause|inflict|make|give)\b(.*)$/i;
+
+/** `a`, `a or b`, `a, b, or c` → the individual words. */
+function splitCoordination(text: string): string[] {
+  return text
+    .split(/\s*,\s*|\s+or\s+|\s+and\s+/)
+    .map((w) => w.trim())
+    .filter(Boolean);
+}
+
+/** One tag, or an `any` over several — the shape a coordinated scope needs. */
+function anyOf(tags: string[]): Predicate | null {
+  if (tags.length === 0) return null;
+  if (tags.length === 1) return { tag: tags[0]! };
+  return { any: tags.map((tag) => ({ tag })) };
+}
+
+/**
+ * Does this scope point BACK at something rather than name a category?
+ *
+ * "against the triggering attack", "against this creature", "against the affliction"
+ * — a reviewer resolving one of these needs the referent from the surrounding text,
+ * not a word we are missing from a vocabulary. That is the difference between the
+ * `anaphoric` and `conditional-unmapped` gap reasons, and getting it wrong sends the
+ * reviewer looking for the wrong thing.
+ */
+const ANAPHORIC_SCOPE = /^against\s+(the|this|that|these|those|your|their|its|his|her)\b/i;
+function isAnaphoricScope(condition: string): boolean {
+  return ANAPHORIC_SCOPE.test(condition.trim());
+}
 
 /** The word itself if it is in `vocab`, else its de-pluralized form if THAT is. */
 function resolveTraitWord(word: string, vocab: ReadonlySet<string> | undefined): string | null {
@@ -509,10 +558,44 @@ function resolveTraitWord(word: string, vocab: ReadonlySet<string> | undefined):
 export function resolveTraitScope(condition: string, ctx: ParseContext): Predicate | null {
   const text = condition.trim().toLowerCase();
 
+  // "effects with the darkness or shadow traits" — the prose names the concept, so
+  // the wide vocabulary is safe and every word must resolve or the whole thing does.
+  const explicit = TRAIT_SCOPE_EXPLICIT.exec(text);
+  if (explicit) {
+    const words = splitCoordination(explicit[1]!).map((w) => resolveTraitWord(w, ctx.effectTraits));
+    if (words.length > 0 && words.every((w): w is string => w !== null)) {
+      return anyOf(words.map((w) => `effect:trait:${w}`));
+    }
+    return null;
+  }
+
+  // "effects that would impose the immobilized condition" — condition slugs are
+  // core's own closed vocabulary, so this needs nothing from the caller.
+  const causes = CAUSES_SCOPE.exec(text);
+  if (causes) {
+    const rest = causes[1]!;
+    const hits = CONDITION_SLUGS.filter((slug) => new RegExp(`\\b${slug}\\b`).test(rest));
+    if (hits.length > 0) return anyOf(hits.map((slug) => `effect:causes:${slug}`));
+    return null;
+  }
+
   const nouned = TRAIT_SCOPE_NOUNED.exec(text);
   if (nouned) {
     const trait = resolveTraitWord(nouned[1]!, ctx.effectTraits);
     return trait ? { tag: `effect:trait:${trait}` } : null;
+  }
+
+  // "against emotion and fear effects" / "against poisons and diseases". BOTH halves
+  // must resolve: half a coordinated scope is a narrower condition than the prose
+  // states, which would apply the bonus in cases the feat does not grant it.
+  const pair = TRAIT_SCOPE_PAIR.exec(text);
+  if (pair) {
+    const hasNoun = /\s+(?:effects?|spells?)$/.test(text);
+    const vocab = hasNoun ? ctx.effectTraits : ctx.spellTraits;
+    const a = resolveTraitWord(pair[1]!, vocab);
+    const b = resolveTraitWord(pair[2]!, vocab);
+    if (a && b) return anyOf([`effect:trait:${a}`, `effect:trait:${b}`]);
+    return null;
   }
 
   const bare = TRAIT_SCOPE_BARE.exec(text);
@@ -591,7 +674,16 @@ export const modifierExtractor: Extractor = (clause, ctx = {}) => {
     // Never both, and never neither — dropping it silently is the wrong-sheet bug.
     const when = condition ? resolveTraitScope(condition, ctx) : null;
     const conditionGap: Gap[] = condition && !when
-      ? [{ field: "when", reason: "conditional-unmapped", raw: condition.slice(0, 80) }]
+      ? [{
+          field: "when",
+          // "against the triggering attack" is not missing vocabulary — it points
+          // back at something earlier in the text, which is what `anaphoric` means.
+          // Filing it as `conditional-unmapped` told a reviewer to go find a word we
+          // lack, when what they actually need is the referent. 68 gaps were
+          // mislabelled this way; the fix costs nothing and aims the queue correctly.
+          reason: isAnaphoricScope(condition) ? "anaphoric" : "conditional-unmapped",
+          raw: condition.slice(0, 80),
+        }]
       : [];
     const whenField = when ? { when } : {};
 

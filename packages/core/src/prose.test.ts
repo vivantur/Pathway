@@ -218,9 +218,14 @@ describe("modifierExtractor", () => {
     // for it. `linguistic` is deliberately only in the wide set (it is a feat trait,
     // never a spell trait) and `human`/`dragon` only in the wide set too — they are
     // what the narrow set has to keep out.
+    // The real vocabulary is nested: effectTraits (spells + feats) is a SUPERSET of
+    // spellTraits. The fixture mirrors that, or it would test a shape that cannot
+    // occur. `linguistic` and `human` are the feat-only half — `human` being exactly
+    // what the narrow set has to keep out of a bare "against …".
+    const spellTraits = new Set(["mental", "death", "emotion", "fire", "disease", "poison", "fear", "curse"]);
     const ctx = {
-      effectTraits: new Set(["mental", "death", "emotion", "fire", "linguistic", "occult", "human"]),
-      spellTraits: new Set(["mental", "death", "emotion", "fire", "disease", "poison", "fear", "curse"]),
+      effectTraits: new Set([...spellTraits, "linguistic", "occult", "human"]),
+      spellTraits,
     };
     const withCtx = (text: string) => extractFromProse(text, [modifierExtractor], ctx);
 
@@ -297,6 +302,80 @@ describe("modifierExtractor", () => {
       ]);
       expect(ex[0]?.draft.when).toBeUndefined();
       expect(ex[0]?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("resolves \"effects with the <trait> trait\" — the least ambiguous shape", () => {
+      const ex = withCtx("You gain a +1 status bonus to saves against effects with the fire trait.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:trait:fire" });
+    });
+
+    it("coordinates several traits into an `any`", () => {
+      const ex = withCtx("You gain a +1 status bonus to saves against effects with the mental or emotion traits.");
+      expect(ex[0]?.draft.when).toEqual({
+        any: [{ tag: "effect:trait:mental" }, { tag: "effect:trait:emotion" }],
+      });
+    });
+
+    it("reads a coordinated pair as ANY, not ALL", () => {
+      // "against emotion and fear effects" applies to an emotion effect AND to a fear
+      // effect — not only to one carrying both traits.
+      const ex = withCtx("You gain a +2 status bonus to saving throws against emotion and fear effects.");
+      expect(ex[0]?.draft.when).toEqual({
+        any: [{ tag: "effect:trait:emotion" }, { tag: "effect:trait:fear" }],
+      });
+    });
+
+    it("coordinates plurals through the same singularization", () => {
+      const ex = withCtx("You gain a +1 status bonus to Fortitude saves against poisons and diseases.");
+      expect(ex[0]?.draft.when).toEqual({
+        any: [{ tag: "effect:trait:poison" }, { tag: "effect:trait:disease" }],
+      });
+    });
+
+    it("refuses a coordinated pair when only HALF resolves", () => {
+      // Emitting just the resolvable half would be a NARROWER condition than the prose
+      // states — the bonus would silently fail to apply where the feat grants it.
+      const ex = withCtx("You gain a +1 status bonus to saves against emotion and gribbly effects.");
+      expect(ex[0]?.draft.when).toBeUndefined();
+      expect(ex[0]?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+    });
+
+    it("resolves \"effects that would impose <condition>\" from core's own slugs", () => {
+      // effect:causes: reads CONDITION_SLUGS — closed and owner-supplied, so this shape
+      // needs no vocabulary from the caller at all.
+      const ex = withCtx("You gain a +2 circumstance bonus to saves against effects that would impose the immobilized condition.");
+      expect(ex[0]?.draft.when).toEqual({ tag: "effect:causes:immobilized" });
+    });
+
+    it("coordinates several inflicted conditions", () => {
+      const ex = withCtx("You gain a +1 status bonus to saves against effects that inflict the blinded or dazzled condition.");
+      expect(ex[0]?.draft.when).toEqual({
+        any: [{ tag: "effect:causes:blinded" }, { tag: "effect:causes:dazzled" }],
+      });
+    });
+
+    it("refuses a would-impose phrase naming no known condition", () => {
+      const ex = withCtx("You gain a +1 status bonus to saves against effects that would impose sogginess.");
+      expect(ex[0]?.draft.when).toBeUndefined();
+    });
+
+    it("labels a back-reference as ANAPHORIC, not as missing vocabulary", () => {
+      // "against the triggering attack" does not need a word we lack; it needs the
+      // referent. Filing it as conditional-unmapped sent reviewers hunting for the
+      // wrong thing.
+      for (const text of [
+        "You gain a +2 circumstance bonus to AC against the triggering attack.",
+        "You gain a +1 status bonus to saves against this creature.",
+      ]) {
+        const ex = withCtx(text);
+        const g = ex[0]?.gaps.find((x) => x.field === "when");
+        expect(g?.reason).toBe("anaphoric");
+      }
+    });
+
+    it("still calls a real vocabulary miss conditional-unmapped", () => {
+      const ex = withCtx("You gain a +1 status bonus to saving throws against magic.");
+      expect(ex[0]?.gaps.find((g) => g.field === "when")?.reason).toBe("conditional-unmapped");
     });
 
     it("carries the predicate onto an anaphoric draft as well", () => {

@@ -1102,10 +1102,36 @@ behavior exactly: a parser resolving against a stale built-in list would be wors
 that admits it does not know the word. Plurals de-pluralize only by checking the SINGULAR
 against the vocabulary ("diseases" → `disease`), never by a rule about English.
 
-**Next**: the gap/conflict editor on the stage-3 authoring surface — the 14 conflicts and 965
-gapped candidates still have no UI that can resolve them, which remains the binding constraint
-on coverage. The next parser slice, if one is wanted first, is the remaining ~340
-`against …` conditions that are not single-trait shapes.
+**The compound scopes followed the same day.** Of the ~340 remaining `against …`
+conditions, only a minority were safely expressible, and measuring said which:
+
+- **`effects with the <X> trait`** (13) — the prose names the concept outright, the least
+  ambiguous shape in the corpus.
+- **coordinated pairs** (30) — "against emotion and fear effects", "against poisons and
+  diseases" → `{ any: [...] }`. Read as ANY, not ALL: the bonus applies to an emotion
+  effect *and* to a fear effect, not only to one carrying both. **Both halves must
+  resolve** — emitting only the resolvable half is a NARROWER condition than the prose
+  states, so the bonus would silently fail to apply where the feat grants it.
+- **`effects that would impose <condition>`** (15) — `effect:causes:<slug>`, whose
+  vocabulary is core's own `CONDITION_SLUGS`: closed and owner-supplied, so this shape
+  needs nothing from the caller.
+
+**Gapped 965 → 910; review 541 → 596. Content byte-identical again.**
+
+**Also fixed: 68 gaps were mislabelled.** "against the triggering attack", "against this
+creature", "against the affliction" were filed as `conditional-unmapped`, which tells a
+reviewer to go find a word we lack. They are ANAPHORIC — what is needed is the referent
+from the surrounding text. `anaphoric` 110 → 181. No coverage change; the queue simply
+now points reviewers at the right problem.
+
+Still gapped and deliberately so: creature scopes ("against dragons") need
+`opponent:trait:` plus a creature-trait vocabulary no dataset here carries, and "against
+magic" / "against spells and other magical effects from the same tradition as yours" are
+not single predicates at all.
+
+**Next**: the gap/conflict editor on the stage-3 authoring surface — the 14 conflicts and
+910 gapped candidates still have no UI that can resolve them, which remains the binding
+constraint on coverage.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
