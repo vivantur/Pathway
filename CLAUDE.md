@@ -47,7 +47,7 @@ this section has been wrong before, and a stale status is worse than none.)*
   proven against it: the web app typechecks/builds against `dist`, and a CommonJS
   `require('@pathway/core')` returns working rules math. ESM was never the obstacle
   (Node ≥22.12 `require(esm)` works); shipping raw `.ts` was.
-- ✅ **Build core** — no longer three slices; **29 modules, 643 tests**. Roughly:
+- ✅ **Build core** — no longer three slices; **29 modules, 651 tests**. Roughly:
   - *scalar rules* — `stats.ts`, `proficiency.ts`, `derived.ts`, `companion.ts`
   - *content schemas* (Zod) — `content.ts` envelope + `spell` `ancestry` `background`
     `feat`
@@ -129,8 +129,29 @@ this section has been wrong before, and a stale status is worse than none.)*
   comparisons are automatic: flat-vs-flat, and dice of the same size.
 
   **No content carries an automation tree yet.** The corpus is all Layer-1
-  passives and `remap-effects.mjs` only emits those, so the host currently runs
-  hand-authored trees. Content supplying trees is the decisions fold-in.
+  passives, and the decisions fold-in (below) ships passives too — so the host
+  still runs hand-authored trees. Layer-2 trees need the authoring surface, not
+  the fold-in; that expectation in this file was wrong until 2026-07-18.
+
+- ✅ **The decisions fold-in** (2026-07-18) — `remap-effects.mjs` runs
+  `resolveEntity(candidates, decisions)` and ships the result, so the prose parser's
+  output reaches a real sheet for the first time. Three things it settled, each a
+  trap for the next person:
+  - `build-candidates.mjs` read Foundry's proposals from `feat.effects`, which is now
+    the pipeline's OWN output — a human's edit would have come back as "Foundry
+    proposed this" and corroborated itself. It re-maps the sidecar's `raw` instead.
+    **Never read a producer's input from the pipeline's output.**
+  - `scripts/grandfather-decisions.mjs` records the 57 `foundry-only` effects that
+    already shipped as accepts carrying `by: "migration:foundry-baseline"` and a note
+    that they were NOT human-reviewed. Without it they would silently stop shipping,
+    since auto-promotion needs corroboration. It refuses to grandfather the 14
+    **conflicts** — those stop shipping until a human rules, per the owner.
+  - `EffectCandidate.multiplicity` — `reconcile` bucketed by key, collapsing a
+    producer that proposed the same effect twice, so Natural Skill's "become trained
+    in TWO skills" silently became one. Content went 341 → 328 effects (the conflicts)
+    and 33 → 33 choices.
+
+  See `docs/effects-engine-design.md` for the full record.
 
   **`/use` landed 2026-07-18** — the loop is closed end to end: core computes, the
   host adapts, mutations are written back, the player sees narration AND what
@@ -333,7 +354,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 643 · bot 341 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 651 · bot 341 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

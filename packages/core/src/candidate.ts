@@ -115,6 +115,20 @@ export interface EffectCandidate {
   /** Grouping shape — what the review UI bulk-accepts by. */
   signature: string;
   evidence: Evidence[];
+  /**
+   * How many INSTANCES of this effect the entity gets. Almost always 1, and omitted
+   * then.
+   *
+   * Bucketing by `key` is what makes corroboration detectable, but it also collapses
+   * a producer that proposed the same thing TWICE — and some content means it twice.
+   * Natural Skill grants two identical "become trained in a skill of your choice"
+   * elements; folded as one candidate that silently became "choose one skill", which
+   * is a wrong sheet of exactly the kind this pipeline exists to prevent.
+   *
+   * It is the MAX across producers, not the sum: two producers each proposing it once
+   * is one instance corroborated, not two of them.
+   */
+  multiplicity?: number;
 }
 
 /** One producer's proposals for one entity. */
@@ -311,6 +325,14 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
     const gaps = b.entries.flatMap((e) => e.gaps);
     const evidence = b.entries.map((e) => e.evidence);
 
+    // How many instances the entity gets: the most any ONE producer proposed. Two
+    // producers each saying it once is corroboration of a single instance; one
+    // producer saying it twice is two instances. See `multiplicity`.
+    const perSource = new Map<CandidateSource, number>();
+    for (const e of b.entries) perSource.set(e.source, (perSource.get(e.source) ?? 0) + 1);
+    const count = Math.max(...perSource.values());
+    const mult = count > 1 ? { multiplicity: count } : {};
+
     if (sourcesSeen.size < 2) {
       out.push({
         entityId,
@@ -320,6 +342,7 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
         key: b.key,
         signature: effectSignature(first.draft),
         evidence,
+        ...mult,
       });
       continue;
     }
@@ -335,6 +358,7 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
         key: b.key,
         signature: effectSignature(first.draft),
         evidence,
+        ...mult,
       });
       continue;
     }
@@ -350,6 +374,7 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
       key: b.key,
       signature: effectSignature(first.draft),
       evidence,
+      ...mult,
     });
   }
   return out;
@@ -528,19 +553,33 @@ export function resolveEntity(
 
   for (const c of candidates) {
     const id = `${c.entityId} ${c.key}`;
+    // A candidate standing for N instances contributes N. A decision on it decides
+    // all of them: they are the same effect proposed the same way, so a reviewer
+    // ruling on Natural Skill's "become trained in a skill of your choice" is
+    // ruling on both of that feat's copies at once.
+    const times = Math.max(1, Math.floor(c.multiplicity ?? 1));
+    const pushEffect = (v: PassiveEffect | undefined): void => {
+      if (v === undefined) return;
+      for (let i = 0; i < times; i += 1) effects.push(v);
+    };
+    const pushChoice = (v: EffectChoice | undefined): void => {
+      if (v === undefined) return;
+      for (let i = 0; i < times; i += 1) choices.push(v);
+    };
+
     const decision = byKey.get(id);
     if (decision) {
       used.add(id);
       if (decision.action === "reject") continue;
-      if (decision.effect) effects.push(decision.effect);
-      if (decision.choice) choices.push(decision.choice);
+      pushEffect(decision.effect);
+      pushChoice(decision.choice);
       continue;
     }
     // Undecided: auto-promote if it has earned it, else it waits for a human.
     const p = promote(c);
     if (autoPromotable(c) && p.ok) {
-      if (p.effect) effects.push(p.effect);
-      if (p.choice) choices.push(p.choice);
+      pushEffect(p.effect);
+      pushChoice(p.choice);
     } else pending.push(c);
   }
 

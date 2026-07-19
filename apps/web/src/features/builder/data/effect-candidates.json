@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-07-18T02:34:07.543Z",
+ "generatedAt": "2026-07-19T01:01:59.806Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
@@ -3233,7 +3233,8 @@
       "text": "The target creature gains a -2 circumstance penalty to Reflex saves"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "catfolk-lore",
@@ -3624,7 +3625,8 @@
       "text": "You also gain a +1 circumstance bonus to this check."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "clan-lore",
@@ -4608,7 +4610,8 @@
       "text": "the target ducks, it gains a +2 circumstance bonus to AC against your attack, or a +4 circumstance bonus to AC"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "cover-fire",
@@ -7151,7 +7154,8 @@
       "text": "You can use this action during an attempt to Decipher Writing that is primarily numerical or mathematical to gain a +2 circumstance bonus to your check."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "eye-for-treasure",
@@ -8345,7 +8349,8 @@
       "text": "The target takes a –1 status penalty to Perception checks and Will saves for 1 round."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "goblin-song",
@@ -8379,7 +8384,8 @@
       "text": "The target takes a –1 status penalty to Perception checks and Will saves for 1 round."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "goloma-courage",
@@ -8424,7 +8430,8 @@
       "text": "In addition, you gain a +1 circumstance bonus to Will saves against fear effects and a +2 circumstance bonus to your Will DC against attempts to Demoralize you."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "goloma-lore",
@@ -8906,7 +8913,8 @@
       "text": "You gain a +2 circumstance bonus on checks to Aid, and you don't give your ally a -1 circumstance penalty to their check"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "hit-the-dirt",
@@ -9118,7 +9126,8 @@
       "text": "You can select this feat twice, once to gain low-light vision and a second time to gain darkvision."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "hungry-eyes",
@@ -9150,7 +9159,8 @@
       "text": "You can select this feat twice, once to gain low-light vision and a second time to gain darkvision."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "hydraulic-deflection",
@@ -9731,7 +9741,8 @@
       "text": "You gain a +2 circumstance bonus to checks to Aid, and your allies gain a +2 circumstance bonus to checks to Aid you."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "intuitive-crafting",
@@ -11397,7 +11408,8 @@
     {
      "source": "foundry"
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "nephilim-eyes",
@@ -12344,7 +12356,8 @@
       "text": "You gain a +2 circumstance bonus to checks to Aid, and your allies gain a +2 circumstance bonus to checks to Aid you."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "parthenogenic-hatchling",
@@ -12712,7 +12725,8 @@
     {
      "source": "foundry"
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "plumekith",
@@ -12969,7 +12983,8 @@
       "text": "Either way, your mistaken treatment imposes a –1 circumstance penalty to saves against the affliction."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "prepare-elemental-medicine",
@@ -13014,7 +13029,8 @@
       "text": "Either way, your mistaken treatment imposes a –1 circumstance penalty to saves against the affliction."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "prepare-elemental-medicine",
@@ -13059,7 +13075,8 @@
       "text": "Either way, your mistaken treatment imposes a –1 circumstance penalty to saves against the affliction."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "primal-dragonblood",
@@ -16768,7 +16785,8 @@
       "text": "You gain a +1 circumstance bonus to saves against effects with the fear trait and a +2 circumstance bonus to your Will DC against Intimidation skill actions, such as Demoralize."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "stonemasons-eye",
@@ -20450,7 +20468,8 @@
       "text": "At 7th level, you become a master in Acrobatics, and at 15th level, you become legendary in Acrobatics."
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "alchemist-dedication",
@@ -21828,7 +21847,8 @@
       "text": "the beginning of your next turn, you gain a +1 circumstance bonus to saving throws against nondivine magical effects, but you also take a –1 circumstance penalty to saves against divine effects"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "divine-aegis",
@@ -21873,7 +21893,8 @@
       "text": "the beginning of your next turn, you gain a +1 circumstance bonus to saving throws against nondivine magical effects, but you also take a –1 circumstance penalty to saves against divine effects"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "divine-aegis",
@@ -21918,7 +21939,8 @@
       "text": "the beginning of your next turn, you gain a +1 circumstance bonus to saving throws against nondivine magical effects, but you also take a –1 circumstance penalty to saves against divine effects"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "divine-grace",
@@ -22633,7 +22655,8 @@
       "text": "The target takes a –1 circumstance penalty to attack rolls against creatures other then you"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "entreat-with-forebears",
@@ -23092,7 +23115,8 @@
       "text": "At 7th level you become a master in Performance, and at 15th level, you become legendary in Performance."
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "field-propagandist-dedication",
@@ -25369,7 +25393,8 @@
       "text": "you craft an alchemical poison, you can tailor it to a creature you have studied in this way, giving that creature a –2 circumstance penalty to Fortitude saves against the poison and giving other creatures a +2 circumstance bonus to Fortitude saves against it."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "poison-resistance",
@@ -25546,7 +25571,8 @@
       "text": "You gain a +1 circumstance bonus to Survival checks made to prepare for this weather event."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "prophet-of-kalistrade-dedication",
@@ -26917,7 +26943,8 @@
       "text": "You gain a +2 status bonus to saving throws and AC against spells."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "soulforger-dedication",
@@ -26957,7 +26984,8 @@
       "text": "You gain a +2 status bonus to saving throws and AC against spells."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "soulforger-dedication",
@@ -26997,7 +27025,8 @@
       "text": "You gain a +2 status bonus to saving throws and AC against spells."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "soulforger-dedication",
@@ -27068,7 +27097,8 @@
       "text": "You gain a +2 status bonus to AC against physical ranged attacks."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "soulforger-dedication",
@@ -27280,7 +27310,8 @@
       "text": "You are unable to spread a rumor and take a –4 circumstance penalty to Deception checks to Sow Rumors about the same subject within the same region for 1 week."
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "sow-rumor",
@@ -27325,7 +27356,8 @@
       "text": "You gain a +1 circumstance bonus to Deception, Diplomacy, and Intimidation checks in an appropriate situation"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "spell-parry",
@@ -28012,7 +28044,8 @@
       "text": "At 7th level, you become a master in Society, and at 15th level, you become legendary in Society."
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "underhanded-assault",
@@ -29727,7 +29760,8 @@
       "text": "At 7th level you become a master in Crafting, and at 15th level, you become legendary in Crafting and you become an expert in your inventor class DC."
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "butterfly-blade-dedication",
@@ -30048,7 +30082,8 @@
       "text": "For 1 round, the target takes a –5-foot status penalty to Speed and a -2 status penalty to Stealth."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "defend-summoner",
@@ -30649,7 +30684,8 @@
       "text": "you fail this check or don't attempt the action within 1 minute, you instead take a -1 circumstance penalty on checks to attempt the same action for 1 hour."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "fly-swat",
@@ -30875,7 +30911,8 @@
       "text": "The target takes a –1 status penalty to attack rolls against creatures other than you"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "harrow-casting",
@@ -30952,7 +30989,8 @@
       "text": "your harrow omen is Stars, the magic also grants the target a +2 status bonus to all saving throws"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "harrow-casting",
@@ -30997,7 +31035,8 @@
       "text": "your harrow omen is Stars, the magic also grants the target a +2 status bonus to all saving throws"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "harrow-casting",
@@ -31042,7 +31081,8 @@
       "text": "your harrow omen is Stars, the magic also grants the target a +2 status bonus to all saving throws"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "harrow-casting",
@@ -31123,7 +31163,8 @@
       "text": "You have a -1 circumstance penalty to Perception checks to Seek creatures other than your condemned foe and on Intimidation checks to Demoralize anyone other than your condemned foe."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "hellbreakers-resolve",
@@ -32454,7 +32495,8 @@
       "text": "in a crowd of at least 10 creatures and a +4 circumstance bonus to your Stealth checks"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "manipulative-charm",
@@ -33464,7 +33506,8 @@
       "text": "You misinterpret the target's strategy and take a –1 circumstance penalty to AC against the creature"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "predispose-settlement",
@@ -39017,7 +39060,8 @@
       "text": "The ally takes a –1 circumstance penalty to AC against the target creature's or hazard's next attack."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "cozy-campfire",
@@ -39668,7 +39712,8 @@
       "text": "Gain a +2 circumstance bonus to saves against disease and poison effects."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "endemic-herbs",
@@ -39708,7 +39753,8 @@
       "text": "Gain a +1 circumstance bonus to Reflex saves."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "endemic-herbs",
@@ -39748,7 +39794,8 @@
       "text": "Gain a +1 circumstance bonus to Will saves."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "endemic-herbs",
@@ -39915,7 +39962,8 @@
       "text": "At 14th level, you or an ally gain a +3 status bonus to saving throws against these effects instead."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "familiars-resolve",
@@ -39960,7 +40008,8 @@
       "text": "At 14th level, you or an ally gain a +3 status bonus to saving throws against these effects instead."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "familiars-resolve",
@@ -40005,7 +40054,8 @@
       "text": "At 14th level, you or an ally gain a +3 status bonus to saving throws against these effects instead."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "fey-tracker",
@@ -42566,7 +42616,8 @@
       "text": "You gain a +2 circumstance bonus to your check"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "wild-speech",
@@ -44747,7 +44798,8 @@
     {
      "source": "foundry"
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "peer-beyond",
@@ -45685,7 +45737,8 @@
       "text": "you Seek to locate a Hidden creature or to see through a creature's Impersonate attempt, you gain a +2 status bonus to the Perception check."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "shadow-spell",
@@ -46053,7 +46106,8 @@
     {
      "source": "foundry"
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "soaring-shape",
@@ -46953,7 +47007,8 @@
       "text": "You gain a +2 circumstance bonus to your check"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "battleforger",
@@ -49692,7 +49747,8 @@
       "text": "Allies that can see you gain a +1 status bonus to attack and damage rolls against undead for 1 round, or a +2 status bonus to attack and damage rolls against undead for 2 rounds"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "corpse-killers-defiance",
@@ -49737,7 +49793,8 @@
       "text": "Allies that can see you gain a +1 status bonus to attack and damage rolls against undead for 1 round, or a +2 status bonus to attack and damage rolls against undead for 2 rounds"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "cut-from-the-air",
@@ -52084,7 +52141,8 @@
       "text": "At 14th level, you gain expert proficiency in Arcana."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "burning-demand",
@@ -52945,7 +53003,8 @@
       "text": "you're in a city or a +2 circumstance bonus to this check"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "enforce-oath",
@@ -52990,7 +53049,8 @@
       "text": "You take a –1 status penalty to AC, attack rolls, and saves against all other creatures"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "enforce-oath",
@@ -53035,7 +53095,8 @@
       "text": "You take a –1 status penalty to AC, attack rolls, and saves against all other creatures"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "enforce-oath",
@@ -53080,7 +53141,8 @@
       "text": "You take a –1 status penalty to AC, attack rolls, and saves against all other creatures"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "enforce-oath",
@@ -53125,7 +53187,8 @@
       "text": "You take a –1 status penalty to AC, attack rolls, and saves against all other creatures"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "enforce-oath",
@@ -53170,7 +53233,8 @@
       "text": "You take a –1 status penalty to AC, attack rolls, and saves against all other creatures"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "frightful-attrition",
@@ -55667,7 +55731,8 @@
       "text": "a creature is possessed or under the influence of an effect that would make them controlled, a +2 circumstance bonus to Perception checks made to see through disguises worn by undead, and a +2 circumstance bonus"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "sharpened-senses",
@@ -57028,7 +57093,8 @@
       "text": "You gain a +1 circumstance bonus to your check"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "induce-imbalance",
@@ -58084,7 +58150,8 @@
       "text": "For 1 hour, gain a +3 item bonus to saves against Deafened or drained."
      }
     }
-   ]
+   ],
+   "multiplicity": 5
   },
   {
    "entityId": "regional-specialty",
@@ -58168,7 +58235,8 @@
       "text": "For 1 hour, gain a +3 item bonus to saves against Deafened or drained."
      }
     }
-   ]
+   ],
+   "multiplicity": 5
   },
   {
    "entityId": "regional-specialty",
@@ -58252,7 +58320,8 @@
       "text": "For 1 hour, gain a +3 item bonus to saves against Deafened or drained."
      }
     }
-   ]
+   ],
+   "multiplicity": 5
   },
   {
    "entityId": "release-me",
@@ -61405,7 +61474,8 @@
       "text": "Any allies adjacent to you during the duration gain a +2 circumstance bonus to AC"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "beasts-of-slumbering-steel",
@@ -61441,7 +61511,8 @@
       "text": "One form has only a land Speed of 80 feet, and the other forms each have a land Speed of 30 feet with a climb, fly, or swim Speed of 60 feet."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "beasts-of-slumbering-steel",
@@ -61942,7 +62013,8 @@
       "text": "your AC is being targeted, you gain a +2 circumstance bonus to your AC, and a critical hit against you becomes a normal hit."
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "not-this-time",
@@ -61987,7 +62059,8 @@
       "text": "you need to attempt a saving throw, you gain a +2 circumstance bonus to the save, and"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "not-this-time",
@@ -62032,7 +62105,8 @@
       "text": "you need to attempt a saving throw, you gain a +2 circumstance bonus to the save, and"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "not-this-time",
@@ -62077,7 +62151,8 @@
       "text": "you need to attempt a saving throw, you gain a +2 circumstance bonus to the save, and"
      }
     }
-   ]
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "on-my-best-day",
@@ -62135,7 +62210,8 @@
       "text": "You gain a +1 status bonus to AC against the next attack made against you"
      }
     }
-   ]
+   ],
+   "multiplicity": 3
   },
   {
    "entityId": "on-my-best-day",

@@ -1,9 +1,9 @@
 {
   "sourceCommit": "foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d",
-  "mappedAt": "2026-07-17T06:55:52.425Z",
+  "mappedAt": "2026-07-19T01:02:14.225Z",
   "summary": {
     "entities": 2490,
-    "entitiesWithEffects": 334,
+    "entitiesWithEffects": 324,
     "entitiesWithChoices": 30,
     "elements": 5212,
     "mapped": 457,

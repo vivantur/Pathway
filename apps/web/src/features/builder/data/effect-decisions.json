@@ -1,0 +1,2420 @@
+{
+ "generatedAt": "2026-07-19T01:02:00.022Z",
+ "summary": {
+  "total": 57,
+  "grandfathered": 57,
+  "human": 0
+ },
+ "decisions": [
+  {
+   "entityId": "beast-trainer",
+   "key": "proficiency:nature",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "nature",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "canny-acumen",
+   "key": "choice:fortitude|perception|reflex|will",
+   "action": "accept",
+   "choice": {
+    "flag": "cannyAcumen",
+    "prompt": "Proficiency",
+    "options": [
+     {
+      "value": "fortitude",
+      "label": "Fortitude",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "fortitude",
+        "rank": {
+         "kind": "call",
+         "fn": "ternary",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "gte",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 17
+            }
+           ]
+          },
+          {
+           "kind": "lit",
+           "value": 3
+          },
+          {
+           "kind": "lit",
+           "value": 2
+          }
+         ]
+        },
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "reflex",
+      "label": "Reflex",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "reflex",
+        "rank": {
+         "kind": "call",
+         "fn": "ternary",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "gte",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 17
+            }
+           ]
+          },
+          {
+           "kind": "lit",
+           "value": 3
+          },
+          {
+           "kind": "lit",
+           "value": 2
+          }
+         ]
+        },
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "will",
+      "label": "Will",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "will",
+        "rank": {
+         "kind": "call",
+         "fn": "ternary",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "gte",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 17
+            }
+           ]
+          },
+          {
+           "kind": "lit",
+           "value": 3
+          },
+          {
+           "kind": "lit",
+           "value": 2
+          }
+         ]
+        },
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "perception",
+      "label": "Perception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "perception",
+        "rank": {
+         "kind": "call",
+         "fn": "ternary",
+         "args": [
+          {
+           "kind": "call",
+           "fn": "gte",
+           "args": [
+            {
+             "kind": "var",
+             "name": "level"
+            },
+            {
+             "kind": "lit",
+             "value": 17
+            }
+           ]
+          },
+          {
+           "kind": "lit",
+           "value": 3
+          },
+          {
+           "kind": "lit",
+           "value": 2
+          }
+         ]
+        },
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "clan-lore",
+   "key": "choice:arcana,occultism|athletics,crafting|athletics,intimidation|athletics,survival|crafting,medicine|crafting,nature|crafting,society|crafting,survival|crafting,thievery|diplomacy,society|religion,society",
+   "action": "accept",
+   "choice": {
+    "flag": "clan",
+    "prompt": "Trains",
+    "options": [
+     {
+      "value": "diplomacy,society",
+      "label": "Diplomacy, Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting,survival",
+      "label": "Crafting, Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting,nature",
+      "label": "Crafting, Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics,survival",
+      "label": "Athletics, Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting,society",
+      "label": "Crafting, Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting,medicine",
+      "label": "Crafting, Medicine",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "medicine",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting,thievery",
+      "label": "Crafting, Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion,society",
+      "label": "Religion, Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "arcana,occultism",
+      "label": "Arcana, Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics,intimidation",
+      "label": "Athletics, Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics,crafting",
+      "label": "Athletics, Crafting",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       },
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "elemental-lore",
+   "key": "proficiency:survival",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "survival",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "fleet",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "lizardfolk-lore",
+   "key": "proficiency:nature",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "nature",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "molten-wit",
+   "key": "choice:deception|diplomacy",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "natural-skill",
+   "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+   "action": "accept",
+   "choice": {
+    "flag": "skillOne",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting",
+      "label": "Crafting",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "medicine",
+      "label": "Medicine",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "medicine",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "performance",
+      "label": "Performance",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "performance",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "society",
+      "label": "Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "stealth",
+      "label": "Stealth",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "stealth",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "survival",
+      "label": "Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "thievery",
+      "label": "Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "nephilim-lore",
+   "key": "proficiency:religion",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "religion",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "nimble-elf",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "nimble-hooves",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "surface-culture",
+   "key": "proficiency:society",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "society",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "swift",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "toughness",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "twitchy",
+   "key": "modifier:initiative:circumstance",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "initiative",
+    "bonusType": "circumstance",
+    "value": {
+     "kind": "lit",
+     "value": 1
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "alchemist-dedication",
+   "key": "proficiency:crafting",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "crafting",
+    "rank": 1,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "bloodrager-dedication",
+   "key": "choice:arcana|religion",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "bright-lion-dedication",
+   "key": "choice:deception|diplomacy",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "captain-dedication",
+   "key": "choice:intimidation",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "hellbreaker-dedication",
+   "key": "note:initiative",
+   "action": "accept",
+   "effect": {
+    "kind": "note",
+    "target": "initiative",
+    "text": "PF2E.SpecificRule.Hellbreaker.Dedication.InitiativeNote"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "magic-warrior-dedication",
+   "key": "choice:arcana|nature",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "pactbinder-dedication",
+   "key": "choice:arcana|nature|occultism|religion",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "rogue-dedication",
+   "key": "choice:stealth|thievery",
+   "action": "accept",
+   "choice": {
+    "flag": "rogueDedication",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "stealth",
+      "label": "Stealth",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "stealth",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "thievery",
+      "label": "Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "stonebound-dedication",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "student-of-perfection-dedication",
+   "key": "choice:acrobatics|athletics",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "swashbuckler-dedication",
+   "key": "choice:acrobatics|athletics|deception|diplomacy|intimidation",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "ghostly-resistance",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "call",
+     "fn": "multiply",
+     "args": [
+      {
+       "kind": "lit",
+       "value": -1
+      },
+      {
+       "kind": "var",
+       "name": "level"
+      }
+     ]
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "recognize-ambush",
+   "key": "note:initiative",
+   "action": "accept",
+   "effect": {
+    "kind": "note",
+    "target": "initiative",
+    "text": "You interact and draw a weapon."
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "bellflower-dedication",
+   "key": "modifier:speed:land:status",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "status",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "hellknight-signifer-preferment",
+   "key": "choice:arcana|nature|occultism|religion",
+   "action": "accept",
+   "choice": {
+    "flag": "skill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 2,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "jelly-body",
+   "key": "grant:resistance:critical-hits",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "critical-hits",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "jelly-body",
+   "key": "grant:resistance:precision",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "precision",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "scouts-speed",
+   "key": "modifier:speed:land:status",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "status",
+    "value": {
+     "kind": "lit",
+     "value": 10
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "golem-grafter-dedication",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "monk-moves",
+   "key": "modifier:speed:land:status",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "status",
+    "value": {
+     "kind": "lit",
+     "value": 10
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "officers-education",
+   "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+   "action": "accept",
+   "choice": {
+    "flag": "secondTrainedSkill",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting",
+      "label": "Crafting",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "medicine",
+      "label": "Medicine",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "medicine",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "performance",
+      "label": "Performance",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "performance",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "society",
+      "label": "Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "stealth",
+      "label": "Stealth",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "stealth",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "survival",
+      "label": "Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "thievery",
+      "label": "Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 1,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "peer-beyond",
+   "key": "note:initiative",
+   "action": "accept",
+   "effect": {
+    "kind": "note",
+    "target": "initiative",
+    "text": "PF2E.SpecificRule.Feat.PeerBeyond.Note"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "physical-training",
+   "key": "proficiency:acrobatics",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "acrobatics",
+    "rank": 3,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "physical-training",
+   "key": "proficiency:athletics",
+   "action": "accept",
+   "effect": {
+    "kind": "proficiency",
+    "target": "athletics",
+    "rank": 3,
+    "mode": "upgrade"
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "skill-mastery",
+   "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+   "action": "accept",
+   "choice": {
+    "flag": "skillMaster",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting",
+      "label": "Crafting",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "medicine",
+      "label": "Medicine",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "medicine",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "performance",
+      "label": "Performance",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "performance",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "society",
+      "label": "Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "stealth",
+      "label": "Stealth",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "stealth",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "survival",
+      "label": "Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "thievery",
+      "label": "Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "call-of-elysium",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "mountains-stoutness",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "tillers-drive",
+   "key": "modifier:speed:land:status",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "status",
+    "value": {
+     "kind": "lit",
+     "value": 10
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "perfections-path",
+   "key": "choice:fortitude|reflex|will",
+   "action": "accept",
+   "choice": {
+    "flag": "save",
+    "prompt": "Proficiency",
+    "options": [
+     {
+      "value": "fortitude",
+      "label": "Fortitude",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "fortitude",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "reflex",
+      "label": "Reflex",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "reflex",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "will",
+      "label": "Will",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "will",
+        "rank": 3,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "arcane-locomotion",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "fey-skin",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "irriseni-ice-witch",
+   "key": "grant:resistance:cold",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "call",
+      "fn": "add",
+      "args": [
+       {
+        "kind": "lit",
+        "value": 5
+       },
+       {
+        "kind": "call",
+        "fn": "max",
+        "args": [
+         {
+          "kind": "lit",
+          "value": 1
+         },
+         {
+          "kind": "call",
+          "fn": "floor",
+          "args": [
+           {
+            "kind": "call",
+            "fn": "divide",
+            "args": [
+             {
+              "kind": "var",
+              "name": "level"
+             },
+             {
+              "kind": "lit",
+              "value": 2
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "resist-ruin",
+   "key": "grant:resistance:void",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "void",
+     "value": {
+      "kind": "lit",
+      "value": 5
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "bound-in-ice",
+   "key": "grant:resistance:cold",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "cold",
+     "value": {
+      "kind": "var",
+      "name": "level"
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "animal-swiftness",
+   "key": "modifier:speed:land:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "speed:land",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 5
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "dragonet-immunities",
+   "key": "grant:immunity:paralyzed",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "immunity",
+     "to": "paralyzed"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "final-form",
+   "key": "grant:weakness:holy",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "weakness",
+     "damageType": "holy",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "jotuns-heart",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "scion-transformation",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "var",
+     "name": "level"
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "become-thought",
+   "key": "grant:resistance:physical",
+   "action": "accept",
+   "effect": {
+    "kind": "grant",
+    "grant": {
+     "type": "resistance",
+     "damageType": "physical",
+     "value": {
+      "kind": "lit",
+      "value": 10
+     }
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "mortal-possibility",
+   "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+   "action": "accept",
+   "choice": {
+    "flag": "mortalPossibility",
+    "prompt": "Skill",
+    "options": [
+     {
+      "value": "acrobatics",
+      "label": "Acrobatics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "acrobatics",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "arcana",
+      "label": "Arcana",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "arcana",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "athletics",
+      "label": "Athletics",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "athletics",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "crafting",
+      "label": "Crafting",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "crafting",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "deception",
+      "label": "Deception",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "deception",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "diplomacy",
+      "label": "Diplomacy",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "diplomacy",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "intimidation",
+      "label": "Intimidation",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "intimidation",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "medicine",
+      "label": "Medicine",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "medicine",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "nature",
+      "label": "Nature",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "nature",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "occultism",
+      "label": "Occultism",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "occultism",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "performance",
+      "label": "Performance",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "performance",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "religion",
+      "label": "Religion",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "religion",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "society",
+      "label": "Society",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "society",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "stealth",
+      "label": "Stealth",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "stealth",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "survival",
+      "label": "Survival",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "survival",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     },
+     {
+      "value": "thievery",
+      "label": "Thievery",
+      "effects": [
+       {
+        "kind": "proficiency",
+        "target": "thievery",
+        "rank": 4,
+        "mode": "upgrade"
+       }
+      ]
+     }
+    ]
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  },
+  {
+   "entityId": "thick-hide-mask",
+   "key": "modifier:hp:untyped",
+   "action": "accept",
+   "effect": {
+    "kind": "modifier",
+    "target": "hp",
+    "bonusType": "untyped",
+    "value": {
+     "kind": "lit",
+     "value": 20
+    }
+   },
+   "by": "migration:foundry-baseline",
+   "at": "2026-07-19T00:55:48.560Z",
+   "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human."
+  }
+ ]
+}

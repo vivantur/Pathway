@@ -1043,10 +1043,40 @@ to a downloaded JSON, folded into content by a LATER slice, never straight to a 
   only `foundry.ts` (+ its test); and every one of the 342 `review` candidates promotes OK
   while all 1,058 gapped are correctly blocked, exercised over the real sidecar.
 
-**Next**: the fold-in slice (teach `remap-effects.mjs` to read a committed
-`effect-decisions.json` and `resolveEntity` accepts into `feat.effects` — the parser's output
-reaching a real sheet for the first time), then the gap/conflict editor on the stage-3
-authoring surface.
+### The fold-in landed 2026-07-18 — decisions reach `feat.effects`
+
+`remap-effects.mjs` now runs `resolveEntity(candidates, decisions)` for every feat and ships
+what comes back. `resolveEntity` is the single path from proposal to content, so the parser's
+output reaches a real sheet for the first time.
+
+Three things had to be settled to make that safe, and each is worth remembering:
+
+- **The producer feedback loop.** `build-candidates.mjs` read Foundry's proposals from
+  `feat.effects` — which is now the pipeline's OWN output. A human's accepted edit would
+  return next run as "Foundry proposed this", corroborate itself, and auto-promote on a
+  second producer that never existed. It now re-maps the sidecar's quarantined `raw`
+  instead. Same queue today (1,820 candidates, 300 auto, 14 conflicts); loop-proof
+  tomorrow.
+- **The Foundry baseline had to be grandfathered.** Auto-promotion requires corroboration,
+  so 57 `foundry-only` effects that already shipped would simply have stopped —
+  reverting working content because a second producer stayed quiet is data loss, not
+  review. `scripts/grandfather-decisions.mjs` writes them as accepts carrying
+  `by: "migration:foundry-baseline"` and a note saying they were NOT human-reviewed. It
+  refuses to grandfather conflicts: those 14 would be silently ruling in Foundry's favour
+  on 14 open rules questions, which is the coin-flip `promote()` exists to refuse. Owner's
+  call (2026-07-18): grandfather the 57, let the 14 stop shipping until reviewed.
+- **`multiplicity` — a real bug the fold-in exposed.** `reconcile` buckets by `effectKey`,
+  which collapsed a producer proposing the same effect TWICE. Natural Skill, Officer's
+  Education, and Skill Mastery each grant two identical "become trained in a skill of your
+  choice" elements; folded as one candidate they silently became "choose one skill". An
+  `EffectCandidate` now carries `multiplicity` (the MAX across producers, not the sum —
+  two producers agreeing once is one instance corroborated) and `resolveEntity` emits that
+  many. Content: 341 → 328 effects (the 14 conflicts, minus one restored by multiplicity),
+  choices 33 → 33.
+
+**Next**: the gap/conflict editor on the stage-3 authoring surface — the 14 conflicts and
+1,058 gapped candidates have no UI that can resolve them yet, which is now the binding
+constraint on coverage.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 

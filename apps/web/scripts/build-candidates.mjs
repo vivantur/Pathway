@@ -12,7 +12,9 @@
  *
  * PRODUCERS (both from @pathway/core, run in the browser too — pure, no I/O):
  *   • parser  — parseProse(feat.description). Emits DraftEffect + gaps + a prose span.
- *   • foundry — the feat's already-mapped `effects`. Human-authored, high precision.
+ *   • foundry — mapFoundryRules over the sidecar's quarantined `raw`. Human-authored
+ *               upstream, high precision. Read from `raw` and NOT from `feat.effects`,
+ *               which is now the pipeline's own output — see foundryProposals.
  * `reconcile` buckets them by effect identity: two producers agreeing is corroboration,
  * two producers disagreeing is a conflict (the most informative thing in the queue).
  *
@@ -27,14 +29,15 @@
  * USAGE: node scripts/build-candidates.mjs [--data <dir>] [--dry]
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseProse, reconcile, triage } from '@pathway/core';
+import { mapFoundryRules, parseProse, reconcile, triage } from '@pathway/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR_DEFAULT = resolve(HERE, '..', 'src', 'features', 'builder', 'data');
 const OUT = 'effect-candidates.json';
+const SIDECAR = 'effect-ingest-report.json';
 
 function parseArgs(argv) {
   const out = { data: DATA_DIR_DEFAULT, dry: false };
@@ -46,14 +49,30 @@ function parseArgs(argv) {
 }
 
 /**
- * A feat's already-mapped effects AND choices → foundry proposals (the ground truth half).
+ * Foundry's proposals for a feat: its rule elements, mapped fresh.
+ *
+ * DERIVED FROM `raw`, NOT FROM `feat.effects` — and that distinction is load-bearing
+ * now that the fold-in writes RESOLVED effects back into feats.json. Reading
+ * `feat.effects` would make this producer echo the pipeline's own output: a human's
+ * accepted edit would come back next run as "Foundry proposed this", corroborating
+ * itself and auto-promoting on a second producer that never existed. The sidecar's
+ * quarantined `raw` is the only honest source for what Foundry actually said.
+ *
+ * Falls back to `feat.effects` only when the sidecar has no entry for the feat — the
+ * pre-sidecar path, where the mapped effects ARE still Foundry's unmodified output.
+ *
  * ALL kinds are included, not just the parser's families: the Review UI verifies every
  * auto-mapped effect, so a foundry-only `grant` or `choice` is a legitimate review item.
  * A choice becomes a `kind: "choice"` draft — the second content type reconcile handles.
  */
-function foundryProposals(feat) {
-  const proposals = (feat.effects ?? []).map((draft) => ({ draft }));
-  for (const choice of feat.choices ?? []) proposals.push({ draft: { kind: 'choice', choice } });
+function foundryProposals(feat, rawById) {
+  const raw = rawById.get(feat.id);
+  const { effects, choices } = raw
+    ? mapFoundryRules(raw)
+    : { effects: feat.effects ?? [], choices: feat.choices ?? [] };
+
+  const proposals = effects.map((draft) => ({ draft }));
+  for (const choice of choices) proposals.push({ draft: { kind: 'choice', choice } });
   return { source: 'foundry', proposals };
 }
 
@@ -61,13 +80,23 @@ function main() {
   const args = parseArgs(process.argv);
   const feats = JSON.parse(readFileSync(join(args.data, 'feats.json'), 'utf8'));
 
+  // Foundry's untouched rule elements, keyed by feat id. See foundryProposals.
+  const sidecarPath = join(args.data, SIDECAR);
+  const rawById = new Map();
+  if (existsSync(sidecarPath)) {
+    const sidecar = JSON.parse(readFileSync(sidecarPath, 'utf8'));
+    for (const e of sidecar.entities ?? []) {
+      if ((e.kind ?? 'feat') === 'feat' && Array.isArray(e.raw) && e.raw.length) rawById.set(e.id, e.raw);
+    }
+  }
+
   const candidates = [];
   let featsWithProse = 0;
   for (const feat of feats) {
     if (!feat.description) continue;
     featsWithProse += 1;
     const parser = parseProse(feat.description);
-    const foundry = foundryProposals(feat);
+    const foundry = foundryProposals(feat, rawById);
     // Nothing to reconcile if neither producer proposed anything for this feat.
     if (parser.proposals.length === 0 && foundry.proposals.length === 0) continue;
     candidates.push(...reconcile(feat.id, [parser, foundry]));

@@ -294,6 +294,68 @@ describe("groupBySignature — the bulk primitive", () => {
   });
 });
 
+describe("multiplicity — content that means it twice", () => {
+  it("counts a producer proposing the SAME effect twice as two instances", () => {
+    // Natural Skill grants two identical "become trained in a skill of your choice"
+    // elements. Bucketing by key collapsed them, so the feat silently became
+    // "choose one skill" — a wrong sheet, and the exact bug this field fixes.
+    const [c] = reconcile("natural-skill", [
+      { source: "foundry", proposals: [{ draft: acBonus }, { draft: acBonus }] },
+    ]);
+    expect(c!.multiplicity).toBe(2);
+    expect(c!.agreement).toBe("foundry-only");
+  });
+
+  it("omits multiplicity entirely for the ordinary single case", () => {
+    const [c] = reconcile("f", [{ source: "foundry", proposals: [{ draft: acBonus }] }]);
+    expect(c!.multiplicity).toBeUndefined();
+  });
+
+  it("takes the MAX across producers, not the sum", () => {
+    // Both producers seeing it once is corroboration of ONE instance. Summing would
+    // invent a second copy out of agreement, which is the opposite of what
+    // corroboration means.
+    const [c] = reconcile("f", [
+      { source: "parser", proposals: [{ draft: acBonus }] },
+      { source: "foundry", proposals: [{ draft: acBonus }] },
+    ]);
+    expect(c!.agreement).toBe("corroborated");
+    expect(c!.multiplicity).toBeUndefined();
+  });
+
+  it("takes the higher count when producers disagree about how many", () => {
+    const [c] = reconcile("f", [
+      { source: "parser", proposals: [{ draft: acBonus }] },
+      { source: "foundry", proposals: [{ draft: acBonus }, { draft: acBonus }] },
+    ]);
+    expect(c!.multiplicity).toBe(2);
+  });
+
+  it("emits the effect once per instance when resolved", () => {
+    const c = cand({ multiplicity: 2 });
+    const r = resolveEntity([c], []);
+    expect(r.effects).toHaveLength(2);
+  });
+
+  it("applies multiplicity to an accepted decision too", () => {
+    const c = cand({ agreement: "parser-only", multiplicity: 3 });
+    const accept: EffectDecision = { entityId: "f", key: c.key, action: "accept", effect: acBonus as PassiveEffect };
+    expect(resolveEntity([c], [accept]).effects).toHaveLength(3);
+  });
+
+  it("a reject drops every instance, not just one", () => {
+    const c = cand({ multiplicity: 2 });
+    const r = resolveEntity([c], [{ entityId: "f", key: c.key, action: "reject" }]);
+    expect(r.effects).toEqual([]);
+  });
+
+  it("treats a nonsense multiplicity as one rather than looping oddly", () => {
+    expect(resolveEntity([cand({ multiplicity: 0 })], []).effects).toHaveLength(1);
+    expect(resolveEntity([cand({ multiplicity: -3 })], []).effects).toHaveLength(1);
+    expect(resolveEntity([cand({ multiplicity: 2.7 })], []).effects).toHaveLength(2);
+  });
+});
+
 describe("resolveEntity — proposals + human decisions → content", () => {
   const accepted: PassiveEffect = { kind: "modifier", target: "ac", bonusType: "circumstance", value: { kind: "lit", value: 1 } } as PassiveEffect;
 

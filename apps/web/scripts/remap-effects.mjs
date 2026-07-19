@@ -43,11 +43,13 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mapFoundryRules, summarizeReports } from '@pathway/core';
+import { mapFoundryRules, resolveEntity, summarizeReports } from '@pathway/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR_DEFAULT = resolve(HERE, '..', 'src', 'features', 'builder', 'data');
 const SIDECAR = 'effect-ingest-report.json';
+const CANDIDATES = 'effect-candidates.json';
+const DECISIONS = 'effect-decisions.json';
 
 function parseArgs(argv) {
   const out = { data: DATA_DIR_DEFAULT, dry: false };
@@ -75,6 +77,59 @@ const DATASETS = [
   { file: 'versatile-heritages.json', kind: 'heritage', walk: (data) => data },
 ];
 
+/**
+ * The fold-in: candidates + human decisions → the effects a sheet actually reads.
+ *
+ * `resolveEntity` is the ONE path from proposal to content, so this script does not
+ * decide anything — it loads the two inputs and reports what came back. Absent either
+ * file, folding is skipped and the Foundry mapping stands, which is what a fresh clone
+ * or a `--data` pointed at a bare directory should do.
+ *
+ * FEATS ONLY, because candidates exist only for feats: `build-candidates.mjs` runs the
+ * prose parser over the feats corpus. Heritages keep the mapped-from-Foundry path until
+ * a producer proposes for them.
+ */
+function loadFoldIn(dataDir) {
+  const candidatesPath = join(dataDir, CANDIDATES);
+  const decisionsPath = join(dataDir, DECISIONS);
+  if (!existsSync(candidatesPath)) return null;
+
+  const { candidates } = readJson(candidatesPath);
+  const decisions = existsSync(decisionsPath) ? readJson(decisionsPath).decisions ?? [] : [];
+
+  const byEntity = new Map();
+  for (const c of candidates) {
+    const list = byEntity.get(c.entityId);
+    if (list) list.push(c);
+    else byEntity.set(c.entityId, [c]);
+  }
+
+  // Decisions are grouped by entity too, and each entity is resolved against ITS OWN
+  // decisions only. Handing the whole list to every entity would make resolveEntity
+  // report every other entity's decisions as stale — 57 decisions across 711 feats
+  // came back as 40,470 "stale" entries before this was split.
+  const decisionsByEntity = new Map();
+  for (const d of decisions) {
+    const list = decisionsByEntity.get(d.entityId);
+    if (list) list.push(d);
+    else decisionsByEntity.set(d.entityId, [d]);
+  }
+
+  // Staleness is a GLOBAL question — a decision pointing at a candidate that no
+  // producer proposes any more — so it is computed once, here, not per entity.
+  const liveKeys = new Set(candidates.map((c) => `${c.entityId} ${c.key}`));
+  const stale = decisions.filter((d) => !liveKeys.has(`${d.entityId} ${d.key}`));
+
+  return {
+    byEntity,
+    decisionsByEntity,
+    decisions,
+    stale,
+    candidateCount: candidates.length,
+    decisionCount: decisions.length,
+  };
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const sidecarPath = join(args.data, SIDECAR);
@@ -87,6 +142,9 @@ function main() {
   for (const e of sidecar?.entities ?? []) {
     if (Array.isArray(e.raw) && e.raw.length) rawById.set(`${e.kind ?? 'feat'}:${e.id}`, e.raw);
   }
+
+  const foldIn = loadFoldIn(args.data);
+  const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0 };
 
   const entities = [];
   const reports = [];
@@ -119,13 +177,36 @@ function main() {
 
       const { effects, choices, report } = mapFoundryRules(raw);
       reports.push(report);
-      if (effects.length > 0) {
-        bearer.effects = effects;
+
+      // The fold-in replaces the mapper's output with the RESOLVED effects wherever
+      // candidates exist for this bearer. The mapper still runs — the sidecar's report
+      // is the coverage diagnostic, and `raw` is what build-candidates re-maps from —
+      // but what SHIPS is what a human decided plus what earned auto-promotion.
+      let finalEffects = effects;
+      let finalChoices = choices;
+      const candidates = foldIn && dataset.kind === 'feat' ? foldIn.byEntity.get(bearer.id) : null;
+      if (candidates) {
+        const resolved = resolveEntity(candidates, foldIn.decisionsByEntity.get(bearer.id) ?? []);
+        finalEffects = resolved.effects;
+        finalChoices = resolved.choices;
+        folded.entities += 1;
+        folded.effects += resolved.effects.length;
+        folded.pending += resolved.pending.length;
+        // Foundry proposed something the resolution dropped: it was rejected, or it
+        // is still pending review. Worth counting — it is content that stopped
+        // shipping, and a silent decrease is exactly what this report exists to prevent.
+        if (effects.length > resolved.effects.length) {
+          folded.droppedFromMapping += effects.length - resolved.effects.length;
+        }
+      }
+
+      if (finalEffects.length > 0) {
+        bearer.effects = finalEffects;
         withEffects += 1;
       }
       // Options + their effects are fixed content; only the pick is runtime.
-      if (choices.length > 0) {
-        bearer.choices = choices;
+      if (finalChoices.length > 0) {
+        bearer.choices = finalChoices;
         withChoices += 1;
       }
       entities.push({ id: bearer.id, kind: dataset.kind, name: bearer.name, raw, report });
@@ -166,6 +247,25 @@ function main() {
   console.log('\nblockers, by reason:');
   for (const [k, v] of Object.entries(summary.byReason).sort((a, b) => b[1] - a[1])) {
     console.log(`${String(v).padStart(6)}  ${k}`);
+  }
+
+  console.log('\nfold-in (candidates + decisions -> effects):');
+  if (!foldIn) {
+    console.log('  no effect-candidates.json — shipping the Foundry mapping unfolded');
+  } else {
+    const human = foldIn.decisions.filter((d) => d.by !== 'migration:foundry-baseline').length;
+    console.log(`  candidates     : ${foldIn.candidateCount}`);
+    console.log(`  decisions      : ${foldIn.decisionCount} (${human} human, ${foldIn.decisionCount - human} grandfathered)`);
+    console.log(`  feats folded   : ${folded.entities} -> ${folded.effects} effects`);
+    console.log(`  still pending  : ${folded.pending}  (awaiting a human in the Review UI)`);
+    console.log(`  dropped vs map : ${folded.droppedFromMapping}  (rejected or pending; NOT shipping)`);
+    if (foldIn.stale.length > 0) {
+      // A decision whose candidate no longer exists: a producer changed its mind, so
+      // a human's judgment is now floating. Loud, because it silently does nothing.
+      console.log(`  STALE decisions: ${foldIn.stale.length} — no matching candidate any more`);
+      for (const s of foldIn.stale.slice(0, 10)) console.log(`      ${s.entityId} ${s.key}`);
+      if (foldIn.stale.length > 10) console.log(`      … and ${foldIn.stale.length - 10} more`);
+    }
   }
 
   if (args.dry) {
