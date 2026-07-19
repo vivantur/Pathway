@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   triage,
   groupBySignature,
+  groupSilence,
   promote,
+  type SilentEntity,
+  type SilenceReason,
   type EffectCandidate,
   type EffectDecision,
   type DraftEffect,
@@ -49,8 +52,16 @@ interface Sidecar {
     gapped: number;
     review: number;
     invalid: number;
+    silent: number;
+    actionFeatsInQueue: number;
   };
   candidates: EffectCandidate[];
+  /** Feats that proposed NOTHING — 3/4 of the corpus, invisible until this landed. */
+  silent: SilentEntity[];
+  /** Feats WITH candidates that carry an action cost — likely modelled as passives. */
+  actionFeatsInQueue: string[];
+  /** The blocker tally across the silent, largest first. The roadmap. */
+  silenceBlockers: { reason: string; count: number }[];
 }
 
 // feats.json → id → display fields. The sidecar deliberately omits descriptions;
@@ -228,9 +239,140 @@ const BUCKET_HINT: Record<Bucket, string> = {
   invalid: 'Complete-looking but schema-invalid — a producer bug, not a content problem.',
 };
 
+/**
+ * The two top-level views. The queue was the whole page until now, which quietly
+ * presented ~18% of the corpus as if it were all the work: 1,096 feats propose
+ * something, 5,020 propose nothing and had no surface at all.
+ */
+type View = 'queue' | 'silent';
+
+const SILENCE_LABEL: Record<SilenceReason, string> = {
+  'action-feat': 'Action feats',
+  'all-unsupported': 'All elements unsupported',
+  'no-producer-signal': 'No producer signal',
+};
+
+const SILENCE_HINT: Record<SilenceReason, string> = {
+  'action-feat':
+    'Carries an action cost, so it grants an ACTIVITY, not a passive — correctly absent from this queue. Not a gap in coverage; work for the granted-action pass, which is why they are named rather than filtered away.',
+  'all-unsupported':
+    'A producer had rule elements for these and every one mapped to unsupported. Not a mystery — the blockers below are named, and they are the roadmap.',
+  'no-producer-signal':
+    'Nothing was ingested for these and the prose yielded nothing. Most likely no passive mechanics at all, but that is unverified — this is the least-understood group.',
+};
+
+/** A feat's display name, falling back to its id so a missing entry stays legible. */
+const nameOf = (id: string): string => FEAT_BY_ID.get(id)?.name ?? id;
+
+/** The silent view: what never reaches review, grouped by why. */
+function SilentPanel({ data }: { data: Sidecar }) {
+  const [openReason, setOpenReason] = useState<SilenceReason | null>(null);
+  const groups = useMemo(() => groupSilence(data.silent), [data.silent]);
+  // The largest tally scales the bars. Guarded: an empty blocker list is possible in
+  // principle (a corpus where every silent feat is an action feat), and indexing [0]
+  // for the divisor would take the whole admin page down with it.
+  const maxBlocker = data.silenceBlockers[0]?.count ?? 0;
+
+  return (
+    <>
+      <p className="mt-2 max-w-3xl text-sm text-parchment/60">
+        {data.summary.silent.toLocaleString()} of {data.summary.feats.toLocaleString()} feats propose
+        nothing at all, so they never enter the queue. Coverage is not the point — knowing what the
+        remainder <em>is</em> is the point.
+      </p>
+
+      {/* the blocker tally — the roadmap, restated from the side of what is missing */}
+      <div className="mt-6 rounded-lg border border-gold/15 bg-midnight-900/40 p-4">
+        <h2 className="font-display text-lg text-gold">Blockers across the silent</h2>
+        <p className="mt-1 text-sm text-parchment/60">
+          Counted in rule ELEMENTS, not feats — one feat can be blocked several ways.
+        </p>
+        <ul className="mt-3 space-y-1.5">
+          {data.silenceBlockers.map((b) => (
+            <li key={b.reason} className="flex items-center gap-3 text-sm">
+              <span className="w-52 shrink-0 font-mono text-parchment/80">{b.reason}</span>
+              <span className="tabular-nums text-parchment/60">{b.count.toLocaleString()}</span>
+              <span
+                className="h-2 rounded-sm bg-gold/30"
+                style={{ width: `${maxBlocker > 0 ? Math.max(2, (b.count / maxBlocker) * 60) : 2}%` }}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {data.actionFeatsInQueue.length > 0 && (
+        <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4">
+          <h2 className="font-display text-lg text-amber-200/90">
+            {data.actionFeatsInQueue.length} action feats are IN the queue
+          </h2>
+          <p className="mt-1 text-sm text-parchment/70">
+            These carry an action cost but still produced passive candidates — so a granted activity
+            is likely being modelled as a passive effect. They are flagged, never auto-removed:
+            dropping real candidates on a heuristic would be exactly the guessing this pipeline
+            refuses.
+          </p>
+          <p className="mt-2 text-sm text-parchment/60">
+            {data.actionFeatsInQueue.slice(0, 12).map((id) => nameOf(id)).join(' · ')}
+            {data.actionFeatsInQueue.length > 12 && ` … +${data.actionFeatsInQueue.length - 12} more`}
+          </p>
+        </div>
+      )}
+
+      <div className="mt-4 space-y-3">
+        {groups.map(({ reason, entities }) => {
+          const open = openReason === reason;
+          return (
+            <div key={reason} className="relative rounded-lg border border-gold/15 bg-midnight-900/40">
+              {open && <CornerBrackets />}
+              <button
+                onClick={() => setOpenReason(open ? null : reason)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+              >
+                <span className="font-display text-gold">{SILENCE_LABEL[reason]}</span>
+                <span className="tabular-nums text-sm text-parchment/60">
+                  {entities.length.toLocaleString()}
+                </span>
+              </button>
+              {open && (
+                <div className="border-t border-gold/10 px-4 py-3">
+                  <p className="mb-3 max-w-3xl text-sm text-parchment/60">{SILENCE_HINT[reason]}</p>
+                  <ul className="max-h-96 space-y-1 overflow-y-auto text-sm">
+                    {entities.slice(0, 300).map((e) => (
+                      <li key={e.entityId} className="flex items-baseline gap-2">
+                        <span className="text-parchment/85">{nameOf(e.entityId)}</span>
+                        {e.actionCost && (
+                          <span className="rounded border border-gold/20 px-1 text-xs text-gold/70">
+                            {e.actionCost}
+                          </span>
+                        )}
+                        {e.blockers?.length ? (
+                          <span className="font-mono text-xs text-parchment/45">
+                            {e.blockers.map((b) => `${b.reason}×${b.count}`).join(' ')}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                  {entities.length > 300 && (
+                    <p className="mt-2 text-xs text-parchment/50">
+                      Showing the first 300 of {entities.length.toLocaleString()}.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export function EffectReviewPage() {
   const [data, setData] = useState<Sidecar | null>(null);
   const [failed, setFailed] = useState(false);
+  const [view, setView] = useState<View>('queue');
   const [bucket, setBucket] = useState<Bucket>('review');
   const [openSig, setOpenSig] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
@@ -390,8 +532,30 @@ export function EffectReviewPage() {
         </label>
       </div>
 
+      {/* view toggle — the queue is only 18% of the corpus; the rest is behind "Not proposed" */}
+      <div className="mt-8 flex flex-wrap gap-2 border-b border-gold/15 pb-3">
+        {([
+          ['queue', `Review queue (${summary.candidates.toLocaleString()})`],
+          ['silent', `Not proposed (${summary.silent.toLocaleString()})`],
+        ] as [View, string][]).map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`rounded-md border px-3 py-1.5 text-sm ${
+              view === v ? 'border-gold/50 bg-midnight-900/80 text-gold' : 'border-gold/15 text-parchment/70 hover:bg-midnight-900/50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'silent' && <SilentPanel data={data} />}
+
+      {view === 'queue' && (
+        <>
       {/* bucket tabs */}
-      <div className="mt-8 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap gap-2">
         {(Object.keys(BUCKET_LABEL) as Bucket[]).map((b) => (
           <button
             key={b}
@@ -467,6 +631,8 @@ export function EffectReviewPage() {
         })}
         {groups.length === 0 && <p className="text-sm text-parchment/50">Nothing in this bucket.</p>}
       </div>
+        </>
+      )}
 
       <p className="mt-10 text-xs text-parchment/40">
         Generated {new Date(data.generatedAt).toLocaleString()} · regenerate with{' '}

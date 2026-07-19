@@ -35,7 +35,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mapFoundryRules, parseProse, reconcile, triage } from '@pathway/core';
+import { mapFoundryRules, parseProse, reconcile, triage, classifySilence, groupSilence, silenceBlockerTally } from '@pathway/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR_DEFAULT = resolve(HERE, '..', 'src', 'features', 'builder', 'data');
@@ -70,13 +70,21 @@ function parseArgs(argv) {
  */
 function foundryProposals(feat, rawById) {
   const raw = rawById.get(feat.id);
-  const { effects, choices } = raw
+  const { effects, choices, report } = raw
     ? mapFoundryRules(raw)
-    : { effects: feat.effects ?? [], choices: feat.choices ?? [] };
+    : { effects: feat.effects ?? [], choices: feat.choices ?? [], report: [] };
 
   const proposals = effects.map((draft) => ({ draft }));
   for (const choice of choices) proposals.push({ draft: { kind: 'choice', choice } });
-  return { source: 'foundry', proposals };
+  // The blockers come from THIS run's re-mapping, never from the ingest report's
+  // stored outcomes — those are a previous run's output, and reading a producer's
+  // result out of the pipeline's own output is the feedback loop the fold-in slice
+  // had to unpick. Re-mapping means the blocker tally improves the moment the
+  // mapper does.
+  const unsupportedReasons = (report ?? [])
+    .filter((r) => r.outcome === 'unsupported' && r.reason)
+    .map((r) => r.reason);
+  return { source: 'foundry', proposals, unsupportedReasons };
 }
 
 /**
@@ -123,17 +131,29 @@ function main() {
 
   const candidates = [];
   let featsWithProse = 0;
+  // What `classifySilence` needs per feat, gathered in the SAME pass that proposes —
+  // so the silence view can never disagree with the queue about which feats proposed.
+  const silenceInputs = [];
   for (const feat of feats) {
     if (!feat.description) continue;
     featsWithProse += 1;
     const parser = parseProse(feat.description, undefined, traits);
     const foundry = foundryProposals(feat, rawById);
+    silenceInputs.push({
+      entityId: feat.id,
+      actionCost: feat.actionCost ?? null,
+      unsupportedReasons: foundry.unsupportedReasons,
+    });
     // Nothing to reconcile if neither producer proposed anything for this feat.
     if (parser.proposals.length === 0 && foundry.proposals.length === 0) continue;
     candidates.push(...reconcile(feat.id, [parser, foundry]));
   }
 
   const t = triage(candidates);
+  // The other 3/4 of the corpus: feats that proposed nothing at all. Without this the
+  // review page reports ~18% of the work as though it were all of it.
+  const silence = classifySilence(silenceInputs, candidates);
+  const blockers = silenceBlockerTally(silence.silent);
   const summary = {
     feats: feats.length,
     featsWithProse,
@@ -143,9 +163,18 @@ function main() {
     gapped: t.gapped.length,
     review: t.review.length,
     invalid: t.invalid.length,
+    silent: silence.silent.length,
+    actionFeatsInQueue: silence.actionFeatsInQueue.length,
   };
 
-  const out = { generatedAt: new Date().toISOString(), summary, candidates };
+  const out = {
+    generatedAt: new Date().toISOString(),
+    summary,
+    candidates,
+    silent: silence.silent,
+    actionFeatsInQueue: silence.actionFeatsInQueue,
+    silenceBlockers: blockers,
+  };
 
   console.log('effect-review candidates');
   console.log('='.repeat(40));
@@ -157,6 +186,14 @@ function main() {
   console.log(`  gapped         : ${summary.gapped}  (a hole a human fills)`);
   console.log(`  review         : ${summary.review}  (one producer, complete)`);
   console.log(`  invalid        : ${summary.invalid}  (producer bug — schema-invalid)`);
+  console.log(`
+silent feats     : ${summary.silent}  (proposed NOTHING — never reach review)`);
+  for (const g of groupSilence(silence.silent)) console.log(`  ${g.reason.padEnd(19)}: ${g.entities.length}`);
+  console.log(`
+blockers across the silent (elements, not feats):`);
+  for (const b of blockers) console.log(`  ${b.reason.padEnd(22)}: ${b.count}`);
+  console.log(`
+action feats IN the queue: ${summary.actionFeatsInQueue}  (likely modelled as passives — needs a human)`);
 
   if (args.dry) {
     console.log('\n--dry: nothing written');

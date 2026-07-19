@@ -586,3 +586,154 @@ export function resolveEntity(
   const staleDecisions = decisions.filter((d) => !used.has(`${d.entityId} ${d.key}`));
   return { effects, choices, pending, staleDecisions };
 }
+
+// ---------------------------------------------------------------------------
+// silence — the entities that never reach the queue at all
+// ---------------------------------------------------------------------------
+//
+// THE QUEUE IS NOT THE PROBLEM. It holds 1,820 candidates over 1,096 feats; the
+// corpus has 6,116. The other 5,020 propose NOTHING, and with no view of them the
+// review page silently reports 18% of the work as if it were all of it. Naming why
+// each one is silent is the same discipline as `foundry.ts`'s unsupported reasons:
+// coverage is not the point, knowing what the remainder IS is the point.
+//
+// Measured 2026-07-18 over the real corpus: 1,544 action-feat only, 1,370
+// all-unsupported only, 348 both, 1,758 with no signal at all.
+
+/**
+ * Why an entity produced no candidates. Precedence is `action-feat` →
+ * `all-unsupported` → `no-producer-signal`, and only 348 entities are ambiguous
+ * between the first two, so the ordering costs almost nothing in practice.
+ *
+ * `action-feat` wins when both apply because it says the entity is in the WRONG
+ * PIPELINE — a different thing to do about it — whereas the blockers say the passive
+ * pipeline needs to grow. The blockers are kept either way, so nothing is lost.
+ */
+export type SilenceReason =
+  /**
+   * The entity carries an action cost, so it grants an ACTIVITY, not a passive
+   * (owner-supplied identifier, 2026-07-18: an action feat is flagged as such in the
+   * rules text — "[two-actions]" on Timber Sentinel). Correctly absent from a passive
+   * queue; real work for the granted-action pass, which is why it is named and not
+   * just filtered away.
+   */
+  | "action-feat"
+  /** A producer had rule elements for it and every one mapped to `unsupported`. */
+  | "all-unsupported"
+  /** No producer saw anything: not ingested, and the prose yielded nothing. */
+  | "no-producer-signal";
+
+/** One blocker and how many of the entity's elements hit it. */
+export interface SilenceBlocker {
+  reason: string;
+  count: number;
+}
+
+/** An entity that proposed nothing, and what we can say about why. */
+export interface SilentEntity {
+  entityId: string;
+  reason: SilenceReason;
+  /** The action cost, when that is what makes it silent — shown by the UI. */
+  actionCost?: string;
+  /**
+   * The named blockers from a producer's unsupported elements, when it had any.
+   * Present even for an `action-feat`, so the roadmap tally stays complete.
+   */
+  blockers?: SilenceBlocker[];
+}
+
+/**
+ * What a caller must supply per entity. Deliberately NOT a content type: core does
+ * not hold the corpus, and the caller (the build script) already has it. Keeping
+ * this a plain bag is what lets the same policy classify feats today and any other
+ * entity kind later without core learning either one's schema.
+ */
+export interface SilenceInput {
+  entityId: string;
+  /** Present ⇒ the entity grants an activity. Any truthy cost counts. */
+  actionCost?: string | null;
+  /** The `reason` of each element a producer could not map, in order. */
+  unsupportedReasons?: readonly string[];
+}
+
+export interface SilenceReport {
+  silent: SilentEntity[];
+  /**
+   * Entities that DID propose candidates but carry an action cost — so a granted
+   * activity is very likely being modelled as a passive effect. Measured at 296.
+   * NOT filtered out of the queue: this names a suspicion for a human, and silently
+   * dropping real candidates on a heuristic would be the guessing the pipeline
+   * refuses.
+   */
+  actionFeatsInQueue: string[];
+}
+
+/**
+ * Classify every entity that produced no candidates, plus flag the ones whose
+ * candidates look like they belong to the action pipeline instead.
+ *
+ * The policy lives here, in core, for the same reason `triage` does: the UI should
+ * render a decision it did not make.
+ */
+export function classifySilence(
+  entities: readonly SilenceInput[],
+  candidates: readonly EffectCandidate[],
+): SilenceReport {
+  const proposed = new Set(candidates.map((c) => c.entityId));
+  const silent: SilentEntity[] = [];
+  const actionFeatsInQueue: string[] = [];
+
+  for (const e of entities) {
+    const isAction = e.actionCost !== undefined && e.actionCost !== null && e.actionCost !== "";
+    if (proposed.has(e.entityId)) {
+      if (isAction) actionFeatsInQueue.push(e.entityId);
+      continue;
+    }
+
+    const blockers = tallyBlockers(e.unsupportedReasons);
+    const reason: SilenceReason = isAction
+      ? "action-feat"
+      : blockers.length > 0
+        ? "all-unsupported"
+        : "no-producer-signal";
+
+    silent.push({
+      entityId: e.entityId,
+      reason,
+      ...(isAction && e.actionCost ? { actionCost: e.actionCost } : {}),
+      ...(blockers.length > 0 ? { blockers } : {}),
+    });
+  }
+  return { silent, actionFeatsInQueue };
+}
+
+/** Count each distinct unsupported reason, largest first. */
+function tallyBlockers(reasons: readonly string[] | undefined): SilenceBlocker[] {
+  if (!reasons?.length) return [];
+  const m = new Map<string, number>();
+  for (const r of reasons) m.set(r, (m.get(r) ?? 0) + 1);
+  return [...m.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+}
+
+/** Group silent entities by their reason, largest group first — what the UI renders. */
+export function groupSilence(silent: readonly SilentEntity[]): { reason: SilenceReason; entities: SilentEntity[] }[] {
+  const m = new Map<SilenceReason, SilentEntity[]>();
+  for (const s of silent) {
+    const list = m.get(s.reason);
+    if (list) list.push(s);
+    else m.set(s.reason, [s]);
+  }
+  return [...m.entries()]
+    .map(([reason, entities]) => ({ reason, entities }))
+    .sort((a, b) => b.entities.length - a.entities.length);
+}
+
+/**
+ * The blocker tally across every silent entity — the roadmap, restated from the
+ * side of what is MISSING rather than what was mapped. Largest first.
+ */
+export function silenceBlockerTally(silent: readonly SilentEntity[]): SilenceBlocker[] {
+  const m = new Map<string, number>();
+  for (const s of silent) for (const b of s.blockers ?? []) m.set(b.reason, (m.get(b.reason) ?? 0) + b.count);
+  return [...m.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+}

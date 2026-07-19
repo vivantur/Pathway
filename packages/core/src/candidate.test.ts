@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   autoPromotable,
+  classifySilence,
+  groupSilence,
+  silenceBlockerTally,
   effectKey,
   effectSignature,
   groupBySignature,
@@ -402,5 +405,90 @@ describe("resolveEntity — proposals + human decisions → content", () => {
     const r = resolveEntity([c], [{ entityId: "feat-b", key: c.key, action: "reject" }]);
     expect(r.effects).toHaveLength(1); // feat-a's candidate still auto-promoted
     expect(r.staleDecisions).toHaveLength(1); // feat-b's decision matched nothing
+  });
+});
+
+describe("classifySilence — the entities that never reach the queue", () => {
+  const c = (entityId: string): EffectCandidate => ({
+    entityId,
+    draft: acBonus,
+    gaps: [],
+    agreement: "parser-only",
+    key: effectKey(acBonus),
+    signature: effectSignature(acBonus),
+    evidence: [],
+  });
+
+  it("names an action feat, because it is in the WRONG PIPELINE not merely missing", () => {
+    const r = classifySilence([{ entityId: "timber-sentinel", actionCost: "2" }], []);
+    expect(r.silent).toEqual([{ entityId: "timber-sentinel", reason: "action-feat", actionCost: "2" }]);
+  });
+
+  it("names the blockers when a producer's elements all went unsupported", () => {
+    const r = classifySilence(
+      [{ entityId: "f", unsupportedReasons: ["needs-item-model", "needs-combat-tags", "needs-item-model"] }],
+      [],
+    );
+    expect(r.silent[0]!.reason).toBe("all-unsupported");
+    // Tallied and sorted, so the group reads as a roadmap.
+    expect(r.silent[0]!.blockers).toEqual([
+      { reason: "needs-item-model", count: 2 },
+      { reason: "needs-combat-tags", count: 1 },
+    ]);
+  });
+
+  it("falls back to no-producer-signal when nothing saw it", () => {
+    expect(classifySilence([{ entityId: "f" }], []).silent[0]!.reason).toBe("no-producer-signal");
+  });
+
+  it("prefers action-feat over the blockers, but KEEPS them", () => {
+    // Precedence costs little (348 entities are ambiguous) and nothing is lost:
+    // the roadmap tally still counts this entity's blockers.
+    const r = classifySilence(
+      [{ entityId: "f", actionCost: "1", unsupportedReasons: ["needs-granting"] }],
+      [],
+    );
+    expect(r.silent[0]!.reason).toBe("action-feat");
+    expect(r.silent[0]!.blockers).toEqual([{ reason: "needs-granting", count: 1 }]);
+  });
+
+  it("excludes anything that DID propose, and flags action feats among them", () => {
+    const r = classifySilence(
+      [
+        { entityId: "proposed-passive" },
+        { entityId: "proposed-action", actionCost: "2" },
+        { entityId: "silent-one" },
+      ],
+      [c("proposed-passive"), c("proposed-action")],
+    );
+    expect(r.silent.map((s) => s.entityId)).toEqual(["silent-one"]);
+    // Named for a human, never silently dropped from the queue: filtering real
+    // candidates on a heuristic would be the guessing the pipeline refuses.
+    expect(r.actionFeatsInQueue).toEqual(["proposed-action"]);
+  });
+
+  it("treats an empty action cost as absent, not as an action feat", () => {
+    expect(classifySilence([{ entityId: "f", actionCost: "" }], []).silent[0]!.reason).toBe("no-producer-signal");
+    expect(classifySilence([{ entityId: "g", actionCost: null }], []).silent[0]!.reason).toBe("no-producer-signal");
+  });
+
+  it("groups by reason largest-first and tallies blockers across the corpus", () => {
+    const r = classifySilence(
+      [
+        { entityId: "a", actionCost: "1" },
+        { entityId: "b", actionCost: "2" },
+        { entityId: "d", unsupportedReasons: ["needs-item-model"] },
+        { entityId: "e", unsupportedReasons: ["needs-item-model", "needs-granting"] },
+      ],
+      [],
+    );
+    expect(groupSilence(r.silent).map((g) => [g.reason, g.entities.length])).toEqual([
+      ["action-feat", 2],
+      ["all-unsupported", 2],
+    ]);
+    expect(silenceBlockerTally(r.silent)).toEqual([
+      { reason: "needs-item-model", count: 2 },
+      { reason: "needs-granting", count: 1 },
+    ]);
   });
 });
