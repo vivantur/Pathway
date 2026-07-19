@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, rollCheck } from "./checks.js";
+import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
 
 /** A stub RNG whose `int` always returns a fixed d20 face. */
 const fixedd20 = (face: number) => ({ next: () => 0, int: (_min: number, _max: number) => face });
@@ -61,5 +61,41 @@ describe("rollCheck", () => {
     expect(rollCheck({ modifier: 0, dc: 20, rng: fixedd20(20) }).degree).toBe("critical-success");
     // die 1, total 21 meets DC 20 → success, dropped one step by nat 1 → failure
     expect(rollCheck({ modifier: 20, dc: 20, rng: fixedd20(1) }).degree).toBe("failure");
+  });
+});
+
+describe("degree adjustments reach the resolver", () => {
+  it("rollCheck applies a conditional map to the rolled degree", () => {
+    // die 15 + mod 0 vs DC 15 → success; Adaptive-Vision-style map → crit success.
+    const out = rollCheck({
+      modifier: 0,
+      dc: 15,
+      rng: fixedd20(15),
+      adjustments: [{ map: { success: "critical-success" } }],
+    });
+    expect(out.degree).toBe("critical-success");
+  });
+
+  it("a map silent about the rolled degree leaves it alone", () => {
+    const out = rollCheck({
+      modifier: 0,
+      dc: 20,
+      rng: fixedd20(15),
+      adjustments: [{ map: { success: "critical-success" } }],
+    });
+    expect(out.degree).toBe("failure");
+  });
+
+  it("resolveCheck applies them to a SHARED roll, per target DC", () => {
+    const shared = { die: 15, total: 15 };
+    const forager = [{ map: { "critical-failure": "success", failure: "success" } } as const];
+    // vs DC 15 → success, untouched by the floor.
+    expect(resolveCheck({ ...shared, dc: 15, adjustments: forager }).degree).toBe("success");
+    // vs DC 30 → critical failure, raised to the floor.
+    expect(resolveCheck({ ...shared, dc: 30, adjustments: forager }).degree).toBe("success");
+  });
+
+  it("omitting adjustments preserves the previous behavior exactly", () => {
+    expect(rollCheck({ modifier: 0, dc: 15, rng: fixedd20(15) }).degree).toBe("success");
   });
 });

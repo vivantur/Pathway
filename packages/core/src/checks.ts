@@ -17,7 +17,7 @@
 // PURE: the only nondeterminism is the passed seeded `Rng`, so a resolution is
 // replayable and unit-testable.
 
-import { DEGREES, degreeOfSuccess, type DegreeOfSuccess } from "./degree.js";
+import { DEGREES, degreeOfSuccess, type DegreeAdjustment, type DegreeOfSuccess } from "./degree.js";
 import type { Rng } from "./rng.js";
 
 /** The DC derived from a modifier: 10 + the modifier (pasted Archives rule). */
@@ -90,19 +90,41 @@ export interface CheckResult {
  * against a DC. This is the path a SHARED roll takes: one attack roll compared
  * against several targets' ACs yields a different degree per target, because the
  * DC differs even though the roll doesn't.
+ *
+ * `adjustments` are the ROLLING creature's degree adjustments — note that for a
+ * save the roller is the TARGET, not the acting character. Select them from a
+ * creature's collected passives with `degreeAdjustmentsFor` (passive.ts).
  */
-export function resolveCheck(input: { die: number; total: number; dc: number }): CheckResult {
-  const degree = degreeOfSuccess({ total: input.total, dc: input.dc, die: input.die });
+export function resolveCheck(input: {
+  die: number;
+  total: number;
+  dc: number;
+  adjustments?: readonly DegreeAdjustment[];
+}): CheckResult {
+  const degree = degreeOfSuccess({
+    total: input.total,
+    dc: input.dc,
+    die: input.die,
+    adjustments: input.adjustments ? [...input.adjustments] : undefined,
+  });
   return { die: input.die, total: input.total, dc: input.dc, degree };
 }
 
 /**
  * Roll a d20 + modifier against a DC and resolve the degree. The natural die face
- * is passed to the degree resolver so the nat-20/nat-1 one-degree shift applies.
- * (Assurance / Fortune / Misfortune degree adjustments are deferred — the resolver
- * supports them, but nothing wires them in yet.)
+ * is passed to the degree resolver so the nat-20/nat-1 one-degree shift applies,
+ * before any `adjustments`.
+ *
+ * (Fortune / Misfortune is a REROLL, not a degree adjustment; it operates on dice
+ * and is still unwired. `degreeAdjustmentsFor` drops reroll payloads for that
+ * reason rather than approximating them as a shift.)
  */
-export function rollCheck(input: { modifier: number; dc: number; rng: Rng }): CheckResult {
+export function rollCheck(input: {
+  modifier: number;
+  dc: number;
+  rng: Rng;
+  adjustments?: readonly DegreeAdjustment[];
+}): CheckResult {
   const die = input.rng.int(1, 20);
-  return resolveCheck({ die, total: die + input.modifier, dc: input.dc });
+  return resolveCheck({ die, total: die + input.modifier, dc: input.dc, adjustments: input.adjustments });
 }

@@ -18,8 +18,8 @@
 //   • `grant` → grants. Senses/resistances/immunities/extra actions have no field
 //     on the resolved model yet; carried for Layer 1.5.
 //   • `rollAdjust` → rollAdjusts. Consumed at Layer 2 when a check resolves
-//     through the degree resolver (Assurance, Fortune/Misfortune) — nothing to
-//     apply to a static sheet.
+//     through the degree resolver — nothing to apply to a static sheet. Turn the
+//     bucket into resolver input with `degreeAdjustmentsFor` (below).
 //
 // PURE: no I/O, no new rules math. Stacking is `stackModifiers` (effects.ts,
 // from rules text); values are the shared expression evaluator (expr.ts);
@@ -28,7 +28,7 @@
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope } from "./character.js";
-import { DEGREES } from "./degree.js";
+import { DEGREES, type DegreeAdjustment } from "./degree.js";
 import { evaluate, exprSchema, type Expr } from "./expr.js";
 import { stackModifiers, type BonusType, type EffectContext, type Modifier, type SheetEffects } from "./effects.js";
 import { describePredicate, predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
@@ -708,6 +708,39 @@ export function applyPassiveEffects(
   }
 
   return { character: applyDeltas(rc, deltas), modifiers, rankGrants, grants, rollAdjusts, notes, skipped };
+}
+
+/**
+ * Select the degree adjustments that apply to a roll of `target`, from a creature's
+ * collected `rollAdjusts` — the bridge from the Layer-1 bucket to the Layer-2 degree
+ * resolver (`resolveCheck` / `rollCheck` take the result as `adjustments`).
+ *
+ * Two things it deliberately drops:
+ *   • Effects aimed at a DIFFERENT stat. Adaptive Vision's "+1 to saving throws
+ *     against visual effects" fans out to one effect per save, so a Fortitude roll
+ *     must not pick up the Reflex one.
+ *   • `reroll` payloads (Fortune/Misfortune). A reroll operates on DICE, not on the
+ *     degree; rendering one as a degree shift would be a different mechanic wearing
+ *     this one's clothes. It stays unwired until it is wired honestly.
+ *
+ * CONDITIONS ARE THE CALLER'S JOB. `when` predicates were already evaluated when the
+ * bucket was collected, against whatever tags `applyPassiveEffects` was given. A
+ * roll-conditional adjustment ("against visual effects") therefore only survives if
+ * the caller passed the roll's tags via `PassiveContext.tags` — see `rollTags` in
+ * predicate.ts. Collect with static tags alone and Adaptive Vision is correctly
+ * absent, because on a save against something non-visual it does not apply.
+ */
+export function degreeAdjustmentsFor(
+  rollAdjusts: readonly RollAdjustEffect[],
+  target: Selector,
+): DegreeAdjustment[] {
+  const out: DegreeAdjustment[] = [];
+  for (const effect of rollAdjusts) {
+    if (effect.target !== target) continue;
+    if (effect.adjust.type === "degree") out.push(effect.adjust.direction);
+    else if (effect.adjust.type === "degreeMap") out.push({ map: effect.adjust.map });
+  }
+  return out;
 }
 
 /**

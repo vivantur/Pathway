@@ -5,6 +5,7 @@ import {
   applyPassiveEffects,
   collectPassiveSheetEffects,
   collectTraits,
+  degreeAdjustmentsFor,
   passiveEffectSchema,
   resolveRankValue,
   type PassiveEffect,
@@ -596,5 +597,57 @@ describe("resolveRankValue — level-scaled proficiency", () => {
     const out = collectPassiveSheetEffects([[bad]], { level: 5 });
     expect(out.saveRanks.size).toBe(0);
     expect(out.skipped).toBe(1);
+  });
+});
+
+// The bridge from the Layer-1 `rollAdjusts` bucket to the Layer-2 degree resolver.
+describe("degreeAdjustmentsFor — selecting adjustments for one roll", () => {
+  const adjust = (target: string, adjustPayload: unknown, when?: unknown): PassiveEffect =>
+    ({ kind: "rollAdjust", target, adjust: adjustPayload, ...(when ? { when } : {}) }) as PassiveEffect;
+
+  // Adaptive Vision fans out to one effect per save (the parser resolves "saving
+  // throws" to all three), so a Fortitude roll must not pick up the Reflex copy.
+  const visualMap = { type: "degreeMap", map: { success: "critical-success" } };
+
+  it("keeps only the effects aimed at the stat being rolled", () => {
+    const collected = applyPassiveEffects(base, [
+      adjust("fortitude", visualMap),
+      adjust("reflex", visualMap),
+      adjust("will", visualMap),
+    ]).rollAdjusts;
+
+    expect(degreeAdjustmentsFor(collected, "fortitude")).toEqual([{ map: { success: "critical-success" } }]);
+    expect(degreeAdjustmentsFor(collected, "athletics")).toEqual([]);
+  });
+
+  it("unwraps a blanket shift to its bare direction", () => {
+    const collected = applyPassiveEffects(base, [
+      adjust("will", { type: "degree", direction: "improve" }),
+    ]).rollAdjusts;
+    expect(degreeAdjustmentsFor(collected, "will")).toEqual(["improve"]);
+  });
+
+  it("DROPS reroll payloads rather than approximating them as a shift", () => {
+    // Fortune/Misfortune operates on dice, not degrees. An absent mechanic beats a
+    // wrong one wearing its clothes.
+    const collected = applyPassiveEffects(base, [
+      adjust("will", { type: "reroll", keep: "higher" }),
+      adjust("will", { type: "degree", direction: "improve" }),
+    ]).rollAdjusts;
+    expect(degreeAdjustmentsFor(collected, "will")).toEqual(["improve"]);
+  });
+
+  // The condition is evaluated when the bucket is COLLECTED, so whether a
+  // roll-conditional adjustment survives depends on the tags the caller supplied.
+  it("omits a roll-conditional adjustment when the roll's tags were not supplied", () => {
+    const effects = [adjust("fortitude", visualMap, { tag: "effect:trait:visual" })];
+    const collected = applyPassiveEffects(base, effects).rollAdjusts;
+    expect(degreeAdjustmentsFor(collected, "fortitude")).toEqual([]);
+  });
+
+  it("includes it when the roll's tags ARE supplied", () => {
+    const effects = [adjust("fortitude", visualMap, { tag: "effect:trait:visual" })];
+    const collected = applyPassiveEffects(base, effects, { tags: ["effect:trait:visual"] }).rollAdjusts;
+    expect(degreeAdjustmentsFor(collected, "fortitude")).toEqual([{ map: { success: "critical-success" } }]);
   });
 });
