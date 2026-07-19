@@ -10,6 +10,8 @@ import {
   patchResolves,
   applyBulk,
   rejectCandidate,
+  conflictReadings,
+  resolveConflict,
   type ResolutionPatch,
   type RejectReason,
   type SilentEntity,
@@ -39,10 +41,16 @@ import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
  * exported as JSON, committed, and folded in downstream — so a guess can never reach a
  * character's sheet from this page.
  *
- * SLICE 1 (triage + accept/reject + export): no inline editor. A gapped or conflicting
- * candidate needs a value FILLED or a winner CHOSEN — that reuses the homebrew authoring
- * surface (stage 3), so here it is shown read-only with its blocker named, and can only
- * be rejected, not accepted. The promotable `review` candidates are the interactive core.
+ * THE EDITOR (slices 1–3, 2026-07-19): a gapped candidate is FILLED here and a
+ * conflicting one has its winner CHOSEN here, both through `resolution.ts` — the only
+ * path from a blocked candidate to a decision. The controls are reused wholesale from
+ * `features/authoring`, so the review surface and the homebrew editor author the same
+ * shapes; and the editor is two fields (`when`, `target`) because measured over the
+ * corpus, every gap is on one of them. `resolutionIssues` drives enablement, so this
+ * page can never record something `promote` would refuse.
+ *
+ * NOT here: authoring a brand-new effect. That is EffectAuthorPage, which is already
+ * the general authoring surface — this one only resolves what a producer proposed.
  *
  * The candidate list is an admin-only sidecar, DYNAMICALLY imported so its ~1 MB never
  * sits in a bundle a player downloads. `triage`/`groupBySignature` run here (client-side)
@@ -553,6 +561,15 @@ export function EffectReviewPage() {
     setSelected(new Set());
   };
 
+  /**
+   * Settle a conflict by picking one producer's reading. `resolveConflict` still runs
+   * the schema and gap gates, so choosing a reading is not a way around either.
+   */
+  const pickReading = (c: EffectCandidate, index: number) => {
+    const out = resolveConflict(c, { index }, { at: new Date().toISOString() });
+    if (out.ok) setDecision(c, out.decision);
+  };
+
   /** Opening a different shape resets the editor — see the `patches` note above. */
   const openGroup = (signature: string | null) => {
     setOpenSig(signature);
@@ -779,6 +796,7 @@ export function EffectReviewPage() {
                         onAccept={() => accept(c)}
                         onResolve={(p) => resolve(c, p)}
                         onReject={(reason) => reject(c, reason)}
+                        onPickReading={(i) => pickReading(c, i)}
                         onClear={() => setDecision(c, null)}
                       />
                     ))}
@@ -873,6 +891,7 @@ function CandidateRow({
   onAccept,
   onResolve,
   onReject,
+  onPickReading,
   onClear,
 }: {
   candidate: EffectCandidate;
@@ -885,6 +904,7 @@ function CandidateRow({
   onAccept: () => void;
   onResolve: (p: ResolutionPatch) => void;
   onReject: (reason?: RejectReason) => void;
+  onPickReading: (index: number) => void;
   onClear: () => void;
 }) {
   const feat = FEAT_BY_ID.get(c.entityId);
@@ -987,10 +1007,36 @@ function CandidateRow({
       {/* a choice's options — the primary content of a choice candidate */}
       {c.draft.kind === 'choice' && <ChoiceOptions choice={c.draft.choice as DraftChoice} />}
 
-      {/* conflict: show every reading, since one is wrong */}
-      {c.agreement === 'conflicting' && c.alternatives && (
-        <div className="mt-2 text-sm text-red-300/80">
-          also read as: {c.alternatives.map((a, i) => <span key={i}>{describeEffect(a)}{i < c.alternatives!.length - 1 ? '; ' : ''}</span>)}
+      {/* conflict: every reading side by side, each with the producer that proposed
+          it, so a reviewer can go check the right source text. One of them is wrong. */}
+      {c.agreement === 'conflicting' && !decided && (
+        <div className="mt-2 rounded-md border border-red-500/25 bg-red-500/5 p-2.5">
+          <div className="mb-2 text-xs uppercase tracking-wide text-red-300/70">
+            Producers disagree — pick the correct reading
+          </div>
+          <div className="space-y-1.5">
+            {conflictReadings(c).map((r) => (
+              <div key={r.index} className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => onPickReading(r.index)}
+                  className="rounded border border-emerald/30 px-2 py-0.5 text-xs text-emerald-soft hover:bg-emerald/10"
+                >
+                  Use this
+                </button>
+                <span className="text-sm text-parchment/85">{describeEffect(r.draft)}</span>
+                {r.sources.length > 0 && (
+                  <span className="rounded border border-gold/20 px-1 text-xs text-parchment/50">
+                    {r.sources.join(', ')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-parchment/45">
+            Authoring a third reading is deliberately not offered here — the readings cover every
+            conflict in the measured corpus, and a genuinely new effect belongs in the homebrew
+            editor, which is already the general authoring surface.
+          </p>
         </div>
       )}
 
