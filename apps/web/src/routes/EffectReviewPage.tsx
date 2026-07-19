@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   triage,
+  partitionDecided,
+  autoPromotable,
   groupBySignature,
   groupSilence,
   promote,
@@ -27,7 +29,17 @@ import {
   type Expr,
 } from '@pathway/core';
 import featData from '@/features/builder/data/feats.json';
-import { PredicateField, SelectorField, EffectForm, validatePassive, strip, withId, type Draft } from '@/features/authoring/fields';
+import {
+  PredicateField,
+  SelectorField,
+  EffectForm,
+  validatePassive,
+  strip,
+  withId,
+  BROADCAST,
+  EFFECT_KINDS,
+  type Draft,
+} from '@/features/authoring/fields';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { CornerBrackets } from '@/components/ui/CornerBrackets';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
@@ -309,7 +321,7 @@ function GapLine({ gap }: { gap: Gap }) {
 
 // ── the page ────────────────────────────────────────────────────────────────
 
-type Bucket = 'review' | 'gapped' | 'conflicts' | 'autoPromote' | 'invalid';
+type Bucket = 'review' | 'gapped' | 'conflicts' | 'autoPromote' | 'invalid' | 'decided';
 
 const BUCKET_LABEL: Record<Bucket, string> = {
   review: 'Needs review',
@@ -317,6 +329,7 @@ const BUCKET_LABEL: Record<Bucket, string> = {
   conflicts: 'Conflicts',
   autoPromote: 'Auto-promoted',
   invalid: 'Invalid',
+  decided: 'Decided',
 };
 
 const BUCKET_HINT: Record<Bucket, string> = {
@@ -326,6 +339,8 @@ const BUCKET_HINT: Record<Bucket, string> = {
   autoPromote:
     'Corroborated + complete: both producers agreed, so these become content with no human needed. Accept is optional here — it records a durable "a human confirmed this" that survives a re-run; Reject reverses the auto-promotion.',
   invalid: 'Complete-looking but schema-invalid — a producer bug, not a content problem.',
+  decided:
+    'Settled — a human ruled on these, so they have left the buckets above and those counts fell. Undo returns a row to the bucket it came from. Confirmations of already-auto-promoted effects are not counted here; they stay under Auto-promoted, which is why this can read lower than the Decided tile.',
 };
 
 /**
@@ -334,6 +349,22 @@ const BUCKET_HINT: Record<Bucket, string> = {
  * something, 5,020 propose nothing and had no surface at all.
  */
 type View = 'queue' | 'silent';
+
+/**
+ * How the queue is CUT. Both cuts show the same candidates; they answer different
+ * questions, so neither replaces the other.
+ *
+ * `shape` groups by `effectSignature` — "confirm this one shape across 143 feats",
+ * which is where the bulk leverage is and the only cut `BulkBar` makes sense in.
+ *
+ * `feat` groups by entity, across every bucket and regardless of decision. It exists
+ * because the shape cut can scatter ONE feat's effects across three tabs: Adaptive
+ * Vision's three saves and its degree rewrite are four rows in four places, so
+ * "are we accounting for everything this feat does" was unanswerable at a glance —
+ * and that question is exactly how a reviewer catches a MISSING effect, which no
+ * per-candidate row can ever show them.
+ */
+type Grouping = 'shape' | 'feat';
 
 const SILENCE_LABEL: Record<SilenceReason, string> = {
   'action-feat': 'Action feats',
@@ -361,6 +392,29 @@ const nameOf = (id: string): string => FEAT_BY_ID.get(id)?.name ?? id;
 // nothing is re-implemented here: the review surface and the homebrew editor author
 // the same shapes through the same fields.
 
+/** What each kind is, in the reviewer's language rather than the schema's. */
+const KIND_LABEL: Record<(typeof EFFECT_KINDS)[number], string> = {
+  modifier: 'a bonus or penalty',
+  proficiency: 'a proficiency rank',
+  grant: 'grant something',
+  note: 'a note on a stat',
+  rollAdjust: 'change the result',
+};
+
+/**
+ * Expand a broadcast target ("all saves", "all skills") into one draft per stat.
+ *
+ * The stored model is per-stat — a single `all-saves` effect is not a shape the schema
+ * accepts, and ingest fans the same tokens out — so this is purely an authoring
+ * convenience, exactly as `EffectAuthorPage.patchEffect` does it. Without it the token
+ * reaches the validator as a target and reports "unknown stat selector", which is what
+ * this panel did: it offered the broadcast options and could never accept one.
+ */
+function fanOut(draft: DraftEffect): DraftEffect[] {
+  const fan = BROADCAST[(draft as { target?: string }).target as keyof typeof BROADCAST];
+  return fan ? fan.map((target) => ({ ...draft, target }) as DraftEffect) : [draft];
+}
+
 /**
  * Author an effect on this feat that NO producer proposed.
  *
@@ -381,18 +435,35 @@ function AddEffectPanel({
 }: {
   entityId: string;
   additions: EffectDecision[];
-  onAdd: (draft: DraftEffect) => { ok: boolean };
+  onAdd: (drafts: readonly DraftEffect[]) => { ok: boolean };
   onRemove: (key: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(() => withId({ kind: 'rollAdjust', adjust: { type: 'degreeMap', map: {} } }));
-  // The same validator the homebrew editor uses, so this cannot record a shape
-  // `addEffect` would refuse — the button's disabled state and core's gate agree.
-  const issues = validatePassive(draft);
+  // `modifier` is the default because a typed bonus is the commonest thing the parser
+  // misses. This panel was pinned to `rollAdjust` with no way to change it, so the one
+  // effect a human most needed to add — "+1 status to saves vs darkness" — could not be
+  // authored here at all.
+  const [kind, setKind] = useState<(typeof EFFECT_KINDS)[number]>('modifier');
+  const fresh = (k: (typeof EFFECT_KINDS)[number]) => withId({ kind: k });
+  const [draft, setDraft] = useState<Draft>(() => fresh('modifier'));
+
+  // Validate what will actually be RECORDED: a broadcast target becomes several drafts,
+  // and validating the un-fanned one reports "unknown stat selector" on a shape that is
+  // never stored. Messages are deduped — the same complaint about sixteen skills is one
+  // problem to the author.
+  const drafts = fanOut(strip(draft) as DraftEffect);
+  const issues = [...new Set(drafts.flatMap((d) => validatePassive(d as unknown as Draft)))];
+
+  const pickKind = (k: (typeof EFFECT_KINDS)[number]) => {
+    // A fresh draft per kind, so switching never leaves a stale field from the old shape
+    // (a `rollAdjust`'s `adjust` hanging off a `modifier`) that the schema would refuse.
+    setKind(k);
+    setDraft(fresh(k));
+  };
 
   const submit = () => {
-    if (onAdd(strip(draft) as DraftEffect).ok) {
-      setDraft(withId({ kind: 'rollAdjust', adjust: { type: 'degreeMap', map: {} } }));
+    if (onAdd(drafts).ok) {
+      setDraft(fresh(kind));
       setOpen(false);
     }
   };
@@ -422,7 +493,26 @@ function AddEffectPanel({
           <div className="mb-1.5 text-xs uppercase tracking-wide text-parchment/50">
             add an effect to {nameOf(entityId)} — one no producer proposed
           </div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-parchment/50">this feat also…</span>
+            <select
+              className="rounded border border-gold/20 bg-midnight-950/60 px-2 py-1 text-sm text-parchment"
+              value={kind}
+              onChange={(e) => pickKind(e.target.value as (typeof EFFECT_KINDS)[number])}
+            >
+              {EFFECT_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {KIND_LABEL[k]}
+                </option>
+              ))}
+            </select>
+          </div>
           <EffectForm draft={draft} onPatch={(patch) => setDraft((d) => ({ ...d, ...patch }))} allowBroadcast />
+          {drafts.length > 1 && (
+            <p className="mt-1.5 text-xs text-parchment/50">
+              fans out to {drafts.length} effects, one per stat — the stored model is per-stat
+            </p>
+          )}
           {issues.length > 0 && (
             <ul className="mt-2 space-y-0.5">
               {issues.map((i, n) => (
@@ -655,8 +745,16 @@ export function EffectReviewPage() {
   const [failed, setFailed] = useState(false);
   const [view, setView] = useState<View>('queue');
   const [bucket, setBucket] = useState<Bucket>('review');
+  const [grouping, setGrouping] = useState<Grouping>('shape');
   const [openSig, setOpenSig] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
+  /** Which rulings the Decided bucket shows — a reject is settled but not the same claim. */
+  const [decidedFilter, setDecidedFilter] = useState<'all' | 'accept' | 'reject'>('all');
+  // By-feat state. The corpus has 1,096 feats with candidates, so a search is not a
+  // convenience — without it the cut is unusable for finding the one feat you want.
+  const [featQuery, setFeatQuery] = useState('');
+  const [outstandingOnly, setOutstandingOnly] = useState(true);
+  const [openFeat, setOpenFeat] = useState<string | null>(null);
   const [decisions, setDecisions] = useState<Map<string, EffectDecision>>(new Map());
   // Per-candidate gap fills, and the multi-select state for the bulk bar. Both are
   // scoped to the open signature group and cleared when it changes — a patch authored
@@ -718,11 +816,84 @@ export function EffectReviewPage() {
     };
   }, []);
 
+  const split = useMemo(
+    () => (data ? partitionDecided(data.candidates, [...decisions.values()]) : null),
+    [data, decisions],
+  );
   const buckets = useMemo(() => (data ? triage(data.candidates) : null), [data]);
+
+  /**
+   * The tabs. Decided work leaves the queue — a settled row used to keep its seat and its
+   * tally forever, so no count on this page could fall as the reviewer worked.
+   *
+   * It drains the four HUMAN buckets only. Auto-promoted keeps every corroborated
+   * candidate whether or not someone confirmed it, because that tab is not a queue: those
+   * are already content, an accept there is the optional durable "a human confirmed this"
+   * its own hint describes, and draining it would leave the tab reading 0 while 342
+   * effects quietly ship. A confirmed row stays there, tinted, with its undo.
+   */
+  const bucketList = useMemo((): Record<Bucket, EffectCandidate[]> | null => {
+    if (!buckets || !split) return null;
+    const undecided = new Set(split.undecided.map(decisionId));
+    const open = (cs: EffectCandidate[]) => cs.filter((c) => undecided.has(decisionId(c)));
+    return {
+      autoPromote: buckets.autoPromote,
+      conflicts: open(buckets.conflicts),
+      gapped: open(buckets.gapped),
+      review: open(buckets.review),
+      invalid: open(buckets.invalid),
+      // Everything a human ruled on that was theirs to rule on. An auto-promoted
+      // confirmation is not listed here as well — one row, one place.
+      decided: split.decided.filter((c) => !autoPromotable(c)),
+    };
+  }, [buckets, split]);
 
   // The signature groups for the selected bucket, largest shape first — "confirm this
   // across 150 feats", not 150 forms.
-  const groups = useMemo(() => (buckets ? groupBySignature(buckets[bucket]) : []), [buckets, bucket]);
+  const groups = useMemo(() => {
+    if (!bucketList) return [];
+    const list =
+      bucket === 'decided' && decidedFilter !== 'all'
+        ? bucketList.decided.filter((c) => decisions.get(decisionId(c))?.action === decidedFilter)
+        : bucketList[bucket];
+    return groupBySignature(list);
+  }, [bucketList, bucket, decidedFilter, decisions]);
+
+  /**
+   * Every feat that proposed anything, with ALL of its candidates — the by-feat cut.
+   *
+   * Built from the full candidate list rather than a bucket, deliberately: a feat whose
+   * effects are half accepted and half conflicting must show BOTH, or the cut cannot
+   * answer the question it exists for.
+   */
+  const featGroups = useMemo(() => {
+    if (!data) return [];
+    const m = new Map<string, EffectCandidate[]>();
+    for (const c of data.candidates) {
+      const list = m.get(c.entityId);
+      if (list) list.push(c);
+      else m.set(c.entityId, [c]);
+    }
+    return [...m.entries()]
+      .map(([entityId, candidates]) => ({ entityId, name: nameOf(entityId), candidates }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  /**
+   * Feats matching the search and the outstanding filter.
+   *
+   * "Outstanding" is undecided AND not auto-promotable — the same definition the "Need a
+   * human" tile uses, so a feat whose only candidates were corroborated does not sit in
+   * the list looking like work.
+   */
+  const visibleFeats = useMemo(() => {
+    const q = featQuery.trim().toLowerCase();
+    return featGroups.filter((g) => {
+      if (q && !g.name.toLowerCase().includes(q)) return false;
+      if (!outstandingOnly) return true;
+      return g.candidates.some((c) => !decisions.has(decisionId(c)) && !autoPromotable(c));
+    });
+  }, [featGroups, featQuery, outstandingOnly, decisions]);
 
   /**
    * The ONE place local state and the database move together. Every decision path
@@ -813,6 +984,9 @@ export function EffectReviewPage() {
       })),
     );
 
+  /** Undo a whole group of rulings — the Decided bucket's counterpart to accept-all. */
+  const clearGroup = (cands: EffectCandidate[]) => commit(cands.map((c) => ({ c, decision: null })));
+
   const setPatch = (c: EffectCandidate, patch: ResolutionPatch) =>
     setPatches((prev) => new Map(prev).set(decisionId(c), patch));
 
@@ -858,13 +1032,28 @@ export function EffectReviewPage() {
   };
 
 
-  const addTo = (entityId: string, draft: DraftEffect) => {
-    const out = addEffect(entityId, draft, additions, { at: new Date().toISOString() });
-    if (out.ok) {
-      setAdditions((prev) => [...prev, out.decision]);
-      persist(() => saveDecisions([out.decision]));
+  /**
+   * Record one or more authored effects. Plural because a broadcast target ("all saves")
+   * fans out to one effect per stat — the stored model is per-stat.
+   *
+   * ALL OR NOTHING, and the keys are minted against a pool that grows as it goes: minting
+   * each against the unchanged `additions` would hand two of them the same key, and the
+   * second would overwrite the first. A half-recorded fan-out is a wrong sheet — "+1 to
+   * all saves" silently becoming +1 to two of the three.
+   */
+  const addTo = (entityId: string, drafts: readonly DraftEffect[]) => {
+    const made: EffectDecision[] = [];
+    let pool = additions;
+    for (const draft of drafts) {
+      const out = addEffect(entityId, draft, pool, { at: new Date().toISOString() });
+      if (!out.ok) return out; // nothing recorded — `made` is discarded with the frame
+      made.push(out.decision);
+      pool = [...pool, out.decision];
     }
-    return out;
+    if (made.length === 0) return { ok: true as const, decision: undefined };
+    setAdditions((prev) => [...prev, ...made]);
+    persist(() => saveDecisions(made));
+    return { ok: true as const, decision: made[0] };
   };
   const removeAddition = (key: string) => {
     const gone = additions.find((a) => a.key === key);
@@ -905,7 +1094,7 @@ export function EffectReviewPage() {
       </div>
     );
   }
-  if (!data || !buckets) {
+  if (!data || !buckets || !bucketList) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12">
         <p className="text-parchment/60">Loading the candidate queue…</p>
@@ -914,9 +1103,44 @@ export function EffectReviewPage() {
   }
 
   const { summary } = data;
-  const needsHuman = summary.conflicts + summary.gapped + summary.review + summary.invalid;
+  /**
+   * Outstanding work, LIVE — from the undecided triage, not the baked `summary`.
+   *
+   * This read off `data.summary` until now, which is generated by build-candidates.mjs
+   * and therefore constant: 343 decisions in, it still said 1,702 needed a human, and it
+   * would have said so with every candidate decided. The one number a reviewer uses to
+   * judge whether the work is shrinking could not shrink.
+   */
+  const needsHuman =
+    bucketList.conflicts.length + bucketList.gapped.length + bucketList.review.length + bucketList.invalid.length;
   const accepts = [...decisions.values()].filter((d) => d.action === 'accept').length;
   const rejects = [...decisions.values()].filter((d) => d.action === 'reject').length;
+  // Counted over the decided CANDIDATES, not over `decisions`, so the sub-filter tallies
+  // match what the list can actually show: a decision left over from an earlier producer
+  // run points at no candidate, and would otherwise be counted into a filter that then
+  // renders one row fewer than it promised.
+  const decidedBy = (action: 'accept' | 'reject') =>
+    bucketList.decided.filter((c) => decisions.get(decisionId(c))?.action === action).length;
+
+  /**
+   * Everything a candidate row needs, bundled once. The row is rendered from two cuts
+   * now (by shape and by feat), and threading fourteen props through both is how the
+   * two drift — a control added to one and forgotten in the other.
+   */
+  const bind: RowBind = {
+    decisions,
+    additions,
+    patches,
+    showText,
+    setPatch,
+    accept,
+    reject,
+    resolve,
+    pickReading,
+    addTo,
+    removeAddition,
+    clear: (c) => setDecision(c, null),
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -931,8 +1155,8 @@ export function EffectReviewPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Candidates" value={summary.candidates.toLocaleString()} hint={`${summary.featsWithProse.toLocaleString()} feats`} />
-        <StatTile label="Auto-promoted" value={summary.autoPromote.toLocaleString()} hint="corroborated + complete" />
-        <StatTile label="Need a human" value={needsHuman.toLocaleString()} hint="conflict · gapped · review" />
+        <StatTile label="Auto-promoted" value={buckets.autoPromote.length.toLocaleString()} hint="corroborated + complete" />
+        <StatTile label="Need a human" value={needsHuman.toLocaleString()} hint="still undecided" />
         <StatTile label="Decided" value={decisions.size.toLocaleString()} hint={`${accepts} accept · ${rejects} reject`} />
       </div>
 
@@ -1002,8 +1226,48 @@ export function EffectReviewPage() {
 
       {view === 'queue' && (
         <>
+      {/* the cut — by shape (bulk leverage) or by feat (completeness). See `Grouping`. */}
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <span className="text-xs uppercase tracking-wide text-parchment/40">group by</span>
+        {([
+          ['shape', 'Shape'],
+          ['feat', 'Feat'],
+        ] as [Grouping, string][]).map(([g, label]) => (
+          <button
+            key={g}
+            onClick={() => setGrouping(g)}
+            className={`rounded-md border px-3 py-1 text-sm ${
+              grouping === g ? 'border-arcane/50 bg-arcane/10 text-arcane' : 'border-gold/15 text-parchment/70 hover:bg-midnight-900/50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="text-xs text-parchment/45">
+          {grouping === 'shape'
+            ? 'one shape across many feats — where the bulk actions are'
+            : 'one feat with every effect we found for it — is anything missing?'}
+        </span>
+      </div>
+
+      {grouping === 'feat' && (
+        <FeatPanel
+          feats={visibleFeats}
+          total={featGroups.length}
+          query={featQuery}
+          onQuery={setFeatQuery}
+          outstandingOnly={outstandingOnly}
+          onOutstandingOnly={setOutstandingOnly}
+          openFeat={openFeat}
+          onOpenFeat={setOpenFeat}
+          bind={bind}
+        />
+      )}
+
+      {grouping === 'shape' && (
+        <>
       {/* bucket tabs */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {(Object.keys(BUCKET_LABEL) as Bucket[]).map((b) => (
           <button
             key={b}
@@ -1012,14 +1276,43 @@ export function EffectReviewPage() {
               openGroup(null);
             }}
             className={`rounded-md border px-3 py-1.5 text-sm ${
-              bucket === b ? 'border-gold/50 bg-midnight-900/80 text-gold' : 'border-gold/15 text-parchment/70 hover:bg-midnight-900/50'
+              bucket === b
+                ? 'border-gold/50 bg-midnight-900/80 text-gold'
+                : b === 'decided'
+                  ? 'border-emerald/20 text-emerald-soft/70 hover:bg-midnight-900/50'
+                  : 'border-gold/15 text-parchment/70 hover:bg-midnight-900/50'
             }`}
           >
-            {BUCKET_LABEL[b]} <span className="tabular-nums text-parchment/50">{buckets[b].length}</span>
+            {BUCKET_LABEL[b]} <span className="tabular-nums text-parchment/50">{bucketList[b].length}</span>
           </button>
         ))}
       </div>
       <p className="mt-2 max-w-3xl text-sm text-parchment/60">{BUCKET_HINT[bucket]}</p>
+
+      {/* the Decided bucket splits by what was ruled — an accept and a reject are both
+          settled, but they are not the same claim about the content. */}
+      {bucket === 'decided' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {([
+            ['all', `All ${bucketList.decided.length}`],
+            ['accept', `Accepted ${decidedBy('accept')}`],
+            ['reject', `Rejected ${decidedBy('reject')}`],
+          ] as ['all' | 'accept' | 'reject', string][]).map(([f, label]) => (
+            <button
+              key={f}
+              onClick={() => {
+                setDecidedFilter(f);
+                openGroup(null);
+              }}
+              className={`rounded border px-2 py-0.5 text-xs ${
+                decidedFilter === f ? 'border-gold/50 text-gold' : 'border-gold/15 text-parchment/60 hover:text-gold'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* signature groups */}
       <div className="mt-4 space-y-3">
@@ -1043,26 +1336,37 @@ export function EffectReviewPage() {
 
               {open && (
                 <div className="border-t border-gold/10 px-4 py-3">
-                  {promotable.length > 0 && (
+                  {bucket === 'decided' ? (
                     <div className="mb-3 flex gap-2">
                       <button
-                        onClick={() => acceptGroup(candidates)}
-                        className="rounded border border-emerald/30 px-2.5 py-1 text-xs text-emerald-soft hover:bg-emerald/10"
+                        onClick={() => clearGroup(candidates)}
+                        className="rounded border border-gold/25 px-2.5 py-1 text-xs text-parchment/70 hover:text-gold"
                       >
-                        Accept all {promotable.length}
-                      </button>
-                      <button
-                        onClick={() => rejectGroup(candidates)}
-                        className="rounded border border-red-500/25 px-2.5 py-1 text-xs text-red-300/80 hover:bg-red-500/10"
-                      >
-                        Reject all {candidates.length}
+                        Undo all {candidates.length}
                       </button>
                     </div>
+                  ) : (
+                    promotable.length > 0 && (
+                      <div className="mb-3 flex gap-2">
+                        <button
+                          onClick={() => acceptGroup(candidates)}
+                          className="rounded border border-emerald/30 px-2.5 py-1 text-xs text-emerald-soft hover:bg-emerald/10"
+                        >
+                          Accept all {promotable.length}
+                        </button>
+                        <button
+                          onClick={() => rejectGroup(candidates)}
+                          className="rounded border border-red-500/25 px-2.5 py-1 text-xs text-red-300/80 hover:bg-red-500/10"
+                        >
+                          Reject all {candidates.length}
+                        </button>
+                      </div>
+                    )
                   )}
                   {/* bulk fill — one patch across a selection. The leverage lives here:
                       504 distinct `when` phrasings mean you resolve by the ANSWER, not
                       by the question, so the selection is the human's, not automatic. */}
-                  {gapFieldsOf(candidates).size > 0 && (
+                  {bucket !== 'decided' && gapFieldsOf(candidates).size > 0 && (
                     <BulkBar
                       candidates={candidates}
                       selected={selected}
@@ -1076,13 +1380,10 @@ export function EffectReviewPage() {
                   )}
                   <div className="space-y-2">
                     {candidates.map((c) => (
-                      <CandidateRow
+                      <BoundRow
                         key={decisionId(c)}
                         candidate={c}
-                        decision={decisions.get(decisionId(c))}
-                        showText={showText}
-                        patch={patches.get(decisionId(c)) ?? {}}
-                        onPatch={(p) => setPatch(c, p)}
+                        bind={bind}
                         selected={selected.has(decisionId(c))}
                         onSelect={(on) =>
                           setSelected((prev) => {
@@ -1092,14 +1393,6 @@ export function EffectReviewPage() {
                             return next;
                           })
                         }
-                        additions={additions.filter((a) => a.entityId === c.entityId)}
-                        onAdd={(d) => addTo(c.entityId, d)}
-                        onRemoveAddition={removeAddition}
-                        onAccept={() => accept(c)}
-                        onResolve={(p) => resolve(c, p)}
-                        onReject={(reason) => reject(c, reason)}
-                        onPickReading={(i) => pickReading(c, i)}
-                        onClear={() => setDecision(c, null)}
                       />
                     ))}
                   </div>
@@ -1108,8 +1401,14 @@ export function EffectReviewPage() {
             </div>
           );
         })}
-        {groups.length === 0 && <p className="text-sm text-parchment/50">Nothing in this bucket.</p>}
+        {groups.length === 0 && (
+          <p className="text-sm text-parchment/50">
+            {bucket === 'decided' ? 'Nothing decided yet.' : 'Nothing left in this bucket.'}
+          </p>
+        )}
       </div>
+        </>
+      )}
         </>
       )}
 
@@ -1182,10 +1481,242 @@ function BulkBar({
   );
 }
 
+/**
+ * The page state and handlers a candidate row needs, bundled so both cuts bind a row
+ * the same way. See the `bind` note in the page.
+ */
+interface RowBind {
+  decisions: Map<string, EffectDecision>;
+  additions: EffectDecision[];
+  patches: Map<string, ResolutionPatch>;
+  showText: boolean;
+  setPatch: (c: EffectCandidate, p: ResolutionPatch) => void;
+  accept: (c: EffectCandidate) => void;
+  reject: (c: EffectCandidate, reason?: RejectReason) => void;
+  resolve: (c: EffectCandidate, p: ResolutionPatch) => void;
+  pickReading: (c: EffectCandidate, index: number) => void;
+  addTo: (entityId: string, drafts: readonly DraftEffect[]) => { ok: boolean };
+  removeAddition: (key: string) => void;
+  clear: (c: EffectCandidate) => void;
+}
+
+/** A `CandidateRow` wired to the page. The ONE place a row's props are assembled. */
+function BoundRow({
+  candidate: c,
+  bind,
+  selected,
+  onSelect,
+  showName = true,
+  showAddPanel = true,
+  showText,
+}: {
+  candidate: EffectCandidate;
+  bind: RowBind;
+  selected?: boolean;
+  onSelect?: (on: boolean) => void;
+  /** By-feat renders the name once on the card, so the rows under it drop theirs. */
+  showName?: boolean;
+  /** Likewise the add-effect panel, which is per-FEAT and was repeated per row. */
+  showAddPanel?: boolean;
+  showText?: boolean;
+}) {
+  const id = decisionId(c);
+  return (
+    <CandidateRow
+      candidate={c}
+      decision={bind.decisions.get(id)}
+      showText={showText ?? bind.showText}
+      showName={showName}
+      showAddPanel={showAddPanel}
+      patch={bind.patches.get(id) ?? {}}
+      onPatch={(p) => bind.setPatch(c, p)}
+      selected={selected ?? false}
+      onSelect={onSelect ?? (() => {})}
+      additions={bind.additions.filter((a) => a.entityId === c.entityId)}
+      onAdd={(d) => bind.addTo(c.entityId, d)}
+      onRemoveAddition={bind.removeAddition}
+      onAccept={() => bind.accept(c)}
+      onResolve={(p) => bind.resolve(c, p)}
+      onReject={(reason) => bind.reject(c, reason)}
+      onPickReading={(i) => bind.pickReading(c, i)}
+      onClear={() => bind.clear(c)}
+    />
+  );
+}
+
+/** How many feats to render at once. Enough to browse, few enough to stay responsive. */
+const FEAT_PAGE = 60;
+
+/** A candidate's state in one word — what a by-feat card summarises per row. */
+function statusOf(c: EffectCandidate, decisions: Map<string, EffectDecision>): {
+  label: string;
+  className: string;
+  outstanding: boolean;
+} {
+  const d = decisions.get(decisionId(c));
+  if (d?.action === 'reject') return { label: 'rejected', className: 'border-red-500/30 text-red-300/80', outstanding: false };
+  if (d) return { label: 'accepted', className: 'border-emerald/30 text-emerald-soft', outstanding: false };
+  if (c.agreement === 'conflicting') return { label: 'conflict', className: 'border-red-500/40 text-red-300', outstanding: true };
+  if (c.gaps.length > 0) return { label: 'gapped', className: 'border-brass/40 text-brass', outstanding: true };
+  if (autoPromotable(c)) return { label: 'auto', className: 'border-gold/25 text-gold/70', outstanding: false };
+  if (promote(c).ok) return { label: 'needs review', className: 'border-arcane/40 text-arcane', outstanding: true };
+  return { label: 'invalid', className: 'border-red-500/30 text-red-300/70', outstanding: true };
+}
+
+/**
+ * The by-feat cut: one card per feat, holding EVERY effect any producer proposed for it.
+ *
+ * This is a completeness surface, not a throughput one. The shape cut is faster for
+ * confirming a known shape across 143 feats; it cannot show that a feat's fourth effect
+ * was never proposed at all, because that absence has no row anywhere. Here the feat's
+ * full text sits above its effects, so the reviewer reads the prose and counts.
+ *
+ * Decided rows stay VISIBLE here rather than moving to their own section, unlike the
+ * shape cut — "what does this feat do" is answered wrongly if the accepted half is
+ * hidden. The status chip carries the distinction instead.
+ */
+function FeatPanel({
+  feats,
+  total,
+  query,
+  onQuery,
+  outstandingOnly,
+  onOutstandingOnly,
+  openFeat,
+  onOpenFeat,
+  bind,
+}: {
+  feats: { entityId: string; name: string; candidates: EffectCandidate[] }[];
+  total: number;
+  query: string;
+  onQuery: (q: string) => void;
+  outstandingOnly: boolean;
+  onOutstandingOnly: (on: boolean) => void;
+  openFeat: string | null;
+  onOpenFeat: (id: string | null) => void;
+  bind: RowBind;
+}) {
+  return (
+    <>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <input
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="Search feats…"
+          className="rounded-md border border-gold/20 bg-midnight-950/60 px-3 py-1.5 text-sm text-parchment placeholder:text-parchment/35 focus:border-gold/50 focus:outline-none"
+        />
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-parchment/70">
+          <input type="checkbox" checked={outstandingOnly} onChange={(e) => onOutstandingOnly(e.target.checked)} />
+          only feats with outstanding work
+        </label>
+        <span className="text-sm text-parchment/45">
+          {feats.length.toLocaleString()} of {total.toLocaleString()} feats
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {feats.slice(0, FEAT_PAGE).map((f) => {
+          const open = openFeat === f.entityId;
+          const statuses = f.candidates.map((c) => statusOf(c, bind.decisions));
+          const outstanding = statuses.filter((s) => s.outstanding).length;
+          const feat = FEAT_BY_ID.get(f.entityId);
+          const featAdditions = bind.additions.filter((a) => a.entityId === f.entityId);
+
+          return (
+            <div key={f.entityId} className="relative rounded-lg border border-gold/15 bg-midnight-900/40">
+              {open && <CornerBrackets />}
+              <button
+                onClick={() => onOpenFeat(open ? null : f.entityId)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left"
+              >
+                <span className="font-ui text-base text-gold">{f.name}</span>
+                <span className="text-xs text-parchment/50">
+                  {f.candidates.length} effect{f.candidates.length === 1 ? '' : 's'}
+                </span>
+                {featAdditions.length > 0 && (
+                  <span className="text-xs text-emerald-soft/70">+{featAdditions.length} added</span>
+                )}
+                {/* The chips ARE the summary — a closed card still says where this feat
+                    stands, so scanning the list does not require opening each one. */}
+                <span className="flex flex-wrap gap-1">
+                  {statuses.map((s, i) => (
+                    <span key={i} className={`rounded border px-1 text-[10px] ${s.className}`}>
+                      {s.label}
+                    </span>
+                  ))}
+                </span>
+                <span className="ml-auto flex items-center gap-2">
+                  {outstanding > 0 ? (
+                    <span className="text-xs text-brass">{outstanding} outstanding</span>
+                  ) : (
+                    <span className="text-xs text-emerald-soft/60">settled</span>
+                  )}
+                  <span className="text-parchment/40">{open ? '▾' : '▸'}</span>
+                </span>
+              </button>
+
+              {open && (
+                <div className="border-t border-gold/10 px-4 py-3">
+                  {/* The prose ONCE, above the effects it produced — this is the cut where
+                      you read the feat and check nothing in it went unmodelled. */}
+                  {feat?.description && (
+                    <div className="mb-3 max-h-72 overflow-y-auto rounded-md border border-gold/15 bg-midnight-950/70 p-3">
+                      <GrimoireMarkdown strip={['access', 'source']}>{feat.description}</GrimoireMarkdown>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {f.candidates.map((c) => (
+                      <BoundRow
+                        key={decisionId(c)}
+                        candidate={c}
+                        bind={bind}
+                        showName={false}
+                        showAddPanel={false}
+                        showText={false}
+                      />
+                    ))}
+                  </div>
+
+                  {/* ONE add panel for the feat. In the shape cut this renders inside every
+                      row, so a feat with three candidates lists its additions three times. */}
+                  <div className="mt-3 border-t border-gold/10 pt-2">
+                    <AddEffectPanel
+                      entityId={f.entityId}
+                      additions={featAdditions}
+                      onAdd={(d) => bind.addTo(f.entityId, d)}
+                      onRemove={bind.removeAddition}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {feats.length === 0 && (
+          <p className="text-sm text-parchment/50">
+            {outstandingOnly
+              ? 'No feats with outstanding work match — clear the filter to see settled ones.'
+              : 'No feats match that search.'}
+          </p>
+        )}
+        {feats.length > FEAT_PAGE && (
+          <p className="text-xs text-parchment/50">
+            Showing the first {FEAT_PAGE} of {feats.length.toLocaleString()} — search to narrow.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
 function CandidateRow({
   candidate: c,
   decision,
   showText,
+  showName = true,
+  showAddPanel = true,
   patch,
   onPatch,
   selected,
@@ -1202,12 +1733,16 @@ function CandidateRow({
   candidate: EffectCandidate;
   decision: EffectDecision | undefined;
   showText: boolean;
+  /** By-feat names the feat once on its card; the rows under it would just repeat it. */
+  showName?: boolean;
+  /** Likewise the add panel — it is per-FEAT, and by-feat hoists it out of the rows. */
+  showAddPanel?: boolean;
   patch: ResolutionPatch;
   onPatch: (p: ResolutionPatch) => void;
   selected: boolean;
   onSelect: (on: boolean) => void;
   additions: EffectDecision[];
-  onAdd: (draft: DraftEffect) => { ok: boolean };
+  onAdd: (drafts: readonly DraftEffect[]) => { ok: boolean };
   onRemoveAddition: (key: string) => void;
   onAccept: () => void;
   onResolve: (p: ResolutionPatch) => void;
@@ -1244,7 +1779,7 @@ function CandidateRow({
             title="Select for a bulk fill"
           />
         )}
-        <span className="font-ui text-base text-parchment">{feat?.name ?? c.entityId}</span>
+        {showName && <span className="font-ui text-base text-parchment">{feat?.name ?? c.entityId}</span>}
         <span className={`rounded border px-1.5 py-0.5 text-xs ${AGREEMENT_STYLE[c.agreement] ?? 'border-gold/20 text-parchment/70'}`}>
           {c.agreement}
         </span>
@@ -1381,12 +1916,14 @@ function CandidateRow({
         </div>
       )}
 
-      <AddEffectPanel
-        entityId={c.entityId}
-        additions={additions}
-        onAdd={onAdd}
-        onRemove={onRemoveAddition}
-      />
+      {showAddPanel && (
+        <AddEffectPanel
+          entityId={c.entityId}
+          additions={additions}
+          onAdd={onAdd}
+          onRemove={onRemoveAddition}
+        />
+      )}
 
       {/* Full feat text, on demand — read and confirm in place, especially for
           foundry-only rows where the parser left no quoted span. */}

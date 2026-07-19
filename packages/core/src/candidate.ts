@@ -533,6 +533,42 @@ export function triage(candidates: readonly EffectCandidate[]): Triage {
   return out;
 }
 
+/** A queue split into what a human has ruled on and what still awaits them. */
+export interface DecidedPartition {
+  /** Candidates a decision points at — settled work, out of the active queue. */
+  decided: EffectCandidate[];
+  /** Candidates nobody has ruled on. What `triage` should bucket for the queue. */
+  undecided: EffectCandidate[];
+}
+
+/**
+ * Split candidates by whether a human has already ruled on them.
+ *
+ * This lives beside `triage` for the same reason `triage` lives here: the queue's
+ * policy is one implementation, and the UI renders a decision it did not make. Without
+ * it the review page counted a settled candidate as outstanding forever — 2,044
+ * candidates and 343 decisions still read "1,702 need a human", which is precisely the
+ * number a reviewer uses to judge whether the work is shrinking.
+ *
+ * `add` decisions are ignored: they carry a minted key addressing an effect NO producer
+ * proposed (see `addEffect`), so they match no candidate by construction. Counting one
+ * as decided would be counting it against a row that does not exist.
+ */
+export function partitionDecided(
+  candidates: readonly EffectCandidate[],
+  decisions: readonly EffectDecision[],
+): DecidedPartition {
+  const ruled = new Set<string>();
+  for (const d of decisions) if (d.action !== "add") ruled.add(`${d.entityId} ${d.key}`);
+
+  const out: DecidedPartition = { decided: [], undecided: [] };
+  for (const c of candidates) {
+    if (ruled.has(`${c.entityId} ${c.key}`)) out.decided.push(c);
+    else out.undecided.push(c);
+  }
+  return out;
+}
+
 /** Group candidates by their bulk-review shape (`effectSignature`), largest first. */
 export function groupBySignature(candidates: readonly EffectCandidate[]): { signature: string; candidates: EffectCandidate[] }[] {
   const m = new Map<string, EffectCandidate[]>();

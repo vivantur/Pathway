@@ -7,6 +7,7 @@ import {
   effectKey,
   effectSignature,
   groupBySignature,
+  partitionDecided,
   promote,
   reconcile,
   resolveEntity,
@@ -281,6 +282,57 @@ describe("triage — the queue the UI renders", () => {
     const t = triage([cand({ agreement: "corroborated", draft: { kind: "modifier", target: "bogus" } })]);
     expect(t.autoPromote).toHaveLength(0);
     expect(t.invalid).toHaveLength(1);
+  });
+});
+
+describe("partitionDecided — settled work leaves the queue", () => {
+  const ruling = (over: Partial<EffectDecision> = {}): EffectDecision => ({
+    entityId: "f",
+    key: "a",
+    action: "accept",
+    ...over,
+  });
+
+  it("splits by (entityId, key), the same identity a decision points at", () => {
+    const p = partitionDecided([cand({ key: "a" }), cand({ key: "b" })], [ruling()]);
+    expect(p.decided.map((c) => c.key)).toEqual(["a"]);
+    expect(p.undecided.map((c) => c.key)).toEqual(["b"]);
+  });
+
+  it("counts a REJECT as decided — a ruling is a ruling, not just an acceptance", () => {
+    // The bug this guards: filtering on `action === "accept"` would leave every
+    // rejected candidate sitting in the active queue, so the count a reviewer reads
+    // as remaining work would never fall when they reject.
+    const p = partitionDecided([cand({ key: "a" })], [ruling({ action: "reject" })]);
+    expect(p.decided).toHaveLength(1);
+  });
+
+  it("matches on the entity too, so the same key on another feat stays undecided", () => {
+    const p = partitionDecided([cand({ entityId: "g", key: "a" })], [ruling({ entityId: "f" })]);
+    expect(p.undecided).toHaveLength(1);
+  });
+
+  it("ignores `add` decisions — a minted key addresses no candidate", () => {
+    // An addition is an effect no producer proposed, so it has no row in the queue.
+    // Were it to match one, it would retire a candidate a human never actually ruled on.
+    const p = partitionDecided([cand({ key: "a" })], [ruling({ action: "add" })]);
+    expect(p.decided).toHaveLength(0);
+    expect(p.undecided).toHaveLength(1);
+  });
+
+  it("keeps every candidate exactly once, so no count can double or vanish", () => {
+    const all = [cand({ key: "a" }), cand({ key: "b" }), cand({ key: "c" })];
+    const p = partitionDecided(all, [ruling({ key: "a" }), ruling({ key: "c", action: "reject" })]);
+    expect(p.decided.length + p.undecided.length).toBe(all.length);
+  });
+
+  it("tolerates a stale decision pointing at a candidate that no longer exists", () => {
+    // Candidates are regenerated whenever a producer improves; a decision outlives the
+    // proposal. `resolveEntity` reports those as `staleDecisions` — here they are simply
+    // inert, and must not throw or invent a row.
+    const p = partitionDecided([cand({ key: "a" })], [ruling({ key: "gone" })]);
+    expect(p.decided).toHaveLength(0);
+    expect(p.undecided).toHaveLength(1);
   });
 });
 
