@@ -14,6 +14,9 @@
 //     succeed.) The shift is clamped — it can't exceed crit success / crit fail.
 //   • ORDER: "apply the adjustment from a natural 20 or natural 1 BEFORE anything
 //     else" — so the natural shift precedes any ability-driven degree adjustment.
+//   • MULTIPLE ADJUSTMENTS (owner-supplied, 2026-07-19): "apply all the effects that
+//     IMPROVE the degree, followed by any that WORSEN it. Each effect can only change
+//     the degree of success once." See `applyDegreeAdjustments`.
 //
 // This module computes only the DEGREE. It does not roll dice, deal damage, or
 // know what a given degree means for a given action (that is the action's data).
@@ -29,8 +32,27 @@ const DEGREE_INDEX: Record<DegreeOfSuccess, number> = {
   "critical-success": 3,
 };
 
-/** A post-natural degree adjustment supplied by a Layer-1 `rollAdjust` effect. */
-export type DegreeAdjustment = "improve" | "worsen";
+/**
+ * A post-natural degree adjustment supplied by a Layer-1 `rollAdjust` effect.
+ *
+ * Two shapes:
+ *   • `"improve"` / `"worsen"` — a BLANKET one-degree shift, whatever the roll came
+ *     out as (Assurance-style).
+ *   • `{ map }` — a CONDITIONAL rewrite keyed on the incoming degree, which is what
+ *     most PF2e prose actually says: "when you roll a success …, you get a critical
+ *     success instead" is `{ success: "critical-success" }`. A degree with no entry
+ *     is untouched, so the map is inherently conditional — Adaptive Vision improves
+ *     a success and leaves a failure alone.
+ *
+ * The map targets an ABSOLUTE degree rather than a step count because that is what
+ * the prose says ("you get a critical success INSTEAD"), and because it expresses
+ * a floor without a second primitive: Forager's "any result worse than a success,
+ * you get a success" is `{ "critical-failure": "success", failure: "success" }`.
+ */
+export type DegreeAdjustment =
+  | "improve"
+  | "worsen"
+  | { map: Partial<Record<DegreeOfSuccess, DegreeOfSuccess>> };
 
 /** Shift a degree by `steps` (may be negative), clamped to the crit-fail/crit-success bounds. */
 export function shiftDegree(degree: DegreeOfSuccess, steps: number): DegreeOfSuccess {
@@ -63,12 +85,62 @@ export interface DegreeInput {
    */
   die?: number;
   /**
-   * Ability-driven degree adjustments (Layer-1 `rollAdjust` hooks), applied in
-   * order AFTER the natural-20/1 shift, per the rules' ordering. Each is a clamped
-   * one-step shift. (Conditional "treat a X as a Y" abilities and Fortune/
-   * Misfortune are separate mechanics, added later from their own rules text.)
+   * Ability-driven degree adjustments (Layer-1 `rollAdjust` hooks), resolved AFTER
+   * the natural-20/1 shift per the rules' ordering, by `applyDegreeAdjustments`
+   * below. Order within the array does NOT matter. (Fortune/Misfortune is a reroll,
+   * a separate mechanic that operates on dice rather than degrees.)
    */
   adjustments?: DegreeAdjustment[];
+}
+
+/**
+ * Resolve one adjustment against `base` into a step count (positive = improves,
+ * negative = worsens, 0 = does not apply to this degree).
+ */
+function adjustmentDelta(adjustment: DegreeAdjustment, base: DegreeOfSuccess): number {
+  if (adjustment === "improve") return 1;
+  if (adjustment === "worsen") return -1;
+  const target = adjustment.map[base];
+  // No entry for the incoming degree — this ability says nothing about this result.
+  if (target === undefined) return 0;
+  return DEGREE_INDEX[target] - DEGREE_INDEX[base];
+}
+
+/**
+ * Apply a set of degree adjustments to an already-natural-shifted degree.
+ *
+ * OWNER-SUPPLIED RULE (2026-07-19), encoded verbatim:
+ *   "When multiple effects change the degree of success for a single roll, we apply
+ *    all the effects that IMPROVE the degree, followed by any that WORSEN it. Each
+ *    effect can only change the degree of success once."
+ *
+ * Two consequences worth spelling out, because both are load-bearing:
+ *
+ *   • WHY THE ORDER MATTERS: clamping. With one improver and one worsener on a
+ *     critical success, improve-then-worsen gives crit-success (clamped) → success,
+ *     while worsen-then-improve gives success → crit-success. The owner's ordering
+ *     picks the first. If the buckets were merely summed the rule would be vacuous.
+ *
+ *   • EACH EFFECT FIRES ONCE: every adjustment is measured against the SAME incoming
+ *     degree (`base`) and contributes a single step count. Adjustments therefore do
+ *     not cascade into one another — Dragon's Presence maps both `success` and
+ *     `failure`, but a given roll is only one of them, so only one entry can fire.
+ *     Measuring against `base` also makes the result independent of array order,
+ *     which a pure engine needs: effects arrive in whatever order a sheet lists them.
+ */
+export function applyDegreeAdjustments(
+  base: DegreeOfSuccess,
+  adjustments: readonly DegreeAdjustment[],
+): DegreeOfSuccess {
+  let improvement = 0;
+  let worsening = 0;
+  for (const adjustment of adjustments) {
+    const delta = adjustmentDelta(adjustment, base);
+    if (delta > 0) improvement += delta;
+    else if (delta < 0) worsening += delta;
+  }
+  // Improvers first (clamped), then worseners (clamped) — the owner's ordering.
+  return shiftDegree(shiftDegree(base, improvement), worsening);
 }
 
 /**
@@ -80,9 +152,6 @@ export function degreeOfSuccess(input: DegreeInput): DegreeOfSuccess {
   // Natural 20 / natural 1 — before anything else.
   if (input.die === 20) degree = shiftDegree(degree, 1);
   else if (input.die === 1) degree = shiftDegree(degree, -1);
-  // Then ability adjustments, in order.
-  for (const adj of input.adjustments ?? []) {
-    degree = shiftDegree(degree, adj === "improve" ? 1 : -1);
-  }
-  return degree;
+  // Then ability adjustments: improvers, then worseners.
+  return applyDegreeAdjustments(degree, input.adjustments ?? []);
 }

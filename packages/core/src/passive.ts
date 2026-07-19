@@ -28,6 +28,7 @@
 import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope } from "./character.js";
+import { DEGREES } from "./degree.js";
 import { evaluate, exprSchema, type Expr } from "./expr.js";
 import { stackModifiers, type BonusType, type EffectContext, type Modifier, type SheetEffects } from "./effects.js";
 import { describePredicate, predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
@@ -101,12 +102,30 @@ export const grantSchema = z.discriminatedUnion("type", [
 export type Grant = z.infer<typeof grantSchema>;
 
 /**
- * A `rollAdjust`'s payload: a one-degree shift (Assurance-style "treat as one
- * degree better/worse") or a reroll keeping the higher/lower die (PF2e Fortune /
- * Misfortune). Consumed by the Layer-2 degree resolver, never here.
+ * A `rollAdjust`'s payload: a BLANKET one-degree shift (Assurance-style "treat as
+ * one degree better/worse"), a CONDITIONAL per-degree rewrite, or a reroll keeping
+ * the higher/lower die (PF2e Fortune / Misfortune). Consumed by the Layer-2 degree
+ * resolver, never here.
+ *
+ * `degreeMap` exists because most PF2e degree prose is conditional on the incoming
+ * result — "when you roll a success …, you get a critical success instead" — which
+ * a blanket shift cannot say without lying about the other three degrees. It also
+ * subsumes the "clamp to a floor" shape (Forager) without a third primitive. See
+ * `DegreeAdjustment` in degree.ts for the encodings and the multi-effect ordering.
+ *
+ * The map must be non-empty: a `degreeMap` that rewrites nothing is content that
+ * failed to say anything, and should surface as a gap rather than validate silently.
  */
 export const rollAdjustmentSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("degree"), direction: z.enum(["improve", "worsen"]) }).strict(),
+  z
+    .object({
+      type: z.literal("degreeMap"),
+      map: z
+        .partialRecord(z.enum(DEGREES), z.enum(DEGREES))
+        .refine((m) => Object.keys(m).length > 0, { message: "degreeMap must rewrite at least one degree" }),
+    })
+    .strict(),
   z.object({ type: z.literal("reroll"), keep: z.enum(["higher", "lower"]) }).strict(),
 ]);
 export type RollAdjustment = z.infer<typeof rollAdjustmentSchema>;
