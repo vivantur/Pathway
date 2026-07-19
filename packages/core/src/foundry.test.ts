@@ -52,13 +52,87 @@ describe("mapFoundryRules — the report invariant", () => {
     expect(report.map((e) => e.reason)).toEqual(["needs-runtime-choice", "needs-runtime-choice"]);
   });
 
-  it("still calls a STATIC entity grant needs-granting", () => {
-    const { report } = mapFoundryRules([
+  it("reports a static entity grant as needs-granting when it cannot be RESOLVED", () => {
+    // No `knownFeatIds` supplied ⇒ nothing resolves ⇒ nothing is emitted. The default
+    // is deliberate: a ref we cannot confirm is a dangling pointer.
+    const { report, grants } = mapFoundryRules([
       { key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Domain Initiate" },
       { key: "GrantItem", uuid: "Compendium.pf2e.actionspf2e.Item.Bon Mot" },
       { key: "GrantItem" }, // no uuid at all — still a grant, still unmapped
     ]);
     expect(report.map((e) => e.reason)).toEqual(["needs-granting", "needs-granting", "needs-granting"]);
+    expect(grants).toEqual([]);
+  });
+
+  describe("feat grants become a build-graph edge, not an effect", () => {
+    const known = new Set(["domain-initiate", "specialty-crafting", "alchemical-crafting"]);
+
+    it("resolves a feats-srd uuid to OUR id, and emits no PassiveEffect for it", () => {
+      const { grants, effects, report } = mapFoundryRules(
+        [{ key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Domain Initiate" }],
+        { knownFeatIds: known },
+      );
+      expect(grants).toEqual([{ type: "feat", ref: "domain-initiate" }]);
+      expect(effects).toEqual([]);
+      expect(report[0]).toMatchObject({ outcome: "mapped", produced: 1 });
+    });
+
+    it("resolves a name with an apostrophe, which our ids strip", () => {
+      const { grants } = mapFoundryRules([{ key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Appraiser’s Eye" }], {
+        knownFeatIds: new Set(["appraisers-eye"]),
+      });
+      expect(grants).toEqual([{ type: "feat", ref: "appraisers-eye" }]);
+    });
+
+    it("emits ONE grant for a doubled feat, and says so in the report", () => {
+      // Elemental Trade / Anvil Dwarf. Two grants would assert the character holds
+      // Specialty Crafting twice; per the owner it is held once with two professions.
+      const { grants, report } = mapFoundryRules(
+        [
+          { key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Specialty Crafting", preselectChoices: { specialtyCrafting: "stonemasonry" } },
+          { key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Specialty Crafting", preselectChoices: { specialtyCrafting: "blacksmithing" } },
+        ],
+        { knownFeatIds: known },
+      );
+      expect(grants).toEqual([{ type: "feat", ref: "specialty-crafting" }]);
+      // The invariant holds — one entry per element — and the second NAMES what it
+      // discarded rather than vanishing.
+      expect(report).toHaveLength(2);
+      expect(report[0]).toMatchObject({ outcome: "mapped", produced: 1 });
+      expect(report[1]).toMatchObject({ outcome: "mapped", produced: 0 });
+      expect(report[1]!.detail).toContain("blacksmithing");
+    });
+
+    it("refuses a feat we do not hold, and names it", () => {
+      const { grants, report } = mapFoundryRules(
+        [{ key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Some Feat We Lack" }],
+        { knownFeatIds: known },
+      );
+      expect(grants).toEqual([]);
+      expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-granting" });
+      expect(report[0]!.detail).toContain("Some Feat We Lack");
+    });
+
+    it("refuses a non-feat pack even when the name would slugify to a feat we hold", () => {
+      // classfeatures/ancestryfeatures are entities we do not carry (2/52 and 0/19
+      // resolve), so trusting the name across packs would manufacture refs.
+      const { grants, report } = mapFoundryRules(
+        [{ key: "GrantItem", uuid: "Compendium.pf2e.classfeatures.Item.Domain Initiate" }],
+        { knownFeatIds: known },
+      );
+      expect(grants).toEqual([]);
+      expect(report[0]!.detail).toContain("classfeatures");
+    });
+
+    it("DEFERS a conditional grant rather than handing out an unearned feat", () => {
+      const { grants, report } = mapFoundryRules(
+        [{ key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Domain Initiate", predicate: ["class:cleric"] }],
+        { knownFeatIds: known },
+      );
+      expect(grants).toEqual([]);
+      expect(report[0]).toMatchObject({ outcome: "unsupported" });
+      expect(report[0]!.detail).toContain("conditional grant");
+    });
   });
 
   it("reports an unknown kind rather than ignoring it", () => {

@@ -110,6 +110,11 @@ export * from './candidate.js';
 // from a gapped/conflicting candidate to a decision.
 export * from './resolution.js';
 
+// ENTITY GRANTS — a feat that gives you another feat. A build-graph edge, NOT a
+// PassiveEffect: it changes which content a character has, not a number on the sheet,
+// so the builder walks it and the effects engine never sees it.
+export * from './grants.js';
+
 // The Foundry ingest boundary — the ONE module allowed to know Foundry's
 // rule-element shape, plus `mapFoundryRules` (their encoding → our PassiveEffect[])
 // and its per-element report. Runs at ingest, offline; never on the runtime path.

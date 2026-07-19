@@ -155,6 +155,21 @@ function main() {
     for (const row of rows) for (const t of row.traits ?? []) effectTraits.add(String(t).toLowerCase());
   }
 
+  // The feat ids we actually HOLD, so a GrantItem can resolve to one of ours. Derived
+  // from the same corpus for the same reason as the traits above: a grant `ref` that
+  // points at content we do not have is a dangling pointer, so the mapper confirms
+  // every one against this set and reports the rest. (Measured 2026-07-19: 242/242 feat
+  // grants resolve; only 8/180 ACTION grants would, which is why actions are not
+  // modelled as grants yet.)
+  const knownFeatIds = new Set();
+  {
+    const path = join(args.data, 'feats.json');
+    if (existsSync(path)) {
+      const data = readJson(path);
+      for (const row of Array.isArray(data) ? data : (data.feats ?? [])) knownFeatIds.add(String(row.id));
+    }
+  }
+
   const foldIn = loadFoldIn(args.data);
   const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0 };
 
@@ -163,6 +178,7 @@ function main() {
   const written = [];
   let withEffects = 0;
   let withChoices = 0;
+  let withGrants = 0;
   let strippedRules = 0;
   let fromSidecar = 0;
   let fromLegacy = 0;
@@ -184,10 +200,11 @@ function main() {
       delete bearer.rules;
       delete bearer.effects;
       delete bearer.choices;
+      delete bearer.grants;
 
       if (!raw || raw.length === 0) continue;
 
-      const { effects, choices, report } = mapFoundryRules(raw, { effectTraits });
+      const { effects, choices, grants, report } = mapFoundryRules(raw, { effectTraits, knownFeatIds });
       reports.push(report);
 
       // The fold-in replaces the mapper's output with the RESOLVED effects wherever
@@ -221,6 +238,17 @@ function main() {
         bearer.choices = finalChoices;
         withChoices += 1;
       }
+      // Entity grants are NOT run through the fold-in, and that is deliberate: the
+      // decisions pipeline arbitrates between two producers proposing EFFECTS, whereas
+      // a grant has a single producer and a deterministic uuid→id derivation with no
+      // gaps to fill. There is nothing for a human to decide that the mapper has not
+      // already confirmed against the corpus. If a second producer ever proposes grants
+      // (prose: "you also gain the X feat"), that stops being true and they should join
+      // the candidate pipeline as choices did.
+      if (grants.length > 0) {
+        bearer.grants = grants;
+        withGrants += 1;
+      }
       entities.push({ id: bearer.id, kind: dataset.kind, name: bearer.name, raw, report });
       bearers += 1;
     }
@@ -237,6 +265,7 @@ function main() {
       entities: entities.length,
       entitiesWithEffects: withEffects,
       entitiesWithChoices: withChoices,
+      entitiesWithGrants: withGrants,
       elements: summary.elements,
       mapped: summary.mapped,
       effectsProduced: summary.effects,
@@ -249,7 +278,9 @@ function main() {
 
   const pct = (n) => `${((n / summary.elements) * 100).toFixed(1)}%`;
   console.log(`raw source       : ${fromSidecar} from sidecar, ${fromLegacy} from legacy rules[]`);
-  console.log(`entities         : ${entities.length} (${withEffects} yield effects, ${withChoices} yield choices)`);
+  console.log(
+    `entities         : ${entities.length} (${withEffects} yield effects, ${withChoices} yield choices, ${withGrants} yield grants)`,
+  );
   for (const w of written) console.log(`  ${w.file.padEnd(25)}: ${w.bearers} bearers`);
   console.log(`rule elements    : ${summary.elements}`);
   console.log(`  mapped         : ${summary.mapped} (${pct(summary.mapped)}) -> ${summary.effects} effects`);

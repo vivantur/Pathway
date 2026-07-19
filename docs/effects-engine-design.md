@@ -1426,6 +1426,70 @@ Per the owner (2026-07-19) those land in a **`grants` field of their own, outsid
 `PassiveEffect` union** — a feat granting a feat is a build-graph edge, not a number on a
 sheet, and the builder must walk it (transitively) rather than the effects engine folding it.
 
+### Entity grants landed 2026-07-19 — `grants.ts`, a feat that gives you a feat
+
+**No content regenerated yet**, deliberately: `remap-effects.mjs` folds in the decisions
+file, so running it would also ship the 343 human accepts the owner has explicitly
+deferred. The mapper, schema and closure are in and tested; the content write is one
+`node apps/web/scripts/remap-effects.mjs` away, to be run when the accepts are dealt with.
+Verified by dry run: **206 feats yield 221 grants over 85 distinct targets, 0 dangling
+refs**, and mapped elements rise 492 → 717 (+225).
+
+**Its own field, NOT a `PassiveEffect`** (owner decision). Everything in `passive.ts`
+answers "what number on the sheet does this change"; a feat granting a feat changes no
+number, it changes *which content the character has*. It is a build-graph edge, so the
+BUILDER walks it and the effects engine never sees it. Folding it into the union would
+have made `applyPassiveEffects` collect something no sheet could apply.
+
+**The mapper must CONFIRM the ref, and that rule came from being wrong.** The plan called
+the 182 action grants "nearly free" because `grantSchema` already has
+`{type:'action', ref}` — reasoning from the schema. Measured: **242/242 feat grants
+resolve to entities we hold, but only 8/180 action grants do.** A mapper trusting the uuid
+would have emitted 172 refs to content that does not exist, which is strictly worse than an
+honest `unsupported`. So `knownFeatIds` is passed in (content, like `effectTraits`) and an
+unconfirmed uuid stays unsupported. Coverage now tracks the dataset: land an actions
+dataset and those 180 start resolving with no mapper change.
+
+**Corpus shape** (why the closure is simple but still guarded): 242 edges over 217 feats,
+24 granting more than one, exactly ONE chain (`gray-corsair-training`), **zero cycles**,
+zero self-grants. `resolveGrantedFeats` is breadth-first with a global visited set anyway —
+content is human-edited and re-ingested, so "no cycles today" is not a property to rely on.
+A grant pointing at content we lack is reported in `unresolved` rather than dropped: that is
+how a character quietly loses a feat with nothing saying so.
+
+**Conditional grants (17 of 242) are deferred, not approximated.** Dropping the predicate
+would hand out an unearned feat; honouring it needs the BUILDER to re-evaluate on every
+build change (gain the prerequisite → gain the feat; retrain out → lose it again). That is a
+lifecycle question, not a mapping one.
+
+**`multiplicity` was designed, then deleted on one example.** Elemental Trade — the dwarf
+heritage known as **Anvil Dwarf** — grants Specialty Crafting twice, and the two elements
+differ only in `preselectChoices` (`stonemasonry` / `blacksmithing`). Per the owner the
+player gains the FEAT once and alters its rules to pick two professions; Specialty Crafting
+cannot otherwise be taken twice. A `multiplicity: 2` would have asserted the character holds
+it twice — a wrong sheet. Note this is the OPPOSITE conclusion from
+`EffectCandidate.multiplicity`, and correctly so: Natural Skill's duplication is two
+instances of an EFFECT, this is two selections inside ONE feat.
+
+**The other three doubled grants are a different case, and still dedupe.** Hellbreaker
+Dedication → Additional Lore, Linguist Dedication → Multilingual, Terrain Scout → Terrain
+Stalker — each granting a feat whose prose carries a `**Special**` clause saying it may be
+taken more than once (Specialty Crafting has none, so **the discriminator is in the
+content** and never has to be remembered). For those three a repeat arguably is two
+acquisitions, so deduping under-grants them. Owner's call: a repeat only means something
+once the player can pick a different Lore/language/terrain, and that selection is not
+modelled — two indistinguishable copies is its own wrong sheet. Deduping errs toward a legal
+character, duplicating toward an illegal one. Every discard is named in the report
+(`produced: 0` plus a reason), so revisiting costs no re-derivation.
+
+**Grants skip the fold-in**, unlike effects and choices: the decisions pipeline arbitrates
+between two producers proposing effects, whereas a grant has ONE producer and a
+deterministic uuid→id derivation with no gaps. If prose ever proposes grants ("you also gain
+the X feat"), that stops being true and they should join the candidate pipeline as choices
+did.
+
+**Next**: the builder consuming `grants` — nothing reads the field yet.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the

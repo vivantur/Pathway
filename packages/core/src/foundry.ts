@@ -41,6 +41,7 @@ import {
 } from "./passive.js";
 import { isSelector, isSkillSlug, SAVE_SELECTORS, SKILL_SLUGS, type Selector } from "./selectors.js";
 import { grantedActionSchema } from "./automation.js";
+import { dedupeGrants, entityGrantSchema, type EntityGrant } from "./grants.js";
 
 /** A Foundry rule element. Only the fields we read are typed; the rest is open. */
 export interface RuleElement {
@@ -97,6 +98,13 @@ export type MappingEntry = z.infer<typeof mappingEntrySchema>;
 
 export interface MappingResult {
   effects: PassiveEffect[];
+  /**
+   * Whole entities this one grants — a BUILD-GRAPH edge, not an effect, which is why
+   * it is its own field rather than a `PassiveEffect` kind (owner decision, 2026-07-19;
+   * see grants.ts). Additive: a consumer destructuring `{ effects, report }` is
+   * unaffected.
+   */
+  grants: EntityGrant[];
   /**
    * Player choices whose OPTIONS are fixed by the content — resolved here, at
    * ingest, so no runtime consumer ever interprets a `ChoiceSet`.
@@ -171,6 +179,12 @@ export const effectBearingShape = {
    * Additive + optional — existing content without it validates unchanged.
    */
   actions: z.array(grantedActionSchema).optional(),
+  /**
+   * Whole entities this one grants (a feat that gives you another feat). NOT an effect
+   * — see grants.ts. Read by the BUILDER when assembling a character's content, never
+   * by the effects engine. Additive + optional, so existing content validates unchanged.
+   */
+  grants: z.array(entityGrantSchema).optional(),
   ingest: ingestRecordSchema.optional(),
   review: effectReviewSchema.optional(),
 };
@@ -228,6 +242,53 @@ const MOVEMENTS: Readonly<Record<string, "land" | "fly" | "swim" | "climb" | "bu
  * entity to resolve until that choice is made.
  */
 const UNRESOLVED_UUID = /^\{(?:item|actor)\|/;
+
+/** `Compendium.pf2e.<pack>.Item.<Name>` → the pack and the entity name. */
+const COMPENDIUM_UUID = /^Compendium\.pf2e\.([a-z0-9-]+)\.Item\.(.+)$/i;
+
+/** True for a plain object — used to read Foundry's open `[field: string]: unknown`. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * A Foundry entity NAME → our entity id. Our ids are slugified names, so this is a
+ * derivation rather than a mapping table — which is what makes it safe: a table would
+ * drift silently as content changed, whereas a derivation that fails to find the id
+ * simply does not resolve, and the element is reported instead.
+ */
+function slugifyEntityName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/**
+ * The uuid of a grant → OUR feat id, or null when we cannot confirm one. Only the
+ * `feats-srd` pack is resolved: class and ancestry features live in packs whose
+ * contents we do not hold as entities (measured: 2/52 and 0/19 resolve), so treating
+ * them as feats would manufacture refs to content that does not exist.
+ */
+function resolveGrantRef(uuid: string, knownFeatIds: ReadonlySet<string>): string | null {
+  const m = COMPENDIUM_UUID.exec(uuid);
+  if (!m || m[1]!.toLowerCase() !== "feats-srd") return null;
+  const id = slugifyEntityName(m[2]!);
+  return knownFeatIds.has(id) ? id : null;
+}
+
+/** Why a grant did not resolve — named precisely enough to act on. */
+function grantDetail(uuid: string, knownFeatIds: ReadonlySet<string>): string {
+  if (!uuid) return "grants another item/feat";
+  const m = COMPENDIUM_UUID.exec(uuid);
+  if (!m) return `grants another item/feat: ${uuid.slice(0, 60)}`;
+  const [, pack, name] = m as unknown as [string, string, string];
+  if (pack.toLowerCase() !== "feats-srd") return `grants a ${pack} entity we do not hold: ${name.slice(0, 50)}`;
+  return knownFeatIds.size === 0
+    ? "grants a feat, but no feat vocabulary was supplied to resolve it against"
+    : `grants a feat we do not hold: ${name.slice(0, 50)}`;
+}
 
 const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detail: string }>> = {
   ItemAlteration: { reason: "needs-item-model", detail: "alters an item's fields" },
@@ -874,6 +935,19 @@ export interface FoundryMapOptions {
    * trait, which is the honest reading when we have no vocabulary to check against.
    */
   effectTraits?: ReadonlySet<string>;
+  /**
+   * The ids of feats we actually HOLD, so a grant can be resolved to one of ours.
+   * Passed in for the same reason as `effectTraits` — it is content, and the caller
+   * holds the corpus.
+   *
+   * WITHOUT IT, NO GRANT MAPS, and that default is deliberate. A `ref` we cannot
+   * confirm is a dangling pointer into content that may not exist, which is strictly
+   * worse than an honest `unsupported`. Measured 2026-07-19: 242/242 feat grants
+   * resolve against our feats, but only 8/180 ACTION grants do — so a mapper that
+   * trusted the uuid would have emitted 172 refs to nothing. Coverage tracking the
+   * dataset means an actions dataset later starts resolving with no mapper change.
+   */
+  knownFeatIds?: ReadonlySet<string>;
 }
 
 export function mapFoundryRules(
@@ -881,7 +955,9 @@ export function mapFoundryRules(
   options: FoundryMapOptions = {},
 ): MappingResult {
   const effectTraits = options.effectTraits ?? new Set<string>();
+  const knownFeatIds = options.knownFeatIds ?? new Set<string>();
   const effects: PassiveEffect[] = [];
+  const grants: EntityGrant[] = [];
   const report: MappingEntry[] = [];
 
   // PRE-PASS: choice groups span SEVERAL elements (a ChoiceSet plus the
@@ -921,6 +997,41 @@ export function mapFoundryRules(
         unsupported("needs-runtime-choice", `grant target is an unresolved choice: ${uuid.slice(0, 60)}`);
         return;
       }
+      // A CONDITIONAL grant is deferred, not approximated. Dropping the predicate would
+      // hand out a feat the character has not earned, and the honest alternative needs
+      // the BUILDER to re-evaluate on every build change (gain the prerequisite, gain
+      // the feat; retrain out of it, lose the feat again). That is a lifecycle question,
+      // not a mapping one. 17 of 242 feat grants are conditional.
+      if (isConditional(rule)) {
+        unsupported("needs-combat-tags", `conditional grant: ${JSON.stringify(rule.predicate).slice(0, 100)}`);
+        return;
+      }
+      const ref = resolveGrantRef(uuid, knownFeatIds);
+      if (ref === null) {
+        unsupported("needs-granting", grantDetail(uuid, knownFeatIds));
+        return;
+      }
+      // Deduped AFTER the loop, so the SECOND element of a double grant still gets its
+      // own report entry saying it produced nothing and why — see `dedupeGrants` for
+      // why a repeat is one feat rather than two.
+      const duplicate = grants.some((g) => g.ref === ref);
+      grants.push({ type: "feat", ref });
+      report.push({
+        index,
+        key,
+        outcome: "mapped",
+        produced: duplicate ? 0 : 1,
+        ...(duplicate
+          ? {
+              detail:
+                `duplicate grant of ${ref}` +
+                (isRecord(rule.preselectChoices)
+                  ? `; differs only in preselectChoices (${JSON.stringify(rule.preselectChoices).slice(0, 60)}), which we do not model`
+                  : ""),
+            }
+          : {}),
+      });
+      return;
     }
 
     const known = KNOWN_UNMAPPED[key];
@@ -984,7 +1095,7 @@ export function mapFoundryRules(
     }
   });
 
-  return { effects, choices, report };
+  return { effects, choices, grants: dedupeGrants(grants), report };
 }
 
 /** Reason tallies across a set of reports — the corpus-level coverage roadmap. */
