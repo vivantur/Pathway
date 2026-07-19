@@ -1,18 +1,186 @@
 {
- "generatedAt": "2026-07-19T06:15:41.798Z",
+ "generatedAt": "2026-07-19T16:43:50.643Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 1820,
+  "candidates": 2019,
   "autoPromote": 300,
   "conflicts": 14,
-  "gapped": 910,
-  "review": 596,
+  "gapped": 1045,
+  "review": 660,
   "invalid": 0,
-  "silent": 5020,
-  "actionFeatsInQueue": 296
+  "silent": 4956,
+  "actionFeatsInQueue": 302
  },
  "candidates": [
+  {
+   "entityId": "disillusionment",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 53,
+      "end": 210,
+      "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disillusionment",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 53,
+      "end": 210,
+      "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disillusionment",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against illusion or dream effect or a Perception check to disbelieve an illusion"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 53,
+      "end": 210,
+      "text": "you roll a success on a saving throw against an illusion or dream effect or a Perception check to disbelieve an illusion, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "disillusionment",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on any of those checks, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 214,
+      "end": 292,
+      "text": "you roll a critical failure on any of those checks, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "sturdy-bindings",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to target"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 44,
+      "end": 122,
+      "text": "you roll a critical failure on a check to a target, you get a failure instead."
+     }
+    }
+   ]
+  },
   {
    "entityId": "adaptive-vision",
    "draft": {
@@ -101,6 +269,96 @@
    ]
   },
   {
+   "entityId": "adaptive-vision",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:visual"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 374,
+      "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adaptive-vision",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:visual"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 374,
+      "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adaptive-vision",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:visual"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 374,
+      "text": "you roll a success on a saving throw against a visual effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "adhyabhau",
    "draft": {
     "kind": "modifier",
@@ -109,15 +367,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "when you roll a success on a saving throw against such an effect, you get a crit"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -128,6 +383,105 @@
       "start": 218,
       "end": 308,
       "text": "You gain a +1 circumstance bonus to Will saves against effects with the emotion trait, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adhyabhau",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 314,
+      "end": 410,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adhyabhau",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 314,
+      "end": 410,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adhyabhau",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 314,
+      "end": 410,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
      }
     }
    ]
@@ -404,6 +758,39 @@
       "start": 144,
       "end": 227,
       "text": "You gain the trained proficiency rank in Thievery (or another skill of your choice,"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "adroit-manipulation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "thievery"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Pick a Lock"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:thievery",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 271,
+      "end": 361,
+      "text": "you roll a success on a Thievery check to Pick a Lock, you get a critical success instead."
      }
     }
    ]
@@ -773,7 +1160,7 @@
     {
      "field": "when",
      "reason": "conditional-unmapped",
-     "raw": "if you roll a success against such an effect, you get a critical success instead"
+     "raw": "against mental effects that would make you controlled"
     }
    ],
    "agreement": "parser-only",
@@ -786,6 +1173,38 @@
       "start": 148,
       "end": 256,
       "text": "You receive a +2 circumstance bonus to Will saves against mental effects that would make you controlled, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "alghollthu-bound",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success against such an effect, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 260,
+      "end": 338,
+      "text": "you roll a success against such an effect, you get a critical success instead."
      }
     }
    ]
@@ -839,6 +1258,43 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "ancestral-insight",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on an Alghollthu Lore or Azlanti Lore check to Recal"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Recall Knowledge"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 143,
+      "end": 262,
+      "text": "you roll a critical failure on an Alghollthu Lore or Azlanti Lore check to Recall Knowledge, you get a failure instead."
+     }
     }
    ]
   },
@@ -2733,7 +3189,7 @@
     {
      "field": "when",
      "reason": "conditional-unmapped",
-     "raw": "if you roll a success on such a saving throw, you get a critical success instead"
+     "raw": "against inhaled threats"
     }
    ],
    "agreement": "parser-only",
@@ -2765,7 +3221,7 @@
     {
      "field": "when",
      "reason": "conditional-unmapped",
-     "raw": "if you roll a success on such a saving throw, you get a critical success instead"
+     "raw": "against inhaled threats"
     }
    ],
    "agreement": "parser-only",
@@ -2797,7 +3253,7 @@
     {
      "field": "when",
      "reason": "conditional-unmapped",
-     "raw": "if you roll a success on such a saving throw, you get a critical success instead"
+     "raw": "against inhaled threats"
     }
    ],
    "agreement": "parser-only",
@@ -2810,6 +3266,38 @@
       "start": 124,
       "end": 227,
       "text": "You gain a +1 circumstance bonus to saving throws against inhaled threats, such as inhaled poisons, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "breath-control",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success on such a saving throw, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 231,
+      "end": 309,
+      "text": "you roll a success on such a saving throw, you get a critical success instead."
      }
     }
    ]
@@ -2938,6 +3426,39 @@
       "start": 309,
       "end": 504,
       "text": "You suffer a -2 circumstance penalty on Stealth checks to Hide or Sneak and gain a +1 circumstance bonus on saves against light effects and effects that inflict the Blinded or Dazzled conditions."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "brine-may",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 127,
+      "end": 212,
+      "text": "you roll a success on an Athletics check to Swim, you get a critical success instead."
      }
     }
    ]
@@ -3139,6 +3660,137 @@
       "start": 98,
       "end": 124,
       "text": "You gain low-light vision."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cantorian-reinforcement",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 128,
+      "end": 229,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cantorian-reinforcement",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 128,
+      "end": 229,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cantorian-reinforcement",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 128,
+      "end": 229,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cantorian-reinforcement",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the save"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 358,
+      "end": 424,
+      "text": "you roll a critical failure on the save you get a failure instead."
      }
     }
    ]
@@ -3955,15 +4607,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "whenever you roll a success on a saving throw against an emotion effect, you get"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -3987,15 +4636,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "whenever you roll a success on a saving throw against an emotion effect, you get"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -4019,15 +4665,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "whenever you roll a success on a saving throw against an emotion effect, you get"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -4038,6 +4681,96 @@
       "start": 76,
       "end": 154,
       "text": "You gain a +1 circumstance bonus to saving throws against emotion effects, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cold-minded",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 263,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cold-minded",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 263,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "cold-minded",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 263,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
     }
    ]
@@ -5434,6 +6167,128 @@
   {
    "entityId": "dragons-presence",
    "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 124,
+      "end": 219,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dragons-presence",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 124,
+      "end": 219,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dragons-presence",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 124,
+      "end": 219,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dragons-presence",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "critical-failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure against a fear effect, you get a critical failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:worsen",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 225,
+      "end": 302,
+      "text": "you roll a failure against a fear effect, you get a critical failure instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "dragons-presence",
+   "draft": {
     "kind": "modifier",
     "target": "intimidation",
     "bonusType": "circumstance",
@@ -6127,6 +6982,38 @@
    ]
   },
   {
+   "entityId": "earned-glory",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 447,
+      "end": 502,
+      "text": "you roll a critical failure, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "elemental-embellish",
    "draft": {
     "kind": "proficiency",
@@ -6270,6 +7157,43 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "eliminate-red-herrings",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on a skill check to Recall Knowledge related to a qu"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Recall Knowledge related to a question about one of your active investigation"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 67,
+      "end": 221,
+      "text": "you roll a critical failure on a skill check to Recall Knowledge related to a question about one of your active investigations, you get a failure instead."
+     }
     }
    ]
   },
@@ -6711,6 +7635,96 @@
    ]
   },
   {
+   "entityId": "emotional-partitions",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 178,
+      "end": 277,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "emotional-partitions",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 178,
+      "end": 277,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "emotional-partitions",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 178,
+      "end": 277,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "emotionless",
    "draft": {
     "kind": "modifier",
@@ -6819,6 +7833,105 @@
    ]
   },
   {
+   "entityId": "emotionless",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or fear effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 179,
+      "end": 286,
+      "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "emotionless",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or fear effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 179,
+      "end": 286,
+      "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "emotionless",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or fear effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 179,
+      "end": 286,
+      "text": "you roll a success on a saving throw against an emotion or fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "empathetic-plea",
    "draft": {
     "kind": "modifier",
@@ -6846,6 +7959,39 @@
       "start": 493,
       "end": 604,
       "text": "The creature takes a -2 circumstance penalty to damage on the triggering Strike and all its Strikes against you"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "esteemed-visitor",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "target": "diplomacy"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Gather Information or Make an Impression"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:diplomacy",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 174,
+      "end": 294,
+      "text": "you roll a critical failure on a Diplomacy check to Gather Information or Make an Impression, you get a failure instead."
      }
     }
    ]
@@ -6930,6 +8076,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "extra-squishy",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success to Squeeze, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 328,
+      "end": 394,
+      "text": "you roll a success to Squeeze, you get a critical success instead."
+     }
     }
    ]
   },
@@ -7423,6 +8601,105 @@
    ]
   },
   {
+   "entityId": "fire-savvy",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against suffocation or choking due to smoke or ash"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 401,
+      "text": "you roll a success on a saving throw against suffocation or choking due to smoke or ash, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "fire-savvy",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against suffocation or choking due to smoke or ash"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 401,
+      "text": "you roll a success on a saving throw against suffocation or choking due to smoke or ash, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "fire-savvy",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against suffocation or choking due to smoke or ash"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 277,
+      "end": 401,
+      "text": "you roll a success on a saving throw against suffocation or choking due to smoke or ash, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "flashy-dodge",
    "draft": {
     "kind": "modifier",
@@ -7498,6 +8775,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "flexible-form",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success to Squeeze, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 115,
+      "end": 181,
+      "text": "you roll a success to Squeeze, you get a critical success instead."
+     }
     }
    ]
   },
@@ -7804,6 +9113,39 @@
    ]
   },
   {
+   "entityId": "forager",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "success",
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll any result worse than a success, you get a success."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 36,
+      "end": 96,
+      "text": "you roll any result worse than a success, you get a success."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "forlorn",
    "draft": {
     "kind": "modifier",
@@ -7886,6 +9228,96 @@
       "start": 104,
       "end": 178,
       "text": "You gain a +1 circumstance bonus to saving throws against emotion effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "forlorn",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 182,
+      "end": 281,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "forlorn",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 182,
+      "end": 281,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "forlorn",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 182,
+      "end": 281,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
      }
     }
    ]
@@ -8371,6 +9803,96 @@
   {
    "entityId": "goloma-courage",
    "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 85,
+      "end": 180,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "goloma-courage",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 85,
+      "end": 180,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "goloma-courage",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 85,
+      "end": 180,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "goloma-courage",
+   "draft": {
     "kind": "modifier",
     "target": "will",
     "bonusType": "circumstance",
@@ -8499,6 +10021,39 @@
    ]
   },
   {
+   "entityId": "gorilla-stance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Climb"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 406,
+      "end": 492,
+      "text": "you roll a success on an Athletics check to Climb, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "gravesight",
    "draft": {
     "kind": "grant",
@@ -8523,6 +10078,96 @@
    ]
   },
   {
+   "entityId": "grim-insight",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 113,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "grim-insight",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 113,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "grim-insight",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:fear"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 113,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a fear effect, you get a critical success instead, and the source of the fear effect is Off-Guard to you"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "grove-harbored",
    "draft": {
     "kind": "modifier",
@@ -8531,15 +10176,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:plant"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against a poison effect, you get a critical succ"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -8563,15 +10205,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:plant"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against a poison effect, you get a critical succ"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -8595,15 +10234,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:plant"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against a poison effect, you get a critical succ"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -8614,6 +10250,96 @@
       "start": 110,
       "end": 196,
       "text": "You gain a +1 circumstance bonus to saves against plant, poison, and wood effects, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "grove-harbored",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:poison"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 200,
+      "end": 289,
+      "text": "you roll a success on a save against a poison effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "grove-harbored",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:poison"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 200,
+      "end": 289,
+      "text": "you roll a success on a save against a poison effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "grove-harbored",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:poison"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 200,
+      "end": 289,
+      "text": "you roll a success on a save against a poison effect, you get a critical success instead."
      }
     }
    ]
@@ -8978,6 +10704,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "hobnobber",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you're a master in Diplomacy and roll a critical failure to Gather Information, "
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 183,
+      "end": 289,
+      "text": "you're a master in Diplomacy and roll a critical failure to Gather Information, you get a failure instead."
+     }
     }
    ]
   },
@@ -9749,6 +11507,96 @@
    ]
   },
   {
+   "entityId": "irrepressible-nephilim",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 183,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "irrepressible-nephilim",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 183,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "irrepressible-nephilim",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 183,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "it-takes-a-village",
    "draft": {
     "kind": "modifier",
@@ -9883,6 +11731,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "jungle-strider",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success at one of these Acrobatics checks, you get a critical success"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 271,
+      "end": 360,
+      "text": "you roll a success at one of these Acrobatics checks, you get a critical success instead."
+     }
     }
    ]
   },
@@ -10143,15 +12023,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against an emotion effect, you get a critical su"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -10175,15 +12052,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against an emotion effect, you get a critical su"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -10207,15 +12081,12 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "tag": "effect:trait:emotion"
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a save against an emotion effect, you get a critical su"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -10226,6 +12097,96 @@
       "start": 132,
       "end": 202,
       "text": "You gain a +1 circumstance bonus to saves against emotion effects, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lawbringer",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 297,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lawbringer",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 297,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lawbringer",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 297,
+      "text": "you roll a success on a save against an emotion effect, you get a critical success instead."
      }
     }
    ]
@@ -10606,6 +12567,33 @@
    ]
   },
   {
+   "entityId": "marsh-runner",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "acrobatics"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:acrobatics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 236,
+      "end": 315,
+      "text": "you roll a success on the Acrobatics check, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "mental-buffer",
    "draft": {
     "kind": "grant",
@@ -10924,15 +12912,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:morph"
+      },
+      {
+       "tag": "effect:trait:polymorph"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a saving throw against a hostile morph or polymorph eff"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:fortitude:circumstance",
    "signature": "modifier:save:circumstance",
@@ -10956,15 +12948,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:morph"
+      },
+      {
+       "tag": "effect:trait:polymorph"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a saving throw against a hostile morph or polymorph eff"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:reflex:circumstance",
    "signature": "modifier:save:circumstance",
@@ -10988,15 +12984,19 @@
     "value": {
      "kind": "lit",
      "value": 1
+    },
+    "when": {
+     "any": [
+      {
+       "tag": "effect:trait:morph"
+      },
+      {
+       "tag": "effect:trait:polymorph"
+      }
+     ]
     }
    },
-   "gaps": [
-    {
-     "field": "when",
-     "reason": "conditional-unmapped",
-     "raw": "if you roll a success on a saving throw against a hostile morph or polymorph eff"
-    }
-   ],
+   "gaps": [],
    "agreement": "parser-only",
    "key": "modifier:will:circumstance",
    "signature": "modifier:save:circumstance",
@@ -11007,6 +13007,105 @@
       "start": 322,
       "end": 412,
       "text": "You gain a +1 circumstance bonus to saving throws against morph and polymorph effects, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "morph-risen",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against hostile morph or polymorph effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 416,
+      "end": 533,
+      "text": "you roll a success on a saving throw against a hostile morph or polymorph effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "morph-risen",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against hostile morph or polymorph effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 416,
+      "end": 533,
+      "text": "you roll a success on a saving throw against a hostile morph or polymorph effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "morph-risen",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against hostile morph or polymorph effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 416,
+      "end": 533,
+      "text": "you roll a success on a saving throw against a hostile morph or polymorph effect, you get a critical success instead."
      }
     }
    ]
@@ -11036,6 +13135,57 @@
      "source": "foundry"
     }
    ]
+  },
+  {
+   "entityId": "musetouched",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Escape"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 169,
+      "end": 249,
+      "text": "you roll a critical failure on a check to Escape, you get a failure instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 255,
+      "end": 310,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "nagaji-lore",
@@ -12425,6 +14575,128 @@
    ]
   },
   {
+   "entityId": "parthenogenic-hatchling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 190,
+      "end": 281,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "parthenogenic-hatchling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 190,
+      "end": 281,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "parthenogenic-hatchling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 190,
+      "end": 281,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "parthenogenic-hatchling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the save"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 410,
+      "end": 476,
+      "text": "you roll a critical failure on the save you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "pelagic-aptitude",
    "draft": {
     "kind": "proficiency",
@@ -12447,6 +14719,43 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "pelagic-aptitude",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on a Survival skill check to Sense Direction or Subs"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Sense Direction or Subsist"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 139,
+      "end": 250,
+      "text": "you roll a critical failure on a Survival skill check to Sense Direction or Subsist, you get a failure instead."
+     }
     }
    ]
   },
@@ -12870,6 +15179,39 @@
       "start": 64,
       "end": 201,
       "text": "You gain a +1 circumstance bonus to Athletics checks to Force Open and Shove, and to Fortitude saving throws to resist becoming Fatigued."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "practiced-brawn",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Shove"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 207,
+      "end": 293,
+      "text": "you roll a success on an Athletics check to Shove, you get a critical success instead."
      }
     }
    ]
@@ -14160,6 +16502,38 @@
    ]
   },
   {
+   "entityId": "risky-surgery",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 311,
+      "end": 366,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "rivethun-disciple",
    "draft": {
     "kind": "modifier",
@@ -14379,6 +16753,38 @@
       "start": 407,
       "end": 487,
       "text": "You also gain a +1 circumstance bonus to Athletics, Stealth, and Thievery checks"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "rock-runner",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success at one of these Acrobatics checks, you get a critical success"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 350,
+      "end": 439,
+      "text": "you roll a success at one of these Acrobatics checks, you get a critical success instead."
      }
     }
    ]
@@ -15236,6 +17642,39 @@
    ]
   },
   {
+   "entityId": "shore-step",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "acrobatics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Balance on a slippery or wet surface, or on an Athletics check to Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:acrobatics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 158,
+      "end": 310,
+      "text": "you roll a success on an Acrobatics check to Balance on a slippery or wet surface, or on an Athletics check to Swim, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "shrouded-mien",
    "draft": {
     "kind": "proficiency",
@@ -15843,6 +18282,39 @@
    ]
   },
   {
+   "entityId": "slither",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "acrobatics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Squeeze"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:acrobatics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 146,
+      "end": 235,
+      "text": "you roll a success on an Acrobatics check to Squeeze, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "snare-setter",
    "draft": {
     "kind": "proficiency",
@@ -16291,6 +18763,76 @@
    ]
   },
   {
+   "entityId": "spellbook-prodigy",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "your check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Learn a Spell"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 171,
+      "end": 257,
+      "text": "you roll a critical failure on your check to Learn a Spell, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "spelunker",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "survival"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Sense Direction or an Athletics check to Climb"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:survival",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 97,
+      "end": 223,
+      "text": "you roll a success on an Survival check to Sense Direction or an Athletics check to Climb, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "startling-appearance-fleshwarp",
    "draft": {
     "kind": "proficiency",
@@ -16530,6 +19072,107 @@
       "start": 0,
       "end": 65,
       "text": "You are trained in Intimidation (or another skill of your choice,"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "steady-balance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success using the Balance action, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 71,
+      "end": 151,
+      "text": "you roll a success using the Balance action, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "steady-on-stone",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success at one of these Acrobatics checks, you get a critical success"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 331,
+      "end": 420,
+      "text": "you roll a success at one of these Acrobatics checks, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "steadying-stone",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success on an Acrobatics check made to Balance on uneven ground compo"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Balance on uneven ground composed of earth or rock"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 63,
+      "end": 200,
+      "text": "you roll a success on an Acrobatics check made to Balance on uneven ground composed of earth or rock, you get a critical success instead."
      }
     }
    ]
@@ -17132,6 +19775,85 @@
    ]
   },
   {
+   "entityId": "student-of-the-canon",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "target": "religion"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Decipher Writing of a religious nature or to Recall Knowledge about the tenet"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:religion",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 102,
+      "end": 269,
+      "text": "you roll a critical failure at a Religion check to Decipher Writing of a religious nature or to Recall Knowledge about the tenets of faiths, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "student-of-the-canon",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure, you get a success instead, and"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 345,
+      "end": 395,
+      "text": "you roll a failure, you get a success instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 399,
+      "end": 454,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
    "entityId": "stumbling-stance",
    "draft": {
     "kind": "modifier",
@@ -17309,6 +20031,39 @@
       "start": 83,
       "end": 117,
       "text": "You gain a climb Speed of 20 feet;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "sure-feet",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "acrobatics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Balance or an Athletics check to Climb"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:acrobatics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 77,
+      "end": 197,
+      "text": "you roll a success on an Acrobatics check to Balance or an Athletics check to Climb, you get a critical success instead."
      }
     }
    ]
@@ -18029,6 +20784,105 @@
       "start": 43,
       "end": 116,
       "text": "You gain a +1 circumstance bonus to saves against cold and water effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "tide-hardened",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against cold or water effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 216,
+      "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "tide-hardened",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against cold or water effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 216,
+      "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "tide-hardened",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against cold or water effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 120,
+      "end": 216,
+      "text": "you roll a success on a save against a cold or water effect, you get a critical success instead."
      }
     }
    ]
@@ -18862,6 +21716,96 @@
    ]
   },
   {
+   "entityId": "undaunted",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 135,
+      "end": 234,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "undaunted",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 135,
+      "end": 234,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "undaunted",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 135,
+      "end": 234,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "unexpected-shift",
    "draft": {
     "kind": "modifier",
@@ -18953,6 +21897,43 @@
       "start": 277,
       "end": 445,
       "text": "On a success, you gain resistance to all damage equal to your level against the triggering effect, you gain a +2 circumstance bonus to saving throws against that effect"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "unfettered-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Escape or a saving throw against an effect that would impose the Grabbed, Imm"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 166,
+      "end": 353,
+      "text": "you roll a success on a check to Escape or a saving throw against an effect that would impose the Grabbed, Immobilized, or Restrained condition on you, you get a critical success instead."
      }
     }
    ]
@@ -19090,6 +22071,65 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "vicious-critique",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "intimidation"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:intimidation",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 468,
+      "end": 552,
+      "text": "you a roll a success on your Intimidation check, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "vicious-critique",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 556,
+      "end": 611,
+      "text": "you roll a critical failure, you get a failure instead."
+     }
     }
    ]
   },
@@ -19538,6 +22578,105 @@
       "start": 45,
       "end": 292,
       "text": "You gain a +2 circumstance bonus to saves and AC against the Web spell, natural webbing, and effects that entrap you in webbing, as well as a +1 circumstance bonus against other effects that snare and entangle you, like the Entangling Flora spell."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "web-walker",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect involving a web"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 302,
+      "end": 409,
+      "text": "you roll a success on a saving throw against an effect involving a web, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "web-walker",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect involving a web"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 302,
+      "end": 409,
+      "text": "you roll a success on a saving throw against an effect involving a web, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "web-walker",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect involving a web"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 302,
+      "end": 409,
+      "text": "you roll a success on a saving throw against an effect involving a web, you get a critical success instead."
      }
     }
    ]
@@ -19994,6 +23133,96 @@
    ]
   },
   {
+   "entityId": "wind-tempered",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:air"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 251,
+      "text": "you roll a success on a save against an air effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "wind-tempered",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:air"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 251,
+      "text": "you roll a success on a save against an air effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "wind-tempered",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:air"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 164,
+      "end": 251,
+      "text": "you roll a success on a save against an air effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "wisdom-from-another-life",
    "draft": {
     "kind": "choice",
@@ -20300,6 +23529,156 @@
      }
     }
    ]
+  },
+  {
+   "entityId": "witch-warden",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against curse or a spell cast by a witch or hag"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 356,
+      "end": 479,
+      "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "witch-warden",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against curse or a spell cast by a witch or hag"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 356,
+      "end": 479,
+      "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "witch-warden",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against curse or a spell cast by a witch or hag"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 356,
+      "end": 479,
+      "text": "you roll a success on a saving throw against a curse or a spell cast by a witch or hag, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "woodcraft",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on a Survival skill check to Sense Direction, Subsis"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Sense Direction, Subsist, or Cover Tracks"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 94,
+      "end": 224,
+      "text": "you roll a critical failure on a Survival skill check to Sense Direction, Subsist, or Cover Tracks, you get a failure instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 228,
+      "end": 283,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "woodworker",
@@ -20646,6 +24025,38 @@
       "start": 387,
       "end": 536,
       "text": "you're serving on a siege weapon crew, you and all other members gain a +2 circumstance bonus to any checks to Load, Aim, move, or Repair the weapon."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "assured-identification",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 111,
+      "end": 166,
+      "text": "you roll a critical failure, you get a failure instead."
      }
     }
    ]
@@ -22063,6 +25474,147 @@
      }
     }
    ]
+  },
+  {
+   "entityId": "divine-health",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 304,
+      "end": 397,
+      "text": "you roll a success on a save against a disease or poison, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 486,
+      "end": 579,
+      "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
+   "entityId": "divine-health",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 304,
+      "end": 397,
+      "text": "you roll a success on a save against a disease or poison, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 486,
+      "end": 579,
+      "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
+   "entityId": "divine-health",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 304,
+      "end": 397,
+      "text": "you roll a success on a save against a disease or poison, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 486,
+      "end": 579,
+      "text": "you roll a critical failure on a save against a disease or poison, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "dragon-disciple-dedication",
@@ -24243,6 +27795,39 @@
    ]
   },
   {
+   "entityId": "marine-marauder-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 105,
+      "end": 190,
+      "text": "you roll a success on an Athletics check to Swim, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "marshal-dedication",
    "draft": {
     "kind": "modifier",
@@ -24469,6 +28054,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "mortal-healing",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success to Treat Wounds for a creature that hasn't regained Hit Point"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 62,
+      "end": 284,
+      "text": "you roll a success to Treat Wounds for a creature that hasn't regained Hit Points from divine magic in the past 24 hours, you get a critical success on your check instead and restore the corresponding amount of Hit Points."
+     }
     }
    ]
   },
@@ -25811,6 +29428,43 @@
    ]
   },
   {
+   "entityId": "reliable-squire",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Aid"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 159,
+      "end": 232,
+      "text": "you roll a critical failure on a check to Aid, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "resilient-mind",
    "draft": {
     "kind": "modifier",
@@ -26475,6 +30129,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "scroll-trickster-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure to Trick a Magic Item that's a scroll, you get a fai"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 339,
+      "end": 432,
+      "text": "you roll a critical failure to Trick a Magic Item that's a scroll, you get a failure instead."
+     }
     }
    ]
   },
@@ -27449,6 +31135,71 @@
    ]
   },
   {
+   "entityId": "swan-dive",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 269,
+      "end": 357,
+      "text": "you roll a success on an Athletics check to Swim you get a critical success instead, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "swan-dive",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 363,
+      "end": 417,
+      "text": "you roll a critical failure you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "swashbuckler-dedication",
    "draft": {
     "kind": "proficiency",
@@ -28033,6 +31784,38 @@
    ]
   },
   {
+   "entityId": "unmistakable-lore",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 199,
+      "text": "you roll a critical failure, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "vehicle-mechanic-dedication",
    "draft": {
     "kind": "proficiency",
@@ -28078,6 +31861,39 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "viking-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 354,
+      "end": 439,
+      "text": "you roll a success on an Athletics check to Swim, you get a critical success instead."
+     }
     }
    ]
   },
@@ -28140,6 +31956,38 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "wandering-chef-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure, you get a success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 470,
+      "end": 516,
+      "text": "you roll a failure, you get a success instead."
+     }
     }
    ]
   },
@@ -29970,6 +33818,52 @@
    ]
   },
   {
+   "entityId": "crystal-keeper-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you Decipher Writing and roll a critical failure, you get a failure instead, and"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you Decipher Writing and roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 224,
+      "text": "you Decipher Writing and roll a critical failure, you get a failure instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 230,
+      "end": 306,
+      "text": "you Decipher Writing and roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
    "entityId": "decry-thief",
    "draft": {
     "kind": "modifier",
@@ -30372,6 +34266,43 @@
       "start": 94,
       "end": 146,
       "text": "You gain a +2 circumstance bonus to initiative rolls"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "familiar-foe",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Recall Knowledge about undead"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 167,
+      "end": 266,
+      "text": "you roll a critical failure on a check to Recall Knowledge about undead, you get a failure instead."
      }
     }
    ]
@@ -33811,6 +37742,137 @@
    ]
   },
   {
+   "entityId": "raise-symbol",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against vitality or void effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 313,
+      "text": "you roll a success at a saving throw against a vitality or void effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "raise-symbol",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against vitality or void effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 313,
+      "text": "you roll a success at a saving throw against a vitality or void effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "raise-symbol",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against vitality or void effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 313,
+      "text": "you roll a success at a saving throw against a vitality or void effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "remember-your-training",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure (but not a critical failure) on this check, you get a success"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 374,
+      "end": 463,
+      "text": "you roll a failure (but not a critical failure) on this check, you get a success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "restorative-strike",
    "draft": {
     "kind": "modifier",
@@ -35384,6 +39446,137 @@
    ]
   },
   {
+   "entityId": "affliction-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 245,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "affliction-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 245,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "affliction-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against disease or poison"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 144,
+      "end": 245,
+      "text": "you roll a success on a saving throw against a disease or poison, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "affliction-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the save"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 374,
+      "end": 440,
+      "text": "you roll a critical failure on the save you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "ageless-patience",
    "draft": {
     "kind": "modifier",
@@ -35552,6 +39745,105 @@
    ]
   },
   {
+   "entityId": "ancestral-suspicion",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 484,
+      "end": 580,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "ancestral-suspicion",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 484,
+      "end": 580,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "ancestral-suspicion",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 484,
+      "end": 580,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "animal-soul-siblings",
    "draft": {
     "kind": "modifier",
@@ -35680,6 +39972,39 @@
    ]
   },
   {
+   "entityId": "athletic-might",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Climb or Swim"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 81,
+      "end": 175,
+      "text": "you roll a success on an Athletics check to Climb or Swim, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "blast-resistance",
    "draft": {
     "kind": "grant",
@@ -35738,6 +40063,105 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "blast-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect that causes the Dazzled or Deafened conditions"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 191,
+      "end": 329,
+      "text": "you roll a success on a saving throw against an effect that causes the Dazzled or Deafened conditions, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "blast-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect that causes the Dazzled or Deafened conditions"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 191,
+      "end": 329,
+      "text": "you roll a success on a saving throw against an effect that causes the Dazzled or Deafened conditions, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "blast-resistance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against effect that causes the Dazzled or Deafened conditions"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 191,
+      "end": 329,
+      "text": "you roll a success on a saving throw against an effect that causes the Dazzled or Deafened conditions, you get a critical success instead."
+     }
     }
    ]
   },
@@ -35856,6 +40280,105 @@
       "start": 110,
       "end": 188,
       "text": "You gain a +1 circumstance bonus to Will saving throws against mental effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "called",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that would make you Controlled"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 192,
+      "end": 323,
+      "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "called",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that would make you Controlled"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 192,
+      "end": 323,
+      "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "called",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that would make you Controlled"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 192,
+      "end": 323,
+      "text": "you roll a success on your saving throw against a mental effect that would make you Controlled, you get a critical success instead."
      }
     }
    ]
@@ -36133,6 +40656,71 @@
    ]
   },
   {
+   "entityId": "duck",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against ability that targets an area and was caused by a Huge or larger creature"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 169,
+      "end": 337,
+      "text": "you roll a critical failure on a Reflex saving throw against an ability that targets an area and was caused by a Huge or larger creature, you get a failure instead, and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "duck",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success against such an effect, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 343,
+      "end": 421,
+      "text": "you roll a success against such an effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "earthbond",
    "draft": {
     "kind": "modifier",
@@ -36350,6 +40938,57 @@
    ]
   },
   {
+   "entityId": "fluid-contortionist",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Squeeze"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 126,
+      "end": 207,
+      "text": "you roll a critical failure on a check to Squeeze, you get a failure instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 213,
+      "end": 268,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
    "entityId": "formation-training",
    "draft": {
     "kind": "modifier",
@@ -36537,6 +41176,39 @@
       "start": 272,
       "end": 475,
       "text": "you hold onto a participant's token, you can assume their form with your Change Shape ability, gaining a +4 status bonus to Deception checks to pass as that person and adding your level to the check even"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "geckos-grip",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to climb"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 103,
+      "end": 189,
+      "text": "you roll a success on an Athletics check to climb, you get a critical success instead."
      }
     }
    ]
@@ -36965,6 +41637,105 @@
    ]
   },
   {
+   "entityId": "lab-rat",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against poison or disease"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 280,
+      "end": 384,
+      "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lab-rat",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against poison or disease"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 280,
+      "end": 384,
+      "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lab-rat",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against poison or disease"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 280,
+      "end": 384,
+      "text": "you roll a success on your saving throw against a poison or disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "leaf-transformation",
    "draft": {
     "kind": "modifier",
@@ -37027,6 +41798,38 @@
    ]
   },
   {
+   "entityId": "lightless-litheness",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success at an Escape check, you get a critical success instead;"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 133,
+      "end": 207,
+      "text": "you roll a success at an Escape check, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "natural-ambassador",
    "draft": {
     "kind": "modifier",
@@ -37054,6 +41857,39 @@
       "start": 285,
       "end": 330,
       "text": "You gain a +1 circumstance bonus to Diplomacy"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "natural-orienteering",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "survival"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Sense Direction or Track"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:survival",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 58,
+      "end": 161,
+      "text": "you roll a success on a Survival check to Sense Direction or Track, you get a critical success instead."
      }
     }
    ]
@@ -37141,6 +41977,128 @@
       "start": 126,
       "end": 193,
       "text": "You gain a +2 circumstance bonus to saving throws against diseases."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-physiology",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 197,
+      "end": 288,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-physiology",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 197,
+      "end": 288,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-physiology",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 197,
+      "end": 288,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-physiology",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the save"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 417,
+      "end": 483,
+      "text": "you roll a critical failure on the save you get a failure instead."
      }
     }
    ]
@@ -37964,6 +42922,38 @@
    ]
   },
   {
+   "entityId": "tail-spin",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success against a target, you get a critical success against that tar"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 146,
+      "end": 238,
+      "text": "you roll a success against a target, you get a critical success against that target instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "tip-the-scales",
    "draft": {
     "kind": "modifier",
@@ -38509,6 +43499,128 @@
    ]
   },
   {
+   "entityId": "well-groomed",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 111,
+      "end": 202,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "well-groomed",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 111,
+      "end": 202,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "well-groomed",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:disease"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 111,
+      "end": 202,
+      "text": "you roll a success on a saving throw against a disease, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "well-groomed",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the save"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 331,
+      "end": 397,
+      "text": "you roll a critical failure on the save you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "analyze-idiolect",
    "draft": {
     "kind": "modifier",
@@ -38902,6 +44014,38 @@
       "start": 375,
       "end": 618,
       "text": "For example, you can combine two Lesser Elixirs of Life to create a combined elixir that heals twice the normal amount, or you can combine a Lesser Darkvision Elixir with a Lesser Eagle-Eye Elixir to both gain darkvision and find secret doors."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "commitment-to-protection",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure or critical failure, you get a success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 303,
+      "end": 369,
+      "text": "you roll a failure or critical failure, you get a success instead."
      }
     }
    ]
@@ -39555,6 +44699,65 @@
    ]
   },
   {
+   "entityId": "emerald-boughs-accustomation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead;"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead;"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you attempt a Society check to Recall Knowledge about cultural practices and rol"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 119,
+      "end": 174,
+      "text": "you roll a critical failure, you get a failure instead;"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 178,
+      "end": 233,
+      "text": "you roll a success, you get a critical success instead;"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 337,
+      "end": 465,
+      "text": "you attempt a Society check to Recall Knowledge about cultural practices and roll a critical failure, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 3
+  },
+  {
    "entityId": "endemic-herbs",
    "draft": {
     "kind": "modifier",
@@ -40031,6 +45234,43 @@
       "start": 154,
       "end": 434,
       "text": "wielding a fan, you can snap open, flutter, or otherwise manipulate the fan to briefly distract observers around you, giving you and adjacent allies a constant +1 circumstance bonus to Stealth checks to secretly Conceal an Object and to Thievery checks to Steal or Palm an Object."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "forced-entry",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "a check"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Force Open"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 176,
+      "end": 256,
+      "text": "you roll a success on a check to Force Open, you get a critical success instead."
      }
     }
    ]
@@ -40916,6 +46156,105 @@
    ]
   },
   {
+   "entityId": "knight-reclaimant-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against undead's special ability"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 146,
+      "end": 255,
+      "text": "you roll a success on a saving throw against an undead's special ability, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "knight-reclaimant-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against undead's special ability"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 146,
+      "end": 255,
+      "text": "you roll a success on a saving throw against an undead's special ability, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "knight-reclaimant-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against undead's special ability"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 146,
+      "end": 255,
+      "text": "you roll a success on a saving throw against an undead's special ability, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "knight-vigilant-dedication",
    "draft": {
     "kind": "proficiency",
@@ -41085,6 +46424,38 @@
       "start": 33,
       "end": 97,
       "text": "You gain a +2 status bonus to Perception checks made to Seek and"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "megafauna-veterinarian",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "your check"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 507,
+      "end": 623,
+      "text": "the subject of your care is your megafauna and you roll a success on your check, you get a critical success instead."
      }
     }
    ]
@@ -41337,6 +46708,105 @@
       "start": 91,
       "end": 214,
       "text": "You gain the Advanced Undead Benefits as well as a +1 circumstance bonus on saving throws against emotion and pain effects."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "numb",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or pain effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 347,
+      "end": 454,
+      "text": "you roll a success on a saving throw against an emotion or pain effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "numb",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or pain effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 347,
+      "end": 454,
+      "text": "you roll a success on a saving throw against an emotion or pain effect, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "numb",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against emotion or pain effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 347,
+      "end": 454,
+      "text": "you roll a success on a saving throw against an emotion or pain effect, you get a critical success instead."
      }
     }
    ]
@@ -42694,6 +48164,71 @@
    ]
   },
   {
+   "entityId": "explosive-entry",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-success": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical success, you get a success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:worsen",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 474,
+      "end": 529,
+      "text": "you roll a critical success, you get a success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "impeccable-crafting",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "crafting"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to make an item of the type you chose with Specialty Crafting"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:crafting",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 61,
+      "end": 198,
+      "text": "you roll a success at a Crafting check to make an item of the type you chose with Specialty Crafting, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "read-shibboleths",
    "draft": {
     "kind": "modifier",
@@ -42747,6 +48282,38 @@
       "start": 351,
       "end": 520,
       "text": "You immediately gain an additional reaction that can be used only to Aid the chosen ally, and you gain a +1 circumstance bonus to your skill check or attack roll to Aid."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "shameless-request",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure for your Request, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 205,
+      "end": 277,
+      "text": "you roll a critical failure for your Request, you get a failure instead."
      }
     }
    ]
@@ -43500,6 +49067,52 @@
    ]
   },
   {
+   "entityId": "glyph-expert",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 687,
+      "end": 742,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 746,
+      "end": 801,
+      "text": "you roll a critical failure, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
    "entityId": "golem-grafter-dedication",
    "draft": {
     "kind": "modifier",
@@ -43815,6 +49428,52 @@
      }
     }
    ]
+  },
+  {
+   "entityId": "insistent-command",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success to Command an Animal, you get a critical success;"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 5,
+      "end": 73,
+      "text": "you roll a success to Command an Animal, you get a critical success;"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 77,
+      "end": 124,
+      "text": "you roll a critical failure, you get a failure."
+     }
+    }
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "instinctive-maneuvers",
@@ -44446,6 +50105,137 @@
    ]
   },
   {
+   "entityId": "necromantic-tenacity",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against necromancy effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 193,
+      "text": "you roll a success on a saving throw against a necromancy effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-tenacity",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against necromancy effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 193,
+      "text": "you roll a success on a saving throw against a necromancy effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-tenacity",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against necromancy effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 92,
+      "end": 193,
+      "text": "you roll a success on a saving throw against a necromancy effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "necromantic-tenacity",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure on such a save, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 197,
+      "end": 267,
+      "text": "you roll a critical failure on such a save, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "officers-education",
    "draft": {
     "kind": "choice",
@@ -44808,6 +50598,38 @@
    "evidence": [
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "practiced-guidance",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success to Aid a member of your crop, you get a critical success inst"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 117,
+      "end": 201,
+      "text": "you roll a success to Aid a member of your crop, you get a critical success instead."
+     }
     }
    ]
   },
@@ -45510,6 +51332,38 @@
       "start": 225,
       "end": 294,
       "text": "You gain a +2 circumstance bonus to AC against the triggering attack."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "scattering-in-spring",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 402,
+      "end": 457,
+      "text": "you roll a success, you get a critical success instead."
      }
     }
    ]
@@ -46263,6 +52117,137 @@
    ]
   },
   {
+   "entityId": "survivor-of-desolation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 174,
+      "end": 270,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "survivor-of-desolation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 174,
+      "end": 270,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "survivor-of-desolation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against such an effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 174,
+      "end": 270,
+      "text": "you roll a success on a saving throw against such an effect, you get a critical success instead;"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "survivor-of-desolation",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure, you get a failure instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 274,
+      "end": 329,
+      "text": "you roll a critical failure, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "swallow-pain",
    "draft": {
     "kind": "grant",
@@ -46808,6 +52793,105 @@
    ]
   },
   {
+   "entityId": "abjure-the-false-kin",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that doesn't deal damage"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 140,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a mental effect that doesn't deal damage, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "abjure-the-false-kin",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that doesn't deal damage"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 140,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a mental effect that doesn't deal damage, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "abjure-the-false-kin",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against mental effect that doesn't deal damage"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 140,
+      "end": 262,
+      "text": "you roll a success on a saving throw against a mental effect that doesn't deal damage, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "arcane-slam",
    "draft": {
     "kind": "modifier",
@@ -46943,6 +53027,43 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "cooperative-soul",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure or critical failure to Aid a skill check, you get a success i"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "to Aid a skill check"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 181,
+      "end": 268,
+      "text": "you roll a failure or critical failure to Aid a skill check, you get a success instead."
+     }
     }
    ]
   },
@@ -47749,6 +53870,160 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "irrepressible-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "fortitude",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:fortitude",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 82,
+      "end": 181,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 223,
+      "end": 322,
+      "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
+   "entityId": "irrepressible-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "reflex",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:reflex",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 82,
+      "end": 181,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 223,
+      "end": 322,
+      "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
+   "entityId": "irrepressible-halfling",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "will",
+    "when": {
+     "tag": "effect:trait:emotion"
+    }
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:will",
+   "signature": "rollAdjust:save:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 82,
+      "end": 181,
+      "text": "you roll a success on a saving throw against an emotion effect, you get a critical success instead."
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 223,
+      "end": 322,
+      "text": "you roll a critical failure on a saving throw against an emotion effect, you get a failure instead."
+     }
+    }
+   ],
+   "multiplicity": 2
+  },
+  {
+   "entityId": "kneel-for-no-god",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "the saving throw"
+    },
+    {
+     "field": "when",
+     "reason": "anaphoric",
+     "raw": "against that spell"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 171,
+      "end": 332,
+      "text": "you use your Call on Ancient Blood reaction against a divine spell and roll a critical failure on the saving throw against that spell, you get a failure instead."
+     }
     }
    ]
   },
@@ -49136,6 +55411,52 @@
      "source": "foundry"
     }
    ]
+  },
+  {
+   "entityId": "witness-of-earth",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you use the atone ritual on yakshas and you roll a critical failure, you get a f"
+    },
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success, you get a critical success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 108,
+      "end": 207,
+      "text": "you use the atone ritual on yakshas and you roll a critical failure, you get a failure instead, and"
+     }
+    },
+    {
+     "source": "parser",
+     "span": {
+      "start": 211,
+      "end": 266,
+      "text": "you roll a success, you get a critical success instead."
+     }
+    }
+   ],
+   "multiplicity": 2
   },
   {
    "entityId": "you-seem-somewhat-familiar",
@@ -51074,6 +57395,38 @@
       "start": 313,
       "end": 375,
       "text": "You become an expert in Athletics, or in another trained skill"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "sneak-adept",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure on a Sneak action, you get a success instead."
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 41,
+      "end": 105,
+      "text": "you roll a failure on a Sneak action, you get a success instead."
      }
     }
    ]
@@ -53024,6 +59377,38 @@
     }
    ],
    "multiplicity": 2
+  },
+  {
+   "entityId": "eternal-legend-dedication",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a success against an effect that would impose that condition on you, yo"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 319,
+      "text": "you roll a success against an effect that would impose that condition on you, you get a critical success instead."
+     }
+    }
+   ]
   },
   {
    "entityId": "frightful-attrition",
@@ -55124,6 +61509,38 @@
    ]
   },
   {
+   "entityId": "eldritch-calm",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a critical failure against an emotion or fear effect, you get a failure"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 255,
+      "end": 344,
+      "text": "you roll a critical failure against an emotion or fear effect, you get a failure instead."
+     }
+    }
+   ]
+  },
+  {
    "entityId": "fey-skin",
    "draft": {
     "kind": "grant",
@@ -55234,6 +61651,33 @@
     },
     {
      "source": "foundry"
+    }
+   ]
+  },
+  {
+   "entityId": "hydraulic-maneuvers",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "critical-failure": "failure"
+     }
+    },
+    "target": "athletics"
+   },
+   "gaps": [],
+   "agreement": "parser-only",
+   "key": "rollAdjust:athletics",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 306,
+      "end": 385,
+      "text": "you roll a critical failure on that Athletics check, you get a failure instead."
+     }
     }
    ]
   },
@@ -56988,6 +63432,105 @@
       "start": 0,
       "end": 19,
       "text": "You gain darkvision"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lord-of-the-fiends",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "deception"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against fiend"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:deception",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 214,
+      "end": 334,
+      "text": "you roll a success on a Deception, Diplomacy, or Intimidation check against a fiend, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lord-of-the-fiends",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "diplomacy"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against fiend"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:diplomacy",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 214,
+      "end": 334,
+      "text": "you roll a success on a Deception, Diplomacy, or Intimidation check against a fiend, you get a critical success instead."
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "lord-of-the-fiends",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    },
+    "target": "intimidation"
+   },
+   "gaps": [
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against fiend"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:intimidation",
+   "signature": "rollAdjust:skill:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 214,
+      "end": 334,
+      "text": "you roll a success on a Deception, Diplomacy, or Intimidation check against a fiend, you get a critical success instead."
      }
     }
    ]
@@ -59089,6 +65632,38 @@
    ]
   },
   {
+   "entityId": "legendary-codebreaker",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "success": "critical-success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you slow down and spend the full amount of time that's ordinarily required and r"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 206,
+      "end": 328,
+      "text": "you slow down and spend the full amount of time that's ordinarily required and roll a success, you get a critical success;"
+     }
+    }
+   ]
+  },
+  {
    "entityId": "legendary-leader",
    "draft": {
     "kind": "modifier",
@@ -61167,6 +67742,43 @@
       "start": 62,
       "end": 128,
       "text": "Your gamtu now grants its wearer a +1 item bonus to Stealth checks"
+     }
+    }
+   ]
+  },
+  {
+   "entityId": "reckless-abandon",
+   "draft": {
+    "kind": "rollAdjust",
+    "adjust": {
+     "type": "degreeMap",
+     "map": {
+      "failure": "success"
+     }
+    }
+   },
+   "gaps": [
+    {
+     "field": "target",
+     "reason": "anaphoric",
+     "raw": "you roll a failure or critical failure on a saving throw against a harmful effec"
+    },
+    {
+     "field": "when",
+     "reason": "conditional-unmapped",
+     "raw": "against harmful effect"
+    }
+   ],
+   "agreement": "parser-only",
+   "key": "rollAdjust:?",
+   "signature": "rollAdjust:?:improve",
+   "evidence": [
+    {
+     "source": "parser",
+     "span": {
+      "start": 231,
+      "end": 340,
+      "text": "you roll a failure or critical failure on a saving throw against a harmful effect, you get a success instead."
      }
     }
    ]
@@ -63694,16 +70306,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "disillusionment",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
-  },
-  {
    "entityId": "fear-no-law-fear-no-one",
    "reason": "action-feat",
    "actionCost": "1"
@@ -63755,16 +70357,6 @@
    "entityId": "spiritual-disruption",
    "reason": "action-feat",
    "actionCost": "2"
-  },
-  {
-   "entityId": "sturdy-bindings",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "trailblazing-stride",
@@ -63925,10 +70517,6 @@
      "count": 1
     }
    ]
-  },
-  {
-   "entityId": "ancestral-insight",
-   "reason": "no-producer-signal"
   },
   {
    "entityId": "ancestral-linguistics",
@@ -64278,20 +70866,6 @@
    ]
   },
   {
-   "entityId": "brine-may",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "brinesoul",
    "reason": "all-unsupported",
    "blockers": [
@@ -64336,16 +70910,6 @@
      "reason": "needs-granting",
      "count": 1
     },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "cantorian-reinforcement",
-   "reason": "all-unsupported",
-   "blockers": [
     {
      "reason": "unsupported-shape",
      "count": 1
@@ -65038,16 +71602,6 @@
    ]
   },
   {
-   "entityId": "eliminate-red-herrings",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "elven-aloofness",
    "reason": "no-producer-signal"
   },
@@ -65115,20 +71669,6 @@
   {
    "entityId": "runesmith-engraving-strike",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "esteemed-visitor",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "eternal-torch",
@@ -65326,16 +71866,6 @@
    ]
   },
   {
-   "entityId": "fire-savvy",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-item-model",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "first-world-magic",
    "reason": "no-producer-signal"
   },
@@ -65396,20 +71926,6 @@
   {
    "entityId": "folksy-patter",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "forager",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "forensic-acumen",
@@ -65579,20 +72095,6 @@
    ]
   },
   {
-   "entityId": "grim-insight",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "grimspawn",
    "reason": "all-unsupported",
    "blockers": [
@@ -65747,16 +72249,6 @@
    ]
   },
   {
-   "entityId": "hobnobber",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "howling-aspect",
    "reason": "action-feat",
    "actionCost": "1"
@@ -65863,16 +72355,6 @@
    ]
   },
   {
-   "entityId": "irrepressible-nephilim",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "iruxi-armaments",
    "reason": "all-unsupported",
    "blockers": [
@@ -65893,16 +72375,6 @@
     {
      "reason": "needs-item-model",
      "count": 2
-    }
-   ]
-  },
-  {
-   "entityId": "jungle-strider",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
     }
    ]
   },
@@ -66109,10 +72581,6 @@
    ]
   },
   {
-   "entityId": "marsh-runner",
-   "reason": "no-producer-signal"
-  },
-  {
    "entityId": "martial-performance",
    "reason": "no-producer-signal"
   },
@@ -66308,20 +72776,6 @@
    "blockers": [
     {
      "reason": "unsupported-selector",
-     "count": 3
-    }
-   ]
-  },
-  {
-   "entityId": "musetouched",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 4
-    },
-    {
-     "reason": "unsupported-shape",
      "count": 3
     }
    ]
@@ -66843,20 +73297,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "rock-runner",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "root-to-life",
    "reason": "action-feat",
    "actionCost": "1"
@@ -67072,10 +73512,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "shore-step",
-   "reason": "no-producer-signal"
-  },
-  {
    "entityId": "shoulder-check",
    "reason": "action-feat",
    "actionCost": "1"
@@ -67115,24 +73551,6 @@
   {
    "entityId": "slink",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "slither",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "small-speak",
@@ -67178,34 +73596,6 @@
   {
    "entityId": "speedrun-strats",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "spellbook-prodigy",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "spelunker",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 2
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
   },
   {
    "entityId": "spine-stabber",
@@ -67286,24 +73676,6 @@
    ]
   },
   {
-   "entityId": "steady-balance",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "steady-on-stone",
-   "reason": "no-producer-signal"
-  },
-  {
    "entityId": "steelhoof",
    "reason": "all-unsupported",
    "blockers": [
@@ -67356,20 +73728,6 @@
    ]
   },
   {
-   "entityId": "student-of-the-canon",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "studious-magic",
    "reason": "no-producer-signal"
   },
@@ -67386,20 +73744,6 @@
   {
    "entityId": "sunlit-vitality",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "sure-feet",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 2
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
   },
   {
    "entityId": "surface-skimmer",
@@ -67761,16 +74105,6 @@
   {
    "entityId": "unfetter-eidolon",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "unfettered-halfling",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 3
-    }
-   ]
   },
   {
    "entityId": "unimpeded-step",
@@ -68218,20 +74552,6 @@
    "actionCost": "1"
   },
   {
-   "entityId": "woodcraft",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "wortwitch",
    "reason": "all-unsupported",
    "blockers": [
@@ -68376,20 +74696,6 @@
     {
      "reason": "needs-combat-tags",
      "count": 2
-    }
-   ]
-  },
-  {
-   "entityId": "assured-identification",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
     }
    ]
   },
@@ -69481,20 +75787,6 @@
    "actionCost": "free"
   },
   {
-   "entityId": "marine-marauder-dedication",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "martial-artist-dedication",
    "reason": "all-unsupported",
    "blockers": [
@@ -69532,16 +75824,6 @@
    "blockers": [
     {
      "reason": "needs-item-model",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "mortal-healing",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -69992,24 +76274,6 @@
    ]
   },
   {
-   "entityId": "scroll-trickster-dedication",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "scrounger-dedication",
    "reason": "no-producer-signal"
   },
@@ -70383,17 +76647,6 @@
    ]
   },
   {
-   "entityId": "swan-dive",
-   "reason": "action-feat",
-   "actionCost": "1",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "swarmkeeper-dedication",
    "reason": "all-unsupported",
    "blockers": [
@@ -70581,20 +76834,6 @@
    ]
   },
   {
-   "entityId": "unmistakable-lore",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "unusual-treatment",
    "reason": "no-producer-signal"
   },
@@ -70661,10 +76900,6 @@
   },
   {
    "entityId": "vigilante-dedication",
-   "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "viking-dedication",
    "reason": "no-producer-signal"
   },
   {
@@ -71974,20 +78209,6 @@
    ]
   },
   {
-   "entityId": "crystal-keeper-dedication",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 2
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "crystal-ward-spells",
    "reason": "no-producer-signal"
   },
@@ -72559,10 +78780,6 @@
    "entityId": "familiar-conduit",
    "reason": "action-feat",
    "actionCost": "1"
-  },
-  {
-   "entityId": "familiar-foe",
-   "reason": "no-producer-signal"
   },
   {
    "entityId": "familiar-mascot",
@@ -73820,11 +80037,6 @@
   },
   {
    "entityId": "regurgitate-mutagen",
-   "reason": "action-feat",
-   "actionCost": "1"
-  },
-  {
-   "entityId": "remember-your-training",
    "reason": "action-feat",
    "actionCost": "1"
   },
@@ -75132,20 +81344,6 @@
    ]
   },
   {
-   "entityId": "athletic-might",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "awakened-yaoguai-heritage",
    "reason": "all-unsupported",
    "blockers": [
@@ -75517,16 +81715,6 @@
    ]
   },
   {
-   "entityId": "duck",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "dwarven-reinforcement",
    "reason": "no-producer-signal"
   },
@@ -75743,20 +81931,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "fluid-contortionist",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "focused-cat-nap",
    "reason": "no-producer-signal"
   },
@@ -75786,24 +81960,6 @@
    "blockers": [
     {
      "reason": "needs-item-model",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "geckos-grip",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-granting",
-     "count": 1
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
      "count": 1
     }
    ]
@@ -76045,20 +82201,6 @@
    "actionCost": "2"
   },
   {
-   "entityId": "lightless-litheness",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 3
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "long-tongue",
    "reason": "no-producer-signal"
   },
@@ -76191,16 +82333,6 @@
     {
      "reason": "needs-item-model",
      "count": 2
-    }
-   ]
-  },
-  {
-   "entityId": "natural-orienteering",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
     }
    ]
   },
@@ -76778,21 +82910,6 @@
    "entityId": "tail-snatch",
    "reason": "action-feat",
    "actionCost": "1"
-  },
-  {
-   "entityId": "tail-spin",
-   "reason": "action-feat",
-   "actionCost": "2",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "taste-blood",
@@ -78310,10 +84427,6 @@
    ]
   },
   {
-   "entityId": "emerald-boughs-accustomation",
-   "reason": "no-producer-signal"
-  },
-  {
    "entityId": "energetic-resonance",
    "reason": "action-feat",
    "actionCost": "reaction"
@@ -78591,16 +84704,6 @@
   {
    "entityId": "fools-fleeting-plan",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "forced-entry",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
   },
   {
    "entityId": "fortified-elixirs",
@@ -79194,10 +85297,6 @@
   },
   {
    "entityId": "mature-trained-companion",
-   "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "megafauna-veterinarian",
    "reason": "no-producer-signal"
   },
   {
@@ -80766,10 +86865,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "explosive-entry",
-   "reason": "no-producer-signal"
-  },
-  {
    "entityId": "fabricated-connections",
    "reason": "no-producer-signal"
   },
@@ -80794,16 +86889,6 @@
    "entityId": "grudging-compliment",
    "reason": "action-feat",
    "actionCost": "reaction"
-  },
-  {
-   "entityId": "impeccable-crafting",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "improvise-strategy",
@@ -80929,10 +87014,6 @@
   },
   {
    "entityId": "scholastic-identification",
-   "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "shameless-request",
    "reason": "no-producer-signal"
   },
   {
@@ -82279,16 +88360,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "insistent-command",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "inspired-stratagem",
    "reason": "all-unsupported",
    "blockers": [
@@ -82652,20 +88723,6 @@
    "reason": "no-producer-signal"
   },
   {
-   "entityId": "necromantic-tenacity",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "nimble-roll",
    "reason": "all-unsupported",
    "blockers": [
@@ -82857,16 +88914,6 @@
   },
   {
    "entityId": "powerful-snares",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
-   "entityId": "practiced-guidance",
    "reason": "all-unsupported",
    "blockers": [
     {
@@ -83906,16 +89953,6 @@
    "actionCost": "reaction"
   },
   {
-   "entityId": "abjure-the-false-kin",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "aboleth-transmutation",
    "reason": "all-unsupported",
    "blockers": [
@@ -84338,16 +90375,6 @@
    "entityId": "consume-magic",
    "reason": "action-feat",
    "actionCost": "reaction"
-  },
-  {
-   "entityId": "cooperative-soul",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "coral-detoxification",
@@ -84996,16 +91023,6 @@
    ]
   },
   {
-   "entityId": "irrepressible-halfling",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
-  },
-  {
    "entityId": "jalmeri-rakshasa-magic",
    "reason": "all-unsupported",
    "blockers": [
@@ -85047,20 +91064,6 @@
     {
      "reason": "needs-item-model",
      "count": 2
-    }
-   ]
-  },
-  {
-   "entityId": "kneel-for-no-god",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    },
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
     }
    ]
   },
@@ -85945,10 +91948,6 @@
    "entityId": "wings-of-air",
    "reason": "action-feat",
    "actionCost": "2"
-  },
-  {
-   "entityId": "witness-of-earth",
-   "reason": "no-producer-signal"
   },
   {
    "entityId": "world-protectors-hospitality",
@@ -87938,16 +93937,6 @@
    "actionCost": "reaction"
   },
   {
-   "entityId": "sneak-adept",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
-  },
-  {
    "entityId": "sour-bomb",
    "reason": "no-producer-signal"
   },
@@ -89230,10 +95219,6 @@
    "entityId": "escape-timeline",
    "reason": "action-feat",
    "actionCost": "free"
-  },
-  {
-   "entityId": "eternal-legend-dedication",
-   "reason": "no-producer-signal"
   },
   {
    "entityId": "evasiveness",
@@ -91269,16 +97254,6 @@
    "actionCost": "2"
   },
   {
-   "entityId": "eldritch-calm",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "unsupported-shape",
-     "count": 2
-    }
-   ]
-  },
-  {
    "entityId": "elite-dracomancer",
    "reason": "no-producer-signal"
   },
@@ -91457,21 +97432,6 @@
    "entityId": "hop-up",
    "reason": "action-feat",
    "actionCost": "free"
-  },
-  {
-   "entityId": "hydraulic-maneuvers",
-   "reason": "action-feat",
-   "actionCost": "1",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 2
-    },
-    {
-     "reason": "unsupported-shape",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "i-sense-malevolence",
@@ -93309,11 +99269,6 @@
    "actionCost": "3"
   },
   {
-   "entityId": "lord-of-the-fiends",
-   "reason": "action-feat",
-   "actionCost": "2"
-  },
-  {
    "entityId": "manipulate-realm",
    "reason": "all-unsupported",
    "blockers": [
@@ -94247,16 +100202,6 @@
   {
    "entityId": "divine-guidance",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "legendary-codebreaker",
-   "reason": "all-unsupported",
-   "blockers": [
-    {
-     "reason": "needs-combat-tags",
-     "count": 1
-    }
-   ]
   },
   {
    "entityId": "legendary-guide",
@@ -96224,11 +102169,6 @@
   {
    "entityId": "rampaging-form",
    "reason": "no-producer-signal"
-  },
-  {
-   "entityId": "reckless-abandon",
-   "reason": "action-feat",
-   "actionCost": "free"
   },
   {
    "entityId": "reflect-foe",
@@ -98922,6 +104862,7 @@
   "meddling-futures",
   "overclock-senses",
   "spell-parry",
+  "swan-dive",
   "underhanded-assault",
   "air-shroud",
   "aldori-parry",
@@ -98960,6 +104901,7 @@
   "prescience",
   "push-back-the-dead",
   "raise-symbol",
+  "remember-your-training",
   "restorative-strike",
   "return-to-the-sea",
   "soul-flare",
@@ -98982,6 +104924,7 @@
   "recognize-ambush",
   "shadowplay",
   "shed-tail",
+  "tail-spin",
   "archaeologists-warning",
   "benevolent-spirit-deck",
   "boasters-challenge",
@@ -99109,6 +105052,7 @@
   "six-pillars-stance",
   "wild-dance",
   "disruptive-stare",
+  "hydraulic-maneuvers",
   "idol-threat",
   "march-the-mines",
   "sharpened-senses",
@@ -99122,6 +105066,7 @@
   "explosive-death-drop",
   "induce-imbalance",
   "ironblood-surge",
+  "lord-of-the-fiends",
   "orchards-endurance",
   "preternatural-parry",
   "purifying-breeze",
@@ -99157,6 +105102,7 @@
   "indomitable-spirit",
   "metallic-skin",
   "pandemonium-eruption",
+  "reckless-abandon",
   "tidal-shield",
   "beasts-of-slumbering-steel",
   "engine-of-destruction",
@@ -99172,15 +105118,15 @@
  "silenceBlockers": [
   {
    "reason": "needs-item-model",
-   "count": 1352
+   "count": 1351
   },
   {
    "reason": "needs-combat-tags",
-   "count": 968
+   "count": 934
   },
   {
    "reason": "needs-granting",
-   "count": 420
+   "count": 415
   },
   {
    "reason": "unsupported-selector",
@@ -99188,7 +105134,7 @@
   },
   {
    "reason": "unsupported-shape",
-   "count": 266
+   "count": 208
   },
   {
    "reason": "needs-runtime-choice",
