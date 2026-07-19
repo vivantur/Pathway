@@ -4,6 +4,14 @@ import {
   groupBySignature,
   groupSilence,
   promote,
+  applyResolution,
+  resolutionIssues,
+  resolveGaps,
+  patchResolves,
+  applyBulk,
+  rejectCandidate,
+  type ResolutionPatch,
+  type RejectReason,
   type SilentEntity,
   type SilenceReason,
   type EffectCandidate,
@@ -14,6 +22,7 @@ import {
   type Expr,
 } from '@pathway/core';
 import featData from '@/features/builder/data/feats.json';
+import { PredicateField, SelectorField } from '@/features/authoring/fields';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { CornerBrackets } from '@/components/ui/CornerBrackets';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
@@ -264,6 +273,79 @@ const SILENCE_HINT: Record<SilenceReason, string> = {
 /** A feat's display name, falling back to its id so a missing entry stays legible. */
 const nameOf = (id: string): string => FEAT_BY_ID.get(id)?.name ?? id;
 
+// ── the gap editor ──────────────────────────────────────────────────────────
+//
+// Measured over the corpus, EVERY gap is on `when` (956) or `target` (110) — so this
+// is a two-field editor, not a general draft editor (that is EffectAuthorPage, which
+// is strictly more general). Both controls already exist in features/authoring, so
+// nothing is re-implemented here: the review surface and the homebrew editor author
+// the same shapes through the same fields.
+
+const REJECT_REASONS: { value: RejectReason; label: string; hint: string }[] = [
+  {
+    value: 'not-a-passive',
+    label: 'not a passive',
+    hint: 'Real content, but a duration or triggered effect — Layer 2’s, not a passive. 104 of the when-gaps are duration text.',
+  },
+  { value: 'wrong-reading', label: 'wrong reading', hint: 'The producer misread the prose; the effect it describes is not there.' },
+  { value: 'out-of-scope', label: 'out of scope', hint: 'Real and expressible, but out of the current scope to model.' },
+  { value: 'duplicate', label: 'duplicate', hint: 'Already covered by another candidate on this feat.' },
+];
+
+/**
+ * The patch controls for a set of gap fields. Shared by the per-candidate editor and
+ * the bulk bar so one patch means the same thing in both places.
+ *
+ * `unconditional` is its own checkbox rather than "an empty predicate", because those
+ * are different claims: an empty builder means NOT YET ANSWERED, while unconditional
+ * means a human read the prose and ruled there is no condition. Collapsing them would
+ * silently promote every untouched candidate as unconditional — turning a situational
+ * bonus into a permanent one, the exact wrong-sheet failure the pipeline refuses.
+ */
+function PatchFields({
+  fields,
+  patch,
+  onPatch,
+}: {
+  fields: ReadonlySet<string>;
+  patch: ResolutionPatch;
+  onPatch: (p: ResolutionPatch) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {fields.has('target') && (
+        <label className="flex flex-wrap items-center gap-2 text-xs text-parchment/70">
+          <span className="w-20 shrink-0">target</span>
+          <SelectorField value={patch.target ?? ''} onChange={(v) => onPatch({ ...patch, target: v || undefined })} />
+          <span className="text-parchment/40">the stat the pronoun refers to</span>
+        </label>
+      )}
+      {fields.has('when') && (
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs text-parchment/70">
+            <input
+              type="checkbox"
+              checked={!!patch.unconditional}
+              onChange={(e) => onPatch({ ...patch, unconditional: e.target.checked, ...(e.target.checked ? { when: undefined } : {}) })}
+            />
+            no condition — the prose clause is not a condition on this effect
+          </label>
+          {!patch.unconditional && (
+            <PredicateField value={patch.when} onChange={(v) => onPatch({ ...patch, when: v })} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The gap fields present across a set of candidates — what `PatchFields` renders. */
+function gapFieldsOf(candidates: readonly EffectCandidate[]): Set<string> {
+  const s = new Set<string>();
+  for (const c of candidates) for (const g of c.gaps) s.add(g.field);
+  return s;
+}
+
 /** The silent view: what never reaches review, grouped by why. */
 function SilentPanel({ data }: { data: Sidecar }) {
   const [openReason, setOpenReason] = useState<SilenceReason | null>(null);
@@ -377,6 +459,13 @@ export function EffectReviewPage() {
   const [openSig, setOpenSig] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
   const [decisions, setDecisions] = useState<Map<string, EffectDecision>>(new Map());
+  // Per-candidate gap fills, and the multi-select state for the bulk bar. Both are
+  // scoped to the open signature group and cleared when it changes — a patch authored
+  // for "modifier:save:circumstance" means nothing against a different shape, and
+  // carrying it across would invite applying it somewhere it was never read for.
+  const [patches, setPatches] = useState<Map<string, ResolutionPatch>>(new Map());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPatch, setBulkPatch] = useState<ResolutionPatch>({});
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -422,11 +511,54 @@ export function EffectReviewPage() {
       at: new Date().toISOString(),
     });
   };
-  const reject = (c: EffectCandidate) =>
-    setDecision(c, { entityId: c.entityId, key: c.key, action: 'reject', at: new Date().toISOString() });
+  const reject = (c: EffectCandidate, reason?: RejectReason) =>
+    setDecision(
+      c,
+      reason
+        ? rejectCandidate(c, reason, { at: new Date().toISOString() })
+        : { entityId: c.entityId, key: c.key, action: 'reject', at: new Date().toISOString() },
+    );
 
   const acceptGroup = (cands: EffectCandidate[]) => cands.forEach((c) => promote(c).ok && accept(c));
   const rejectGroup = (cands: EffectCandidate[]) => cands.forEach((c) => reject(c));
+
+  const setPatch = (c: EffectCandidate, patch: ResolutionPatch) =>
+    setPatches((prev) => new Map(prev).set(decisionId(c), patch));
+
+  /**
+   * Record a gap fill as a decision. `resolveGaps` is the gate — it refuses anything the
+   * patch did not complete — so this cannot record a half-resolved candidate even if the
+   * button's disabled state were wrong.
+   */
+  const resolve = (c: EffectCandidate, patch: ResolutionPatch) => {
+    const out = resolveGaps(c, patch, { at: new Date().toISOString() });
+    if (out.ok) setDecision(c, out.decision);
+  };
+
+  /** One patch across the selected candidates. Refusals are reported, never forced. */
+  const applyBulkPatch = (cands: readonly EffectCandidate[]) => {
+    const { decisions: made } = applyBulk(cands, bulkPatch, { at: new Date().toISOString() });
+    if (made.length === 0) return;
+    setDecisions((prev) => {
+      const next = new Map(prev);
+      // applyBulk returns decisions in the order it was given the candidates, and it
+      // only emits for the ones that resolved — so re-derive each row's id from the
+      // candidate it came from rather than assuming the arrays line up.
+      for (const c of cands) {
+        const d = made.find((m) => m.entityId === c.entityId && m.key === c.key);
+        if (d) next.set(decisionId(c), d);
+      }
+      return next;
+    });
+    setSelected(new Set());
+  };
+
+  /** Opening a different shape resets the editor — see the `patches` note above. */
+  const openGroup = (signature: string | null) => {
+    setOpenSig(signature);
+    setSelected(new Set());
+    setBulkPatch({});
+  };
 
   const exportDecisions = () => {
     const arr = [...decisions.values()];
@@ -561,7 +693,7 @@ export function EffectReviewPage() {
             key={b}
             onClick={() => {
               setBucket(b);
-              setOpenSig(null);
+              openGroup(null);
             }}
             className={`rounded-md border px-3 py-1.5 text-sm ${
               bucket === b ? 'border-gold/50 bg-midnight-900/80 text-gold' : 'border-gold/15 text-parchment/70 hover:bg-midnight-900/50'
@@ -582,7 +714,7 @@ export function EffectReviewPage() {
             <div key={signature} className="relative rounded-lg border border-gold/15 bg-midnight-900/40">
               {open && <CornerBrackets />}
               <button
-                onClick={() => setOpenSig(open ? null : signature)}
+                onClick={() => openGroup(open ? null : signature)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left"
               >
                 <span className="font-ui text-sm text-gold">{signature}</span>
@@ -611,6 +743,21 @@ export function EffectReviewPage() {
                       </button>
                     </div>
                   )}
+                  {/* bulk fill — one patch across a selection. The leverage lives here:
+                      504 distinct `when` phrasings mean you resolve by the ANSWER, not
+                      by the question, so the selection is the human's, not automatic. */}
+                  {gapFieldsOf(candidates).size > 0 && (
+                    <BulkBar
+                      candidates={candidates}
+                      selected={selected}
+                      patch={bulkPatch}
+                      onPatch={setBulkPatch}
+                      onToggleAll={(on) =>
+                        setSelected(on ? new Set(candidates.map(decisionId)) : new Set())
+                      }
+                      onApply={() => applyBulkPatch(candidates.filter((c) => selected.has(decisionId(c))))}
+                    />
+                  )}
                   <div className="space-y-2">
                     {candidates.map((c) => (
                       <CandidateRow
@@ -618,8 +765,20 @@ export function EffectReviewPage() {
                         candidate={c}
                         decision={decisions.get(decisionId(c))}
                         showText={showText}
+                        patch={patches.get(decisionId(c)) ?? {}}
+                        onPatch={(p) => setPatch(c, p)}
+                        selected={selected.has(decisionId(c))}
+                        onSelect={(on) =>
+                          setSelected((prev) => {
+                            const next = new Set(prev);
+                            if (on) next.add(decisionId(c));
+                            else next.delete(decisionId(c));
+                            return next;
+                          })
+                        }
                         onAccept={() => accept(c)}
-                        onReject={() => reject(c)}
+                        onResolve={(p) => resolve(c, p)}
+                        onReject={(reason) => reject(c, reason)}
                         onClear={() => setDecision(c, null)}
                       />
                     ))}
@@ -642,24 +801,101 @@ export function EffectReviewPage() {
   );
 }
 
+/**
+ * The bulk fill bar: select rows, author ONE patch, apply it across them.
+ *
+ * The count is computed with `patchResolves` BEFORE the action, so the bar can say
+ * "34 of 50 will resolve" rather than reporting 16 refusals afterwards. `applyBulk`
+ * refuses the rest rather than approximating them — forcing a shared fill onto a
+ * candidate whose remaining gap it never addressed is how a bulk action produces
+ * wrong sheets at scale.
+ */
+function BulkBar({
+  candidates,
+  selected,
+  patch,
+  onPatch,
+  onToggleAll,
+  onApply,
+}: {
+  candidates: EffectCandidate[];
+  selected: Set<string>;
+  patch: ResolutionPatch;
+  onPatch: (p: ResolutionPatch) => void;
+  onToggleAll: (on: boolean) => void;
+  onApply: () => void;
+}) {
+  const picked = candidates.filter((c) => selected.has(decisionId(c)));
+  const willResolve = picked.filter((c) => patchResolves(c, patch)).length;
+  const allOn = picked.length === candidates.length && candidates.length > 0;
+
+  return (
+    <div className="mb-3 rounded-md border border-arcane/25 bg-arcane/5 p-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-parchment/70">
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={allOn} onChange={(e) => onToggleAll(e.target.checked)} />
+          select all {candidates.length}
+        </label>
+        <span className="text-parchment/40">·</span>
+        <span className="tabular-nums">{picked.length} selected</span>
+      </div>
+
+      {picked.length > 0 && (
+        <div className="mt-2 border-t border-arcane/15 pt-2">
+          <PatchFields fields={gapFieldsOf(picked)} patch={patch} onPatch={onPatch} />
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={onApply}
+              disabled={willResolve === 0}
+              className="rounded border border-emerald/30 px-2.5 py-1 text-xs text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              Apply to {willResolve}
+            </button>
+            <span className="text-xs text-parchment/50">
+              {willResolve} of {picked.length} selected will resolve with this fill
+              {willResolve < picked.length && ' — the rest keep a gap it does not close, and are left alone'}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CandidateRow({
   candidate: c,
   decision,
   showText,
+  patch,
+  onPatch,
+  selected,
+  onSelect,
   onAccept,
+  onResolve,
   onReject,
   onClear,
 }: {
   candidate: EffectCandidate;
   decision: EffectDecision | undefined;
   showText: boolean;
+  patch: ResolutionPatch;
+  onPatch: (p: ResolutionPatch) => void;
+  selected: boolean;
+  onSelect: (on: boolean) => void;
   onAccept: () => void;
-  onReject: () => void;
+  onResolve: (p: ResolutionPatch) => void;
+  onReject: (reason?: RejectReason) => void;
   onClear: () => void;
 }) {
   const feat = FEAT_BY_ID.get(c.entityId);
   const canAccept = promote(c).ok;
   const decided = decision?.action;
+  const gapped = c.gaps.length > 0;
+  // What the fill leaves outstanding, addressed to a field — the same gates `promote`
+  // uses, so the Resolve button can never enable a save promote would refuse.
+  const patched = applyResolution(c, patch);
+  const issues = resolutionIssues(patched);
+  const canResolve = issues.length === 0;
 
   return (
     <div
@@ -672,6 +908,14 @@ function CandidateRow({
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
+        {gapped && !decided && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelect(e.target.checked)}
+            title="Select for a bulk fill"
+          />
+        )}
         <span className="font-ui text-base text-parchment">{feat?.name ?? c.entityId}</span>
         <span className={`rounded border px-1.5 py-0.5 text-xs ${AGREEMENT_STYLE[c.agreement] ?? 'border-gold/20 text-parchment/70'}`}>
           {c.agreement}
@@ -685,17 +929,56 @@ function CandidateRow({
             </button>
           ) : (
             <>
-              <button
-                onClick={onAccept}
-                disabled={!canAccept}
-                title={canAccept ? 'Accept as content' : 'Not acceptable yet — resolve its gap/conflict in the editor (later slice)'}
-                className="rounded border border-emerald/30 px-2.5 py-0.5 text-sm text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-30"
+              {canAccept ? (
+                <button
+                  onClick={onAccept}
+                  title="Accept as content"
+                  className="rounded border border-emerald/30 px-2.5 py-0.5 text-sm text-emerald-soft hover:bg-emerald/10"
+                >
+                  Accept
+                </button>
+              ) : (
+                <button
+                  onClick={() => onResolve(patch)}
+                  disabled={!canResolve}
+                  title={
+                    canResolve
+                      ? 'Record this fill as a decision'
+                      : gapped
+                        ? 'Fill the gap below first'
+                        : // A conflict is not fillable — a human picks a reading, which is
+                          // slice 3. Saying "fill the gap" here would send them looking for
+                          // a hole that does not exist.
+                          'Producers disagree — picking a reading is the conflict editor (next slice)'
+                  }
+                  className="rounded border border-emerald/30 px-2.5 py-0.5 text-sm text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  Resolve
+                </button>
+              )}
+              {/* Reject carries a REASON, from a closed vocabulary. "not a passive" is
+                  the one that matters: 104 of the when-gaps are duration text, which is
+                  real Layer-2 content — rejecting it as a misreading would lie to the
+                  next reviewer. */}
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onReject(v ? (v as RejectReason) : undefined);
+                  e.target.value = '';
+                }}
+                title="Reject with a reason"
+                className="rounded border border-red-500/25 bg-midnight-950/60 px-1.5 py-0.5 text-sm text-red-300/80"
               >
-                Accept
-              </button>
-              <button onClick={onReject} className="rounded border border-red-500/25 px-2.5 py-0.5 text-sm text-red-300/80 hover:bg-red-500/10">
-                Reject
-              </button>
+                <option value="" disabled>
+                  Reject…
+                </option>
+                {REJECT_REASONS.map((r) => (
+                  <option key={r.value} value={r.value} title={r.hint}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
             </>
           )}
         </div>
@@ -719,6 +1002,30 @@ function CandidateRow({
           <EvidenceLine key={i} ev={ev} />
         ))}
       </div>
+
+      {/* the gap editor — two fields, because every gap in the corpus is on one of
+          them. Shown whenever a row cannot yet be accepted, not just when it is
+          gapped: a conflicting or schema-invalid row then explains ITSELF through the
+          same issue list, instead of offering a disabled button and no reason. */}
+      {!canAccept && !decided && (
+        <div className="mt-2 rounded-md border border-gold/15 bg-midnight-950/60 p-2.5">
+          <PatchFields fields={gapFieldsOf([c])} patch={patch} onPatch={onPatch} />
+          {issues.length > 0 && (
+            <ul className="mt-2 space-y-0.5">
+              {issues.map((i, n) => (
+                <li key={n} className="text-xs text-amber-200/70">
+                  <span className="font-mono text-parchment/50">{i.field}</span> — {i.message}
+                </li>
+              ))}
+            </ul>
+          )}
+          {canResolve && (
+            <p className="mt-2 text-xs text-emerald-soft/80">
+              resolves to: {describeEffect(patched.draft)}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Full feat text, on demand — read and confirm in place, especially for
           foundry-only rows where the parser left no quoted span. */}
