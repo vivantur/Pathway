@@ -1133,6 +1133,97 @@ not single predicates at all.
 910 gapped candidates still have no UI that can resolve them, which remains the binding
 constraint on coverage.
 
+### Resolution backend landed 2026-07-18 — `resolution.ts`, the editor's core half
+
+The gap/conflict editor's backend, built ahead of any UI so the frontend can be designed
+against a settled API. `candidate.ts` decides what needs a human; `resolution.ts` is what the
+human does about it, and it is the ONLY path from a gapped or conflicting candidate to a
+decision — so `promote`'s refusals stay the last word everywhere else. Pure and
+storage-agnostic like its sibling: decisions flow into the existing `effect-decisions.json`
+and the fold-in consumes them unchanged. **Zero content change this slice.**
+
+**The measurement reshaped the design, twice.** Taken before writing anything:
+
+- **Every gap in the corpus is on one of two fields** — `when` (956) and `target` (110). So
+  this is not a general draft editor; the general one is the stage-3 authoring surface, which
+  already exists. `ResolutionPatch` is deliberately those two fields plus `unconditional`,
+  NOT a `Partial<DraftEffect>`: a type admitting any field would turn the review queue into a
+  second authoring surface, where an edit is no longer checkable against *which gap did this
+  close?*
+- **Bulk-by-signature does NOT carry over from review slice 1.** The `when` gaps have 504
+  distinct raw phrasings; the top 20 cover 16.5% and 319 occur exactly once. No grouping of
+  the QUESTION collapses this queue. What repeats is the ANSWER — many phrasings resolve to
+  the same predicate — so the leverage is human multi-select (`applyBulk`), not automatic
+  grouping. Assuming the slice-1 model would have built the wrong UI.
+
+**The API**: `applyResolution` (patch + recompute gaps), `resolutionIssues` (field-addressed,
+for a form), `resolveGaps` / `resolveConflict` (the gate into a decision), `conflictReadings`
+(each reading + which producer proposed it), `applyBulk` / `patchResolves`,
+`rejectCandidate` / `rejectReasonOf`, `parsePredicate`.
+
+Four things it settled, each a trap for the next person:
+
+- **The gap-clearing rule is MECHANICAL: a gap on field F clears when the patch supplies F.**
+  Nothing inspects the value to judge whether the fill is a *good* answer — detecting "that's
+  the wrong condition" requires implementing the rules, and inferring "that fill looks
+  insufficient" is exactly the guessing the pipeline refuses. The schema still gets the last
+  word in `promote`; rules correctness is the human's. Gaps on unsupplied fields SURVIVE, so a
+  candidate gapped on both fields and patched with one stays unpromotable rather than
+  half-resolving into content.
+- **A decision is addressed by the ORIGINAL candidate key, never the patched one.** This was a
+  real bug, caught by writing the end-to-end assertion rather than by a unit test. Filling a
+  `target` changes the key (`modifier:?:circumstance` → `modifier:stealth:circumstance`), but
+  next run the producers re-emit the GAPPED proposal under the OLD key — so keying by the
+  patched draft sent all 110 target-gap decisions to `staleDecisions`: the human's answer
+  silently dropped and the candidate back in the queue. **A `when` fill does not change the
+  key, which is precisely why this hid.** Regression-tested, and verified over the real corpus
+  at 0 stale.
+- **`resolutionIssues` is empty ⇔ `promote().ok`, pinned by a test** and verified at 0
+  mismatches across all 1,820 real candidates. A second completeness opinion would eventually
+  disagree with the one that governs, and the editor would enable a save `promote` refuses.
+- **Rejection carries a reason** (`not-a-passive` | `wrong-reading` | `out-of-scope` |
+  `duplicate`), riding in the existing `note` so `EffectDecision` stays backward compatible.
+  It exists for one measured distinction: **104 of the `when` gaps are DURATION text** ("until
+  the start of your next turn") — a category error, since a Layer-1 passive has no duration.
+  They are real content the parser reached from a passive's clause, belonging to Layer 2.
+  Filing them as `wrong-reading` would tell a future reviewer the prose was misread; leaving
+  them gapped leaves a reviewer trying to invent a predicate for a duration. `not-a-passive`
+  says the true thing and makes the set queryable when Layer 2 authoring comes for them.
+
+**`applyBulk` is partial by design, never forced.** A candidate the shared patch does not
+complete is REFUSED with its issues, not approximated — forcing a shared fill onto a candidate
+whose remaining gap it never addressed is how a bulk action produces wrong sheets at scale.
+`patchResolves` predicts the split so the UI can say "34 of 50" *before* the action.
+
+**Verified over the real sidecar**, not just fixtures: all 910 gapped candidates resolve, the
+14 conflicts produce fully attributed readings, and the decisions round-trip through
+`resolveEntity` with 0 stale. (Placeholder patches — the run exercised the machinery and
+resolved nothing for real.) Core 662 → 704 tests; root typecheck clean; boundary grep
+unchanged.
+
+#### What this is NOT — and what the UI still needs
+
+**It is gap-specific, not a first cut at the complete editor.** The complete one already
+exists and is strictly more general: `EffectAuthorPage` authors any of the five passive kinds
+plus choices and automation trees, from scratch. `resolution.ts` edits two fields on a draft a
+producer already wrote. The two meet at their shared components — `PredicateField` is the
+`when` control both need, and the schemas are the same.
+
+**The deferred recursive predicate editor stays deferred, and now there is a number for it.**
+Of the 956 `when` gaps only **15** show mixed and/or structure that the flat builder cannot
+express, and **13** are numeric thresholds ("at least two hobgoblin allies") that are not
+Layer-1 predicates at all — those are `branch` conditions in Layer 2, and belong in the
+`not-a-passive` bucket alongside the durations. So the flat `PredicateField` covers the
+overwhelming majority of the queue, and the recursive editor is still not worth building.
+Its honesty cost is already paid: `readPredicate` returns `null` for a tree it cannot
+represent and renders read-only rather than flattening.
+
+**Remaining UI work** is therefore the review surface, not the effect editor: wiring
+`PredicateField` and a target selector into `EffectReviewPage`'s rows, multi-select +
+`applyBulk` with the `patchResolves` count, the conflict side-by-side over `conflictReadings`,
+and a reject-with-reason control. The 14 conflicts and 910 gapped candidates remain unresolved
+content-wise — this slice built the tool, and used it on nothing.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the

@@ -106,6 +106,10 @@ export * from './checks.js';
 // database later replaces the edge and touches none of this.
 export * from './candidate.js';
 
+// Gap + conflict RESOLUTION — the editor backend over candidate.ts. The only path
+// from a gapped/conflicting candidate to a decision.
+export * from './resolution.js';
+
 // The Foundry ingest boundary — the ONE module allowed to know Foundry's
 // rule-element shape, plus `mapFoundryRules` (their encoding → our PassiveEffect[])
 // and its per-element report. Runs at ingest, offline; never on the runtime path.
