@@ -251,6 +251,73 @@ export function resolveGaps(
 }
 
 // ---------------------------------------------------------------------------
+// additions — an effect no producer proposed
+// ---------------------------------------------------------------------------
+
+/**
+ * The prefix that marks a decision key as a human ADDITION rather than an answer to a
+ * producer's proposal. Namespaced so it can never collide with an `effectKey`, which
+ * always begins with a draft kind.
+ */
+const ADD_KEY_PREFIX = "added:";
+
+/** Whether a decision key names a human addition. */
+export function isAddedKey(key: string): boolean {
+  return key.startsWith(ADD_KEY_PREFIX);
+}
+
+/**
+ * Record an effect a human authored for an entity NO producer proposed it for — the
+ * prose said something the parser cannot yet read (a degree rewrite it missed, a
+ * penalty in a sentence it could not segment).
+ *
+ * WHY THIS IS NOT A `ResolutionPatch` FIELD. A patch answers "which gap did this
+ * close?", and that question is what makes an edit checkable without inferring intent.
+ * An addition closes no gap — there is no proposal to close one on — so folding it into
+ * the patch surface would cost that property for every edit, not just additions. It is
+ * a distinct action, and `EffectDecision.action` says so.
+ *
+ * KEYS ARE MINTED, NOT DERIVED. A decision is normally addressed by the candidate key a
+ * producer will re-emit next run; an addition has no such key, and two additions can
+ * legitimately share an `effectKey` (Dragon's Presence rewrites a success AND a failure,
+ * both `rollAdjust:will`). So the key is `added:<effectKey>#<n>`, where `n` is the first
+ * index free among `existing` — stable across re-runs because it is derived from the
+ * decisions already recorded, and unique because it is checked against them.
+ *
+ * Refuses anything the schema refuses, for the same reason `resolveGaps` does: this
+ * module is the only door to a decision, and an addition must not be a way around
+ * `promote`'s validation.
+ */
+export function addEffect(
+  entityId: string,
+  draft: DraftEffect,
+  existing: readonly EffectDecision[] = [],
+  attribution: Attribution = {},
+): ResolveOutcome {
+  const parsed = passiveEffectSchema.safeParse(draft);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      issues: parsed.error.issues.map((i) => ({
+        field: i.path.join(".") || "(root)",
+        message: i.message,
+        source: "schema" as const,
+      })),
+    };
+  }
+
+  const base = `${ADD_KEY_PREFIX}${effectKey(draft)}`;
+  const taken = new Set(existing.filter((d) => d.entityId === entityId).map((d) => d.key));
+  let n = 1;
+  while (taken.has(`${base}#${n}`)) n += 1;
+
+  return {
+    ok: true,
+    decision: { entityId, key: `${base}#${n}`, action: "add", effect: parsed.data, ...attribution },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // conflicts
 // ---------------------------------------------------------------------------
 

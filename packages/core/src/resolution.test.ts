@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  addEffect,
   applyBulk,
   applyResolution,
   conflictReadings,
+  isAddedKey,
   isEmptyPatch,
   parsePredicate,
   patchResolves,
@@ -12,7 +14,7 @@ import {
   resolveConflict,
   resolveGaps,
 } from "./resolution.js";
-import { effectKey, effectSignature, promote, resolveEntity, type DraftEffect, type EffectCandidate } from "./candidate.js";
+import { effectKey, effectSignature, promote, resolveEntity, type DraftEffect, type EffectCandidate, type EffectDecision } from "./candidate.js";
 
 const lit = (value: number) => ({ kind: "lit", value });
 
@@ -334,5 +336,78 @@ describe("end to end — a gapped candidate reaches a sheet", () => {
     expect(out.ok).toBe(true);
     if (!out.ok) return;
     expect(resolveEntity([c], [out.decision]).effects).toHaveLength(2);
+  });
+});
+
+describe("addEffect — an effect no producer proposed", () => {
+  const draft: DraftEffect = {
+    kind: "rollAdjust",
+    target: "will",
+    adjust: { type: "degreeMap", map: { success: "critical-success" } },
+  };
+
+  it("mints an add decision carrying the validated effect", () => {
+    const out = addEffect("adhyabhau", draft, [], { by: "sam" });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.decision.action).toBe("add");
+    expect(out.decision.entityId).toBe("adhyabhau");
+    expect(out.decision.effect).toEqual(draft);
+    expect(out.decision.by).toBe("sam");
+  });
+
+  it("refuses a draft the schema refuses, rather than recording nonsense", () => {
+    const out = addEffect("x", { kind: "rollAdjust", target: "will", adjust: { type: "degreeMap", map: {} } });
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.issues.every((i) => i.source === "schema")).toBe(true);
+  });
+
+  it("gives two additions sharing an effectKey distinct keys", () => {
+    // Dragon's Presence rewrites a success AND a failure — both `rollAdjust:will`.
+    const first = addEffect("dragons-presence", draft, []);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = addEffect(
+      "dragons-presence",
+      { ...draft, adjust: { type: "degreeMap", map: { failure: "critical-failure" } } },
+      [first.decision],
+    );
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.decision.key).not.toBe(first.decision.key);
+    expect(isAddedKey(second.decision.key)).toBe(true);
+  });
+
+  it("keys are namespaced so they can never collide with a candidate key", () => {
+    const out = addEffect("x", draft, []);
+    if (!out.ok) return;
+    expect(isAddedKey(out.decision.key)).toBe(true);
+    expect(isAddedKey(effectKey(draft))).toBe(false);
+  });
+});
+
+describe("resolveEntity folds additions in", () => {
+  const added: EffectDecision = {
+    entityId: "adhyabhau",
+    key: "added:rollAdjust:will#1",
+    action: "add",
+    effect: { kind: "rollAdjust", target: "will", adjust: { type: "degreeMap", map: { success: "critical-success" } } },
+  };
+
+  it("reaches content even though no candidate proposed it", () => {
+    const out = resolveEntity([], [added]);
+    expect(out.effects).toEqual([added.effect]);
+  });
+
+  // The trap: `staleDecisions` means "a producer changed its mind". An addition was
+  // never tied to a proposal, so a naive filter drops every one on the next run.
+  it("is NEVER reported stale", () => {
+    expect(resolveEntity([], [added]).staleDecisions).toEqual([]);
+  });
+
+  it("still reports a genuinely stale decision", () => {
+    const orphan: EffectDecision = { entityId: "x", key: "modifier:ac:status", action: "accept" };
+    expect(resolveEntity([], [orphan]).staleDecisions).toEqual([orphan]);
   });
 });

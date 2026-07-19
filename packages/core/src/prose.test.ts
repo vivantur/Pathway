@@ -693,3 +693,46 @@ describe("degreeExtractor — conditional degree-of-success rewrites", () => {
     expect(run("You gain a +1 circumstance bonus to saving throws against visual effects.")).toEqual([]);
   });
 });
+
+describe("modifierExtractor — a trailing clause that is its own effect", () => {
+  const traits = { effectTraits: new Set(["emotion", "mental"]), spellTraits: new Set(["emotion", "mental"]) };
+
+  // Adhyabhau, verbatim. Two effects in one sentence: a scoped modifier and a degree
+  // rewrite. Reading the second as the first's condition dropped the scope sitting
+  // right there ("against effects with the emotion trait") and sent the reviewer to
+  // resolve a condition that does not exist. Measured: 13 modifier drafts, all of
+  // which gained a real predicate and became gap-free.
+  const adhyabhau =
+    "You gain a +1 circumstance bonus to Will saves against effects with the emotion trait, " +
+    "and when you roll a success on a saving throw against such an effect, you get a critical success instead.";
+
+  it("keeps the modifier's own scope instead of the degree clause", () => {
+    const [mod] = extractFromProse(adhyabhau, [modifierExtractor], traits);
+    expect(mod!.draft.target).toBe("will");
+    expect(mod!.draft.when).toEqual({ tag: "effect:trait:emotion" });
+    expect(mod!.gaps).toEqual([]);
+  });
+
+  it("still treats a genuine trailing condition as a condition", () => {
+    // Not a degree rewrite — this one really does condition the bonus.
+    const [mod] = extractFromProse(
+      "You gain a +1 circumstance bonus to Will saves while you are raging.",
+      [modifierExtractor],
+      traits,
+    );
+    expect(mod!.gaps.some((g) => g.field === "when")).toBe(true);
+  });
+
+  it("the degree clause still becomes its own effect, not nothing", () => {
+    const adjusts = extractFromProse(adhyabhau, [degreeExtractor], traits);
+    expect(adjusts).toHaveLength(3);
+    expect((adjusts[0]!.draft.adjust as { map: unknown }).map).toEqual({ success: "critical-success" });
+  });
+
+  it("aims 'against such an effect' at the referent, not at missing vocabulary", () => {
+    // "such" names no trait — it points back at the effect described earlier. Filed as
+    // conditional-unmapped it told a reviewer to go find a word we lack.
+    const adjusts = extractFromProse(adhyabhau, [degreeExtractor], traits);
+    expect(adjusts[0]!.gaps).toEqual([{ field: "when", reason: "anaphoric", raw: "against such an effect" }]);
+  });
+});

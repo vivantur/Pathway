@@ -276,3 +276,33 @@ describe("describePredicate — display prose", () => {
     expect(describePredicate({ any: [] })).toBe("never");
   });
 });
+
+describe("describePredicate — an intersection must not read as two scopes", () => {
+  // Alghollthu Bound: +2 vs mental effects THAT WOULD MAKE YOU CONTROLLED. Not all
+  // mental effects, and not everything that controls you — the overlap.
+  const intersection: Predicate = {
+    all: [{ tag: "effect:trait:mental" }, { tag: "effect:causes:controlled" }],
+  };
+
+  it("renders a trait+causes conjunction as one scope", () => {
+    expect(describePredicate(intersection)).toBe("vs mental effects that cause controlled");
+  });
+
+  it("keeps the repeated 'vs' for an OR, where alternatives are the point", () => {
+    expect(describePredicate({ any: [{ tag: "effect:trait:mental" }, { tag: "effect:causes:controlled" }] })).toBe(
+      "vs mental effects or vs effects that cause controlled",
+    );
+  });
+
+  it("does not fold a negated child into the phrasing", () => {
+    // "that DON'T cause controlled" is the opposite claim; falling back is correct.
+    const negated: Predicate = { all: [{ tag: "effect:trait:mental" }, { not: { tag: "effect:causes:controlled" } }] };
+    expect(describePredicate(negated)).toContain("not");
+  });
+
+  it("leaves the existing single-category collapse alone", () => {
+    expect(describePredicate({ all: [{ tag: "effect:trait:death" }, { tag: "effect:trait:fear" }] })).toBe(
+      "vs death and fear effects",
+    );
+  });
+});

@@ -544,7 +544,14 @@ export interface EffectDecision {
   entityId: string;
   /** The candidate's `key`. Stable across re-runs while the proposal is the same. */
   key: string;
-  action: "accept" | "reject" | "edit";
+  /**
+   * `accept`/`edit`/`reject` answer a PROPOSAL. `add` does not: it carries an effect a
+   * human authored for an entity no producer proposed it for — the prose said something
+   * the parser cannot yet read. It is a separate action rather than a `ResolutionPatch`
+   * field precisely so the patch surface keeps its property that every edit closes a
+   * NAMED gap; an addition closes nothing, and says so.
+   */
+  action: "accept" | "reject" | "edit" | "add";
   /** Required for accept/edit of a passive-effect candidate — the effect that becomes content. */
   effect?: PassiveEffect;
   /** Required for accept/edit of a CHOICE candidate — the choice that becomes content. */
@@ -617,7 +624,17 @@ export function resolveEntity(
     } else pending.push(c);
   }
 
-  const staleDecisions = decisions.filter((d) => !used.has(`${d.entityId} ${d.key}`));
+  // Human ADDITIONS answer no candidate, so they are folded in on their own — and must
+  // never be read as stale. `staleDecisions` means "a producer changed its mind since a
+  // human ruled"; an addition was never tied to a proposal, so the filter below would
+  // drop every one of them silently on the very next run.
+  for (const d of decisions) {
+    if (d.action !== "add") continue;
+    if (d.effect) effects.push(d.effect);
+    if (d.choice) choices.push(d.choice);
+  }
+
+  const staleDecisions = decisions.filter((d) => d.action !== "add" && !used.has(`${d.entityId} ${d.key}`));
   return { effects, choices, pending, staleDecisions };
 }
 

@@ -290,6 +290,18 @@ export function describePredicate(pred: Predicate): string {
   if (children.length === 0) return "all" in pred ? "always" : "never";
   if (children.length === 1) return describePredicate(children[0]!);
 
+  // A CONJUNCTION over one effect's traits and the conditions it inflicts describes a
+  // single narrower scope, and must read as one. Rendered by the generic join below it
+  // came out "vs mental effects and vs effects that cause controlled", which in English
+  // reads like two separate scopes — a reviewer cannot tell an intersection ("mental
+  // AND controlling") from two applications, and that is the difference between a feat
+  // that fires on charm and one that does not. Only for `all`: for `any` the repeated
+  // "vs" is correct, because those ARE alternatives.
+  if ("all" in pred) {
+    const combined = describeEffectIntersection(children);
+    if (combined) return combined;
+  }
+
   // Collapse the fixed text when every child is a leaf that agrees on it.
   const leaves = children.every((c) => "tag" in c) ? children.map((c) => describeTag((c as { tag: string }).tag)) : null;
   const first = leaves?.[0];
@@ -297,4 +309,27 @@ export function describePredicate(pred: Predicate): string {
     return `${first.prefix}${leaves.map((l) => l.term).join(join)}${first.suffix}`;
   }
   return children.map((c) => describePredicate(c)).join(join);
+}
+
+/**
+ * "vs mental effects that cause controlled" for a conjunction of `effect:trait:*` and
+ * `effect:causes:*` leaves. Returns null — falling back to the generic join — for
+ * anything else, including any negated child: "vs mental effects that DON'T cause
+ * controlled" is a different claim, and quietly folding a `not` into this phrasing
+ * would state the opposite of the predicate.
+ */
+function describeEffectIntersection(children: readonly Predicate[]): string | null {
+  const traits: string[] = [];
+  const causes: string[] = [];
+  for (const c of children) {
+    if (!("tag" in c)) return null;
+    const parts = c.tag.split(":");
+    if (parts.length !== 3 || parts[0] !== "effect") return null;
+    if (parts[1] === "trait") traits.push(label(parts[2]!));
+    else if (parts[1] === "causes") causes.push(label(parts[2]!));
+    else return null;
+  }
+  // Needs both halves — one alone is already handled well by the existing collapse.
+  if (traits.length === 0 || causes.length === 0) return null;
+  return `vs ${traits.join(" and ")} effects that cause ${causes.join(" and ")}`;
 }

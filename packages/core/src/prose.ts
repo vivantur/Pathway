@@ -537,7 +537,12 @@ function anyOf(tags: string[]): Predicate | null {
  * `anaphoric` and `conditional-unmapped` gap reasons, and getting it wrong sends the
  * reviewer looking for the wrong thing.
  */
-const ANAPHORIC_SCOPE = /^against\s+(the|this|that|these|those|your|their|its|his|her)\b/i;
+// `such` belongs here for the same reason the demonstratives do: "against SUCH an
+// effect" names no trait, it points back at one described earlier in the feat
+// ("mental effects that would make you controlled … against such an effect"). Filed as
+// `conditional-unmapped` it told a reviewer to go find vocabulary we lack; the referent
+// is right there in the prose.
+const ANAPHORIC_SCOPE = /^against\s+(the|this|that|these|those|such|your|their|its|his|her)\b/i;
 function isAnaphoricScope(condition: string): boolean {
   return ANAPHORIC_SCOPE.test(condition.trim());
 }
@@ -666,10 +671,24 @@ export const modifierExtractor: Extractor = (clause, ctx = {}) => {
     //   • a SCOPE right after the target — "+1 to saves AGAINST magic", which also fans a
     //     broadcast target, so without this every "saves against X" becomes a blanket
     //     all-saves bonus. Measured: this is the single biggest precision hazard.
+    //
+    // A trailing clause that is ITSELF a whole effect is not a condition on this one.
+    // "+2 circumstance to Will saves against mental effects that would make you
+    // controlled, AND if you roll a success against such an effect you get a critical
+    // success instead" is a modifier plus a degree rewrite — two effects. Treating the
+    // second as the first's condition both mis-states the modifier (its real scope,
+    // "against mental effects…", is sitting right there and gets dropped) and sends a
+    // reviewer to resolve a condition that does not exist. This is not an extractor
+    // reading another's output: it is one shared fact — that a clause matching a known
+    // effect template stands on its own — and the degree extractor emits that effect.
     const scopeMatch = SCOPE_RE.exec(clause.text.slice(m.index + m[0].length));
+    const trailing =
+      clause.trailingCondition && !looksLikeDegreeRewrite(clause.trailingCondition)
+        ? clause.trailingCondition
+        : undefined;
     const condition = clause.governor
       ? `${clause.governor} ${clause.text}`
-      : (clause.trailingCondition ?? scopeMatch?.[1]);
+      : (trailing ?? scopeMatch?.[1]);
 
     // A condition we can STATE becomes a predicate; one we cannot becomes a gap.
     // Never both, and never neither — dropping it silently is the wrong-sheet bug.
@@ -1047,6 +1066,20 @@ const DEGREE_RE = new RegExp(
   String.raw`\broll\s+(?:(any\s+result\s+worse\s+than)\s+)?(?:a|an|the)?\s*(${DEG_ALT})\b([^.;]{0,140}?)\s*,?\s*(?:and\s+)?you\s+get\s+(?:a|an)\s+(${DEG_ALT})\b`,
   "gi",
 );
+
+/**
+ * Whether a clause is a degree rewrite in its own right — used by the MODIFIER
+ * extractor to refuse it as a trailing condition. A function declaration so it is
+ * hoisted above its caller; `DEGREE_RE` exists by the time any extractor runs.
+ */
+export function looksLikeDegreeRewrite(text: string): boolean {
+  DEGREE_RE.lastIndex = 0;
+  const m = DEGREE_RE.exec(text);
+  DEGREE_RE.lastIndex = 0;
+  // A match whose trigger and result are the same degree is a restatement, not a
+  // rewrite — the same guard the extractor itself applies before emitting.
+  return m !== null && m[2]!.toLowerCase().replace(/\s+/g, " ") !== m[4]!.toLowerCase().replace(/\s+/g, " ");
+}
 
 /** Leading prepositions on the scope phrase: "ON a saving throw", "AT one of…". */
 const DEGREE_MIDDLE_LEAD = /^\s*(?:on|at|for|in|with|to)\s+/i;
