@@ -8,6 +8,7 @@ import { useFeatFallback, resolveFallbackRow } from '@/features/characters/useFe
 import type { FeatRow } from '@/features/characters/types';
 import type { PathbuilderBuild } from '@/features/characters/pathbuilder';
 import { Panel } from '../Sheet';
+import { GrantedActions } from '../GrantedActions';
 import { FeatsIcon } from '../icons';
 
 /**
@@ -155,6 +156,12 @@ export function FeatsTab({ build }: { build: PathbuilderBuild }) {
         : (
           <CategoryPanel category={activeCategory} entries={filtered} />
         )}
+
+      {/* Runnable activities the chosen feats grant. Renders nothing unless the
+          character was built on the site AND a feat actually carries one — which
+          no content does yet. Deliberately outside the category filter: it is a
+          different axis (what you can DO) from the feat list itself. */}
+      <GrantedActions build={build} />
     </div>
   );
 }

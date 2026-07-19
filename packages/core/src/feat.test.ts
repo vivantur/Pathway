@@ -180,3 +180,76 @@ describe('coerceFeat — effects + rejections', () => {
     if (!r.ok) expect(r.issues.join(' ')).toMatch(/level/);
   });
 });
+
+describe('coerceFeat — granted actions', () => {
+  // The trees here are SHAPE-ONLY demonstrations (a text node, a flat roll), never a
+  // rules claim about a real activity: no rules text was supplied for this slice, and
+  // authoring a real action from memory is exactly the failure rules-from-source
+  // exists to prevent. What is under test is that a feat CAN carry a GrantedAction and
+  // that it validates against core's schema — not what any real feat's action does.
+
+  it("carries a runnable GrantedAction in core's shape", () => {
+    const f = feat({
+      name: 'Demo Stance',
+      level: 1,
+      traits: 'Class',
+      source: 'Book pg. 1',
+      featType: 'class',
+      classIds: ['fighter'],
+      description: 'A feat that hands you an activity.',
+      grantedActions: [
+        {
+          id: 'demo-stance-strike',
+          name: 'Demo Stance Strike',
+          actionCost: { kind: 'actions', min: 1, max: 1 },
+          automation: [{ kind: 'text', body: 'Shape-only demonstration, not a Pathfinder rule.' }],
+        },
+      ],
+    });
+    expect(f.grantedActions).toHaveLength(1);
+    expect(f.grantedActions?.[0]).toMatchObject({
+      id: 'demo-stance-strike',
+      name: 'Demo Stance Strike',
+      actionCost: { kind: 'actions', min: 1, max: 1 },
+    });
+  });
+
+  it('accepts a feat that grants an action with no automation tree yet (name/cost only)', () => {
+    // A granted action can be declared before its tree is authored — the interpreter
+    // simply has nothing to run. This is the state most decided actions start in.
+    const f = feat({
+      name: 'Placeholder Grant',
+      level: 1,
+      traits: 'General',
+      source: 'Book pg. 1',
+      description: 'x',
+      grantedActions: [{ id: 'ph', name: 'Placeholder Activity' }],
+    });
+    expect(f.grantedActions?.[0]?.automation).toBeUndefined();
+  });
+
+  it('a feat that grants no activity has no field', () => {
+    const f = feat({
+      name: 'Passive Feat', level: 1, traits: 'General', source: 'Book pg. 1', description: 'x',
+    });
+    expect(f.grantedActions).toBeUndefined();
+  });
+
+  it("rejects a granted action missing a name (core's GrantedAction schema is strict)", () => {
+    const r = coerceFeat({
+      name: 'Bad Grant', level: 1, traits: 'General', source: 'Book pg. 1', description: 'x',
+      grantedActions: [{ id: 'no-name', automation: [{ kind: 'text', body: 'x' }] }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.issues.join(' ')).toMatch(/grantedActions/);
+  });
+
+  it('rejects a granted action whose automation tree is invalid', () => {
+    const r = coerceFeat({
+      name: 'Bad Tree', level: 1, traits: 'General', source: 'Book pg. 1', description: 'x',
+      grantedActions: [{ id: 'bad', name: 'Bad', automation: [{ kind: 'roll', notation: 'not dice' }] }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.issues.join(' ')).toMatch(/grantedActions/);
+  });
+});

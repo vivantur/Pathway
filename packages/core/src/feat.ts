@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { contentBaseSchema, slugify, RARITIES, type Rarity, type Source } from './content.js';
 import { effectBearingShape } from './foundry.js';
 import { actionCostSchema, parseActionCostText, type ActionCost } from './spell.js';
+import { grantedActionSchema } from './automation.js';
 
 export const featTypeSchema = z.enum(['general', 'skill', 'ancestry', 'class', 'archetype']);
 export type FeatType = z.infer<typeof featTypeSchema>;
@@ -43,6 +44,25 @@ export const featSchema = z.object({
   // content. `effects` (ours, mapped at ingest) replaces it, and the raw elements
   // are quarantined in `ingest.raw` as opaque provenance nothing at runtime reads.
   ...effectBearingShape,
+  /**
+   * Runnable activities this feat GRANTS — the "actions from feats" half of the
+   * effects engine's first goal. `actionCost` (above) is the cost to USE this feat;
+   * a granted action is an activity the feat HANDS YOU, whose mechanics are a Layer-2
+   * automation tree (a stance's special Strike, a new activity). Channeler's Stance
+   * carries a one-action COST today but no runnable action — this is the field that
+   * closes that gap.
+   *
+   * The shape is core's `GrantedAction` — the SAME schema an applied effect's
+   * `grantedActions` carries and the bot's authored-action catalog validates against
+   * — so an action authored inline here, granted by a temporary effect, or decided in
+   * the review pipeline are ONE type with ONE interpreter. Optional and additive:
+   * every stored feat validates unchanged, and a feat that grants no activity has no
+   * field.
+   *
+   * NO RULES LIVE HERE. This is a passthrough of authored content; the trees are built
+   * from rules text (rules-from-source) upstream, never synthesized at coerce time.
+   */
+  grantedActions: z.array(grantedActionSchema).optional(),
   description: z.string().min(1),
 });
 export type Feat = z.infer<typeof featSchema>;
@@ -155,6 +175,10 @@ export function coerceFeat(raw: unknown): CoerceFeatResult {
     // `rec.rules` (Foundry's shape) is deliberately NOT read: an ingested row's rule
     // elements are mapped to `effects` by the ingest, not carried onto the entity.
     ...(Array.isArray(rec.effects) ? { effects: rec.effects } : {}),
+    // Passthrough, exactly like `effects`: authored GrantedActions arrive already in
+    // our shape (from the review pipeline / homebrew authoring), and the schema
+    // validates each against grantedActionSchema. Absent on every ingested row today.
+    ...(Array.isArray(rec.grantedActions) ? { grantedActions: rec.grantedActions } : {}),
     description: firstStr(rec, 'description', 'summary'),
   };
 

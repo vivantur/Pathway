@@ -193,6 +193,19 @@ export interface Feat {
    * apply only once picked — folding them in would grant every option at once.
    */
   choices?: unknown[];
+  /**
+   * Runnable activities this feat GRANTS (`GrantedAction[]` from @pathway/core) —
+   * the Layer-2 counterpart to `effects`. `actionCost` above is the cost to USE the
+   * feat; this is an activity the feat HANDS YOU, whose mechanics are an automation
+   * tree. `grantedActionsFor` in rules.ts is the consumer, and
+   * `features/automation/runAction.ts` is what runs one.
+   *
+   * `unknown[]` for the same reason as `effects`: this is the loose JSON dataset
+   * shape, validated against core's schema at the boundary rather than re-declared
+   * here. NO content carries this yet — the trees are authored upstream from rules
+   * text and reach the dataset through the review pipeline.
+   */
+  grantedActions?: unknown[];
   /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
   legacy?: boolean;
   source: string;

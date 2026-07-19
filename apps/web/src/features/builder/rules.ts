@@ -36,6 +36,7 @@ import {
   type EffectProvenance,
   type AttackCategory,
   type CharacterTraits,
+  type GrantedAction,
   type GrantedSense,
   type Modifier,
   type PassiveEffect,
@@ -269,6 +270,45 @@ export function characterEffects(state: BuilderState): SheetEffects {
     labels.push(feat.name);
   }
   return collectPassiveSheetEffects(itemEffects, { level, abilityMods: abilityModsFor(state) }, labels);
+}
+
+/** A runnable action a character has, plus what granted it. */
+export interface CharacterGrantedAction {
+  action: GrantedAction;
+  /** The feat's display name — what the sheet shows as the source. */
+  sourceName: string;
+  /** The feat's id, so a caller can link back to it. */
+  sourceId: string;
+}
+
+/**
+ * Runnable ACTIONS the character's chosen feats grant — the Layer-2 counterpart
+ * to `characterEffects` above, which collects their Layer-1 passives.
+ *
+ * A LOOKUP, not an interpretation: the trees are authored content (rules-from-source,
+ * upstream), and this walks the same `chosenFeatIds` set and hands them back tagged
+ * with their source. It runs nothing — `features/automation/runAction.ts` is the host.
+ *
+ * Named for what it collects rather than `characterActions`, which would read as
+ * "everything the player can do" — Strikes, skill actions, basic actions. Feat
+ * grants are ONE source; effect- and item-granted actions join them here later.
+ *
+ * Actions with no authored tree yet are INCLUDED: a feat that grants an activity
+ * still grants it, and the sheet should say so rather than hiding it until the
+ * automation exists. Callers distinguish the two with `hasAutomation`.
+ */
+export function grantedActionsFor(state: BuilderState): CharacterGrantedAction[] {
+  const out: CharacterGrantedAction[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    // Cast at the boundary, exactly as `characterEffects` does for `effects`: the
+    // dataset's field is `unknown[]`, and core's schema is what validates it.
+    for (const action of (feat.grantedActions ?? []) as GrantedAction[]) {
+      out.push({ action, sourceName: feat.name, sourceId: feat.id });
+    }
+  }
+  return out;
 }
 
 // --- choice-driven feats: player prompts ------------------------------------
