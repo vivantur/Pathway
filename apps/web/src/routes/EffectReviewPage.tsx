@@ -10,6 +10,8 @@ import {
   patchResolves,
   addEffect,
   applyBulk,
+  parsePredicate,
+  describePredicate,
   rejectCandidate,
   conflictReadings,
   resolveConflict,
@@ -148,8 +150,40 @@ function describeAdjust(adjust: unknown): string {
   return 'adjust rolls';
 }
 
-/** A one-line, human-readable summary of a draft effect — what the reviewer confirms. */
+/**
+ * The condition on a draft, in the SAME prose the sheet shows the player — core's
+ * `describePredicate`, so the review surface and the sheet can never word a condition
+ * differently.
+ *
+ * Returns null for an absent or half-built predicate rather than guessing at one: the
+ * gap editor already reports an unparseable `when` as an issue, and inventing a
+ * description for it here would be a second opinion that could disagree.
+ */
+function conditionText(when: unknown): string | null {
+  if (when === undefined || when === null) return null;
+  const parsed = parsePredicate(when);
+  return parsed.ok ? describePredicate(parsed.predicate) : null;
+}
+
+/**
+ * A one-line, human-readable summary of a draft effect — what the reviewer confirms.
+ *
+ * THE CONDITION IS PART OF THE EFFECT, not decoration. This omitted `when` entirely
+ * until now, which was survivable only while most conditions were unresolved: an
+ * unresolved one at least showed as a gap line, so the reviewer knew a condition
+ * existed. Once the Foundry mapper started resolving them, a corroborated candidate
+ * showed NO gap and NO condition — so Adaptive Vision read as "success → critical
+ * success on will", flatly, and a reviewer would have accepted an effect whose actual
+ * scope (visual effects only) was nowhere on screen. That is the wrong-sheet failure
+ * this pipeline is built to prevent, reproduced in the surface meant to catch it.
+ */
 function describeEffect(d: DraftEffect): string {
+  const base = describeEffectBase(d);
+  const cond = conditionText(d.when);
+  return cond ? `${base} · ${cond}` : base;
+}
+
+function describeEffectBase(d: DraftEffect): string {
   switch (d.kind) {
     case 'modifier': {
       const val = d.value === undefined ? '?' : exprText(d.value);
