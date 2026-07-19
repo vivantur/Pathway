@@ -384,6 +384,63 @@ export function PredicateField({ value, onChange }: { value: unknown; onChange: 
  */
 const WHEN_KINDS = new Set(['modifier', 'grant', 'rollAdjust', 'note']);
 
+/** The four degrees, worst → best, as core orders them. */
+const DEGREES = ['critical-failure', 'failure', 'success', 'critical-success'] as const;
+const DEGREE_LABEL: Record<string, string> = {
+  'critical-failure': 'critical failure',
+  failure: 'failure',
+  success: 'success',
+  'critical-success': 'critical success',
+};
+
+/** A fresh payload per `adjust` type, so switching never leaves a half-built shape. */
+const NEW_ADJUST: Record<string, Record<string, unknown>> = {
+  degreeMap: { type: 'degreeMap', map: {} },
+  degree: { type: 'degree', direction: 'improve' },
+  reroll: { type: 'reroll', keep: 'higher' },
+};
+
+/**
+ * The per-degree rewrite editor: one row per incoming degree, each optionally becoming
+ * another. This IS the shape of the prose — "when you roll a success, you get a
+ * critical success instead" is one row — and a floor needs no separate control, since
+ * Forager's "any result worse than a success" is simply the two rows below success
+ * both pointing at it.
+ *
+ * Rows the author leaves alone are absent from the map, which is what makes the effect
+ * conditional: a degree with no row is untouched.
+ */
+function DegreeMapField({ map, onChange }: { map: Record<string, string>; onChange: (m: Record<string, string>) => void }) {
+  const set = (from: string, to: string) => {
+    const next = { ...map };
+    if (to) next[from] = to;
+    else delete next[from];
+    onChange(next);
+  };
+  return (
+    <div className="rounded border border-gold/15 bg-midnight-950/40 px-2 py-1.5">
+      <div className="mb-1 text-xs uppercase tracking-wide text-parchment/50">when you roll…</div>
+      <div className="flex flex-col gap-1">
+        {DEGREES.map((from) => (
+          <div key={from} className="flex items-center gap-2 text-sm">
+            <span className="w-28 text-parchment/70">{DEGREE_LABEL[from]}</span>
+            <span className="text-parchment/40">→</span>
+            <select className={inputCls} value={map[from] ?? ''} onChange={(e) => set(from, e.target.value)}>
+              <option value="">(unchanged)</option>
+              {DEGREES.filter((d) => d !== from).map((to) => (
+                <option key={to} value={to}>{DEGREE_LABEL[to]}</option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      {Object.keys(map).length === 0 && (
+        <div className="mt-1 text-xs text-amber-300/70">Rewrite at least one result, or this effect says nothing.</div>
+      )}
+    </div>
+  );
+}
+
 export function EffectForm({ draft, onPatch, allowBroadcast }: { draft: Draft; onPatch: (p: Record<string, unknown>) => void; allowBroadcast?: boolean }) {
   const body = KindFields({ draft, onPatch, allowBroadcast });
   if (!WHEN_KINDS.has(String(draft.kind))) return body;
@@ -477,22 +534,32 @@ function KindFields({ draft, onPatch, allowBroadcast }: { draft: Draft; onPatch:
       );
     case 'rollAdjust':
       return (
-        <div className="flex flex-wrap items-center gap-2">
-          <SelectorField value={(draft.target as string) ?? ''} onChange={(v) => onPatch({ target: v })} />
-          <select className={inputCls} value={(adjust.type as string) ?? 'degree'} onChange={(e) => onPatch({ adjust: e.target.value === 'degree' ? { type: 'degree', direction: 'improve' } : { type: 'reroll', keep: 'higher' } })}>
-            <option value="degree">degree shift</option>
-            <option value="reroll">reroll</option>
-          </select>
-          {adjust.type === 'reroll' ? (
-            <select className={inputCls} value={(adjust.keep as string) ?? 'higher'} onChange={(e) => onPatch({ adjust: { type: 'reroll', keep: e.target.value } })}>
-              <option value="higher">keep higher</option>
-              <option value="lower">keep lower</option>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <SelectorField value={(draft.target as string) ?? ''} onChange={(v) => onPatch({ target: v })} allowBroadcast={allowBroadcast} />
+            <select className={inputCls} value={(adjust.type as string) ?? 'degreeMap'} onChange={(e) => onPatch({ adjust: NEW_ADJUST[e.target.value] ?? NEW_ADJUST.degreeMap })}>
+              <option value="degreeMap">on a result…</option>
+              <option value="degree">shift every result</option>
+              <option value="reroll">reroll</option>
             </select>
-          ) : (
-            <select className={inputCls} value={(adjust.direction as string) ?? 'improve'} onChange={(e) => onPatch({ adjust: { type: 'degree', direction: e.target.value } })}>
-              <option value="improve">improve</option>
-              <option value="worsen">worsen</option>
-            </select>
+            {adjust.type === 'reroll' && (
+              <select className={inputCls} value={(adjust.keep as string) ?? 'higher'} onChange={(e) => onPatch({ adjust: { type: 'reroll', keep: e.target.value } })}>
+                <option value="higher">keep higher</option>
+                <option value="lower">keep lower</option>
+              </select>
+            )}
+            {adjust.type === 'degree' && (
+              <select className={inputCls} value={(adjust.direction as string) ?? 'improve'} onChange={(e) => onPatch({ adjust: { type: 'degree', direction: e.target.value } })}>
+                <option value="improve">one degree better</option>
+                <option value="worsen">one degree worse</option>
+              </select>
+            )}
+          </div>
+          {(adjust.type ?? 'degreeMap') === 'degreeMap' && (
+            <DegreeMapField
+              map={(adjust.map as Record<string, string>) ?? {}}
+              onChange={(map) => onPatch({ adjust: { type: 'degreeMap', map } })}
+            />
           )}
         </div>
       );

@@ -8,6 +8,7 @@ import {
   resolutionIssues,
   resolveGaps,
   patchResolves,
+  addEffect,
   applyBulk,
   rejectCandidate,
   conflictReadings,
@@ -24,7 +25,7 @@ import {
   type Expr,
 } from '@pathway/core';
 import featData from '@/features/builder/data/feats.json';
-import { PredicateField, SelectorField } from '@/features/authoring/fields';
+import { PredicateField, SelectorField, EffectForm, validatePassive, strip, withId, type Draft } from '@/features/authoring/fields';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { CornerBrackets } from '@/components/ui/CornerBrackets';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
@@ -116,6 +117,36 @@ function exprText(v: unknown): string {
   }
 }
 
+const DEGREE_LABEL: Record<string, string> = {
+  'critical-failure': 'critical failure',
+  failure: 'failure',
+  success: 'success',
+  'critical-success': 'critical success',
+};
+
+/**
+ * What a `rollAdjust` does, in the reviewer's language. Every one of these used to
+ * render as "adjust rolls on ?", which tells a reviewer nothing they can confirm
+ * against the prose — and the corpus now proposes 200+ of them.
+ *
+ * A degree map is stated as the rewrite the prose states: "a success becomes a
+ * critical success". A map with several entries lists them, because a reviewer has to
+ * check each against the text (Dragon's Presence improves a success AND worsens a
+ * failure, and confirming one is not confirming the other).
+ */
+function describeAdjust(adjust: unknown): string {
+  const a = adjust as { type?: string; direction?: string; keep?: string; map?: Record<string, string> } | undefined;
+  if (!a) return 'adjust rolls';
+  if (a.type === 'reroll') return `reroll, keep ${a.keep ?? '?'}`;
+  if (a.type === 'degree') return `every result one degree ${a.direction === 'worsen' ? 'worse' : 'better'}`;
+  if (a.type === 'degreeMap') {
+    const entries = Object.entries(a.map ?? {});
+    if (entries.length === 0) return 'rewrites nothing';
+    return entries.map(([from, to]) => `${DEGREE_LABEL[from] ?? from} → ${DEGREE_LABEL[to] ?? to}`).join(', ');
+  }
+  return 'adjust rolls';
+}
+
 /** A one-line, human-readable summary of a draft effect — what the reviewer confirms. */
 function describeEffect(d: DraftEffect): string {
   switch (d.kind) {
@@ -140,7 +171,7 @@ function describeEffect(d: DraftEffect): string {
     case 'note':
       return `note on ${d.target ?? '?'}`;
     case 'rollAdjust':
-      return `adjust rolls on ${d.target ?? '?'}`;
+      return `${describeAdjust(d.adjust)} on ${d.target ?? '?'}`;
     case 'choice': {
       const ch = d.choice as DraftChoice | undefined;
       const n = ch?.options?.length ?? 0;
@@ -288,6 +319,97 @@ const nameOf = (id: string): string => FEAT_BY_ID.get(id)?.name ?? id;
 // is strictly more general). Both controls already exist in features/authoring, so
 // nothing is re-implemented here: the review surface and the homebrew editor author
 // the same shapes through the same fields.
+
+/**
+ * Author an effect on this feat that NO producer proposed.
+ *
+ * Separate from the gap editor above it, and deliberately so: that editor answers
+ * "which gap did this close?", and an addition closes none — there is no proposal to
+ * close one on. Core keeps the same split (`ResolutionPatch` vs `addEffect`), so the
+ * distinction survives into the exported decisions as `action: "add"` and a reviewer
+ * reading them later can tell a human's fill from a human's invention.
+ *
+ * The form is `EffectForm` — the SAME control the homebrew authoring page uses, so
+ * there is one authoring surface rendered in two places rather than two that drift.
+ */
+function AddEffectPanel({
+  entityId,
+  additions,
+  onAdd,
+  onRemove,
+}: {
+  entityId: string;
+  additions: EffectDecision[];
+  onAdd: (draft: DraftEffect) => { ok: boolean };
+  onRemove: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>(() => withId({ kind: 'rollAdjust', adjust: { type: 'degreeMap', map: {} } }));
+  // The same validator the homebrew editor uses, so this cannot record a shape
+  // `addEffect` would refuse — the button's disabled state and core's gate agree.
+  const issues = validatePassive(draft);
+
+  const submit = () => {
+    if (onAdd(strip(draft) as DraftEffect).ok) {
+      setDraft(withId({ kind: 'rollAdjust', adjust: { type: 'degreeMap', map: {} } }));
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      {additions.length > 0 && (
+        <ul className="mb-2 space-y-1">
+          {additions.map((a) => (
+            <li key={a.key} className="flex items-center gap-2 rounded border border-emerald/25 bg-emerald/5 px-2 py-1">
+              <span className="rounded border border-emerald/30 px-1 text-xs text-emerald-soft">added</span>
+              <span className="text-sm text-parchment/85">{a.effect ? describeEffect(a.effect as DraftEffect) : '—'}</span>
+              <button
+                onClick={() => onRemove(a.key)}
+                className="ml-auto text-xs text-parchment/50 hover:text-red-300"
+                title="Remove this addition"
+              >
+                remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {open ? (
+        <div className="rounded-md border border-gold/15 bg-midnight-950/60 p-2.5">
+          <div className="mb-1.5 text-xs uppercase tracking-wide text-parchment/50">
+            add an effect to {nameOf(entityId)} — one no producer proposed
+          </div>
+          <EffectForm draft={draft} onPatch={(patch) => setDraft((d) => ({ ...d, ...patch }))} allowBroadcast />
+          {issues.length > 0 && (
+            <ul className="mt-2 space-y-0.5">
+              {issues.map((i, n) => (
+                <li key={n} className="text-xs text-amber-200/70">{i}</li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-2 flex items-center gap-1.5">
+            <button
+              onClick={submit}
+              disabled={issues.length > 0}
+              className="rounded border border-emerald/30 px-2 py-0.5 text-sm text-emerald-soft hover:bg-emerald/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Add
+            </button>
+            <button onClick={() => setOpen(false)} className="rounded border border-gold/20 px-2 py-0.5 text-sm text-parchment/60 hover:text-gold">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setOpen(true)} className="text-xs text-parchment/45 hover:text-gold">
+          ＋ add an effect the producers missed
+        </button>
+      )}
+    </div>
+  );
+}
 
 const REJECT_REASONS: { value: RejectReason; label: string; hint: string }[] = [
   {
@@ -577,8 +699,25 @@ export function EffectReviewPage() {
     setBulkPatch({});
   };
 
+  /**
+   * Effects a human authored that NO producer proposed — the prose said something the
+   * parser cannot yet read. Held apart from `decisions` because they are addressed by a
+   * minted key rather than a candidate's (see core's `addEffect`), so they have no row
+   * in the queue to hang off. They export alongside the rest, and `resolveEntity` folds
+   * them into content without ever reporting them stale.
+   */
+  const [additions, setAdditions] = useState<EffectDecision[]>([]);
+
+  const addTo = (entityId: string, draft: DraftEffect) => {
+    const out = addEffect(entityId, draft, additions, { at: new Date().toISOString() });
+    if (out.ok) setAdditions((prev) => [...prev, out.decision]);
+    return out;
+  };
+  const removeAddition = (key: string) =>
+    setAdditions((prev) => prev.filter((a) => a.key !== key));
+
   const exportDecisions = () => {
-    const arr = [...decisions.values()];
+    const arr = [...decisions.values(), ...additions];
     const blob = new Blob([`${JSON.stringify(arr, null, 2)}\n`], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -793,6 +932,9 @@ export function EffectReviewPage() {
                             return next;
                           })
                         }
+                        additions={additions.filter((a) => a.entityId === c.entityId)}
+                        onAdd={(d) => addTo(c.entityId, d)}
+                        onRemoveAddition={removeAddition}
                         onAccept={() => accept(c)}
                         onResolve={(p) => resolve(c, p)}
                         onReject={(reason) => reject(c, reason)}
@@ -888,6 +1030,9 @@ function CandidateRow({
   onPatch,
   selected,
   onSelect,
+  additions,
+  onAdd,
+  onRemoveAddition,
   onAccept,
   onResolve,
   onReject,
@@ -901,6 +1046,9 @@ function CandidateRow({
   onPatch: (p: ResolutionPatch) => void;
   selected: boolean;
   onSelect: (on: boolean) => void;
+  additions: EffectDecision[];
+  onAdd: (draft: DraftEffect) => { ok: boolean };
+  onRemoveAddition: (key: string) => void;
   onAccept: () => void;
   onResolve: (p: ResolutionPatch) => void;
   onReject: (reason?: RejectReason) => void;
@@ -1034,8 +1182,8 @@ function CandidateRow({
           </div>
           <p className="mt-2 text-xs text-parchment/45">
             Authoring a third reading is deliberately not offered here — the readings cover every
-            conflict in the measured corpus, and a genuinely new effect belongs in the homebrew
-            editor, which is already the general authoring surface.
+            conflict in the measured corpus. An effect the producers missed entirely is a
+            different thing, and goes through "add an effect" below.
           </p>
         </div>
       )}
@@ -1072,6 +1220,13 @@ function CandidateRow({
           )}
         </div>
       )}
+
+      <AddEffectPanel
+        entityId={c.entityId}
+        additions={additions}
+        onAdd={onAdd}
+        onRemove={onRemoveAddition}
+      />
 
       {/* Full feat text, on demand — read and confirm in place, especially for
           foundry-only rows where the parser left no quoted span. */}
