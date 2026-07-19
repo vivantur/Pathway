@@ -242,7 +242,7 @@ type Effect =
   | { kind: 'modifier';    target: Selector; bonusType: BonusType; value: Value; when?: Predicate }
   | { kind: 'proficiency'; target: ProfSelector; rank: Rank; mode: 'upgrade' | 'set' }
   | { kind: 'grant';       grant: Grant; when?: Predicate }        // sense, speed, resistance, trait, action
-  | { kind: 'rollAdjust';  target: Selector; adjust: DegreeShift | Reroll; when?: Predicate }
+  | { kind: 'rollAdjust';  target: Selector; adjust: DegreeShift | DegreeMap | Reroll; when?: Predicate }
   | { kind: 'note';        target: Selector; text: string; when?: Predicate };
 ```
 
@@ -315,6 +315,37 @@ text, never from memory" — it lives in core, tested, shared, exactly like the 
 tables. It must be **pluggable by Layer-1 `rollAdjust` effects** (Assurance; "treat a crit
 failure as a failure") — this is the first real Layer-1 ↔ Layer-2 coupling, and it is
 PF2e-specific.
+
+**Degree adjustments are CONDITIONAL on the incoming degree (landed 2026-07-19).** The
+original `DegreeShift` said only "one degree better/worse", unconditionally — and almost
+no PF2e prose says that. It says *"when you roll a success against a fear effect, you get
+a critical success instead"*, which is silent about the other three degrees. 167 clauses
+across 131 feats carry that shape, and `foundry.ts` had already named the gap by dropping
+`AdjustDegreeOfSuccess` as `unsupported-shape`. So `adjust` gained a **`degreeMap`**: a
+partial map from incoming degree → resulting degree.
+
+The map targets an **absolute** degree, not a step count. That is what the prose literally
+says ("you get a critical success *instead*"), and it subsumes the **floor** shape without
+a second primitive — Forager's "any result worse than a success, you get a success" is
+just `{ 'critical-failure': 'success', failure: 'success' }`.
+
+Ordering when several apply to one roll is **owner-supplied (2026-07-19)**, not derived:
+*apply all the effects that improve the degree, then any that worsen it; each effect can
+change the degree at most once.* Two consequences are load-bearing and locked by tests:
+
+- **The order is only observable at the clamp bounds** — on a critical success, one
+  improver plus one worsener yields success, while the reverse yields critical success.
+  Collapse this to a sum of deltas and the rule becomes vacuous.
+- **"Once" means every effect is measured against the same incoming (post-natural-20/1)
+  degree.** Adjustments never cascade into one another, and the outcome does not depend
+  on the order a sheet happens to list its effects in — which a pure engine requires.
+
+`degreeAdjustmentsFor` (passive.ts) is the bridge from the collected `rollAdjusts` bucket
+to `resolveCheck`/`rollCheck`. It drops `reroll` payloads: Fortune/Misfortune operates on
+*dice*, not degrees, and is still unwired. **The interpreter is not yet bound**: a `save`
+node is rolled by the TARGET and a `check` node by the actor, so adjustments must be
+selected per *roller*, and neither `ResolvedCharacter` nor `ExecutionContext` carries a
+creature's passives today. That binding is an open model decision.
 
 ---
 
