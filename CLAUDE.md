@@ -113,8 +113,20 @@ this section has been wrong before, and a stale status is worse than none.)*
   ambiguous (Unconscious hits AC with both a status and a circumstance penalty).
   Backward compatible by construction: no `bonusTypes` = untyped = added, exactly
   the old behavior, so effects stored in live encounters keep their numbers.
-  `bless`/`heroism` and the persistent-damage presets are NOT core conditions and
-  stay untyped — typing them needs rules text.
+  `bless` and `heroism` are spells, not conditions, so nothing is derivable for
+  them; the owner supplied both as **status** (2026-07-18) and they sit in
+  `OWNER_SUPPLIED` in `bonusTypes.js`. **Do not extend that table from memory** —
+  an entry there is a rules claim, and unclaimed presets stay untyped, which
+  asserts nothing.
+
+  **Persistent damage stacking (owner-supplied, 2026-07-18).** Different damage
+  types coexist — they already did, since each type is its own preset with its own
+  name. The SAME type keeps the HIGHER, and `addEffect` used to replace by
+  recency, so 3d6 already burning could be silently downgraded to 1d6. It now
+  compares, and **declines to decide when the comparison is genuinely ambiguous**
+  (3 vs 1d4, or 1d4 vs 1d6): it keeps what is in play and tells the GM, because
+  the owner's rule is explicit that this is their call, not the system's. Only two
+  comparisons are automatic: flat-vs-flat, and dice of the same size.
 
   **No content carries an automation tree yet.** The corpus is all Layer-1
   passives and `remap-effects.mjs` only emits those, so the host currently runs
@@ -321,7 +333,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 643 · bot 329 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 643 · bot 341 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

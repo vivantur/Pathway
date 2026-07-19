@@ -618,9 +618,71 @@ function addEffect(encounter, query, effect) {
     source: effect.source ?? null,
   };
   const existing = combatant.effects.findIndex(e => e.id === clean.id || slug(e.name) === key);
+
+  // Persistent damage of the SAME type does not replace by recency: the rules
+  // keep the HIGHER one. (Different damage types coexist, which they already do
+  // — each type is its own preset with its own name, so they never collide here.)
+  if (existing >= 0 && isPersistentDamage(combatant.effects[existing]) && isPersistentDamage(clean)) {
+    const prior = combatant.effects[existing];
+    const verdict = comparePersistentDamage(prior, clean);
+    if (verdict !== 'incoming') {
+      return {
+        encounter,
+        combatant,
+        effect: prior,
+        replaced: false,
+        declined: true,
+        // `ambiguous` is the DM's call, not ours: 3 versus 1d4 has no answer a
+        // system should invent. We keep what is in play and say so.
+        reason: verdict === 'ambiguous'
+          ? `${combatant.name} already has ${describeDamage(prior)}; ${describeDamage(clean)} is not comparable to it, so the higher one is the GM's call. Nothing changed — swap it with /init removeeffect then /init addeffect.`
+          : `${combatant.name} already has ${describeDamage(prior)}, which is at least as high as ${describeDamage(clean)}. The higher persistent damage is kept.`,
+      };
+    }
+  }
+
   if (existing >= 0) combatant.effects[existing] = clean;
   else combatant.effects.push(clean);
   return { encounter, combatant, effect: clean, replaced: existing >= 0 };
+}
+
+/** Is this effect persistent damage? Same test `getPersistentDamageEffects` uses. */
+function isPersistentDamage(effect) {
+  const kind = effect?.kind ?? effect?.modifiers?.kind;
+  return kind === 'persistent-damage' || effectKey(effect).startsWith('persistent-');
+}
+
+/** `1d6` / `3` → a comparable form; null when the notation is something else. */
+function parseDamageAmount(text) {
+  const s = String(text ?? '').trim().toLowerCase();
+  if (/^\d+$/.test(s)) return { kind: 'flat', count: Number(s) };
+  const m = /^(\d+)d(\d+)$/.exec(s);
+  return m ? { kind: 'dice', count: Number(m[1]), sides: Number(m[2]) } : null;
+}
+
+function describeDamage(effect) {
+  const { damageDice, damageType } = persistentDamageConfig(effect);
+  return `${damageDice} persistent ${damageType} damage`;
+}
+
+/**
+ * Which of two same-type persistent damages is higher: `'incoming'`, `'existing'`,
+ * or `'ambiguous'`.
+ *
+ * Deliberately conservative. Only two comparisons are unambiguous enough for a
+ * system to make on its own: two flat amounts, and two dice pools of the SAME die
+ * size (2d6 beats 1d6 on every measure). Anything else — 3 versus 1d4, or 1d4
+ * versus 1d6 — is a judgement call, and the owner's rule is explicit that it
+ * belongs to the GM rather than to us.
+ */
+function comparePersistentDamage(existing, incoming) {
+  const a = parseDamageAmount(persistentDamageConfig(existing).damageDice);
+  const b = parseDamageAmount(persistentDamageConfig(incoming).damageDice);
+  if (!a || !b) return 'ambiguous';
+  if (a.kind !== b.kind) return 'ambiguous';
+  if (a.kind === 'dice' && a.sides !== b.sides) return 'ambiguous';
+  if (b.count > a.count) return 'incoming';
+  return 'existing';
 }
 
 function removeEffect(encounter, query, effectName) {

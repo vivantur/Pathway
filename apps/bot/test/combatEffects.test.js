@@ -72,11 +72,26 @@ describe('bonus types are derived from core, not from the bot', () => {
     expect(slotBonusTypes('unconscious').saveBonus).toBe('status');
   });
 
-  it('returns nothing for things that are not core conditions', () => {
-    expect(slotBonusTypes('bless')).toEqual({});
+  it('uses the owner-supplied table for spells core has no condition for', () => {
+    // Bless and Heroism are spells, not conditions, so nothing is derivable.
+    // These types were supplied by the owner (2026-07-18), not written from memory.
+    expect(slotBonusTypes('bless')).toEqual({ attackBonus: 'status' });
+    expect(slotBonusTypes('heroism')).toEqual({
+      attackBonus: 'status', saveBonus: 'status', skillBonus: 'status',
+    });
+  });
+
+  it('returns nothing for anything neither derivable nor supplied', () => {
     expect(slotBonusTypes('persistent-fire')).toEqual({});
     expect(slotBonusTypes('not-a-condition')).toEqual({});
     expect(slotBonusTypes(undefined)).toEqual({});
+  });
+
+  it('stops Bless and Heroism doubling, now that both are typed', () => {
+    // Both grant a STATUS bonus to attack, so only the better one applies.
+    const t = sumEffectModifiers({ effects: [preset('bless'), preset('heroism', 2)] });
+    expect(t.attackBonus).toBe(2);
+    expect(t.superseded).toBe(true);
   });
 
   it('defaults an absent type to untyped', () => {

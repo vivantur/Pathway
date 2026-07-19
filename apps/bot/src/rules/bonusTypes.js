@@ -51,11 +51,28 @@ function slotForSelector(selector) {
 }
 
 /**
+ * Types that CANNOT be derived, because the preset is not a condition and core's
+ * condition data therefore has nothing to say about it.
+ *
+ * OWNER-SUPPLIED (2026-07-18), through the authorized channel: Bless grants a
+ * status bonus; Heroism grants a status bonus. DO NOT EXTEND THIS TABLE FROM
+ * MEMORY — an entry here is a rules claim, and the whole reason the rest of this
+ * module derives rather than declares is that claims written from memory turned
+ * out to be wrong (see prone). A preset absent from this table stays untyped,
+ * which is the tracker's historical behavior and asserts nothing.
+ */
+const OWNER_SUPPLIED = {
+  bless: { attackBonus: 'status' },
+  heroism: { attackBonus: 'status', saveBonus: 'status', skillBonus: 'status' },
+};
+
+/**
  * The unambiguous bonus type per slot for one condition slug, e.g.
  * `{ acBonus: 'circumstance', attackBonus: 'circumstance' }` for Prone.
  * Slots core cannot speak to unambiguously are simply absent.
  */
 function deriveSlotTypes(slug) {
+  if (OWNER_SUPPLIED[slug]) return { ...OWNER_SUPPLIED[slug] };
   if (!core.isConditionSlug(slug)) return {};
 
   // A representative value for valued conditions — the VALUE is irrelevant here,

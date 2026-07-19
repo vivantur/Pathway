@@ -588,6 +588,11 @@ async function execute(interaction) {
         source: 'custom',
       };
       const result = combatV2State.addEffect(channelId, target.name, effect);
+      if (result.declined) {
+        // Same-type persistent damage that did not win. Say what is still in
+        // force and why, rather than reporting an add that did not happen.
+        return interaction.reply({ content: `⚠️ ${result.reason}`, ephemeral: true });
+      }
       await interaction.reply(`Added **${result.effect.name}${result.effect.value ? ` ${result.effect.value}` : ''}** to **${result.combatant.name}**.`);
       await updateCombatV2Summary(interaction.channel, result.encounter);
       return;
