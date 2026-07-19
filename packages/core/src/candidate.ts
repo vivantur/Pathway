@@ -243,11 +243,45 @@ export function effectSignature(draft: DraftEffect): string {
       const first = (draft.choice as { options?: { effects?: DraftEffect[] }[] } | undefined)?.options?.[0]?.effects?.[0];
       return `choice:${first ? effectSignature(first) : "?"}`;
     }
+    case "rollAdjust":
+      // The DIRECTION is part of the shape, not a detail. "A success becomes a critical
+      // success" and "a failure becomes a critical failure" are opposite rules and a
+      // reviewer confirms them separately — grouping all 131 as `rollAdjust:save` would
+      // hand them one bucket containing both, which is exactly what a signature is for
+      // avoiding. `mixed` covers a map that does both at once (Dragon's Presence, when
+      // one clause states them together).
+      return `rollAdjust:${cls}:${rollAdjustDirection(draft.adjust)}`;
     case undefined:
       return "?";
     default:
       return `${draft.kind}:${cls}`;
   }
+}
+
+/** Degrees worst → best, for reading a rollAdjust's direction. Mirrors degree.ts. */
+const DEGREE_ORDER = ["critical-failure", "failure", "success", "critical-success"];
+
+/**
+ * Which way a `rollAdjust` moves the degree: `improve`, `worsen`, `mixed` (a map with
+ * entries going both ways), `reroll`, or `?` when it is not stated yet. Signature-only —
+ * the resolver reads the payload itself, never this string.
+ */
+function rollAdjustDirection(adjust: unknown): string {
+  const a = adjust as { type?: string; direction?: string; map?: Record<string, string> } | undefined;
+  if (a?.type === "degree") return a.direction ?? "?";
+  if (a?.type === "reroll") return "reroll";
+  if (a?.type !== "degreeMap" || !a.map) return "?";
+  let improves = false;
+  let worsens = false;
+  for (const [from, to] of Object.entries(a.map)) {
+    const delta = DEGREE_ORDER.indexOf(to) - DEGREE_ORDER.indexOf(from);
+    if (delta > 0) improves = true;
+    else if (delta < 0) worsens = true;
+  }
+  if (improves && worsens) return "mixed";
+  if (improves) return "improve";
+  if (worsens) return "worsen";
+  return "?";
 }
 
 /** Stable structural serialization — key order must not decide equality. */

@@ -184,6 +184,7 @@ export function segment(normalized: string): Clause[] {
 
 import type { DraftEffect, Gap, SourceProposals } from "./candidate.js";
 import { CONDITION_SLUGS } from "./conditions.js";
+import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import type { Predicate } from "./predicate.js";
 import type { Selector } from "./selectors.js";
 
@@ -992,5 +993,179 @@ export const choiceExtractor: Extractor = (clause) => {
   return out;
 };
 
+// ---------------------------------------------------------------------------
+// 9. the degree-of-success extractor
+// ---------------------------------------------------------------------------
+//
+// MEASURED over the corpus (167 degree clauses across 131 feats, 127 distinct
+// surface shapes) — but the shapes are variations on ONE template:
+//
+//     you roll a <TRIGGER>  <scope phrase>,  you get a <RESULT> instead
+//
+// The variety is entirely in the middle: "on a saving throw against a fear effect",
+// "on an Athletics check to Climb", "on the save", or nothing at all. So this keys
+// on the two degree words and the "instead", and hands the middle to the SAME
+// target/scope machinery the modifier extractor uses. The top shapes:
+//
+//     8  you roll a <S>, you get a <CS> instead.
+//     7  you roll a <S> on an ~ check to ~, you get a <CS> instead.
+//     6  you roll a <CF>, you get a <F> instead.
+//     5  you roll a <CF> on the save you get a <F> instead.      (note: no comma)
+//     5  you roll a <S> on a saving throw against an ~ ~, you get a <CS> instead.
+//
+// GOVERNORS ARE NOT CONDITIONS HERE, and this is the one thing to get right. The
+// modifier extractor treats a governing "when"/"if" as an unexpressed condition,
+// because "+1 to attacks WHILE raging" is a conditional modifier. But "WHEN you roll
+// a success, you get a critical success instead" is not a conditional anything — the
+// governor introduces the effect's own TRIGGER, which is precisely what the map's key
+// encodes. Emitting it as a condition gap as well would send all 131 feats to a
+// reviewer to "resolve" a condition the draft already states.
+
+const DEG_WORD: Record<string, DegreeOfSuccess> = {
+  "critical success": "critical-success",
+  "critical failure": "critical-failure",
+  success: "success",
+  failure: "failure",
+};
+// Longest-first so "critical success" is never read as the bare "success".
+const DEG_ALT = String.raw`critical\s+success|critical\s+failure|success|failure`;
+
+/**
+ * `roll [any result worse than] a <trigger> <middle>, you get a <result>`.
+ * The middle is lazy and stops at the "you get" that follows, so it captures exactly
+ * the scope phrase. The comma is optional — 5 corpus clauses omit it.
+ *
+ * "instead" is NOT required, though 129 of the 135 matching clauses say it. Six real
+ * rewrites do not ("…you get a success.", "…you get a critical success;"), and one
+ * more puts a phrase in between ("you get a critical success against that target
+ * instead"). Precision does not depend on the word: the template already needs two
+ * degree words in a fixed frame, and a match whose trigger and result are the SAME
+ * degree is discarded below, which is what rules out "you roll a success to Treat
+ * Wounds … you get a success".
+ */
+const DEGREE_RE = new RegExp(
+  String.raw`\broll\s+(?:(any\s+result\s+worse\s+than)\s+)?(?:a|an|the)?\s*(${DEG_ALT})\b([^.;]{0,140}?)\s*,?\s*(?:and\s+)?you\s+get\s+(?:a|an)\s+(${DEG_ALT})\b`,
+  "gi",
+);
+
+/** Leading prepositions on the scope phrase: "ON a saving throw", "AT one of…". */
+const DEGREE_MIDDLE_LEAD = /^\s*(?:on|at|for|in|with|to)\s+/i;
+/** Where the target run ends and a narrowing scope begins. */
+const DEGREE_SCOPE_SPLIT = /\s+\b(against|to)\b\s+/i;
+/**
+ * Degree prose scopes in the SINGULAR with an article — "against A VISUAL EFFECT" —
+ * where modifier prose says "against visual effects". The trait-scope patterns expect
+ * the bare noun phrase, so the article is dropped before they see it. Without this
+ * every one of these gaps as `conditional-unmapped` over a trait we can in fact name.
+ */
+const DEGREE_SCOPE_ARTICLE = /^(against|to)\s+(?:a|an|the)\s+/i;
+
+/**
+ * A DEFINITE article on a bare check noun — "on THE save", "on THE check" — points
+ * back at a specific roll named earlier in the feat, so it is anaphoric. An INDEFINITE
+ * one — "on A saving throw" — is generic and correctly fans out to all three saves.
+ *
+ * `resolveTarget` reads both as the broadcast, because it hits TARGET_MAP's "save"
+ * before its own anaphora check. That is defensible for modifier prose and wrong here:
+ * measured, 5 corpus clauses say "on the save", and Cantorian Reinforcement is the
+ * proof — its second sentence rewrites a critical failure "on the save", meaning the
+ * disease-or-poison save from its FIRST sentence. Read as a broadcast it becomes an
+ * unconditional rewrite on every save the character ever rolls. Narrowed to this
+ * extractor deliberately: changing `resolveTarget` would move modifier candidates
+ * across the whole corpus, which needs its own measurement.
+ */
+const DEGREE_DEFINITE_TARGET = /^the\s+(?:saving\s+throws?|saves?|checks?|rolls?|attacks?)$/i;
+
+/**
+ * Build the degree map. A plain trigger rewrites ONE degree; "any result worse than
+ * a success" is a FLOOR, which is just every degree below the trigger rewritten to
+ * the result — no separate clamp primitive (see `DegreeAdjustment` in degree.ts).
+ */
+function degreeMapFor(trigger: DegreeOfSuccess, result: DegreeOfSuccess, floor: boolean): Partial<Record<DegreeOfSuccess, DegreeOfSuccess>> {
+  const map: Partial<Record<DegreeOfSuccess, DegreeOfSuccess>> = {};
+  if (!floor) {
+    if (trigger !== result) map[trigger] = result;
+    return map;
+  }
+  const cutoff = DEGREES.indexOf(trigger);
+  for (const d of DEGREES) {
+    if (DEGREES.indexOf(d) < cutoff && d !== result) map[d] = result;
+  }
+  return map;
+}
+
+/**
+ * Extract conditional degree-of-success rewrites ("when you roll a success …, you get
+ * a critical success instead") as `rollAdjust` drafts carrying a `degreeMap`.
+ *
+ * A resolved target fans out exactly as a modifier does — "a saving throw" is a
+ * broadcast, so Adaptive Vision yields one draft per save and a Fortitude roll picks
+ * up only its own (see `degreeAdjustmentsFor`). An unstated target yields a gapped
+ * draft rather than a guess: an unconditional degree rewrite on the wrong check is
+ * the same wrong-sheet bug a blanket-from-narrow modifier is, and `promote` refuses
+ * a gapped draft meanwhile.
+ */
+export const degreeExtractor: Extractor = (clause, ctx = {}) => {
+  const out: Extraction[] = [];
+  const span = { start: clause.start, end: clause.end, text: clause.text };
+  let m: RegExpExecArray | null;
+  DEGREE_RE.lastIndex = 0;
+  while ((m = DEGREE_RE.exec(clause.text))) {
+    const trigger = DEG_WORD[m[2]!.toLowerCase().replace(/\s+/g, " ")];
+    const result = DEG_WORD[m[4]!.toLowerCase().replace(/\s+/g, " ")];
+    if (!trigger || !result) continue;
+
+    const map = degreeMapFor(trigger, result, Boolean(m[1]));
+    // "roll a success, you get a success instead" rewrites nothing. Not an effect.
+    if (Object.keys(map).length === 0) continue;
+    const draftBase = { kind: "rollAdjust" as const, adjust: { type: "degreeMap" as const, map } };
+
+    // Split the middle into "what is rolled" and "what narrows it": "a saving throw
+    // against a fear effect" → target "a saving throw", scope "against a fear effect".
+    const middle = m[3]!.replace(DEGREE_MIDDLE_LEAD, "").trim();
+    const split = DEGREE_SCOPE_SPLIT.exec(middle);
+    const targetRun = split ? middle.slice(0, split.index) : middle;
+    const scope = split ? middle.slice(split.index).trim().replace(DEGREE_SCOPE_ARTICLE, "$1 ") : undefined;
+
+    // Same discipline as the modifier extractor: a scope we can state becomes a
+    // predicate, one we cannot becomes a gap — never both, never neither.
+    const when = scope ? resolveTraitScope(scope, ctx) : null;
+    const scopeGap: Gap[] = scope && !when
+      ? [{ field: "when", reason: isAnaphoricScope(scope) ? "anaphoric" : "conditional-unmapped", raw: scope.slice(0, 80) }]
+      : [];
+    const whenField = when ? { when } : {};
+
+    const { selectors, anaphoric } =
+      !targetRun || DEGREE_DEFINITE_TARGET.test(targetRun.trim())
+        ? { selectors: [] as Selector[], anaphoric: targetRun ? [targetRun.trim()] : [] }
+        : resolveTargetList(targetRun);
+
+    for (const target of selectors) {
+      out.push({ draft: { ...draftBase, target, ...whenField }, gaps: [...scopeGap], span });
+    }
+    for (const raw of anaphoric) {
+      out.push({ draft: { ...draftBase, ...whenField }, gaps: [{ field: "target", reason: "anaphoric", raw }, ...scopeGap], span });
+    }
+    // Nothing said what is being rolled ("when you roll a success, you get a critical
+    // success instead"). Filed as `anaphoric`, not `missing`: the referent is earlier
+    // in the feat's own text, so the reviewer's job is to go read it, not to supply
+    // vocabulary we lack. Mislabelling this cost 68 misaimed gaps once already.
+    if (selectors.length === 0 && anaphoric.length === 0) {
+      out.push({
+        draft: { ...draftBase, ...whenField },
+        gaps: [{ field: "target", reason: "anaphoric", raw: clause.text.slice(0, 80) }, ...scopeGap],
+        span,
+      });
+    }
+  }
+  return out;
+};
+
 /** The default producer extractor set. Grows one family per slice. */
-export const DEFAULT_EXTRACTORS: readonly Extractor[] = [proficiencyExtractor, modifierExtractor, grantExtractor, choiceExtractor];
+export const DEFAULT_EXTRACTORS: readonly Extractor[] = [
+  proficiencyExtractor,
+  modifierExtractor,
+  grantExtractor,
+  choiceExtractor,
+  degreeExtractor,
+];

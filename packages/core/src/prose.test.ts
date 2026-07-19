@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import {
   choiceExtractor,
+  degreeExtractor,
   extractFromProse,
   grantExtractor,
   modifierExtractor,
@@ -590,5 +591,105 @@ describe("parseProse — as a candidate.ts producer", () => {
     const candidates = reconcile("lepidstadt-surgeon-dedication", [parser, foundry]);
     const prof = candidates.find((c) => c.draft.kind === "proficiency");
     expect(prof?.agreement).toBe("corroborated");
+  });
+});
+
+// All fixtures below are verbatim corpus prose. The measured shape counts they stand
+// in for are recorded in prose.ts's section-9 header.
+describe("degreeExtractor — conditional degree-of-success rewrites", () => {
+  const traits = { effectTraits: new Set(["visual", "fear", "emotion"]), spellTraits: new Set(["visual", "fear", "emotion"]) };
+  const run = (raw: string, ctx = traits) =>
+    extractFromProse(raw, [degreeExtractor], ctx).map((e) => ({ draft: e.draft, gaps: e.gaps }));
+
+  it("reads Adaptive Vision: a scoped save rewrite, fanned across the three saves", () => {
+    const out = run(
+      "If you roll a success on a saving throw against a visual effect, you get a critical success instead.",
+    );
+    expect(out).toHaveLength(3);
+    expect(out.map((o) => o.draft.target)).toEqual(["fortitude", "reflex", "will"]);
+    for (const o of out) {
+      expect(o.draft.adjust).toEqual({ type: "degreeMap", map: { success: "critical-success" } });
+      expect(o.draft.when).toEqual({ tag: "effect:trait:visual" });
+      expect(o.gaps).toEqual([]);
+    }
+  });
+
+  it("reads Dragon's Presence: one clause improves, the other worsens", () => {
+    const out = run(
+      "When you roll a success on a saving throw against a fear effect, you get a critical success instead. " +
+        "When you roll a failure against a fear effect, you get a critical failure instead.",
+    );
+    const maps = out.map((o) => (o.draft.adjust as { map: unknown }).map);
+    expect(maps).toContainEqual({ success: "critical-success" });
+    expect(maps).toContainEqual({ failure: "critical-failure" });
+  });
+
+  it("reads Forager's floor as a map, with no clamp primitive", () => {
+    const out = run("While using Survival to Subsist, if you roll any result worse than a success, you get a success.");
+    expect(out).toHaveLength(1);
+    expect((out[0]!.draft.adjust as { map: unknown }).map).toEqual({
+      "critical-failure": "success",
+      failure: "success",
+    });
+  });
+
+  // The whole point of the extractor: the governing "when" is the effect's TRIGGER,
+  // already encoded in the map's key, so it must not ALSO be filed as a condition gap.
+  it("does not file the governing 'when you roll a X' as an unexpressed condition", () => {
+    const out = run("When you roll a success on a saving throw against a fear effect, you get a critical success instead.");
+    for (const o of out) expect(o.gaps.filter((g) => g.field === "when")).toEqual([]);
+  });
+
+  it("gaps the target rather than guessing when the clause does not state one", () => {
+    const out = run("When you roll a critical failure, you get a failure instead.");
+    expect(out).toHaveLength(1);
+    expect(out[0]!.draft.target).toBeUndefined();
+    expect(out[0]!.gaps).toEqual([{ field: "target", reason: "anaphoric", raw: expect.any(String) }]);
+  });
+
+  // Cantorian Reinforcement's second sentence: "the save" is the disease-or-poison save
+  // from its first. Read as a broadcast it would rewrite EVERY save unconditionally.
+  it("treats a definite 'the save' as anaphoric, not a broadcast over all three saves", () => {
+    const out = run("If you roll a critical failure on the save you get a failure instead.");
+    expect(out).toHaveLength(1);
+    expect(out[0]!.draft.target).toBeUndefined();
+    expect(out[0]!.gaps.some((g) => g.field === "target" && g.reason === "anaphoric")).toBe(true);
+  });
+
+  it("still fans an INDEFINITE 'a saving throw' across the three saves", () => {
+    const out = run("If you roll a critical failure on a saving throw, you get a failure instead.");
+    expect(out.map((o) => o.draft.target)).toEqual(["fortitude", "reflex", "will"]);
+  });
+
+  it("gaps a scope it cannot name instead of dropping it", () => {
+    const out = run(
+      "If you roll a success on a saving throw against a visual effect, you get a critical success instead.",
+      { effectTraits: new Set<string>(), spellTraits: new Set<string>() },
+    );
+    for (const o of out) {
+      expect(o.draft.when).toBeUndefined();
+      expect(o.gaps).toContainEqual({ field: "when", reason: "conditional-unmapped", raw: "against visual effect" });
+    }
+  });
+
+  it("matches a clause that omits 'instead' (6 real ones do)", () => {
+    const out = run("If you roll a critical failure, you get a failure.");
+    expect(out).toHaveLength(1);
+    expect((out[0]!.draft.adjust as { map: unknown }).map).toEqual({ "critical-failure": "failure" });
+  });
+
+  it("discards an identity rewrite, which is what keeps 'instead' optional safe", () => {
+    // Real corpus prose: "you roll a success to Treat Wounds … you get a success" is a
+    // restatement, not a rewrite. Dropping it is why the word `instead` is not required.
+    expect(run("If you roll a success to Treat Wounds for a creature, you get a success.")).toEqual([]);
+  });
+
+  it("reads 'critical success' as one degree, never as a bare 'success'", () => {
+    const out = run("If you roll a critical success on a saving throw, you get a success instead.");
+    expect((out[0]!.draft.adjust as { map: unknown }).map).toEqual({ "critical-success": "success" });
+  });
+
+  it("emits nothing for prose with no degree rewrite", () => {
+    expect(run("You gain a +1 circumstance bonus to saving throws against visual effects.")).toEqual([]);
   });
 });
