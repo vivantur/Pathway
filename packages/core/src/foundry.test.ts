@@ -491,3 +491,127 @@ describe("mapFoundryRules — choice-driven rank grants", () => {
     expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-runtime-choice" });
   });
 });
+
+// Every fixture below is a VERBATIM element from the corpus sidecar, not an invented
+// shape — the vocabulary counts they stand for are in foundry.ts's section header.
+describe("AdjustDegreeOfSuccess", () => {
+  const effectTraits = new Set(['visual', 'emotion', 'fear', 'disease', 'poison', 'dream', 'illusion']);
+  const map = (rule: RuleElement) => mapFoundryRules([rule], { effectTraits });
+
+  it("maps Adaptive Vision, fanning a broadcast save selector across all three", () => {
+    const { effects } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: ['visual'],
+      selector: 'saving-throw',
+      type: 'save',
+    });
+    expect(effects).toHaveLength(3);
+    expect(effects[0]).toEqual({
+      kind: 'rollAdjust',
+      target: 'fortitude',
+      adjust: { type: 'degreeMap', map: { success: 'critical-success' } },
+      when: { tag: 'effect:trait:visual' },
+    });
+  });
+
+  // The key names the incoming degree, which is what makes a RELATIVE instruction
+  // resolvable to an absolute target with no approximation.
+  it("resolves 'one-degree-better' against the degree its key names", () => {
+    const { effects } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { criticalFailure: 'one-degree-better' },
+      selector: 'will',
+    });
+    expect((effects[0] as { adjust: { map: unknown } }).adjust.map).toEqual({ 'critical-failure': 'failure' });
+  });
+
+  it("maps an absolute instruction too", () => {
+    const { effects } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'to-critical-success' },
+      selector: 'athletics',
+    });
+    expect((effects[0] as { adjust: { map: unknown } }).adjust.map).toEqual({ success: 'critical-success' });
+  });
+
+  it("expands `all` to every degree, dropping the entry that would rewrite nothing", () => {
+    // A critical success one degree better is still a critical success — clamped, so
+    // it says nothing and is omitted rather than stored as an identity rewrite.
+    const { effects } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { all: 'one-degree-better' },
+      selector: 'will',
+    });
+    expect((effects[0] as { adjust: { map: unknown } }).adjust.map).toEqual({
+      'critical-failure': 'failure',
+      failure: 'success',
+      success: 'critical-success',
+    });
+  });
+
+  it("maps a Foundry `or` to our `any`, reading item: as the incoming effect", () => {
+    const { effects } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { criticalFailure: 'one-degree-better' },
+      predicate: [{ or: ['item:trait:disease', 'item:trait:poison'] }],
+      selector: 'fortitude',
+    });
+    expect((effects[0] as { when: unknown }).when).toEqual({
+      any: [{ tag: 'effect:trait:disease' }, { tag: 'effect:trait:poison' }],
+    });
+  });
+
+  it("refuses an action-scoped predicate rather than dropping it", () => {
+    // We have no action vocabulary; shipping this unconditional would apply a
+    // Climb-only rewrite to every Athletics check. 74 corpus elements are here.
+    const { effects, report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: ['action:climb'],
+      selector: 'athletics',
+    });
+    expect(effects).toEqual([]);
+    expect(report[0]!.reason).toBe('needs-combat-tags');
+  });
+
+  it("refuses a bare option the trait vocabulary does not confirm", () => {
+    // Most bare Foundry roll options are feat slugs or flags, not traits. Guessing
+    // would produce a condition that can never fire.
+    const { report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: ['student-of-the-canon'],
+      selector: 'religion',
+    });
+    expect(report[0]!.reason).toBe('needs-combat-tags');
+  });
+
+  it("refuses a numeric predicate leaf, which the tag model excludes by design", () => {
+    const { report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: [{ gte: ['check:roll:total', 19] }],
+      selector: 'will',
+    });
+    expect(report[0]!.reason).toBe('needs-combat-tags');
+  });
+
+  it("with NO trait vocabulary, a bare option maps nothing", () => {
+    // The default. Honest when we have no corpus to check a word against.
+    const { report } = mapFoundryRules([
+      { key: 'AdjustDegreeOfSuccess', adjustment: { success: 'one-degree-better' }, predicate: ['visual'], selector: 'will' },
+    ]);
+    expect(report[0]!.reason).toBe('needs-combat-tags');
+  });
+
+  it("reports an unknown instruction rather than approximating it", () => {
+    const { report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'three-degrees-sideways' },
+      selector: 'will',
+    });
+    expect(report[0]!.outcome).toBe('unsupported');
+    expect(report[0]!.reason).toBe('unsupported-shape');
+  });
+});

@@ -143,6 +143,18 @@ function main() {
     if (Array.isArray(e.raw) && e.raw.length) rawById.set(`${e.kind ?? 'feat'}:${e.id}`, e.raw);
   }
 
+  // The SAME corpus-derived trait vocabulary build-candidates gives the parser, so
+  // both producers read a bare Foundry roll option against one list. Hardcoding it in
+  // core would drift; deriving it twice from different files would drift too.
+  const effectTraits = new Set();
+  for (const file of ['spells.json', 'feats.json']) {
+    const path = join(args.data, file);
+    if (!existsSync(path)) continue;
+    const data = readJson(path);
+    const rows = Array.isArray(data) ? data : (data.spells ?? data.feats ?? []);
+    for (const row of rows) for (const t of row.traits ?? []) effectTraits.add(String(t).toLowerCase());
+  }
+
   const foldIn = loadFoldIn(args.data);
   const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0 };
 
@@ -175,7 +187,7 @@ function main() {
 
       if (!raw || raw.length === 0) continue;
 
-      const { effects, choices, report } = mapFoundryRules(raw);
+      const { effects, choices, report } = mapFoundryRules(raw, { effectTraits });
       reports.push(report);
 
       // The fold-in replaces the mapper's output with the RESOLVED effects wherever

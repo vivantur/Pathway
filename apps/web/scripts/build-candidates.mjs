@@ -68,10 +68,10 @@ function parseArgs(argv) {
  * auto-mapped effect, so a foundry-only `grant` or `choice` is a legitimate review item.
  * A choice becomes a `kind: "choice"` draft — the second content type reconcile handles.
  */
-function foundryProposals(feat, rawById) {
+function foundryProposals(feat, rawById, vocab) {
   const raw = rawById.get(feat.id);
   const { effects, choices, report } = raw
-    ? mapFoundryRules(raw)
+    ? mapFoundryRules(raw, { effectTraits: vocab.effectTraits })
     : { effects: feat.effects ?? [], choices: feat.choices ?? [], report: [] };
 
   const proposals = effects.map((draft) => ({ draft }));
@@ -138,7 +138,7 @@ function main() {
     if (!feat.description) continue;
     featsWithProse += 1;
     const parser = parseProse(feat.description, undefined, traits);
-    const foundry = foundryProposals(feat, rawById);
+    const foundry = foundryProposals(feat, rawById, traits);
     silenceInputs.push({
       entityId: feat.id,
       actionCost: feat.actionCost ?? null,

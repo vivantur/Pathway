@@ -27,7 +27,9 @@
 // tallies double as a roadmap of what the engine still lacks.
 
 import { z } from "zod";
+import { DEGREES, shiftDegree, type DegreeOfSuccess } from "./degree.js";
 import { parseExpr, type Expr } from "./expr.js";
+import type { Predicate } from "./predicate.js";
 import {
   effectChoiceSchema,
   passiveEffectSchema,
@@ -230,10 +232,6 @@ const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detai
   GrantItem: { reason: "needs-granting", detail: "grants another item/feat" },
   ChoiceSet: { reason: "needs-runtime-choice", detail: "prompts a selection at choice time" },
   RollOption: { reason: "needs-combat-tags", detail: "produces a roll option/tag" },
-  AdjustDegreeOfSuccess: {
-    reason: "unsupported-shape",
-    detail: "per-degree adjustment map; our rollAdjust is a blanket one-degree shift",
-  },
   AdjustModifier: { reason: "unsupported-shape", detail: "retunes another modifier" },
   Aura: { reason: "unsupported-shape", detail: "emanating aura; needs positioning" },
   EphemeralEffect: { reason: "unsupported-shape", detail: "transient effect on another actor" },
@@ -261,6 +259,104 @@ const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detai
 /** A rule element is conditional if it carries a non-empty Foundry predicate. */
 function isConditional(rule: RuleElement): boolean {
   return Array.isArray(rule.predicate) && rule.predicate.length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Foundry predicates → our tag predicates
+// ---------------------------------------------------------------------------
+//
+// MEASURED over the corpus's 135 AdjustDegreeOfSuccess elements: 34 carry a predicate
+// made entirely of leaves we can state. The rest are blocked by `action:` scoping (74
+// — Escape, Climb, Subsist; we have no action vocabulary), numeric leaves (`{gte}`,
+// `check:roll:total:natural:19` — deliberately outside our tag model), `terrain:`,
+// `self:effect:` combat state, and feat-slug flags.
+//
+// ALL-OR-NOTHING, IN BOTH DIRECTIONS. A predicate maps whole or not at all. Dropping
+// a conjunct WIDENS the condition (the effect fires when it should not); dropping a
+// disjunct NARROWS it (it fails to fire when it should). Both are wrong sheets, so
+// neither is a "safe" partial — an unmappable leaf anywhere refuses the element.
+//
+// `item:trait:X` BECOMES `effect:trait:X`. In Foundry a save is rolled against an
+// item, so `item:` there names the INCOMING effect — the same thing our
+// `effect:trait:` scope names, and the same claim our parser makes when it reads
+// "against disease effects". That equivalence is checkable rather than assumed: if it
+// were wrong, these elements would land as CONFLICTS against the parser's proposals
+// rather than corroborating them.
+
+/** A Foundry predicate leaf we can state, or null when we cannot. */
+function mapPredicateLeaf(leaf: string, effectTraits: ReadonlySet<string>): Predicate | null {
+  // `item:` in a save/check context is the incoming effect.
+  const item = /^item:trait:([a-z][a-z0-9-]*)$/.exec(leaf);
+  if (item) return { tag: `effect:trait:${item[1]}` };
+
+  // Scopes that carry across unchanged.
+  const scoped = /^(target|origin):trait:([a-z][a-z0-9-]*)$/.exec(leaf);
+  if (scoped) return { tag: `${scoped[1]}:trait:${scoped[2]}` };
+
+  // Foundry's "this effect would inflict <condition>" — our `effect:causes:`.
+  const inflicts = /^inflicts:([a-z][a-z0-9-]*)$/.exec(leaf);
+  if (inflicts) return { tag: `effect:causes:${inflicts[1]}` };
+
+  // A BARE string is a roll option, and most of them are not traits at all (feat
+  // slugs, action names, flags). Only accept one the caller's vocabulary confirms is
+  // a real effect trait — the same discipline prose.ts applies, and for the same
+  // reason: a guessed trait produces a condition that can never fire.
+  if (/^[a-z][a-z0-9-]*$/.test(leaf) && effectTraits.has(leaf)) {
+    return { tag: `effect:trait:${leaf}` };
+  }
+  return null;
+}
+
+/**
+ * A Foundry predicate (an implicit AND of leaves and operators) → our `Predicate`,
+ * or null when any part of it is beyond our vocabulary.
+ */
+function mapPredicate(pred: unknown, effectTraits: ReadonlySet<string>): Predicate | null {
+  if (typeof pred === "string") return mapPredicateLeaf(pred, effectTraits);
+
+  // A Foundry predicate array is a conjunction.
+  if (Array.isArray(pred)) {
+    const parts: Predicate[] = [];
+    for (const p of pred) {
+      const mapped = mapPredicate(p, effectTraits);
+      if (!mapped) return null;
+      parts.push(mapped);
+    }
+    if (parts.length === 0) return null;
+    return parts.length === 1 ? parts[0]! : { all: parts };
+  }
+
+  if (pred && typeof pred === "object") {
+    const keys = Object.keys(pred as Record<string, unknown>);
+    if (keys.length !== 1) return null;
+    const [op] = keys as [string];
+    const body = (pred as Record<string, unknown>)[op];
+
+    if (op === "and" || op === "or") {
+      if (!Array.isArray(body)) return null;
+      const parts: Predicate[] = [];
+      for (const p of body) {
+        const mapped = mapPredicate(p, effectTraits);
+        if (!mapped) return null;
+        parts.push(mapped);
+      }
+      if (parts.length === 0) return null;
+      if (parts.length === 1) return parts[0]!;
+      return op === "and" ? { all: parts } : { any: parts };
+    }
+
+    if (op === "not") {
+      const inner = mapPredicate(body, effectTraits);
+      return inner ? { not: inner } : null;
+    }
+
+    // `nor`, `gte`, `lt`, `xor`… — numeric comparisons are outside our tag model by
+    // design, and `nor` is expressible but absent from the corpus, so it stays
+    // unmapped rather than shipped untested.
+    return null;
+  }
+
+  return null;
 }
 
 /**
@@ -331,6 +427,104 @@ function mapFlatModifier(rule: RuleElement): PassiveEffect[] {
 
   const value = toExpr(rule.value);
   return targets.map((target) => ({ kind: "modifier", target, bonusType, value }) as PassiveEffect);
+}
+
+// ---------------------------------------------------------------------------
+// AdjustDegreeOfSuccess
+// ---------------------------------------------------------------------------
+//
+// Foundry's shape, READ OFF THE CORPUS rather than recalled:
+//
+//   { key: "AdjustDegreeOfSuccess", selector: "saving-throw",
+//     adjustment: { success: "one-degree-better" }, predicate: ["visual"] }
+//
+// The `adjustment` map is keyed by the INCOMING degree, which is what makes every
+// instruction resolvable to an absolute target: "one-degree-better" is ambiguous on
+// its own, but "one-degree-better FROM a success" is exactly `critical-success`. So
+// this needs no shift-vs-absolute compromise — both of Foundry's styles land in our
+// `degreeMap` without approximating anything.
+//
+// Observed keys: success (92), criticalFailure (44), all (11), failure (6).
+// Observed instructions: one-degree-better (123), to-critical-success (16),
+// to-success (7), to-failure (4), one-degree-worse (2), two-degrees-worse (1).
+
+const FOUNDRY_DEGREE: Readonly<Record<string, DegreeOfSuccess>> = {
+  criticalFailure: "critical-failure",
+  failure: "failure",
+  success: "success",
+  criticalSuccess: "critical-success",
+};
+
+/** Instructions that name an absolute result, whatever was rolled. */
+const DEGREE_ABSOLUTE: Readonly<Record<string, DegreeOfSuccess>> = {
+  "to-critical-failure": "critical-failure",
+  "to-failure": "failure",
+  "to-success": "success",
+  "to-critical-success": "critical-success",
+};
+
+/** Instructions that name a shift RELATIVE to the incoming degree. */
+const DEGREE_SHIFT: Readonly<Record<string, number>> = {
+  "one-degree-better": 1,
+  "two-degrees-better": 2,
+  "one-degree-worse": -1,
+  "two-degrees-worse": -2,
+};
+
+function mapAdjustDegreeOfSuccess(rule: RuleElement, effectTraits: ReadonlySet<string>): PassiveEffect[] {
+  const targets: Selector[] = [];
+  for (const raw of toArray(rule.selector)) {
+    const name = String(raw);
+    const mapped = SELECTOR_MAP[name] ?? (isSkillSlug(name) ? [name] : undefined);
+    if (!mapped) throw new MapError("unsupported-selector", `selector "${name}"`);
+    targets.push(...mapped);
+  }
+  if (targets.length === 0) throw new MapError("unsupported-shape", "no selector");
+
+  const adjustment = rule.adjustment as Record<string, unknown> | undefined;
+  if (!adjustment || typeof adjustment !== "object") {
+    throw new MapError("unsupported-shape", "no adjustment map");
+  }
+
+  const map: Partial<Record<DegreeOfSuccess, DegreeOfSuccess>> = {};
+  for (const [rawFrom, rawInstruction] of Object.entries(adjustment)) {
+    const instruction = String(rawInstruction);
+    // `all` applies the instruction to every incoming degree — expanded here, which
+    // is faithful rather than approximate: our map has no "any degree" key, and
+    // writing out the four cases says exactly the same thing.
+    const froms = rawFrom === "all" ? DEGREES : [FOUNDRY_DEGREE[rawFrom]];
+    for (const from of froms) {
+      if (!from) throw new MapError("unsupported-shape", `degree "${rawFrom}"`);
+      let to: DegreeOfSuccess | undefined = DEGREE_ABSOLUTE[instruction];
+      if (!to) {
+        const steps = DEGREE_SHIFT[instruction];
+        if (steps === undefined) throw new MapError("unsupported-shape", `adjustment "${instruction}"`);
+        to = shiftDegree(from, steps);
+      }
+      // A rewrite to the degree already rolled says nothing. Clamping makes these
+      // real: "one degree better" from a critical success, or `all` + a fixed target
+      // covering the degree that target already is.
+      if (to !== from) map[from] = to;
+    }
+  }
+
+  if (Object.keys(map).length === 0) throw new MapError("unsupported-shape", "adjustment rewrites nothing");
+
+  // The predicate was already checked as mappable by the caller; re-map it here so
+  // the effect carries it. A conditional degree rewrite shipped unconditional would
+  // be the wrong-sheet bug this boundary exists to prevent.
+  const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits) : null;
+  if (isConditional(rule) && !when) throw new MapError("needs-combat-tags", "unmappable predicate");
+
+  return targets.map(
+    (target) =>
+      ({
+        kind: "rollAdjust",
+        target,
+        adjust: { type: "degreeMap", map: { ...map } },
+        ...(when ? { when } : {}),
+      }) as PassiveEffect,
+  );
 }
 
 /** Foundry writes proficiency ranks as ActiveEffectLike paths into their actor data. */
@@ -661,7 +855,22 @@ function mapBaseSpeed(rule: RuleElement): PassiveEffect[] {
  * would turn a situational bonus into a permanent one — a wrong sheet, which is worse
  * than an absent effect.
  */
-export function mapFoundryRules(rules: readonly RuleElement[]): MappingResult {
+export interface FoundryMapOptions {
+  /**
+   * Traits an EFFECT can carry, used to decide whether a BARE Foundry roll option is
+   * a trait at all. Passed in rather than hardcoded for the same reason prose.ts takes
+   * it: the trait list is game CONTENT, the caller already holds the corpus, and a
+   * constant here would drift. Empty (the default) means no bare option is read as a
+   * trait, which is the honest reading when we have no vocabulary to check against.
+   */
+  effectTraits?: ReadonlySet<string>;
+}
+
+export function mapFoundryRules(
+  rules: readonly RuleElement[],
+  options: FoundryMapOptions = {},
+): MappingResult {
+  const effectTraits = options.effectTraits ?? new Set<string>();
   const effects: PassiveEffect[] = [];
   const report: MappingEntry[] = [];
 
@@ -697,7 +906,13 @@ export function mapFoundryRules(rules: readonly RuleElement[]): MappingResult {
 
     // Checked BEFORE the per-kind map: a predicate we cannot express makes the
     // element unmappable regardless of how well the rest of its shape fits.
-    if (isConditional(rule)) {
+    //
+    // SCOPED TO AdjustDegreeOfSuccess ON PURPOSE. Now that Foundry predicates CAN be
+    // mapped (see mapPredicate), this gate could be lifted for every kind — but
+    // `needs-combat-tags` is the corpus's largest blocker at ~1,600 elements, so doing
+    // that moves a great deal of content at once and is its own measured change. The
+    // narrow version is what the degree work needs and what its numbers cover.
+    if (isConditional(rule) && !(key === "AdjustDegreeOfSuccess" && mapPredicate(rule.predicate, effectTraits))) {
       unsupported("needs-combat-tags", `conditional: ${JSON.stringify(rule.predicate).slice(0, 120)}`);
       return;
     }
@@ -707,6 +922,9 @@ export function mapFoundryRules(rules: readonly RuleElement[]): MappingResult {
       switch (key) {
         case "FlatModifier":
           produced = mapFlatModifier(rule);
+          break;
+        case "AdjustDegreeOfSuccess":
+          produced = mapAdjustDegreeOfSuccess(rule, effectTraits);
           break;
         case "ActiveEffectLike":
           produced = mapActiveEffectLike(rule);
