@@ -6,9 +6,11 @@
 import { describe, expect, it } from "vitest";
 import {
   choiceExtractor,
+  classifyCondition,
   degreeExtractor,
   extractFromProse,
   grantExtractor,
+  isolateCondition,
   modifierExtractor,
   parseProse,
   proficiencyExtractor,
@@ -211,7 +213,10 @@ describe("modifierExtractor", () => {
       modifierExtractor,
     ]);
     const governed = ex.find((e) => e.draft.target === "attack");
-    expect(governed?.gaps.some((g) => g.field === "when" && g.reason === "conditional-unmapped")).toBe(true);
+    // The condition is CARRIED (the point of this test); `combat-state` is what it is —
+    // "while you are raging" is momentary state, blocked on the model rather than on a
+    // missing word. See classifyCondition.
+    expect(governed?.gaps.some((g) => g.field === "when" && g.reason === "combat-state")).toBe(true);
   });
 
   describe("trait scopes become a predicate, not a gap", () => {
@@ -266,20 +271,20 @@ describe("modifierExtractor", () => {
       const ex = withCtx("You gain a +1 circumstance bonus to attack rolls against humans.");
       const d = ex.find((e) => e.draft.target === "attack");
       expect(d?.draft.when).toBeUndefined();
-      expect(d?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+      expect(d?.gaps.some((g) => g.reason === "unresolved-vocabulary")).toBe(true);
     });
 
     it("refuses a word that is in no vocabulary at all", () => {
       const ex = withCtx("You gain a +1 status bonus to saving throws against magic.");
       expect(ex[0]?.draft.when).toBeUndefined();
-      expect(ex[0]?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+      expect(ex[0]?.gaps.some((g) => g.reason === "unresolved-vocabulary")).toBe(true);
     });
 
     it("still gaps a governor-style condition, which is not a trait scope", () => {
       const ex = withCtx("You gain a +1 status bonus to attack rolls while you are raging.");
       const d = ex.find((e) => e.draft.target === "attack");
       expect(d?.draft.when).toBeUndefined();
-      expect(d?.gaps.some((g) => g.reason === "conditional-unmapped")).toBe(true);
+      expect(d?.gaps.some((g) => g.reason === "combat-state")).toBe(true);
     });
 
     it("emits a predicate OR a gap, never both and never neither", () => {
@@ -374,9 +379,11 @@ describe("modifierExtractor", () => {
       }
     });
 
-    it("still calls a real vocabulary miss conditional-unmapped", () => {
+    it("still calls a real vocabulary miss what it is", () => {
+      // Was asserted as `conditional-unmapped` when that reason absorbed everything;
+      // `unresolved-vocabulary` is the reason actually named for a vocabulary miss.
       const ex = withCtx("You gain a +1 status bonus to saving throws against magic.");
-      expect(ex[0]?.gaps.find((g) => g.field === "when")?.reason).toBe("conditional-unmapped");
+      expect(ex[0]?.gaps.find((g) => g.field === "when")?.reason).toBe("unresolved-vocabulary");
     });
 
     it("carries the predicate onto an anaphoric draft as well", () => {
@@ -734,5 +741,94 @@ describe("modifierExtractor — a trailing clause that is its own effect", () =>
     // conditional-unmapped it told a reviewer to go find a word we lack.
     const adjusts = extractFromProse(adhyabhau, [degreeExtractor], traits);
     expect(adjusts[0]!.gaps).toEqual([{ field: "when", reason: "anaphoric", raw: "against such an effect" }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// classifyCondition — splitting the `conditional-unmapped` bucket
+// ---------------------------------------------------------------------------
+//
+// Fixtures are REAL condition strings from the corpus, quoted as the parser built them
+// (governed ones therefore include the clause they govern — that is the finding these
+// tests lock, not a typo).
+
+describe("isolateCondition", () => {
+  it("drops the main clause a governor's condition was glued to", () => {
+    // THE governed-clause bug: `condition` is built as governor + the WHOLE clause, so
+    // the string handed to the scope resolver contains the effect text. Every trait
+    // pattern is `^against …$` anchored, so such a condition could never resolve.
+    expect(isolateCondition("as long as you have these temporary hit points, you gain a +1 circumstance bonus to AC"))
+      .toBe("as long as you have these temporary hit points");
+  });
+
+  it("isolates across the other main-clause subjects the corpus uses", () => {
+    expect(isolateCondition("until the start of your next turn, it gains a +2 status bonus")).toBe(
+      "until the start of your next turn",
+    );
+    expect(isolateCondition("when you hit, the target takes 1d6 damage")).toBe("when you hit");
+  });
+
+  it("leaves a condition with no main clause exactly as it is", () => {
+    // Under-isolating is merely noisy; over-isolating would truncate a real condition
+    // and mislabel it, so anything without the boundary is returned untouched.
+    expect(isolateCondition("against emotion and fear effects")).toBe("against emotion and fear effects");
+    expect(isolateCondition("while raging")).toBe("while raging");
+  });
+
+  it("does not treat a comma inside the condition as the boundary", () => {
+    expect(isolateCondition("against cold, fire, or acid effects")).toBe("against cold, fire, or acid effects");
+  });
+});
+
+describe("classifyCondition", () => {
+  it("keeps anaphora first — the referent is what no other reason addresses", () => {
+    expect(classifyCondition("against the triggering attack")).toBe("anaphoric");
+    expect(classifyCondition("against such an effect")).toBe("anaphoric");
+  });
+
+  it("calls a duration what it is, rather than a condition we failed to map", () => {
+    // 104 corpus gaps. "Until the start of your next turn" states no condition at all —
+    // the effect is unconditional and temporary, so sending a reviewer to find a
+    // predicate was sending them after something that was never in the prose.
+    expect(classifyCondition("until the start of your next turn")).toBe("duration-not-condition");
+    expect(classifyCondition("until the start of your next turn, you gain a +1 circumstance bonus to Deception")).toBe(
+      "duration-not-condition",
+    );
+  });
+
+  it("names an action scope, which needs a namespace rather than a word", () => {
+    expect(classifyCondition("to Climb")).toBe("purpose-scope");
+    expect(classifyCondition("to Recall Knowledge")).toBe("purpose-scope");
+  });
+
+  it("calls a bare noun scope a vocabulary miss, and does NOT guess what kind of thing it names", () => {
+    // "against dragons" really is a creature scope and "against magic" really is not,
+    // but they are the SAME SHAPE — so a classifier reading shape alone cannot tell
+    // them apart. Claiming `creature-scope` for both would attach a confident wrong
+    // label to one of them; claiming it for neither is what the evidence supports.
+    expect(classifyCondition("against dragons")).toBe("unresolved-vocabulary");
+    expect(classifyCondition("against humans")).toBe("unresolved-vocabulary");
+    expect(classifyCondition("against magic")).toBe("unresolved-vocabulary");
+  });
+
+  it("names momentary combat state, including when it arrived glued to its clause", () => {
+    expect(classifyCondition("while raging")).toBe("combat-state");
+    expect(classifyCondition("whenever you successfully Recall Knowledge about this creature, you gain a +1 bonus")).toBe(
+      "combat-state",
+    );
+  });
+
+  it("falls through to conditional-unmapped, which finally means what it says", () => {
+    // The honest residual: a compound scope we genuinely cannot state.
+    expect(classifyCondition("against spells and other magical effects from the same tradition as yours")).toBe(
+      "conditional-unmapped",
+    );
+    expect(classifyCondition("against inhaled threats")).toBe("conditional-unmapped");
+  });
+
+  it("prefers the duration reading over the state reading when a clause is both", () => {
+    // Precedence is load-bearing: "until" leads, so this is a duration even though the
+    // isolated text would also satisfy the combat-state leads if tried first.
+    expect(classifyCondition("until you stop enforcing your oath")).toBe("duration-not-condition");
   });
 });

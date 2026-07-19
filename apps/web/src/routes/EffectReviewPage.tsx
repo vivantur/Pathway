@@ -249,10 +249,16 @@ const AGREEMENT_STYLE: Record<string, string> = {
   'foundry-only': 'border-gold/30 bg-gold/10 text-gold',
 };
 
+// Each entry says what the reviewer should DO about it, because that is the question a
+// gap actually poses. The four condition reasons were one bucket until 2026-07-19 —
+// see prose.ts `classifyCondition` for why splitting them aims this queue.
 const GAP_MEANING: Record<string, string> = {
   anaphoric: 'The target is a pronoun ("the check", "the save") pointing at an earlier clause.',
-  'unresolved-vocabulary': 'A term we have no vocabulary for yet.',
-  'conditional-unmapped': 'A condition on this effect we cannot yet express.',
+  'unresolved-vocabulary': 'A term we have no vocabulary for yet — the word may name a creature, or something we do not model at all.',
+  'conditional-unmapped': 'A condition we cannot yet state — usually a compound scope ("spells and other magical effects from the same tradition").',
+  'combat-state': 'Momentary combat state ("while raging", "when adjacent to an ally"). Blocked on the tag model, not on a missing word — nothing to fill in here yet.',
+  'purpose-scope': 'Narrowed to an action ("to Climb", "to Recall Knowledge"). Needs an action tag namespace we have not built.',
+  'duration-not-condition': 'Not a condition at all — the prose states a DURATION ("until the start of your next turn"). The effect is unconditional and temporary.',
   ambiguous: 'The prose admits more than one reading.',
   missing: 'A required field simply is not stated.',
 };

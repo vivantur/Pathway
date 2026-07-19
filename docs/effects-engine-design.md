@@ -1367,6 +1367,65 @@ represent and renders read-only rather than flattening.
 and a reject-with-reason control. The 14 conflicts and 910 gapped candidates remain unresolved
 content-wise — this slice built the tool, and used it on nothing.
 
+### Gap re-triage landed 2026-07-19 — `conditional-unmapped` was a bucket, not a diagnosis
+
+**Zero content change.** `feats.json` and every other dataset are byte-identical; all 2,044
+candidates keep their drafts, targets, values and evidence spans (verified field-by-field —
+0 structural diffs). Only *gap reasons* and the `raw` quoted beside them moved. This slice
+re-aims the review queue and makes the roadmap tallies true; it promotes nothing.
+
+**The measurement.** `conditional-unmapped` held **965 of 1,017 gaps** and meant six
+different things. A reviewer opening one could not tell "go find a word we lack" from "this
+was never a condition in the first place". Split:
+
+| before | after | |
+|---|---|---|
+| | 446 | `combat-state` — momentary state; blocked on the MODEL (decision 3), not vocabulary |
+| 965 | 233 | `conditional-unmapped` — the honest residual: compound scopes we truly cannot state |
+| | 138 | `purpose-scope` — "to Climb", "to Recall Knowledge"; needs an `action:` namespace |
+| | 104 | `duration-not-condition` — "until the start of your next turn" is not a condition |
+| | 44 | `unresolved-vocabulary` — a bare noun no trait vocabulary matched |
+
+This is the `anaphoric` argument (which split 68 gaps out of the same bucket) generalized.
+Each reason now routes to a *different fixer*: a model decision, a namespace, a dataset, or
+nothing at all.
+
+**THE GOVERNED-CLAUSE FINDING — the reason this was worth doing.** For a governed clause the
+extractor builds the condition as `governor + THE WHOLE CLAUSE TEXT`, so the string handed to
+`resolveTraitScope` reads *"as long as you have these temporary hit points, you gain a +1
+circumstance bonus to AC"*. Every trait-scope pattern is `^against …$` anchored — **so a
+governed clause could never resolve, no matter what vocabulary we added.** 217 of the 218
+gaps that looked like parser over-capture, plus the whole combat-state bucket, were
+structurally guaranteed rather than word-blocked. `isolateCondition` recovers the governing
+phrase, and the reviewer now sees the condition instead of the entire sentence.
+
+It is **deliberately not wired into `resolveTraitScope`.** Isolation could make a condition
+newly resolvable, turning a gapped draft into a clean one — a content change, which belongs
+in its own slice behind its own verification. Here it informs only the label.
+
+**`creature-scope` was designed, built, and then rejected on the evidence.** "against
+dragons" really does name a creature and really does need `opponent:trait:` plus a creature
+vocabulary — but "against magic" is the *identical shape* and names no creature. A classifier
+reading shape alone cannot tell them apart, so the reason would have confidently mislabeled
+one of them. The observable fact is weaker and already had a name: `unresolved-vocabulary`.
+Same discipline as the mapper's — report the blocker you can defend, not the one you suspect.
+
+**`GrantItem` was three blockers wearing one key.** Of 620 on feats: ~313 name a static
+entity, ~182 name an ACTION, and ~90 name no entity at all — their uuid is
+`{item|flags.system.rulesSelections.…}`, an unresolved ChoiceSet reference. That last group's
+blocker is the CHOICE, so it now reports `needs-runtime-choice`: `needs-granting` 414 → 345,
+`needs-runtime-choice` 207 → 276. A balanced −69/+69 that stops overstating the
+entity-modelling work and puts those elements in the tally that would justify building
+choices.
+
+**Two things this measured for the work after it.** (1) Core's `grantSchema` *already* has
+`{ type: 'action', ref }`, and `grep '"action"' foundry.ts` returns nothing — the mapper never
+emits the grant kind it already models, so ~182 action grants are reachable with no schema
+change. (2) 283 distinct feats grant another feat (50 conditionally, 44 `allowDuplicate`).
+Per the owner (2026-07-19) those land in a **`grants` field of their own, outside the
+`PassiveEffect` union** — a feat granting a feat is a build-graph edge, not a number on a
+sheet, and the builder must walk it (transitively) rather than the effects engine folding it.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the

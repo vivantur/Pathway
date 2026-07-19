@@ -221,6 +221,14 @@ const MOVEMENTS: Readonly<Record<string, "land" | "fly" | "swim" | "climb" | "bu
  * have to be built first. Naming them explicitly is what turns "unknown-key" noise
  * into an actionable tally — the report can say WHY 949 ItemAlterations are absent.
  */
+/**
+ * A uuid that is a Foundry data reference rather than a compendium path —
+ * `{item|flags.system.rulesSelections.feat}`, `{actor|flags.system.gunslinger.…}`.
+ * It names whatever a ChoiceSet earlier on the same item selected, so there is no
+ * entity to resolve until that choice is made.
+ */
+const UNRESOLVED_UUID = /^\{(?:item|actor)\|/;
+
 const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detail: string }>> = {
   ItemAlteration: { reason: "needs-item-model", detail: "alters an item's fields" },
   AdjustStrike: { reason: "needs-item-model", detail: "alters a strike" },
@@ -229,6 +237,8 @@ const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detai
   DamageDice: { reason: "needs-item-model", detail: "adds damage dice to a strike" },
   CriticalSpecialization: { reason: "needs-item-model", detail: "weapon critical specialization" },
   MartialProficiency: { reason: "needs-item-model", detail: "weapon/armor category proficiency" },
+  // Only reached for a uuid that names a STATIC entity — the unresolved-choice form is
+  // split off above, since its blocker is the choice rather than the granting.
   GrantItem: { reason: "needs-granting", detail: "grants another item/feat" },
   ChoiceSet: { reason: "needs-runtime-choice", detail: "prompts a selection at choice time" },
   RollOption: { reason: "needs-combat-tags", detail: "produces a roll option/tag" },
@@ -896,6 +906,21 @@ export function mapFoundryRules(
     if (block) {
       unsupported(block.reason, block.detail);
       return;
+    }
+
+    // GrantItem is THREE blockers wearing one key, so it dispatches on its target
+    // before the flat table. Measured over the feat corpus: of 620 elements, ~313 name
+    // a static entity (a feat, a class/ancestry feature), ~182 name an ACTION, and ~90
+    // name no entity at all — their uuid is an unresolved ChoiceSet reference like
+    // `{item|flags.system.rulesSelections.feat}`. That last group's blocker is the
+    // CHOICE, not the granting: reporting it as `needs-granting` overstated how much of
+    // the granting work is entity-modelling and hid it from the runtime-choice tally.
+    if (key === "GrantItem") {
+      const uuid = typeof rule.uuid === "string" ? rule.uuid : "";
+      if (UNRESOLVED_UUID.test(uuid)) {
+        unsupported("needs-runtime-choice", `grant target is an unresolved choice: ${uuid.slice(0, 60)}`);
+        return;
+      }
     }
 
     const known = KNOWN_UNMAPPED[key];

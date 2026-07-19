@@ -47,7 +47,7 @@ this section has been wrong before, and a stale status is worse than none.)*
   proven against it: the web app typechecks/builds against `dist`, and a CommonJS
   `require('@pathway/core')` returns working rules math. ESM was never the obstacle
   (Node ≥22.12 `require(esm)` works); shipping raw `.ts` was.
-- ✅ **Build core** — no longer three slices; **31 modules, 704 tests**. Roughly:
+- ✅ **Build core** — no longer three slices; **31 modules, 786 tests**. Roughly:
   - *scalar rules* — `stats.ts`, `proficiency.ts`, `derived.ts`, `companion.ts`
   - *content schemas* (Zod) — `content.ts` envelope + `spell` `ancestry` `background`
     `feat`
@@ -355,7 +355,7 @@ npm run deploy            # register slash commands globally
 npm run deploy:guild      # register slash commands to the dev guild (instant)
 npm run dev:web           # Vite dev server for the web app
 npm run build:web         # production build of the web app
-npm test                  # ALL workspace tests (core 704 · bot 341 · web 101 · db 15)
+npm test                  # ALL workspace tests (core 786 · bot 341 · web 101 · db 15)
 npm run typecheck         # ALL workspaces — see the blindspot below. RUN THIS.
 npm --workspace packages/core run test   # core tests only
 npm --workspace apps/bot run test        # bot rules tests only

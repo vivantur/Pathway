@@ -43,14 +43,34 @@ export type CandidateSource = "parser" | "foundry";
 export type GapReason =
   /** The prose refers back to something earlier ("the check", "the save"). */
   | "anaphoric"
-  /** A term we have no vocabulary for yet. */
+  /** A term we have no vocabulary for yet. Also what a bare "against <noun>" scope
+   *  becomes once every trait vocabulary has declined it — "against dragons" (a
+   *  creature type) and "against magic" (no creature at all) are the same SHAPE, so
+   *  the honest claim is that the word is unknown, not what kind of thing it names. */
   | "unresolved-vocabulary"
   /** There is a condition on this effect that we cannot express (see predicate.ts). */
   | "conditional-unmapped"
   /** The prose admits more than one reading. */
   | "ambiguous"
   /** The field simply is not stated. */
-  | "missing";
+  | "missing"
+  // The three below SPLIT what `conditional-unmapped` used to absorb (along with
+  // `unresolved-vocabulary` above, which already existed and now earns its keep).
+  // Measured on the corpus it held 965 gaps meaning six different things, and a
+  // reviewer opening one could not tell "go find a word we lack" from "this was never
+  // a condition". Each names the BLOCKER and routes to a different fixer — the same
+  // argument that split `anaphoric` out of it (see prose.ts, `classifyCondition`).
+  //
+  /** Momentary combat state — "while raging", "when you are adjacent to an ally".
+   *  The deferred half of decision 3; blocked on the model, not on vocabulary. */
+  | "combat-state"
+  /** Narrowed to an ACTION — "to Climb", "to Recall Knowledge". Blocked on an
+   *  `action:` tag namespace, which does not exist yet. */
+  | "purpose-scope"
+  /** Not a condition at all — "until the start of your next turn" states a DURATION.
+   *  Filed as a missing `when` it sent reviewers hunting for a predicate that was
+   *  never in the prose; the effect is unconditional and merely temporary. */
+  | "duration-not-condition";
 
 /** One hole in a draft, and what a human needs in order to fill it. */
 export interface Gap {

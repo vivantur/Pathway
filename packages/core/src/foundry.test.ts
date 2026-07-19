@@ -39,6 +39,28 @@ describe("mapFoundryRules — the report invariant", () => {
     ]);
   });
 
+  it("blames the CHOICE, not the granting, when a grant's target is an unresolved selection", () => {
+    // Measured: ~90 of 620 GrantItems on feats point at `{item|flags.…rulesSelections.x}`
+    // — whatever a ChoiceSet earlier on the item selected. There is no entity to resolve
+    // until that choice is made, so the blocker is the choice. Reporting these as
+    // `needs-granting` overstated the entity-modelling work and hid them from the
+    // runtime-choice tally, which is the number that would justify building choices.
+    const { report } = mapFoundryRules([
+      { key: "GrantItem", uuid: "{item|flags.system.rulesSelections.feat}" },
+      { key: "GrantItem", uuid: "{actor|flags.system.gunslinger.initialDeed}" },
+    ]);
+    expect(report.map((e) => e.reason)).toEqual(["needs-runtime-choice", "needs-runtime-choice"]);
+  });
+
+  it("still calls a STATIC entity grant needs-granting", () => {
+    const { report } = mapFoundryRules([
+      { key: "GrantItem", uuid: "Compendium.pf2e.feats-srd.Item.Domain Initiate" },
+      { key: "GrantItem", uuid: "Compendium.pf2e.actionspf2e.Item.Bon Mot" },
+      { key: "GrantItem" }, // no uuid at all — still a grant, still unmapped
+    ]);
+    expect(report.map((e) => e.reason)).toEqual(["needs-granting", "needs-granting", "needs-granting"]);
+  });
+
   it("reports an unknown kind rather than ignoring it", () => {
     const { report } = mapFoundryRules([{ key: "SomeNewFoundryThing" }]);
     expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "unknown-key" });

@@ -182,7 +182,7 @@ export function segment(normalized: string): Clause[] {
 // 3. the parse entry point + the extractor framework
 // ---------------------------------------------------------------------------
 
-import type { DraftEffect, Gap, SourceProposals } from "./candidate.js";
+import type { DraftEffect, Gap, GapReason, SourceProposals } from "./candidate.js";
 import { CONDITION_SLUGS } from "./conditions.js";
 import { DEGREES, type DegreeOfSuccess } from "./degree.js";
 import type { Predicate } from "./predicate.js";
@@ -613,6 +613,87 @@ export function resolveTraitScope(condition: string, ctx: ParseContext): Predica
   return null;
 }
 
+// --- classifying a condition we could NOT resolve ---------------------------
+//
+// `resolveTraitScope` returning null used to produce one of two gap reasons —
+// `anaphoric` or `conditional-unmapped` — and the second was a bucket, not a
+// diagnosis. Measured: 965 gaps, of which the residual that genuinely means "we lack
+// a word" is under a quarter. The rest name four DIFFERENT blockers with four
+// different fixers, and a reviewer could not tell them apart.
+//
+// THE GOVERNED-CLAUSE FINDING, which is why this exists at all. For a governed clause
+// the caller builds the condition as `governor + THE WHOLE CLAUSE TEXT` — so the string
+// handed to `resolveTraitScope` reads "as long as you have these temporary hit points,
+// you gain a +1 circumstance bonus to AC". Every trait-scope pattern is `^against …$`
+// anchored, so a governed clause CANNOT resolve regardless of vocabulary: 217 of the 218
+// "over-captured" gaps, plus the combat-state bucket, are structurally guaranteed rather
+// than word-blocked. `isolateCondition` recovers the governing phrase before classifying,
+// so the reason — and the `raw` quoted to the reviewer — describe the CONDITION rather
+// than the whole sentence.
+//
+// DELIBERATELY NOT WIRED INTO `resolveTraitScope`. Isolation could make a condition
+// newly resolvable, which would turn a gapped draft into a clean one and change what
+// ships. That is a content change and belongs in its own slice, behind its own
+// verification. Here it only informs the LABEL, so this whole module stays a re-triage:
+// the same drafts, the same gaps, aimed correctly.
+
+/**
+ * The subordinate clause a governor introduces, without the main clause it governs:
+ * "as long as you have these temporary hit points, you gain a +1 circumstance bonus"
+ * → "as long as you have these temporary hit points".
+ *
+ * Splits at the first comma followed by a main-clause subject ("you gain", "it gains"),
+ * which is the boundary English actually marks. A condition with no such boundary is
+ * returned unchanged — under-isolating leaves the old (verbose) text, which is merely
+ * noisy, while over-isolating would truncate a real condition and mislabel it.
+ */
+export function isolateCondition(condition: string): string {
+  const m = /^(.*?),\s+(?:and\s+)?(?:you|it|they|the\s+\w+|your\s+\w+)\s+\w/i.exec(condition.trim());
+  const head = m ? m[1]!.trim() : condition.trim();
+  return head.length > 0 ? head : condition.trim();
+}
+
+/** Leading duration markers — "until the start of your next turn", "for 1 round". */
+const DURATION_LEAD = /^(?:until|for\s+(?:the\s+rest|\d)|through\s+the\s+end|for\s+\d+\s+(?:round|minute|hour|turn))/i;
+/** A governor that introduces momentary state rather than a category of effect. */
+const COMBAT_STATE_LEAD = /^(?:while|when|whenever|if|as\s+long\s+as|during|after|before|once|unless|each\s+time|any\s+time)\b/i;
+/** A purpose scope: "to Climb", "to Recall Knowledge" — narrowed to an ACTION. */
+const PURPOSE_LEAD = /^to\s+[a-z]/i;
+/**
+ * A bare "against <noun>" that no trait vocabulary matched.
+ *
+ * This started out as a `creature-scope` reason, on the reading that "against dragons"
+ * names a creature type and needs `opponent:trait:` plus a creature vocabulary. It does
+ * — but the SHAPE cannot tell you that: "against magic" is the identical shape and names
+ * no creature. Claiming `creature-scope` from a bare noun would assert something the
+ * evidence does not support, which is the same over-claim the mapper refuses elsewhere.
+ * What is actually observable is weaker and already has a reason: no vocabulary we hold
+ * matched this word.
+ */
+const BARE_NOUN_SCOPE = /^against\s+(?:a|an|the)?\s*[a-z][a-z-]*s?\s*$/i;
+
+/**
+ * Why a condition we could not resolve is unresolved — the gap reason a reviewer reads.
+ *
+ * Called ONLY after `resolveTraitScope` has already returned null, which is what makes
+ * `unresolved-vocabulary` sound here: a bare noun reaching this point means every trait
+ * vocabulary already declined it. Order matters and is pinned by tests: `anaphoric`
+ * stays first (it is about the REFERENT, which no other reason addresses), then the
+ * shapes that are not conditions at all, then state, then the honest residual.
+ *
+ * Conservative by construction — anything unrecognized falls through to
+ * `conditional-unmapped`, the reason that already means "we cannot say".
+ */
+export function classifyCondition(condition: string): GapReason {
+  if (isAnaphoricScope(condition)) return "anaphoric";
+  const text = isolateCondition(condition);
+  if (DURATION_LEAD.test(text)) return "duration-not-condition";
+  if (PURPOSE_LEAD.test(text)) return "purpose-scope";
+  if (BARE_NOUN_SCOPE.test(text)) return "unresolved-vocabulary";
+  if (COMBAT_STATE_LEAD.test(text)) return "combat-state";
+  return "conditional-unmapped";
+}
+
 /**
  * Resolve a possibly-COMPOUND target run ("Nature, Society, and Reflex saves") into the
  * selectors it names and any anaphoric fragments. Each element resolves independently via
@@ -701,8 +782,13 @@ export const modifierExtractor: Extractor = (clause, ctx = {}) => {
           // Filing it as `conditional-unmapped` told a reviewer to go find a word we
           // lack, when what they actually need is the referent. 68 gaps were
           // mislabelled this way; the fix costs nothing and aims the queue correctly.
-          reason: isAnaphoricScope(condition) ? "anaphoric" : "conditional-unmapped",
-          raw: condition.slice(0, 80),
+          // `classifyCondition` generalizes exactly that argument to four more
+          // blockers that the same bucket was absorbing.
+          reason: classifyCondition(condition),
+          // The ISOLATED condition, not the whole governed clause: for a governed
+          // clause `condition` is the governor plus the entire sentence, so quoting it
+          // raw showed the reviewer the effect text as if it were the unresolved part.
+          raw: isolateCondition(condition).slice(0, 80),
         }]
       : [];
     const whenField = when ? { when } : {};
@@ -1164,7 +1250,7 @@ export const degreeExtractor: Extractor = (clause, ctx = {}) => {
     // predicate, one we cannot becomes a gap — never both, never neither.
     const when = scope ? resolveTraitScope(scope, ctx) : null;
     const scopeGap: Gap[] = scope && !when
-      ? [{ field: "when", reason: isAnaphoricScope(scope) ? "anaphoric" : "conditional-unmapped", raw: scope.slice(0, 80) }]
+      ? [{ field: "when", reason: classifyCondition(scope), raw: isolateCondition(scope).slice(0, 80) }]
       : [];
     const whenField = when ? { when } : {};
 
