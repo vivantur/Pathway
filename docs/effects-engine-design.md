@@ -71,6 +71,118 @@ rebuilt:
 
 ---
 
+## Where this stands — distance to the first-goal state (measured 2026-07-18)
+
+*Everything in this section was verified against the code and the SHIPPED DATA, not
+against the status prose elsewhere in this repo. Re-verify before trusting it; the
+one-liners are all reproducible with a `node -e` over the datasets.*
+
+The owner's **first-goal state** — the engine's essential functions — is three things:
+
+1. the web character builder assigns **passive effects AND new actions** from chosen feats;
+2. users get **basic-strike effects from weapons + runes**, Pathbuilder-style, on the sheet;
+3. **spell effects work when cast**, including heightening (spell *slots* explicitly later).
+
+**The headline: the engine is largely built; the content and the app wiring are not.**
+Every goal below is blocked on authoring + wiring rather than on missing engine
+capability — with ONE exception (weapons), which needs genuinely new engine surface.
+
+### Goal 1 — feats → passives + actions
+
+**Passives are DONE and live.** `characterEffects()` (`apps/web/src/features/builder/
+rules.ts`) walks the chosen feats, takes `effects` + `resolveChoiceEffects(choices)`, and
+runs them through core's `collectPassiveSheetEffects` onto the sheet. That wire is complete.
+
+**The constraint is coverage, and it is small: 265 of 6,116 feats carry effects (4.3%).**
+The review queue's ceiling is measured: 1,096 feats have at least one candidate, so
+resolving the ENTIRE queue reaches **~17.9%**. Of those, **590 feats are fully resolvable
+today with no gap-filling at all** — they are merely undecided, which is the cheapest
+coverage in the project.
+
+**Actions are NOT started.** Zero feats carry actions; the feat schema has no `actions`
+field (it parses action *cost*, a different thing). Core has `GrantedAction` and a tested
+Layer-2 interpreter, and the BOT executes trees — but **`apps/web` never imports the
+automation engine at all.**
+
+### Goal 2 — weapons, runes, strikes (the biggest gap, and the only one needing new engine)
+
+Weapon DATA is already rich: 5,218 items, weapons carrying `damageDie`, `damageType`,
+`group`, `hands`, `range`, `traits`. What is missing is the mechanical layer:
+
+- **`attack` and `damage` selectors return 0.** They are explicitly RESERVED in
+  `selectors.ts` ("per-weapon, the resolved model does not carry them yet"). So today **no
+  effect can modify an attack or damage roll.**
+- **No item/weapon schema in core** — `items.json` is validated by nothing.
+- **No rune system.** The 28 rune-ish entries are wondrous items; potency/striking are not
+  modeled.
+- **No Strike model** — nothing computes "your Strike with this weapon is +X for YdZ+W".
+
+This is the same missing piece that blocks the bot's scoped attack/damage selectors (see
+CLAUDE.md on Enfeebled/Clumsy), so it pays off twice.
+
+### Goal 3 — spells on cast, with heightening (further off than it looks)
+
+- **0 of 1,818 spells carry effects or automation.**
+- **The spell schema has no `effects`/`automation` field at all** — deliberately deferred
+  in `spell.ts` to "a later effect system".
+- `heightening.ts` is two pure functions (`autoHeightenRank`, `heightenIncrements`) — the
+  rank MATH, not the application of heightened effects.
+- The 543 spells carrying `heightening` hold **raw Foundry shape**
+  (`levels: {3: {damage: {…}}}`), a different encoding from core's `heightenEntrySchema`.
+- **No producer exists for spell automation.** The prose parser emits Layer-1 passives only,
+  so trees would be hand-authored via `AutomationEditor` — viable for the top ~50 spells,
+  not for 1,818.
+
+### Cross-cutting: the shipped content does not conform to core's schemas
+
+**Feats, ancestries, backgrounds and spells all validate 0/300 against core's content
+schemas.** The schemas are real and tested; the shipped JSON is a separate, older ingest
+shape that predates them. Nothing is broken by this today — the web reads the JSON with its
+own TS types, and the `effects` field genuinely IS core's `PassiveEffect`, which is exactly
+why goal 1 works. But it means "add an automation field to the spell schema" would be adding
+a field to a schema nothing currently conforms to. This is the "`packages/db` not wired, the
+JSON is transitional" gap showing its true size.
+
+### Suggested ordering
+
+1. **Finish goal 1's passives** — nearest to done, and `resolution.ts` unblocked exactly it.
+   590 feats are decidable before anyone fills a single gap.
+2. **Weapons/strikes** — biggest lift, makes the sheet feel real, unblocks the bot too.
+3. **Spells** — needs a schema field, a web execution surface, and hand authoring.
+
+Goal 1's *actions* half shares the "no web automation surface" blocker with goal 3, so those
+two are probably cheaper together than in goal 1's slot.
+
+### The silent corpus — 5,020 feats that never reach review (measured 2026-07-18)
+
+The review queue shows 1,820 candidates over **1,096** feats. The other **5,020 feats propose
+nothing at all**, and until now there was no way to see them — which made the queue look like
+the whole problem when it is 18% of it. Classified by why they are silent:
+
+| count | why | |
+|---|---|---|
+| 3,302 | **no producer saw it** — absent from the Foundry ingest AND the parser found nothing | |
+| 1,718 | **Foundry had rule elements, every one mapped to `unsupported`** | |
+
+For that second group the blocking reasons are already recorded per element by `foundry.ts`,
+and **they are the roadmap, restated from the other side**:
+
+| elements | reason | |
+|---|---|---|
+| 1,352 | `needs-item-model` | ← this is goal 2 |
+| 968 | `needs-combat-tags` | |
+| 420 | `needs-granting` | |
+| 288 | `unsupported-selector` | ← the reserved `attack`/`damage`, also goal 2 |
+| 266 | `unsupported-shape` | |
+| 207 | `needs-runtime-choice` | |
+| 27 | `unsupported-value` | |
+
+(Element counts, not feat counts — one feat can be blocked several ways.) That
+`needs-item-model` is the single largest blocker is independent confirmation that the weapon
+work is correctly ranked #2, arrived at from the corpus rather than from intuition.
+
+---
+
 ## The core framing: two interlocking layers
 
 Everything divides into two paradigms that meet at one bridge.
