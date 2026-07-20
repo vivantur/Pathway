@@ -33,6 +33,11 @@ export * from './derived.js';
 // the shared list of the 16 skill slugs. A shared primitive of both layers.
 export * from './selectors.js';
 
+// The action vocabulary — the finite set of action names a predicate may be gated
+// on (`action:demoralize`), plus each skill action's skill(s). A TAG NAMESPACE, not
+// runtime state: whoever performs an action asserts the tag.
+export * from './actions.js';
+
 // The expression language — the bounded, sandboxed evaluator for effect values
 // (AST + `evaluate`/`parseExpr` + the `ExprScope` seam). One implementation for
 // both the Foundry-ingest value path and the effect engine. No `eval`.

@@ -40,6 +40,7 @@ import {
   type RankValue,
 } from "./passive.js";
 import { isSelector, isSkillSlug, SAVE_SELECTORS, SKILL_SLUGS, type Selector } from "./selectors.js";
+import { ACTION_SKILLS, isActionSlug, isSkillAction } from "./actions.js";
 import { grantedActionSchema } from "./automation.js";
 import { dedupeGrants, entityGrantSchema, type EntityGrant } from "./grants.js";
 
@@ -419,6 +420,29 @@ function mapPredicateLeaf(leaf: string, effectTraits: ReadonlySet<string>): Pred
   const inflicts = /^inflicts:([a-z][a-z0-9-]*)$/.exec(leaf);
   if (inflicts) return { tag: `effect:causes:${inflicts[1]}` };
 
+  // `action:trait:X` is a filter OVER actions ("any action with the downtime
+  // trait"), not an action name — checked BEFORE `action:` so the slug arm below
+  // never sees a leaf whose second segment is `trait`.
+  const actionTrait = /^action:trait:([a-z][a-z0-9-]*)$/.exec(leaf);
+  if (actionTrait) {
+    return effectTraits.has(actionTrait[1]!) ? { tag: `action:trait:${actionTrait[1]}` } : null;
+  }
+
+  // `action:demoralize` — the action being performed. Confirmed against the action
+  // vocabulary for the same reason the bare-trait arm below confirms against
+  // `effectTraits`: Foundry's action slugs include feat-granted actions (Battle
+  // Medicine, Scare to Death) and creature abilities (`swallow-whole`) that our
+  // vocabulary does not name, and inventing a tag for one produces a condition
+  // nothing can ever satisfy.
+  //
+  // Trailing segments are REFUSED, not truncated. The corpus has 10 such leaves —
+  // `action:perform:keyboards`, `action:administer-first-aid:stabilize` — where the
+  // segment names a VARIANT of the action. Mapping those to bare `action:perform`
+  // would widen a keyboards-only bonus to every Perform, which is the wrong-sheet
+  // bug this boundary exists to prevent.
+  const action = /^action:([a-z][a-z0-9-]*)$/.exec(leaf);
+  if (action) return isActionSlug(action[1]) ? { tag: `action:${action[1]}` } : null;
+
   // A BARE string is a roll option, and most of them are not traits at all (feat
   // slugs, action names, flags). Only accept one the caller's vocabulary confirms is
   // a real effect trait — the same discipline prose.ts applies, and for the same
@@ -647,6 +671,82 @@ function mapAdjustDegreeOfSuccess(rule: RuleElement, effectTraits: ReadonlySet<s
         ...(when ? { when } : {}),
       }) as PassiveEffect,
   );
+}
+
+// ---------------------------------------------------------------------------
+// narrowing a broadcast skill fan-out by the action its predicate names
+// ---------------------------------------------------------------------------
+//
+// Foundry's `skill-check` selector means "any skill check", and we faithfully fan it
+// out to all 16 skills. That was invisible while conditional elements were refused
+// outright; once they map, it produces noise. Sturdy Bindings ("when you roll a
+// critical failure on a check to Grapple") became 16 effects — including one telling
+// the sheet that ARCANA improves when Grappling.
+//
+// Nothing there is arithmetically wrong: `action:grapple` is never asserted next to
+// an Arcana roll, so the other 15 can never fire. But a sheet that lists "Arcana: +1
+// when Grappling" is misleading to read, and 67 corpus elements do this — 1,072
+// effects where ~100 say the same thing. Inert clutter is still a wrong sheet.
+//
+// So: when the predicate positively names skill actions, narrow a FANNED-OUT skill
+// target list to the skills those actions actually use. This is the one place the
+// action→skill map does real work at ingest.
+//
+// THREE GUARDS, each preventing a way this could silently lose a real effect:
+//   • NEGATION DISQUALIFIES. `not: action:grapple` means "every skill check EXCEPT
+//     Grapple" — narrowing to Athletics would invert the meaning and drop the 15
+//     skills where the effect genuinely applies.
+//   • A NON-SKILL ACTION DISQUALIFIES. Escape is a basic action our source assigns no
+//     skill; there is nothing to narrow to, and guessing Athletics would be a rules
+//     claim.
+//   • ONLY FAN-OUTS ARE NARROWED. An element that explicitly targets one skill is
+//     left alone even if it disagrees with the map — that is a content question, and
+//     dropping it here would hide it.
+function positiveActionSkills(pred: Predicate | null): ReadonlySet<string> | null {
+  if (!pred) return null;
+  const skills = new Set<string>();
+  let sawAction = false;
+  let disqualified = false;
+
+  const walk = (p: Predicate, negated: boolean): void => {
+    if (disqualified) return;
+    if ("tag" in p) {
+      const m = /^action:([a-z][a-z0-9-]*)$/.exec(p.tag);
+      if (!m) return;
+      sawAction = true;
+      if (negated || !isSkillAction(m[1])) {
+        disqualified = true;
+        return;
+      }
+      for (const s of ACTION_SKILLS[m[1]]) skills.add(s);
+      return;
+    }
+    if ("not" in p) return walk(p.not, !negated);
+    if ("all" in p) return p.all.forEach((c) => walk(c, negated));
+    if ("any" in p) return p.any.forEach((c) => walk(c, negated));
+  };
+  walk(pred, false);
+
+  if (!sawAction || disqualified || skills.size === 0) return null;
+  return skills;
+}
+
+/**
+ * Drop the skills a broadcast `skill-check` fan-out reached that the predicate's
+ * action cannot actually be attempted with. A no-op unless the effect list holds
+ * MORE THAN ONE skill target — see the guards above.
+ */
+function narrowFannedSkillTargets(produced: PassiveEffect[], when: Predicate | null): PassiveEffect[] {
+  const skills = positiveActionSkills(when);
+  if (!skills) return produced;
+
+  const isSkillTarget = (e: PassiveEffect): boolean => "target" in e && isSkillSlug(e.target);
+  if (produced.filter(isSkillTarget).length <= 1) return produced;
+
+  const kept = produced.filter((e) => !isSkillTarget(e) || skills.has((e as { target: string }).target));
+  // Defensive: an action whose only skill is an (unenumerable) lore would narrow to
+  // nothing. Keeping the fan-out beats silently producing no effect at all.
+  return kept.some(isSkillTarget) ? kept : produced;
 }
 
 /** Foundry writes proficiency ranks as ActiveEffectLike paths into their actor data. */
@@ -1094,12 +1194,15 @@ export function mapFoundryRules(
     // Checked BEFORE the per-kind map: a predicate we cannot express makes the
     // element unmappable regardless of how well the rest of its shape fits.
     //
-    // SCOPED TO AdjustDegreeOfSuccess ON PURPOSE. Now that Foundry predicates CAN be
-    // mapped (see mapPredicate), this gate could be lifted for every kind — but
-    // `needs-combat-tags` is the corpus's largest blocker at ~1,600 elements, so doing
-    // that moves a great deal of content at once and is its own measured change. The
-    // narrow version is what the degree work needs and what its numbers cover.
-    if (isConditional(rule) && !(key === "AdjustDegreeOfSuccess" && mapPredicate(rule.predicate, effectTraits))) {
+    // APPLIES TO EVERY KIND (2026-07-20). This gate was once scoped to
+    // AdjustDegreeOfSuccess, on the stated grounds that widening it "moves a great
+    // deal of content at once". MEASURED, that was wrong: of the 1,779 elements
+    // blocked here, only 97 had a predicate the leaf mapper could already state. The
+    // rest were blocked by the leaf VOCABULARY, not by this gate — which is why the
+    // action vocabulary (actions.ts) landed alongside it and does the real work,
+    // taking the total to 265.
+    const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits) : null;
+    if (isConditional(rule) && !when) {
       unsupported("needs-combat-tags", `conditional: ${JSON.stringify(rule.predicate).slice(0, 120)}`);
       return;
     }
@@ -1138,6 +1241,27 @@ export function mapFoundryRules(
           unsupported("unknown-key", `no mapper for "${key}"`);
           return;
       }
+      // Attach the predicate the gate above already proved mappable. WITHOUT THIS,
+      // lifting the gate would ship every conditional FlatModifier as a PERMANENT
+      // bonus — the exact wrong-sheet bug this boundary exists to prevent, and a
+      // regression rather than a coverage win. AdjustDegreeOfSuccess is skipped
+      // because `mapAdjustDegreeOfSuccess` attaches its own.
+      //
+      // `proficiency` is the one kind with no `when` — deliberately, since a raised
+      // rank is a permanent property of the sheet (see passive.ts). Its schema is
+      // `.strict()`, so a conditional ActiveEffectLike cannot express its condition
+      // at all and is REFUSED here rather than shipped unconditional.
+      if (when && key !== "AdjustDegreeOfSuccess") {
+        const uncarryable = produced.find((e) => e.kind === "proficiency");
+        if (uncarryable) {
+          unsupported("needs-combat-tags", `conditional ${uncarryable.kind} effect cannot carry a predicate`);
+          return;
+        }
+        produced = produced.map((e) => ({ ...e, when }) as PassiveEffect);
+      }
+      // AFTER the attach, and outside the branch above, because AdjustDegreeOfSuccess
+      // attaches its own `when` and fans out over `skill-check` exactly like the rest.
+      produced = narrowFannedSkillTargets(produced, when);
       effects.push(...produced);
       report.push({ index, key, outcome: "mapped", produced: produced.length });
     } catch (e) {

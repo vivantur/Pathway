@@ -155,10 +155,113 @@ describe("mapFoundryRules — conditional elements", () => {
 
   it("checks the predicate before the shape, so the reason names the real blocker", () => {
     // This one is ALSO on an unmappable selector; the predicate is the first wall.
+    // Battle Medicine is a FEAT-granted action, deliberately outside actions.ts, so
+    // the predicate stays unmappable. (This test previously used `action:perform`
+    // with `strike-damage` — both of which have since become mappable.)
     const { report } = mapFoundryRules([
-      { key: "FlatModifier", predicate: ["action:perform"], selector: "strike-damage", value: 2 },
+      {
+        key: "FlatModifier",
+        predicate: ["action:battle-medicine"],
+        selector: "system.attributes.hp.max",
+        value: 2,
+      },
     ]);
     expect(report[0]!.reason).toBe("needs-combat-tags");
+  });
+
+  it("carries the predicate onto a mapped effect of ANY kind, not just degree rewrites", () => {
+    // THE REGRESSION THIS GUARDS. The conditional gate was once scoped to
+    // AdjustDegreeOfSuccess, which was the only mapper attaching its own `when`.
+    // Lifting the gate without attaching the predicate centrally would have shipped
+    // every conditional FlatModifier as a PERMANENT bonus — a wrong sheet, and worse
+    // than the refusal it replaced.
+    const { effects, report } = mapFoundryRules([
+      { key: "FlatModifier", predicate: ["action:demoralize"], selector: "intimidation", type: "status", value: 1 },
+    ]);
+    expect(report[0]!.outcome).toBe("mapped");
+    expect(effects[0]).toMatchObject({
+      kind: "modifier",
+      target: "intimidation",
+      when: { tag: "action:demoralize" },
+    });
+  });
+
+  it("carries the predicate onto a note", () => {
+    const { effects } = mapFoundryRules([
+      { key: "Note", predicate: ["action:treat-wounds"], selector: "medicine", text: "See the GM." },
+    ]);
+    expect(effects[0]).toMatchObject({ kind: "note", when: { tag: "action:treat-wounds" } });
+  });
+
+  it("refuses a conditional proficiency grant, the one kind that cannot carry a `when`", () => {
+    // `proficiency` has no `when` by design — a raised rank is permanent. Attaching
+    // one would fail its strict schema; shipping it WITHOUT one would grant the rank
+    // unconditionally. Refusing is the only honest outcome.
+    const { effects, report } = mapFoundryRules([
+      {
+        key: "ActiveEffectLike",
+        predicate: ["action:climb"],
+        path: "system.skills.athletics.rank",
+        mode: "upgrade",
+        value: 2,
+      },
+    ]);
+    expect(effects).toEqual([]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-combat-tags" });
+  });
+
+  it("narrows a broadcast skill fan-out to the skills the named action uses", () => {
+    // Sturdy Bindings: `skill-check` + `action:grapple`. Fanning to all 16 would tell
+    // the sheet that Arcana improves when Grappling — inert, but misleading to read.
+    const { effects } = mapFoundryRules([
+      { key: "AdjustDegreeOfSuccess", adjustment: { criticalFailure: "one-degree-better" }, predicate: ["action:grapple"], selector: "skill-check" },
+    ]);
+    expect(effects).toHaveLength(1);
+    expect(effects[0]).toMatchObject({ target: "athletics", when: { tag: "action:grapple" } });
+  });
+
+  it("narrows to ALL skills a many-to-many action uses", () => {
+    // Recall Knowledge is attemptable with seven skills; `lore` is unenumerable and
+    // so is absent from the read vocabulary, leaving six.
+    const { effects } = mapFoundryRules([
+      { key: "FlatModifier", predicate: ["action:recall-knowledge"], selector: "skill-check", type: "status", value: 1 },
+    ]);
+    expect(effects.map((e) => (e as { target: string }).target).sort()).toEqual([
+      "arcana",
+      "crafting",
+      "nature",
+      "occultism",
+      "religion",
+      "society",
+    ]);
+  });
+
+  it("does NOT narrow on a negated action — that would invert the condition", () => {
+    // "any skill check EXCEPT Grapple" applies to the other 15 skills. Narrowing to
+    // Athletics would drop every skill the effect actually reaches.
+    const { effects } = mapFoundryRules([
+      { key: "FlatModifier", predicate: [{ not: "action:grapple" }], selector: "skill-check", type: "status", value: 1 },
+    ]);
+    expect(effects).toHaveLength(16);
+  });
+
+  it("does NOT narrow on a basic action, which has no skill to narrow to", () => {
+    // Escape is a basic action; our source assigns it no skill, and guessing
+    // Athletics would be a rules claim.
+    const { effects } = mapFoundryRules([
+      { key: "FlatModifier", predicate: ["action:escape"], selector: "skill-check", type: "status", value: 1 },
+    ]);
+    expect(effects).toHaveLength(16);
+  });
+
+  it("leaves an explicitly-targeted single skill alone", () => {
+    // Not a fan-out. Even a disagreement with the action→skill map is a content
+    // question; dropping it here would hide it.
+    const { effects } = mapFoundryRules([
+      { key: "FlatModifier", predicate: ["action:grapple"], selector: "arcana", type: "status", value: 1 },
+    ]);
+    expect(effects).toHaveLength(1);
+    expect(effects[0]).toMatchObject({ target: "arcana" });
   });
 
   it("maps an element whose predicate key is present but empty", () => {
@@ -701,14 +804,42 @@ describe("AdjustDegreeOfSuccess", () => {
     });
   });
 
-  it("refuses an action-scoped predicate rather than dropping it", () => {
-    // We have no action vocabulary; shipping this unconditional would apply a
-    // Climb-only rewrite to every Athletics check. 74 corpus elements are here.
+  it("carries an action-scoped predicate instead of dropping it", () => {
+    // Was refused until the action vocabulary landed (2026-07-20). Shipping this
+    // UNCONDITIONAL would apply a Climb-only rewrite to every Athletics check, so
+    // the contract that matters is that the condition survives — not that the
+    // element is refused.
     const { effects, report } = map({
       key: 'AdjustDegreeOfSuccess',
       adjustment: { success: 'one-degree-better' },
       predicate: ['action:climb'],
       selector: 'athletics',
+    });
+    expect(report[0]!.outcome).toBe('mapped');
+    expect((effects[0] as { when: unknown }).when).toEqual({ tag: 'action:climb' });
+  });
+
+  it("still refuses an action outside the vocabulary", () => {
+    // Scare to Death is feat-granted, so actions.ts does not name it. Inventing a
+    // tag would produce a condition nothing can ever assert.
+    const { effects, report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: ['action:scare-to-death'],
+      selector: 'intimidation',
+    });
+    expect(effects).toEqual([]);
+    expect(report[0]!.reason).toBe('needs-combat-tags');
+  });
+
+  it("refuses an action leaf with a variant segment rather than widening it", () => {
+    // `action:perform:keyboards` is Perform-with-keyboards. Truncating to
+    // `action:perform` would widen the bonus to every Perform.
+    const { effects, report } = map({
+      key: 'AdjustDegreeOfSuccess',
+      adjustment: { success: 'one-degree-better' },
+      predicate: ['action:perform:keyboards'],
+      selector: 'performance',
     });
     expect(effects).toEqual([]);
     expect(report[0]!.reason).toBe('needs-combat-tags');

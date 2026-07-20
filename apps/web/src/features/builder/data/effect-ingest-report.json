@@ -1,33 +1,33 @@
 {
   "sourceCommit": "foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d",
-  "mappedAt": "2026-07-20T01:09:00.197Z",
+  "mappedAt": "2026-07-20T18:53:14.037Z",
   "summary": {
     "entities": 2490,
-    "entitiesWithEffects": 338,
+    "entitiesWithEffects": 356,
     "entitiesWithChoices": 30,
     "entitiesWithGrants": 206,
     "entitiesWithGrantedActions": 0,
     "grantedActions": 0,
     "elements": 5212,
-    "mapped": 717,
-    "effectsProduced": 789,
-    "unsupported": 4495,
+    "mapped": 921,
+    "effectsProduced": 1299,
+    "unsupported": 4291,
     "byReason": {
-      "needs-combat-tags": 1779,
+      "needs-combat-tags": 1514,
       "needs-item-model": 1446,
-      "needs-runtime-choice": 360,
-      "unsupported-selector": 359,
-      "unsupported-shape": 263,
+      "unsupported-shape": 304,
+      "unsupported-value": 50,
+      "needs-runtime-choice": 362,
+      "unsupported-selector": 370,
       "needs-granting": 242,
-      "unsupported-bonus-type": 3,
-      "unsupported-value": 43
+      "unsupported-bonus-type": 3
     },
     "byKey": {
-      "AdjustDegreeOfSuccess": 100,
+      "AdjustDegreeOfSuccess": 56,
       "RollOption": 546,
-      "Note": 266,
+      "Note": 241,
       "ItemAlteration": 949,
-      "FlatModifier": 567,
+      "FlatModifier": 432,
       "Sense": 39,
       "ChoiceSet": 255,
       "ActiveEffectLike": 451,
@@ -257,9 +257,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:grapple\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -410,9 +409,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:visual\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -424,8 +422,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:visual\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -468,16 +466,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "reason": "unsupported-value",
+          "detail": "note text is a Foundry content reference"
         },
         {
           "index": 2,
@@ -641,9 +638,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:pick-a-lock\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -671,9 +667,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:darkness\",\"item:trait:shadow\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -812,9 +807,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:identify-alchemy\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -936,8 +930,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"mental\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 3,
@@ -1273,9 +1267,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:animal\",\"action:make-an-impression\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -3247,9 +3240,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:tumble-through\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -3294,9 +3286,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:inhaled\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -3452,16 +3443,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:hide\",\"action:sneak\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"light\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -3536,15 +3525,14 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:swim\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:swim\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -3607,8 +3595,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:alchemical\"]"
+          "reason": "unsupported-value",
+          "detail": "unparseable value \"max(floor(@weapon.level/4), 1)\""
         },
         {
           "index": 1,
@@ -3620,9 +3608,8 @@
         {
           "index": 2,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"damage\""
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -4030,9 +4017,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"darkness\",\"light\",\"shadow\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -4302,8 +4288,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:lie\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -4442,9 +4428,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:subsist\"]"
+          "outcome": "mapped",
+          "produced": 2
         },
         {
           "index": 1,
@@ -4695,9 +4680,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -4751,9 +4735,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -4853,9 +4836,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:lie\",\"action:sense-motive\",\"action:impersonate\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -5072,8 +5054,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"check\""
         }
       ]
     },
@@ -5106,9 +5088,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:poison\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -5195,8 +5176,8 @@
           "index": 2,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:steal\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"perception-dc\""
         }
       ]
     },
@@ -5241,9 +5222,8 @@
         {
           "index": 2,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -5892,15 +5872,14 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:demon\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"weapon-damage\""
         },
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:demon\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -5937,16 +5916,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"target:trait:devil\",\"origin:trait:devil\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"origin:trait:devil\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -6833,16 +6810,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:dragon\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"origin:trait:dragon\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -7243,9 +7218,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:sleep\",\"inflicts:paralyzed\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -7298,9 +7272,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"sleep\",\"dream\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -7449,8 +7422,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -7755,16 +7728,14 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:elf\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:elf\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -8414,9 +8385,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:fire\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -8483,9 +8453,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -8535,9 +8504,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:emotion\",\"item:trait:fear\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -8976,9 +8944,8 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:gather-information\",\"action:make-an-impression\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -9070,8 +9037,8 @@
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:earn-income\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"lore-skill-check\""
         }
       ]
     },
@@ -9246,16 +9213,14 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -9365,9 +9330,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -9810,16 +9774,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:fey\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"origin:trait:fey\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -10081,9 +10043,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -10189,9 +10150,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:treat-wounds\",\"action:treat-disease\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -10237,16 +10197,14 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:subsist\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:subsist\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -10293,16 +10251,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
@@ -11195,16 +11152,15 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:fear\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:demoralize\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"will-dc\""
         }
       ]
     },
@@ -11341,8 +11297,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"fear\"]"
+          "reason": "needs-runtime-choice",
+          "detail": "interpolated note text"
         }
       ]
     },
@@ -11405,9 +11361,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"plant\",\"poison\",\"wood\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -11656,9 +11611,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:repair\",{\"not\":\"target:trait:magical\"}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11728,16 +11682,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"illusion\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"illusion\",\"shadow\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11970,9 +11922,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 17
         }
       ]
     },
@@ -12432,9 +12383,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"illusion\"]"
+          "outcome": "mapped",
+          "produced": 2
         }
       ]
     },
@@ -12560,9 +12510,8 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:create-a-diversion\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -12588,9 +12537,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 17
         }
       ]
     },
@@ -12626,9 +12574,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:repair\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -12982,8 +12929,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"check\""
         }
       ]
     },
@@ -13196,9 +13143,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:olfactory\",\"inflicts:sickened\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13713,16 +13659,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
@@ -13801,8 +13746,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:create-a-diversion\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -14584,9 +14529,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:repair\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -15163,9 +15107,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:morph\",\"item:trait:polymorph\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -15824,51 +15767,44 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 4,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 5,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 6,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -17327,8 +17263,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:feint\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -17389,9 +17325,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 16
         }
       ]
     },
@@ -17430,9 +17365,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:disease\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -17663,9 +17597,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"air\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -17782,23 +17715,20 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:shove\",\"action:force-open\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"inflicts:fatigued\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:shove\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -17984,9 +17914,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"inflicts:controlled\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -18138,8 +18067,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:shove\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -19024,9 +18953,8 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:balance\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20197,9 +20125,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"illusion\",\"visual\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20530,16 +20457,14 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20895,9 +20820,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:learn-a-spell\"]"
+          "outcome": "mapped",
+          "produced": 4
         }
       ]
     },
@@ -20956,29 +20880,27 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-direction\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-direction\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21539,16 +21461,14 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:balance\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:balance\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21630,9 +21550,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:fear\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -21809,9 +21728,8 @@
         {
           "index": 2,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:strix\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21839,9 +21757,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:sense-motive\",\"action:lie\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21926,16 +21843,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:human\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:human\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -22255,30 +22170,26 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:balance\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:balance\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -22780,9 +22691,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:linguistic\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -23203,9 +23113,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"cold\",\"water\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -23850,8 +23759,8 @@
           "index": 2,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"origin:trait:trap\"]"
+          "reason": "unsupported-value",
+          "detail": "unparseable value \"ternary(gte(@actor.system.skills.thievery.rank,3),2,1)\""
         },
         {
           "index": 3,
@@ -24060,8 +23969,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:tumble-through\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -24292,9 +24201,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:trait:downtime\"]"
+          "outcome": "mapped",
+          "produced": 16
         }
       ]
     },
@@ -24430,16 +24338,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"emotion\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:emotion\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
@@ -24613,16 +24520,14 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 16
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -24807,9 +24712,8 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"sleep\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -25963,9 +25867,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"poison\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -25994,9 +25897,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-motive\",{\"or\":[\"target:trait:possessed\",\"target:trait:enchanted\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26086,9 +25988,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"water\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -26567,9 +26468,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"auditory\",\"illusion\",\"linguistic\",\"sonic\",\"visual\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -26803,9 +26703,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"air\",\"electricity\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -26817,8 +26716,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"air\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -27032,9 +26931,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"curse\",\"origin:trait:hag\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -27045,9 +26943,8 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"curse\",\"origin:trait:hag\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -27268,9 +27165,8 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:sense-direction\",\"action:subsist\",\"action:cover-tracks\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -27470,9 +27366,8 @@
         {
           "index": 2,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -27512,8 +27407,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:tumble-through\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -27840,8 +27735,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:demoralize\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -28127,16 +28022,15 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:identify-magic\"]"
+          "outcome": "mapped",
+          "produced": 4
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:identify-magic\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -28193,9 +28087,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:divine\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -29915,9 +29808,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:treat-wounds\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -30046,8 +29938,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:grapple\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -30101,8 +29993,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:high-jump\",\"action:long-jump\"]}]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -30352,8 +30244,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:feint\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -30456,9 +30348,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:disease\",\"item:trait:poison\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -32772,8 +32663,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:lie\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"perception-dc\""
         },
         {
           "index": 1,
@@ -33048,8 +32939,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:create-a-diversion\"]"
+          "reason": "needs-runtime-choice",
+          "detail": "interpolated note text"
         }
       ]
     },
@@ -35769,16 +35660,15 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:learn-a-spell\"]"
+          "outcome": "mapped",
+          "produced": 4
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:learn-a-spell\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -35846,9 +35736,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:swim\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -36367,8 +36256,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:treat-wounds\"]"
+          "reason": "unsupported-value",
+          "detail": "note text is a Foundry content reference"
         }
       ]
     },
@@ -37001,8 +36890,8 @@
           "index": 3,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"target:trait:animal\",\"target:trait:humanoid\"]}]"
+          "reason": "unsupported-value",
+          "detail": "unparseable value \"max(-1 * @actor.flags.system.oozemorphDedicationCount, -4)\""
         }
       ]
     },
@@ -37457,9 +37346,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"poison\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -38184,23 +38072,20 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 17
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 16
         }
       ]
     },
@@ -38236,9 +38121,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:mental\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -40305,9 +40189,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:swim\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -41030,8 +40913,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:tumble-through\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
@@ -41404,15 +41287,15 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"lore-skill-check\""
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"lore-skill-check\""
         }
       ]
     },
@@ -41537,8 +41420,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:administer-first-aid\",\"action:treat-disease\",\"action:treat-poison\",\"action:treat-wounds\"]}]"
+          "reason": "unsupported-value",
+          "detail": "unparseable value \"ternary(gte(@actor.system.skills.medicine.rank,4),3,ternary(gte(@actor.system.skills.medicine.rank,3),2,1))\""
         }
       ]
     },
@@ -42017,9 +41900,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:treat-wounds\",\"action:treat-disease\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -43334,9 +43216,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:steal\",\"action:conceal-an-object\",\"action:palm-an-object\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -43531,9 +43412,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:orc\",{\"or\":[\"action:make-an-impression\",\"action:coerce\"]}]"
+          "outcome": "mapped",
+          "produced": 2
         }
       ]
     },
@@ -43664,9 +43544,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -44346,9 +44225,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"inflicts:controlled\",\"inflicts:frightened\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -46506,9 +46384,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:request\",\"target:trait:animal\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -46961,8 +46838,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
@@ -47202,9 +47079,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:decipher-writing\"]"
+          "outcome": "mapped",
+          "produced": 4
         },
         {
           "index": 1,
@@ -47287,8 +47163,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:demoralize\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -47473,8 +47349,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:feint\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -48933,9 +48809,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"fire\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -50573,9 +50448,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-motive\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -50805,16 +50679,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:lie\",\"target:trait:humanoid\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:humanoid\",{\"or\":[\"action:gather-information\",\"action:make-an-impression\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -51346,9 +51218,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:decipher-writing\"]"
+          "outcome": "mapped",
+          "produced": 4
         }
       ]
     },
@@ -51579,9 +51450,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sneak\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52258,9 +52128,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",{\"or\":[\"target:trait:celestial\",\"target:trait:fiend\",\"target:trait:fey\",\"target:trait:monit"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52343,9 +52212,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",{\"or\":[\"target:trait:beast\",\"target:trait:fey\",\"target:trait:kami\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52791,22 +52659,21 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"basic-unarmed-attack-roll\""
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:grab-an-edge\",\"inflicts:prone\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:grapple\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -55539,9 +55406,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:disease\",\"item:trait:poison\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -55681,9 +55547,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:demoralize\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -55822,23 +55687,20 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 2
         },
         {
           "index": 2,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -55883,9 +55745,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"inflicts:controlled\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -55898,8 +55759,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"inflicts:controlled\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -56006,9 +55867,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:animal\",\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -56046,9 +55906,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:animal\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -56076,9 +55935,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:disease\",\"item:trait:poison\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -56163,9 +56021,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",{\"or\":[\"target:trait:amphibious\",\"target:trait:aquatic\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -56326,16 +56183,14 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:climb\",\"action:swim\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:climb\",\"action:swim\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -56481,9 +56336,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"unarmed-damage\""
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -56802,16 +56656,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"mental\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"mental\",\"inflicts:controlled\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
@@ -56886,9 +56739,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-direction\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -57209,8 +57061,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:coerce\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -57865,9 +57717,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -58088,9 +57939,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:conceal-an-object\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -58495,16 +58345,14 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -59197,9 +59045,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:disease\",\"item:trait:poison\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -59312,9 +59159,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:earn-income\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -59373,30 +59219,27 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:squeeze\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "outcome": "mapped",
+          "produced": 16
         },
         {
           "index": 3,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:escape\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -59876,9 +59719,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:sense-direction\",\"action:track\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -59911,9 +59753,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:disease\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -60042,9 +59883,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"mental\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -61700,9 +61540,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"origin:trait:haunt\"]"
+          "outcome": "mapped",
+          "produced": 16
         }
       ]
     },
@@ -62715,9 +62554,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:elemental\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -62869,9 +62707,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:disease\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -64600,8 +64437,8 @@
           "index": 1,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"inflicts:grabbed\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"fortitude-dc\""
         }
       ]
     },
@@ -65300,9 +65137,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"void\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -65642,9 +65478,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-motive\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -66183,9 +66018,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -66912,9 +66746,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:conceal-an-object\",\"action:palm-an-object\",\"action:steal\"]}]"
+          "outcome": "mapped",
+          "produced": 2
         }
       ]
     },
@@ -66951,9 +66784,8 @@
         {
           "index": 1,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:force-open\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -67346,9 +67178,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:request\",\"target:trait:plant\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -69354,9 +69185,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"inflicts:clumsy\",\"inflicts:drained\",\"inflicts:enfeebled\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -70893,8 +70723,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:disarm\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -71246,9 +71076,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:escape\",\"action:squeeze\",\"action:tumble-through\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -71392,9 +71221,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:identify-magic\"]"
+          "outcome": "mapped",
+          "produced": 4
         }
       ]
     },
@@ -72018,8 +71846,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:disarm\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"reflex-dc\""
         }
       ]
     },
@@ -72088,8 +71916,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -72863,9 +72691,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:maneuver-in-flight\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -73044,9 +72871,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -73208,8 +73034,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:climb\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -73282,8 +73108,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:swim\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -76456,9 +76282,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-motive\",\"target:trait:humanoid\",{\"not\":\"target:trait:elf\"}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -76688,9 +76513,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:command-an-animal\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -76928,8 +76752,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
@@ -78457,9 +78281,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:aid\"]"
+          "outcome": "mapped",
+          "produced": 16
         }
       ]
     },
@@ -78551,8 +78374,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:disarm\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"reflex-dc\""
         }
       ]
     },
@@ -82781,9 +82604,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:divine\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -82928,9 +82750,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\",\"target:trait:dragon\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -84405,9 +84226,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:sprite\"]"
+          "outcome": "mapped",
+          "produced": 2
         },
         {
           "index": 1,
@@ -84651,9 +84471,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:death\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -86031,9 +85850,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:occult\"]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -86268,9 +86086,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"target:trait:plant\",\"target:trait:animal\"]},\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -87579,9 +87396,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"item:trait:mental\"]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -90398,8 +90214,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:fey\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 2,
@@ -90958,8 +90774,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -92414,9 +92230,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sneak\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -95118,9 +94933,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"magical\",\"arcane\",\"primal\",\"occult\",\"divine\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -96377,16 +96191,14 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:shove\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:trip\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -96484,9 +96296,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"disease\",\"poison\",\"inflicts:paralyzed\",\"inflicts:stunned\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -96808,9 +96619,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:death\",\"item:trait:disease\",\"item:trait:evil\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -97446,8 +97256,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:reposition\",\"action:shove\"]}]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -98007,9 +97817,8 @@
         {
           "index": 0,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:make-an-impression\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -98390,8 +98199,8 @@
           "index": 1,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:disarm\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"reflex-dc\""
         },
         {
           "index": 2,
@@ -102570,9 +102379,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:maneuver-in-flight\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -102775,8 +102583,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"arcane\",\"divine\",\"primal\",\"occult\",\"magical\"]}]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         }
       ]
     },
@@ -102912,9 +102720,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:stone\",\"action:gather-information\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -104101,8 +103908,8 @@
           "index": 0,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"melee-damage\""
+          "reason": "unsupported-value",
+          "detail": "unparseable value \"@actor.conditions.doomed.badge.value + @actor.conditions.wounded.badge.value\""
         }
       ]
     },
@@ -106110,9 +105917,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"poison\",\"sleep\",\"inflicts:paralyzed\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -106140,9 +105946,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"origin:trait:beast\",\"origin:trait:dragon\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -106271,9 +106076,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"poison\",\"disease\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 2,
@@ -107518,9 +107322,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"poison\",\"disease\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         },
         {
           "index": 1,
@@ -107554,9 +107357,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"disease\",\"primal\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -107889,9 +107691,8 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:decipher-writing\"]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -111494,9 +111295,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"item:trait:emotion\",\"item:trait:illusion\"]}]"
+          "outcome": "mapped",
+          "produced": 3
         }
       ]
     },
@@ -112876,9 +112676,8 @@
         {
           "index": 1,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"melee-strike-damage\""
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -114751,16 +114550,15 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:sense-motive\"]"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "FlatModifier",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:lie\"]"
+          "reason": "unsupported-selector",
+          "detail": "selector \"perception-dc\""
         }
       ]
     },
@@ -114790,9 +114588,8 @@
         {
           "index": 0,
           "key": "FlatModifier",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [{\"or\":[\"action:lie\",\"action:sense-motive\"]}]"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -115726,8 +115523,8 @@
           "index": 0,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"target:trait:fiend\"]"
+          "reason": "unsupported-shape",
+          "detail": "degree-scoped note"
         },
         {
           "index": 1,
@@ -117744,9 +117541,8 @@
         {
           "index": 2,
           "key": "AdjustDegreeOfSuccess",
-          "outcome": "unsupported",
-          "reason": "needs-combat-tags",
-          "detail": "conditional: [\"action:recall-knowledge\"]"
+          "outcome": "mapped",
+          "produced": 6
         }
       ]
     },

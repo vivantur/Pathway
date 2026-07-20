@@ -1498,6 +1498,104 @@ did.
 
 **Next**: the builder consuming `grants` — nothing reads the field yet.
 
+### The action vocabulary landed 2026-07-20 — `actions.ts`, and the predicate gate came off
+
+**`needs-combat-tags` 1,779 → 1,514. Mapped elements 717 → 921 (+204); effects 789 → 1,299.**
+Shipped content rose 371 → 455 effects with **zero previously-shipping effects lost**.
+
+**The premise this started from was wrong, and measuring it first is the whole lesson.**
+`foundry.ts` carried a comment saying the conditional gate was scoped to
+`AdjustDegreeOfSuccess` because widening it "moves a great deal of content at once, and is
+its own measured change" — with `needs-combat-tags` at ~1,600 elements as the justification.
+Replaying `mapPredicate` over all 1,779 blocked elements first: **only 97 had a predicate the
+leaf mapper could already state.** The gate was almost never the wall; the leaf VOCABULARY
+was. Sizing this work off that comment would have spent the effort for 97 elements.
+
+**What the bucket actually contained**, once measured rather than tallied:
+- **RollOption — 546 (31%), the largest single line item, and not this problem at all.** These
+  PRODUCE a roll option; they are not gated by one. Filed here because the reason vocabulary
+  is named after the blocker and they share the noun. They need a tag *production* model and
+  are untouched by any of the below.
+- **`action:*` — 199 elements where it is the sole blocker, 272 counting co-blockers.** The
+  only large *coherent* family, and what this slice addressed.
+- **A genuine long tail that looks like a roadmap until you read it.** A greedy
+  set-cover ranked two synthetic buckets on top ("bare-non-trait" 346, "other" 173); both
+  dissolved on inspection. `other` is per-class Foundry state machines (`kinetic-gate:earth`,
+  `werecreature:wereshark`) at a max frequency of 5 — internal bookkeeping, not rules
+  conditions. `bare-non-trait` is mostly feat slugs, and includes `alghollthu`, which is
+  creature identity the owner has ruled is never automated. **Aggregate tallies pointed at the
+  wrong work here; only reading the leaves corrected it.**
+
+**`actions.ts` — 75 slugs, entirely from owner-supplied rules text** (AoN 2343 basic, AoN 2344
+specialty, plus a compiled skill-action directory, since AoN does not carry those on one
+page). It is a **TAG NAMESPACE, not a state machine**: core cannot know a character is
+Escaping, and nothing on `ResolvedCharacter` says so. Whoever RUNS an action asserts the tag —
+the bot's `/use`, or an Escape button on the Grabbed condition (the owner's framing, and the
+thing that settled the design). A consumer that never asserts them, like the web sheet, simply
+never fires those effects, which is correct rather than a gap.
+
+**Sourcing caught two errors that would otherwise have shipped**: the directory's "Manuever in
+Flight" typo (the corpus uses `maneuver-in-flight`; a slug that could never match), and
+`action:trait:downtime`, which is a trait filter OVER actions, not an action name. **Stride is
+deliberately absent** — the Basic Actions page references it but carries no entry, and no
+corpus content asks for it, so adding it would be a rules claim invented to fix a
+non-problem. There is a test asserting its absence so it reads as a decision.
+
+**Lifting the gate alone would have been a REGRESSION, not a coverage win.** Only
+`AdjustDegreeOfSuccess` attached its own `when`; every other mapper ignored the predicate
+entirely. Widening the gate without attaching it centrally would have shipped every
+conditional FlatModifier as a **permanent** bonus — the exact wrong-sheet bug this boundary
+exists to prevent, and strictly worse than the refusal it replaced. `proficiency` is the one
+kind that cannot carry a `when` (deliberately — a raised rank is permanent, and its schema is
+`.strict()`), so conditional `ActiveEffectLike` elements are still REFUSED rather than granted
+unconditionally.
+
+**Faithful fan-out became noise the moment conditionals mapped.** Foundry's `skill-check`
+selector means "any skill check" and we expand it to all 16 skills. Harmless while conditional
+elements were refused; once they mapped, Sturdy Bindings ("a critical failure on a check to
+Grapple") became 16 effects, one of which told the sheet that **Arcana** improves when
+Grappling. Nothing is arithmetically wrong — `action:grapple` is never asserted beside an
+Arcana roll — but 67 corpus elements did this, 1,072 effects saying what ~100 could, and a
+sheet reading "Arcana: +1 when Grappling" is misleading. **Inert clutter is still a wrong
+sheet.** So the action→skill map narrows fanned-out skill targets, with three guards, each
+blocking a way this could silently lose a real effect:
+- **negation disqualifies** — `not: action:grapple` means the OTHER 15 skills; narrowing to
+  Athletics would invert it;
+- **a non-skill action disqualifies** — Escape is basic and our source assigns it no skill;
+  guessing Athletics would be a rules claim;
+- **only fan-outs narrow** — a single explicitly-targeted skill is left alone even when it
+  disagrees with the map, because that is a content question and dropping it would hide it.
+
+Effects 1,462 → 1,299 with mapped elements unchanged.
+
+**The review-queue delta is the system working, not damage.** Conflicts 48 → 187. All 139 new
+ones were previously `parser-only`, **none had a human decision (so nothing stopped
+shipping)**, and **100 of 139 differ ONLY by Foundry supplying a condition the parser
+missed**. Charming Liar is the pattern: the prose says "when you get a critical success using
+the **Lie** action" and the parser had proposed it unconditionally. Foundry now corroborates
+the effect and contradicts its unconditionality — which is precisely what a conflict is for.
+
+**Worth knowing: none of the 84 newly-shipped effects are action-gated.** All 84 come from the
+gate lift (trait predicates like `effect:trait:visual`). The action vocabulary's contribution
+sits entirely in the review queue, because it conflicts with parser proposals and ships only
+once a human rules. **The action work's value is currently latent, gated on review** — the
+coverage number moved, the shipped-content number moved for a different reason.
+
+**Reconciling earlier numbers in this doc.** 265 elements left `needs-combat-tags`, but only
+204 became mapped: the other **61 hit a DEEPER blocker** (`unsupported-shape` +41,
+`unsupported-selector` +11, `unsupported-value` +7, `needs-runtime-choice` +2) and are now
+reported against the real wall instead of hiding behind the predicate gate. Earlier
+`needs-combat-tags` figures in this doc (1,606 post-slice-A; 968 in the first-goal table) are
+dated snapshots on different scopings and were not rewritten.
+
+**Next**: `RollOption` (546) is now the largest blocker in this bucket by a wide margin and
+needs a tag-PRODUCTION model — its own slice, with tag lifetime and scope to settle. The 18
+remaining uncovered action slugs are feat-granted actions (Battle Medicine, Scare to Death)
+and creature abilities (`swallow-whole`), defined by feats we already ingest. And the `.docx`
+of skill-action degrees of success is the raw material for replacing the hand-authored
+`authoredActions.js` catalog with rules-sourced ones — deliberately NOT pulled into this
+slice, which needed only the slugs.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the
