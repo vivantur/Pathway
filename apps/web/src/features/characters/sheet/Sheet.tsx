@@ -279,7 +279,7 @@ function TabContent({
     case 'skills':
       return <SkillsTab build={build} />;
     case 'feats':
-      return <FeatsTab build={build} />;
+      return <FeatsTab build={build} character={character} edit={edit} />;
     case 'spells':
       return <SpellsTab build={build} character={character} edit={edit} />;
     case 'companions':

@@ -5,10 +5,11 @@ import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFeatsByNames } from '@/features/characters/useFeatsByNames';
 import { useFeatFallback, resolveFallbackRow } from '@/features/characters/useFeatFallback';
-import type { FeatRow } from '@/features/characters/types';
+import type { CharacterRow, FeatRow } from '@/features/characters/types';
 import type { PathbuilderBuild } from '@/features/characters/pathbuilder';
-import { Panel } from '../Sheet';
+import { Panel, type EditControls } from '../Sheet';
 import { GrantedActions } from '../GrantedActions';
+import { FeatToggles } from '../FeatToggles';
 import { FeatsIcon } from '../icons';
 
 /**
@@ -42,7 +43,15 @@ interface FeatEntry {
 
 const CATEGORY_ORDER = ['Class', 'Ancestry', 'General', 'Skill', 'Archetype', 'Bonus', 'Heritage', 'Background', 'Other'] as const;
 
-export function FeatsTab({ build }: { build: PathbuilderBuild }) {
+export function FeatsTab({
+  build,
+  character,
+  edit,
+}: {
+  build: PathbuilderBuild;
+  character: CharacterRow;
+  edit: EditControls;
+}) {
   // Memoize so a new empty array on every render doesn't invalidate the
   // downstream useMemo dependencies (and their queries).
   const entries: Entry[] = useMemo(
@@ -156,6 +165,11 @@ export function FeatsTab({ build }: { build: PathbuilderBuild }) {
         : (
           <CategoryPanel category={activeCategory} entries={filtered} />
         )}
+
+      {/* Player toggles the chosen feats offer — stances and modes. Like
+          GrantedActions, a different axis from the feat list, and renders nothing
+          unless a feat actually offers one and the character was built on the site. */}
+      <FeatToggles build={build} character={character} edit={edit} />
 
       {/* Runnable activities the chosen feats grant. Renders nothing unless the
           character was built on the site AND a feat actually carries one — which

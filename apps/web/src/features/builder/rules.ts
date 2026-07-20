@@ -48,6 +48,7 @@ import {
   type StrikeSource,
   type SheetEffects,
   type SkillStat,
+  type ToggleDeclaration,
 } from '@pathway/core';
 
 // Scalar stat math lives in @pathway/core (one source for builder, sheet, and
@@ -310,6 +311,38 @@ export function grantedActionsFor(state: BuilderState): CharacterGrantedAction[]
     // dataset's field is `unknown[]`, and core's schema is what validates it.
     for (const action of (feat.grantedActions ?? []) as GrantedAction[]) {
       out.push({ action, sourceName: feat.name, sourceId: feat.id });
+    }
+  }
+  return out;
+}
+
+/** A toggle a character's feat offers, plus the feat that granted it. */
+export interface CharacterToggle {
+  toggle: ToggleDeclaration;
+  /** The feat's display name — what the sheet shows as the source. */
+  sourceName: string;
+  /** The feat's id, so a caller can link back to it. */
+  sourceId: string;
+}
+
+/**
+ * Player-controlled TOGGLES the character's chosen feats offer — the switches a
+ * player flips to record a stance or mode (see core's toggles.ts). A LOOKUP over the
+ * same `chosenFeatIds` set as `grantedActionsFor`, not an interpretation.
+ *
+ * The sheet renders a control per toggle and stores its position in
+ * `overlay.web_edits.toggles`. It does NOT yet feed the derived stats: no shipping
+ * effect reads a toggle tag today (the consumers are pending review), so flipping one
+ * changes no sheet number. That wiring waits until reviewed consumers ship — for now a
+ * toggle is exactly what the owner asked for, the player's own record of a choice.
+ */
+export function characterToggles(state: BuilderState): CharacterToggle[] {
+  const out: CharacterToggle[] = [];
+  for (const id of chosenFeatIds(state)) {
+    const feat = findFeat(id);
+    if (!feat) continue;
+    for (const toggle of (feat.toggles ?? []) as ToggleDeclaration[]) {
+      out.push({ toggle, sourceName: feat.name, sourceId: feat.id });
     }
   }
   return out;

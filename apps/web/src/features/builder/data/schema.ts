@@ -206,6 +206,15 @@ export interface Feat {
    * text and reach the dataset through the review pipeline.
    */
   grantedActions?: unknown[];
+  /**
+   * Player-controlled switches this feat offers (`ToggleDeclaration[]` from
+   * @pathway/core) — a stance you're in, a mode you've activated. Mapped from Foundry
+   * RollOptions AT INGEST by scripts/remap-effects.mjs. `characterToggles` in rules.ts
+   * is the consumer; the sheet renders a control and stores its position in
+   * `overlay.web_edits.toggles`. `unknown[]` for the same reason as `effects` — the
+   * loose dataset shape, validated against core's schema at the boundary.
+   */
+  toggles?: unknown[];
   /** Content Foundry doesn't (yet) ship in Remaster form; kept so its id resolves. */
   legacy?: boolean;
   source: string;
