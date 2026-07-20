@@ -49,12 +49,12 @@ import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdi
 import { heldConditionSchema } from "./conditions.js";
 import { applyCounter, canSpend, type Counter } from "./counter.js";
 import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
-import { DEGREES, type DegreeOfSuccess } from "./degree.js";
+import { DEGREES, type DegreeAdjustment, type DegreeOfSuccess } from "./degree.js";
 import { rollNotation, safeParseDice, type RolledDie } from "./dice.js";
 import { evaluate, exprSchema, type Expr, type ExprScope, type ExprValue } from "./expr.js";
 import { heightenIncrements } from "./heightening.js";
 import type { Rng } from "./rng.js";
-import { passiveEffectSchema } from "./passive.js";
+import { degreeAdjustmentsFor, passiveEffectSchema } from "./passive.js";
 import { isSelector, type SaveSelector, type Selector } from "./selectors.js";
 import { actionCostSchema } from "./spell.js";
 
@@ -829,11 +829,15 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     modifier: number,
     dc: number,
     rollMode?: RollMode,
+    adjustments?: readonly DegreeAdjustment[],
   ): AutomationNode[] | undefined => {
     // A shared roll is made once and compared against each target's own DC, so the
-    // degree still differs per target.
+    // degree still differs per target — and so do the ADJUSTMENTS, which is why they
+    // are applied here at resolution rather than cached with the roll.
     const cached = getShared<{ die: number; total: number }>(node as AutomationNode, rollMode);
-    const result = cached ? resolveCheck({ ...cached, dc }) : rollCheck({ modifier, dc, rng: ctx.rng });
+    const result = cached
+      ? resolveCheck({ ...cached, dc, ...(adjustments ? { adjustments } : {}) })
+      : rollCheck({ modifier, dc, rng: ctx.rng, ...(adjustments ? { adjustments } : {}) });
     if (!cached) putShared(node as AutomationNode, rollMode, { die: result.die, total: result.total });
     const name = node.name ?? checkType;
     bindDegree(name, result.degree);
@@ -901,7 +905,17 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         let children: AutomationNode[] | undefined;
         try {
           const target = requireTarget();
-          children = resolve(node, "save", resolveSelector(target, node.save), resolveDc(node.dc));
+          // THE TARGET rolls a save, so the degree adjustments are the TARGET's —
+          // not the acting character's. This asymmetry with `check` below is the
+          // whole reason adjustments are carried per creature.
+          children = resolve(
+            node,
+            "save",
+            resolveSelector(target, node.save),
+            resolveDc(node.dc),
+            undefined,
+            degreeAdjustmentsFor(target.rollAdjusts ?? [], node.save),
+          );
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, `save (${node.save})`);
@@ -915,6 +929,12 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         try {
           const target = requireTarget();
           const modifier = evaluate(node.bonus, scope(), "number") as number;
+          // NO ADJUSTMENTS. An attack node carries a `bonus` EXPRESSION, not a
+          // selector, so there is nothing for `degreeAdjustmentsFor` to match on —
+          // the same "scoped attack selectors" blocker that stops Enfeebled's
+          // blanket attack penalty being modelled. Passing the actor's save/skill
+          // adjustments here would fire a Fortitude rewrite on a Strike, which is
+          // worse than not adjusting at all. Left named rather than approximated.
           children = resolve(node, "attack", modifier, resolveSelector(target, "ac"), node.rollMode);
         } catch (e) {
           if (e instanceof Abort) throw e;
@@ -927,7 +947,19 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       case "check": {
         let children: AutomationNode[] | undefined;
         try {
-          children = resolve(node, "check", resolveSelector(ctx.actor, node.check), resolveDc(node.dc), node.rollMode);
+          // THE ACTOR rolls a check — the mirror of `save` above, where the target
+          // rolls. This is the distinction that makes a Grapple correct: Athletics
+          // vs the target's Fortitude DC is the ACTOR's roll, so the target's
+          // "success becomes a critical success on Fortitude saves" does not fire.
+          // It is not making a save; the DC is merely built from its Fortitude.
+          children = resolve(
+            node,
+            "check",
+            resolveSelector(ctx.actor, node.check),
+            resolveDc(node.dc),
+            node.rollMode,
+            degreeAdjustmentsFor(ctx.actor.rollAdjusts ?? [], node.check),
+          );
         } catch (e) {
           if (e instanceof Abort) throw e;
           applyPolicy(node.onError, `check (${node.check})`);

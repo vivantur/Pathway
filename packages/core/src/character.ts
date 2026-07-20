@@ -18,6 +18,7 @@
 
 import type { Ability } from "./content.js";
 import type { ExprScope } from "./expr.js";
+import type { RollAdjustEffect } from "./passive.js";
 import type { ProficiencyRank } from "./proficiency.js";
 import { isSelector, SKILL_SLUGS, type SaveSelector, type Selector } from "./selectors.js";
 
@@ -80,6 +81,30 @@ export interface ResolvedCharacter {
   /** One entry per spellcasting class/tradition the character has, if any. */
   spellcasting?: SpellcastingStat[];
   focusPoints?: { max: number };
+  /**
+   * This creature's DEGREE-ADJUSTING passives — "if you roll a success on a save
+   * against a visual effect, you get a critical success instead". Carried here, on
+   * the creature, because degree adjustment is selected PER ROLLER and a roller is
+   * not always the acting character: a `save` node is rolled by the TARGET while a
+   * `check` is rolled by the actor. Hanging them on each creature makes that
+   * selection impossible to mis-align; a parallel list on the context could drift
+   * out of step with `targets`.
+   *
+   * Unresolved effects rather than numbers, which is deliberate and has precedent:
+   * `traits` above is on this type for the same reason — it is effect INPUT the
+   * engine needs per creature, and resolving it into a number is exactly what
+   * cannot be done ahead of knowing the roll.
+   *
+   * THESE ARE ROLLS THE BEARER MAKES. An effect that would alter how someone else's
+   * roll against this creature's DC turns out is NOT expressible, and must not be
+   * encoded here (owner ruling, 2026-07-19: a creature Grappled via Athletics vs its
+   * Fortitude DC is not making a save, so its Fortitude-save adjustment does not
+   * fire — though anything modifying that DC still applies, since the DC is built
+   * from the creature's own modifiers). See `degreeAdjustmentsFor`.
+   *
+   * Optional and defaulted-empty so hosts adopt it incrementally.
+   */
+  rollAdjusts?: RollAdjustEffect[];
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   type Outcome,
 } from "./automation.js";
 import { evaluatePredicate, rollTags } from "./predicate.js";
+import type { RollAdjustEffect } from "./passive.js";
 import type { ResolvedCharacter } from "./character.js";
 import type { Expr } from "./expr.js";
 import { autoHeightenRank } from "./heightening.js";
@@ -1284,5 +1285,105 @@ describe("heightening schema", () => {
     expect(
       automationSchema.safeParse([{ kind: "heightened", entries: [{ minRank: 2.5, children: [] }] }]).success,
     ).toBe(false);
+  });
+});
+
+describe("degree adjustments — selected per ROLLER", () => {
+  // OWNER RULING, 2026-07-19. Both creatures' passives are live in a resolution, but
+  // a degree adjustment fires only for the creature ACTUALLY ROLLING. The worked case
+  // the owner gave: Grapple is the actor's Athletics check against the target's
+  // Fortitude DC. A target whose passive turns a successful Fortitude SAVE into a
+  // critical success does NOT get it here — nobody made a save. Anything modifying
+  // that Fortitude DC still applies, because the DC is built from the target's own
+  // modifiers before any of this runs.
+  //
+  // "Success becomes a critical success" is the shape all 42 shipped rollAdjusts use.
+  const fortSuccessToCrit: RollAdjustEffect = {
+    kind: "rollAdjust",
+    target: "fortitude",
+    adjust: { type: "degreeMap", map: { success: "critical-success" } },
+  };
+
+  // Both DCs are chosen so seed 3 (a d20 of 15) lands on a PLAIN SUCCESS — the one
+  // degree these adjustments rewrite. A critical success would hide the effect by
+  // being the answer either way, which is what the first draft of this got wrong.
+  /** The target rolls Fortitude (+5) → 20 vs DC 18: success by 2. */
+  const saveTree: AutomationNode[] = [
+    { kind: "save", save: "fortitude", dc: { kind: "flat", value: { kind: "lit", value: 18 } } },
+  ];
+
+  /** Grapple-shaped: the ACTOR rolls Athletics (+11) → 26 vs DC 20: success by 6. */
+  const grappleTree: AutomationNode[] = [
+    { kind: "check", check: "athletics", dc: { kind: "flat", value: { kind: "lit", value: 20 } } },
+  ];
+
+  const degreeOf = (out: ReturnType<typeof runAutomation>) => {
+    const entry = out.log.find((l) => l.kind === "check");
+    return entry?.kind === "check" ? entry.degree : undefined;
+  };
+
+  it("fires the TARGET's adjustment on a save, because the target rolls it", () => {
+    const adjusted = { ...target, rollAdjusts: [fortSuccessToCrit] };
+    const out = runAutomation(saveTree, ctx({ targets: [adjusted], rng: makeRng(3) }));
+    expect(degreeOf(out)).toBe("critical-success");
+
+    // Same roll, same seed, without the passive: a plain success. So the adjustment
+    // is what moved it, not the dice.
+    const plain = runAutomation(saveTree, ctx({ targets: [target], rng: makeRng(3) }));
+    expect(degreeOf(plain)).toBe("success");
+  });
+
+  it("does NOT fire the target's Fortitude adjustment on a CHECK against its Fort DC", () => {
+    // THE GRAPPLE CASE. The target carries the same passive, and the roll is
+    // resolved against Fortitude — but the ACTOR is rolling, so it must not apply.
+    const adjusted = { ...target, rollAdjusts: [fortSuccessToCrit] };
+    const withPassive = runAutomation(grappleTree, ctx({ targets: [adjusted], rng: makeRng(3) }));
+    const without = runAutomation(grappleTree, ctx({ targets: [target], rng: makeRng(3) }));
+    expect(degreeOf(withPassive)).toBe(degreeOf(without));
+    expect(degreeOf(withPassive)).toBe("success");
+  });
+
+  it("fires the ACTOR's adjustment on a check, because the actor rolls it", () => {
+    const athleticsBoost: RollAdjustEffect = {
+      kind: "rollAdjust",
+      target: "athletics",
+      adjust: { type: "degreeMap", map: { success: "critical-success" } },
+    };
+    const out = runAutomation(
+      grappleTree,
+      ctx({ actor: { ...actor, rollAdjusts: [athleticsBoost] }, targets: [target], rng: makeRng(3) }),
+    );
+    expect(degreeOf(out)).toBe("critical-success");
+  });
+
+  it("does NOT fire the ACTOR's save adjustment on a save the TARGET rolls", () => {
+    // The mirror of the Grapple case: the actor's own Fortitude passive is theirs,
+    // and a save node is rolled by someone else.
+    const out = runAutomation(
+      saveTree,
+      ctx({ actor: { ...actor, rollAdjusts: [fortSuccessToCrit] }, targets: [target], rng: makeRng(3) }),
+    );
+    expect(degreeOf(out)).toBe("success");
+  });
+
+  it("ignores an adjustment for a DIFFERENT statistic", () => {
+    const willOnly: RollAdjustEffect = {
+      kind: "rollAdjust",
+      target: "will",
+      adjust: { type: "degreeMap", map: { success: "critical-success" } },
+    };
+    const out = runAutomation(
+      saveTree,
+      ctx({ targets: [{ ...target, rollAdjusts: [willOnly] }], rng: makeRng(3) }),
+    );
+    expect(degreeOf(out)).toBe("success");
+  });
+
+  it("a creature with no rollAdjusts resolves exactly as before", () => {
+    // Backward compatibility: the field is optional, and every existing host omits
+    // it. Absent must mean "no adjustments", never a crash.
+    const out = runAutomation(saveTree, ctx({ targets: [target], rng: makeRng(3) }));
+    expect(degreeOf(out)).toBe("success");
+    expect(out.warnings).toEqual([]);
   });
 });
