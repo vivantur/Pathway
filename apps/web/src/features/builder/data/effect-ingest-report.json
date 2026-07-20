@@ -1,26 +1,28 @@
 {
   "sourceCommit": "foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d",
-  "mappedAt": "2026-07-19T17:23:35.679Z",
+  "mappedAt": "2026-07-20T01:09:00.197Z",
   "summary": {
     "entities": 2490,
     "entitiesWithEffects": 338,
     "entitiesWithChoices": 30,
+    "entitiesWithGrants": 206,
+    "entitiesWithGrantedActions": 0,
+    "grantedActions": 0,
     "elements": 5212,
-    "mapped": 492,
-    "effectsProduced": 568,
-    "unsupported": 4720,
+    "mapped": 717,
+    "effectsProduced": 789,
+    "unsupported": 4495,
     "byReason": {
-      "needs-granting": 620,
-      "needs-combat-tags": 1713,
+      "needs-combat-tags": 1779,
       "needs-item-model": 1446,
-      "needs-runtime-choice": 273,
+      "needs-runtime-choice": 360,
       "unsupported-selector": 359,
       "unsupported-shape": 263,
+      "needs-granting": 242,
       "unsupported-bonus-type": 3,
       "unsupported-value": 43
     },
     "byKey": {
-      "GrantItem": 620,
       "AdjustDegreeOfSuccess": 100,
       "RollOption": 546,
       "Note": 266,
@@ -36,6 +38,7 @@
       "Strike": 116,
       "SubstituteRoll": 6,
       "AdjustModifier": 93,
+      "GrantItem": 395,
       "Resistance": 98,
       "EphemeralEffect": 22,
       "CraftingAbility": 18,
@@ -72,9 +75,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -853,9 +855,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1195,9 +1196,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1215,9 +1215,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1374,9 +1373,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1590,9 +1588,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1916,9 +1913,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -1936,9 +1932,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -2044,9 +2039,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -2479,9 +2473,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -2688,9 +2681,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -2742,8 +2734,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -2773,9 +2765,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -2864,8 +2855,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:draconic-benefactor\"}]"
         },
         {
           "index": 1,
@@ -3477,7 +3468,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a spell-effects entity we do not hold: Spell Effect: Light"
         }
       ]
     },
@@ -3573,7 +3564,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Salt Wound"
         }
       ]
     },
@@ -3669,9 +3660,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -3808,9 +3798,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -3852,9 +3841,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -4086,9 +4074,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -4287,9 +4274,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -4662,7 +4648,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Clan Pistol"
         },
         {
           "index": 1,
@@ -4703,9 +4689,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -4732,7 +4717,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Empty Vessel"
         }
       ]
     },
@@ -5196,16 +5181,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"self:level\",11]}]"
         },
         {
           "index": 2,
@@ -5251,9 +5235,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -5765,9 +5748,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -6902,9 +6884,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -7282,9 +7263,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -7512,9 +7492,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -7637,9 +7616,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -7765,9 +7743,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -7808,9 +7785,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -8005,16 +7981,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 0,
+          "detail": "duplicate grant of specialty-crafting; differs only in preselectChoices ({\"specialtyCrafting\":\"blacksmithing\"}), which we do not model"
         },
         {
           "index": 2,
@@ -8214,8 +8189,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -8284,9 +8259,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -8416,9 +8390,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -9399,9 +9372,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -9425,9 +9397,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -9667,7 +9638,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Find Fault"
         }
       ]
     },
@@ -10431,9 +10402,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -10477,9 +10447,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -10524,8 +10493,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -10893,8 +10862,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"skill:society:rank\",1]}]"
         }
       ]
     },
@@ -10919,16 +10888,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11115,9 +11082,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11394,9 +11360,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11527,9 +11492,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11857,9 +11821,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -11980,9 +11943,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -12127,9 +12089,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -12444,9 +12405,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13053,9 +13013,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13104,16 +13063,15 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"heritage:sage-jotunborn\"]"
         }
       ]
     },
@@ -13282,9 +13240,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13470,8 +13427,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:draconic-benefactor\"}]"
         },
         {
           "index": 1,
@@ -13527,9 +13484,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13864,9 +13820,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -13896,9 +13851,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -14189,9 +14143,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -14512,9 +14465,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -14626,9 +14578,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -14697,9 +14648,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -14804,9 +14754,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -14832,7 +14781,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mirror-Trickery"
         }
       ]
     },
@@ -14852,7 +14801,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mist Blending"
         }
       ]
     },
@@ -14873,7 +14822,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Decompose"
         }
       ]
     },
@@ -14976,8 +14925,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -15773,9 +15722,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -16098,8 +16046,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.naturalAmbition}"
         }
       ]
     },
@@ -16381,9 +16329,8 @@
         {
           "index": 3,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -16831,9 +16778,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -16912,9 +16858,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -17060,9 +17005,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -17195,9 +17139,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -17270,16 +17213,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Orc Warmask"
         }
       ]
     },
@@ -17616,8 +17558,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"self:level:1\"]"
         },
         {
           "index": 1,
@@ -17696,8 +17638,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -17745,16 +17687,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Plummeting Roll"
         }
       ]
     },
@@ -18236,9 +18177,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -18319,15 +18259,15 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"skill:intimidation:rank\",1]}]"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"skill:intimidation:rank:4\"]"
         },
         {
           "index": 2,
@@ -18406,9 +18346,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -18571,7 +18510,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Psychometric Assessment"
         }
       ]
     },
@@ -18685,7 +18624,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Reinforced Chassis"
         },
         {
           "index": 1,
@@ -18712,8 +18651,8 @@
           "index": 4,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"enhancement:reinforced-chassis\"]"
         }
       ]
     },
@@ -18735,16 +18674,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -18808,9 +18745,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -18884,9 +18820,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -19124,9 +19059,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -19201,9 +19135,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -19268,9 +19201,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -19324,9 +19256,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -19587,9 +19518,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -19917,9 +19847,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20088,9 +20017,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20194,9 +20122,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20214,9 +20141,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20278,9 +20204,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20337,9 +20262,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20375,9 +20299,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20411,9 +20334,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20482,9 +20404,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20514,9 +20435,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -20604,9 +20524,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20674,7 +20593,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Smoke Blending"
         }
       ]
     },
@@ -20698,9 +20617,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20730,9 +20648,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -20972,9 +20889,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -21180,9 +21096,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21589,9 +21504,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -21778,8 +21692,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"skill:crafting:rank\",1]}]"
         },
         {
           "index": 2,
@@ -21889,9 +21803,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -22213,9 +22126,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -22390,9 +22302,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -22441,9 +22352,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -22846,9 +22756,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -22915,9 +22824,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -23015,9 +22923,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -23801,7 +23708,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Tough Skin"
         }
       ]
     },
@@ -24014,9 +23921,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -24408,7 +24314,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Unwavering Resilience"
         }
       ]
     },
@@ -24477,9 +24383,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -24946,9 +24851,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -25158,9 +25062,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -25303,8 +25206,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.grantedVerdantWeapon}"
         },
         {
           "index": 4,
@@ -25451,16 +25354,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -25601,9 +25502,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -26119,9 +26019,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -26231,9 +26130,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26513,9 +26411,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26562,9 +26459,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26637,9 +26533,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26692,9 +26587,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -26857,9 +26751,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -27080,9 +26973,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -27403,9 +27295,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -27464,9 +27355,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -27574,9 +27464,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -27749,16 +27638,15 @@
         {
           "index": 4,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 5,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Quick Alchemy"
         }
       ]
     },
@@ -27853,9 +27741,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
@@ -27892,9 +27779,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -27920,7 +27806,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Assume a Role"
         },
         {
           "index": 1,
@@ -28164,7 +28050,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mark for Death"
         }
       ]
     },
@@ -28380,15 +28266,15 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.instinct}"
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Rage"
         },
         {
           "index": 4,
@@ -28549,8 +28435,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.lesson}"
         }
       ]
     },
@@ -28568,9 +28454,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -28622,9 +28507,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -28644,7 +28528,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Call Companion"
         }
       ]
     },
@@ -28677,9 +28561,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -28711,8 +28594,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:dragon-deviant-classification\"}]"
         }
       ]
     },
@@ -28775,7 +28658,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Harvest Blood"
         },
         {
           "index": 3,
@@ -28807,8 +28690,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:troll-deviant-classification\"}]"
         }
       ]
     },
@@ -28833,8 +28716,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:leech-deviant-classification\"}]"
         }
       ]
     },
@@ -28893,15 +28776,15 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feature:hunt-prey\"]"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Hunt Prey"
         },
         {
           "index": 2,
@@ -29093,7 +28976,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Bullet Dancer Stance"
         },
         {
           "index": 1,
@@ -29120,7 +29003,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Offer Story"
         }
       ]
     },
@@ -29194,8 +29077,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -29223,21 +29106,21 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Catharsis"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Settle Emotions"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Catharsis Emotion"
         }
       ]
     },
@@ -29257,7 +29140,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Upstage"
         }
       ]
     },
@@ -29466,7 +29349,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Deity (Champion)"
         },
         {
           "index": 5,
@@ -29479,8 +29362,8 @@
           "index": 6,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.cause}"
         },
         {
           "index": 7,
@@ -29653,9 +29536,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -29795,14 +29677,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Talon Stance"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Claw Stance"
         }
       ]
     },
@@ -29828,7 +29710,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Deity (Cleric)"
         },
         {
           "index": 1,
@@ -29884,7 +29766,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Tactics"
         }
       ]
     },
@@ -30009,8 +29891,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:dragon-deviant-classification\"}]"
         }
       ]
     },
@@ -30115,7 +29997,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Infiltrator's Draw"
         },
         {
           "index": 1,
@@ -30343,7 +30225,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Influence Rumor"
         }
       ]
     },
@@ -30442,7 +30324,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Set Explosives"
         }
       ]
     },
@@ -30633,29 +30515,28 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:draconic-benefactor\"}]"
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Channel Draconic Essence"
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Draconic Salvation"
         }
       ]
     },
@@ -31899,8 +31780,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:leech-deviant-classification\"}]"
         }
       ]
     },
@@ -31952,8 +31833,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.druidicOrder}"
         }
       ]
     },
@@ -31971,9 +31852,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -32039,9 +31919,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -32086,9 +31965,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -32106,9 +31984,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -32132,8 +32009,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:wraith-deviant-classification\"}]"
         }
       ]
     },
@@ -32659,7 +32536,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Divine Spark and Ikons"
         },
         {
           "index": 2,
@@ -32770,8 +32647,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"self:has-familiar\"]"
         },
         {
           "index": 1,
@@ -32916,7 +32793,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spread Propaganda"
         }
       ]
     },
@@ -33097,16 +32974,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Launch Fireworks"
         },
         {
           "index": 2,
@@ -33127,7 +33003,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Quick Alchemy"
         },
         {
           "index": 5,
@@ -33193,7 +33069,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spin Tale"
         }
       ]
     },
@@ -33350,7 +33226,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Hunt Prey"
         },
         {
           "index": 1,
@@ -33876,7 +33752,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         },
         {
           "index": 5,
@@ -33946,8 +33822,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:wraith-deviant-classification\"}]"
         }
       ]
     },
@@ -34055,14 +33931,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         },
         {
           "index": 5,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Consume Flesh"
         }
       ]
     },
@@ -34274,7 +34150,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Taunt"
         }
       ]
     },
@@ -34476,8 +34352,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.way}"
         },
         {
           "index": 2,
@@ -34520,14 +34396,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a spells-srd entity we do not hold: Harrowing"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Avoid Dire Fate"
         }
       ]
     },
@@ -34557,16 +34433,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 0,
+          "detail": "duplicate grant of additional-lore"
         },
         {
           "index": 2,
@@ -34607,9 +34482,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -34686,9 +34560,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -34706,9 +34579,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -35056,9 +34928,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -35071,8 +34942,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.innovation}"
         },
         {
           "index": 4,
@@ -35146,7 +35017,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: On the Case"
         }
       ]
     },
@@ -35176,9 +35047,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -35317,21 +35187,21 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Impulses"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Channel Elements"
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.elementOne}"
         },
         {
           "index": 4,
@@ -35409,9 +35279,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -35457,15 +35326,15 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"divine-spark:{item|flags.system.rulesSelections.ikon}\"]"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"divine-spark:{item|flags.system.rulesSelections.ikon}\"]"
         }
       ]
     },
@@ -35633,16 +35502,15 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 0,
+          "detail": "duplicate grant of multilingual"
         }
       ]
     },
@@ -35682,9 +35550,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -35738,7 +35605,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Entity's Resurgence"
         }
       ]
     },
@@ -35973,9 +35840,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -36421,7 +36287,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Powerful Fist"
         },
         {
           "index": 2,
@@ -36563,8 +36429,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         },
         {
           "index": 3,
@@ -36653,16 +36519,15 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         },
         {
           "index": 3,
@@ -36716,7 +36581,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Engineer's Efficiency"
         }
       ]
     },
@@ -37193,15 +37058,15 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.mystery}"
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Oracular Curse"
         }
       ]
     },
@@ -37242,8 +37107,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.order}"
         }
       ]
     },
@@ -37274,15 +37139,15 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         }
       ]
     },
@@ -37307,8 +37172,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:flicker-deviant-classification\"}]"
         }
       ]
     },
@@ -37428,7 +37293,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Binding Vow"
         }
       ]
     },
@@ -37468,7 +37333,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mystic Aegis"
         }
       ]
     },
@@ -37539,14 +37404,13 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Boarding Assault"
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -37564,9 +37428,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -37639,9 +37502,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -37858,8 +37720,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.consciousMind}"
         }
       ]
     },
@@ -38041,7 +37903,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Hunt Prey"
         },
         {
           "index": 1,
@@ -38132,7 +37994,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Razmiri Mask"
         }
       ]
     },
@@ -38275,8 +38137,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:blight-soul-deviant-classification\"}]"
         }
       ]
     },
@@ -38500,7 +38362,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Bond with Spirit"
         }
       ]
     },
@@ -38536,14 +38398,13 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Enter Spirit Trance"
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -38664,7 +38525,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Surprise Attack"
         },
         {
           "index": 3,
@@ -38677,8 +38538,8 @@
           "index": 4,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.skillFeat}"
         }
       ]
     },
@@ -38704,8 +38565,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:blight-soul-deviant-classification\"}]"
         }
       ]
     },
@@ -38815,9 +38676,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -38850,9 +38710,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -39147,16 +39006,14 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 3,
@@ -39255,9 +39112,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -39387,9 +39243,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -39428,8 +39283,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:flicker-deviant-classification\"}]"
         }
       ]
     },
@@ -39469,8 +39324,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.bloodline}"
         }
       ]
     },
@@ -39563,7 +39418,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Spectral Dagger"
         },
         {
           "index": 1,
@@ -39640,7 +39495,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Overwhelming Combination"
         },
         {
           "index": 1,
@@ -39797,8 +39652,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:verdant-core-deviant-classification\"}]"
         }
       ]
     },
@@ -39819,7 +39674,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Tenacious Stance"
         }
       ]
     },
@@ -39938,7 +39793,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Starlit Transformation"
         }
       ]
     },
@@ -40157,7 +40012,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Stonestrike Stance"
         }
       ]
     },
@@ -40289,9 +40144,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -40360,15 +40214,15 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"skill:athletics:rank\",1]}]"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"gte\":[\"skill:athletics:rank\",3]}]"
         }
       ]
     },
@@ -40426,7 +40280,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Eidolon"
         }
       ]
     },
@@ -40477,14 +40331,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Swarm Forth"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Bite and Sting"
         }
       ]
     },
@@ -40578,8 +40432,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.swashbucklersStyle}"
         },
         {
           "index": 2,
@@ -40598,14 +40452,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Panache"
         },
         {
           "index": 5,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Stylish Combatant"
         }
       ]
     },
@@ -40707,8 +40561,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.firstTactic}"
         },
         {
           "index": 2,
@@ -40721,8 +40575,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.secondTactic}"
         }
       ]
     },
@@ -40809,7 +40663,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Storied Skin"
         }
       ]
     },
@@ -40907,8 +40761,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.implement}"
         },
         {
           "index": 2,
@@ -40927,7 +40781,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Glimpse Vulnerability"
         }
       ]
     },
@@ -41131,8 +40985,8 @@
           "index": 7,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:troll-deviant-classification\"}]"
         }
       ]
     },
@@ -41235,16 +41089,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Designate Ally"
         }
       ]
     },
@@ -41340,7 +41193,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Slayer's Identification"
         }
       ]
     },
@@ -41402,9 +41255,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -41444,7 +41296,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Accidental Shot"
         }
       ]
     },
@@ -41633,28 +41485,28 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         },
         {
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Revulsion"
         },
         {
           "index": 4,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Sunlight"
         },
         {
           "index": 5,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Drink Blood"
         }
       ]
     },
@@ -41862,8 +41714,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:verdant-core-deviant-classification\"}]"
         }
       ]
     },
@@ -42096,16 +41948,15 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Quick Alchemy"
         },
         {
           "index": 3,
@@ -42137,9 +41988,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -42958,9 +42808,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -42981,7 +42830,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Change Shape"
         },
         {
           "index": 5,
@@ -43282,15 +43131,15 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.patron}"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Familiar (Witch)"
         }
       ]
     },
@@ -43332,7 +43181,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Shake It Off"
         }
       ]
     },
@@ -43379,9 +43228,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -43439,9 +43287,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -43601,7 +43448,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         }
       ]
     },
@@ -43651,8 +43498,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.ancestralParagon}"
         }
       ]
     },
@@ -44968,7 +44815,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: For My House!"
         }
       ]
     },
@@ -45341,7 +45188,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Base Kinesis"
         }
       ]
     },
@@ -45386,8 +45233,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicArcana}"
         }
       ]
     },
@@ -45432,8 +45279,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicBloodPotency}"
         }
       ]
     },
@@ -45478,8 +45325,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicBreakthrough}"
         }
       ]
     },
@@ -45524,8 +45371,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicConcoction}"
         }
       ]
     },
@@ -45570,8 +45417,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicDeduction}"
         }
       ]
     },
@@ -45629,8 +45476,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -45688,8 +45535,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicDevotion}"
         }
       ]
     },
@@ -45734,8 +45581,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicDogma}"
         }
       ]
     },
@@ -45780,8 +45627,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -45826,8 +45673,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicFlair}"
         }
       ]
     },
@@ -45885,8 +45732,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicFury}"
         }
       ]
     },
@@ -45944,8 +45791,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicGlory}"
         }
       ]
     },
@@ -46003,8 +45850,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicHuntersTrick}"
         }
       ]
     },
@@ -46062,8 +45909,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicKata}"
         }
       ]
     },
@@ -46121,8 +45968,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicManeuver}"
         }
       ]
     },
@@ -46167,8 +46014,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicMartialMagic}"
         }
       ]
     },
@@ -46213,8 +46060,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicMusesWhispers}"
         }
       ]
     },
@@ -46259,8 +46106,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicMysteries}"
         }
       ]
     },
@@ -46305,8 +46152,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicShooting}"
         }
       ]
     },
@@ -46354,8 +46201,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicSynergy}"
         }
       ]
     },
@@ -46400,8 +46247,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicThaumaturgy}"
         }
       ]
     },
@@ -46446,8 +46293,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicThoughtform}"
         }
       ]
     },
@@ -46492,8 +46339,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicTrickery}"
         }
       ]
     },
@@ -46538,8 +46385,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicWilding}"
         }
       ]
     },
@@ -46598,8 +46445,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.basicWitchcraft}"
         }
       ]
     },
@@ -47081,9 +46928,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -47121,9 +46967,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -47143,7 +46988,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Coughing Dragon"
         }
       ]
     },
@@ -47391,9 +47236,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -47462,9 +47306,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -47580,7 +47423,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Objection"
         }
       ]
     },
@@ -48362,7 +48205,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Accept Echo"
         }
       ]
     },
@@ -48435,9 +48278,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -48450,8 +48292,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.elementalExistence}"
         },
         {
           "index": 3,
@@ -48517,15 +48359,15 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"self:has-familiar\"]"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"self:has-familiar\"}]"
         },
         {
           "index": 2,
@@ -48581,9 +48423,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -48732,14 +48573,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spirit's Mercy"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Collect Spirit Remnant"
         },
         {
           "index": 2,
@@ -48851,9 +48692,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -49058,14 +48898,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Basic Finisher"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Precise Strike"
         }
       ]
     },
@@ -49219,7 +49059,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Unravel the Future"
         },
         {
           "index": 2,
@@ -49502,9 +49342,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -49540,16 +49379,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
@@ -49603,7 +49440,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Rage"
         },
         {
           "index": 1,
@@ -49800,7 +49637,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Remove Head"
         }
       ]
     },
@@ -49899,9 +49736,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -50238,7 +50074,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Devise a Stratagem"
         }
       ]
     },
@@ -50441,15 +50277,15 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feat:qi-spells\"}]"
         }
       ]
     },
@@ -51700,9 +51536,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -51720,9 +51555,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -51836,8 +51670,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -51855,9 +51689,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52027,14 +51860,13 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Affix a Talisman"
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52194,7 +52026,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Reactive Strike"
         }
       ]
     },
@@ -52534,7 +52366,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Pacifying Infusion"
         }
       ]
     },
@@ -52769,9 +52601,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -52900,9 +52731,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -53114,7 +52944,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Daydream Trance"
         }
       ]
     },
@@ -53195,9 +53025,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -53276,7 +53105,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Sneak Attack"
         }
       ]
     },
@@ -53417,8 +53246,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -53475,8 +53304,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         }
       ]
     },
@@ -53496,7 +53325,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spell-Woven Shot"
         }
       ]
     },
@@ -53516,7 +53345,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spellstrike"
         }
       ]
     },
@@ -53561,8 +53390,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.spiritualAwakening}"
         }
       ]
     },
@@ -53687,7 +53516,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Size Up"
         }
       ]
     },
@@ -53727,7 +53556,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Ringing Challenge"
         },
         {
           "index": 2,
@@ -54260,8 +54089,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.firstTactic}"
         },
         {
           "index": 3,
@@ -54274,8 +54103,8 @@
           "index": 4,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.secondTactic}"
         }
       ]
     },
@@ -54297,16 +54126,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 0,
+          "detail": "duplicate grant of terrain-stalker"
         }
       ]
     },
@@ -54518,8 +54346,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.throughTheGate}"
         }
       ]
     },
@@ -54559,7 +54387,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Blinding of the Needle"
         },
         {
           "index": 2,
@@ -54862,9 +54690,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -55003,9 +54830,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -55416,9 +55242,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -56096,16 +55921,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Anchor"
         }
       ]
     },
@@ -56389,7 +56213,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Resist Magic"
         },
         {
           "index": 1,
@@ -56457,8 +56281,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -56549,8 +56373,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -56651,8 +56475,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:draconic-benefactor\"}]"
         },
         {
           "index": 1,
@@ -57011,9 +56835,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -57104,8 +56927,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -57123,9 +56946,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -57299,9 +57121,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -57314,8 +57135,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -57929,9 +57750,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -58821,8 +58641,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"heritage:cliffscale-lizardfolk\"}]"
         },
         {
           "index": 1,
@@ -59468,8 +59288,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -60382,9 +60202,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -60527,9 +60346,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -61047,9 +60865,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -61062,8 +60879,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.runtsage}"
         }
       ]
     },
@@ -61128,8 +60945,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.lineage}"
         }
       ]
     },
@@ -61167,8 +60984,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.heritage}"
         }
       ]
     },
@@ -61645,16 +61462,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -62275,7 +62090,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Tengu Feather Fan"
         },
         {
           "index": 1,
@@ -64301,7 +64116,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spellsling"
         }
       ]
     },
@@ -64362,7 +64177,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Coiling Serpents"
         },
         {
           "index": 2,
@@ -64684,7 +64499,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Sneak Attack"
         },
         {
           "index": 3,
@@ -64779,7 +64594,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Liberate Self"
         },
         {
           "index": 1,
@@ -64831,8 +64646,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         }
       ]
     },
@@ -65353,7 +65168,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -65610,8 +65425,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:verdant-core-deviant-classification\"}]"
         }
       ]
     },
@@ -65634,8 +65449,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         }
       ]
     },
@@ -65728,8 +65543,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.divineAlly}"
         }
       ]
     },
@@ -66109,9 +65924,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -66268,7 +66082,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Eldritch Shot"
         }
       ]
     },
@@ -66385,7 +66199,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Set Free"
         }
       ]
     },
@@ -66409,8 +66223,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:wraith-deviant-classification\"}]"
         }
       ]
     },
@@ -66613,7 +66427,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Explode"
         }
       ]
     },
@@ -67038,7 +66852,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Cycle Elemental Stance"
         }
       ]
     },
@@ -67196,7 +67010,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Create Familiar Fulu"
         }
       ]
     },
@@ -67240,16 +67054,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -67269,7 +67081,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -67313,7 +67125,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -67367,7 +67179,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -67453,9 +67265,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -67510,8 +67321,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.lesson}"
         }
       ]
     },
@@ -67681,7 +67492,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Intercept Attack"
         }
       ]
     },
@@ -67951,7 +67762,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Signifer's Mask"
         },
         {
           "index": 3,
@@ -67995,7 +67806,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Warding Shift"
         }
       ]
     },
@@ -68020,8 +67831,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:troll-deviant-classification\"}]"
         }
       ]
     },
@@ -68066,8 +67877,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {actor|flags.system.thaumaturge.initiateBenefit}"
         }
       ]
     },
@@ -68337,8 +68148,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.furyInstinct}"
         }
       ]
     },
@@ -68457,8 +68268,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:blight-soul-deviant-classification\"}]"
         }
       ]
     },
@@ -68501,7 +68312,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Keen Recollection"
         }
       ]
     },
@@ -68570,8 +68381,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:leech-deviant-classification\"}]"
         }
       ]
     },
@@ -68711,9 +68522,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -68892,7 +68702,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Sever Four Dragonfly Wings"
         },
         {
           "index": 2,
@@ -68992,7 +68802,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Quick Alchemy"
         },
         {
           "index": 1,
@@ -69031,14 +68841,14 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Raise the Horde"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mobbing Assault"
         }
       ]
     },
@@ -69159,7 +68969,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -69510,7 +69320,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Dragon Breath"
         }
       ]
     },
@@ -70705,7 +70515,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Once Bitten"
         }
       ]
     },
@@ -70879,16 +70689,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -71031,9 +70839,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -71152,7 +70959,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Tangle in Riddle"
         },
         {
           "index": 2,
@@ -71326,7 +71133,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Brandish the Gorgon's Gaze"
         },
         {
           "index": 2,
@@ -71407,8 +71214,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {actor|flags.system.gunslinger.initialDeed}"
         }
       ]
     },
@@ -72021,8 +71828,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:dragon-deviant-classification\"}]"
         }
       ]
     },
@@ -72108,7 +71915,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Opportune Riposte"
         }
       ]
     },
@@ -72308,23 +72115,20 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -72545,8 +72349,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:flicker-deviant-classification\"}]"
         }
       ]
     },
@@ -73801,8 +73605,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.ikon}"
         }
       ]
     },
@@ -74573,7 +74377,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Call Gun"
         }
       ]
     },
@@ -74817,8 +74621,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.bloodline}"
         }
       ]
     },
@@ -75223,9 +75027,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -76907,7 +76710,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Inspired Stratagem"
         }
       ]
     },
@@ -76986,7 +76789,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Jumping Jenny"
         }
       ]
     },
@@ -77447,7 +77250,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Transform Ammunition"
         }
       ]
     },
@@ -77653,8 +77456,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.modification}"
         }
       ]
     },
@@ -78223,8 +78026,8 @@
           "index": 7,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.feat}"
         }
       ]
     },
@@ -78342,7 +78145,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Entreat Pact"
         }
       ]
     },
@@ -78362,7 +78165,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Lay Down Arms"
         }
       ]
     },
@@ -78678,16 +78481,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -79144,8 +78945,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.blessing}"
         }
       ]
     },
@@ -79433,8 +79234,8 @@
           "index": 5,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.skillMastery}"
         },
         {
           "index": 6,
@@ -79591,7 +79392,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Arcane Bond"
         }
       ]
     },
@@ -80121,9 +79922,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -80847,9 +80647,8 @@
         {
           "index": 2,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -81890,7 +81689,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Fortify Focus"
         }
       ]
     },
@@ -82161,7 +81960,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Call Upon the Brightness"
         }
       ]
     },
@@ -83225,8 +83024,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"dragonblood-paragon:kobold-breath\"]"
         },
         {
           "index": 3,
@@ -84859,9 +84658,8 @@
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -85404,9 +85202,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -85639,7 +85436,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a equipment-srd entity we do not hold: Lucky Keepsake"
         }
       ]
     },
@@ -85935,9 +85732,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -86089,8 +85885,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.multitalented}"
         }
       ]
     },
@@ -87792,7 +87588,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: I Defy You!"
         }
       ]
     },
@@ -88021,16 +87817,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -88726,8 +88520,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.elementOne}"
         }
       ]
     },
@@ -88994,23 +88788,21 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Impersonate"
         }
       ]
     },
@@ -89050,7 +88842,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Mark the Center"
         },
         {
           "index": 2,
@@ -89678,8 +89470,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"change-shape:animal\",\"dire-growth\"]"
         },
         {
           "index": 3,
@@ -89712,8 +89504,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:verdant-core-deviant-classification\"}]"
         }
       ]
     },
@@ -89737,8 +89529,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:wraith-deviant-classification\"}]"
         }
       ]
     },
@@ -90390,8 +90182,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:leech-deviant-classification\"}]"
         }
       ]
     },
@@ -90480,7 +90272,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Goblin Jubilee"
         }
       ]
     },
@@ -90901,16 +90693,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -91087,7 +90877,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Race the Skies"
         },
         {
           "index": 2,
@@ -91224,8 +91014,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:flicker-deviant-classification\"}]"
         }
       ]
     },
@@ -91281,8 +91071,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.lesson}"
         }
       ]
     },
@@ -91470,7 +91260,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Flurry of Blows"
         }
       ]
     },
@@ -91807,8 +91597,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {actor|flags.system.gunslinger.slingersReload}"
         }
       ]
     },
@@ -91958,8 +91748,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:dragon-deviant-classification\"}]"
         }
       ]
     },
@@ -92483,7 +92273,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Sneak Attack"
         },
         {
           "index": 3,
@@ -92648,8 +92438,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"feat:ostilli-host-dedication\"]"
         }
       ]
     },
@@ -93098,8 +92888,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:troll-deviant-classification\"}]"
         }
       ]
     },
@@ -93123,9 +92913,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -93385,7 +93174,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Deny Advantage"
         }
       ]
     },
@@ -93411,8 +93200,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feature:blight-soul-deviant-classification\"}]"
         }
       ]
     },
@@ -93880,7 +93669,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Absorb into the Aegis"
         }
       ]
     },
@@ -93963,7 +93752,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Manifest Realm"
         },
         {
           "index": 1,
@@ -94096,7 +93885,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Bless Ally"
         },
         {
           "index": 1,
@@ -94320,7 +94109,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Runelord's Response"
         },
         {
           "index": 1,
@@ -94361,7 +94150,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Banshee Cry"
         }
       ]
     },
@@ -94803,7 +94592,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Ultimatum of Liberation"
         }
       ]
     },
@@ -94880,7 +94669,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Death Drone"
         }
       ]
     },
@@ -95092,7 +94881,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Topple the Pillar of Heaven"
         },
         {
           "index": 2,
@@ -95661,9 +95450,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -96399,16 +96187,15 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Flash of Memory"
         }
       ]
     },
@@ -96477,7 +96264,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Disarming Interception"
         },
         {
           "index": 1,
@@ -96639,7 +96426,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Basic Undead Benefits"
         }
       ]
     },
@@ -96930,8 +96717,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.deity}"
         },
         {
           "index": 2,
@@ -97176,7 +96963,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Pitch-Perfect Projection"
         }
       ]
     },
@@ -97326,7 +97113,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Reactive Falsehood"
         }
       ]
     },
@@ -97370,7 +97157,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Royal Grace"
         }
       ]
     },
@@ -97504,7 +97291,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a spells-srd entity we do not hold: Commune"
         }
       ]
     },
@@ -97710,8 +97497,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.ikon}"
         }
       ]
     },
@@ -98047,9 +97834,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -98136,7 +97922,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spiritual Aid"
         }
       ]
     },
@@ -98481,7 +98267,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Sidestep Through Time"
         }
       ]
     },
@@ -98821,7 +98607,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Dancing Dodge"
         },
         {
           "index": 1,
@@ -98868,7 +98654,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spasm of the Berserker"
         },
         {
           "index": 2,
@@ -98895,7 +98681,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Call Warshard Weapon"
         }
       ]
     },
@@ -98915,7 +98701,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Unimpeded Journey"
         }
       ]
     },
@@ -99004,8 +98790,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.advancedGeneralTraining}"
         }
       ]
     },
@@ -99382,7 +99168,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a spells-srd entity we do not hold: Awaken Animal"
         }
       ]
     },
@@ -99769,8 +99555,8 @@
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"ceremony-of-growth\"]"
         },
         {
           "index": 3,
@@ -100116,8 +99902,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"change-shape:hybrid\"]"
         },
         {
           "index": 1,
@@ -100291,8 +100077,8 @@
           "index": 3,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"enhancement:enlarged-chassis\"}]"
         }
       ]
     },
@@ -104287,16 +104073,14 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -104434,7 +104218,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Flyby Attack"
         },
         {
           "index": 1,
@@ -104559,7 +104343,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Aegis of Envy"
         }
       ]
     },
@@ -104579,7 +104363,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Gluttonous Feast"
         }
       ]
     },
@@ -104599,7 +104383,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Convocation of Greed"
         }
       ]
     },
@@ -104619,7 +104403,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Sorshen's Devotion"
         }
       ]
     },
@@ -104639,7 +104423,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Summon Sloth"
         }
       ]
     },
@@ -104659,7 +104443,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Host of Wrath"
         }
       ]
     },
@@ -104769,9 +104553,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         }
       ]
     },
@@ -104898,7 +104681,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Impromptu Investment"
         }
       ]
     },
@@ -105110,7 +104893,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Only You and I"
         },
         {
           "index": 2,
@@ -105184,7 +104967,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Thermal Eruption"
         },
         {
           "index": 2,
@@ -105472,7 +105255,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a ancestryfeatures entity we do not hold: Advanced Undead Benefits"
         }
       ]
     },
@@ -105492,7 +105275,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Makes Me Stronger"
         }
       ]
     },
@@ -105778,7 +105561,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Heaven Rains an Ending"
         },
         {
           "index": 2,
@@ -105919,7 +105702,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a adventure-specific-actions entity we do not hold: Exhale Poison"
         },
         {
           "index": 2,
@@ -106159,7 +105942,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Weaponsight"
         }
       ]
     },
@@ -106187,21 +105970,21 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Drain Realm"
         },
         {
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Spread Realm"
         },
         {
           "index": 2,
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Unleash Realm"
         }
       ]
     },
@@ -106379,7 +106162,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Overawe Crowd"
         }
       ]
     },
@@ -106432,7 +106215,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Fey Jump"
         }
       ]
     },
@@ -107514,9 +107297,8 @@
         {
           "index": 0,
           "key": "GrantItem",
-          "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "outcome": "mapped",
+          "produced": 1
         },
         {
           "index": 1,
@@ -107906,7 +107688,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Verdant Rest"
         }
       ]
     },
@@ -108016,7 +107798,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Draw From the Pages"
         }
       ]
     },
@@ -108313,7 +108095,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Call to Hand"
         }
       ]
     },
@@ -108333,7 +108115,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Instant Recovery"
         }
       ]
     },
@@ -108389,7 +108171,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Blizzard Evasion"
         }
       ]
     },
@@ -108672,7 +108454,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Heavy is the Crown"
         },
         {
           "index": 2,
@@ -109196,8 +108978,8 @@
           "index": 4,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"diverse-mystery:ancestral-touch\",\"used-diverse-mystery\",\"self:condition:cursebound\"]"
         },
         {
           "index": 5,
@@ -109217,8 +108999,8 @@
           "index": 7,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"diverse-mystery:spray-of-stars\",\"used-diverse-mystery\",\"self:condition:cursebound\"]"
         },
         {
           "index": 8,
@@ -109231,8 +109013,8 @@
           "index": 9,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"diverse-mystery:incendiary-aura\",\"used-diverse-mystery\",\"self:condition:cursebound\"]"
         },
         {
           "index": 10,
@@ -109540,7 +109322,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Shed the Mortal Skin"
         },
         {
           "index": 2,
@@ -109919,7 +109701,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Share Death's Promises"
         }
       ]
     },
@@ -109959,7 +109741,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: A Challenge for Heroes"
         },
         {
           "index": 2,
@@ -110001,7 +109783,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -110351,7 +110133,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Restore the Moment"
         }
       ]
     },
@@ -110534,7 +110316,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Enter Seat Of Power"
         }
       ]
     },
@@ -110574,7 +110356,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Skirt the Underworld"
         },
         {
           "index": 2,
@@ -113110,7 +112892,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Clumsy"
         }
       ]
     },
@@ -113747,7 +113529,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Plant Thirty Barbs"
         },
         {
           "index": 2,
@@ -113877,7 +113659,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a classfeatures entity we do not hold: Greater Field Discovery (Toxicologist)"
         }
       ]
     },
@@ -114758,7 +114540,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -114862,7 +114644,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Burn out of Time"
         },
         {
           "index": 2,
@@ -115133,7 +114915,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Swift Choreography"
         }
       ]
     },
@@ -115323,8 +115105,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-runtime-choice",
+          "detail": "grant target is an unresolved choice: {item|flags.system.rulesSelections.thirdAdept}"
         }
       ]
     },
@@ -115344,7 +115126,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Speed of Arms"
         }
       ]
     },
@@ -115561,7 +115343,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Forced Pact"
         }
       ]
     },
@@ -116192,7 +115974,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Fleeting Arc through Heaven and Earth"
         },
         {
           "index": 2,
@@ -116478,7 +116260,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Break the Sun's Legs"
         },
         {
           "index": 2,
@@ -116605,7 +116387,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Intercession Spell"
         }
       ]
     },
@@ -116640,7 +116422,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -117139,7 +116921,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: Enter Runewell"
         }
       ]
     },
@@ -117200,8 +116982,8 @@
           "index": 0,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [{\"not\":\"feat:conceal-spell\"}]"
         }
       ]
     },
@@ -117339,7 +117121,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -117381,7 +117163,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -117595,7 +117377,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -117950,7 +117732,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -117999,7 +117781,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -118272,7 +118054,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -118314,7 +118096,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -118356,7 +118138,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -118384,7 +118166,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a adventure-specific-actions entity we do not hold: Protector's Interdiction"
         }
       ]
     },
@@ -118597,7 +118379,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -118625,7 +118407,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         }
       ]
     },
@@ -118787,7 +118569,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a actionspf2e entity we do not hold: True Shapeshift"
         }
       ]
     },
@@ -118933,7 +118715,7 @@
           "key": "GrantItem",
           "outcome": "unsupported",
           "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "detail": "grants a conditionitems entity we do not hold: Quickened"
         },
         {
           "index": 1,
@@ -119115,8 +118897,8 @@
           "index": 1,
           "key": "GrantItem",
           "outcome": "unsupported",
-          "reason": "needs-granting",
-          "detail": "grants another item/feat"
+          "reason": "needs-combat-tags",
+          "detail": "conditional grant: [\"ideaform\"]"
         },
         {
           "index": 2,
