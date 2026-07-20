@@ -41,6 +41,7 @@ import {
 } from "./passive.js";
 import { isSelector, isSkillSlug, SAVE_SELECTORS, SKILL_SLUGS, type Selector } from "./selectors.js";
 import { ACTION_SKILLS, isActionSlug, isSkillAction } from "./actions.js";
+import { toggleDeclarationSchema, type ToggleDeclaration, type ToggleVariant } from "./toggles.js";
 import { grantedActionSchema } from "./automation.js";
 import { dedupeGrants, entityGrantSchema, type EntityGrant } from "./grants.js";
 
@@ -111,6 +112,12 @@ export interface MappingResult {
    * ingest, so no runtime consumer ever interprets a `ChoiceSet`.
    */
   choices: EffectChoice[];
+  /**
+   * Player-controlled switches this entity offers, each asserting tag(s) when flipped
+   * (see toggles.ts). Its own field, not a `PassiveEffect`, for the same reason as
+   * `grants`: a toggle changes no number, it changes which tags are active. Additive.
+   */
+  toggles: ToggleDeclaration[];
   report: MappingEntry[];
 }
 
@@ -186,6 +193,13 @@ export const effectBearingShape = {
    * by the effects engine. Additive + optional, so existing content validates unchanged.
    */
   grants: z.array(entityGrantSchema).optional(),
+  /**
+   * Player-controlled switches this entity offers (see toggles.ts). NOT an effect — a
+   * toggle changes which TAGS are active, and other elements predicate on those. Read
+   * by the sheet to render controls and by the tag builder; the effects engine sees
+   * only the resulting tags. Additive + optional.
+   */
+  toggles: z.array(toggleDeclarationSchema).optional(),
   ingest: ingestRecordSchema.optional(),
   review: effectReviewSchema.optional(),
 };
@@ -354,7 +368,7 @@ const KNOWN_UNMAPPED: Readonly<Record<string, { reason: UnsupportedReason; detai
   // split off above, since its blocker is the choice rather than the granting.
   GrantItem: { reason: "needs-granting", detail: "grants another item/feat" },
   ChoiceSet: { reason: "needs-runtime-choice", detail: "prompts a selection at choice time" },
-  RollOption: { reason: "needs-combat-tags", detail: "produces a roll option/tag" },
+  // RollOption is handled by mapRollOption — it produces a ToggleDeclaration, not an effect.
   AdjustModifier: { reason: "unsupported-shape", detail: "retunes another modifier" },
   Aura: { reason: "unsupported-shape", detail: "emanating aura; needs positioning" },
   EphemeralEffect: { reason: "unsupported-shape", detail: "transient effect on another actor" },
@@ -407,7 +421,11 @@ function isConditional(rule: RuleElement): boolean {
 // rather than corroborating them.
 
 /** A Foundry predicate leaf we can state, or null when we cannot. */
-function mapPredicateLeaf(leaf: string, effectTraits: ReadonlySet<string>): Predicate | null {
+function mapPredicateLeaf(
+  leaf: string,
+  effectTraits: ReadonlySet<string>,
+  producedOptions: ReadonlySet<string>,
+): Predicate | null {
   // `item:` in a save/check context is the incoming effect.
   const item = /^item:trait:([a-z][a-z0-9-]*)$/.exec(leaf);
   if (item) return { tag: `effect:trait:${item[1]}` };
@@ -443,6 +461,17 @@ function mapPredicateLeaf(leaf: string, effectTraits: ReadonlySet<string>): Pred
   const action = /^action:([a-z][a-z0-9-]*)$/.exec(leaf);
   if (action) return isActionSlug(action[1]) ? { tag: `action:${action[1]}` } : null;
 
+  // A PRODUCED OPTION — a tag some RollOption in the corpus asserts (`spellshape`,
+  // `spellshape:reach-spell`, `deflecting-wave:acid`). This is the consumer side of the
+  // toggle work: a feat that predicates on `reveal-beasts` is mappable precisely because
+  // another element produces that tag. Confirmed against the collected producer set for
+  // the same reason as `effectTraits` — a leaf nothing produces is a condition that can
+  // never fire, so an unproduced option is refused, not guessed. Kept verbatim as the
+  // tag (`{tag: leaf}`), which is exactly what `toggleTags` emits. Checked BEFORE the
+  // bare-trait fallback because an option and a trait can share a bare slug, and when
+  // the slug is a produced option the raw tag is the correct reading.
+  if (producedOptions.has(leaf)) return { tag: leaf };
+
   // A BARE string is a roll option, and most of them are not traits at all (feat
   // slugs, action names, flags). Only accept one the caller's vocabulary confirms is
   // a real effect trait — the same discipline prose.ts applies, and for the same
@@ -457,14 +486,18 @@ function mapPredicateLeaf(leaf: string, effectTraits: ReadonlySet<string>): Pred
  * A Foundry predicate (an implicit AND of leaves and operators) → our `Predicate`,
  * or null when any part of it is beyond our vocabulary.
  */
-function mapPredicate(pred: unknown, effectTraits: ReadonlySet<string>): Predicate | null {
-  if (typeof pred === "string") return mapPredicateLeaf(pred, effectTraits);
+function mapPredicate(
+  pred: unknown,
+  effectTraits: ReadonlySet<string>,
+  producedOptions: ReadonlySet<string>,
+): Predicate | null {
+  if (typeof pred === "string") return mapPredicateLeaf(pred, effectTraits, producedOptions);
 
   // A Foundry predicate array is a conjunction.
   if (Array.isArray(pred)) {
     const parts: Predicate[] = [];
     for (const p of pred) {
-      const mapped = mapPredicate(p, effectTraits);
+      const mapped = mapPredicate(p, effectTraits, producedOptions);
       if (!mapped) return null;
       parts.push(mapped);
     }
@@ -482,7 +515,7 @@ function mapPredicate(pred: unknown, effectTraits: ReadonlySet<string>): Predica
       if (!Array.isArray(body)) return null;
       const parts: Predicate[] = [];
       for (const p of body) {
-        const mapped = mapPredicate(p, effectTraits);
+        const mapped = mapPredicate(p, effectTraits, producedOptions);
         if (!mapped) return null;
         parts.push(mapped);
       }
@@ -492,7 +525,7 @@ function mapPredicate(pred: unknown, effectTraits: ReadonlySet<string>): Predica
     }
 
     if (op === "not") {
-      const inner = mapPredicate(body, effectTraits);
+      const inner = mapPredicate(body, effectTraits, producedOptions);
       return inner ? { not: inner } : null;
     }
 
@@ -617,7 +650,11 @@ const DEGREE_SHIFT: Readonly<Record<string, number>> = {
   "two-degrees-worse": -2,
 };
 
-function mapAdjustDegreeOfSuccess(rule: RuleElement, effectTraits: ReadonlySet<string>): PassiveEffect[] {
+function mapAdjustDegreeOfSuccess(
+  rule: RuleElement,
+  effectTraits: ReadonlySet<string>,
+  producedOptions: ReadonlySet<string>,
+): PassiveEffect[] {
   const targets: Selector[] = [];
   for (const raw of toArray(rule.selector)) {
     const name = String(raw);
@@ -659,7 +696,7 @@ function mapAdjustDegreeOfSuccess(rule: RuleElement, effectTraits: ReadonlySet<s
   // The predicate was already checked as mappable by the caller; re-map it here so
   // the effect carries it. A conditional degree rewrite shipped unconditional would
   // be the wrong-sheet bug this boundary exists to prevent.
-  const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits) : null;
+  const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits, producedOptions) : null;
   if (isConditional(rule) && !when) throw new MapError("needs-combat-tags", "unmappable predicate");
 
   return targets.map(
@@ -747,6 +784,106 @@ function narrowFannedSkillTargets(produced: PassiveEffect[], when: Predicate | n
   // Defensive: an action whose only skill is an (unenumerable) lore would narrow to
   // nothing. Keeping the fan-out beats silently producing no effect at all.
   return kept.some(isSkillTarget) ? kept : produced;
+}
+
+// ---------------------------------------------------------------------------
+// RollOption → ToggleDeclaration
+// ---------------------------------------------------------------------------
+//
+// The other side of the predicate work: these elements PRODUCE a tag rather than being
+// gated by one, which is why they sat in `needs-combat-tags` without the gate ever being
+// their blocker. See toggles.ts for the three mechanisms Foundry packs into this one key;
+// this maps the two that are declarative and defers the third.
+//
+// A Foundry LABEL IS USUALLY NOT TEXT. 460 of the corpus's 593 are localization keys
+// (`PF2E.TraitAcid`), so `humanLabel` keeps only what is already human-readable. Passing
+// an i18n key through would print `PF2E.TraitAcid` on a character sheet.
+function humanLabel(v: unknown): string | undefined {
+  if (typeof v !== "string" || v === "") return undefined;
+  // `PF2E.*` and SCREAMING.DOTTED.KEYS are Foundry's i18n namespace, never prose.
+  if (/^PF2E\./.test(v) || /^[A-Z0-9_]+(\.[A-Z0-9_]+)+$/.test(v)) return undefined;
+  return v;
+}
+
+function mapRollOption(
+  rule: RuleElement,
+  effectTraits: ReadonlySet<string>,
+  producedOptions: ReadonlySet<string>,
+): ToggleDeclaration {
+  const option = String(rule.option ?? "");
+  if (!option) throw new MapError("unsupported-shape", "no option");
+
+  // `breath-of-the-dragon:{actor|flags.system.dragonblood.shape}` — the tag's own NAME
+  // depends on Foundry actor data we do not carry. Mapping it would produce a tag no
+  // predicate could ever match.
+  if (isInterpolated(option)) {
+    throw new MapError("needs-runtime-choice", `option interpolates: ${option.slice(0, 60)}`);
+  }
+
+  const toggleable = rule.toggleable === true || rule.toggleable === "totm";
+
+  // A NON-toggleable predicated option is a DERIVED tag — asserted because other tags
+  // are, e.g. Disarming Flair giving your Disarm the `bravado` trait. That is a tag
+  // depending on a tag, which needs evaluation ordering `predicate.ts` does not have.
+  // Deferred deliberately, and reported as such rather than shipped as a player toggle
+  // the player would have to know to flip. (An `alwaysActive` predicated option is NOT
+  // this — its predicate is an availability condition, handled below.)
+  if (!toggleable && rule.alwaysActive !== true && isConditional(rule)) {
+    throw new MapError("needs-combat-tags", `derived tag (asserted by predicate), not a toggle`);
+  }
+
+  // Foundry places a NON-toggleable option on the actor unconditionally, so it is
+  // always on — the player has no switch for it. `alwaysActive` says the same
+  // explicitly. Only a `toggleable` option is a player-flippable switch that defaults
+  // off. (A bare `{option}` with neither flag is therefore a constant tag, not a
+  // dormant toggle that never fires.)
+  const alwaysOn = rule.alwaysActive === true || !toggleable;
+
+  const decl: ToggleDeclaration = { option };
+
+  const label = humanLabel(rule.label);
+  if (label) decl.label = label;
+  if (alwaysOn) decl.alwaysOn = true;
+
+  // Availability. Unmappable means we cannot say WHEN the switch is offered, and an
+  // always-offered switch the character has not qualified for is a wrong sheet.
+  if (isConditional(rule)) {
+    const when = mapPredicate(rule.predicate, effectTraits, producedOptions);
+    if (!when) {
+      throw new MapError("needs-combat-tags", `unmappable availability: ${JSON.stringify(rule.predicate).slice(0, 90)}`);
+    }
+    decl.when = when;
+  }
+
+  // Suboptions come in two shapes. The ARRAY form is a fixed variant list and maps. The
+  // OBJECT form (`{config: "skills", predicate: ["skill:{choice|value}:rank:0"]}`) asks
+  // the sheet to enumerate a config list at render time and interpolates the choice back
+  // into a predicate — a runtime choice, not a fixed set.
+  if (rule.suboptions !== undefined) {
+    if (!Array.isArray(rule.suboptions)) {
+      throw new MapError("needs-runtime-choice", "config-driven suboptions (enumerated at render)");
+    }
+    const variants: ToggleVariant[] = [];
+    for (const raw of rule.suboptions) {
+      if (!isRecord(raw)) throw new MapError("unsupported-shape", "malformed suboption");
+      const value = String(raw.value ?? "");
+      if (!value) throw new MapError("unsupported-shape", "suboption without a value");
+      const variant: ToggleVariant = { value };
+      const vLabel = humanLabel(raw.label);
+      if (vLabel) variant.label = vLabel;
+      if (Array.isArray(raw.predicate) && raw.predicate.length) {
+        const vWhen = mapPredicate(raw.predicate, effectTraits, producedOptions);
+        if (!vWhen) {
+          throw new MapError("needs-combat-tags", `unmappable variant availability on "${value}"`);
+        }
+        variant.when = vWhen;
+      }
+      variants.push(variant);
+    }
+    if (variants.length) decl.variants = variants;
+  }
+
+  return toggleDeclarationSchema.parse(decl);
 }
 
 /** Foundry writes proficiency ranks as ActiveEffectLike paths into their actor data. */
@@ -1099,6 +1236,16 @@ export interface FoundryMapOptions {
    * dataset means an actions dataset later starts resolving with no mapper change.
    */
   knownFeatIds?: ReadonlySet<string>;
+  /**
+   * The tag options PRODUCED by RollOptions across the corpus (base + variant forms,
+   * e.g. `spellshape` and `spellshape:reach-spell`). Passed in for the same reason as
+   * `effectTraits`: a consumer's predicate that reads `spellshape:reach-spell` is only
+   * mappable if something actually produces that tag, and that is corpus-wide knowledge
+   * one entity's rules cannot see. Empty (the default) means no option leaf is
+   * recognized — the honest reading when we have not collected the producers, and it
+   * keeps a bare option leaf from mapping to a tag nothing asserts.
+   */
+  producedOptions?: ReadonlySet<string>;
 }
 
 export function mapFoundryRules(
@@ -1107,8 +1254,10 @@ export function mapFoundryRules(
 ): MappingResult {
   const effectTraits = options.effectTraits ?? new Set<string>();
   const knownFeatIds = options.knownFeatIds ?? new Set<string>();
+  const producedOptions = options.producedOptions ?? new Set<string>();
   const effects: PassiveEffect[] = [];
   const grants: EntityGrant[] = [];
+  const toggles: ToggleDeclaration[] = [];
   const report: MappingEntry[] = [];
 
   // PRE-PASS: choice groups span SEVERAL elements (a ChoiceSet plus the
@@ -1185,6 +1334,20 @@ export function mapFoundryRules(
       return;
     }
 
+    // BEFORE the predicate gate below: a RollOption's predicate is its AVAILABILITY
+    // condition, not a gate on an effect, so `mapRollOption` interprets it itself.
+    if (key === "RollOption") {
+      try {
+        const decl = mapRollOption(rule, effectTraits, producedOptions);
+        toggles.push(decl);
+        report.push({ index, key, outcome: "mapped", produced: 1 });
+      } catch (e) {
+        if (e instanceof MapError) unsupported(e.reason, e.detail);
+        else unsupported("unsupported-shape", `mapper threw: ${String(e)}`);
+      }
+      return;
+    }
+
     const known = KNOWN_UNMAPPED[key];
     if (known) {
       unsupported(known.reason, known.detail);
@@ -1201,7 +1364,7 @@ export function mapFoundryRules(
     // rest were blocked by the leaf VOCABULARY, not by this gate — which is why the
     // action vocabulary (actions.ts) landed alongside it and does the real work,
     // taking the total to 265.
-    const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits) : null;
+    const when = isConditional(rule) ? mapPredicate(rule.predicate, effectTraits, producedOptions) : null;
     if (isConditional(rule) && !when) {
       unsupported("needs-combat-tags", `conditional: ${JSON.stringify(rule.predicate).slice(0, 120)}`);
       return;
@@ -1214,7 +1377,7 @@ export function mapFoundryRules(
           produced = mapFlatModifier(rule);
           break;
         case "AdjustDegreeOfSuccess":
-          produced = mapAdjustDegreeOfSuccess(rule, effectTraits);
+          produced = mapAdjustDegreeOfSuccess(rule, effectTraits, producedOptions);
           break;
         case "ActiveEffectLike":
           produced = mapActiveEffectLike(rule);
@@ -1270,7 +1433,7 @@ export function mapFoundryRules(
     }
   });
 
-  return { effects, choices, grants: dedupeGrants(grants), report };
+  return { effects, choices, grants: dedupeGrants(grants), toggles, report };
 }
 
 /** Reason tallies across a set of reports — the corpus-level coverage roadmap. */

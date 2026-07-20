@@ -27,14 +27,14 @@ describe("mapFoundryRules — the report invariant", () => {
     const { report } = mapFoundryRules([
       { key: "ItemAlteration" },
       { key: "ChoiceSet" },
-      { key: "RollOption" },
+      { key: "DamageDice" },
       { key: "GrantItem" },
     ]);
     expect(report.every((e) => e.outcome === "unsupported" && e.reason && e.detail)).toBe(true);
     expect(report.map((e) => e.reason)).toEqual([
       "needs-item-model",
       "needs-runtime-choice",
-      "needs-combat-tags",
+      "needs-item-model",
       "needs-granting",
     ]);
   });
@@ -542,6 +542,117 @@ describe("mapFoundryRules — Note", () => {
   });
 });
 
+describe("mapFoundryRules — RollOption (toggles)", () => {
+  it("maps a plain toggle to a bare declaration, no effect", () => {
+    const { toggles, effects, report } = mapFoundryRules([
+      { key: "RollOption", option: "reveal-beasts", toggleable: true },
+    ]);
+    expect(effects).toEqual([]);
+    expect(toggles).toEqual([{ option: "reveal-beasts" }]);
+    expect(report[0]).toMatchObject({ outcome: "mapped", produced: 1 });
+  });
+
+  it("keeps a variant list, dropping Foundry i18n-key labels", () => {
+    const { toggles } = mapFoundryRules([
+      {
+        key: "RollOption",
+        option: "deflecting-wave",
+        toggleable: true,
+        suboptions: [
+          { label: "PF2E.TraitAcid", value: "acid" },
+          { label: "PF2E.TraitFire", value: "fire" },
+        ],
+      },
+    ]);
+    // Labels are i18n keys, so they are refused; `value` carries the meaning.
+    expect(toggles[0]).toEqual({
+      option: "deflecting-wave",
+      variants: [{ value: "acid" }, { value: "fire" }],
+    });
+  });
+
+  it("keeps a label that is already human text", () => {
+    const { toggles } = mapFoundryRules([
+      { key: "RollOption", option: "x", toggleable: true, label: "Press the Advantage" },
+    ]);
+    expect(toggles[0]).toEqual({ option: "x", label: "Press the Advantage" });
+  });
+
+  it("maps an alwaysActive option as alwaysOn", () => {
+    const { toggles } = mapFoundryRules([
+      { key: "RollOption", option: "orc-superstition", alwaysActive: true },
+    ]);
+    expect(toggles[0]).toEqual({ option: "orc-superstition", alwaysOn: true });
+  });
+
+  it("carries a mappable availability predicate as `when`", () => {
+    const { toggles } = mapFoundryRules(
+      [{ key: "RollOption", option: "x", toggleable: true, predicate: ["dragon"] }],
+      { effectTraits: new Set(["dragon"]) },
+    );
+    expect(toggles[0]).toMatchObject({ option: "x", when: { tag: "effect:trait:dragon" } });
+  });
+
+  it("carries a variant-level availability predicate", () => {
+    const { toggles } = mapFoundryRules(
+      [
+        {
+          key: "RollOption",
+          option: "x",
+          toggleable: true,
+          suboptions: [
+            { value: "1" },
+            { value: "2", predicate: ["dragon"] },
+          ],
+        },
+      ],
+      { effectTraits: new Set(["dragon"]) },
+    );
+    expect(toggles[0]!.variants).toEqual([
+      { value: "1" },
+      { value: "2", when: { tag: "effect:trait:dragon" } },
+    ]);
+  });
+
+  it("refuses an option whose NAME interpolates Foundry actor data", () => {
+    const { toggles, report } = mapFoundryRules([
+      { key: "RollOption", option: "breath-of-the-dragon:{actor|flags.system.dragonblood.shape}" },
+    ]);
+    expect(toggles).toEqual([]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-runtime-choice" });
+  });
+
+  it("refuses config-driven suboptions — a render-time enumeration, not a fixed set", () => {
+    const { report } = mapFoundryRules([
+      {
+        key: "RollOption",
+        option: "ancestral-longevity",
+        alwaysActive: true,
+        suboptions: { config: "skills", predicate: ["skill:{choice|value}:rank:0"] },
+      },
+    ]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-runtime-choice" });
+  });
+
+  it("defers a NON-toggleable predicated option as a derived tag", () => {
+    // Disarming Flair: `item:trait:bravado` asserted when you Disarm. A tag that
+    // depends on a tag needs ordering we don't have yet — its own slice.
+    const { toggles, report } = mapFoundryRules([
+      { key: "RollOption", option: "item:trait:bravado", predicate: ["action:disarm"] },
+    ]);
+    expect(toggles).toEqual([]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-combat-tags" });
+  });
+
+  it("refuses an unmappable availability predicate rather than offering the toggle always", () => {
+    const { toggles, report } = mapFoundryRules([
+      { key: "RollOption", option: "x", toggleable: true, predicate: [{ gte: ["self:level", 5] }] },
+    ]);
+    expect(toggles).toEqual([]);
+    expect(report[0]).toMatchObject({ outcome: "unsupported", reason: "needs-combat-tags" });
+  });
+});
+
 describe("mapped effects are valid against our own schema", () => {
   it("everything the mapper emits parses as a PassiveEffect on a feat", () => {
     // The mapper's output is content we will store, so it must satisfy the schema a
@@ -589,12 +700,14 @@ describe("summarizeReports", () => {
     const s = summarizeReports([a.report, b.report]);
     expect(s).toMatchObject({
       elements: 5,
-      mapped: 2,
-      unsupported: 3,
-      effects: 4, // 1 + the saving-throw fan-out to 3
+      mapped: 3, // the two plain FlatModifiers + the RollOption (now a toggle)
+      unsupported: 2,
+      effects: 5, // perception 1 + saving-throw fan-out 3 + the toggle's 1 produced
+      // (`produced` counts things a mapped element yields; like grants, a toggle is one)
     });
-    expect(s.byReason).toEqual({ "needs-combat-tags": 2, "needs-item-model": 1 });
-    expect(s.byKey).toEqual({ RollOption: 1, ItemAlteration: 1, FlatModifier: 1 });
+    // byKey/byReason count only the UNSUPPORTED — the roadmap. RollOption has left it.
+    expect(s.byReason).toEqual({ "needs-combat-tags": 1, "needs-item-model": 1 });
+    expect(s.byKey).toEqual({ ItemAlteration: 1, FlatModifier: 1 });
   });
 });
 

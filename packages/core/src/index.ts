@@ -38,6 +38,11 @@ export * from './selectors.js';
 // runtime state: whoever performs an action asserts the tag.
 export * from './actions.js';
 
+// Toggles — player-controlled switches that assert tags (`ToggleDeclaration`,
+// `toggleTags`, `ToggleState`). The production side of the tag vocabulary, the way
+// `predicate.ts` is the consumption side.
+export * from './toggles.js';
+
 // The expression language — the bounded, sandboxed evaluator for effect values
 // (AST + `evaluate`/`parseExpr` + the `ExprScope` seam). One implementation for
 // both the Foundry-ingest value path and the effect engine. No `eval`.

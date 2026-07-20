@@ -43,7 +43,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mapFoundryRules, resolveEntity, summarizeReports } from '@pathway/core';
+import { mapFoundryRules, resolveEntity, summarizeReports, producedOptionTags } from '@pathway/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR_DEFAULT = resolve(HERE, '..', 'src', 'features', 'builder', 'data');
@@ -170,6 +170,18 @@ function main() {
     }
   }
 
+  // The tag options RollOptions produce across the WHOLE corpus. A consumer predicate
+  // that reads `spellshape:reach-spell` is mappable only because something asserts that
+  // tag, and that is cross-entity knowledge — so we do a cheap pre-pass mapping every
+  // entity's `raw` (with the trait vocab, but no options yet, which only affects the
+  // rare option-gated toggle) and collect the toggles it declares. Reusing the mapper
+  // rather than re-parsing Foundry keeps the producer and consumer sides in lockstep.
+  const producedOptions = new Set();
+  for (const raw of rawById.values()) {
+    const { toggles } = mapFoundryRules(raw, { effectTraits, knownFeatIds });
+    for (const tag of producedOptionTags(toggles)) producedOptions.add(tag);
+  }
+
   const foldIn = loadFoldIn(args.data);
   const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0, grantedActions: 0 };
 
@@ -179,6 +191,7 @@ function main() {
   let withEffects = 0;
   let withChoices = 0;
   let withGrants = 0;
+  let withToggles = 0;
   let withGrantedActions = 0;
   let strippedRules = 0;
   let fromSidecar = 0;
@@ -230,7 +243,7 @@ function main() {
 
       if (!raw || raw.length === 0) continue;
 
-      const { effects, choices, grants, report } = mapFoundryRules(raw, { effectTraits, knownFeatIds });
+      const { effects, choices, grants, toggles, report } = mapFoundryRules(raw, { effectTraits, knownFeatIds, producedOptions });
       reports.push(report);
 
       // The fold-in replaces the mapper's output with the RESOLVED effects wherever
@@ -275,6 +288,12 @@ function main() {
         bearer.grants = grants;
         withGrants += 1;
       }
+      // Toggles, like grants, have a single producer and no fold-in: there is nothing
+      // for a human to arbitrate between two proposals of. They ship as mapped.
+      if (toggles.length > 0) {
+        bearer.toggles = toggles;
+        withToggles += 1;
+      }
       entities.push({ id: bearer.id, kind: dataset.kind, name: bearer.name, raw, report });
       bearers += 1;
     }
@@ -292,6 +311,7 @@ function main() {
       entitiesWithEffects: withEffects,
       entitiesWithChoices: withChoices,
       entitiesWithGrants: withGrants,
+      entitiesWithToggles: withToggles,
       entitiesWithGrantedActions: withGrantedActions,
       grantedActions: folded.grantedActions,
       elements: summary.elements,
@@ -307,7 +327,7 @@ function main() {
   const pct = (n) => `${((n / summary.elements) * 100).toFixed(1)}%`;
   console.log(`raw source       : ${fromSidecar} from sidecar, ${fromLegacy} from legacy rules[]`);
   console.log(
-    `entities         : ${entities.length} (${withEffects} yield effects, ${withChoices} yield choices, ${withGrants} yield grants)`,
+    `entities         : ${entities.length} (${withEffects} yield effects, ${withChoices} yield choices, ${withGrants} yield grants, ${withToggles} yield toggles)`,
   );
   for (const w of written) console.log(`  ${w.file.padEnd(25)}: ${w.bearers} bearers`);
   console.log(`rule elements    : ${summary.elements}`);

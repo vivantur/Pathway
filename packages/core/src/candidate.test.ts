@@ -386,6 +386,29 @@ describe("multiplicity — content that means it twice", () => {
     expect(c!.multiplicity).toBe(2);
   });
 
+  it("does NOT multiply DISTINCT same-key proposals from one source — they are not a repeat", () => {
+    // Web Hunter proposes tremorsense at 15 ft AND 60 ft (the latter gated on a toggle).
+    // Both share the key `grant:sense:tremorsense` — the key ignores range and `when` —
+    // but they are different effects, NOT "tremorsense twice". Counting bucket entries
+    // gave multiplicity 2, so resolving an accepted 15-ft grant emitted it TWICE: a
+    // duplicate on the sheet. With multiplicity counted by `sameDraft`, it stays 1.
+    const near = { kind: "grant" as const, grant: { type: "sense", name: "tremorsense", range: 15 } };
+    const far = {
+      kind: "grant" as const,
+      grant: { type: "sense", name: "tremorsense", range: 60 },
+      when: { tag: "web-hunter-same-object" },
+    };
+    const [c] = reconcile("web-hunter", [{ source: "foundry", proposals: [{ draft: near }, { draft: far }] }]);
+    expect(c!.multiplicity).toBeUndefined();
+    // One source keeps its first reading (the 60-ft variant is a pre-existing
+    // single-source drop, unchanged by this slice); the point here is that it no
+    // longer DUPLICATES.
+    expect(
+      resolveEntity([c!], [{ entityId: "web-hunter", key: c!.key, action: "accept", effect: near as PassiveEffect }])
+        .effects,
+    ).toHaveLength(1);
+  });
+
   it("emits the effect once per instance when resolved", () => {
     const c = cand({ multiplicity: 2 });
     const r = resolveEntity([c], []);

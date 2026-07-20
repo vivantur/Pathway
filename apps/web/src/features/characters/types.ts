@@ -71,6 +71,14 @@ export interface CharacterOverlay {
   web_edits?: {
     spells?: AddedSpell[];
     conditions?: ActiveCondition[];
+    /**
+     * Player-controlled toggle switches, keyed by a content toggle's `option`
+     * (see core's `ToggleState`). `true` flips a plain toggle on; a string picks
+     * that variant. Absent/`false` is off. Additive JSONB — a character that never
+     * touches a toggle stores nothing here, so this needs no migration and old rows
+     * read unchanged.
+     */
+    toggles?: Record<string, boolean | string>;
   };
   [key: string]: unknown;
 }

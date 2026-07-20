@@ -35,7 +35,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mapFoundryRules, parseProse, reconcile, triage, classifySilence, groupSilence, silenceBlockerTally } from '@pathway/core';
+import { mapFoundryRules, parseProse, reconcile, triage, classifySilence, groupSilence, silenceBlockerTally, producedOptionTags } from '@pathway/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR_DEFAULT = resolve(HERE, '..', 'src', 'features', 'builder', 'data');
@@ -71,7 +71,7 @@ function parseArgs(argv) {
 function foundryProposals(feat, rawById, vocab) {
   const raw = rawById.get(feat.id);
   const { effects, choices, report } = raw
-    ? mapFoundryRules(raw, { effectTraits: vocab.effectTraits })
+    ? mapFoundryRules(raw, { effectTraits: vocab.effectTraits, producedOptions: vocab.producedOptions })
     : { effects: feat.effects ?? [], choices: feat.choices ?? [], report: [] };
 
   const proposals = effects.map((draft) => ({ draft }));
@@ -128,6 +128,17 @@ function main() {
       if ((e.kind ?? 'feat') === 'feat' && Array.isArray(e.raw) && e.raw.length) rawById.set(e.id, e.raw);
     }
   }
+
+  // The corpus-wide produced-option vocabulary, so a consumer predicate (`spellshape:
+  // reach-spell`) maps here exactly as it does in remap. WITHOUT THIS the two mappers
+  // disagree: remap maps the consumer, but with no candidate produced here the fold-in
+  // would drop it. Collected in one pre-pass over the same sidecar `raw`.
+  const producedOptions = new Set();
+  for (const raw of rawById.values()) {
+    const { toggles } = mapFoundryRules(raw, { effectTraits: traits.effectTraits });
+    for (const tag of producedOptionTags(toggles)) producedOptions.add(tag);
+  }
+  traits.producedOptions = producedOptions;
 
   const candidates = [];
   let featsWithProse = 0;

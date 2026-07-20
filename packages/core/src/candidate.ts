@@ -380,12 +380,23 @@ export function reconcile(entityId: string, sources: readonly SourceProposals[])
     const gaps = b.entries.flatMap((e) => e.gaps);
     const evidence = b.entries.map((e) => e.evidence);
 
-    // How many instances the entity gets: the most any ONE producer proposed. Two
-    // producers each saying it once is corroboration of a single instance; one
-    // producer saying it twice is two instances. See `multiplicity`.
+    // How many instances the entity gets: the most any ONE producer proposed OF THE
+    // SAME EFFECT. Two producers each saying it once is corroboration of a single
+    // instance; one producer saying the SAME thing twice is two instances (Natural
+    // Skill's two identical "become trained in a skill" choices). See `multiplicity`.
+    //
+    // Counted by `sameDraft`, NOT by bucket key. The key deliberately ignores range and
+    // `when` (`grant:sense:tremorsense` covers both a 15-ft grant and a 60-ft one gated
+    // on a toggle), so counting bucket entries would read Web Hunter's base + conditional
+    // variant as "tremorsense twice" and replicate the accepted one — a duplicate on the
+    // sheet. Distinct same-key proposals are a CONFLICT (draft + alternatives), not a
+    // multiplicity, so only genuine repeats raise the count.
     const perSource = new Map<CandidateSource, number>();
-    for (const e of b.entries) perSource.set(e.source, (perSource.get(e.source) ?? 0) + 1);
-    const count = Math.max(...perSource.values());
+    for (const e of b.entries) {
+      const same = b.entries.filter((o) => o.source === e.source && sameDraft(o.draft, e.draft)).length;
+      perSource.set(e.source, Math.max(perSource.get(e.source) ?? 0, same));
+    }
+    const count = perSource.size ? Math.max(...perSource.values()) : 1;
     const mult = count > 1 ? { multiplicity: count } : {};
 
     if (sourcesSeen.size < 2) {

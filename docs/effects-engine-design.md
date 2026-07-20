@@ -1596,6 +1596,71 @@ of skill-action degrees of success is the raw material for replacing the hand-au
 `authoredActions.js` catalog with rules-sourced ones — deliberately NOT pulled into this
 slice, which needed only the slugs.
 
+### Toggles landed 2026-07-20 — `toggles.ts`, the PRODUCTION side of the tag vocabulary (phase 1–2)
+
+**`needs-combat-tags` 1,514 → 813. Mapped elements 921 → 1,539 (+618).** Shipped content gained
+**482 toggle declarations across 468 feats with ZERO effect churn** — the safest possible
+content diff. This is commit 1 of a planned three (core + persistence; then web; then bot).
+
+**RollOption was the largest blocker in the bucket (546, 31%) and a DIFFERENT problem from
+everything else in it.** These elements PRODUCE a tag rather than being gated by one — filed
+under `needs-combat-tags` only because the reason vocabulary is named after the blocker and
+they share the noun. Measured, three mechanisms hid under Foundry's one `RollOption` key:
+- **473 (87%) player toggles** — `toggleable`. A checkbox/picker on the sheet.
+- **~45 constant tags** — `alwaysActive`, or a bare non-toggleable option (which Foundry places
+  on the actor unconditionally; mapped as `alwaysOn`, NOT a dormant toggle that never fires —
+  a bug caught mid-build).
+- **~52 derived tags** — a NON-toggleable *predicated* option (Disarming Flair gives your
+  Disarm the `bravado` trait). A tag asserted because of other tags needs evaluation ordering
+  `predicate.ts`'s single-pass membership lacks. **Deferred as its own slice**, reported not
+  shipped.
+
+**The measurement corrected the design twice.** In Phase 0 I predicted tag *lifetime* (stance
+vs action-scoped) would be load-bearing — it isn't; toggles are *stored character state*, the
+same kind of thing as `overlay.web_edits.conditions`, so persistence is an additive JSONB key
+(`overlay.web_edits.toggles`) with **no migration and no risk to live characters** (verified:
+both the bot and web overlay writers namespace themselves and preserve unknown keys). And I
+predicted the web sheet would be a passive consumer as it was for action tags — here it is the
+natural OWNER, since a toggle checkbox lives on the sheet.
+
+**A toggle nobody reads does nothing, so the CONSUMERS are the point.** Mapping the producers
+alone freed 486 elements but left 465 feats carrying inert toggles. The other half: a feat that
+predicates on `spellshape:reach-spell` is mappable precisely because some `RollOption` asserts
+that tag. So `mapPredicate` gained a produced-option leaf arm, confirmed against a **corpus-wide
+option vocabulary** collected in a pre-pass (like `effectTraits`/`knownFeatIds` — a leaf nothing
+produces is refused, not guessed). That took the total from 486 to **701 elements freed**. Both
+`remap-effects.mjs` and `build-candidates.mjs` collect and pass the vocabulary, because if they
+disagreed the fold-in would map a consumer in remap and then drop it for want of a candidate.
+
+**A real duplicate bug surfaced and was fixed in `reconcile`.** Web Hunter proposes tremorsense
+at 15 ft AND 60 ft (the latter gated on its toggle). Both share the key `grant:sense:tremorsense`
+— the key deliberately ignores range and `when` — so `multiplicity` counted them as "tremorsense
+twice" and the stale human `accept` of the 15-ft grant shipped it TWICE. Fix: **multiplicity
+counts genuinely-identical proposals (`sameDraft`), not same-key ones.** Natural Skill's two
+*identical* skill choices stay multiplicity 2; Web Hunter's two *distinct* proposals are a
+conflict, not a repeat. My first content check missed this because it compared effect SETS,
+which dedupe a duplicate — the multiset count is what caught it. Corpus-wide: 0 duplicates after
+the fix, 0 shipped effects lost or gained.
+
+**Review-queue delta, same shape as the action slice and benign.** Candidates 2,328 → 2,522,
+conflicts 187 → 273. The new conflicts are Foundry now proposing consumer effects the parser
+proposed differently or not at all. Exactly **one** touches a prior human decision — Web Hunter
+itself — and it is not stranded: the decision still ships the 15-ft grant correctly, the conflict
+flag merely surfaces the new 60-ft variant for review. Consumer effects themselves are gated on
+review (the fold-in), so they sit pending, not shipping, until ruled on — while the toggle
+DECLARATIONS ship directly (single producer, no fold-in, like grants). None fire on any surface
+yet: nothing asserts a toggle's tag until phase 3 renders the control.
+
+**Deferred deliberately, each reported not dropped:** derived tags (~52), config-driven suboptions
+(`{config: "skills"}` — a render-time enumeration), and options whose NAME interpolates Foundry
+actor data (`{actor|flags.system.dragonblood.shape}`). Foundry i18n-key labels
+(`PF2E.TraitAcid` — 460 of 593) are refused so they never print on a sheet; the UI humanizes the
+`value`, which is always a real word.
+
+**Next:** phase 3 (the sheet control + wiring `deriveCharacter`'s tag set) and phase 4 (the bot
+reading the same overlay key, closing the cross-surface loop). Then the deferred derived-tag
+slice, which is what `self:effect:*` and `feat:*` consumers are largely waiting on.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the
