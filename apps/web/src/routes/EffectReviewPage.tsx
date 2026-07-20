@@ -567,7 +567,17 @@ function SaveIndicator({ state, error, count }: { state: 'idle' | 'saving' | 'sa
   if (state === 'saved') {
     return <span className="px-2.5 py-1.5 text-sm text-emerald-soft/80">✓ saved ({count})</span>;
   }
-  return <span className="px-2.5 py-1.5 text-sm text-parchment/40">{count > 0 ? `${count} decided` : 'decisions save automatically'}</span>;
+  // The STEADY state, and the one a reviewer actually looks at — `saved` is transient
+  // (it appears just after a write), so anyone not mid-click sees this instead. It used
+  // to read "588 decided", a bare tally sitting next to an Export button, which is
+  // indistinguishable from work that has NOT been persisted yet — the assurance was
+  // shown only while `count` was 0, i.e. only when there was nothing to be assured
+  // about. Say it whenever there is something saved.
+  return (
+    <span className="px-2.5 py-1.5 text-sm text-parchment/40">
+      {count > 0 ? `${count} decided · saved automatically` : 'decisions save automatically'}
+    </span>
+  );
 }
 
 const REJECT_REASONS: { value: RejectReason; label: string; hint: string }[] = [
