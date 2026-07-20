@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { CONDITION_SLUGS, effectChoiceSchema, grantedActionSchema, SKILL_SLUGS } from '@pathway/core';
+import {
+  addGrantedAction,
+  CONDITION_SLUGS,
+  effectChoiceSchema,
+  grantedActionSchema,
+  SKILL_SLUGS,
+  type EffectDecision,
+} from '@pathway/core';
+import { saveDecisions } from '@/features/effects/decisions';
 import featData from '@/features/builder/data/feats.json';
 import { GildedRule } from '@/components/ui/GildedRule';
 import { GrimoireMarkdown } from '@/components/ui/GrimoireMarkdown';
@@ -63,6 +71,8 @@ export function EffectAuthorPage() {
   const [choices, setChoices] = useState<ChoiceDraft[]>([]);
   const [actions, setActions] = useState<ActionDraft[]>([]);
   const [showText, setShowText] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<{ ok: boolean; message: string } | null>(null);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -107,11 +117,57 @@ export function EffectAuthorPage() {
     choices.every((c) => validateChoice(c).length === 0) &&
     actions.every((a) => validateAction(a).length === 0);
 
+  /**
+   * Persist the authored activities as `add` decisions — the rail passives already
+   * ride, rather than the download/re-import round trip this page used to require.
+   *
+   * ONLY ACTIONS. `effects` and `choices` are owned by the review queue, and
+   * `remap-effects.mjs` deletes and rebuilds them from candidates + decisions on
+   * every run; writing them from here would either be clobbered on the next bake or
+   * fight the queue for the same rows. Granted actions have no such producer, which
+   * is exactly why they are the thing this page can author outright.
+   *
+   * `addGrantedAction` is core's door: it validates against `grantedActionSchema`
+   * (recursively, so a bad automation tree is refused here rather than on a sheet)
+   * and derives the stable key that makes a re-save an update.
+   */
+  const saveActions = async () => {
+    if (!feat) return;
+    setSaving(true);
+    setSaveState(null);
+    try {
+      const decisions: EffectDecision[] = [];
+      for (const draft of authoredActions) {
+        const out = addGrantedAction(feat.id, draft);
+        if (!out.ok) {
+          // Refuse the whole batch rather than saving part of it: a half-saved set
+          // is a feat that grants some of its activities, which is worse than one
+          // that grants none and says why.
+          setSaveState({
+            ok: false,
+            message: `Not saved — ${out.issues.map((i) => `${i.field}: ${i.message}`).join('; ')}`,
+          });
+          return;
+        }
+        decisions.push(out.decision!);
+      }
+      await saveDecisions(decisions);
+      setSaveState({ ok: true, message: `Saved ${decisions.length} action(s) to the review queue.` });
+    } catch (e) {
+      setSaveState({ ok: false, message: `Save failed: ${e instanceof Error ? e.message : String(e)}` });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportJson = () => {
     const content = {
       id: feat?.id, name: feat?.name, effects: authored,
       ...(authoredChoices.length ? { choices: authoredChoices } : {}),
-      ...(authoredActions.length ? { actions: authoredActions } : {}),
+      // `grantedActions`, matching the field on our content — this used to emit
+      // `actions`, which no consumer reads. The mismatch was silent by construction:
+      // a feat carrying `actions` validates fine and simply grants nothing.
+      ...(authoredActions.length ? { grantedActions: authoredActions } : {}),
     };
     const blob = new Blob([`${JSON.stringify(content, null, 2)}\n`], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -243,16 +299,29 @@ export function EffectAuthorPage() {
 
       {/* output */}
       <h2 className="mt-8 font-display text-xl text-gold">Authored content</h2>
-      <div className="mt-2 flex items-center gap-3">
+      <div className="mt-2 flex flex-wrap items-center gap-3">
         <span className={`text-sm ${allValid ? 'text-emerald-soft' : 'text-red-300/80'}`}>
           {allValid ? `✓ ${effects.length} effect(s), ${choices.length} choice(s), ${actions.length} action(s) valid` : 'some entries are invalid'}
         </span>
+        <button onClick={saveActions} disabled={!feat || !allValid || actions.length === 0 || saving} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
+          {saving ? 'Saving…' : `Save ${actions.length || ''} action(s) to review queue`}
+        </button>
         <button onClick={exportJson} disabled={!feat || !allValid || (effects.length === 0 && choices.length === 0 && actions.length === 0)} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
           Export JSON
         </button>
       </div>
+      {saveState && (
+        <p className={`mt-2 text-sm ${saveState.ok ? 'text-emerald-soft' : 'text-red-300/80'}`}>{saveState.message}</p>
+      )}
+      <p className="mt-2 max-w-3xl text-xs text-parchment/50">
+        Saving records each action as an <code>add</code> decision keyed by its id, so re-saving an
+        edited action updates it rather than adding a second copy. Effects and choices are NOT saved
+        here — those belong to the review queue, which owns them and rebuilds them on every bake.
+        Run <code>npm run pull:decisions</code> then <code>remap-effects.mjs</code> to bake what you
+        save into content.
+      </p>
       <pre className="mt-3 max-h-80 overflow-auto rounded-md border border-gold/15 bg-midnight-950/70 p-3 text-[11px] leading-relaxed text-parchment/70">
-        {JSON.stringify({ effects: authored, ...(authoredChoices.length ? { choices: authoredChoices } : {}), ...(authoredActions.length ? { actions: authoredActions } : {}) }, null, 2)}
+        {JSON.stringify({ effects: authored, ...(authoredChoices.length ? { choices: authoredChoices } : {}), ...(authoredActions.length ? { grantedActions: authoredActions } : {}) }, null, 2)}
       </pre>
 
       <datalist id="resist-types">

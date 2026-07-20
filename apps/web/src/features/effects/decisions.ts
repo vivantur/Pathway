@@ -28,6 +28,7 @@ interface DecisionRow {
   action: EffectDecision['action'];
   effect: unknown;
   choice: unknown;
+  granted_action: unknown;
   note: string | null;
   decided_by_label: string | null;
   updated_at: string | null;
@@ -41,6 +42,9 @@ function toDecision(row: DecisionRow): EffectDecision {
     action: row.action,
     ...(row.effect ? { effect: row.effect as EffectDecision['effect'] } : {}),
     ...(row.choice ? { choice: row.choice as EffectDecision['choice'] } : {}),
+    ...(row.granted_action
+      ? { grantedAction: row.granted_action as EffectDecision['grantedAction'] }
+      : {}),
     ...(row.note ? { note: row.note } : {}),
     ...(row.decided_by_label ? { by: row.decided_by_label } : {}),
     ...(row.updated_at ? { at: row.updated_at } : {}),
@@ -52,7 +56,7 @@ export async function fetchDecisions(): Promise<EffectDecision[]> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('effect_decisions')
-    .select('entity_id, key, action, effect, choice, note, decided_by_label, updated_at');
+    .select('entity_id, key, action, effect, choice, granted_action, note, decided_by_label, updated_at');
   if (error) throw error;
   return (data ?? []).map((r) => toDecision(r as DecisionRow));
 }
@@ -69,12 +73,13 @@ export async function fetchDecisions(): Promise<EffectDecision[]> {
 export async function saveDecisions(decisions: readonly EffectDecision[]): Promise<void> {
   if (decisions.length === 0) return;
   const supabase = requireSupabase();
-  const payload = decisions.map(({ entityId, key, action, effect, choice, note }) => ({
+  const payload = decisions.map(({ entityId, key, action, effect, choice, grantedAction, note }) => ({
     entityId,
     key,
     action,
     ...(effect ? { effect } : {}),
     ...(choice ? { choice } : {}),
+    ...(grantedAction ? { grantedAction } : {}),
     ...(note ? { note } : {}),
   }));
   const { error } = await supabase.rpc('save_effect_decisions', { p_decisions: payload });

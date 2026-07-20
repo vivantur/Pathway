@@ -171,7 +171,7 @@ function main() {
   }
 
   const foldIn = loadFoldIn(args.data);
-  const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0 };
+  const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0, grantedActions: 0 };
 
   const entities = [];
   const reports = [];
@@ -179,6 +179,7 @@ function main() {
   let withEffects = 0;
   let withChoices = 0;
   let withGrants = 0;
+  let withGrantedActions = 0;
   let strippedRules = 0;
   let fromSidecar = 0;
   let fromLegacy = 0;
@@ -201,6 +202,31 @@ function main() {
       delete bearer.effects;
       delete bearer.choices;
       delete bearer.grants;
+      delete bearer.grantedActions;
+
+      // AUTHORED ACTIVITIES, folded in BEFORE the `raw` guard below — deliberately.
+      //
+      // A granted action comes only from a human `add` decision; nothing proposes
+      // one, so it does not depend on `raw` at all. And the entities that carry one
+      // are precisely the ones most likely to have NO rule elements: the corpus
+      // names 1,544 of them `action-feat` — they grant an activity and are correctly
+      // absent from the passive queue. Folding below the guard would drop every
+      // authored action on exactly the feats this field exists for.
+      //
+      // Routed through `resolveEntity` rather than reading the decisions directly,
+      // even with no candidates to reconcile, because that function is the ONE path
+      // from a decision to content. Worth a second call on entities that also have
+      // candidates; a private second path would not be.
+      const entityDecisions =
+        foldIn && dataset.kind === 'feat' ? (foldIn.decisionsByEntity.get(bearer.id) ?? []) : [];
+      if (entityDecisions.length > 0) {
+        const authored = resolveEntity([], entityDecisions).grantedActions;
+        if (authored.length > 0) {
+          bearer.grantedActions = authored;
+          withGrantedActions += 1;
+          folded.grantedActions += authored.length;
+        }
+      }
 
       if (!raw || raw.length === 0) continue;
 
@@ -266,6 +292,8 @@ function main() {
       entitiesWithEffects: withEffects,
       entitiesWithChoices: withChoices,
       entitiesWithGrants: withGrants,
+      entitiesWithGrantedActions: withGrantedActions,
+      grantedActions: folded.grantedActions,
       elements: summary.elements,
       mapped: summary.mapped,
       effectsProduced: summary.effects,
@@ -300,6 +328,11 @@ function main() {
     console.log(`  candidates     : ${foldIn.candidateCount}`);
     console.log(`  decisions      : ${foldIn.decisionCount} (${human} human, ${foldIn.decisionCount - human} grandfathered)`);
     console.log(`  feats folded   : ${folded.entities} -> ${folded.effects} effects`);
+    // Reported unconditionally, including the zero. These are the ONLY Layer-2
+    // content that ships, and they come from a table rather than the corpus — so a
+    // run that quietly stopped carrying them (an unapplied migration, a pull against
+    // the wrong project) must be visible here, not discovered on a character sheet.
+    console.log(`  granted actions: ${folded.grantedActions} on ${withGrantedActions} feats`);
     console.log(`  still pending  : ${folded.pending}  (awaiting a human in the Review UI)`);
     console.log(`  dropped vs map : ${folded.droppedFromMapping}  (rejected or pending; NOT shipping)`);
     if (foldIn.stale.length > 0) {

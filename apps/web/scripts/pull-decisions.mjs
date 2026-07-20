@@ -42,7 +42,7 @@ async function main() {
 
   const { data, error } = await supabase
     .from('effect_decisions')
-    .select('entity_id, key, action, effect, choice, note, decided_by_label, updated_at')
+    .select('entity_id, key, action, effect, choice, granted_action, note, decided_by_label, updated_at')
     .order('entity_id');
 
   if (error) {
@@ -59,6 +59,7 @@ async function main() {
     action: r.action,
     ...(r.effect ? { effect: r.effect } : {}),
     ...(r.choice ? { choice: r.choice } : {}),
+    ...(r.granted_action ? { grantedAction: r.granted_action } : {}),
     ...(r.note ? { note: r.note } : {}),
     ...(r.decided_by_label ? { by: r.decided_by_label } : {}),
     ...(r.updated_at ? { at: r.updated_at } : {}),
@@ -66,6 +67,7 @@ async function main() {
 
   const byAction = {};
   for (const d of decisions) byAction[d.action] = (byAction[d.action] ?? 0) + 1;
+  const withActions = decisions.filter((d) => d.grantedAction).length;
 
   console.log('effect decisions, pulled');
   console.log('========================================');
@@ -73,6 +75,10 @@ async function main() {
   for (const [action, n] of Object.entries(byAction).sort((a, b) => b[1] - a[1])) {
     console.log(`  ${action.padEnd(14)}: ${n}`);
   }
+  // Counted separately because a granted action is a payload, not an action kind —
+  // every one of these is also an `add` above. Reported so a run that silently
+  // stopped carrying activities is visible here rather than at the bake.
+  console.log('granted actions :', withActions);
 
   // A pull that would WIPE a non-empty file is almost certainly pointing at the wrong
   // project or an unmigrated one. Refuse rather than silently discard every recorded

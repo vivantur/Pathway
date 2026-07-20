@@ -31,6 +31,7 @@ import {
 } from "./candidate.js";
 import { predicateSchema, type Predicate } from "./predicate.js";
 import { passiveEffectSchema, effectChoiceSchema } from "./passive.js";
+import { grantedActionSchema } from "./automation.js";
 
 // ---------------------------------------------------------------------------
 // the patch
@@ -314,6 +315,63 @@ export function addEffect(
   return {
     ok: true,
     decision: { entityId, key: `${base}#${n}`, action: "add", effect: parsed.data, ...attribution },
+  };
+}
+
+/**
+ * Record a runnable ACTIVITY a human authored for an entity — the Layer-2 sibling of
+ * `addEffect`, and the ONLY door to a granted action reaching content.
+ *
+ * WHY THERE IS NO `acceptGrantedAction`. Every other decision answers a producer's
+ * proposal; nothing proposes an activity. The corpus says so directly: 1,544 entities
+ * are silent for `action-feat` — they grant an activity and are correctly absent from a
+ * PASSIVE queue. So an authored action is always an ADDITION, never an accept, and
+ * `EffectDecision.grantedAction` is documented as meaningful only with `action: "add"`.
+ *
+ * KEYS ARE DERIVED, NOT MINTED — the one place this deliberately differs from
+ * `addEffect`. That function mints `#n` against a pool because two additions can
+ * legitimately share an `effectKey` (Dragon's Presence rewrites a success AND a
+ * failure, both `rollAdjust:will`), so it has nothing stable to key on. An action
+ * already carries an author-chosen `id`, and the key is exactly `added:action:<id>`.
+ *
+ * That is what makes RE-AUTHORING WORK. The decisions table is unique on
+ * `(entity_id, key)`, so editing an activity and saving again upserts the same row
+ * instead of accumulating a second copy of it — which is the common workflow, not an
+ * edge case. A `#n` suffix here would break that, and worse: two decisions would fold
+ * in as two actions sharing one id, so the sheet would show the activity twice and
+ * `hasAutomation` would disagree between them. Two actions on one entity sharing an id
+ * is an authoring mistake, and the caller is where it is visible and fixable.
+ *
+ * Refuses anything `grantedActionSchema` refuses — including an invalid automation
+ * tree, since the schema validates the tree recursively. This module is the only door,
+ * so an addition must not be a way around validation.
+ */
+export function addGrantedAction(
+  entityId: string,
+  draft: unknown,
+  attribution: Attribution = {},
+): ResolveOutcome {
+  const parsed = grantedActionSchema.safeParse(draft);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      issues: parsed.error.issues.map((i) => ({
+        field: i.path.join(".") || "(root)",
+        message: i.message,
+        source: "schema" as const,
+      })),
+    };
+  }
+
+  return {
+    ok: true,
+    decision: {
+      entityId,
+      key: `${ADD_KEY_PREFIX}action:${parsed.data.id}`,
+      action: "add",
+      grantedAction: parsed.data,
+      ...attribution,
+    },
   };
 }
 

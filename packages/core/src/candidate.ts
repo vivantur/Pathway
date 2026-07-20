@@ -25,6 +25,7 @@
 // passive.ts / foundry.ts / the parser, each from source text.
 
 import { passiveEffectSchema, effectChoiceSchema, type PassiveEffect, type EffectChoice } from "./passive.js";
+import type { GrantedAction } from "./automation.js";
 
 // ---------------------------------------------------------------------------
 // the model
@@ -612,6 +613,18 @@ export interface EffectDecision {
   effect?: PassiveEffect;
   /** Required for accept/edit of a CHOICE candidate — the choice that becomes content. */
   choice?: EffectChoice;
+  /**
+   * A runnable ACTIVITY a human authored for this entity — the Layer-2 payload,
+   * beside `effect`'s and `choice`'s Layer-1 ones.
+   *
+   * ONLY MEANINGFUL WITH `action: "add"`, and that is not a limitation but the
+   * shape of the problem: no producer proposes granted actions, so there is no
+   * proposal for an accept/reject/edit to answer. The corpus already says as
+   * much — 1,544 entities are silent for `action-feat`, i.e. they grant an
+   * activity and are correctly absent from a PASSIVE queue. An authored action
+   * is how those entities get content at all.
+   */
+  grantedAction?: GrantedAction;
   by?: string;
   at?: string;
   /** Why — especially for a reject, so a re-run's reviewer is not re-deciding blind. */
@@ -625,6 +638,11 @@ export interface ResolveResult {
   choices: EffectChoice[];
   /** Candidates still needing a human. */
   pending: EffectCandidate[];
+  /**
+   * What becomes the entity's `grantedActions`: authored activities, all of them
+   * from `add` decisions. Never auto-promoted, because nothing proposes one.
+   */
+  grantedActions: GrantedAction[];
   /** Decisions that matched no candidate — a producer changed its mind since. */
   staleDecisions: EffectDecision[];
 }
@@ -647,6 +665,7 @@ export function resolveEntity(
   const effects: PassiveEffect[] = [];
   const choices: EffectChoice[] = [];
   const pending: EffectCandidate[] = [];
+  const grantedActions: GrantedAction[] = [];
 
   for (const c of candidates) {
     const id = `${c.entityId} ${c.key}`;
@@ -688,10 +707,13 @@ export function resolveEntity(
     if (d.action !== "add") continue;
     if (d.effect) effects.push(d.effect);
     if (d.choice) choices.push(d.choice);
+    // A granted action arrives ONLY this way: nothing proposes one, so no candidate
+    // branch above could ever produce it.
+    if (d.grantedAction) grantedActions.push(d.grantedAction);
   }
 
   const staleDecisions = decisions.filter((d) => d.action !== "add" && !used.has(`${d.entityId} ${d.key}`));
-  return { effects, choices, pending, staleDecisions };
+  return { effects, choices, pending, grantedActions, staleDecisions };
 }
 
 // ---------------------------------------------------------------------------
