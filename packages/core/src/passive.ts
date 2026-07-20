@@ -33,7 +33,13 @@ import { evaluate, exprSchema, type Expr } from "./expr.js";
 import { stackModifiers, type BonusType, type EffectContext, type Modifier, type SheetEffects } from "./effects.js";
 import { describePredicate, predicateHolds, predicateSchema, staticTags, type Predicate } from "./predicate.js";
 import type { ProficiencyRank } from "./proficiency.js";
-import { isSelector, isSkillSlug, type Selector } from "./selectors.js";
+import {
+  isScopedSelector,
+  isSelector,
+  isSkillSlug,
+  type ScopedSelector,
+  type Selector,
+} from "./selectors.js";
 import { RANK_LABEL } from "./stats.js";
 
 // ---------------------------------------------------------------------------
@@ -287,8 +293,40 @@ function selectorLabel(target: Selector): string {
     case "spell-attack":
       return "spell attack";
     default:
+      if (isScopedSelector(target)) return scopedSelectorLabel(target);
       return target.replace(/\b\w/g, (c) => c.toUpperCase());
   }
+}
+
+/**
+ * Human label for a scoped attack/damage selector — `damage:strike:melee` reads
+ * as "melee Strike damage", not "Damage:Strike:Melee". Provenance summaries are
+ * shown to players on the sheet, so a raw selector string leaking through would
+ * be a visible defect.
+ */
+function scopedSelectorLabel(target: ScopedSelector): string {
+  const [base, ...segments] = target.split(":");
+  const qualifiers: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i]!;
+    switch (seg) {
+      case "strike":
+        qualifiers.push("Strike");
+        break;
+      case "group":
+        qualifiers.push(`${segments[++i]} weapon`);
+        break;
+      case "weapon":
+        qualifiers.push(String(segments[++i]));
+        break;
+      default:
+        // melee / ranged / unarmed read naturally as bare adjectives.
+        qualifiers.push(seg);
+        break;
+    }
+  }
+  const noun = base === "attack" ? "attack rolls" : "damage";
+  return qualifiers.length > 0 ? `${qualifiers.join(" ")} ${noun}` : noun;
 }
 
 /**
@@ -788,12 +826,16 @@ function applyDeltas(rc: ResolvedCharacter, deltas: Map<Selector, number>): Reso
       case "speed:land":
         next.speeds.land += delta;
         break;
-      // Reserved selectors carry no field on the resolved model — not folded.
-      case "attack":
-      case "damage":
+      // Reserved: derived at play time, carries no field on the model.
       case "initiative":
         break;
       default: {
+        // Scoped attack/damage modifiers are NEVER folded into the resolved
+        // character: they apply to some strikes and not others, so there is no
+        // character-wide total to fold them into. They are collected and applied
+        // by the strike pipeline instead (docs/strikes-and-weapons.md). Skipping
+        // them here is the correct behavior, not a gap.
+        if (isScopedSelector(target)) break;
         // A skill (or lore) slug — folded only if the character has that entry.
         const sk = next.skills[target];
         if (sk) next.skills[target] = { ...sk, modifier: sk.modifier + delta };

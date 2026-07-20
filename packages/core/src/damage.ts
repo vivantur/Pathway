@@ -32,9 +32,34 @@ export const ENERGY_DAMAGE_TYPES = [
 ] as const;
 export type EnergyDamageType = (typeof ENERGY_DAMAGE_TYPES)[number];
 
-/** Every base damage type (physical + energy). */
-export const DAMAGE_TYPES = [...PHYSICAL_DAMAGE_TYPES, ...ENERGY_DAMAGE_TYPES] as const;
-export type DamageType = PhysicalDamageType | EnergyDamageType;
+/**
+ * Damage types that are neither physical nor energy.
+ *
+ * `bleed` is here rather than under physical, deliberately. The owner's ruling
+ * (2026-07-19): "Bleed is sort of a damage type, but it's usually persistent…
+ * there are feats that will give resistance to persistent bleed damage, so we
+ * SHOULD recognize it as a damage type for that purpose."
+ *
+ * So it exists to be NAMED — by a resistance, a weakness, or a crit
+ * specialization's `1d6 persistent bleed`. Filing it as physical would be a rules
+ * claim nobody made, and would silently make it bypassable by anything that
+ * resists physical damage.
+ *
+ * Note it is a TYPE, not a category: `persistent` remains a `DamageCategory`
+ * below, so "persistent bleed" is the pair `{ type: "bleed", categories:
+ * ["persistent"] }`. Most bleed is persistent, but the two are orthogonal and
+ * collapsing them would make non-persistent bleed inexpressible.
+ */
+export const OTHER_DAMAGE_TYPES = ["bleed"] as const;
+export type OtherDamageType = (typeof OTHER_DAMAGE_TYPES)[number];
+
+/** Every base damage type (physical + energy + the rest). */
+export const DAMAGE_TYPES = [
+  ...PHYSICAL_DAMAGE_TYPES,
+  ...ENERGY_DAMAGE_TYPES,
+  ...OTHER_DAMAGE_TYPES,
+] as const;
+export type DamageType = PhysicalDamageType | EnergyDamageType | OtherDamageType;
 
 /**
  * Material descriptors that ride along a damage instance and matter for

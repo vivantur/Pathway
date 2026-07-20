@@ -46,6 +46,7 @@ import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 import { characterScope, resolveSelector } from "./character.js";
 import { attackDamageMultiplier, basicSaveMultiplier, dcFromModifier, degreeOrdinal, resolveCheck, rollCheck } from "./checks.js";
+import { advanceAttackCount, multipleAttackPenalty, type MapPenaltyPair } from "./map.js";
 import { heldConditionSchema } from "./conditions.js";
 import { applyCounter, canSpend, type Counter } from "./counter.js";
 import { isDamageType, type DamageCategory, type DamageType } from "./damage.js";
@@ -157,6 +158,17 @@ export interface DamageHeightening {
  */
 export type RollMode = "per-target" | "shared";
 
+/**
+ * Attack-trait marking on a resolution node — opts it into the multiple attack
+ * penalty. See `mapOptionsSchema` for why presence is the opt-in and why `check`
+ * carries it too.
+ */
+export interface MapOptions {
+  agile?: boolean;
+  offTurn?: boolean;
+  override?: MapPenaltyPair;
+}
+
 /** One rolled damage component in an emitted mutation (pre-scaling amount + descriptor). */
 export interface DamageInstance {
   amount: number;
@@ -176,8 +188,8 @@ export type AutomationNode =
   | { kind: "variable"; name: string; value: Expr; onError?: ErrorPolicy }
   | { kind: "roll"; notation: string; name?: string; onError?: ErrorPolicy }
   | ({ kind: "save"; save: SaveSelector; dc: Dc; basicSave?: boolean; onError?: ErrorPolicy } & DegreeChildren)
-  | ({ kind: "attack"; bonus: Expr; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
-  | ({ kind: "check"; check: Selector; dc: Dc; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
+  | ({ kind: "attack"; bonus: Expr; map?: MapOptions; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
+  | ({ kind: "check"; check: Selector; dc: Dc; map?: MapOptions; rollMode?: RollMode; onError?: ErrorPolicy } & DegreeChildren)
   | { kind: "damage"; components: DamageComponent[]; heightening?: DamageHeightening; scaling?: DamageScaling; healing?: boolean; target?: "self" | "target"; rollMode?: RollMode; onError?: ErrorPolicy }
   | { kind: "temphp"; formula: string; target?: "self" | "target"; onError?: ErrorPolicy }
   | { kind: "counter"; counter: string; amount: Expr; allowOverflow?: boolean; requireAvailable?: boolean; name?: string; onError?: ErrorPolicy }
@@ -418,11 +430,36 @@ const saveNodeSchema = z
   })
   .strict();
 
+/**
+ * Marks a resolution node as an ATTACK-TRAIT check, opting it into the multiple
+ * attack penalty. Its PRESENCE is the opt-in: a node without it neither takes MAP
+ * nor advances the turn's attack count, which is exactly the behavior every tree
+ * authored before MAP existed already had.
+ *
+ * It is on `check` as well as `attack` because MAP counts attack-TRAIT checks, not
+ * Strikes — "certain skill actions like Shove" advance it too (Player Core p. 402).
+ */
+const mapOptionsSchema = z
+  .object({
+    /** Whether the weapon used for THIS attack has the agile trait (−4/−8 instead of −5/−10). */
+    agile: z.boolean().optional(),
+    /** A Reactive Strike or similar: takes no MAP and does not advance the count. */
+    offTurn: z.boolean().optional(),
+    /** A feature-supplied penalty pair overriding the trait-derived one. */
+    override: z
+      .object({ second: z.number().int(), thirdPlus: z.number().int() })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 const attackNodeSchema = z
   .object({
     kind: z.literal("attack"),
     /** The attack modifier expression (e.g. `spellAttack`); resolved against the target's AC. */
     bonus: exprSchema,
+    /** Opt in to the multiple attack penalty. See `mapOptionsSchema`. */
+    map: mapOptionsSchema.optional(),
     rollMode: rollModeSchema.optional(),
     onError: errorPolicySchema.optional(),
     ...degreeOutcomeShape,
@@ -435,6 +472,8 @@ const checkNodeSchema = z
     /** The statistic the actor rolls (a skill, Perception, …). */
     check: selectorSchema,
     dc: dcSchema,
+    /** Present when this check has the attack trait (Shove, Trip, …). */
+    map: mapOptionsSchema.optional(),
     rollMode: rollModeSchema.optional(),
     onError: errorPolicySchema.optional(),
     ...degreeOutcomeShape,
@@ -609,6 +648,17 @@ export interface Outcome {
   warnings: string[];
   /** True if a `raise` error policy aborted the run before every node ran. */
   aborted: boolean;
+  /**
+   * The actor's attack-trait check count AFTER this run, when the tree contained
+   * any MAP-marked node. The host persists it for the rest of the turn so a second
+   * `/use` in the same turn takes the right penalty; hosts that ignore it simply
+   * get no cross-invocation MAP, which is the behavior before this field existed.
+   *
+   * Reported on the outcome rather than as a `Mutation` deliberately: it is run
+   * BOOKKEEPING, not a change to a creature, and adding a mutation kind would
+   * break hosts that exhaustively switch over the union.
+   */
+  attacksThisTurn?: number;
 }
 
 export interface ExecutionContext {
@@ -655,6 +705,16 @@ export interface ExecutionContext {
   vars?: Record<string, ExprValue>;
   /** Default error policy for nodes that don't carry their own. Defaults to `ignore`. */
   onError?: ErrorPolicy;
+  /**
+   * How many ATTACK-TRAIT checks the actor has already made this turn, supplied by
+   * the host. Defaults to 0 — the first attack of a turn.
+   *
+   * A COUNT, never a penalty: the rules compute MAP from the weapon swung on THIS
+   * attack, so a stored "-5" would be wrong the moment the next attack uses an
+   * agile weapon (Player Core p. 402's own longsword/shortsword example). The host
+   * resets this at turn boundaries; core cannot, having no clock.
+   */
+  attacksThisTurn?: number;
 }
 
 /** Internal sentinel: a `raise` policy aborts the walk; caught at the top of the run. */
@@ -680,6 +740,12 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
   // but the caller's objects are never mutated.
   const counters: Record<string, Counter> = {};
   for (const [id, c] of Object.entries(ctx.counters ?? {})) counters[id] = { ...c };
+  // The turn's attack-trait check count, advanced by each MAP-marked node so two
+  // Strikes in one tree escalate correctly. `touchedMap` keeps the count off the
+  // outcome entirely for trees with no attack-trait node, so a host cannot mistake
+  // an untouched 0 for "the actor has attacked zero times".
+  let attacksThisTurn = Math.max(0, Math.floor(ctx.attacksThisTurn ?? 0));
+  let touchedMap = false;
   // The invocation's spell ranks read as ambient vars, so flat heightening is plain
   // arithmetic (`5 + 5 * (castRank - baseRank)`) and a `heightened` node's selection
   // needs no new expression vocabulary. They sit with the character scope — ambient
@@ -771,6 +837,22 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
     mode === "shared" ? (sharedRolls?.get(node) as T | undefined) : undefined;
   const putShared = (node: AutomationNode, mode: RollMode | undefined, value: unknown): void => {
     if (mode === "shared") sharedRolls?.set(node, value);
+  };
+
+  /**
+   * Resolve one attack-trait check's MAP and advance the turn's count. Returns the
+   * penalty to ADD to the node's modifier (0 or negative), or 0 for an unmarked
+   * node — which is every tree authored before MAP existed.
+   *
+   * Order matters: the penalty is read from the count BEFORE advancing, so the
+   * first attack of a turn takes none and the second takes the second-attack value.
+   */
+  const applyMap = (options: MapOptions | undefined): number => {
+    if (!options) return 0;
+    touchedMap = true;
+    const penalty = multipleAttackPenalty({ ...options, priorAttacks: attacksThisTurn });
+    attacksThisTurn = advanceAttackCount(attacksThisTurn, options.offTurn);
+    return penalty;
   };
 
   /** The creature currently in scope, or throw (→ the node's error policy). */
@@ -928,7 +1010,7 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
         let children: AutomationNode[] | undefined;
         try {
           const target = requireTarget();
-          const modifier = evaluate(node.bonus, scope(), "number") as number;
+          const modifier = evaluate(node.bonus, scope(), "number") as number + applyMap(node.map);
           // NO ADJUSTMENTS. An attack node carries a `bonus` EXPRESSION, not a
           // selector, so there is nothing for `degreeAdjustmentsFor` to match on —
           // the same "scoped attack selectors" blocker that stops Enfeebled's
@@ -955,7 +1037,7 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
           children = resolve(
             node,
             "check",
-            resolveSelector(ctx.actor, node.check),
+            resolveSelector(ctx.actor, node.check) + applyMap(node.map),
             resolveDc(node.dc),
             node.rollMode,
             degreeAdjustmentsFor(ctx.actor.rollAdjusts ?? [], node.check),
@@ -1159,6 +1241,10 @@ export function runAutomation(tree: readonly AutomationNode[], ctx: ExecutionCon
       throw e;
     }
   }
+  // Reported only when the tree actually made an attack-trait check, so an absent
+  // field means "this run says nothing about MAP" rather than "the count is 0".
+  // An aborted run still reports it: the attacks made before the abort happened.
+  if (touchedMap) outcome.attacksThisTurn = attacksThisTurn;
   return outcome;
 }
 

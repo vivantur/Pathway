@@ -220,11 +220,54 @@ describe("mapFoundryRules — FlatModifier", () => {
     expect(report[0]).toMatchObject({ reason: "unsupported-bonus-type", detail: 'type "proficiency"' });
   });
 
-  it("reports a per-weapon selector as unsupported, not as `damage`", () => {
-    const { report } = mapFoundryRules([
+  it("maps strike selectors to the scoped attack/damage vocabulary", () => {
+    // Previously reported `unsupported-selector` — the scoped vocabulary landed
+    // 2026-07-19 and these are now expressible. `strike-damage` alone is the
+    // single most common scoped selector in the corpus (109 usages).
+    const { effects, report } = mapFoundryRules([
       { key: "FlatModifier", selector: "strike-damage", type: "circumstance", value: 2 },
     ]);
-    expect(report[0]).toMatchObject({ reason: "unsupported-selector" });
+    expect(report[0]).toMatchObject({ outcome: "mapped" });
+    expect(effects[0]).toMatchObject({ kind: "modifier", target: "damage:strike" });
+  });
+
+  it("preserves Foundry's attack-roll vs strike-attack-roll distinction", () => {
+    // `attack-roll` includes spell attacks; `strike-attack-roll` does not. Mapping
+    // both to the same selector would silently buff spell attack rolls.
+    const broad = mapFoundryRules([
+      { key: "FlatModifier", selector: "attack-roll", type: "status", value: 1 },
+    ]);
+    expect(broad.effects[0]).toMatchObject({ target: "attack" });
+
+    const strikes = mapFoundryRules([
+      { key: "FlatModifier", selector: "strike-attack-roll", type: "status", value: 1 },
+    ]);
+    expect(strikes.effects[0]).toMatchObject({ target: "attack:strike" });
+  });
+
+  it("maps the patterned group-scoped selectors, both spellings", () => {
+    const a = mapFoundryRules([
+      { key: "FlatModifier", selector: "bow-group-attack-roll", type: "item", value: 1 },
+    ]);
+    expect(a.effects[0]).toMatchObject({ target: "attack:group:bow" });
+
+    const b = mapFoundryRules([
+      { key: "FlatModifier", selector: "crossbow-weapon-group-damage", type: "item", value: 2 },
+    ]);
+    expect(b.effects[0]).toMatchObject({ target: "damage:group:crossbow" });
+  });
+
+  it("still refuses the per-weapon tail rather than guessing a scope", () => {
+    // `jaws-damage` and friends would need a weapon-slug scope we cannot derive
+    // safely by pattern — the same pattern would swallow `damage-received`
+    // (INCOMING damage) and `{item|id}-damage` (a template interpolation).
+    for (const selector of ["jaws-damage", "damage-received", "{item|id}-damage", "spell-damage"]) {
+      const { report, effects } = mapFoundryRules([
+        { key: "FlatModifier", selector, type: "circumstance", value: 2 },
+      ]);
+      expect(report[0]).toMatchObject({ reason: "unsupported-selector" });
+      expect(effects).toEqual([]);
+    }
   });
 
   it("maps the infix half-your-level idiom now that expr.ts parses arithmetic", () => {

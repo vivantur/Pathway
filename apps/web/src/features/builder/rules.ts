@@ -29,8 +29,11 @@ import {
   proficientModifier,
   proficiencyRankAtLevel,
   RANK_LABEL,
+  coerceWeapon,
   resolveChoiceEffects,
+  resolveStrike,
   stackModifiers,
+  weaponToStrikeSources,
   type EffectChoice,
   type ConditionalModifier,
   type EffectProvenance,
@@ -42,6 +45,7 @@ import {
   type PassiveEffect,
   type ProficiencyTrack,
   type ResolvedCharacter,
+  type StrikeSource,
   type SheetEffects,
   type SkillStat,
 } from '@pathway/core';
@@ -708,6 +712,25 @@ export function freeSkillCount(state: BuilderState): number {
   return klass.initialProficiencies.trainedSkillCount + Math.max(0, intMod);
 }
 
+/**
+ * Map a dataset weapon onto core's `StrikeSource` via core's own adapter.
+ *
+ * The normalization (the `"d8"` die string, the `B`/`P`/`S` damage codes, the
+ * empty-string group) lives in `coerceWeapon` — ONE implementation, validated
+ * against all 909 shipped weapons. An app-local copy of it was the same
+ * duplication this whole migration exists to remove.
+ *
+ * Returns null only if the row violates core's weapon schema, which no committed
+ * row does; the caller surfaces that rather than showing a wrong number.
+ */
+function toStrikeSource(w: Weapon): StrikeSource | null {
+  const coerced = coerceWeapon(w as unknown as Parameters<typeof coerceWeapon>[0]);
+  if ('error' in coerced) return null;
+  // Today core produces exactly one source per weapon; `two-hand`, `versatile`
+  // and `thrown` variants are reported in `unmapped` rather than approximated.
+  return weaponToStrikeSources(coerced.weapon).sources[0] ?? null;
+}
+
 export interface EquippedWeapon {
   id: string;
   name: string;
@@ -989,7 +1012,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
     klass?.greaterWeaponSpecialization != null && level >= klass.greaterWeaponSpecialization;
   const weaponSpecNotes: EffectProvenance[] = [];
 
-  const weapons: EquippedWeapon[] = equippedWeapons.map((w) => {
+  const weapons: EquippedWeapon[] = equippedWeapons.map((w): EquippedWeapon | null => {
     // Attack proficiency: the class's level-1 rank, raised by its weapon
     // expertise/mastery features (category-, list-, and group-scoped — the
     // fighter's chosen group comes from state.weaponGroup).
@@ -1010,24 +1033,7 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
       featureRank,
       doctrineAttackRank(state, w.category, level),
     ) as ProficiencyRank;
-    const finesse = w.traits.includes('finesse');
-    const attackMod = w.ranged ? mods.dex : finesse ? Math.max(mods.str, mods.dex) : mods.str;
-    const propulsive = w.traits.includes('propulsive');
-    const thrown = w.traits.includes('thrown');
-    // Propulsive: add half your Strength modifier if positive, your FULL
-    // modifier if negative. Thrown adds full Strength; other ranged adds none.
-    const damageMod = w.ranged
-      ? propulsive
-        ? mods.str >= 0
-          ? Math.floor(mods.str / 2)
-          : mods.str
-        : thrown
-          ? mods.str
-          : 0
-      : mods.str;
     const wRunes = runesFor(w.id);
-    const potency = abp ? 0 : Math.max(0, Math.min(3, wRunes?.potency ?? 0));
-    const striking = abp ? 0 : Math.max(0, Math.min(3, wRunes?.striking ?? 0));
     // Applies only at expert+ (rank ≥ 2); the value equals the rank, doubled by
     // Greater Weapon Specialization.
     const weaponSpecBonus =
@@ -1039,25 +1045,53 @@ export function deriveCharacter(state: BuilderState): DerivedCharacter {
         summary: `+${weaponSpecBonus} ${w.name} damage`,
       });
     }
+
+    // THE RULES MATH LIVES IN @pathway/core. Everything above this point is
+    // ORCHESTRATION — reading the build to decide which rank, which runes, and
+    // whether a class feature applies. `resolveStrike` owns the arithmetic:
+    // finesse/propulsive/thrown ability selection, potency (attack only),
+    // striking dice, and Proficiency Without Level. It was ported from THIS
+    // block, so the numbers are unchanged by construction and the builder's
+    // existing tests are the guard.
+    const source = toStrikeSource(w);
+    if (!source) {
+      // The row violates core's weapon schema (no committed row does). Surface it
+      // instead of dropping the weapon from the sheet or showing a guessed +0.
+      weaponSpecNotes.push({
+        source: 'Data',
+        stat: w.id,
+        summary: `${w.name}: unreadable weapon data — no attack computed`,
+      });
+      return null;
+    }
+    const strike = resolveStrike(
+      { level, mods },
+      {
+        source,
+        rank: catRank,
+        // Under Automatic Bonus Progression the runes do not exist at all; ABP's
+        // level-based values replace them.
+        ...(abp
+          ? { abp: { attack: abpAttack(level), diceCount: abpDamageDice(level) } }
+          : { runes: { potency: wRunes?.potency ?? 0, striking: wRunes?.striking ?? 0 } }),
+        withoutLevel: pwl,
+        damageExtras: weaponSpecBonus,
+      },
+    );
+
     return {
       id: w.id,
       name: w.name,
-      attack: proficientModifier({
-        abilityMod: attackMod,
-        rank: catRank,
-        level,
-        withoutLevel: pwl,
-        itemBonus: potency + (abp ? abpAttack(level) : 0),
-      }),
-      dice: abp ? abpDamageDice(level) : 1 + striking,
+      attack: strike.attack,
+      dice: strike.dice.count,
       damageDie: w.damageDie,
-      damageMod: damageMod + weaponSpecBonus,
+      damageMod: strike.damageBonus,
       damageType: w.damageType,
       ranged: w.ranged,
       range: w.range,
       hands: w.hands,
     };
-  });
+  }).filter((w): w is EquippedWeapon => w !== null);
 
   return {
     scores,

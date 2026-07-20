@@ -23,6 +23,14 @@ progress in separate tracks.*
 > *Original gate (kept for context): do not begin implementation drafts — Zod schemas, node
 > interpreter, etc. — until the DB/content schema and character model land. Both now have.*
 
+> **Strikes, weapons, runes, and MAP live in their own doc (2026-07-19):**
+> [`strikes-and-weapons.md`](./strikes-and-weapons.md). That work is the largest single
+> coverage unlock in the corpus — `needs-item-model` is 32% of all unsupported ingest
+> elements — and it is what makes the reserved `attack`/`damage` selectors real. It was
+> split out because this doc is past 120KB and no longer readable end to end. Read it
+> before touching strikes, weapons, or the multiple attack penalty; the owner-supplied
+> rules text for runes, deadly/fatal, MAP, and critical specialization lives there.
+
 ---
 
 ## What this is

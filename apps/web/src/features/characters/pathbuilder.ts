@@ -33,7 +33,7 @@ import {
   type Money,
   type PathbuilderBuild,
   type Spellcaster,
-  type Weapon,
+  type PathbuilderWeapon as Weapon,
 } from '@pathway/core';
 
 // -------- Format types + readers, re-exported from core --------
@@ -46,7 +46,12 @@ export type {
   PathbuilderBuild,
   ProfRank,
   Spellcaster,
-  Weapon,
+  // Core renamed this to `PathbuilderWeapon` once a real weapon CONTENT entity
+  // existed (they are different things: this is what Pathbuilder wrote, that is
+  // our schema). Aliased back to the historical short name so this module's
+  // consumers are unaffected — the same aliasing this file already does for the
+  // `pathbuilder*` readers.
+  PathbuilderWeapon as Weapon,
 } from '@pathway/core';
 
 export { normalizeDefenseList, resolvedFromPathbuilder } from '@pathway/core';

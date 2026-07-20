@@ -298,6 +298,92 @@ describe("attack node", () => {
   });
 });
 
+describe("attack node — multiple attack penalty", () => {
+  // A fixed d20 face of 10 makes every total = 10 + bonus + MAP, so the penalty is
+  // readable straight off the logged total.
+  const attackTotals = (out: ReturnType<typeof runAutomation>): number[] =>
+    out.log.filter((e) => e.kind === "check").map((e) => (e as { total: number }).total);
+
+  it("takes no MAP without the marker — trees authored before MAP are unchanged", () => {
+    const out = runAutomation(
+      [{ kind: "attack", bonus: lit(10) }, { kind: "attack", bonus: lit(10) }],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    expect(attackTotals(out)).toEqual([20, 20]);
+    // No MAP-marked node ran, so the run says nothing about the turn's count.
+    expect(out.attacksThisTurn).toBeUndefined();
+  });
+
+  it("escalates across attacks in one tree and reports the count", () => {
+    const out = runAutomation(
+      [
+        { kind: "attack", bonus: lit(10), map: {} },
+        { kind: "attack", bonus: lit(10), map: {} },
+        { kind: "attack", bonus: lit(10), map: {} },
+      ],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    expect(attackTotals(out)).toEqual([20, 15, 10]); // 0 / −5 / −10
+    expect(out.attacksThisTurn).toBe(3);
+  });
+
+  it("continues from the host's count across invocations", () => {
+    // The second `/use` of a turn must not restart at no-penalty.
+    const out = runAutomation(
+      [{ kind: "attack", bonus: lit(10), map: {} }],
+      ctx({ targets: [target], rng: fixedd20(10), attacksThisTurn: 1 }),
+    );
+    expect(attackTotals(out)).toEqual([15]); // second attack → −5
+    expect(out.attacksThisTurn).toBe(2);
+  });
+
+  // Player Core p. 402's own worked example, driven end to end through the
+  // interpreter: a longsword and an agile shortsword, three Strikes in a turn.
+  // The penalty follows the weapon swung NOW, not the ones swung before.
+  it("uses the current weapon's agile trait, not the previous attacks'", () => {
+    const out = runAutomation(
+      [
+        { kind: "attack", bonus: lit(10), map: {} }, // longsword — first, no penalty
+        { kind: "attack", bonus: lit(10), map: { agile: true } }, // shortsword — −4
+        { kind: "attack", bonus: lit(10), map: {} }, // longsword — third, −10
+      ],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    expect(attackTotals(out)).toEqual([20, 16, 10]);
+  });
+
+  it("an off-turn attack takes no penalty and does not advance the count", () => {
+    const out = runAutomation(
+      [
+        { kind: "attack", bonus: lit(10), map: {} },
+        { kind: "attack", bonus: lit(10), map: { offTurn: true } }, // Reactive Strike
+        { kind: "attack", bonus: lit(10), map: {} },
+      ],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    // The reaction is unpenalised AND invisible to the third attack, which is
+    // still only the second attack of the turn.
+    expect(attackTotals(out)).toEqual([20, 20, 15]);
+    expect(out.attacksThisTurn).toBe(2);
+  });
+
+  it("counts an attack-trait skill check too — Shove advances MAP", () => {
+    // "Every check that has the attack trait counts toward your multiple attack
+    // penalty, including Strikes, spell attack rolls, certain skill actions like
+    // Shove." The actor is trained in athletics via the shared test fixture.
+    const out = runAutomation(
+      [
+        { kind: "check", check: "athletics", dc: { kind: "flat", value: lit(15) }, map: {} },
+        { kind: "attack", bonus: lit(10), map: {} },
+      ],
+      ctx({ targets: [target], rng: fixedd20(10) }),
+    );
+    // The Strike is the SECOND attack-trait check of the turn → −5.
+    expect(attackTotals(out)[1]).toBe(15);
+    expect(out.attacksThisTurn).toBe(2);
+  });
+});
+
 describe("check node", () => {
   it("rolls an actor skill vs a target-stat-derived DC (10 + modifier)", () => {
     // actor athletics +11, die 10 → total 21 vs (10 + target reflex 3 = 13) → success

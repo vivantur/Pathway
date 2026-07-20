@@ -216,7 +216,58 @@ const SELECTOR_MAP: Readonly<Record<string, readonly Selector[]>> = {
   "spell-dc": ["spell-dc"],
   "spell-attack": ["spell-attack"],
   "spell-attack-roll": ["spell-attack"],
+
+  // Strike selectors, mappable since the scoped attack/damage vocabulary landed
+  // (2026-07-19). Foundry distinguishes `attack-roll` (any attack roll, spell
+  // attacks included) from `strike-attack-roll` (Strikes only); that distinction
+  // is real in PF2e, not a Foundry artifact, and our `:strike` segment preserves
+  // it. Mapping both to the same thing would silently buff spell attacks.
+  attack: ["attack"],
+  "attack-roll": ["attack"],
+  damage: ["damage"],
+  "attack-damage": ["damage"],
+  "strike-attack-roll": ["attack:strike"],
+  "strike-damage": ["damage:strike"],
+  "melee-attack-roll": ["attack:melee"],
+  "melee-damage": ["damage:melee"],
+  "ranged-attack-roll": ["attack:ranged"],
+  "ranged-damage": ["damage:ranged"],
+  "melee-strike-attack-roll": ["attack:strike:melee"],
+  "melee-strike-damage": ["damage:strike:melee"],
+  "ranged-strike-attack-roll": ["attack:strike:ranged"],
+  "ranged-strike-damage": ["damage:strike:ranged"],
+  "unarmed-attack-roll": ["attack:unarmed"],
+  "unarmed-attack": ["attack:unarmed"],
+  "unarmed-damage": ["damage:unarmed"],
 };
+
+/**
+ * Foundry's group-scoped strike selectors, which are patterned rather than
+ * enumerable: `bow-group-attack-roll`, `crossbow-weapon-group-damage`. Anchored
+ * on both ends so only these two exact shapes match.
+ *
+ * DELIBERATELY NOT EXTENDED TO THE PER-WEAPON TAIL. Foundry also emits
+ * `jaws-damage`, `claw-damage`, `fist-damage` and ~50 more of that shape, which a
+ * loose `<slug>-damage` pattern would catch — along with `spell-damage`,
+ * `damage-received` (INCOMING damage, an entirely different concept),
+ * `{item|id}-damage` (a template interpolation, not a slug) and every
+ * `*-inline-damage`. Mapping those wrong would put bonuses on the wrong rolls,
+ * which is worse than reporting them unsupported. The tail stays named.
+ */
+const GROUP_SELECTOR_RE = /^([a-z]+)-(?:weapon-)?group-(attack-roll|damage)$/;
+
+/** Look up a Foundry selector name, including the patterned group-scoped forms. */
+function mapSelectorName(name: string): readonly Selector[] | undefined {
+  const direct = SELECTOR_MAP[name];
+  if (direct) return direct;
+  const group = GROUP_SELECTOR_RE.exec(name);
+  if (group) {
+    const [, groupSlug, stat] = group;
+    const base = stat === "damage" ? "damage" : "attack";
+    return [`${base}:group:${groupSlug}` as Selector];
+  }
+  return isSkillSlug(name) ? [name] : undefined;
+}
 
 /** Foundry bonus types → ours. `proficiency`/`ability` have no equivalent. */
 const BONUS_TYPES: ReadonlySet<string> = new Set(["circumstance", "status", "item", "untyped"]);
@@ -490,7 +541,7 @@ function mapFlatModifier(rule: RuleElement): PassiveEffect[] {
   const targets: Selector[] = [];
   for (const raw of toArray(rule.selector)) {
     const name = String(raw);
-    const mapped = SELECTOR_MAP[name] ?? (isSkillSlug(name) ? [name] : undefined);
+    const mapped = mapSelectorName(name);
     if (!mapped) throw new MapError("unsupported-selector", `selector "${name}"`);
     targets.push(...mapped);
   }
@@ -546,7 +597,7 @@ function mapAdjustDegreeOfSuccess(rule: RuleElement, effectTraits: ReadonlySet<s
   const targets: Selector[] = [];
   for (const raw of toArray(rule.selector)) {
     const name = String(raw);
-    const mapped = SELECTOR_MAP[name] ?? (isSkillSlug(name) ? [name] : undefined);
+    const mapped = mapSelectorName(name);
     if (!mapped) throw new MapError("unsupported-selector", `selector "${name}"`);
     targets.push(...mapped);
   }
@@ -834,7 +885,7 @@ function mapNote(rule: RuleElement): PassiveEffect[] {
   const targets: Selector[] = [];
   for (const raw of toArray(rule.selector)) {
     const name = String(raw);
-    const mapped = SELECTOR_MAP[name] ?? (isSkillSlug(name) ? [name] : undefined);
+    const mapped = mapSelectorName(name);
     if (!mapped) throw new MapError("unsupported-selector", `selector "${name}"`);
     targets.push(...mapped);
   }

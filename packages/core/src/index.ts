@@ -100,6 +100,24 @@ export * from './dice.js';
 // primitive; the resolution nodes consume it.
 export * from './checks.js';
 
+// The multiple attack penalty (Player Core p. 402). Pure arithmetic over a
+// turn-scoped count of ATTACK-TRAIT checks — not Strikes, and not a cached
+// penalty: the current weapon's own agile trait decides the value every time.
+// See docs/strikes-and-weapons.md.
+export * from './map.js';
+
+// The Strike model — the slot pipeline that resolves a strike SOURCE plus a
+// character into an attack modifier and damage. A weapon is one producer of
+// strikes, not the definition of one, which is what lets a non-weapon attack
+// (a Kineticist blast, a homebrew attack) exist without a special case.
+// See docs/strikes-and-weapons.md.
+export * from './strike.js';
+
+// Weapons — the content entity behind a Strike, plus the fundamental runes
+// (potency = attack only, striking = dice count). `weaponToStrikeSources` is
+// PLURAL on purpose: a dagger offers a melee strike and a thrown one.
+export * from './weapon.js';
+
 // The candidate/review model — how a PROPOSED effect becomes a real one.
 // Candidates are a work queue, never content: producers → candidates → promote →
 // effects. Storage-agnostic (pure functions over values), so moving content into the

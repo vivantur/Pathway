@@ -20,7 +20,13 @@ import type { Ability } from "./content.js";
 import type { ExprScope } from "./expr.js";
 import type { RollAdjustEffect } from "./passive.js";
 import type { ProficiencyRank } from "./proficiency.js";
-import { isSelector, SKILL_SLUGS, type SaveSelector, type Selector } from "./selectors.js";
+import {
+  isScopedSelector,
+  isSelector,
+  SKILL_SLUGS,
+  type SaveSelector,
+  type Selector,
+} from "./selectors.js";
 
 /**
  * A resolved statistic: its final total and the proficiency rank behind it. For
@@ -140,12 +146,16 @@ export function resolveSelector(rc: ResolvedCharacter, selector: Selector): numb
       return rc.spellcasting?.[0]?.spellAttack.modifier ?? 0;
     case "speed:land":
       return rc.speeds.land;
-    // Reserved selectors the resolved model does not carry yet.
-    case "attack":
-    case "damage":
+    // Reserved: derived at play time, not carried on the model.
     case "initiative":
       return 0;
     default:
+      // A scoped `attack`/`damage` selector resolves PER STRIKE, not per
+      // character — there is no single number here to return, by construction.
+      // Collecting the modifiers that match a given strike is the strike
+      // pipeline's job (see docs/strikes-and-weapons.md); this scalar surface
+      // reports 0 rather than inventing a character-wide attack bonus.
+      if (isScopedSelector(selector)) return 0;
       // A skill (or lore) slug.
       return rc.skills[selector]?.modifier ?? 0;
   }
@@ -174,11 +184,12 @@ export function resolveRank(rc: ResolvedCharacter, selector: Selector): Proficie
     case "ac":
     case "hp":
     case "speed:land":
-    case "attack":
-    case "damage":
     case "initiative":
       return 0;
     default:
+      // Scoped attack/damage: the rank behind a strike belongs to that strike's
+      // proficiency slot, not to the character as a whole.
+      if (isScopedSelector(selector)) return 0;
       return rc.skills[selector]?.rank ?? 0;
   }
 }

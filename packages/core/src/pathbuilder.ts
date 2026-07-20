@@ -70,7 +70,13 @@ export type FocusPools = Record<
   >
 >;
 
-export interface Weapon {
+/**
+ * A weapon in PATHBUILDER'S STORAGE FORMAT — not the content entity. Named
+ * explicitly (it was `Weapon`) so it cannot be confused with `weapon.ts`'s
+ * `Weapon`, which is our own schema. This one exists only to read what
+ * Pathbuilder wrote; its field names and encodings are Pathbuilder's, not ours.
+ */
+export interface PathbuilderWeapon {
   name: string;
   display?: string;
   die?: string;
@@ -165,7 +171,7 @@ export interface PathbuilderBuild {
   /** [feat name, sourcebook, type/category, level acquired]. */
   feats?: Array<[string, string | null, string, number]>;
   specificProficiencies?: Record<string, unknown>;
-  weapons?: Weapon[];
+  weapons?: PathbuilderWeapon[];
   armor?: Armor[];
   money?: Money;
   equipment?: Array<[string, number]>;
