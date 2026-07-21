@@ -242,10 +242,25 @@ function main() {
         }
       }
 
-      if (!raw || raw.length === 0) continue;
+      // A feat can carry candidates WITHOUT own raw — when its mechanics live
+      // entirely on a granted feat-effect (ingest-feat-effects.mjs), whose
+      // effect-derived candidates build-candidates already folded into the queue.
+      // So map own raw only when present, but run the fold-in whenever there are
+      // candidates. Skipping no-raw feats here (as this once did) would silently
+      // drop an accepted effect-derived effect on exactly the stance/rider feats
+      // this slice exists to reach.
+      const candidates = foldIn && dataset.kind === 'feat' ? foldIn.byEntity.get(bearer.id) : null;
+      if ((!raw || raw.length === 0) && !candidates) continue;
 
-      const { effects, choices, grants, toggles, report } = mapFoundryRules(raw, { effectTraits, knownFeatIds, producedOptions });
-      reports.push(report);
+      let effects = [];
+      let choices = [];
+      let grants = [];
+      let toggles = [];
+      let report = null;
+      if (raw && raw.length > 0) {
+        ({ effects, choices, grants, toggles, report } = mapFoundryRules(raw, { effectTraits, knownFeatIds, producedOptions }));
+        reports.push(report);
+      }
 
       // The fold-in replaces the mapper's output with the RESOLVED effects wherever
       // candidates exist for this bearer. The mapper still runs — the sidecar's report
@@ -253,7 +268,6 @@ function main() {
       // but what SHIPS is what a human decided plus what earned auto-promotion.
       let finalEffects = effects;
       let finalChoices = choices;
-      const candidates = foldIn && dataset.kind === 'feat' ? foldIn.byEntity.get(bearer.id) : null;
       if (candidates) {
         const resolved = resolveEntity(candidates, foldIn.decisionsByEntity.get(bearer.id) ?? []);
         finalEffects = resolved.effects;
@@ -295,8 +309,13 @@ function main() {
         bearer.toggles = toggles;
         withToggles += 1;
       }
-      entities.push({ id: bearer.id, kind: dataset.kind, name: bearer.name, raw, report });
-      bearers += 1;
+      // The sidecar's entities carry the feat's OWN raw for re-mapping; a feat with
+      // no own raw contributes none (its granted-effect raw lives in the links file),
+      // even when the fold-in above shipped an effect for it.
+      if (raw && raw.length > 0) {
+        entities.push({ id: bearer.id, kind: dataset.kind, name: bearer.name, raw, report });
+        bearers += 1;
+      }
     }
     written.push({ path, data, file: dataset.file, bearers });
   }

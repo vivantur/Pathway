@@ -88,6 +88,36 @@ function foundryProposals(feat, rawById, vocab) {
 }
 
 /**
+ * Proposals from the feat-effects a feat GRANTS (ingest-feat-effects.mjs), mapped
+ * through the same foundry mapper but kept as a SEPARATE producer — NOT merged into
+ * `foundryProposals`.
+ *
+ * WHY SEPARATE IS LOAD-BEARING. An effect's `FlatModifier: -1 Will` says "this
+ * effect imposes −1 on WHOEVER BEARS IT for its duration" — it is not evidence that
+ * the FEAT'S OWNER has −1 Will passively. If it were folded into the foundry source
+ * it would corroborate a parser that misread the same prose, and a corroborated,
+ * gap-free pair AUTO-PROMOTES — shipping Goblin Song's target debuff as a permanent
+ * penalty on the singer's own sheet. Measured: that is exactly what happened.
+ *
+ * So these are their own single source. The caller reconciles them alone (→
+ * foundry-only, never auto-promoted — a human must contextualize the duration and
+ * the target) and drops any whose key a real producer already covers, so an effect
+ * can never silently second a passive reading.
+ */
+function effectProposals(feat, linkedRawsById, vocab) {
+  const opts = { effectTraits: vocab.effectTraits, producedOptions: vocab.producedOptions };
+  const proposals = [];
+  const unsupportedReasons = [];
+  for (const linkedRaw of linkedRawsById.get(feat.id) ?? []) {
+    const mapped = mapFoundryRules(linkedRaw, opts);
+    for (const draft of mapped.effects) proposals.push({ draft });
+    for (const choice of mapped.choices) proposals.push({ draft: { kind: 'choice', choice } });
+    for (const r of mapped.report ?? []) if (r.outcome === 'unsupported' && r.reason) unsupportedReasons.push(r.reason);
+  }
+  return { source: 'foundry', proposals, unsupportedReasons };
+}
+
+/**
  * The trait vocabulary the parser resolves scopes against, read from the corpus we
  * already ship rather than hardcoded in core — traits are game content, and content
  * supplied from the data can never drift out of date the way a constant would.
@@ -129,15 +159,31 @@ function main() {
     }
   }
 
+  // The rule elements from the feat-effects a feat GRANTS (ingest-feat-effects.mjs),
+  // one raw[] per linked effect — a second Foundry input, in its own sidecar so the
+  // feat sidecar stays purely feat-own-rules. See foundryProposals.
+  const linkedRawsById = new Map();
+  const linksPath = join(args.data, 'feat-effects-links.json');
+  if (existsSync(linksPath)) {
+    for (const l of JSON.parse(readFileSync(linksPath, 'utf8')).links ?? []) {
+      if (Array.isArray(l.raw) && l.raw.length) {
+        if (!linkedRawsById.has(l.featId)) linkedRawsById.set(l.featId, []);
+        linkedRawsById.get(l.featId).push(l.raw);
+      }
+    }
+  }
+
   // The corpus-wide produced-option vocabulary, so a consumer predicate (`spellshape:
   // reach-spell`) maps here exactly as it does in remap. WITHOUT THIS the two mappers
   // disagree: remap maps the consumer, but with no candidate produced here the fold-in
   // would drop it. Collected in one pre-pass over the same sidecar `raw`.
   const producedOptions = new Set();
-  for (const raw of rawById.values()) {
+  const collectOptions = (raw) => {
     const { toggles } = mapFoundryRules(raw, { effectTraits: traits.effectTraits });
     for (const tag of producedOptionTags(toggles)) producedOptions.add(tag);
-  }
+  };
+  for (const raw of rawById.values()) collectOptions(raw);
+  for (const linked of linkedRawsById.values()) for (const raw of linked) collectOptions(raw);
   traits.producedOptions = producedOptions;
 
   const candidates = [];
@@ -150,14 +196,28 @@ function main() {
     featsWithProse += 1;
     const parser = parseProse(feat.description, undefined, traits);
     const foundry = foundryProposals(feat, rawById, traits);
+    const effects = effectProposals(feat, linkedRawsById, traits);
     silenceInputs.push({
       entityId: feat.id,
       actionCost: feat.actionCost ?? null,
-      unsupportedReasons: foundry.unsupportedReasons,
+      // Both producers' blockers feed the roadmap — a granted effect that maps to
+      // `unsupported` is as real a gap as the feat's own rule that does.
+      unsupportedReasons: [...foundry.unsupportedReasons, ...effects.unsupportedReasons],
     });
-    // Nothing to reconcile if neither producer proposed anything for this feat.
-    if (parser.proposals.length === 0 && foundry.proposals.length === 0) continue;
-    candidates.push(...reconcile(feat.id, [parser, foundry]));
+    // Nothing to reconcile if no producer proposed anything for this feat.
+    if (parser.proposals.length === 0 && foundry.proposals.length === 0 && effects.proposals.length === 0) continue;
+
+    const reconciled = reconcile(feat.id, [parser, foundry]);
+    candidates.push(...reconciled);
+
+    // Granted-effect proposals are reconciled ALONE (→ foundry-only, never
+    // auto-promoted) and only for keys no real producer already covers — so an
+    // effect can neither second a passive reading into auto-promotion nor
+    // duplicate a candidate a human will already see.
+    if (effects.proposals.length > 0) {
+      const seen = new Set(reconciled.map((c) => c.key));
+      for (const c of reconcile(feat.id, [effects])) if (!seen.has(c.key)) candidates.push(c);
+    }
   }
 
   const t = triage(candidates);
