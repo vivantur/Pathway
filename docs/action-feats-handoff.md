@@ -20,10 +20,12 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   `target:<combatant>` routes damage through the tracker's `applyHp`; `ac:<number>` rolls
 >   against an explicit AC and reports (does not apply) the damage. **Deploy step:** the slash
 >   command needs registering — `npm run deploy:guild` (instant) or `npm run deploy` (~1h).
->   Deliberately NOT in this slice: reference-item trait enrichment (Pathbuilder exports no
->   weapon traits, so a Pathbuilder weapon strikes with a −5 MAP default and no deadly/fatal/
->   agile, WARNED honestly); turn-tracked MAP (the `map:` option is explicit per-invocation).
->   Remaining: **steps 1, 2, 5.**
+>   Natively web-built characters carry weapon traits (the web export was extended to
+>   include them, 2026-07-21) — their Strikes get correct agile MAP + deadly/fatal.
+>   Pathbuilder-imported weapons carry none, so they strike with a −5 MAP default and no
+>   agile/deadly/fatal, WARNED honestly, until the planned format conversion (reference-item
+>   enrichment is the fallback). Also deliberately NOT in this slice: turn-tracked MAP (the
+>   `map:` option is explicit per-invocation). Remaining: **steps 1, 2, 5.**
 
 ---
 

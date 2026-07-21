@@ -179,10 +179,13 @@ this section has been wrong before, and a stale status is worse than none.)*
   structure (dice, crit doubling, deadly/fatal, MAP). It runs through the SAME `/use`
   host (`run` + `applyOutcome`); `target:<combatant>` routes damage through the tracker's
   `applyHp`, `ac:<number>` rolls against an explicit AC and reports the damage without
-  applying it. **Honesty gap:** Pathbuilder exports no weapon traits, so a Pathbuilder
-  weapon strikes with a −5 MAP default and no agile/deadly/fatal — WARNED, not
-  approximated. Reference-item trait enrichment is the named fast-follow. See
-  `docs/action-feats-handoff.md` (step 4).
+  applying it. **Honesty gap, now Pathbuilder-IMPORTS-only:** natively web-built
+  characters carry their weapon traits (the web export was extended to include them,
+  2026-07-21), so their Strikes get correct agile MAP + deadly/fatal. Pathbuilder
+  exports no traits, so a Pathbuilder-imported weapon still strikes with a −5 MAP
+  default and no agile/deadly/fatal — WARNED, not approximated — until those characters
+  are converted to our format (the owner's planned path; reference-item enrichment is the
+  fallback if needed sooner). See `docs/action-feats-handoff.md` (step 4).
 - 🔶 **`packages/db`** — no longer a skeleton: a content store plus `spells`,
   `feats`, `ancestries`, `backgrounds` (15 tests). But **nothing outside `packages/db`
   imports it yet** — the web app still reads the JSON datasets in

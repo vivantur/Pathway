@@ -194,6 +194,11 @@ export function toPathbuilder(state: BuilderState): PathbuilderExport {
       damageBonus: w.damageMod,
       pot: Math.max(0, Math.min(3, r?.potency ?? 0)),
       runes: striking ? [STRIKING_NAMES[striking]] : [],
+      // The weapon's traits, in core's canonical form (`agile`, `deadly-d10`).
+      // Pathbuilder's export drops these; ours keeps them, so a natively-built
+      // character Strikes with correct agile MAP and deadly/fatal crit dice
+      // through the bot's /strike (which reads them straight off this field).
+      ...(item && item.kind === 'weapon' && item.traits.length > 0 ? { traits: item.traits } : {}),
       display: w.name,
     };
   });
