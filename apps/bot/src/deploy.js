@@ -350,6 +350,19 @@ const useCommand = new SlashCommandBuilder()
   .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
+// /strike — make a weapon Strike through the effects engine
+// ─────────────────────────────────────────────────────────────────────────────
+const strikeCommand = new SlashCommandBuilder()
+  .setName('strike')
+  .setDescription('Make a weapon Strike through the effects engine.')
+  .addStringOption(o => o.setName('weapon').setDescription('Which weapon to Strike with').setRequired(true).setAutocomplete(true))
+  .addStringOption(o => o.setName('target').setDescription('Target combatant in this channel\'s encounter').setRequired(false))
+  .addIntegerOption(o => o.setName('ac').setDescription('Target AC (when not targeting a combatant)').setRequired(false).setMinValue(1))
+  .addStringOption(o => o.setName('map').setDescription('Which attack this turn (multiple attack penalty)').setRequired(false)
+    .addChoices({ name: 'First (no MAP)', value: 'first' }, { name: 'Second', value: 'second' }, { name: 'Third or more', value: 'third' }))
+  .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
+
+// ─────────────────────────────────────────────────────────────────────────────
 // /spellbook  /prepared
 // ─────────────────────────────────────────────────────────────────────────────
 const spellbookCommand = new SlashCommandBuilder()
@@ -1604,6 +1617,7 @@ const commands = [
   ccCommand,
   countersCommand,
   useCommand,
+  strikeCommand,
   // Combat & rolls
   initCommand,
   iCommand,

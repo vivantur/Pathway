@@ -1,9 +1,29 @@
 # Action feats — session handoff
 
-**Status: PLANNING ONLY. Nothing here is built.** This doc points a fresh session at the
+**Status: PLANNING, with steps 3–4 landed.** This doc points a fresh session at the
 action-feats surface: what it is, what already exists to build on, the decisions already made,
 the sequence, and the traps. Read `docs/effects-engine-design.md` (the plan of record) for the
 effects engine as a whole; this doc is the action-feats slice specifically.
+
+> **Progress (2026-07-21).** Two of the five steps below are done; the plan's own
+> "does not exist" lists were stale on step 3 the day this doc was written.
+> - **Step 3 (action-authoring UI) already EXISTED** before this doc — `EffectAuthorPage.tsx`
+>   authors granted actions with a full automation tree and saves through `addGrantedAction`
+>   onto the decisions rail (commit `e5a2c7d`, 2026-07-19). The "the surface does not exist"
+>   note below was wrong.
+> - **Step 4 (player strike-run path) LANDED 2026-07-21.** A bot `/strike` command consumes
+>   `strikeAutomation` (previously consumed by nothing) and runs it through the existing `/use`
+>   host. New: `apps/bot/src/rules/strikeAdapter.js` (pure adapter — trusts the character's
+>   stored attack/damage totals via `overrides`, delegates all arithmetic to core;
+>   the `pf2eMath` pattern), `apps/bot/src/commands/strike/`, and a one-line
+>   `attacksThisTurn` passthrough in `rules/automation.js`'s `buildContext` for the MAP option.
+>   `target:<combatant>` routes damage through the tracker's `applyHp`; `ac:<number>` rolls
+>   against an explicit AC and reports (does not apply) the damage. **Deploy step:** the slash
+>   command needs registering — `npm run deploy:guild` (instant) or `npm run deploy` (~1h).
+>   Deliberately NOT in this slice: reference-item trait enrichment (Pathbuilder exports no
+>   weapon traits, so a Pathbuilder weapon strikes with a −5 MAP default and no deadly/fatal/
+>   agile, WARNED honestly); turn-tracked MAP (the `map:` option is explicit per-invocation).
+>   Remaining: **steps 1, 2, 5.**
 
 ---
 

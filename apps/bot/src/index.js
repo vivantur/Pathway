@@ -87,6 +87,7 @@ const heroCmd          = require('./commands/hero/command');
 const recoveryCmd      = require('./commands/recovery/command');
 const ccCmd            = require('./commands/cc/command');
 const useCmd           = require('./commands/use/command');
+const strikeCmd        = require('./commands/strike/command');
 const cvarCmd          = require('./commands/cvar/command');
 const spellsCmd        = require('./commands/spells/command');
 const spellbookCmd     = require('./commands/spellbook/command');
@@ -1463,6 +1464,10 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.commandName === 'use') {
           return await useCmd.autocomplete(interaction);
         }
+        // ─── /strike autocomplete (the character's own weapons) ───
+        if (interaction.commandName === 'strike') {
+          return await strikeCmd.autocomplete(interaction);
+        }
 
         const focused = interaction.options.getFocused(true); // { name, value }
         const q = String(focused.value ?? '').toLowerCase().trim();
@@ -2309,6 +2314,9 @@ client.on('interactionCreate', async (interaction) => {
   // interpreter. The rules live in core; this is only the entry point.
   else if (commandName === 'use') {
     await useCmd.execute(interaction);
+  }
+  else if (commandName === 'strike') {
+    await strikeCmd.execute(interaction);
   }
 
   // ─── /counters ───────────────────────────────────────────────────

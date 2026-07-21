@@ -124,7 +124,7 @@ function combatantToResolved(combatant) {
  * documents.
  */
 function buildContext(charEntry, opts = {}) {
-  const { seed, targets = [], spell, vars, onError } = opts;
+  const { seed, targets = [], spell, vars, onError, attacksThisTurn } = opts;
 
   if (!Number.isFinite(seed)) {
     throw new TypeError('buildContext requires a numeric `seed` so the run can be replayed.');
@@ -152,6 +152,10 @@ function buildContext(charEntry, opts = {}) {
   if (spell) ctx.spell = spell;
   if (vars) ctx.vars = vars;
   if (onError) ctx.onError = onError;
+  // The turn's prior attack count, so a MAP-marked node (a Strike) takes the
+  // second/third-attack penalty. Core reads it off the context; the bot has no
+  // turn tracker yet, so `/strike` passes it explicitly from its `map:` option.
+  if (Number.isFinite(attacksThisTurn)) ctx.attacksThisTurn = attacksThisTurn;
 
   return ctx;
 }

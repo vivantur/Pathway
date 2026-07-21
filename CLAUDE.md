@@ -168,6 +168,21 @@ this section has been wrong before, and a stale status is worse than none.)*
   person (a spell whose cost silently failed would still hand out its effect).
   `buildContext` therefore defaults `onError` to `warn`, and an authored node that
   genuinely must not proceed — a COST — carries its own `raise`.
+
+  **`/strike` landed 2026-07-21** — the player analogue of `/mattack`, and the first
+  consumer of core's `strikeAutomation` (which nothing ran before). `rules/strikeAdapter.js`
+  is an adapter in the `pf2eMath` mould: it reads a stored weapon off
+  `getCharacterWeapons` and builds a core Strike, TRUSTING the character's precomputed
+  attack/damage totals via `resolveStrike`'s `overrides` rather than re-deriving a
+  proficiency rank the bot has no class tables for — the same deliberate "trust the
+  imported build" choice the web makes for Pathbuilder characters. Core still owns the
+  structure (dice, crit doubling, deadly/fatal, MAP). It runs through the SAME `/use`
+  host (`run` + `applyOutcome`); `target:<combatant>` routes damage through the tracker's
+  `applyHp`, `ac:<number>` rolls against an explicit AC and reports the damage without
+  applying it. **Honesty gap:** Pathbuilder exports no weapon traits, so a Pathbuilder
+  weapon strikes with a −5 MAP default and no agile/deadly/fatal — WARNED, not
+  approximated. Reference-item trait enrichment is the named fast-follow. See
+  `docs/action-feats-handoff.md` (step 4).
 - 🔶 **`packages/db`** — no longer a skeleton: a content store plus `spells`,
   `feats`, `ancestries`, `backgrounds` (15 tests). But **nothing outside `packages/db`
   imports it yet** — the web app still reads the JSON datasets in
