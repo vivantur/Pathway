@@ -480,7 +480,7 @@ const checkNodeSchema = z
   })
   .strict();
 
-const damageComponentSchema = z
+export const damageComponentSchema = z
   .object({
     formula: z.string().min(1).refine((n) => safeParseDice(n) !== null, { message: "invalid dice notation" }),
     type: z.custom<DamageType>((v) => isDamageType(v), { message: "unknown damage type" }).optional(),

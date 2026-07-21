@@ -123,6 +123,10 @@ export * from './map.js';
 // See docs/strikes-and-weapons.md.
 export * from './strike.js';
 
+// Strike riders — composing a keyword fragment (a condition on hit, an extra die,
+// a MAP multiplier) onto a base Strike's Layer-2 tree. See docs/strike-riders-design.md.
+export * from './rider.js';
+
 // Weapons — the content entity behind a Strike, plus the fundamental runes
 // (potency = attack only, striking = dice count). `weaponToStrikeSources` is
 // PLURAL on purpose: a dagger offers a melee strike and a thrown one.
