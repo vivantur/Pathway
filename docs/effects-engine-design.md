@@ -1707,6 +1707,31 @@ derived-tag slice (a tag asserted by other tags — Disarming Flair's `bravado`)
 `self:effect:*` and `feat:*` consumers are largely waiting on; and, independently, the bot's
 own-math migration that wakes the tags seam above.
 
+### Action feats — direction of record (2026-07-20, planning only, NOT built)
+
+The `action-feat` bucket (~1,850 feats in the live queue) is the next big surface, and it is
+its own session. The full plan is `docs/action-feats-handoff.md`; the two load-bearing
+decisions, recorded here so the design of record carries them:
+
+- **Two categories, and conflating them will bloat the work.** A feat that "modifies a Strike"
+  is either (a) an ALWAYS-ON conditional — "+1 damage when you Strike with a sword you're
+  trained in" — which is a **Layer-1 passive** with a scoped selector (`damage:strike`) and a
+  `when`, auto-applied, no player input; or (b) an OPT-IN activity — Intimidating Strike, Power
+  Attack — which **costs an action** and is chosen instead of a plain Strike. A real slice of
+  the "action feats read as passives" queue is CORRECTLY passive (category a) and needs no
+  action at all. Only category (b) needs the granted-action / snippet work.
+
+- **Snippets are the composition LAYER of the granted-action pass, not a separate feature.** A
+  category-(b) rider (extra damage die, a degree-of-success effect, an applied condition) should
+  be authored as a small Layer-2 FRAGMENT composed onto a base Strike's tree at invocation —
+  the Avrae-snippet shape ("Strike normally, tack on the keyword") — NOT a bespoke tree per
+  feat. `strike.ts` already has the pieces (`resolveStrike`, `strikeAutomation`,
+  `collectStrikeModifiers`), but `strikeAutomation` is consumed by nothing and there is no
+  player-facing strike-run path yet. Sequence: build the strike-run path → author genuinely
+  bespoke activities → add snippet composition once enough real riders show the shared shape.
+  Building the composition model first is the "seam before the consumer" trap the toggle work
+  hit twice; design toward it from day one, build it third.
+
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
 `main` had diverged 30 commits while `test` built the engine, and it had built MORE on the
