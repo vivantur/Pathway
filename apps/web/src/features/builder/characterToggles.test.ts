@@ -113,11 +113,24 @@ describe('characterToggles', () => {
 });
 
 describe('the real dataset', () => {
-  it('carries toggles on the expected number of feats — the phase-1 bake', () => {
+  it('carries toggles on the expected number of feats — the bake', () => {
     // Read straight from the JSON so the mock cannot flatter it. Locked so that if a
     // re-bake changes the count, whoever did it sees this and confirms it was intended
     // (the same discipline grantedActions.test.ts applies to its own surface).
+    //
+    // 468 mapped from Foundry RollOptions + 94 synthesized stance TRACKERS (a stance's
+    // real mechanics live on a Foundry Effect item we do not yet ingest, so until then
+    // every `stance`-trait feat gets a plain toggle with no mechanics — see
+    // remap-effects.mjs).
     const withToggles = (featsDataset as Feat[]).filter((f) => (f.toggles?.length ?? 0) > 0);
-    expect(withToggles.length).toBe(468);
+    expect(withToggles.length).toBe(562);
+  });
+
+  it('gives every stance-trait feat a tracking toggle (the interim synthesis)', () => {
+    const stances = (featsDataset as Feat[]).filter((f) =>
+      (f.traits ?? []).map((t) => String(t).toLowerCase()).includes('stance'),
+    );
+    expect(stances.length).toBeGreaterThan(0);
+    for (const s of stances) expect((s.toggles?.length ?? 0)).toBeGreaterThan(0);
   });
 });

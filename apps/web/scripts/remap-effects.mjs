@@ -216,6 +216,7 @@ function main() {
       delete bearer.choices;
       delete bearer.grants;
       delete bearer.grantedActions;
+      delete bearer.toggles;
 
       // AUTHORED ACTIVITIES, folded in BEFORE the `raw` guard below — deliberately.
       //
@@ -300,6 +301,30 @@ function main() {
     written.push({ path, data, file: dataset.file, bearers });
   }
 
+  // INTERIM STANCE TOGGLES (2026-07-20). A stance's mechanics live on a separate
+  // Foundry EFFECT item ("Effect: Everstand Stance") that our ingest does not read —
+  // it walks packs/pf2e/feats only — so all 94 `stance`-trait feats reach here with no
+  // RollOption and no toggle. Until the effects-pack ingest lands, synthesize a plain
+  // TRACKING toggle from the trait, so a player who takes Everstand Stance can record
+  // "I'm in it" on the sheet and in /use. It makes NO rules claim: no modifiers, no
+  // consumer, just the switch. That is exactly the "player's record of a choice we
+  // can't yet fully express" a toggle is for.
+  //
+  // Runs AFTER the mapping loop and only when a feat has no toggle, so a real
+  // RollOption (should one ever sit on a stance feat) always wins. Keyed on the feat
+  // id so the eventual effects-pack toggle can reconcile against it by lookup rather
+  // than guessing. See docs/effects-engine-design.md.
+  let synthStanceToggles = 0;
+  const featsData = written.find((w) => w.file === 'feats.json')?.data ?? [];
+  for (const feat of featsData) {
+    const traits = Array.isArray(feat.traits) ? feat.traits.map((t) => String(t).toLowerCase()) : [];
+    if (!traits.includes('stance')) continue;
+    if (Array.isArray(feat.toggles) && feat.toggles.length > 0) continue;
+    feat.toggles = [{ option: feat.id, label: feat.name }];
+    synthStanceToggles += 1;
+  }
+  withToggles += synthStanceToggles;
+
   const summary = summarizeReports(reports);
   const out = {
     // Provenance: which upstream snapshot these rule elements came from. The mapper
@@ -329,6 +354,7 @@ function main() {
   console.log(
     `entities         : ${entities.length} (${withEffects} yield effects, ${withChoices} yield choices, ${withGrants} yield grants, ${withToggles} yield toggles)`,
   );
+  console.log(`  of which toggles : ${synthStanceToggles} are synthesized stance trackers (no mechanics yet)`);
   for (const w of written) console.log(`  ${w.file.padEnd(25)}: ${w.bearers} bearers`);
   console.log(`rule elements    : ${summary.elements}`);
   console.log(`  mapped         : ${summary.mapped} (${pct(summary.mapped)}) -> ${summary.effects} effects`);

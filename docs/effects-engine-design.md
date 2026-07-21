@@ -1683,9 +1683,29 @@ tags or toggle-gated effects won't apply. Build it THEN, at the resolve-time sea
 consumer. The producer half (read overlay → active toggles) already landed tested and used by the
 visibility feature, so it is reusable when that day comes.
 
-**Next:** the deferred derived-tag slice (a tag asserted by other tags — Disarming Flair's
-`bravado`), which is what `self:effect:*` and `feat:*` consumers are largely waiting on; and,
-independently, the bot's own-math migration that wakes the tags seam above.
+**Stances are invisible to the engine — a CONTENT gap, not a toggle bug (found 2026-07-20).**
+The first character built to test toggles took Everstand Stance and got no toggle. Cause:
+of 94 `stance`-trait feats, 0 carry a toggle and 1 carries any rule element at all. In
+Foundry's data a Stance FEAT is just the action to enter the stance; its RollOption (the
+toggle) and its AC/attack/damage modifiers live on a SEPARATE Effect item ("Effect: Everstand
+Stance"). `ingest-pf2e.mjs` walks `packs/pf2e/feats/` ONLY, so those Effect items — and every
+stance's mechanics — are never ingested. The feat correctly lands in the `action-feat` silent
+bucket (it grants an activity), but the mechanics are in a content type we do not pull.
+
+**Interim (2026-07-20): `remap-effects.mjs` synthesizes a plain TRACKING toggle for every
+`stance`-trait feat that has none** (468 mapped → 562 total, +94). It makes no rules claim —
+no modifiers, no consumer — so a player who takes Everstand Stance can record "I'm in it" on
+the sheet and in `/use` today. Keyed on the feat id so the real RollOption can reconcile by
+lookup, and it only fires when a feat has no mapped toggle, so a real one always wins. The
+real fix is ingesting the effects pack and LINKING each stance Effect to its feat (Everstand
+carried no `GrantItem`, so the link is likely name-matching, `@UUID` in the action prose, or
+both) — a genuine ingest slice that needs the Foundry clone.
+
+**Next:** the effects-pack ingest above (stances, and every other feat whose mechanics sit on
+a granted Effect item — the same shape the granted-action pass must reckon with); the deferred
+derived-tag slice (a tag asserted by other tags — Disarming Flair's `bravado`), which is what
+`self:effect:*` and `feat:*` consumers are largely waiting on; and, independently, the bot's
+own-math migration that wakes the tags seam above.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 
