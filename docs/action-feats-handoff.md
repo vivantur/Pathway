@@ -61,6 +61,16 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   bespoke. **Follow-ups (not this session):** the `mapMultiplier` interpreter wiring in
 >   `automation.ts`, the bot `/strike … rider:<keyword>` surface, and authoring the 349
 >   riders from source. Remaining: the flagged-row confirmation + the step-5 follow-ups.
+> - **Step 5 END-TO-END LANDED 2026-07-21.** `/strike … rider:<keyword>` composes a rider
+>   onto the base Strike via `composeStrikeRider` and runs it through the step-4 host.
+>   `apps/bot/src/rules/strikeRiders.js` is a TEMPORARY catalog (like `authoredActions.js`)
+>   with two riders authored from source — Intimidating Strike (Frightened 1/2) and Snagging
+>   Strike (Off-Guard); conditions carry their real modifiers via `conditionPassives`.
+>   Verified against a tracked Goblin: crit → dmg + Frightened 2, hit → dmg + Frightened 1,
+>   miss → nothing. Still open: `mapMultiplier` interpreter wiring (no turn tracker yet, so
+>   no observable effect), authoring the rest of the 349, and Power Attack-style
+>   weapon-relative bonus dice (deferred — Power Attack isn't in `feats.json`, so it would be
+>   building against absent source). Needs `npm run deploy:guild` to register the option.
 
 ---
 

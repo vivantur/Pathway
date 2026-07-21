@@ -38,16 +38,18 @@ describe("composeStrikeRider — degree-gated fragments (Intimidating Strike)", 
   const tree = composeStrikeRider(strike, intimidatingStrike);
   const attack = attackOf(tree);
 
+  const conditionValue = (n: AutomationNode | undefined) =>
+    (n as unknown as { effect: { conditions: { value: number }[] } }).effect.conditions[0]!.value;
+
   it("keeps the base damage first, then appends the per-degree rider", () => {
     expect(attack.onSuccess?.[0]?.kind).toBe("damage");
     const last = attack.onSuccess?.at(-1);
     expect(last?.kind).toBe("applyEffect");
-    expect((last as { effect: { conditions: { value: number }[] } }).effect.conditions[0].value).toBe(1);
+    expect(conditionValue(last)).toBe(1);
   });
 
   it("applies the crit-specific value on a critical hit (Frightened 2, not 1)", () => {
-    const last = attack.onCriticalSuccess?.at(-1);
-    expect((last as { effect: { conditions: { value: number }[] } }).effect.conditions[0].value).toBe(2);
+    expect(conditionValue(attack.onCriticalSuccess?.at(-1))).toBe(2);
   });
 
   it("does not invent failure branches a plain Strike does not have", () => {
@@ -68,7 +70,7 @@ describe("composeStrikeRider — onHit fans to both success branches (Snagging S
     id: "snagging-strike", name: "Snagging Strike", keyword: "snagging", actionCost: { kind: "actions", min: 1, max: 1 },
     onHit: [{
       kind: "applyEffect", target: "target",
-      effect: { name: "Off-Guard", conditions: [{ slug: "off-guard" }], duration: { kind: "until", moment: { who: "self", when: "turn-start" }, next: true }, passives: [] },
+      effect: { name: "Off-Guard", conditions: [{ slug: "off-guard" }], duration: { kind: "until", moment: { whose: "origin", when: "start" }, next: true }, passives: [] },
     } as AutomationNode],
   };
   const attack = attackOf(composeStrikeRider(strike, snagging));
