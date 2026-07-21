@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
   addGrantedAction,
+  addRider,
   CONDITION_SLUGS,
   effectChoiceSchema,
   grantedActionSchema,
+  strikeRiderSchema,
   SKILL_SLUGS,
   type EffectDecision,
 } from '@pathway/core';
@@ -60,6 +62,41 @@ function validateAction(a: ActionDraft): string[] {
   return r.success ? [] : r.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
 }
 
+// ── strike riders ─────────────────────────────────────────────────────────────
+// A rider is "Make a Strike, and also X": fragments composed onto the base Strike's
+// per-degree branches. One Strike carries several at once (composeStrikeRiders), so
+// each is authored on its own and gets its own `apply` mode — automatic (a rune/
+// always-on feat the weapon brings) or opt-in (an activity the player chooses).
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+interface RiderDraft {
+  _id: number; id: string; name: string; keyword: string; apply: 'opt-in' | 'automatic'; cost: string;
+  onHit: Draft[]; onSuccess: Draft[]; onCriticalSuccess: Draft[]; onFailure: Draft[];
+}
+const RIDER_BRANCHES: { key: 'onHit' | 'onSuccess' | 'onCriticalSuccess' | 'onFailure'; label: string; hint: string }[] = [
+  { key: 'onHit', label: 'On any hit', hint: 'runs on a hit AND a crit (Snagging Strike: Off-Guard)' },
+  { key: 'onCriticalSuccess', label: 'On a crit only', hint: 'the crit-specific effect (Intimidating: Frightened 2)' },
+  { key: 'onSuccess', label: 'On a regular hit only', hint: 'a non-crit hit (Intimidating: Frightened 1)' },
+  { key: 'onFailure', label: 'On a miss', hint: 'a failure rider (Certain Strike)' },
+];
+function buildRider(r: RiderDraft): Record<string, unknown> {
+  const id = r.id || slugify(r.name);
+  return stripDeep({
+    id,
+    name: r.name,
+    keyword: r.keyword || id,
+    apply: r.apply,
+    ...(ACTION_COSTS[r.cost] ? { actionCost: ACTION_COSTS[r.cost] } : {}),
+    ...(r.onHit.length ? { onHit: r.onHit } : {}),
+    ...(r.onSuccess.length ? { onSuccess: r.onSuccess } : {}),
+    ...(r.onCriticalSuccess.length ? { onCriticalSuccess: r.onCriticalSuccess } : {}),
+    ...(r.onFailure.length ? { onFailure: r.onFailure } : {}),
+  }) as Record<string, unknown>;
+}
+function validateRider(r: RiderDraft): string[] {
+  const parsed = strikeRiderSchema.safeParse(buildRider(r));
+  return parsed.success ? [] : parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
+}
+
 // ── the page ─────────────────────────────────────────────────────────────────
 interface FeatLite { id: string; name: string; description?: string; effects?: unknown[] }
 const FEATS = featData as FeatLite[];
@@ -70,6 +107,7 @@ export function EffectAuthorPage() {
   const [effects, setEffects] = useState<Draft[]>([]);
   const [choices, setChoices] = useState<ChoiceDraft[]>([]);
   const [actions, setActions] = useState<ActionDraft[]>([]);
+  const [riders, setRiders] = useState<RiderDraft[]>([]);
   const [showText, setShowText] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveState, setSaveState] = useState<{ ok: boolean; message: string } | null>(null);
@@ -85,6 +123,7 @@ export function EffectAuthorPage() {
     setEffects((f.effects ?? []).map((e) => withId(e as Record<string, unknown>)));
     setChoices([]);
     setActions([]);
+    setRiders([]);
   };
 
   const patchEffect = (id: number, p: Record<string, unknown>) => {
@@ -108,14 +147,17 @@ export function EffectAuthorPage() {
   const toggleSkill = (id: number, skill: string) =>
     setChoices((prev) => prev.map((c) => (c._id === id ? { ...c, skills: c.skills.includes(skill) ? c.skills.filter((s) => s !== skill) : [...c.skills, skill] } : c)));
   const patchAction = (id: number, p: Partial<ActionDraft>) => setActions((prev) => prev.map((a) => (a._id === id ? { ...a, ...p } : a)));
+  const patchRider = (id: number, p: Partial<RiderDraft>) => setRiders((prev) => prev.map((r) => (r._id === id ? { ...r, ...p } : r)));
 
   const authored = effects.map(strip);
   const authoredChoices = choices.map(buildChoice);
   const authoredActions = actions.map(buildAction);
+  const authoredRiders = riders.map(buildRider);
   const allValid =
     effects.every((d) => validatePassive(d).length === 0) &&
     choices.every((c) => validateChoice(c).length === 0) &&
-    actions.every((a) => validateAction(a).length === 0);
+    actions.every((a) => validateAction(a).length === 0) &&
+    riders.every((r) => validateRider(r).length === 0);
 
   /**
    * Persist the authored activities as `add` decisions — the rail passives already
@@ -160,6 +202,35 @@ export function EffectAuthorPage() {
     }
   };
 
+  /**
+   * Persist authored riders through `addRider` — the same rail granted actions ride.
+   * A rider has no producer (nothing derives "Make a Strike, and also Frighten"), so
+   * like a granted action it is authored outright and keyed on its id, so re-saving an
+   * edited rider updates it. The bot composes these onto a Strike at invocation.
+   */
+  const saveRiders = async () => {
+    if (!feat) return;
+    setSaving(true);
+    setSaveState(null);
+    try {
+      const decisions: EffectDecision[] = [];
+      for (const draft of authoredRiders) {
+        const out = addRider(feat.id, draft);
+        if (!out.ok) {
+          setSaveState({ ok: false, message: `Not saved — ${out.issues.map((i) => `${i.field}: ${i.message}`).join('; ')}` });
+          return;
+        }
+        decisions.push(out.decision!);
+      }
+      await saveDecisions(decisions);
+      setSaveState({ ok: true, message: `Saved ${decisions.length} rider(s) to the review queue.` });
+    } catch (e) {
+      setSaveState({ ok: false, message: `Save failed: ${e instanceof Error ? e.message : String(e)}` });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportJson = () => {
     const content = {
       id: feat?.id, name: feat?.name, effects: authored,
@@ -168,6 +239,7 @@ export function EffectAuthorPage() {
       // `actions`, which no consumer reads. The mismatch was silent by construction:
       // a feat carrying `actions` validates fine and simply grants nothing.
       ...(authoredActions.length ? { grantedActions: authoredActions } : {}),
+      ...(authoredRiders.length ? { riders: authoredRiders } : {}),
     };
     const blob = new Blob([`${JSON.stringify(content, null, 2)}\n`], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -297,16 +369,57 @@ export function EffectAuthorPage() {
       </div>
       <button onClick={() => setActions((prev) => [...prev, { _id: nextId(), id: '', name: '', cost: '', automation: [] }])} className="mt-3 rounded border border-gold/25 px-2.5 py-1 text-sm text-parchment hover:bg-midnight-900/60">+ granted action</button>
 
+      {/* strike riders editor */}
+      <h2 className="mt-8 font-display text-xl text-gold">Strike riders <span className="text-sm font-normal text-parchment/50">(composed onto a Strike)</span></h2>
+      <p className="mt-1 max-w-3xl text-xs text-parchment/50">
+        "Make a Strike, and also X." Each rider is authored on its own; a single Strike composes several at once.
+        Mark it <em>automatic</em> (a rune / always-on feat the weapon brings) or <em>opt-in</em> (an activity the player chooses).
+      </p>
+      <div className="mt-3 space-y-2">
+        {riders.map((r) => {
+          const issues = validateRider(r);
+          return (
+            <div key={r._id} className={`rounded-md border p-3 ${issues.length ? 'border-red-500/30 bg-red-500/5' : 'border-emerald/25 bg-emerald/5'}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <input className={`${inputCls} w-48`} placeholder="rider name (e.g. Intimidating Strike)" value={r.name} onChange={(e) => patchRider(r._id, { name: e.target.value })} />
+                <input className={`${inputCls} w-32`} placeholder="keyword" value={r.keyword} onChange={(e) => patchRider(r._id, { keyword: e.target.value })} />
+                <select className={inputCls} value={r.apply} onChange={(e) => patchRider(r._id, { apply: e.target.value as RiderDraft['apply'] })}>
+                  <option value="opt-in">opt-in (activity)</option>
+                  <option value="automatic">automatic (rune/feat)</option>
+                </select>
+                <select className={inputCls} value={r.cost} onChange={(e) => patchRider(r._id, { cost: e.target.value })}>
+                  <option value="">— cost —</option>
+                  <option value="1">1 action</option><option value="2">2 actions</option><option value="3">3 actions</option>
+                  <option value="reaction">reaction</option><option value="free">free</option>
+                </select>
+                <button onClick={() => setRiders((prev) => prev.filter((x) => x._id !== r._id))} className="ml-auto text-parchment/40 hover:text-red-300">✕</button>
+              </div>
+              {RIDER_BRANCHES.map((b) => (
+                <div key={b.key} className="mt-2">
+                  <div className="text-xs text-gold/80">{b.label} <span className="text-parchment/40">— {b.hint}</span></div>
+                  <AutomationTree nodes={r[b.key]} onChange={(n) => patchRider(r._id, { [b.key]: n } as Partial<RiderDraft>)} />
+                </div>
+              ))}
+              {issues.map((iss, i) => <div key={i} className="mt-1 text-xs text-red-300/80">{iss}</div>)}
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={() => setRiders((prev) => [...prev, { _id: nextId(), id: '', name: '', keyword: '', apply: 'opt-in', cost: '', onHit: [], onSuccess: [], onCriticalSuccess: [], onFailure: [] }])} className="mt-3 rounded border border-gold/25 px-2.5 py-1 text-sm text-parchment hover:bg-midnight-900/60">+ strike rider</button>
+
       {/* output */}
       <h2 className="mt-8 font-display text-xl text-gold">Authored content</h2>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <span className={`text-sm ${allValid ? 'text-emerald-soft' : 'text-red-300/80'}`}>
-          {allValid ? `✓ ${effects.length} effect(s), ${choices.length} choice(s), ${actions.length} action(s) valid` : 'some entries are invalid'}
+          {allValid ? `✓ ${effects.length} effect(s), ${choices.length} choice(s), ${actions.length} action(s), ${riders.length} rider(s) valid` : 'some entries are invalid'}
         </span>
         <button onClick={saveActions} disabled={!feat || !allValid || actions.length === 0 || saving} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
           {saving ? 'Saving…' : `Save ${actions.length || ''} action(s) to review queue`}
         </button>
-        <button onClick={exportJson} disabled={!feat || !allValid || (effects.length === 0 && choices.length === 0 && actions.length === 0)} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
+        <button onClick={saveRiders} disabled={!feat || !allValid || riders.length === 0 || saving} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
+          {saving ? 'Saving…' : `Save ${riders.length || ''} rider(s) to review queue`}
+        </button>
+        <button onClick={exportJson} disabled={!feat || !allValid || (effects.length === 0 && choices.length === 0 && actions.length === 0 && riders.length === 0)} className="rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:border-gold/60 disabled:opacity-40">
           Export JSON
         </button>
       </div>
@@ -321,7 +434,7 @@ export function EffectAuthorPage() {
         save into content.
       </p>
       <pre className="mt-3 max-h-80 overflow-auto rounded-md border border-gold/15 bg-midnight-950/70 p-3 text-[11px] leading-relaxed text-parchment/70">
-        {JSON.stringify({ effects: authored, ...(authoredChoices.length ? { choices: authoredChoices } : {}), ...(authoredActions.length ? { grantedActions: authoredActions } : {}) }, null, 2)}
+        {JSON.stringify({ effects: authored, ...(authoredChoices.length ? { choices: authoredChoices } : {}), ...(authoredActions.length ? { grantedActions: authoredActions } : {}), ...(authoredRiders.length ? { riders: authoredRiders } : {}) }, null, 2)}
       </pre>
 
       <datalist id="resist-types">
