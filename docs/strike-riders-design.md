@@ -93,14 +93,14 @@ is *small* — a condition-applying `applyEffect` node and, at most, a damage tw
   order-preserving: bonus dice concatenate (each doubles on a crit), degree fragments
   concatenate onto their branch, and `ridersMapMultiplier` takes the MAX (two riders
   never make a Strike "count as three attacks").
-- **OPEN — automatic vs. opt-in riders** (shapes the authoring + bot collection, below).
+- **Automatic vs. opt-in riders — DECIDED (owner, 2026-07-21): a flag on the rider.**
   A Strike's rider SET has two origins: *automatic* ones the weapon/character always
   brings (a Rooting/Flaming rune, an always-on feat) and *opt-in* ones the player
-  chooses (the activity — Intimidating Strike, Power Attack). The bot must collect the
-  automatic set from the character's weapon + feats and add the chosen activity, then
-  `composeStrikeRiders` the union. Whether "automatic" is a field on the rider or a
-  property of WHERE it is attached (a rune's rider vs a feat-activity's) is the design
-  question the authoring plumbing has to answer.
+  chooses (the activity). `StrikeRider.apply: "automatic" | "opt-in"` (absent = opt-in)
+  records which; `isAutomaticRider` reads it. The AUTHORING captures it now (the web
+  editor's apply dropdown); the bot's `/strike rider:` composes the explicitly-named
+  set today, and AUTO-COLLECTION of a character's automatic riders (from runes/feats)
+  is the next slice — it needs riders-as-content wired onto weapons/feats first.
 - **`mapMultiplier` is declarative here; its interpreter wiring is a follow-up.** "Counts
   as two attacks" advances the turn's attack count by 2 (so the *next* Strike is at
   third-attack MAP). That is a post-strike effect on `attacksThisTurn`, which the host
@@ -114,9 +114,16 @@ is *small* — a condition-applying `applyEffect` node and, at most, a damage tw
 
 ## Sequencing (the rest of step 5)
 
-1. **This: the core model + composition, tested.** ← the load-bearing primitive.
-2. The `mapMultiplier` interpreter wiring (a scoped `automation.ts` change).
-3. The bot surface: `/strike … rider:<keyword>` resolves a rider and composes it before
-   the run — a small extension to the command built in step 4.
-4. Authoring real riders from the 349 (rules-from-source), which retires the hand
-   `authoredActions.js` demos for the rider cases.
+1. ✅ **Core model + composition**, single then multi-rider (`composeStrikeRiders`).
+2. ✅ **Content path** — `addRider` → decisions rail → `resolveEntity.riders` →
+   `remap-effects` writes `bearer.riders`. Riders are now admin-authorable content.
+3. ✅ **Bot surface** — `/strike rider:<a>,<b>` composes the named set.
+4. ✅ **Web authoring** — the rider editor in `EffectAuthorPage` (writes `addRider`).
+5. 🔜 **Auto-collection** — the bot pulls a character's *automatic* riders from their
+   weapon runes + always-on feats and unions them with the chosen activity. Needs
+   riders-as-content attached to weapons/feats (a rune → its rider). The seam is ready
+   (`isAutomaticRider`, `bearer.riders`); this wires it.
+6. 🔜 **Authoring the real riders** from the 349 (rules-from-source), retiring the
+   temporary bot `strikeRiders.js` catalog.
+7. 🔜 **`mapMultiplier` interpreter wiring** (a scoped `automation.ts` change) — only
+   observable once a turn-MAP tracker exists.
