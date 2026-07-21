@@ -30,13 +30,30 @@ function signed(n) {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
-function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applied, targetName, targetApplied, seed }) {
+const ACTION_GLYPH = { 1: '(1 action)', 2: '(2 actions)', 3: '(3 actions)' };
+function riderCostLabel(rider) {
+  const c = rider?.actionCost;
+  if (!c) return '';
+  if (c.kind === 'actions') return ACTION_GLYPH[c.min] ?? `(${c.min}–${c.max} actions)`;
+  if (c.kind === 'reaction') return '(reaction)';
+  if (c.kind === 'free') return '(free)';
+  return '';
+}
+
+function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applied, targetName, targetApplied, rider, seed }) {
   const name = charEntry?.data?.name || charEntry?.name || 'Character';
   const weaponName = weapon?.display || weapon?.name || 'Strike';
+  // With a rider, the ACTIVITY is the headline (Intimidating Strike), the weapon a subtitle.
+  const title = rider
+    ? `${rider.name} ${riderCostLabel(rider)}`.trim()
+    : `${weaponName} ${signed(built.strike.attack)}${targetName ? ` vs ${targetName}` : ''}`;
 
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(`${weaponName} ${signed(built.strike.attack)}${targetName ? ` vs ${targetName}` : ''}`);
+    .setTitle(title);
+  if (rider) {
+    embed.addFields({ name: 'Strike', value: `${weaponName} ${signed(built.strike.attack)}${targetName ? ` vs ${targetName}` : ''}` });
+  }
 
   const body = narration.lines.length > 0 ? narration.lines.join('\n') : '_No roll._';
   embed.setDescription(clamp(body));
@@ -59,6 +76,13 @@ function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applie
       });
     }
     skipped = applied.skipped.filter(s => !s.startsWith('damage:'));
+  }
+
+  // A rider that "counts as N attacks" for MAP — surfaced, not applied (the bot has
+  // no turn tracker; the player picks `map:` for their next Strike themselves).
+  const mult = rider?.strikeMods?.mapMultiplier;
+  if (mult && mult > 1) {
+    embed.addFields({ name: 'Multiple attack penalty', value: `This counts as **${mult}** attacks — set \`map:\` accordingly on your next Strike this turn.` });
   }
 
   // Honesty surface. The adapter's warnings (no traits → MAP/crit caveats) ride

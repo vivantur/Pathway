@@ -22,6 +22,7 @@ const characterState = require('../../state/characters');
 const combat = require('../../state/combat');
 const core = require('@pathway/core');
 const { buildStrike } = require('../../rules/strikeAdapter');
+const { findRider } = require('../../rules/strikeRiders');
 const { run, describeOutcome, describeApplied } = require('../../rules/automation');
 const { randomSeed, applyOutcome } = require('../../state/automation');
 const { buildStrikeEmbed } = require('./embed');
@@ -111,14 +112,29 @@ async function execute(interaction) {
     return interaction.reply({ content: `❌ Could not read **${weapon.display ?? weapon.name}**: ${built.error}`, ephemeral: true });
   }
 
+  // An optional RIDER — a keyword tacked onto the Strike (Avrae-style). It composes
+  // onto the base Strike's tree via core, so a hit also applies the rider's effect.
+  const riderQuery = interaction.options.getString('rider');
+  let rider = null;
+  if (riderQuery) {
+    rider = findRider(riderQuery);
+    if (!rider) {
+      return interaction.reply({ content: `❌ No rider matches **"${riderQuery}"**. Known: \`intimidating\`, \`snagging\`.`, ephemeral: true });
+    }
+  }
+
   const seed = randomSeed();
   const attacksThisTurn = MAP_PRIOR[interaction.options.getString('map') ?? 'first'] ?? 0;
+  // With a rider, compose it onto the base strike; without, run the plain strike.
+  // Both are the same base tree — composeStrikeRider just appends the rider's
+  // degree fragments and folds any strike mods in first.
+  const nodes = rider ? core.composeStrikeRider(built.strike, rider, { agile: built.agile }) : built.nodes;
 
   let outcome;
   try {
-    outcome = run(charEntry, built.nodes, { seed, targets: [targetLike], attacksThisTurn });
+    outcome = run(charEntry, nodes, { seed, targets: [targetLike], attacksThisTurn });
   } catch (err) {
-    console.error('[strike] automation failed', { weapon: weapon.name, error: err });
+    console.error('[strike] automation failed', { weapon: weapon.name, rider: rider?.id, error: err });
     return interaction.reply({ content: `❌ **${weapon.display ?? weapon.name}** failed to run: ${err.message}`, ephemeral: true });
   }
 
@@ -142,6 +158,7 @@ async function execute(interaction) {
       applied: describeApplied(report),
       targetName: targetLike?.name ?? null,
       targetApplied: report.applied.some(a => a.kind === 'damage' || a.kind === 'healing'),
+      rider,
       seed,
     })],
   });

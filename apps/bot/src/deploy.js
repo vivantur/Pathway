@@ -360,6 +360,8 @@ const strikeCommand = new SlashCommandBuilder()
   .addIntegerOption(o => o.setName('ac').setDescription('Target AC (when not targeting a combatant)').setRequired(false).setMinValue(1))
   .addStringOption(o => o.setName('map').setDescription('Which attack this turn (multiple attack penalty)').setRequired(false)
     .addChoices({ name: 'First (no MAP)', value: 'first' }, { name: 'Second', value: 'second' }, { name: 'Third or more', value: 'third' }))
+  .addStringOption(o => o.setName('rider').setDescription('Tack a rider activity onto the Strike').setRequired(false)
+    .addChoices({ name: 'Intimidating Strike (Frightened on hit)', value: 'intimidating' }, { name: 'Snagging Strike (Off-Guard on hit)', value: 'snagging' }))
   .addStringOption(o => o.setName('character').setDescription('Character (default: active)').setRequired(false).setAutocomplete(true));
 
 // ─────────────────────────────────────────────────────────────────────────────
