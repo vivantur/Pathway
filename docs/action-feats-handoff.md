@@ -50,6 +50,17 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   feats.json byte-identical)**. The effect raw is captured so `remap-effects.mjs` re-maps
 >   it as the mapper improves — the clone is paid once. Remaining: **step 5** (and the
 >   flagged rows).
+> - **Step 5 (rider composition — CORE MODEL) LANDED 2026-07-21** (branch
+>   `action-feats/trichotomy`). `packages/core/src/rider.ts` + `docs/strike-riders-design.md`,
+>   designed against the real step-1 riders. `composeStrikeRider(strike, rider, map?)` merges
+>   a rider onto `strikeAutomation`'s base tree at two points — `strikeMods` (extra weapon
+>   dice fold into the Strike so they double on a crit; a MAP multiplier surfaced for the
+>   host) before, degree fragments (onHit/onSuccess/onCriticalSuccess/onFailure) after. 10
+>   tests over Intimidating Strike / Snagging Strike / Power Attack / Certain Strike.
+>   Movement-prefix (Sudden Charge) and multi-strike (Double Slice) are scoped OUT as
+>   bespoke. **Follow-ups (not this session):** the `mapMultiplier` interpreter wiring in
+>   `automation.ts`, the bot `/strike … rider:<keyword>` surface, and authoring the 349
+>   riders from source. Remaining: the flagged-row confirmation + the step-5 follow-ups.
 
 ---
 

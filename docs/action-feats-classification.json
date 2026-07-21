@@ -5,8 +5,8 @@
     "corpus": 2188,
     "byBucket": {
       "strike-rider": 349,
-      "bespoke-activity": 1798,
-      "keep-passive": 41
+      "bespoke-activity": 1792,
+      "keep-passive": 47
     },
     "byBucketAndSource": {
       "strike-rider": {
@@ -14,17 +14,17 @@
         "inQueue": 38
       },
       "bespoke-activity": {
-        "silent": 1542,
-        "inQueue": 256
+        "silent": 1508,
+        "inQueue": 284
       },
       "keep-passive": {
         "silent": 0,
-        "inQueue": 41
+        "inQueue": 47
       }
     },
-    "lowConfidence": 32,
-    "flagged": 56,
-    "scopedStrikePassives": 65
+    "lowConfidence": 31,
+    "flagged": 55,
+    "scopedStrikePassives": 71
   },
   "rows": [
     {
@@ -2033,8 +2033,8 @@
         "occult",
         "teleportation"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -5665,8 +5665,8 @@
         "stance",
         "uncommon"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -6082,8 +6082,8 @@
         "emotion",
         "mental"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -6764,7 +6764,7 @@
         "thaumaturge"
       ],
       "source": "in-queue",
-      "hasCandidates": false,
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "strike-rider",
       "signal": "imperative \"make … Strike\" in the rules text",
@@ -7368,10 +7368,10 @@
       ],
       "source": "in-queue",
       "hasCandidates": true,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost with a self-contained activity verb, no Strike",
-      "confidence": "high",
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
       "flags": []
     },
     {
@@ -7936,8 +7936,8 @@
         "ranger",
         "rogue"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -8106,8 +8106,8 @@
         "emotion",
         "mental"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -8600,8 +8600,8 @@
         "concentrate",
         "fortune"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -8834,8 +8834,8 @@
         "fortune",
         "uncommon"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -10046,7 +10046,7 @@
         "lizardfolk"
       ],
       "source": "in-queue",
-      "hasCandidates": false,
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -10075,7 +10075,7 @@
       "traits": [
         "tengu"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -10361,12 +10361,12 @@
         "nephilim",
         "polymorph"
       ],
-      "source": "silent",
-      "hasCandidates": false,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost with a self-contained activity verb, no Strike",
-      "confidence": "high",
+      "source": "in-queue",
+      "hasCandidates": true,
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
       "flags": []
     },
     {
@@ -10918,8 +10918,8 @@
         "concentrate",
         "spellshape"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -11997,8 +11997,8 @@
         "fortune",
         "linguistic"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -12440,7 +12440,7 @@
         "archetype"
       ],
       "source": "in-queue",
-      "hasCandidates": false,
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -12523,8 +12523,8 @@
         "magical",
         "rare"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -14048,15 +14048,13 @@
         "divine",
         "rage"
       ],
-      "source": "silent",
-      "hasCandidates": false,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost, no Strike and no clear activity verb",
-      "confidence": "low",
-      "flags": [
-        "no Strike reference and no clear activity verb — verify it is an action at all, not a mis-costed passive"
-      ]
+      "source": "in-queue",
+      "hasCandidates": true,
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
+      "flags": []
     },
     {
       "id": "spiritual-secret",
@@ -15410,7 +15408,7 @@
       "traits": [
         "archetype"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -16935,7 +16933,7 @@
         "monk",
         "stance"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -17154,8 +17152,8 @@
         "archetype",
         "fortune"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -17834,8 +17832,8 @@
         "archetype",
         "manipulate"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -19619,7 +19617,7 @@
         "concentrate",
         "dwarf"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -21220,8 +21218,8 @@
         "mental",
         "visual"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -22911,8 +22909,8 @@
       "traits": [
         "monk"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -25509,7 +25507,7 @@
         "polymorph",
         "primal"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -26576,7 +26574,7 @@
         "spellshape",
         "uncommon"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -27176,12 +27174,12 @@
         "fear",
         "mental"
       ],
-      "source": "silent",
-      "hasCandidates": false,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost with a self-contained activity verb, no Strike",
-      "confidence": "high",
+      "source": "in-queue",
+      "hasCandidates": true,
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
       "flags": []
     },
     {
@@ -27500,7 +27498,7 @@
         "visual"
       ],
       "source": "in-queue",
-      "hasCandidates": false,
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -27576,7 +27574,7 @@
         "aura",
         "dragonet"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -27900,7 +27898,7 @@
         "reincarnated",
         "rare"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -28330,7 +28328,7 @@
         "polymorph",
         "primal"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -28584,11 +28582,11 @@
         "mythic"
       ],
       "source": "in-queue",
-      "hasCandidates": false,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost with a self-contained activity verb, no Strike",
-      "confidence": "high",
+      "hasCandidates": true,
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
       "flags": []
     },
     {
@@ -28824,7 +28822,7 @@
         "mythic",
         "rare"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -29872,8 +29870,8 @@
         "cleric",
         "fortune"
       ],
-      "source": "silent",
-      "hasCandidates": false,
+      "source": "in-queue",
+      "hasCandidates": true,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
       "signal": "an action cost with a self-contained activity verb, no Strike",
@@ -30435,7 +30433,7 @@
       "traits": [
         "archetype"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -32589,7 +32587,7 @@
       "traits": [
         "archetype"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -33125,7 +33123,7 @@
       "traits": [
         "nephilim"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -34644,7 +34642,7 @@
         "archetype",
         "spellshape"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -34934,7 +34932,7 @@
         "rogue",
         "uncommon"
       ],
-      "source": "silent",
+      "source": "in-queue",
       "hasCandidates": false,
       "scopedStrike": false,
       "bucket": "bespoke-activity",
@@ -35732,12 +35730,12 @@
         "commander",
         "visual"
       ],
-      "source": "silent",
-      "hasCandidates": false,
-      "scopedStrike": false,
-      "bucket": "bespoke-activity",
-      "signal": "an action cost with a self-contained activity verb, no Strike",
-      "confidence": "high",
+      "source": "in-queue",
+      "hasCandidates": true,
+      "scopedStrike": true,
+      "bucket": "keep-passive",
+      "signal": "a producer read an auto-applying attack/damage modifier, with no imperative Strike",
+      "confidence": "medium",
       "flags": []
     },
     {

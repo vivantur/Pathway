@@ -12,8 +12,8 @@
 | bucket | count | share | silent | in-queue |
 |---|---:|---:|---:|---:|
 | strike-rider | 349 | 16.0% | 311 | 38 |
-| bespoke-activity | 1798 | 82.2% | 1542 | 256 |
-| keep-passive | 41 | 1.9% | 0 | 41 |
+| bespoke-activity | 1792 | 81.9% | 1508 | 284 |
+| keep-passive | 47 | 2.1% | 0 | 47 |
 
 - **strike-rider (c)** — the feat's action is or modifies a Strike. These compose onto a base Strike tree (step 5); until then, author as bespoke actions or scoped passives.
 - **bespoke-activity (b)** — an opt-in activity of its own. Author via `addGrantedAction` (the authoring UI exists).
@@ -21,9 +21,9 @@
 
 ## Where a human is needed
 
-- **56** rows carry a **flag** (genuine ambiguity — e.g. both an imperative Strike and an auto-applying modifier).
-- **32** rows are **low-confidence** (no Strike and no clear activity verb — verify they are actions at all).
-- **65** carry an auto-applying attack/damage modifier the pipeline already extracted.
+- **55** rows carry a **flag** (genuine ambiguity — e.g. both an imperative Strike and an auto-applying modifier).
+- **31** rows are **low-confidence** (no Strike and no clear activity verb — verify they are actions at all).
+- **71** carry an auto-applying attack/damage modifier the pipeline already extracted.
 
 ## Examples per bucket
 
@@ -82,12 +82,12 @@
 - **Grudge Strike** `[2]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
 - **Retaliating Rescue** `[2]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
 - **Sniper's Aim** `[2]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
-- **Spirits' Interference** `[1]` (bespoke-activity, low) — no Strike reference and no clear activity verb — verify it is an action at all, not a mis-costed passive
 - **Triggerbrand Salvo** `[1]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
 - **Verduran Ambush** `[3]` (bespoke-activity, low) — no Strike reference and no clear activity verb — verify it is an action at all, not a mis-costed passive
 - **War Rider Stance** `[1]` (bespoke-activity, low) — no Strike reference and no clear activity verb — verify it is an action at all, not a mis-costed passive
 - **Kip Up** `[free]` (bespoke-activity, low) — no Strike reference and no clear activity verb — verify it is an action at all, not a mis-costed passive
 - **Archer's Aim** `[2]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
 - **Bullet Split** `[1]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
+- **Bullseye** `[1]` (strike-rider, high) — both an imperative Strike and an auto-applying strike modifier — is the modifier the rider itself, or a separate always-on passive?
 
 _Golden self-check: all 8 hand-eyeballed feats classified as expected._
