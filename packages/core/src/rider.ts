@@ -70,58 +70,76 @@ export const strikeRiderSchema = z
 
 export type StrikeRider = z.infer<typeof strikeRiderSchema>;
 
-/** Whether a rider carries a MAP multiplier the host still needs to apply. */
+/**
+ * The MAP multiplier a SET of riders imposes — "counts as N attacks". Realistically
+ * only the ACTIVITY rider sets one (a rune or passive rider leaves it at 1), so the
+ * max is the honest fold: two riders never make a Strike "count as three attacks".
+ * The host still applies it (turn state, not tree shape).
+ */
+export function ridersMapMultiplier(riders: readonly StrikeRider[]): number {
+  return Math.max(1, ...riders.map((r) => r.strikeMods?.mapMultiplier ?? 1));
+}
+
+/** A single rider's MAP multiplier — the one-rider form of {@link ridersMapMultiplier}. */
 export function riderMapMultiplier(rider: StrikeRider): number {
-  return rider.strikeMods?.mapMultiplier ?? 1;
+  return ridersMapMultiplier([rider]);
 }
 
 /**
- * Compose a rider onto a base Strike, returning the runnable Layer-2 tree.
+ * Compose a SET of riders onto a base Strike, returning the runnable Layer-2 tree.
  *
- * The base tree is `strikeAutomation`'s single `attack` node with per-degree damage;
- * this returns a fresh tree with the rider merged (nothing here mutates its inputs).
+ * ONE Strike commonly carries SEVERAL riders at once — a Rooting rune (Immobilized on
+ * a crit) on a weapon Struck with an activity like Power Attack (an extra die), plus
+ * whatever runes/feats always apply. At mid level a real attack stacks four or more.
+ * So this folds a list, not a single rider; `composeStrikeRider` is the one-rider case.
  *
- * `bonusDamage` is folded into the Strike's own damage so the interpreter doubles it
- * on a crit exactly as it doubles the weapon's dice — a tacked-on un-scaled damage
- * node would UNDER-count a critical Power Attack, which is precisely the kind of
- * silent damage bug the Strike model keeps `deadlyDamage` separate to avoid.
+ * The fold is order-preserving and additive:
+ *   • every rider's `strikeMods.bonusDamage` is concatenated into the Strike's damage
+ *     BEFORE the tree is built, so each extra die doubles on a crit exactly as the
+ *     weapon's dice do — a tacked-on un-scaled node would under-count a critical hit,
+ *     the bug the Strike model keeps `deadlyDamage` separate to avoid;
+ *   • every rider's degree fragments are appended to the matching branch, in rider
+ *     order, AFTER the base damage — so damage resolves first and an applied condition
+ *     can read "you hit and dealt damage", and two riders' effects both land.
  *
- * `mapMultiplier` is NOT applied here (it is host/turn state, not tree shape); read it
- * with `riderMapMultiplier` and advance the turn's attack count in the host.
+ * Returns a fresh tree; nothing here mutates its inputs. `mapMultiplier` is NOT applied
+ * here (it is host/turn state) — read it with `ridersMapMultiplier`.
  */
-export function composeStrikeRider(strike: Strike, rider: StrikeRider, map?: MapOptions): AutomationNode[] {
-  // 1. strikeMods → a copy of the Strike, so bonus dice double on a crit with the rest.
-  let modified = strike;
-  const bonus = rider.strikeMods?.bonusDamage;
-  if (bonus && bonus.length > 0) {
-    modified = {
-      ...strike,
-      damage: [...strike.damage, ...bonus],
-      // When FATAL replaced the crit dice, the bonus dice must ride there too or the
-      // crit silently loses them (onCriticalSuccess reads criticalDamage when set).
-      criticalDamage: strike.criticalDamage ? [...strike.criticalDamage, ...bonus] : strike.criticalDamage,
-    };
-  }
+export function composeStrikeRiders(strike: Strike, riders: readonly StrikeRider[], map?: MapOptions): AutomationNode[] {
+  // 1. Fold every rider's strikeMods into a copy of the Strike.
+  const bonus = riders.flatMap((r) => r.strikeMods?.bonusDamage ?? []);
+  const modified: Strike = bonus.length > 0
+    ? {
+        ...strike,
+        damage: [...strike.damage, ...bonus],
+        // When FATAL replaced the crit dice, the bonus dice must ride there too or the
+        // crit silently loses them (onCriticalSuccess reads criticalDamage when set).
+        criticalDamage: strike.criticalDamage ? [...strike.criticalDamage, ...bonus] : strike.criticalDamage,
+      }
+    : strike;
 
   // 2. The base tree.
   const tree = strikeAutomation(modified, map);
   const base = tree[0];
   if (!base || base.kind !== "attack") return tree; // strikeAutomation always yields one attack node
 
-  // 3. Append the degree fragments. `onHit` fans to both success branches; the base
-  //    damage stays FIRST so damage resolves before a rider's applied condition reads
-  //    "you hit and dealt damage".
-  const onHit = rider.onHit ?? [];
+  // 3. Concatenate every rider's degree fragments. `onHit` fans to both success
+  //    branches; the base damage stays FIRST.
+  const collect = (pick: (r: StrikeRider) => AutomationNode[] | undefined) => riders.flatMap((r) => pick(r) ?? []);
+  const onHit = collect((r) => r.onHit);
+  const onFailure = collect((r) => r.onFailure);
+  const onCriticalFailure = collect((r) => r.onCriticalFailure);
   const attack: AutomationNode = {
     ...base,
-    onSuccess: [...(base.onSuccess ?? []), ...onHit, ...(rider.onSuccess ?? [])],
-    onCriticalSuccess: [...(base.onCriticalSuccess ?? []), ...onHit, ...(rider.onCriticalSuccess ?? [])],
-    ...(rider.onFailure && rider.onFailure.length > 0
-      ? { onFailure: [...(base.onFailure ?? []), ...rider.onFailure] }
-      : {}),
-    ...(rider.onCriticalFailure && rider.onCriticalFailure.length > 0
-      ? { onCriticalFailure: [...(base.onCriticalFailure ?? []), ...rider.onCriticalFailure] }
-      : {}),
+    onSuccess: [...(base.onSuccess ?? []), ...onHit, ...collect((r) => r.onSuccess)],
+    onCriticalSuccess: [...(base.onCriticalSuccess ?? []), ...onHit, ...collect((r) => r.onCriticalSuccess)],
+    ...(onFailure.length > 0 ? { onFailure: [...(base.onFailure ?? []), ...onFailure] } : {}),
+    ...(onCriticalFailure.length > 0 ? { onCriticalFailure: [...(base.onCriticalFailure ?? []), ...onCriticalFailure] } : {}),
   };
   return [attack, ...tree.slice(1)];
+}
+
+/** Compose ONE rider onto a Strike — the one-rider case of {@link composeStrikeRiders}. */
+export function composeStrikeRider(strike: Strike, rider: StrikeRider, map?: MapOptions): AutomationNode[] {
+  return composeStrikeRiders(strike, [rider], map);
 }

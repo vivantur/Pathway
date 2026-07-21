@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { composeStrikeRider, riderMapMultiplier, strikeRiderSchema, type StrikeRider } from "./rider.js";
+import { composeStrikeRider, composeStrikeRiders, riderMapMultiplier, ridersMapMultiplier, strikeRiderSchema, type StrikeRider } from "./rider.js";
 import { resolveStrike, type Strike, type StrikeActor, type StrikeSource } from "./strike.js";
 import type { AutomationNode } from "./automation.js";
 
@@ -115,6 +115,55 @@ describe("composeStrikeRider — a rider may add a failure branch (Certain Strik
   it("adds an onFailure branch the base Strike lacked", () => {
     expect(attack.onFailure).toBeDefined();
     expect(attack.onFailure?.[0]?.kind).toBe("text");
+  });
+});
+
+describe("composeStrikeRiders — a Strike carries MORE THAN ONE rider at once", () => {
+  // The example: a Rooting rune (Immobilized on a crit) on a weapon Struck with a
+  // Vicious-style rider (an extra weapon die). Two separate riders, one Strike.
+  const viciousDie: StrikeRider = {
+    id: "extra-die", name: "Extra Weapon Die", keyword: "vicious",
+    strikeMods: { bonusDamage: [{ formula: "1d8", type: "slashing" }] },
+  };
+  const rootingRune: StrikeRider = {
+    id: "rooting", name: "Rooting Rune", keyword: "rooting",
+    onCriticalSuccess: [{ kind: "applyEffect", target: "target", effect: { name: "Immobilized", conditions: [{ slug: "immobilized" }], duration: { kind: "unlimited" }, passives: [] } } as AutomationNode],
+  };
+  const tree = composeStrikeRiders(strike, [viciousDie, rootingRune]);
+  const attack = attackOf(tree);
+
+  it("folds every rider's bonus damage into the Strike (Vicious's die is present)", () => {
+    const hitDamage = attack.onSuccess?.find((n) => n.kind === "damage") as { components: unknown[] };
+    expect(hitDamage.components.length).toBe(strike.damage.length + 1);
+  });
+
+  it("lands each rider's degree fragment (Rooting's Immobilized rides the crit branch)", () => {
+    const immobilized = attack.onCriticalSuccess?.some(
+      (n) => n.kind === "applyEffect" && (n as { effect: { name: string } }).effect.name === "Immobilized",
+    );
+    expect(immobilized).toBe(true);
+    // ...and it is NOT on a regular hit (Rooting is crit-only).
+    expect(attack.onSuccess?.some((n) => n.kind === "applyEffect")).toBe(false);
+  });
+
+  it("stacks four riders' effects without dropping any (the mid-level reality)", () => {
+    const frightenHit: StrikeRider = { id: "a", name: "A", keyword: "a", onHit: [{ kind: "text", body: "A" } as AutomationNode] };
+    const bleedHit: StrikeRider = { id: "b", name: "B", keyword: "b", onHit: [{ kind: "text", body: "B" } as AutomationNode] };
+    const critC: StrikeRider = { id: "c", name: "C", keyword: "c", onCriticalSuccess: [{ kind: "text", body: "C" } as AutomationNode] };
+    const four = attackOf(composeStrikeRiders(strike, [viciousDie, frightenHit, bleedHit, critC]));
+    const texts = (four.onSuccess ?? []).filter((n) => n.kind === "text").length;
+    expect(texts).toBe(2); // A and B, both onHit
+    expect((four.onCriticalSuccess ?? []).filter((n) => n.kind === "text").length).toBe(3); // A, B (onHit) + C (crit)
+  });
+
+  it("takes the max MAP multiplier across the set, not the sum", () => {
+    const powerAttack: StrikeRider = { id: "pa", name: "Power Attack", keyword: "power", strikeMods: { mapMultiplier: 2 } };
+    expect(ridersMapMultiplier([viciousDie, rootingRune, powerAttack])).toBe(2);
+    expect(ridersMapMultiplier([viciousDie, rootingRune])).toBe(1);
+  });
+
+  it("composeStrikeRider is exactly the one-rider case", () => {
+    expect(composeStrikeRider(strike, rootingRune)).toEqual(composeStrikeRiders(strike, [rootingRune]));
   });
 });
 

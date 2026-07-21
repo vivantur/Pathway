@@ -84,10 +84,23 @@ is *small* — a condition-applying `applyEffect` node and, at most, a damage tw
 
 ## Decisions
 
-- **One rider per Strike, for now.** Every A/B rider in the corpus is a single activity;
-  none stacks a second rider onto the same Strike. The signature admits only one
-  `rider:` argument. If genuine stacking appears, `composeStrikeRider` folds a list —
-  the shape does not fight it — but we do not build for imagined content.
+- **A Strike composes a SET of riders, not one** (owner, 2026-07-21 — this retires the
+  earlier "one rider for now"). One Strike routinely carries several at once: a Rooting
+  rune (Immobilized on a crit) on a weapon Struck with Power Attack (an extra die), plus
+  whatever runes/feats always apply. At mid level a real attack stacks four or more
+  (the Avrae-snippet reality). So the primitive is `composeStrikeRiders(strike,
+  riders[], map?)`; `composeStrikeRider` is the one-rider case. The fold is additive and
+  order-preserving: bonus dice concatenate (each doubles on a crit), degree fragments
+  concatenate onto their branch, and `ridersMapMultiplier` takes the MAX (two riders
+  never make a Strike "count as three attacks").
+- **OPEN — automatic vs. opt-in riders** (shapes the authoring + bot collection, below).
+  A Strike's rider SET has two origins: *automatic* ones the weapon/character always
+  brings (a Rooting/Flaming rune, an always-on feat) and *opt-in* ones the player
+  chooses (the activity — Intimidating Strike, Power Attack). The bot must collect the
+  automatic set from the character's weapon + feats and add the chosen activity, then
+  `composeStrikeRiders` the union. Whether "automatic" is a field on the rider or a
+  property of WHERE it is attached (a rune's rider vs a feat-activity's) is the design
+  question the authoring plumbing has to answer.
 - **`mapMultiplier` is declarative here; its interpreter wiring is a follow-up.** "Counts
   as two attacks" advances the turn's attack count by 2 (so the *next* Strike is at
   third-attack MAP). That is a post-strike effect on `attacksThisTurn`, which the host
