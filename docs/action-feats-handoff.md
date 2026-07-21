@@ -35,6 +35,21 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   Output in `docs/action-feats-classification.{md,json}`. This scopes steps 2/5: the
 >   bespoke bucket is the bulk of the authoring, the rider bucket feeds step 5's snippet
 >   composition. Remaining: **steps 2, 5** (and confirming the flagged rows).
+> - **Step 2 (effects-pack ingest + linking) LANDED 2026-07-21** (branch
+>   `action-feats/trichotomy`). `ingest-feat-effects.mjs` walks `packs/pf2e/feat-effects`
+>   (833 items), links each to its feat (exact slug → prose `@UUID` name-ref → fuzzy;
+>   555 linked, unmatched reported and mostly non-feat), and writes
+>   `feat-effects-links.json`. `build-candidates.mjs` maps the linked effects as a
+>   SEPARATE producer; `remap-effects.mjs` folds in feats with no own raw too. **The trap
+>   caught here:** an effect's `FlatModifier -1 Will` describes what the effect does to its
+>   BEARER, not a passive on the feat's owner — folding it into the `foundry` source
+>   corroborated the parser and AUTO-PROMOTED Goblin Song's target debuff as a permanent
+>   penalty on the singer's own sheet. Fixed by keeping effect proposals a single source
+>   (foundry-only, never auto-promoted) deduped against real producers. Result: +282
+>   review items, action-feat silent 1853→1819, **autoPromote unchanged (no content ships;
+>   feats.json byte-identical)**. The effect raw is captured so `remap-effects.mjs` re-maps
+>   it as the mapper improves — the clone is paid once. Remaining: **step 5** (and the
+>   flagged rows).
 
 ---
 
