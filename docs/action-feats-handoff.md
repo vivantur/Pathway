@@ -26,6 +26,15 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   agile/deadly/fatal, WARNED honestly, until the planned format conversion (reference-item
 >   enrichment is the fallback). Also deliberately NOT in this slice: turn-tracked MAP (the
 >   `map:` option is explicit per-invocation). Remaining: **steps 1, 2, 5.**
+> - **Step 1 (trichotomy scoping) LANDED 2026-07-21** (branch `action-feats/trichotomy`).
+>   `apps/web/scripts/classify-action-feats.mjs` reads each action-feat's own rules text
+>   (`feats.json`) + producer signals and PROPOSES a bucket per feat — a diagnostic, not a
+>   decision (every row carries the signal that drove it; a golden self-check guards it).
+>   Result over 2,188 action-feats: **strike-rider 349 (16%) · bespoke-activity 1,798
+>   (82%) · keep-passive 41 (2%)**, with 56 flagged + 32 low-confidence for human review.
+>   Output in `docs/action-feats-classification.{md,json}`. This scopes steps 2/5: the
+>   bespoke bucket is the bulk of the authoring, the rider bucket feeds step 5's snippet
+>   composition. Remaining: **steps 2, 5** (and confirming the flagged rows).
 
 ---
 
