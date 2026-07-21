@@ -31,27 +31,28 @@ function signed(n) {
 }
 
 const ACTION_GLYPH = { 1: '(1 action)', 2: '(2 actions)', 3: '(3 actions)' };
-function riderCostLabel(rider) {
-  const c = rider?.actionCost;
-  if (!c) return '';
-  if (c.kind === 'actions') return ACTION_GLYPH[c.min] ?? `(${c.min}–${c.max} actions)`;
-  if (c.kind === 'reaction') return '(reaction)';
-  if (c.kind === 'free') return '(free)';
+/** The costliest action cost across a rider set — the activity's, in practice. */
+function ridersCostLabel(riders) {
+  const actions = riders.map(r => (r.actionCost?.kind === 'actions' ? r.actionCost.min : 0));
+  const max = Math.max(0, ...actions);
+  if (max > 0) return ACTION_GLYPH[max] ?? `(${max} actions)`;
+  if (riders.some(r => r.actionCost?.kind === 'reaction')) return '(reaction)';
+  if (riders.some(r => r.actionCost?.kind === 'free')) return '(free)';
   return '';
 }
 
-function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applied, targetName, targetApplied, rider, seed }) {
+function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applied, targetName, targetApplied, riders = [], seed }) {
   const name = charEntry?.data?.name || charEntry?.name || 'Character';
   const weaponName = weapon?.display || weapon?.name || 'Strike';
-  // With a rider, the ACTIVITY is the headline (Intimidating Strike), the weapon a subtitle.
-  const title = rider
-    ? `${rider.name} ${riderCostLabel(rider)}`.trim()
+  // With riders, the activity/riders are the headline, the weapon a subtitle.
+  const title = riders.length
+    ? `${riders.map(r => r.name).join(' + ')} ${ridersCostLabel(riders)}`.trim()
     : `${weaponName} ${signed(built.strike.attack)}${targetName ? ` vs ${targetName}` : ''}`;
 
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(title);
-  if (rider) {
+    .setTitle(title.slice(0, 256));
+  if (riders.length) {
     embed.addFields({ name: 'Strike', value: `${weaponName} ${signed(built.strike.attack)}${targetName ? ` vs ${targetName}` : ''}` });
   }
 
@@ -80,8 +81,8 @@ function buildStrikeEmbed({ charEntry, weapon, built, outcome, narration, applie
 
   // A rider that "counts as N attacks" for MAP — surfaced, not applied (the bot has
   // no turn tracker; the player picks `map:` for their next Strike themselves).
-  const mult = rider?.strikeMods?.mapMultiplier;
-  if (mult && mult > 1) {
+  const mult = Math.max(1, ...riders.map(r => r.strikeMods?.mapMultiplier ?? 1));
+  if (mult > 1) {
     embed.addFields({ name: 'Multiple attack penalty', value: `This counts as **${mult}** attacks — set \`map:\` accordingly on your next Strike this turn.` });
   }
 

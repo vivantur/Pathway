@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addEffect,
   addGrantedAction,
+  addRider,
   applyBulk,
   applyResolution,
   conflictReadings,
@@ -473,6 +474,62 @@ describe("addGrantedAction", () => {
     });
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.issues.length).toBeGreaterThan(0);
+  });
+});
+
+describe("addRider", () => {
+  // Shape-only, like addGrantedAction: the DOOR is under test, not a rules claim.
+  const rider = {
+    id: "demo-rider",
+    name: "Demo Rider",
+    keyword: "demo",
+    apply: "opt-in" as const,
+    onSuccess: [{ kind: "text", body: "Shape only." }],
+  };
+
+  it("records an authored rider as an ADD decision keyed on its id", () => {
+    const out = addRider("demo-feat", rider);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.decision).toMatchObject({ entityId: "demo-feat", action: "add", rider: { id: "demo-rider", keyword: "demo" } });
+    expect(isAddedKey(out.decision!.key)).toBe(true);
+    // Not a passive, not an activity — a fourth payload.
+    expect(out.decision?.effect).toBeUndefined();
+    expect(out.decision?.grantedAction).toBeUndefined();
+  });
+
+  it("re-authoring UPSERTS (same id → same key), and different riders differ", () => {
+    const first = addRider("demo-feat", rider);
+    const edited = addRider("demo-feat", { ...rider, name: "Demo Rider, revised" });
+    const other = addRider("demo-feat", { ...rider, id: "other-rider" });
+    if (!first.ok || !edited.ok || !other.ok) return;
+    expect(edited.decision?.key).toBe(first.decision?.key);
+    expect(other.decision?.key).not.toBe(first.decision?.key);
+  });
+
+  it("refuses a rider with an invalid automation fragment — the door validates recursively", () => {
+    const out = addRider("demo-feat", { ...rider, onSuccess: [{ kind: "roll", notation: "not dice" }] });
+    expect(out.ok).toBe(false);
+  });
+});
+
+describe("resolveEntity — riders", () => {
+  const rider = { id: "demo-rider", name: "Demo Rider", keyword: "demo", onHit: [{ kind: "text", body: "Shape only." }] };
+
+  it("folds an authored rider into content, without leaking into other fields", () => {
+    const added = addRider("demo-feat", rider);
+    if (!added.ok) return;
+    const r = resolveEntity([], [added.decision!]);
+    expect(r.riders).toEqual([added.decision!.rider]);
+    expect(r.grantedActions).toEqual([]);
+    expect(r.effects).toEqual([]);
+  });
+
+  it("never reports an authored rider as stale, and returns [] when none authored", () => {
+    const added = addRider("demo-feat", rider);
+    if (!added.ok) return;
+    expect(resolveEntity([], [added.decision!]).staleDecisions).toEqual([]);
+    expect(resolveEntity([], []).riders).toEqual([]);
   });
 });
 

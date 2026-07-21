@@ -34,6 +34,15 @@ export const strikeRiderSchema = z
     /** How a player invokes it: `/strike … rider:<keyword>`. */
     keyword: z.string().min(1),
     /**
+     * WHEN this rider joins a Strike's set:
+     *   • "automatic" — the weapon/character always brings it (a Rooting/Flaming rune,
+     *     an always-on feat). The bot adds it to every Strike with that weapon.
+     *   • "opt-in" — the player chooses it per Strike (the activity: Intimidating
+     *     Strike, Power Attack). Invoked by keyword.
+     * Absent ⇒ opt-in (an authored rider is a deliberate choice unless marked otherwise).
+     */
+    apply: z.enum(["automatic", "opt-in"]).optional(),
+    /**
      * The activity's real action cost (Intimidating Strike is 2), which overrides a
      * plain Strike's. Display and validation only — the cost is not spent in the tree.
      */
@@ -83,6 +92,12 @@ export function ridersMapMultiplier(riders: readonly StrikeRider[]): number {
 /** A single rider's MAP multiplier — the one-rider form of {@link ridersMapMultiplier}. */
 export function riderMapMultiplier(rider: StrikeRider): number {
   return ridersMapMultiplier([rider]);
+}
+
+/** Whether a rider joins every Strike with its weapon (a rune/always-on feat) rather
+ *  than being chosen per Strike. Absent `apply` reads as opt-in. */
+export function isAutomaticRider(rider: StrikeRider): boolean {
+  return rider.apply === "automatic";
 }
 
 /**

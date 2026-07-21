@@ -22,7 +22,7 @@ const characterState = require('../../state/characters');
 const combat = require('../../state/combat');
 const core = require('@pathway/core');
 const { buildStrike } = require('../../rules/strikeAdapter');
-const { findRider } = require('../../rules/strikeRiders');
+const { findRider, listRiders } = require('../../rules/strikeRiders');
 const { run, describeOutcome, describeApplied } = require('../../rules/automation');
 const { randomSeed, applyOutcome } = require('../../state/automation');
 const { buildStrikeEmbed } = require('./embed');
@@ -112,29 +112,31 @@ async function execute(interaction) {
     return interaction.reply({ content: `❌ Could not read **${weapon.display ?? weapon.name}**: ${built.error}`, ephemeral: true });
   }
 
-  // An optional RIDER — a keyword tacked onto the Strike (Avrae-style). It composes
-  // onto the base Strike's tree via core, so a hit also applies the rider's effect.
+  // Optional RIDERS — keywords tacked onto the Strike (Avrae-style). A single Strike
+  // routinely carries several (Power Attack + a Rooting rune + …), so this takes a
+  // comma-separated list and composes the whole SET onto the base tree via core.
   const riderQuery = interaction.options.getString('rider');
-  let rider = null;
+  const riders = [];
   if (riderQuery) {
-    rider = findRider(riderQuery);
-    if (!rider) {
-      return interaction.reply({ content: `❌ No rider matches **"${riderQuery}"**. Known: \`intimidating\`, \`snagging\`.`, ephemeral: true });
+    for (const token of riderQuery.split(',').map(t => t.trim()).filter(Boolean)) {
+      const r = findRider(token);
+      if (!r) {
+        return interaction.reply({ content: `❌ No rider matches **"${token}"**. Known: \`intimidating\`, \`snagging\`.`, ephemeral: true });
+      }
+      riders.push(r);
     }
   }
 
   const seed = randomSeed();
   const attacksThisTurn = MAP_PRIOR[interaction.options.getString('map') ?? 'first'] ?? 0;
-  // With a rider, compose it onto the base strike; without, run the plain strike.
-  // Both are the same base tree — composeStrikeRider just appends the rider's
-  // degree fragments and folds any strike mods in first.
-  const nodes = rider ? core.composeStrikeRider(built.strike, rider, { agile: built.agile }) : built.nodes;
+  // With riders, compose the set onto the base strike; without, run the plain strike.
+  const nodes = riders.length ? core.composeStrikeRiders(built.strike, riders, { agile: built.agile }) : built.nodes;
 
   let outcome;
   try {
     outcome = run(charEntry, nodes, { seed, targets: [targetLike], attacksThisTurn });
   } catch (err) {
-    console.error('[strike] automation failed', { weapon: weapon.name, rider: rider?.id, error: err });
+    console.error('[strike] automation failed', { weapon: weapon.name, riders: riders.map(r => r.id), error: err });
     return interaction.reply({ content: `❌ **${weapon.display ?? weapon.name}** failed to run: ${err.message}`, ephemeral: true });
   }
 
@@ -158,15 +160,30 @@ async function execute(interaction) {
       applied: describeApplied(report),
       targetName: targetLike?.name ?? null,
       targetApplied: report.applied.some(a => a.kind === 'damage' || a.kind === 'healing'),
-      rider,
+      riders,
       seed,
     })],
   });
 }
 
-/** Autocomplete over the active character's weapons. */
+/** Autocomplete: the character's weapons for `weapon:`, the rider catalog for `rider:`. */
 async function autocomplete(interaction) {
-  const focused = String(interaction.options.getFocused() ?? '').toLowerCase();
+  const focusedOpt = interaction.options.getFocused(true);
+  const focused = String(focusedOpt?.value ?? '').toLowerCase();
+
+  if (focusedOpt?.name === 'rider') {
+    // `rider:` is comma-separated, so complete only the LAST token and keep the rest.
+    const parts = focused.split(',');
+    const prefix = parts.slice(0, -1).join(',');
+    const head = parts.length > 1 ? `${prefix},` : '';
+    const partial = (parts[parts.length - 1] ?? '').trim();
+    const choices = listRiders()
+      .filter(r => r.keyword.includes(partial) || r.name.toLowerCase().includes(partial))
+      .slice(0, 25)
+      .map(r => ({ name: `${r.name} (${r.keyword})`.slice(0, 100), value: `${head}${r.keyword}`.slice(0, 100) }));
+    return interaction.respond(choices);
+  }
+
   let weapons = [];
   try {
     const characters = characterState.getAll();

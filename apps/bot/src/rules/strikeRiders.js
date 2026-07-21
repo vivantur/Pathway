@@ -49,6 +49,7 @@ const RIDERS = [
     id: 'intimidating-strike',
     name: 'Intimidating Strike',
     keyword: 'intimidating',
+    apply: 'opt-in', // an ACTIVITY you choose, not an always-on rune
     actionCost: { kind: 'actions', min: 2, max: 2 },
     // "Make a melee Strike. If you hit and deal damage, the target is Frightened 1,
     //  or Frightened 2 on a critical hit."
@@ -59,6 +60,7 @@ const RIDERS = [
     id: 'snagging-strike',
     name: 'Snagging Strike',
     keyword: 'snagging',
+    apply: 'opt-in',
     actionCost: { kind: 'actions', min: 1, max: 1 },
     // "Make a Strike while keeping one hand free. If this Strike hits, the target is
     //  Off-Guard until the start of your next turn…" (reach caveat left to the table)

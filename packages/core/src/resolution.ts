@@ -32,6 +32,7 @@ import {
 import { predicateSchema, type Predicate } from "./predicate.js";
 import { passiveEffectSchema, effectChoiceSchema } from "./passive.js";
 import { grantedActionSchema } from "./automation.js";
+import { strikeRiderSchema } from "./rider.js";
 
 // ---------------------------------------------------------------------------
 // the patch
@@ -370,6 +371,49 @@ export function addGrantedAction(
       key: `${ADD_KEY_PREFIX}action:${parsed.data.id}`,
       action: "add",
       grantedAction: parsed.data,
+      ...attribution,
+    },
+  };
+}
+
+/**
+ * Record a Strike RIDER a human authored for an entity — the composition sibling of
+ * `addGrantedAction`, and the ONLY door to a rider reaching content.
+ *
+ * A rider is authored, never proposed (nothing derives "Make a Strike, and also
+ * Frighten" from a passive), so like a granted action it is always an ADDITION. The
+ * key is `added:rider:<id>` — derived, not minted, for the same reason: a rider carries
+ * an author-chosen `id`, so re-authoring UPSERTS the same row rather than accumulating
+ * a duplicate. Two riders on one entity sharing an id is an authoring mistake the caller
+ * can see and fix.
+ *
+ * Refuses anything `strikeRiderSchema` refuses — including a bad automation fragment,
+ * since the schema validates the fragments recursively.
+ */
+export function addRider(
+  entityId: string,
+  draft: unknown,
+  attribution: Attribution = {},
+): ResolveOutcome {
+  const parsed = strikeRiderSchema.safeParse(draft);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      issues: parsed.error.issues.map((i) => ({
+        field: i.path.join(".") || "(root)",
+        message: i.message,
+        source: "schema" as const,
+      })),
+    };
+  }
+
+  return {
+    ok: true,
+    decision: {
+      entityId,
+      key: `${ADD_KEY_PREFIX}rider:${parsed.data.id}`,
+      action: "add",
+      rider: parsed.data,
       ...attribution,
     },
   };

@@ -45,4 +45,17 @@ describe('the rider catalog', () => {
     expect(attack.onSuccess.some((n) => n.kind === 'applyEffect')).toBe(true);
     expect(attack.onCriticalSuccess.some((n) => n.kind === 'applyEffect')).toBe(true);
   });
+
+  it('tags each catalog rider with an apply mode (both opt-in activities)', () => {
+    expect(findRider('intimidating').apply).toBe('opt-in');
+    expect(findRider('snagging').apply).toBe('opt-in');
+  });
+
+  it('composes MULTIPLE riders onto one Strike (both effects on a hit)', () => {
+    const built = buildStrike(longsword, actor);
+    const nodes = core.composeStrikeRiders(built.strike, [findRider('intimidating'), findRider('snagging')], { agile: built.agile });
+    const applied = nodes[0].onSuccess.filter((n) => n.kind === 'applyEffect').map((n) => n.effect.name);
+    expect(applied).toContain('Frightened'); // Intimidating (onSuccess)
+    expect(applied).toContain('Off-Guard');  // Snagging (onHit)
+  });
 });

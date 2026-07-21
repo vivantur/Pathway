@@ -26,6 +26,7 @@
 
 import { passiveEffectSchema, effectChoiceSchema, type PassiveEffect, type EffectChoice } from "./passive.js";
 import type { GrantedAction } from "./automation.js";
+import type { StrikeRider } from "./rider.js";
 
 // ---------------------------------------------------------------------------
 // the model
@@ -636,6 +637,12 @@ export interface EffectDecision {
    * is how those entities get content at all.
    */
   grantedAction?: GrantedAction;
+  /**
+   * A Strike RIDER a human authored for this entity — the composition sibling of
+   * `grantedAction`. Also ONLY MEANINGFUL WITH `action: "add"`, for the same reason:
+   * nothing proposes "Make a Strike, and also Frighten", so a rider is always authored.
+   */
+  rider?: StrikeRider;
   by?: string;
   at?: string;
   /** Why — especially for a reject, so a re-run's reviewer is not re-deciding blind. */
@@ -654,6 +661,11 @@ export interface ResolveResult {
    * from `add` decisions. Never auto-promoted, because nothing proposes one.
    */
   grantedActions: GrantedAction[];
+  /**
+   * What becomes the entity's `riders`: authored Strike riders, all from `add`
+   * decisions. Never auto-promoted, because nothing proposes one.
+   */
+  riders: StrikeRider[];
   /** Decisions that matched no candidate — a producer changed its mind since. */
   staleDecisions: EffectDecision[];
 }
@@ -677,6 +689,7 @@ export function resolveEntity(
   const choices: EffectChoice[] = [];
   const pending: EffectCandidate[] = [];
   const grantedActions: GrantedAction[] = [];
+  const riders: StrikeRider[] = [];
 
   for (const c of candidates) {
     const id = `${c.entityId} ${c.key}`;
@@ -721,10 +734,12 @@ export function resolveEntity(
     // A granted action arrives ONLY this way: nothing proposes one, so no candidate
     // branch above could ever produce it.
     if (d.grantedAction) grantedActions.push(d.grantedAction);
+    // A rider, likewise — authored, never proposed.
+    if (d.rider) riders.push(d.rider);
   }
 
   const staleDecisions = decisions.filter((d) => d.action !== "add" && !used.has(`${d.entityId} ${d.key}`));
-  return { effects, choices, pending, grantedActions, staleDecisions };
+  return { effects, choices, pending, grantedActions, riders, staleDecisions };
 }
 
 // ---------------------------------------------------------------------------

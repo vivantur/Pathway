@@ -183,7 +183,7 @@ function main() {
   }
 
   const foldIn = loadFoldIn(args.data);
-  const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0, grantedActions: 0 };
+  const folded = { entities: 0, effects: 0, pending: 0, droppedFromMapping: 0, grantedActions: 0, riders: 0 };
 
   const entities = [];
   const reports = [];
@@ -193,6 +193,7 @@ function main() {
   let withGrants = 0;
   let withToggles = 0;
   let withGrantedActions = 0;
+  let withRiders = 0;
   let strippedRules = 0;
   let fromSidecar = 0;
   let fromLegacy = 0;
@@ -216,6 +217,7 @@ function main() {
       delete bearer.choices;
       delete bearer.grants;
       delete bearer.grantedActions;
+      delete bearer.riders;
       delete bearer.toggles;
 
       // AUTHORED ACTIVITIES, folded in BEFORE the `raw` guard below — deliberately.
@@ -234,11 +236,18 @@ function main() {
       const entityDecisions =
         foldIn && dataset.kind === 'feat' ? (foldIn.decisionsByEntity.get(bearer.id) ?? []) : [];
       if (entityDecisions.length > 0) {
-        const authored = resolveEntity([], entityDecisions).grantedActions;
-        if (authored.length > 0) {
-          bearer.grantedActions = authored;
+        // Both authored payloads come only from `add` decisions and never depend on
+        // `raw`, so they are resolved together here, above the guard.
+        const resolvedAdds = resolveEntity([], entityDecisions);
+        if (resolvedAdds.grantedActions.length > 0) {
+          bearer.grantedActions = resolvedAdds.grantedActions;
           withGrantedActions += 1;
-          folded.grantedActions += authored.length;
+          folded.grantedActions += resolvedAdds.grantedActions.length;
+        }
+        if (resolvedAdds.riders.length > 0) {
+          bearer.riders = resolvedAdds.riders;
+          withRiders += 1;
+          folded.riders += resolvedAdds.riders.length;
         }
       }
 
