@@ -1657,9 +1657,35 @@ actor data (`{actor|flags.system.dragonblood.shape}`). Foundry i18n-key labels
 (`PF2E.TraitAcid` — 460 of 593) are refused so they never print on a sheet; the UI humanizes the
 `value`, which is always a real word.
 
-**Next:** phase 3 (the sheet control + wiring `deriveCharacter`'s tag set) and phase 4 (the bot
-reading the same overlay key, closing the cross-surface loop). Then the deferred derived-tag
-slice, which is what `self:effect:*` and `feat:*` consumers are largely waiting on.
+**Phase 3 landed 2026-07-20 (web control).** A per-feat toggle control on the Feats tab
+(`FeatToggles.tsx`), read from the committed dataset via `characterToggles` (rules.ts) — NOT
+the DB `feats` table, which has no `toggles` column, so no schema change and no risk to the
+live bot. State persists to `overlay.web_edits.toggles`, the same additive JSONB pattern as
+`web_edits.conditions`. Flippable anytime the sheet is not read-only. The derivation wiring was
+DEFERRED and is genuinely dead today: measured, 0 shipping feat effects read a toggle tag
+(consumers are pending review) and the sheet's collector never folds a conditional into a total
+anyway — so a toggle changes no number yet. It is the player's record of a choice, as the owner
+framed it; the stored state is in place for the wiring to read when reviewed consumers ship.
+
+**Phase 4 landed 2026-07-20 (bot VISIBILITY only).** `/use` reads `overlay.web_edits.toggles`
+and shows an "Active stances" field (`rules/toggles.js` → the use embed). The bot SEES the
+web-set stance and reports it — the honest half of the cross-surface loop that works today.
+
+**The bot TAGS SEAM is explicit future work, NOT built.** Making the bot mechanically APPLY a
+toggle needs a tag set at ACTOR RESOLUTION — `applyPassiveEffects(rc, effects, { tags })` — and
+the bot does none of that yet: `resolvedFromPathbuilder` re-derives the actor from Pathbuilder's
+own numbers and applies no Layer-1 passives, and `ExecutionContext` has no `tags` field. Adding
+one now would be the WRONG seam (tags are consumed at resolve, upstream of the interpreter) built
+to a guess with no consumer to check it — dead code asserting a false closure. The seam is not
+permanently dead: it goes LOAD-BEARING the moment the bot moves off Pathbuilder-centered math to
+our own builder + effects (a stated project direction), because that resolution must union toggle
+tags or toggle-gated effects won't apply. Build it THEN, at the resolve-time seam, against a real
+consumer. The producer half (read overlay → active toggles) already landed tested and used by the
+visibility feature, so it is reusable when that day comes.
+
+**Next:** the deferred derived-tag slice (a tag asserted by other tags — Disarming Flair's
+`bravado`), which is what `self:effect:*` and `feat:*` consumers are largely waiting on; and,
+independently, the bot's own-math migration that wakes the tags seam above.
 
 ## The `main` merge — absorbing the sheet features (2026-07-17)
 

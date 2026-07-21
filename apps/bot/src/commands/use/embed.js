@@ -9,6 +9,7 @@
 // admits the gap — the same principle the ingest mapper runs on.
 
 const { EmbedBuilder } = require('discord.js');
+const { activeToggles } = require('../../rules/toggles');
 
 const COLOR = 0x9b59b6;
 const MAX_DESCRIPTION = 4000;
@@ -32,6 +33,18 @@ function buildUseEmbed({ charEntry, action, costLabel, narration, applied, seed 
 
   if (applied.lines.length > 0) {
     embed.addFields({ name: 'What changed', value: clamp(applied.lines.join('\n'), 1024) });
+  }
+
+  // The stances the player set on the web sheet. Context, NOT mechanics: the bot
+  // shows what is active but does not yet apply it (see rules/toggles.js). Surfaced
+  // so a player and GM can see the mode the run happened in — the honest half of the
+  // cross-surface loop that works today.
+  const stances = activeToggles(charEntry);
+  if (stances.length > 0) {
+    embed.addFields({
+      name: 'Active stances',
+      value: clamp(stances.map(s => `• ${s.display}`).join('\n'), 1024),
+    });
   }
 
   // Everything below is the honesty surface: a run that aborted, a warning the
