@@ -6,6 +6,7 @@ import {
   tagSlug,
   CONDITIONS,
   CONDITION_SLUGS,
+  ACTION_SLUGS,
   FIXED_SELECTORS,
   SKILL_SLUGS,
   SAVE_SELECTORS,
@@ -185,11 +186,14 @@ export type PredicateScope =
   | 'origin:trait'
   | 'effect:trait'
   | 'effect:causes'
-  | 'self:trait';
+  | 'self:trait'
+  // The action being performed — `action:<slug>`. Unlike the others this is a
+  // ONE-segment scope (an action name has no category), so it builds a 2-segment tag.
+  | 'action';
 
 export interface PredicateTerm {
   scope: PredicateScope;
-  /** The trait or condition slug — whichever the scope's category names. */
+  /** The trait, condition, or action slug — whichever the scope's category names. */
   value: string;
   negate: boolean;
 }
@@ -201,8 +205,14 @@ const SCOPE_LABELS: { scope: PredicateScope; label: string }[] = [
   { scope: 'effect:trait', label: 'vs an effect with' },
   { scope: 'effect:causes', label: 'vs an effect that would cause' },
   { scope: 'self:trait', label: 'when you have' },
+  { scope: 'action', label: 'when performing the action' },
 ];
 const SCOPES = SCOPE_LABELS.map((s) => s.scope);
+
+/** De-slug an action name for a dropdown option: `make-an-impression` → `make an impression`. */
+const actionLabel = (slug: string) => slug.replace(/-/g, ' ');
+/** Action names sorted for a scannable dropdown. */
+const ACTION_OPTIONS = [...ACTION_SLUGS].sort();
 
 /**
  * Creature/self traits observed in the Foundry corpus's own predicates — a datalist
@@ -260,6 +270,12 @@ export function buildPredicate(terms: readonly PredicateTerm[], join: 'all' | 'a
   return join === 'all' ? { all: leaves } : { any: leaves };
 }
 
+/** The plaintext of a top-level `{ prose }` predicate, or null if it isn't one. */
+function readProse(pred: unknown): string | null {
+  const p = pred as { prose?: unknown };
+  return p && typeof p === 'object' && typeof p.prose === 'string' ? p.prose : null;
+}
+
 /** One flat leaf (`tag` or `not`-of-`tag`) back into a term, or null if it isn't one. */
 function readTerm(node: unknown): PredicateTerm | null {
   const n = node as { tag?: unknown; not?: unknown };
@@ -269,6 +285,11 @@ function readTerm(node: unknown): PredicateTerm | null {
   }
   if (!n || typeof n !== 'object' || typeof n.tag !== 'string') return null;
   const parts = n.tag.split(':');
+  // `action:<slug>` — a one-segment scope, so it reads back before the 3-part check.
+  // (`action:trait:<t>` deliberately stays unread → the field shows it read-only.)
+  if (parts.length === 2 && parts[0] === 'action' && parts[1]) {
+    return { scope: 'action', value: parts[1], negate: false };
+  }
   if (parts.length !== 3 || !parts[2]) return null;
   const scope = `${parts[0]}:${parts[1]}` as PredicateScope;
   if (!SCOPES.includes(scope)) return null;
@@ -298,20 +319,75 @@ export function readPredicate(pred: unknown): { terms: PredicateTerm[]; join: 'a
 }
 
 /**
- * The `when` editor. Shows the condition as the PLAYER will read it (core's
+ * The `when` editor. Two modes:
+ *   • STRUCTURED — the flat tag-vocabulary builder (scope + trait + negate), joined
+ *     by and/or. What most conditions are.
+ *   • PLAIN TEXT — an un-evaluable `{ prose }` condition for anything the vocabulary
+ *     can't express ("against non-damaging effects"). It surfaces verbatim on the
+ *     sheet and never auto-applies — the honest escape hatch instead of faking a trait.
+ *
+ * Either way it shows the condition as the PLAYER will read it (core's
  * `describePredicate`, the same prose the sheet renders), so an author can see that
  * "vs undead or fiend" is what they built.
  */
 export function PredicateField({ value, onChange }: { value: unknown; onChange: (v: Predicate | undefined) => void }) {
+  const proseFromValue = readProse(value);
   const parsed = readPredicate(value);
+  const [mode, setMode] = useState<'structured' | 'plaintext'>(proseFromValue !== null ? 'plaintext' : 'structured');
+  const [proseText, setProseText] = useState(proseFromValue ?? '');
   const [terms, setTerms] = useState<PredicateTerm[]>(() => parsed?.terms ?? []);
   const [join, setJoin] = useState<'all' | 'any'>(() => parsed?.join ?? 'any');
 
-  // Beyond the flat builder — show it, refuse to mangle it.
-  if (parsed === null) {
+  // Switching modes re-emits the value in the target representation, so the parent's
+  // `when` is never left as the mode we just navigated away from.
+  const switchTo = (m: 'structured' | 'plaintext') => {
+    if (m === mode) return;
+    setMode(m);
+    onChange(m === 'plaintext' ? (proseText.trim() ? { prose: proseText.trim() } : undefined) : buildPredicate(terms, join));
+  };
+
+  const ModeToggle = (
+    <div className="flex gap-1 text-[11px]">
+      {(['structured', 'plaintext'] as const).map((m) => (
+        <button
+          key={m}
+          onClick={() => switchTo(m)}
+          className={`rounded border px-1.5 py-0.5 ${mode === m ? 'border-gold/50 bg-gold/10 text-gold' : 'border-gold/15 text-parchment/50 hover:text-parchment'}`}
+        >
+          {m === 'structured' ? 'structured' : 'plain text'}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (mode === 'plaintext') {
+    const setProse = (text: string) => {
+      setProseText(text);
+      onChange(text.trim() ? { prose: text.trim() } : undefined);
+    };
+    return (
+      <div className="flex flex-col gap-1">
+        {ModeToggle}
+        <input
+          className={inputCls}
+          value={proseText}
+          onChange={(e) => setProse(e.target.value)}
+          placeholder={'describe the condition, e.g. "against non-damaging effects"'}
+        />
+        <span className="text-[11px] text-parchment/50">
+          shown verbatim on the sheet; never applied automatically — the player judges when it holds
+        </span>
+      </div>
+    );
+  }
+
+  // Structured mode, beyond the flat builder — show it, refuse to mangle it. A prose
+  // value is excluded: it belongs to plain-text mode, which the toggle above reaches.
+  if (parsed === null && proseFromValue === null) {
     return (
       <div className="rounded border border-gold/15 bg-midnight-950/40 px-2 py-1.5">
-        <div className="text-[11px] text-parchment/50">
+        {ModeToggle}
+        <div className="mt-1 text-[11px] text-parchment/50">
           condition: too complex to edit here (nested) — left untouched
         </div>
         <pre className="mt-1 overflow-auto text-[10px] text-parchment/60">{JSON.stringify(value)}</pre>
@@ -329,6 +405,7 @@ export function PredicateField({ value, onChange }: { value: unknown; onChange: 
 
   return (
     <div className="flex flex-col gap-1">
+      {ModeToggle}
       {terms.map((t, i) => (
         <div key={i} className="flex flex-wrap items-center gap-1.5">
           {i > 0 && (
@@ -354,6 +431,15 @@ export function PredicateField({ value, onChange }: { value: unknown; onChange: 
               <option value="">condition…</option>
               {CONDITION_SLUGS.map((c) => (
                 <option key={c} value={c}>{CONDITIONS[c].name}</option>
+              ))}
+            </select>
+          ) : t.scope === 'action' ? (
+            // Action names are a CLOSED vocabulary too (core's ACTION_SLUGS) — a select,
+            // so an unrecognized name can't build a condition that never fires.
+            <select className={`${inputCls} w-44`} value={t.value} onChange={(e) => patch(i, { value: e.target.value })}>
+              <option value="">action…</option>
+              {ACTION_OPTIONS.map((a) => (
+                <option key={a} value={a}>{actionLabel(a)}</option>
               ))}
             </select>
           ) : (

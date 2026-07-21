@@ -33,15 +33,22 @@ import { z } from "zod";
 import type { ResolvedCharacter } from "./character.js";
 
 /**
- * A declarative boolean tree over the tag vocabulary. Four node kinds:
- *   • `{ tag }`  — a leaf: true when the tag is in the active set.
- *   • `{ all }`  — conjunction (empty ⇒ true, the neutral element).
- *   • `{ any }`  — disjunction (empty ⇒ false).
- *   • `{ not }`  — negation of a single child.
+ * A declarative boolean tree over the tag vocabulary. Five node kinds:
+ *   • `{ tag }`   — a leaf: true when the tag is in the active set.
+ *   • `{ prose }` — an UN-EVALUABLE leaf: a plaintext condition the vocabulary
+ *                   cannot express ("against non-damaging effects"). It carries no
+ *                   machine meaning — it is displayed verbatim and NEVER auto-applies
+ *                   (see `evaluatePredicate` / `predicateHolds`). The escape hatch for
+ *                   the honest-but-unmappable condition, so it need not be faked as a
+ *                   tag that renders as something it isn't.
+ *   • `{ all }`   — conjunction (empty ⇒ true, the neutral element).
+ *   • `{ any }`   — disjunction (empty ⇒ false).
+ *   • `{ not }`   — negation of a single child.
  * Same *shape* as Foundry/Avrae predicates; the tags are OURS.
  */
 export type Predicate =
   | { tag: string }
+  | { prose: string }
   | { all: Predicate[] }
   | { any: Predicate[] }
   | { not: Predicate };
@@ -54,6 +61,7 @@ export type Predicate =
 export const predicateSchema: z.ZodType<Predicate> = z.lazy(() =>
   z.union([
     z.object({ tag: z.string().min(1) }).strict(),
+    z.object({ prose: z.string().min(1) }).strict(),
     z.object({ all: z.array(predicateSchema) }).strict(),
     z.object({ any: z.array(predicateSchema) }).strict(),
     z.object({ not: predicateSchema }).strict(),
@@ -68,18 +76,38 @@ export const predicateSchema: z.ZodType<Predicate> = z.lazy(() =>
  */
 export function evaluatePredicate(pred: Predicate, tags: ReadonlySet<string>): boolean {
   if ("tag" in pred) return tags.has(pred.tag);
+  // A prose leaf carries no machine meaning — there is nothing to test it against, so
+  // it never holds on its own. The `predicateHolds` guard below is what makes a prose
+  // node decline to auto-apply no matter where it sits (including under `not`, where a
+  // naive `!false` would wrongly fire); this branch keeps the raw evaluator honest too.
+  if ("prose" in pred) return false;
   if ("all" in pred) return pred.all.every((p) => evaluatePredicate(p, tags));
   if ("any" in pred) return pred.any.some((p) => evaluatePredicate(p, tags));
   return !evaluatePredicate(pred.not, tags);
+}
+
+/** True if the tree contains any un-evaluable `{ prose }` leaf. */
+export function containsProse(pred: Predicate): boolean {
+  if ("prose" in pred) return true;
+  if ("tag" in pred) return false;
+  if ("not" in pred) return containsProse(pred.not);
+  return ("all" in pred ? pred.all : pred.any).some(containsProse);
 }
 
 /**
  * Convenience for the common call site: a passive effect either carries a
  * predicate or is unconditional. An ABSENT predicate is always true — an
  * unconditional passive always applies.
+ *
+ * A predicate containing a `{ prose }` leaf NEVER auto-applies: prose is un-evaluable
+ * by design (the human decides), so we decline rather than guess — the same "surface
+ * it, don't compute it" rule the sheet's situational list follows. This is the ONE
+ * chokepoint every auto-apply site routes through, so guarding it here suffices.
  */
 export function predicateHolds(pred: Predicate | undefined, tags: ReadonlySet<string>): boolean {
-  return pred === undefined || evaluatePredicate(pred, tags);
+  if (pred === undefined) return true;
+  if (containsProse(pred)) return false;
+  return evaluatePredicate(pred, tags);
 }
 
 /**
@@ -254,6 +282,11 @@ interface TagPhrase {
  */
 function describeTag(tag: string): TagPhrase {
   const parts = tag.split(":");
+  // `action:<slug>` — the action being performed ("using make an impression"). Two
+  // segments, not three, because an action NAME has no category between scope and value.
+  if (parts.length === 2 && parts[0] === "action") {
+    return { prefix: "using ", term: label(parts[1]!), suffix: "" };
+  }
   if (parts.length === 3) {
     const [scope, category, value] = parts as [string, string, string];
     if (category === "trait") {
@@ -262,6 +295,8 @@ function describeTag(tag: string): TagPhrase {
       if (scope === "origin") return { prefix: "vs effects from ", term, suffix: "" };
       if (scope === "self") return { prefix: "when ", term, suffix: "" };
       if (scope === "effect") return { prefix: "vs ", term, suffix: " effects" };
+      // `action:trait:<t>` — a filter over actions ("using a downtime action").
+      if (scope === "action") return { prefix: "using a ", term, suffix: " action" };
     }
     if (category === "causes" && scope === "effect") {
       return { prefix: "vs effects that cause ", term: label(value), suffix: "" };
@@ -283,6 +318,8 @@ export function describePredicate(pred: Predicate): string {
     const { prefix, term, suffix } = describeTag(pred.tag);
     return `${prefix}${term}${suffix}`;
   }
+  // A prose leaf IS its own description — the author's exact words, unadorned.
+  if ("prose" in pred) return pred.prose;
   if ("not" in pred) return `not ${describePredicate(pred.not)}`;
 
   const children = "all" in pred ? pred.all : pred.any;

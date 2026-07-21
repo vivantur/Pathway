@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ResolvedCharacter } from "./character.js";
 import {
+  containsProse,
   describePredicate,
   evaluatePredicate,
   predicateHolds,
@@ -71,6 +72,43 @@ describe("predicateSchema", () => {
     expect(predicateSchema.safeParse({ tag: "" }).success).toBe(false);
     expect(predicateSchema.safeParse({ tag: "a", extra: 1 }).success).toBe(false);
     expect(predicateSchema.safeParse({ nope: [] }).success).toBe(false);
+  });
+
+  it("accepts a prose leaf and rejects an empty one", () => {
+    expect(predicateSchema.safeParse({ prose: "against non-damaging effects" }).success).toBe(true);
+    expect(predicateSchema.safeParse({ prose: "" }).success).toBe(false);
+    expect(predicateSchema.safeParse({ prose: "x", extra: 1 }).success).toBe(false);
+  });
+});
+
+describe("prose — the un-evaluable plaintext condition", () => {
+  const prose: Predicate = { prose: "against non-damaging effects" };
+
+  it("a bare prose leaf never evaluates true", () => {
+    expect(evaluatePredicate(prose, tags())).toBe(false);
+    expect(evaluatePredicate(prose, tags("anything"))).toBe(false);
+  });
+
+  it("never auto-applies, even negated or grouped — the human decides", () => {
+    // The whole point: a prose-gated modifier must not silently fire. `not prose`
+    // would be `!false = true` in the raw evaluator; the guard in predicateHolds is
+    // what keeps it from auto-applying.
+    expect(predicateHolds(prose, tags())).toBe(false);
+    expect(predicateHolds({ not: prose }, tags())).toBe(false);
+    expect(predicateHolds({ any: [{ tag: "a" }, prose] }, tags("a"))).toBe(false);
+    expect(predicateHolds({ all: [{ tag: "a" }, prose] }, tags("a"))).toBe(false);
+  });
+
+  it("containsProse detects a prose leaf anywhere in the tree", () => {
+    expect(containsProse(prose)).toBe(true);
+    expect(containsProse({ not: prose })).toBe(true);
+    expect(containsProse({ all: [{ tag: "a" }, { any: [prose] }] })).toBe(true);
+    expect(containsProse({ tag: "a" })).toBe(false);
+    expect(containsProse({ all: [{ tag: "a" }, { not: { tag: "b" } }] })).toBe(false);
+  });
+
+  it("describes verbatim — the author's exact words", () => {
+    expect(describePredicate(prose)).toBe("against non-damaging effects");
   });
 });
 
@@ -249,6 +287,14 @@ describe("describePredicate — display prose", () => {
     expect(describePredicate({ tag: "effect:causes:enfeebled" })).toBe("vs effects that cause enfeebled");
     const p: Predicate = { any: [{ tag: "effect:causes:enfeebled" }, { tag: "effect:causes:clumsy" }] };
     expect(describePredicate(p)).toBe("vs effects that cause enfeebled or clumsy");
+  });
+
+  it("renders an action name and an action-trait filter", () => {
+    expect(describePredicate({ tag: "action:make-an-impression" })).toBe("using make an impression");
+    expect(describePredicate({ tag: "action:trait:downtime" })).toBe("using a downtime action");
+    // The Animal Elocutionist shape from the corpus.
+    const p: Predicate = { all: [{ tag: "opponent:trait:animal" }, { tag: "action:make-an-impression" }] };
+    expect(describePredicate(p)).toBe("vs animal and using make an impression");
   });
 
   it("does not collapse a creature trait with an effect trait — different nouns", () => {

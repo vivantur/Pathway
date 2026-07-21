@@ -68,6 +68,12 @@ describe('buildPredicate', () => {
     }
   });
 
+  it('builds a 2-segment `action:<slug>` tag for the action scope', () => {
+    expect(buildPredicate([term({ scope: 'action', value: 'make-an-impression' })], 'any')).toEqual({
+      tag: 'action:make-an-impression',
+    });
+  });
+
   it('produces a `when` the REAL effect schema accepts', () => {
     const parsed = passiveEffectSchema.safeParse({
       kind: 'modifier',
@@ -91,6 +97,7 @@ describe('readPredicate — loading an existing condition for editing', () => {
       [[term({ negate: true })], 'any'],
       [[term(), term({ value: 'fiend', scope: 'origin:trait' })], 'all'],
       [[term({ scope: 'self:trait', value: 'elf' }), term({ value: 'dragon', negate: true })], 'any'],
+      [[term({ scope: 'action', value: 'make-an-impression' }), term({ value: 'animal' })], 'all'],
     ] as const) {
       const built = buildPredicate(terms, join);
       expect(readPredicate(built)).toEqual({ terms: [...terms], join });
@@ -211,5 +218,31 @@ describe('the authoring → sheet loop', () => {
     expect(evaluatePredicate(when!, rollTags({ effect: { traits: incoming.traits } }))).toBe(true);
     // An effect that is NOT a death effect does not satisfy it.
     expect(evaluatePredicate(when!, rollTags({ effect: { traits: ['mental'] } }))).toBe(false);
+  });
+
+  it('authors the Animal Elocutionist shape — a trait AND the action being performed', () => {
+    // "+1 circumstance to Diplomacy to Make an Impression on animals" — the Foundry
+    // corpus's `{ all: [opponent:trait:animal, action:make-an-impression] }`, now
+    // authorable by hand rather than only accepted from ingest.
+    const when = buildPredicate(
+      [
+        { scope: 'opponent:trait', value: 'animal', negate: false },
+        { scope: 'action', value: 'make-an-impression', negate: false },
+      ],
+      'all',
+    );
+    expect(when).toEqual({ all: [{ tag: 'opponent:trait:animal' }, { tag: 'action:make-an-impression' }] });
+
+    const sheet = collectPassiveSheetEffects(
+      [[{ kind: 'modifier', target: 'diplomacy', bonusType: 'circumstance', value: { kind: 'lit', value: 1 }, when }]],
+      { level: 5 },
+      ['Animal Elocutionist'],
+    );
+    expect(sheet.conditional[0]).toEqual({
+      source: 'Animal Elocutionist',
+      stat: 'diplomacy',
+      summary: '+1 circumstance to Diplomacy',
+      condition: 'vs animal and using make an impression',
+    });
   });
 });
