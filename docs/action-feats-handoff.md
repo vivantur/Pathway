@@ -71,6 +71,19 @@ effects engine as a whole; this doc is the action-feats slice specifically.
 >   no observable effect), authoring the rest of the 349, and Power Attack-style
 >   weapon-relative bonus dice (deferred — Power Attack isn't in `feats.json`, so it would be
 >   building against absent source). Needs `npm run deploy:guild` to register the option.
+> - **Step 5 MULTI-RIDER + AUTHORING PLUMBING LANDED 2026-07-21** (merged to `test`). A
+>   Strike composes a SET (`composeStrikeRiders`) — one attack routinely stacks several
+>   (Power Attack + a Rooting rune + …). Riders are now admin-authorable content, mirroring
+>   granted actions: `addRider` (core) → decisions rail → `resolveEntity.riders` →
+>   `remap-effects` writes `bearer.riders`; `StrikeRider.apply: automatic|opt-in`
+>   (`isAutomaticRider`); `/strike rider:a,b` composes the named set; and a rider editor in
+>   `EffectAuthorPage`. All three buckets (passive/bespoke/rider) are now admin-authorable.
+>   **Two named follow-up sessions:** (1) **AUTHORING** — author real riders/bespoke/passives
+>   from source through the review UI + `EffectAuthorPage`, retiring the temporary
+>   `apps/bot/src/rules/strikeRiders.js` catalog; (2) **AUTO-COLLECTION** — the bot pulls a
+>   character's *automatic* riders (weapon runes / always-on feats) and unions them with the
+>   chosen activity (seam ready: `isAutomaticRider`, `bearer.riders`; needs riders attached to
+>   rune/feat content). See `docs/strike-riders-design.md` §Sequencing (items 5–7).
 
 ---
 
