@@ -1,6 +1,20 @@
 {
   "decisions": [
     {
+      "entityId": "a-little-bird-told-me",
+      "key": "grant:weakness:physical",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-21T01:46:38.771837+00:00"
+    },
+    {
+      "entityId": "abjure-harm",
+      "key": "grant:resistance:physical",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-21T01:50:14.676705+00:00"
+    },
+    {
       "entityId": "adaptive-vision",
       "key": "rollAdjust:fortitude",
       "action": "accept",
@@ -76,6 +90,60 @@
       "at": "2026-07-19T17:44:56.132062+00:00"
     },
     {
+      "entityId": "adaptive-vision",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:visual"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:39.77533+00:00"
+    },
+    {
+      "entityId": "adaptive-vision",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:visual"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:42.13173+00:00"
+    },
+    {
+      "entityId": "adhyabhau",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:42.619213+00:00"
+    },
+    {
       "entityId": "adroit-manipulation",
       "key": "proficiency:thievery",
       "action": "accept",
@@ -85,7 +153,177 @@
         "rank": 1,
         "target": "thievery"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "aegis-of-the-dissolution",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:darkness"
+            },
+            {
+              "tag": "effect:trait:shadow"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:48.547862+00:00"
+    },
+    {
+      "entityId": "aegis-of-the-dissolution",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:darkness"
+            },
+            {
+              "tag": "effect:trait:shadow"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:52.774357+00:00"
+    },
+    {
+      "entityId": "aegis-of-the-dissolution",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:darkness"
+            },
+            {
+              "tag": "effect:trait:shadow"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:53.258845+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "agile-hand",
+      "key": "modifier:thievery:untyped",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-21T01:50:00.541999+00:00"
+    },
+    {
+      "entityId": "alabaster-eyes",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:03:27.092831+00:00"
     },
     {
       "entityId": "alchemist-dedication",
@@ -100,6 +338,31 @@
       "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human.",
       "by": "migration:foundry-baseline",
       "at": "2026-07-19T18:01:51.840291+00:00"
+    },
+    {
+      "entityId": "alghollthu-bound",
+      "key": "modifier:will:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "all": [
+            {
+              "tag": "effect:trait:mental"
+            },
+            {
+              "tag": "effect:causes:controlled"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:52:52.25444+00:00"
     },
     {
       "entityId": "alkenstar-agent-dedication",
@@ -135,7 +398,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "anadi-lore",
@@ -147,7 +410,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "android-lore",
@@ -159,7 +422,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "android-lore",
@@ -171,7 +434,7 @@
         "rank": 1,
         "target": "thievery"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "angelkin",
@@ -183,7 +446,14 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "animal-senses",
+      "key": "grant:sense:low-light vision",
+      "action": "reject",
+      "note": "wrong-reading",
+      "at": "2026-07-19T20:02:12.261839+00:00"
     },
     {
       "entityId": "animal-swiftness",
@@ -203,6 +473,20 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "aquatic-eyes",
+      "key": "grant:sense:low-light vision",
+      "action": "reject",
+      "note": "wrong-reading",
+      "at": "2026-07-19T20:02:34.182872+00:00"
+    },
+    {
+      "entityId": "aquatic-eyes",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "wrong-reading",
+      "at": "2026-07-19T20:02:42.110561+00:00"
+    },
+    {
       "entityId": "arcane-dragonblood",
       "key": "proficiency:arcana",
       "action": "accept",
@@ -212,7 +496,20 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "arcane-eye",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:02:51.506246+00:00"
     },
     {
       "entityId": "arcane-locomotion",
@@ -265,7 +562,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "athamaru-lore",
@@ -277,7 +574,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "athamaru-lore",
@@ -289,7 +586,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "aura-of-confidence",
@@ -325,6 +622,60 @@
       "at": "2026-07-19T17:43:30.970397+00:00"
     },
     {
+      "entityId": "aura-of-despair",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fear"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "aura-of-despair",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fear"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "aura-of-despair",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fear"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "automaton-lore",
       "key": "proficiency:arcana",
       "action": "accept",
@@ -334,7 +685,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "automaton-lore",
@@ -346,7 +697,61 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "avowed-insight",
+      "key": "modifier:fortitude:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "after successfully Recalling Knowledge about a creature"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:54:36.413612+00:00"
+    },
+    {
+      "entityId": "avowed-insight",
+      "key": "modifier:reflex:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "after successfully Recalling Knowledge about a creature"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:54:42.286902+00:00"
+    },
+    {
+      "entityId": "avowed-insight",
+      "key": "modifier:will:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "after successfully Recalling Knowledge about a creature"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:55:08.58667+00:00"
     },
     {
       "entityId": "awakened-animal-lore",
@@ -358,7 +763,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "awakened-animal-lore",
@@ -370,7 +775,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "axiomatic-lore",
@@ -382,7 +787,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "axiomatic-lore",
@@ -394,7 +799,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "azarketi-lore",
@@ -406,7 +811,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "azarketi-lore",
@@ -418,7 +823,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "barbarian-dedication",
@@ -430,7 +835,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "bard-dedication",
@@ -442,7 +847,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "bard-dedication",
@@ -454,7 +859,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "battle-harbinger-dedication",
@@ -502,7 +907,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "beast-trainer",
@@ -528,7 +933,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "become-thought",
@@ -671,6 +1076,13 @@
       "at": "2026-07-19T17:43:35.20701+00:00"
     },
     {
+      "entityId": "bon-mot",
+      "key": "modifier:will:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-20T01:49:54.240866+00:00"
+    },
+    {
       "entityId": "bouncy-goblin",
       "key": "proficiency:acrobatics",
       "action": "accept",
@@ -680,7 +1092,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "bound-in-ice",
@@ -773,6 +1185,13 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "briny-beverage",
+      "key": "grant:sense:wavesense",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:32:35.299524+00:00"
+    },
+    {
       "entityId": "burrowing-tripkee",
       "key": "grant:speed:burrow",
       "action": "accept",
@@ -805,6 +1224,24 @@
       "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human.",
       "by": "migration:foundry-baseline",
       "at": "2026-07-19T18:01:51.840291+00:00"
+    },
+    {
+      "entityId": "called",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:mental"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "canny-acumen",
@@ -977,6 +1414,19 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "canopy-sight",
+      "key": "grant:sense:low-light vision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "low-light vision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:02:56.493875+00:00"
+    },
+    {
       "entityId": "captain-dedication",
       "key": "choice:intimidation",
       "action": "accept",
@@ -1012,7 +1462,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "catch-the-details",
@@ -1024,7 +1474,14 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "catfolk-dance",
+      "key": "modifier:reflex:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:55:17.627214+00:00"
     },
     {
       "entityId": "catfolk-lore",
@@ -1036,7 +1493,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "catfolk-lore",
@@ -1048,7 +1505,25 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "cavaliers-banner",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fear"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "cave-climber",
@@ -1103,7 +1578,7 @@
         "rank": 1,
         "target": "medicine"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "centaur-lore",
@@ -1115,7 +1590,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "champion-dedication",
@@ -1127,7 +1602,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "changeling-lore",
@@ -1139,7 +1614,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "changeling-lore",
@@ -1151,7 +1626,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "childlike-plant",
@@ -1163,7 +1638,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "clan-lore",
@@ -1387,7 +1862,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "climbing-claws",
@@ -1422,6 +1897,60 @@
         }
       },
       "at": "2026-07-19T17:43:25.437072+00:00"
+    },
+    {
+      "entityId": "cold-minded",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:56.036566+00:00"
+    },
+    {
+      "entityId": "cold-minded",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:56.53659+00:00"
+    },
+    {
+      "entityId": "cold-minded",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:58:57.079219+00:00"
     },
     {
       "entityId": "cold-minded",
@@ -1481,6 +2010,13 @@
       "at": "2026-07-19T17:43:07.96105+00:00"
     },
     {
+      "entityId": "combine-elixirs",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:33:30.374037+00:00"
+    },
+    {
       "entityId": "conrasu-lore",
       "key": "proficiency:crafting",
       "action": "accept",
@@ -1490,7 +2026,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "conrasu-lore",
@@ -1502,7 +2038,21 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "consolidated-overlay-panopticon",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:17:47.301232+00:00"
+    },
+    {
+      "entityId": "corgi-mount",
+      "key": "grant:sense:scent",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:03:18.604935+00:00"
     },
     {
       "entityId": "corpse-tender-dedication",
@@ -1514,7 +2064,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "creative-prodigy",
@@ -1526,7 +2076,22 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "crown-of-the-saumen-kar",
+      "key": "grant:sense:scent",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "scent",
+          "type": "sense",
+          "range": 30,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:33:51.502508+00:00"
     },
     {
       "entityId": "cultivator-dedication",
@@ -1539,6 +2104,21 @@
         "target": "occultism"
       },
       "at": "2026-07-19T17:43:28.790203+00:00"
+    },
+    {
+      "entityId": "cultivators-keen-eye",
+      "key": "grant:sense:lifesense",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "lifesense",
+          "type": "sense",
+          "range": 30,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:34:33.799477+00:00"
     },
     {
       "entityId": "cunning-climber",
@@ -1556,6 +2136,19 @@
         }
       },
       "at": "2026-07-19T17:43:25.437072+00:00"
+    },
+    {
+      "entityId": "darkseer",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:32:38.800506+00:00"
     },
     {
       "entityId": "death-warden",
@@ -1591,6 +2184,32 @@
       "at": "2026-07-19T17:43:30.970397+00:00"
     },
     {
+      "entityId": "deep-vision",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:03:23.777938+00:00"
+    },
+    {
+      "entityId": "defy-the-darkness",
+      "key": "grant:sense:greater darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "greater darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:32:47.607386+00:00"
+    },
+    {
       "entityId": "delver",
       "key": "grant:speed:burrow",
       "action": "accept",
@@ -1606,6 +2225,13 @@
         }
       },
       "at": "2026-07-19T17:43:25.437072+00:00"
+    },
+    {
+      "entityId": "demon-hunting-companion",
+      "key": "grant:sense:scent",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:29:12.468642+00:00"
     },
     {
       "entityId": "digger",
@@ -1625,16 +2251,153 @@
       "at": "2026-07-19T17:43:25.437072+00:00"
     },
     {
-      "entityId": "divine-dragonblood",
-      "key": "proficiency:religion",
+      "entityId": "disillusionment",
+      "key": "rollAdjust:?",
+      "action": "reject",
+      "note": "duplicate",
+      "at": "2026-07-22T14:22:35.989233+00:00"
+    },
+    {
+      "entityId": "disillusionment",
+      "key": "rollAdjust:fortitude",
       "action": "accept",
       "effect": {
-        "kind": "proficiency",
-        "mode": "upgrade",
-        "rank": 1,
-        "target": "religion"
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:dream"
+            },
+            {
+              "tag": "effect:trait:illusion"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success",
+            "critical-failure": "failure"
+          },
+          "type": "degreeMap"
+        },
+        "target": "fortitude"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-22T14:18:09.325467+00:00"
+    },
+    {
+      "entityId": "disillusionment",
+      "key": "rollAdjust:reflex",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:dream"
+            },
+            {
+              "tag": "effect:trait:illusion"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success",
+            "critical-failure": "failure"
+          },
+          "type": "degreeMap"
+        },
+        "target": "reflex"
+      },
+      "at": "2026-07-22T14:22:17.246536+00:00"
+    },
+    {
+      "entityId": "disillusionment",
+      "key": "rollAdjust:will",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:dream"
+            },
+            {
+              "tag": "effect:trait:illusion"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success",
+            "critical-failure": "failure"
+          },
+          "type": "degreeMap"
+        },
+        "target": "will"
+      },
+      "at": "2026-07-22T14:22:23.479591+00:00"
+    },
+    {
+      "entityId": "dissolutions-sight",
+      "key": "grant:sense:greater darkvision",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:34:48.823148+00:00"
+    },
+    {
+      "entityId": "divine-countermeasures",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:divine"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "divine-countermeasures",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:divine"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "divine-countermeasures",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:divine"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "divine-dragonblood",
@@ -1650,6 +2413,108 @@
         "bonusType": "circumstance"
       },
       "at": "2026-07-19T17:43:47.833615+00:00"
+    },
+    {
+      "entityId": "divine-dragonblood",
+      "key": "proficiency:religion",
+      "action": "accept",
+      "effect": {
+        "kind": "proficiency",
+        "mode": "upgrade",
+        "rank": 1,
+        "target": "religion"
+      },
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "divine-grace",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "divine-grace",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "divine-grace",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "doom-of-sailors",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -4
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "doom-of-sailors",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -4
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "doom-of-sailors",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -4
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "draconic-scent",
@@ -1691,7 +2556,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "dragon-lore",
@@ -1703,7 +2568,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "dragonet-immunities",
@@ -1743,7 +2608,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "duskwalker-lore",
@@ -1755,7 +2620,7 @@
         "rank": 1,
         "target": "medicine"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "duskwalker-lore",
@@ -1767,7 +2632,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "dustsoul",
@@ -1779,7 +2644,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "dwarven-lore",
@@ -1791,7 +2656,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "dwarven-lore",
@@ -1803,7 +2668,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "earned-glory",
@@ -1815,7 +2680,22 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "earthsense",
+      "key": "grant:sense:tremorsense",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "tremorsense",
+          "type": "sense",
+          "range": 30,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:35:03.439523+00:00"
     },
     {
       "entityId": "eldritch-researcher-dedication",
@@ -1863,7 +2743,20 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "elemental-eyes",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:04:41.70728+00:00"
     },
     {
       "entityId": "elemental-lore",
@@ -1925,7 +2818,20 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "elucidating-vision",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:04:44.377642+00:00"
     },
     {
       "entityId": "elven-lore",
@@ -1937,7 +2843,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "elven-lore",
@@ -1949,7 +2855,115 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "elven-verve",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:immobilized"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:09.782601+00:00"
+    },
+    {
+      "entityId": "elven-verve",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:immobilized"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:09.863317+00:00"
+    },
+    {
+      "entityId": "elven-verve",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:immobilized"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:10.819385+00:00"
+    },
+    {
+      "entityId": "emberkin",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:22.899911+00:00"
+    },
+    {
+      "entityId": "emberkin",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:23.195405+00:00"
+    },
+    {
+      "entityId": "emberkin",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:23.58086+00:00"
     },
     {
       "entityId": "embodied-legionary-subjectivity",
@@ -1961,7 +2975,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "embodied-legionary-subjectivity",
@@ -1973,7 +2987,61 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "emotional-partitions",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:32.11386+00:00"
+    },
+    {
+      "entityId": "emotional-partitions",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:32.409555+00:00"
+    },
+    {
+      "entityId": "emotional-partitions",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:32.730052+00:00"
     },
     {
       "entityId": "emotional-partitions",
@@ -2033,6 +3101,153 @@
       "at": "2026-07-19T17:43:07.96105+00:00"
     },
     {
+      "entityId": "emotionless",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:emotion"
+            },
+            {
+              "tag": "effect:trait:fear"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:47.457398+00:00"
+    },
+    {
+      "entityId": "emotionless",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:emotion"
+            },
+            {
+              "tag": "effect:trait:fear"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:46.80584+00:00"
+    },
+    {
+      "entityId": "emotionless",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:emotion"
+            },
+            {
+              "tag": "effect:trait:fear"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:47.089453+00:00"
+    },
+    {
+      "entityId": "endemic-herbs",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "endemic-herbs",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "endemic-herbs",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "expanded-senses",
+      "key": "grant:sense:low-light vision",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:05:14.543241+00:00"
+    },
+    {
       "entityId": "extra-squishy",
       "key": "proficiency:acrobatics",
       "action": "accept",
@@ -2042,7 +3257,74 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "extra-squishy",
+      "key": "added:rollAdjust:acrobatics#1",
+      "action": "add",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "tag": "action:squeeze"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "acrobatics"
+      },
+      "at": "2026-07-22T13:57:34.096908+00:00"
+    },
+    {
+      "entityId": "extra-squishy",
+      "key": "added:proficiency:acrobatics#1",
+      "action": "add",
+      "effect": {
+        "kind": "proficiency",
+        "mode": "upgrade",
+        "rank": 1,
+        "target": "acrobatics"
+      },
+      "at": "2026-07-22T13:57:57.359542+00:00"
+    },
+    {
+      "entityId": "extra-squishy",
+      "key": "modifier:fortitude:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "against attempts to Shove you or other forced movement"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:58:03.024518+00:00"
+    },
+    {
+      "entityId": "extra-squishy",
+      "key": "modifier:reflex:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "against attempts to Shove you or other forced movement"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T13:58:33.896008+00:00"
     },
     {
       "entityId": "eye-for-treasure",
@@ -2054,7 +3336,27 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "eye-of-the-arclords",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-19T20:08:10.319729+00:00"
+    },
+    {
+      "entityId": "eyes-of-night",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:05:18.387645+00:00"
     },
     {
       "entityId": "fascinated-by-society",
@@ -2066,7 +3368,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "favor-of-heaven",
@@ -2146,7 +3448,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "fighter-dedication",
@@ -2222,6 +3524,60 @@
     },
     {
       "entityId": "fire-resistance",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "fire-resistance",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "fire-resistance",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:fire"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "fire-resistance",
       "key": "grant:resistance:fire",
       "action": "accept",
       "effect": {
@@ -2280,7 +3636,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "folk-healer",
@@ -2292,7 +3648,7 @@
         "rank": 1,
         "target": "medicine"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "folk-healer",
@@ -2304,7 +3660,61 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "forlorn",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:56.838354+00:00"
+    },
+    {
+      "entityId": "forlorn",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:57.309787+00:00"
+    },
+    {
+      "entityId": "forlorn",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T19:59:57.510806+00:00"
     },
     {
       "entityId": "forlorn",
@@ -2362,6 +3772,13 @@
         "target": "will"
       },
       "at": "2026-07-19T17:43:07.96105+00:00"
+    },
+    {
+      "entityId": "friend-of-the-sea",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:05:26.524465+00:00"
     },
     {
       "entityId": "full-flight",
@@ -2450,7 +3867,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "generation-digger",
@@ -2479,7 +3896,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "ghoran-lore",
@@ -2491,7 +3908,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "ghostly-resistance",
@@ -2557,6 +3974,19 @@
       "at": "2026-07-19T17:43:33.637779+00:00"
     },
     {
+      "entityId": "gloomseer",
+      "key": "grant:sense:low-light vision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "low-light vision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:22.367807+00:00"
+    },
+    {
       "entityId": "goblin-lore",
       "key": "proficiency:nature",
       "action": "accept",
@@ -2566,7 +3996,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "goblin-lore",
@@ -2578,7 +4008,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "golem-grafter-dedication",
@@ -2664,7 +4094,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "goloma-lore",
@@ -2676,7 +4106,20 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "gravesight",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:25.79738+00:00"
     },
     {
       "entityId": "greenwatch-initiate",
@@ -2766,6 +4209,42 @@
     },
     {
       "entityId": "grove-harbored",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:plant"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:05.716173+00:00"
+    },
+    {
+      "entityId": "grove-harbored",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:plant"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:04.827688+00:00"
+    },
+    {
+      "entityId": "grove-harbored",
       "key": "rollAdjust:fortitude",
       "action": "accept",
       "effect": {
@@ -2822,6 +4301,31 @@
       "at": "2026-07-19T17:43:07.96105+00:00"
     },
     {
+      "entityId": "grove-harbored",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:plant"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:05.26376+00:00"
+    },
+    {
+      "entityId": "growing-eel-friend",
+      "key": "grant:sense:scent",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:32:57.324836+00:00"
+    },
+    {
       "entityId": "guardian-dedication",
       "key": "proficiency:athletics",
       "action": "accept",
@@ -2831,7 +4335,20 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "hags-sight",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:29.265548+00:00"
     },
     {
       "entityId": "halfling-lore",
@@ -2843,7 +4360,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "halfling-lore",
@@ -2855,7 +4372,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "harmless-doll",
@@ -2867,7 +4384,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "harrower-dedication",
@@ -2879,7 +4396,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "heart-of-earth",
@@ -2921,7 +4438,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "hellknight-preferment",
@@ -3019,7 +4536,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "herbalist-dedication",
@@ -3060,7 +4577,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "hobgoblin-lore",
@@ -3072,7 +4589,22 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "hot-foot",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "icy-apotheosis",
@@ -3097,7 +4629,40 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "illusion-sense",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:illusion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "impervious-vehicle",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "incredible-initiative",
@@ -3115,6 +4680,66 @@
       "at": "2026-07-19T17:43:47.833615+00:00"
     },
     {
+      "entityId": "indomitable-shot",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "induce-imbalance",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "induce-imbalance",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "induce-imbalance",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "innocuous",
       "key": "proficiency:deception",
       "action": "accept",
@@ -3124,7 +4749,28 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "inoculation",
+      "key": "modifier:fortitude:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:58:41.163984+00:00"
+    },
+    {
+      "entityId": "inoculation",
+      "key": "modifier:reflex:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:58:43.34934+00:00"
+    },
+    {
+      "entityId": "inoculation",
+      "key": "modifier:will:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:58:44.960134+00:00"
     },
     {
       "entityId": "into-the-sky",
@@ -3153,7 +4799,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "inured-to-the-heat",
@@ -3182,7 +4828,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "investigator-dedication",
@@ -3194,7 +4840,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "irrepressible-nephilim",
@@ -3356,7 +5002,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "jotunborn-lore",
@@ -3368,7 +5014,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "jotunborn-lore",
@@ -3380,7 +5026,20 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "jotuns-eyes",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:40.934664+00:00"
     },
     {
       "entityId": "jotuns-heart",
@@ -3409,7 +5068,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "keen-nose",
@@ -3436,7 +5095,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "kholo-lore",
@@ -3448,7 +5107,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "kineticist-dedication",
@@ -3460,7 +5119,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "kitsune-lore",
@@ -3472,7 +5131,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "kitsune-lore",
@@ -3484,7 +5143,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "knight-reclaimant-dedication",
@@ -3532,7 +5191,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "kobold-lore",
@@ -3544,7 +5203,82 @@
         "rank": 1,
         "target": "thievery"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "lab-rat",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:poison"
+            },
+            {
+              "tag": "effect:trait:disease"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lab-rat",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:poison"
+            },
+            {
+              "tag": "effect:trait:disease"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lab-rat",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:poison"
+            },
+            {
+              "tag": "effect:trait:disease"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "land-legs",
@@ -3573,7 +5307,61 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "lawbringer",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lawbringer",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lawbringer",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "lawbringer",
@@ -3714,7 +5502,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "leshy-lore",
@@ -3726,7 +5514,76 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "lifesense",
+      "key": "grant:sense:lifesense",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "lifesense",
+          "type": "sense",
+          "range": 10,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:33:09.949679+00:00"
+    },
+    {
+      "entityId": "lightning-rod",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:electricity"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lightning-rod",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:electricity"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "lightning-rod",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:electricity"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "like-a-fish-in-water",
@@ -3815,16 +5672,58 @@
       "at": "2026-07-19T17:43:33.637779+00:00"
     },
     {
-      "entityId": "lizardfolk-lore",
-      "key": "proficiency:survival",
+      "entityId": "living-stone",
+      "key": "modifier:fortitude:circumstance",
       "action": "accept",
       "effect": {
-        "kind": "proficiency",
-        "mode": "upgrade",
-        "rank": 1,
-        "target": "survival"
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "living-stone",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "living-stone",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "lizardfolk-lore",
@@ -3839,6 +5738,18 @@
       "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human.",
       "by": "migration:foundry-baseline",
       "at": "2026-07-19T18:01:51.840291+00:00"
+    },
+    {
+      "entityId": "lizardfolk-lore",
+      "key": "proficiency:survival",
+      "action": "accept",
+      "effect": {
+        "kind": "proficiency",
+        "mode": "upgrade",
+        "rank": 1,
+        "target": "survival"
+      },
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "magic-warrior-dedication",
@@ -3888,7 +5799,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "medic-dedication",
@@ -3955,7 +5866,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "merfolk-lore",
@@ -3967,7 +5878,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "minotaur-lore",
@@ -3979,7 +5890,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "minotaur-lore",
@@ -3991,7 +5902,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "miresoul",
@@ -4003,7 +5914,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "molten-wit",
@@ -4095,6 +6006,81 @@
       "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human.",
       "by": "migration:foundry-baseline",
       "at": "2026-07-19T18:01:51.840291+00:00"
+    },
+    {
+      "entityId": "morph-risen",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:morph"
+            },
+            {
+              "tag": "effect:trait:polymorph"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "morph-risen",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:morph"
+            },
+            {
+              "tag": "effect:trait:polymorph"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "morph-risen",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:morph"
+            },
+            {
+              "tag": "effect:trait:polymorph"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "mortal-possibility",
@@ -4362,7 +6348,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "nagaji-lore",
@@ -4374,7 +6360,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "nagaji-lore",
@@ -4386,7 +6372,35 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "nalinivatis-light",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:44.224425+00:00"
+    },
+    {
+      "entityId": "named-artillery",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "natural-skill",
@@ -4613,6 +6627,60 @@
     },
     {
       "entityId": "necromantic-physiology",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "necromantic-physiology",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "necromantic-physiology",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "necromantic-physiology",
       "key": "rollAdjust:fortitude",
       "action": "accept",
       "effect": {
@@ -4735,6 +6803,19 @@
       "at": "2026-07-19T17:43:30.970397+00:00"
     },
     {
+      "entityId": "nephilim-eyes",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:46.32448+00:00"
+    },
+    {
       "entityId": "nephilim-lore",
       "key": "choice:diplomacy|intimidation",
       "action": "accept",
@@ -4785,6 +6866,77 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "never",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "never",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "never",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "nidalese-horselord-dedication",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:17:18.08216+00:00"
+    },
+    {
+      "entityId": "nightvision-adaptation",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:06:47.891758+00:00"
+    },
+    {
       "entityId": "nimble-elf",
       "key": "modifier:speed:land:untyped",
       "action": "accept",
@@ -4819,6 +6971,82 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "no-stranger-to-death",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "no-stranger-to-death",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "no-stranger-to-death",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "noble-resolve",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:mental"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "nocturnal-tripkee",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:07:01.17371+00:00"
+    },
+    {
       "entityId": "nosois-mask",
       "key": "proficiency:intimidation",
       "action": "accept",
@@ -4828,7 +7056,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "occult-dragonblood",
@@ -4840,7 +7068,61 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "occult-resistance",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "occult-resistance",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "occult-resistance",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "officers-education",
@@ -5058,7 +7340,7 @@
         "rank": 1,
         "target": "medicine"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "one-with-earth",
@@ -5087,7 +7369,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "oracle-dedication",
@@ -5099,7 +7381,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "orc-lore",
@@ -5111,7 +7393,7 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "orc-lore",
@@ -5123,7 +7405,20 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "orc-sight",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:07:09.039877+00:00"
     },
     {
       "entityId": "overlooked-mastermind",
@@ -5135,7 +7430,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "pactbinder-dedication",
@@ -5245,6 +7540,114 @@
       "at": "2026-07-19T17:43:30.970397+00:00"
     },
     {
+      "entityId": "pain-tolerance",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:clumsy"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "pain-tolerance",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:clumsy"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "pain-tolerance",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:clumsy"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "parthenogenic-hatchling",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "parthenogenic-hatchling",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "parthenogenic-hatchling",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "parthenogenic-hatchling",
       "key": "rollAdjust:fortitude",
       "action": "accept",
@@ -5302,6 +7705,81 @@
       "at": "2026-07-19T17:43:07.96105+00:00"
     },
     {
+      "entityId": "peculiar-anatomy",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "peculiar-anatomy",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "peculiar-anatomy",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "peer-beyond",
       "key": "note:initiative",
       "action": "accept",
@@ -5354,7 +7832,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "perfections-path",
@@ -5407,6 +7885,20 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "pet",
+      "key": "grant:sense:darkvision",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:07:15.320841+00:00"
+    },
+    {
+      "entityId": "pet",
+      "key": "grant:sense:low-light vision",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:07:13.346043+00:00"
+    },
+    {
       "entityId": "physical-training",
       "key": "proficiency:acrobatics",
       "action": "accept",
@@ -5435,6 +7927,19 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "pierce-the-darkness",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:07:19.811143+00:00"
+    },
+    {
       "entityId": "pitborn",
       "key": "proficiency:athletics",
       "action": "accept",
@@ -5444,7 +7949,61 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "plumekith",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:air"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "plumekith",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:air"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "plumekith",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:air"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "poison-resistance",
@@ -5506,7 +8065,28 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "prepare-elemental-medicine",
+      "key": "modifier:fortitude:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:59:48.039867+00:00"
+    },
+    {
+      "entityId": "prepare-elemental-medicine",
+      "key": "modifier:reflex:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:59:50.443452+00:00"
+    },
+    {
+      "entityId": "prepare-elemental-medicine",
+      "key": "modifier:will:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-22T13:59:51.96068+00:00"
     },
     {
       "entityId": "primal-dragonblood",
@@ -5518,7 +8098,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "prodigious-climber",
@@ -5547,7 +8127,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "progenitor-lore",
@@ -5559,7 +8139,61 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "proteankin",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:controlled"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "proteankin",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:controlled"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "proteankin",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:controlled"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "provocator-dedication",
@@ -5583,7 +8217,14 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "psychopomp-familiar",
+      "key": "grant:sense:lifesense",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:29:13.847231+00:00"
     },
     {
       "entityId": "quadruped",
@@ -5612,7 +8253,61 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "rakshasa-ravaged",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "rakshasa-ravaged",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "rakshasa-ravaged",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:occult"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "ranger-dedication",
@@ -5624,7 +8319,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "ratfolk-lore",
@@ -5636,7 +8331,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "ratfolk-lore",
@@ -5648,7 +8343,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "recognize-ambush",
@@ -5662,6 +8357,151 @@
       "note": "Grandfathered from the pre-fold-in Foundry baseline: this effect already shipped, and dropping it for lack of corroboration would revert working content. NOT reviewed by a human.",
       "by": "migration:foundry-baseline",
       "at": "2026-07-19T18:01:51.840291+00:00"
+    },
+    {
+      "entityId": "recognize-spell",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "recognize-spell",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "recognize-spell",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "reflective-ripple-stance",
+      "key": "added:modifier:athletics:circumstance#1",
+      "action": "add",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "action:disarm"
+            },
+            {
+              "tag": "action:swim"
+            },
+            {
+              "tag": "action:trip"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "athletics",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:01:40.633717+00:00"
+    },
+    {
+      "entityId": "reflective-ripple-stance",
+      "key": "modifier:reflex:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "against being Disarmed and Tripped"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:01:56.097692+00:00"
+    },
+    {
+      "entityId": "resilient-mind",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:mental"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "resilient-mind",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:mental"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "resilient-mind",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:mental"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "resist-ruin",
@@ -5692,7 +8532,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "rimesoul",
@@ -5833,7 +8673,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "ru-shi",
@@ -5845,7 +8685,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "runescarred-dedication",
@@ -5869,7 +8709,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "sage-of-scattered-leaves",
@@ -5881,7 +8721,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "samsaran-lore",
@@ -5893,7 +8733,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "samsaran-lore",
@@ -5905,7 +8745,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "sanguine-tenacity",
@@ -5934,7 +8774,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "sarangay-lore",
@@ -5946,7 +8786,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "scaling-poppet",
@@ -5975,7 +8815,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "scion-transformation",
@@ -6055,7 +8895,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "serpentine-swimmer",
@@ -6075,6 +8915,34 @@
       "at": "2026-07-19T17:43:25.437072+00:00"
     },
     {
+      "entityId": "serpents-tongue",
+      "key": "grant:sense:scent",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "scent",
+          "type": "sense",
+          "range": 30,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:07:24.775498+00:00"
+    },
+    {
+      "entityId": "shadowdancer-dedication",
+      "key": "grant:sense:greater darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "greater darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:34:38.423264+00:00"
+    },
+    {
       "entityId": "shieldmarshal-dedication",
       "key": "proficiency:society",
       "action": "accept",
@@ -6084,7 +8952,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "shokis-argument",
@@ -6096,7 +8964,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "shoony-lore",
@@ -6108,7 +8976,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "shoony-lore",
@@ -6120,7 +8988,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "shrouded-mien",
@@ -6132,7 +9000,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "silent-stone",
@@ -6144,7 +9012,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "sinister-appearance",
@@ -6156,7 +9024,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "skill-mastery",
@@ -6612,7 +9480,7 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "snare-setter",
@@ -6624,7 +9492,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "soaring-form",
@@ -6670,7 +9538,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "sodbuster",
@@ -6699,7 +9567,52 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "stalwart-song",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "stalwart-song",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "stalwart-song",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "startling-appearance-fleshwarp",
@@ -6711,7 +9624,58 @@
         "rank": 1,
         "target": "intimidation"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "steadying-stone",
+      "key": "modifier:fortitude:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "against attempts to Shove or Trip you, or against spells and effects that would knock you prone"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:03:31.222857+00:00"
+    },
+    {
+      "entityId": "steadying-stone",
+      "key": "modifier:reflex:circumstance",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "against attempts to Shove or Trip you, or against spells and effects that would knock you prone"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:03:34.650874+00:00"
+    },
+    {
+      "entityId": "steel-yourself",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "stonebound-dedication",
@@ -6740,7 +9704,52 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "storm-spiral",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "storm-spiral",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "storm-spiral",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "story-crooner",
@@ -6752,7 +9761,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "strix-lore",
@@ -6764,7 +9773,7 @@
         "rank": 1,
         "target": "acrobatics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "strix-lore",
@@ -6776,7 +9785,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "strong-tail",
@@ -6843,7 +9852,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "superior-sight",
@@ -6884,7 +9893,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "svetocher",
@@ -6896,7 +9905,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "swashbuckler-dedication",
@@ -7033,7 +10042,61 @@
         "rank": 1,
         "target": "athletics"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "tangle-tongues-wit",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:linguistic"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "tangle-tongues-wit",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:linguistic"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "tangle-tongues-wit",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:linguistic"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "tanuki-lore",
@@ -7045,7 +10108,7 @@
         "rank": 1,
         "target": "deception"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "tanuki-lore",
@@ -7057,7 +10120,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "tengu-lore",
@@ -7069,7 +10132,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "tengu-lore",
@@ -7081,7 +10144,22 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "terra-dragonblood",
+      "key": "grant:sense:tremorsense",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "tremorsense",
+          "type": "sense",
+          "range": 30,
+          "acuity": "imprecise"
+        }
+      },
+      "at": "2026-07-19T20:07:31.748542+00:00"
     },
     {
       "entityId": "thaumaturge-dedication",
@@ -7161,6 +10239,81 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "tide-hardened",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:cold"
+            },
+            {
+              "tag": "effect:trait:water"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "tide-hardened",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:cold"
+            },
+            {
+              "tag": "effect:trait:water"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "tide-hardened",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:cold"
+            },
+            {
+              "tag": "effect:trait:water"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "tillers-drive",
       "key": "modifier:speed:land:status",
       "action": "accept",
@@ -7220,7 +10373,7 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "toughness",
@@ -7266,7 +10419,7 @@
         "rank": 1,
         "target": "medicine"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "travelers-counsel",
@@ -7278,7 +10431,7 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "tree-climber-elf",
@@ -7307,7 +10460,7 @@
         "rank": 1,
         "target": "nature"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "tripkee-lore",
@@ -7319,7 +10472,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "true-dragons-flight",
@@ -7391,6 +10544,60 @@
     },
     {
       "entityId": "undaunted",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "undaunted",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "undaunted",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "undaunted",
       "key": "rollAdjust:fortitude",
       "action": "accept",
       "effect": {
@@ -7459,6 +10666,21 @@
       "at": "2026-07-19T17:43:28.790203+00:00"
     },
     {
+      "entityId": "unending-subsistence",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "vampire-lore",
       "key": "proficiency:religion",
       "action": "accept",
@@ -7468,7 +10690,7 @@
         "rank": 1,
         "target": "religion"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "vampire-lore",
@@ -7480,7 +10702,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "vanara-lore",
@@ -7492,7 +10714,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "vanara-lore",
@@ -7504,7 +10726,7 @@
         "rank": 1,
         "target": "thievery"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "vandal",
@@ -7516,7 +10738,7 @@
         "rank": 1,
         "target": "thievery"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "verduran-shadow-dedication",
@@ -7531,6 +10753,67 @@
       "at": "2026-07-19T17:43:28.790203+00:00"
     },
     {
+      "entityId": "vibration-sense",
+      "key": "grant:sense:tremorsense",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-19T20:29:16.368097+00:00"
+    },
+    {
+      "entityId": "vigorous-victor",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:drained"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "vigorous-victor",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:drained"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "vigorous-victor",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:causes:drained"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "vishkanya-lore",
       "key": "proficiency:performance",
       "action": "accept",
@@ -7540,7 +10823,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "vishkanya-lore",
@@ -7552,7 +10835,20 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "visual-fidelity",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:34:21.75649+00:00"
     },
     {
       "entityId": "wandering-chef-dedication",
@@ -7564,7 +10860,61 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "ward-against-corruption",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:death"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "ward-against-corruption",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:death"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "ward-against-corruption",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:death"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "warren-digger",
@@ -7593,7 +10943,7 @@
         "rank": 1,
         "target": "survival"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "water-nagaji",
@@ -7639,7 +10989,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "wayang-lore",
@@ -7651,7 +11001,7 @@
         "rank": 1,
         "target": "stealth"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "web-hunter",
@@ -7874,6 +11224,60 @@
     },
     {
       "entityId": "well-groomed",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "well-groomed",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "well-groomed",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:disease"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "well-groomed",
       "key": "rollAdjust:fortitude",
       "action": "accept",
       "effect": {
@@ -7939,7 +11343,82 @@
         "rank": 1,
         "target": "diplomacy"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "wind-tempered",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:air"
+            },
+            {
+              "tag": "effect:trait:electricity"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "wind-tempered",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:air"
+            },
+            {
+              "tag": "effect:trait:electricity"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "wind-tempered",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:air"
+            },
+            {
+              "tag": "effect:trait:electricity"
+            }
+          ]
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
       "entityId": "wind-tempered",
@@ -8203,6 +11682,60 @@
       "at": "2026-07-19T17:43:33.637779+00:00"
     },
     {
+      "entityId": "witch-warden",
+      "key": "modifier:fortitude:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:curse"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "fortitude",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "witch-warden",
+      "key": "modifier:reflex:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:curse"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "reflex",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
+      "entityId": "witch-warden",
+      "key": "modifier:will:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "effect:trait:curse"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "will",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-19T20:00:46.107567+00:00"
+    },
+    {
       "entityId": "wizard-dedication",
       "key": "proficiency:arcana",
       "action": "accept",
@@ -8212,7 +11745,7 @@
         "rank": 1,
         "target": "arcana"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "woodworker",
@@ -8224,7 +11757,20 @@
         "rank": 1,
         "target": "crafting"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "worm-sense",
+      "key": "grant:sense:darkvision",
+      "action": "accept",
+      "effect": {
+        "kind": "grant",
+        "grant": {
+          "name": "darkvision",
+          "type": "sense"
+        }
+      },
+      "at": "2026-07-19T20:32:22.291072+00:00"
     },
     {
       "entityId": "wrestler-dedication",
@@ -8248,7 +11794,7 @@
         "rank": 1,
         "target": "occultism"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "you-dont-smell-right",
@@ -8275,7 +11821,7 @@
         "rank": 1,
         "target": "performance"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
       "entityId": "zephyr-guard-dedication",
@@ -8287,7 +11833,7 @@
         "rank": 1,
         "target": "society"
       },
-      "at": "2026-07-19T17:35:07.383284+00:00"
+      "at": "2026-07-19T19:57:43.388416+00:00"
     }
   ]
 }
