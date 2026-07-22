@@ -248,6 +248,73 @@ describe("conflicts", () => {
     if (out.ok) return;
     expect(out.issues.some((i) => i.field === "target")).toBe(true);
   });
+
+  // The corpus's dominant conflict shape, and the one that was silently dead: the
+  // producers disagree AND the primary draft is gapped on `when`, while the rival
+  // reading states the condition outright. 205 of the 244 open conflicts on
+  // 2026-07-22 looked exactly like this.
+  const whenGappedConflict = (): EffectCandidate =>
+    cand({
+      draft: gappedWhen,
+      agreement: "conflicting",
+      alternatives: [{ ...gappedWhen, when: deathTrait }],
+      gaps: [{ field: "when", reason: "conditional-unmapped", raw: "against death effects" }],
+      evidence: [{ source: "parser" }, { source: "foundry" }],
+    });
+
+  it("picking a reading that SUPPLIES the gapped field closes the gap and promotes", () => {
+    const out = resolveConflict(whenGappedConflict(), { index: 1 }, { by: "viv" });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.decision.action).toBe("accept");
+    expect(out.decision.effect).toMatchObject({ when: deathTrait });
+  });
+
+  it("picking the reading that does NOT supply it leaves the gap standing", () => {
+    // The other half of the rule: the gate is satisfied only when the chosen reading
+    // genuinely fills the hole. Index 0 is the gapped one, so this must still refuse.
+    const out = resolveConflict(whenGappedConflict(), { index: 0 });
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.issues.some((i) => i.field === "when")).toBe(true);
+  });
+
+  it("closes only the fields the reading supplies, so a half-filling reading stays blocked", () => {
+    // Gapped on both; the rival names a target but still no condition. Promoting on
+    // a partial fill is how a situational bonus becomes a permanent one.
+    const both = cand({
+      draft: gappedTarget,
+      agreement: "conflicting",
+      alternatives: [{ ...gappedTarget, target: "will" } as DraftEffect],
+      gaps: [
+        { field: "target", reason: "anaphoric", raw: "the check" },
+        { field: "when", reason: "conditional-unmapped", raw: "against undead" },
+      ],
+      evidence: [{ source: "parser" }, { source: "foundry" }],
+    });
+    const out = resolveConflict(both, { index: 1 });
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.issues.map((i) => i.field)).toEqual(["when"]);
+  });
+
+  it("an authored third reading closes gaps it fills, same rule", () => {
+    const authored: DraftEffect = { ...gappedWhen, when: deathTrait };
+    const out = resolveConflict(whenGappedConflict(), { draft: authored });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.decision.action).toBe("edit");
+  });
+
+  it("the decision is still addressed by the ORIGINAL key, not the settled one", () => {
+    // Same reason as `resolveGaps`: next producer run regenerates the gapped
+    // proposal, and the decision has to be found under the key it will have then.
+    const c = whenGappedConflict();
+    const out = resolveConflict(c, { index: 1 });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.decision.key).toBe(c.key);
+  });
 });
 
 describe("rejection with a reason", () => {

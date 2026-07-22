@@ -89,6 +89,21 @@ function suppliedFields(patch: ResolutionPatch): Set<string> {
 }
 
 /**
+ * Whether a DRAFT supplies a gapped field — the conflict picker's counterpart to
+ * `suppliedFields`, used by `resolveConflict`.
+ *
+ * Same mechanical rule, and the same deliberate blindness to the value: presence is
+ * the answer, and whether it is the RIGHT answer is a rules judgment this module
+ * does not make. Not restricted to `PATCHABLE_FIELDS` — that set bounds what a
+ * human may hand-author here, which is what keeps the queue from becoming a second
+ * authoring surface. A reading comes from a producer, already whole, so the bound
+ * does not apply to it.
+ */
+function supplies(draft: DraftEffect, field: string): boolean {
+  return (draft as Record<string, unknown>)[field] !== undefined;
+}
+
+/**
  * Apply a human's fill to a candidate, returning the patched candidate.
  *
  * THE GAP-CLEARING RULE IS MECHANICAL, ON PURPOSE: a gap on field F clears when
@@ -486,10 +501,23 @@ export function resolveConflict(
   // The picked reading becomes THE draft, and the disagreement is over: a human
   // ruled. `alternatives` goes with it — keeping them would leave a candidate that
   // still looks contested after it has been settled.
+  //
+  // GAPS CLEAR AGAINST THE PICKED READING, by the same mechanical rule
+  // `applyResolution` uses for a patch: a gap on field F closes when F is supplied.
+  // The gaps were measured against the ORIGINAL draft, so carrying them over
+  // unexamined blamed the chosen reading for a hole it does not have — and
+  // `promote` then refused a candidate that was, in fact, complete. Measured over
+  // the corpus (2026-07-22) that was 205 of the 244 open conflicts: every one had a
+  // reading supplying the missing field, and picking it silently did nothing.
+  //
+  // This is not a way around the gate. A reading that does NOT supply the field
+  // leaves the gap standing and still refuses — which is the existing contract, and
+  // the right answer, because that reading really is incomplete.
   const settled: EffectCandidate = {
     ...candidate,
     draft,
     agreement: "corroborated",
+    gaps: candidate.gaps.filter((g) => !supplies(draft, g.field)),
     key: effectKey(draft),
     signature: effectSignature(draft),
   };
