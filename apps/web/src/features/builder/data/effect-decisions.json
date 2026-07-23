@@ -15,6 +15,110 @@
       "at": "2026-07-21T01:50:14.676705+00:00"
     },
     {
+      "entityId": "abjure-the-false-kin",
+      "key": "rollAdjust:reflex",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "prose": "against a mental effect that doesn't deal damage"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "reflex"
+      },
+      "at": "2026-07-23T15:48:38.858235+00:00"
+    },
+    {
+      "entityId": "abjure-the-false-kin",
+      "key": "rollAdjust:will",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "prose": "against a mental effect that doesn't deal damage"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "will"
+      },
+      "at": "2026-07-23T15:48:42.948026+00:00"
+    },
+    {
+      "entityId": "abjure-the-false-kin",
+      "key": "rollAdjust:fortitude",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "prose": "against a mental effect that doesn't deal damage"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "fortitude"
+      },
+      "at": "2026-07-23T15:52:58.7805+00:00"
+    },
+    {
+      "entityId": "accelerating-touch",
+      "key": "modifier:speed:land:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T15:55:22.745671+00:00"
+    },
+    {
+      "entityId": "accursed-clay-fist",
+      "key": "modifier:fortitude:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T15:56:12.856093+00:00"
+    },
+    {
+      "entityId": "accursed-clay-fist",
+      "key": "modifier:reflex:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T15:57:20.598415+00:00"
+    },
+    {
+      "entityId": "accursed-clay-fist",
+      "key": "modifier:will:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T15:57:21.797426+00:00"
+    },
+    {
+      "entityId": "acrobat-dedication",
+      "key": "proficiency:acrobatics",
+      "action": "accept",
+      "effect": {
+        "kind": "proficiency",
+        "mode": "upgrade",
+        "rank": 2,
+        "target": "acrobatics"
+      },
+      "at": "2026-07-22T14:47:46.31055+00:00"
+    },
+    {
+      "entityId": "adamantine-body",
+      "key": "grant:resistance:all-damage",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T15:58:58.712284+00:00"
+    },
+    {
       "entityId": "adaptive-vision",
       "key": "rollAdjust:fortitude",
       "action": "accept",
@@ -144,6 +248,81 @@
       "at": "2026-07-19T19:58:42.619213+00:00"
     },
     {
+      "entityId": "adhyabhau",
+      "key": "rollAdjust:will",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "will"
+      },
+      "at": "2026-07-22T14:57:15.253332+00:00"
+    },
+    {
+      "entityId": "adhyabhau",
+      "key": "rollAdjust:reflex",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "reflex"
+      },
+      "at": "2026-07-22T15:58:32.041946+00:00"
+    },
+    {
+      "entityId": "adhyabhau",
+      "key": "rollAdjust:fortitude",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "tag": "effect:trait:emotion"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "fortitude"
+      },
+      "at": "2026-07-22T15:58:33.000177+00:00"
+    },
+    {
+      "entityId": "adrenaline-rush",
+      "key": "modifier:athletics:status",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "while Raging, on Athletics checks to lift heavy objects, Escape, or Force Open"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 1
+        },
+        "target": "athletics",
+        "bonusType": "status"
+      },
+      "at": "2026-07-23T16:00:00.261897+00:00"
+    },
+    {
       "entityId": "adroit-manipulation",
       "key": "proficiency:thievery",
       "action": "accept",
@@ -154,6 +333,236 @@
         "target": "thievery"
       },
       "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "adroit-manipulation",
+      "key": "rollAdjust:thievery",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "tag": "action:pick-a-lock"
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "thievery"
+      },
+      "at": "2026-07-23T16:01:02.0435+00:00"
+    },
+    {
+      "entityId": "adroit-manipulation",
+      "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+      "action": "accept",
+      "choice": {
+        "flag": "skill-choice",
+        "prompt": "Skill",
+        "options": [
+          {
+            "label": "Acrobatics",
+            "value": "acrobatics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "acrobatics"
+              }
+            ]
+          },
+          {
+            "label": "Arcana",
+            "value": "arcana",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "arcana"
+              }
+            ]
+          },
+          {
+            "label": "Athletics",
+            "value": "athletics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "athletics"
+              }
+            ]
+          },
+          {
+            "label": "Crafting",
+            "value": "crafting",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "crafting"
+              }
+            ]
+          },
+          {
+            "label": "Deception",
+            "value": "deception",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "deception"
+              }
+            ]
+          },
+          {
+            "label": "Diplomacy",
+            "value": "diplomacy",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "diplomacy"
+              }
+            ]
+          },
+          {
+            "label": "Intimidation",
+            "value": "intimidation",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "intimidation"
+              }
+            ]
+          },
+          {
+            "label": "Medicine",
+            "value": "medicine",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "medicine"
+              }
+            ]
+          },
+          {
+            "label": "Nature",
+            "value": "nature",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "nature"
+              }
+            ]
+          },
+          {
+            "label": "Occultism",
+            "value": "occultism",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "occultism"
+              }
+            ]
+          },
+          {
+            "label": "Performance",
+            "value": "performance",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "performance"
+              }
+            ]
+          },
+          {
+            "label": "Religion",
+            "value": "religion",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "religion"
+              }
+            ]
+          },
+          {
+            "label": "Society",
+            "value": "society",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "society"
+              }
+            ]
+          },
+          {
+            "label": "Stealth",
+            "value": "stealth",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "stealth"
+              }
+            ]
+          },
+          {
+            "label": "Survival",
+            "value": "survival",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "survival"
+              }
+            ]
+          },
+          {
+            "label": "Thievery",
+            "value": "thievery",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "thievery"
+              }
+            ]
+          }
+        ]
+      },
+      "at": "2026-07-23T16:01:37.773927+00:00"
+    },
+    {
+      "entityId": "aegis-for-the-innocent",
+      "key": "modifier:ac:status",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-23T16:02:08.74679+00:00"
     },
     {
       "entityId": "aegis-of-the-dissolution",
@@ -231,6 +640,24 @@
       "at": "2026-07-19T19:58:53.258845+00:00"
     },
     {
+      "entityId": "aerobatics-mastery",
+      "key": "modifier:acrobatics:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "action:maneuver-in-flight"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "acrobatics",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-23T16:02:47.04155+00:00"
+    },
+    {
       "entityId": "affliction-resistance",
       "key": "modifier:fortitude:circumstance",
       "action": "accept",
@@ -306,11 +733,620 @@
       "at": "2026-07-19T20:00:46.107567+00:00"
     },
     {
+      "entityId": "affliction-resistance",
+      "key": "rollAdjust:fortitude",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "fortitude"
+      },
+      "at": "2026-07-23T16:04:10.136375+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "rollAdjust:reflex",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "reflex"
+      },
+      "at": "2026-07-23T16:04:12.924185+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "rollAdjust:will",
+      "action": "accept",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "any": [
+            {
+              "tag": "effect:trait:disease"
+            },
+            {
+              "tag": "effect:trait:poison"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "will"
+      },
+      "at": "2026-07-23T16:04:17.342948+00:00"
+    },
+    {
+      "entityId": "affliction-resistance",
+      "key": "rollAdjust:?",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-23T16:05:03.268053+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:perception:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "perception",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:42.280419+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:acrobatics:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "acrobatics",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:43.193559+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:arcana:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "arcana",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:44.115118+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:deception:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "deception",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:47.506921+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:medicine:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "medicine",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:49.763695+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:performance:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "performance",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:52.990869+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:thievery:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "thievery",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:55.474671+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:athletics:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "athletics",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:44.552958+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:diplomacy:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "diplomacy",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:47.99937+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:nature:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "nature",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:50.677813+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:religion:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "religion",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:53.551713+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:survival:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "survival",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:56.150633+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:crafting:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "crafting",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:45.906013+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:intimidation:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "intimidation",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:48.612349+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:occultism:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "occultism",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:52.321716+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:society:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "society",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:54.082906+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:stealth:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "ageless-patience"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 2
+        },
+        "target": "stealth",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-22T14:48:56.66358+00:00"
+    },
+    {
+      "entityId": "ageless-patience",
+      "key": "modifier:?:circumstance",
+      "action": "reject",
+      "note": "duplicate",
+      "at": "2026-07-22T14:53:56.08012+00:00"
+    },
+    {
+      "entityId": "ageless-spirit",
+      "key": "choice:acrobatics|arcana|athletics|crafting|deception|diplomacy|intimidation|medicine|nature|occultism|performance|religion|society|stealth|survival|thievery",
+      "action": "accept",
+      "choice": {
+        "flag": "skill-choice",
+        "prompt": "Skill",
+        "options": [
+          {
+            "label": "Acrobatics",
+            "value": "acrobatics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "acrobatics"
+              }
+            ]
+          },
+          {
+            "label": "Arcana",
+            "value": "arcana",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "arcana"
+              }
+            ]
+          },
+          {
+            "label": "Athletics",
+            "value": "athletics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "athletics"
+              }
+            ]
+          },
+          {
+            "label": "Crafting",
+            "value": "crafting",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "crafting"
+              }
+            ]
+          },
+          {
+            "label": "Deception",
+            "value": "deception",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "deception"
+              }
+            ]
+          },
+          {
+            "label": "Diplomacy",
+            "value": "diplomacy",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "diplomacy"
+              }
+            ]
+          },
+          {
+            "label": "Intimidation",
+            "value": "intimidation",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "intimidation"
+              }
+            ]
+          },
+          {
+            "label": "Medicine",
+            "value": "medicine",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "medicine"
+              }
+            ]
+          },
+          {
+            "label": "Nature",
+            "value": "nature",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "nature"
+              }
+            ]
+          },
+          {
+            "label": "Occultism",
+            "value": "occultism",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "occultism"
+              }
+            ]
+          },
+          {
+            "label": "Performance",
+            "value": "performance",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "performance"
+              }
+            ]
+          },
+          {
+            "label": "Religion",
+            "value": "religion",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "religion"
+              }
+            ]
+          },
+          {
+            "label": "Society",
+            "value": "society",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "society"
+              }
+            ]
+          },
+          {
+            "label": "Stealth",
+            "value": "stealth",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "stealth"
+              }
+            ]
+          },
+          {
+            "label": "Survival",
+            "value": "survival",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "survival"
+              }
+            ]
+          },
+          {
+            "label": "Thievery",
+            "value": "thievery",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "thievery"
+              }
+            ]
+          }
+        ]
+      },
+      "at": "2026-07-22T14:54:18.193006+00:00"
+    },
+    {
       "entityId": "agile-hand",
       "key": "modifier:thievery:untyped",
       "action": "reject",
       "note": "not-a-passive",
       "at": "2026-07-21T01:50:00.541999+00:00"
+    },
+    {
+      "entityId": "air-shroud",
+      "key": "modifier:attack:circumstance",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-23T16:37:31.155597+00:00"
     },
     {
       "entityId": "alabaster-eyes",
@@ -340,6 +1376,49 @@
       "at": "2026-07-19T18:01:51.840291+00:00"
     },
     {
+      "entityId": "aldori-duelist-dedication",
+      "key": "choice:acrobatics|athletics",
+      "action": "accept",
+      "choice": {
+        "flag": "skill-choice",
+        "prompt": "Skill",
+        "options": [
+          {
+            "label": "Acrobatics",
+            "value": "acrobatics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "acrobatics"
+              }
+            ]
+          },
+          {
+            "label": "Athletics",
+            "value": "athletics",
+            "effects": [
+              {
+                "kind": "proficiency",
+                "mode": "upgrade",
+                "rank": 1,
+                "target": "athletics"
+              }
+            ]
+          }
+        ]
+      },
+      "at": "2026-07-23T16:39:26.226496+00:00"
+    },
+    {
+      "entityId": "aldori-parry",
+      "key": "modifier:ac:circumstance",
+      "action": "reject",
+      "note": "out-of-scope",
+      "at": "2026-07-23T16:45:20.002084+00:00"
+    },
+    {
       "entityId": "alghollthu-bound",
       "key": "modifier:will:circumstance",
       "action": "edit",
@@ -365,6 +1444,32 @@
       "at": "2026-07-22T13:52:52.25444+00:00"
     },
     {
+      "entityId": "alghollthu-bound",
+      "key": "rollAdjust:?",
+      "action": "edit",
+      "effect": {
+        "kind": "rollAdjust",
+        "when": {
+          "all": [
+            {
+              "tag": "effect:trait:mental"
+            },
+            {
+              "tag": "effect:causes:controlled"
+            }
+          ]
+        },
+        "adjust": {
+          "map": {
+            "success": "critical-success"
+          },
+          "type": "degreeMap"
+        },
+        "target": "will"
+      },
+      "at": "2026-07-23T16:57:18.013698+00:00"
+    },
+    {
       "entityId": "alkenstar-agent-dedication",
       "key": "proficiency:deception",
       "action": "accept",
@@ -375,6 +1480,24 @@
         "target": "deception"
       },
       "at": "2026-07-19T17:43:28.790203+00:00"
+    },
+    {
+      "entityId": "all-this-has-happened-before",
+      "key": "modifier:initiative:circumstance",
+      "action": "accept",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "tag": "all-this-has-happened-before"
+        },
+        "value": {
+          "kind": "lit",
+          "value": 4
+        },
+        "target": "initiative",
+        "bonusType": "circumstance"
+      },
+      "at": "2026-07-23T16:59:50.492064+00:00"
     },
     {
       "entityId": "alter-ego-dedication",
