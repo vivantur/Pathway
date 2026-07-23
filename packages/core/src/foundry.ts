@@ -798,10 +798,23 @@ function narrowFannedSkillTargets(produced: PassiveEffect[], when: Predicate | n
 // A Foundry LABEL IS USUALLY NOT TEXT. 460 of the corpus's 593 are localization keys
 // (`PF2E.TraitAcid`), so `humanLabel` keeps only what is already human-readable. Passing
 // an i18n key through would print `PF2E.TraitAcid` on a character sheet.
+/**
+ * Whether a string is one of Foundry's i18n KEYS rather than prose — `PF2E.TraitAcid`,
+ * `PF2E.SpecificRule.Dwarf.RockRunner.Note`, or a SCREAMING.DOTTED.KEY. The text these
+ * name lives in Foundry's `lang/*.json`, which we do not ingest, so a key is never
+ * something we can show a player.
+ *
+ * ONE implementation, used by every caller that faces the question. `humanLabel` had it
+ * inline and `mapNote` did not have it at all — which shipped 37 of the corpus's 43
+ * notes carrying a raw key as their body.
+ */
+function isLocalizationKey(v: string): boolean {
+  return /^PF2E\./.test(v) || /^[A-Z0-9_]+(\.[A-Z0-9_]+)+$/.test(v);
+}
+
 function humanLabel(v: unknown): string | undefined {
   if (typeof v !== "string" || v === "") return undefined;
-  // `PF2E.*` and SCREAMING.DOTTED.KEYS are Foundry's i18n namespace, never prose.
-  if (/^PF2E\./.test(v) || /^[A-Z0-9_]+(\.[A-Z0-9_]+)+$/.test(v)) return undefined;
+  if (isLocalizationKey(v)) return undefined;
   return v;
 }
 
@@ -1117,6 +1130,15 @@ function mapNote(rule: RuleElement): PassiveEffect[] {
   // `@Localize[…]` / `@UUID[…]` are Foundry content references, not text we own.
   if (/@(?:Localize|UUID|Compendium)\[/.test(text)) {
     throw new MapError("unsupported-value", "note text is a Foundry content reference");
+  }
+  // A bare key is the SAME category as the guard above — a reference to text living in
+  // Foundry's `lang/*.json`, which we do not ingest — but it carries no `@Localize[…]`
+  // wrapper, so it slipped straight through. That shipped 37 of the corpus's 43 notes
+  // with an unresolved key as their body: a sheet rendering the literal string
+  // "PF2E.SpecificRule.Hobgoblin.AgonizingRebuke.Note" to a player. Refusing them is
+  // the mapper's own rule — an effect we can stand behind, or a named blocker.
+  if (isLocalizationKey(text)) {
+    throw new MapError("unsupported-value", "note text is an unresolved localization key");
   }
 
   const targets: Selector[] = [];

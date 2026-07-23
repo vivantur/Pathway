@@ -540,6 +540,32 @@ describe("mapFoundryRules — Note", () => {
     ]);
     expect(report[0]).toMatchObject({ reason: "unsupported-value" });
   });
+
+  // The BARE key — no `@Localize[…]` wrapper — is the same reference, and it used to
+  // sail through the guard above. 37 of the corpus's 43 notes looked like this, so a
+  // sheet would have rendered the key itself to a player.
+  it("refuses a note whose text is a bare localization key", () => {
+    const { effects, report } = mapFoundryRules([
+      { key: "Note", selector: "athletics", text: "PF2E.SpecificRule.Dwarf.RockRunner.Note" },
+    ]);
+    expect(effects).toEqual([]);
+    expect(report[0]).toMatchObject({
+      outcome: "unsupported",
+      reason: "unsupported-value",
+      detail: "note text is an unresolved localization key",
+    });
+  });
+
+  it("still maps a note that merely CONTAINS a dot, or markup", () => {
+    // The guard keys on the shape of an identifier, not on punctuation — prose with a
+    // full stop, or an HTML-wrapped sentence, is still text we can show.
+    const { effects } = mapFoundryRules([
+      { key: "Note", selector: "athletics", text: "You Climb at full Speed. Really." },
+      { key: "Note", selector: "will", text: "<p class='compact-text'>You get a failure instead.</p>" },
+    ]);
+    expect(effects).toHaveLength(2);
+    expect(effects[0]).toMatchObject({ kind: "note", text: "You Climb at full Speed. Really." });
+  });
 });
 
 describe("mapFoundryRules — RollOption (toggles)", () => {
