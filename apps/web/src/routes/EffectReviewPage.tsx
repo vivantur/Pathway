@@ -1773,7 +1773,10 @@ function CandidateRow({
   return (
     <div
       className={`rounded-md border p-3 ${
-        decided === 'accept'
+        // Settled is settled: `edit` and `add` are decisions too, and testing only for
+        // `accept` left them wearing the UNDECIDED styling — a row a human had already
+        // ruled on still looking like outstanding work.
+        decided && decided !== 'reject'
           ? 'border-emerald/30 bg-emerald/5'
           : decided === 'reject'
             ? 'border-red-500/20 bg-red-500/5'
@@ -1798,7 +1801,19 @@ function CandidateRow({
         <div className="ml-auto flex items-center gap-1.5">
           {decided ? (
             <button onClick={onClear} className="rounded border border-gold/20 px-2 py-0.5 text-sm text-parchment/60 hover:text-gold">
-              {decided === 'accept' ? '✓ accepted' : '✕ rejected'} · undo
+              {/* Four actions, not two. `edit` (a gap filled, a conflict authored) and
+                  `add` both fell into the else and rendered as "rejected" — telling a
+                  reviewer their filled gap had been thrown away, and inviting them to
+                  undo work that had in fact been recorded correctly. Mirrors `statusOf`,
+                  which only ever calls `reject` a rejection. */}
+              {decided === 'reject'
+                ? '✕ rejected'
+                : decided === 'edit'
+                  ? '✎ edited'
+                  : decided === 'add'
+                    ? '✚ added'
+                    : '✓ accepted'}{' '}
+              · undo
             </button>
           ) : (
             <>
