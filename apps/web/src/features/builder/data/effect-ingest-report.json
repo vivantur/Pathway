@@ -1,31 +1,31 @@
 {
   "sourceCommit": "foundryvtt/pf2e@ea40c945bc2828ad8164e14fab8a2298484d4f4d",
-  "mappedAt": "2026-07-21T01:45:44.379Z",
+  "mappedAt": "2026-07-23T16:32:25.985Z",
   "summary": {
     "entities": 2490,
-    "entitiesWithEffects": 356,
+    "entitiesWithEffects": 415,
     "entitiesWithChoices": 30,
     "entitiesWithGrants": 206,
     "entitiesWithToggles": 562,
     "entitiesWithGrantedActions": 0,
     "grantedActions": 0,
     "elements": 5212,
-    "mapped": 1539,
-    "effectsProduced": 2062,
-    "unsupported": 3673,
+    "mapped": 1510,
+    "effectsProduced": 2027,
+    "unsupported": 3702,
     "byReason": {
       "needs-combat-tags": 813,
       "unsupported-shape": 328,
       "needs-item-model": 1446,
-      "unsupported-value": 67,
+      "unsupported-value": 98,
       "needs-runtime-choice": 384,
-      "unsupported-selector": 390,
+      "unsupported-selector": 388,
       "needs-granting": 242,
       "unsupported-bonus-type": 3
     },
     "byKey": {
       "AdjustDegreeOfSuccess": 41,
-      "Note": 234,
+      "Note": 263,
       "ItemAlteration": 949,
       "FlatModifier": 339,
       "Sense": 33,
@@ -805,8 +805,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -5868,8 +5869,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -7714,8 +7716,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 3,
@@ -8929,8 +8932,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -9198,8 +9202,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 3,
@@ -10185,8 +10190,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -12488,8 +12494,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -18798,8 +18805,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 3,
@@ -18914,8 +18922,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -20421,8 +20430,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -21418,8 +21428,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 1,
@@ -22124,14 +22135,16 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 2,
@@ -24654,8 +24667,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 3
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -25806,8 +25820,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -26877,8 +26892,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 3
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -27099,8 +27115,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 3
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -29731,8 +29748,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -34251,8 +34269,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -40041,8 +40060,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -41789,8 +41809,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -47849,8 +47870,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -55349,8 +55371,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -58137,8 +58160,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 1,
@@ -63649,8 +63673,8 @@
           "index": 1,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"alchemical-bomb-damage\""
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         },
         {
           "index": 2,
@@ -77752,8 +77776,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -89413,8 +89438,8 @@
           "index": 2,
           "key": "Note",
           "outcome": "unsupported",
-          "reason": "unsupported-selector",
-          "detail": "selector \"alchemical-bomb-damage\""
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -91927,8 +91952,9 @@
         {
           "index": 1,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -107143,8 +107169,9 @@
         {
           "index": 0,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -107915,8 +107942,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },
@@ -110847,8 +110875,9 @@
         {
           "index": 2,
           "key": "Note",
-          "outcome": "mapped",
-          "produced": 1
+          "outcome": "unsupported",
+          "reason": "unsupported-value",
+          "detail": "note text is an unresolved localization key"
         }
       ]
     },

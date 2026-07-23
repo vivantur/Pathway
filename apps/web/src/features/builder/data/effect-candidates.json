@@ -1,16 +1,16 @@
 {
- "generatedAt": "2026-07-21T17:19:48.560Z",
+ "generatedAt": "2026-07-23T16:28:18.696Z",
  "summary": {
   "feats": 6116,
   "featsWithProse": 6116,
-  "candidates": 2804,
+  "candidates": 2767,
   "autoPromote": 426,
   "conflicts": 273,
   "gapped": 840,
-  "review": 1265,
+  "review": 1228,
   "invalid": 0,
-  "silent": 4828,
-  "actionFeatsInQueue": 369
+  "silent": 4839,
+  "actionFeatsInQueue": 367
  },
  "candidates": [
   {
@@ -2000,26 +2000,6 @@
       "end": 125,
       "text": "You gain darkvision."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "alchemical-assessment",
-   "draft": {
-    "kind": "note",
-    "target": "crafting",
-    "text": "PF2E.SpecificRule.Alchemist.AlchemicalAssessment.Note",
-    "when": {
-     "tag": "action:identify-alchemy"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:crafting",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -7566,26 +7546,6 @@
    ]
   },
   {
-   "entityId": "demonbane-warrior",
-   "draft": {
-    "kind": "note",
-    "target": "damage:strike",
-    "text": "PF2E.SpecificRule.Elf.DemonbaneWarrior.Note",
-    "when": {
-     "tag": "target:trait:demon"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:damage:strike",
-   "signature": "note:damage:strike",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "devils-advocate",
    "draft": {
     "kind": "modifier",
@@ -9376,33 +9336,6 @@
   {
    "entityId": "earned-glory",
    "draft": {
-    "kind": "note",
-    "target": "performance",
-    "text": "PF2E.SpecificRule.HalfElf.EarnedGlory.Note",
-    "when": {
-     "all": [
-      {
-       "tag": "action:make-an-impression"
-      },
-      {
-       "tag": "target:trait:elf"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:performance",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "earned-glory",
-   "draft": {
     "kind": "rollAdjust",
     "target": "performance",
     "adjust": {
@@ -10527,33 +10460,6 @@
    ]
   },
   {
-   "entityId": "esteemed-visitor",
-   "draft": {
-    "kind": "note",
-    "target": "diplomacy",
-    "text": "PF2E.SpecificRule.Shoony.EsteemedVisitor.Note",
-    "when": {
-     "any": [
-      {
-       "tag": "action:gather-information"
-      },
-      {
-       "tag": "action:make-an-impression"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:diplomacy",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "expanded-senses",
    "draft": {
     "kind": "grant",
@@ -10729,26 +10635,6 @@
       "end": 552,
       "text": "you're Squeezing, you gain a +4 circumstance bonus to your Fortitude or Reflex DCs against attempts to Shove you or otherwise move you from your space."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "extra-squishy",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.Goblin.ExtraSquishy.Note",
-    "when": {
-     "tag": "action:squeeze"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -11924,26 +11810,6 @@
    "agreement": "foundry-only",
    "key": "rollAdjust:survival",
    "signature": "rollAdjust:skill:improve",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "forager",
-   "draft": {
-    "kind": "note",
-    "target": "survival",
-    "text": "PF2E.SpecificRule.Feat.Forager.Note",
-    "when": {
-     "tag": "action:subsist"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:survival",
-   "signature": "note:skill",
    "evidence": [
     {
      "source": "foundry"
@@ -14822,26 +14688,6 @@
       "end": 238,
       "text": "You gain the trained proficiency rank in Deception (or another skill of your choice,"
      }
-    }
-   ]
-  },
-  {
-   "entityId": "innocuous",
-   "draft": {
-    "kind": "note",
-    "target": "deception",
-    "text": "PF2E.SpecificRule.Halfling.Innocuous.Note",
-    "when": {
-     "tag": "action:create-a-diversion"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:deception",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -21740,33 +21586,6 @@
   {
    "entityId": "risky-surgery",
    "draft": {
-    "kind": "note",
-    "target": "medicine",
-    "text": "PF2E.SpecificRule.Feat.RiskySurgery.Note",
-    "when": {
-     "all": [
-      {
-       "tag": "action:treat-wounds"
-      },
-      {
-       "tag": "risky-surgery"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:medicine",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "risky-surgery",
-   "draft": {
     "kind": "rollAdjust",
     "target": "medicine",
     "adjust": {
@@ -22049,26 +21868,6 @@
       "end": 439,
       "text": "you roll a success at one of these Acrobatics checks, you get a critical success instead."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "rock-runner",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.Dwarf.RockRunner.Note",
-    "when": {
-     "tag": "action:balance"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -23681,26 +23480,6 @@
    ]
   },
   {
-   "entityId": "slither",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.Goblin.ExtraSquishy.Note",
-    "when": {
-     "tag": "action:squeeze"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "snare-setter",
    "draft": {
     "kind": "proficiency",
@@ -24634,26 +24413,6 @@
       "end": 151,
       "text": "you roll a success using the Balance action, you get a critical success instead."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "steady-balance",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.SteadyBalance.Note",
-    "when": {
-     "tag": "action:balance"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -25879,46 +25638,6 @@
       "text": "you roll a success on an Acrobatics check to Balance or an Athletics check to Climb, you get a critical success instead."
      }
     },
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "sure-feet",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.Halfling.SureFeet.BalanceNote",
-    "when": {
-     "tag": "action:balance"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "sure-feet",
-   "draft": {
-    "kind": "note",
-    "target": "athletics",
-    "text": "PF2E.SpecificRule.Halfling.SureFeet.ClimbNote",
-    "when": {
-     "tag": "action:climb"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:athletics",
-   "signature": "note:skill",
-   "evidence": [
     {
      "source": "foundry"
     }
@@ -29103,66 +28822,6 @@
    ]
   },
   {
-   "entityId": "unwavering-mien",
-   "draft": {
-    "kind": "note",
-    "target": "fortitude",
-    "text": "PF2E.SpecificRule.Elf.UnwaveringMien.Note",
-    "when": {
-     "tag": "effect:trait:sleep"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:fortitude",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "unwavering-mien",
-   "draft": {
-    "kind": "note",
-    "target": "reflex",
-    "text": "PF2E.SpecificRule.Elf.UnwaveringMien.Note",
-    "when": {
-     "tag": "effect:trait:sleep"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:reflex",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "unwavering-mien",
-   "draft": {
-    "kind": "note",
-    "target": "will",
-    "text": "PF2E.SpecificRule.Elf.UnwaveringMien.Note",
-    "when": {
-     "tag": "effect:trait:sleep"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:will",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "vampire-lore",
    "draft": {
     "kind": "proficiency",
@@ -29430,26 +29089,6 @@
       "text": "You gain the trained proficiency rank in Survival."
      }
     },
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "wash-out",
-   "draft": {
-    "kind": "note",
-    "target": "fortitude",
-    "text": "PF2E.SpecificRule.Poppet.WashOut.Note",
-    "when": {
-     "tag": "effect:trait:poison"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:fortitude",
-   "signature": "note:save",
-   "evidence": [
     {
      "source": "foundry"
     }
@@ -31310,87 +30949,6 @@
    ]
   },
   {
-   "entityId": "witch-warden",
-   "draft": {
-    "kind": "note",
-    "target": "fortitude",
-    "text": "PF2E.SpecificRule.Human.WitchWarden.SaveNote",
-    "when": {
-     "any": [
-      {
-       "tag": "effect:trait:curse"
-      },
-      {
-       "tag": "origin:trait:hag"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:fortitude",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "witch-warden",
-   "draft": {
-    "kind": "note",
-    "target": "reflex",
-    "text": "PF2E.SpecificRule.Human.WitchWarden.SaveNote",
-    "when": {
-     "any": [
-      {
-       "tag": "effect:trait:curse"
-      },
-      {
-       "tag": "origin:trait:hag"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:reflex",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "witch-warden",
-   "draft": {
-    "kind": "note",
-    "target": "will",
-    "text": "PF2E.SpecificRule.Human.WitchWarden.SaveNote",
-    "when": {
-     "any": [
-      {
-       "tag": "effect:trait:curse"
-      },
-      {
-       "tag": "origin:trait:hag"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:will",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "woodcraft",
    "draft": {
     "kind": "rollAdjust",
@@ -31437,96 +30995,6 @@
       "end": 283,
       "text": "you roll a success, you get a critical success instead."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "woodcraft",
-   "draft": {
-    "kind": "note",
-    "target": "fortitude",
-    "text": "PF2E.SpecificRule.Elf.Woodcraft.Note",
-    "when": {
-     "any": [
-      {
-       "tag": "action:sense-direction"
-      },
-      {
-       "tag": "action:subsist"
-      },
-      {
-       "tag": "action:cover-tracks"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:fortitude",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "woodcraft",
-   "draft": {
-    "kind": "note",
-    "target": "reflex",
-    "text": "PF2E.SpecificRule.Elf.Woodcraft.Note",
-    "when": {
-     "any": [
-      {
-       "tag": "action:sense-direction"
-      },
-      {
-       "tag": "action:subsist"
-      },
-      {
-       "tag": "action:cover-tracks"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:reflex",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "woodcraft",
-   "draft": {
-    "kind": "note",
-    "target": "will",
-    "text": "PF2E.SpecificRule.Elf.Woodcraft.Note",
-    "when": {
-     "any": [
-      {
-       "tag": "action:sense-direction"
-      },
-      {
-       "tag": "action:subsist"
-      },
-      {
-       "tag": "action:cover-tracks"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:will",
-   "signature": "note:save",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -33020,26 +32488,6 @@
       "text": "You become trained in Religion and your deity's associated skill;"
      }
     },
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "continual-recovery",
-   "draft": {
-    "kind": "note",
-    "target": "medicine",
-    "text": "PF2E.SpecificRule.ContinualRecovery.Note",
-    "when": {
-     "tag": "action:treat-wounds"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:medicine",
-   "signature": "note:skill",
-   "evidence": [
     {
      "source": "foundry"
     }
@@ -35363,23 +34811,6 @@
       "text": "You become trained in Occultism;"
      }
     },
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "hellbreaker-dedication",
-   "draft": {
-    "kind": "note",
-    "target": "initiative",
-    "text": "PF2E.SpecificRule.Hellbreaker.Dedication.InitiativeNote"
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:initiative",
-   "signature": "note:initiative",
-   "evidence": [
     {
      "source": "foundry"
     }
@@ -41447,26 +40878,6 @@
    ]
   },
   {
-   "entityId": "stunning-blows",
-   "draft": {
-    "kind": "note",
-    "target": "damage:strike",
-    "text": "PF2E.SpecificRule.Monk.StunningFist.Note",
-    "when": {
-     "tag": "stunning-blows"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:damage:strike",
-   "signature": "note:damage:strike",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "swan-dive",
    "draft": {
     "kind": "rollAdjust",
@@ -42362,33 +41773,6 @@
       "end": 516,
       "text": "you roll a failure, you get a success instead."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "ward-medic",
-   "draft": {
-    "kind": "note",
-    "target": "medicine",
-    "text": "PF2E.SpecificRule.WardMedic.Note",
-    "when": {
-     "any": [
-      {
-       "tag": "action:treat-wounds"
-      },
-      {
-       "tag": "action:treat-disease"
-      }
-     ]
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:medicine",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -45588,26 +44972,6 @@
    "agreement": "foundry-only",
    "key": "modifier:initiative:circumstance",
    "signature": "modifier:initiative:circumstance",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "duelists-edge",
-   "draft": {
-    "kind": "note",
-    "target": "initiative",
-    "text": "PF2E.SpecificRule.AldoriDuelist.DuelistsEdge.Note",
-    "when": {
-     "tag": "duelists-edge"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:initiative",
-   "signature": "note:initiative",
    "evidence": [
     {
      "source": "foundry"
@@ -53180,26 +52544,6 @@
    ]
   },
   {
-   "entityId": "agonizing-rebuke",
-   "draft": {
-    "kind": "note",
-    "target": "intimidation",
-    "text": "PF2E.SpecificRule.Hobgoblin.AgonizingRebuke.Note",
-    "when": {
-     "tag": "action:demoralize"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:intimidation",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "all-this-has-happened-before",
    "draft": {
     "kind": "modifier",
@@ -55283,26 +54627,6 @@
       "end": 268,
       "text": "you roll a success, you get a critical success instead."
      }
-    }
-   ]
-  },
-  {
-   "entityId": "fluid-contortionist",
-   "draft": {
-    "kind": "note",
-    "target": "acrobatics",
-    "text": "PF2E.SpecificRule.AdjustDegreeOfSuccess.Squeeze.CriticalFailureSuccessBetter",
-    "when": {
-     "tag": "action:squeeze"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:acrobatics",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -64355,23 +63679,6 @@
    ]
   },
   {
-   "entityId": "spirits-interference",
-   "draft": {
-    "kind": "note",
-    "target": "attack:ranged",
-    "text": "PF2E.SpecificRule.Barbarian.SpiritsInterference.Note"
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:attack:ranged",
-   "signature": "note:attack:ranged",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "stoney-deflection",
    "draft": {
     "kind": "modifier",
@@ -68667,23 +67974,6 @@
       "end": 282,
       "text": "You gain a +2 circumstance bonus to saving throws against mental effects caused by incorporeal undead and haunts, and you can roll a Spirit Lore or Haunt Lore check for initiative"
      }
-    }
-   ]
-  },
-  {
-   "entityId": "peer-beyond",
-   "draft": {
-    "kind": "note",
-    "target": "initiative",
-    "text": "PF2E.SpecificRule.Feat.PeerBeyond.Note"
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:initiative",
-   "signature": "note:initiative",
-   "evidence": [
-    {
-     "source": "foundry"
     }
    ]
   },
@@ -77623,26 +76913,6 @@
    ]
   },
   {
-   "entityId": "spiritual-flurry",
-   "draft": {
-    "kind": "note",
-    "target": "damage:strike",
-    "text": "PF2E.SpecificRule.ScionOfDomora.SpiritualFlurryNote",
-    "when": {
-     "tag": "spiritual-strike"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:damage:strike",
-   "signature": "note:damage:strike",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "stalwart-standard",
    "draft": {
     "kind": "modifier",
@@ -84968,23 +84238,6 @@
    ]
   },
   {
-   "entityId": "channel-divine-spark",
-   "draft": {
-    "kind": "note",
-    "target": "damage:strike:melee",
-    "text": "PF2E.SpecificRule.AscendedCelestial.ChannelDivineSpark.Note"
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:damage:strike:melee",
-   "signature": "note:damage:strike:melee",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "chosen-ward",
    "draft": {
     "kind": "modifier",
@@ -88645,26 +87898,6 @@
    ]
   },
   {
-   "entityId": "legendary-codebreaker",
-   "draft": {
-    "kind": "note",
-    "target": "society",
-    "text": "PF2E.SpecificRule.Feat.LegendaryCodebreaker.Note",
-    "when": {
-     "tag": "action:decipher-writing"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:society",
-   "signature": "note:skill",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
    "entityId": "legendary-leader",
    "draft": {
     "kind": "modifier",
@@ -89310,26 +88543,6 @@
    "agreement": "foundry-only",
    "key": "modifier:thievery:status",
    "signature": "modifier:skill:status",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "death-from-above-eternal-legend",
-   "draft": {
-    "kind": "note",
-    "target": "damage:strike",
-    "text": "PF2E.SpecificRule.EternalLegend.DeathFromAbove.Note",
-    "when": {
-     "tag": "death-from-above-eternal-legend"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:damage:strike",
-   "signature": "note:damage:strike",
    "evidence": [
     {
      "source": "foundry"
@@ -91562,26 +90775,6 @@
    "agreement": "foundry-only",
    "key": "modifier:attack:ranged:circumstance",
    "signature": "modifier:attack:ranged:circumstance",
-   "evidence": [
-    {
-     "source": "foundry"
-    }
-   ]
-  },
-  {
-   "entityId": "forge-blessed-shot",
-   "draft": {
-    "kind": "note",
-    "target": "attack:ranged",
-    "text": "PF2E.SpecificRule.Dwarf.ForgeBlessedShot.Note",
-    "when": {
-     "tag": "forge-blessed-shot"
-    }
-   },
-   "gaps": [],
-   "agreement": "foundry-only",
-   "key": "note:attack:ranged",
-   "signature": "note:attack:ranged",
    "evidence": [
     {
      "source": "foundry"
@@ -96208,6 +95401,16 @@
    "actionCost": "reaction"
   },
   {
+   "entityId": "alchemical-assessment",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "alchemical-crafting",
    "reason": "no-producer-signal"
   },
@@ -97014,6 +96217,20 @@
    "entityId": "deliberate-death",
    "reason": "action-feat",
    "actionCost": "reaction"
+  },
+  {
+   "entityId": "demonbane-warrior",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-selector",
+     "count": 1
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
   },
   {
    "entityId": "desperate-prayer",
@@ -100103,6 +99320,16 @@
    ]
   },
   {
+   "entityId": "wash-out",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "watchful-gaze",
    "reason": "action-feat",
    "actionCost": "1",
@@ -100776,6 +100003,16 @@
    ]
   },
   {
+   "entityId": "continual-recovery",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "convergent-tides",
    "reason": "no-producer-signal"
   },
@@ -101391,6 +100628,20 @@
   {
    "entityId": "hands-that-unweave-disaster",
    "reason": "no-producer-signal"
+  },
+  {
+   "entityId": "hellbreaker-dedication",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "needs-granting",
+     "count": 2
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
   },
   {
    "entityId": "hellknight-armiger-dedication",
@@ -102367,6 +101618,16 @@
    ]
   },
   {
+   "entityId": "stunning-blows",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "summoner-dedication",
    "reason": "all-unsupported",
    "blockers": [
@@ -102628,6 +101889,16 @@
    "blockers": [
     {
      "reason": "needs-granting",
+     "count": 1
+    }
+   ]
+  },
+  {
+   "entityId": "ward-medic",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
      "count": 1
     }
    ]
@@ -106685,6 +105956,16 @@
    ]
   },
   {
+   "entityId": "agonizing-rebuke",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "alarming-disappearance",
    "reason": "no-producer-signal"
   },
@@ -109030,7 +108311,7 @@
    "actionCost": "free",
    "blockers": [
     {
-     "reason": "unsupported-selector",
+     "reason": "unsupported-value",
      "count": 1
     },
     {
@@ -111507,6 +110788,21 @@
    "entityId": "spirits-absolution",
    "reason": "action-feat",
    "actionCost": "1"
+  },
+  {
+   "entityId": "spirits-interference",
+   "reason": "action-feat",
+   "actionCost": "1",
+   "blockers": [
+    {
+     "reason": "unsupported-shape",
+     "count": 1
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
   },
   {
    "entityId": "spiritual-secret",
@@ -118009,7 +117305,11 @@
    "blockers": [
     {
      "reason": "unsupported-selector",
-     "count": 2
+     "count": 1
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
     }
    ]
   },
@@ -119373,6 +118673,20 @@
     {
      "reason": "needs-combat-tags",
      "count": 2
+    }
+   ]
+  },
+  {
+   "entityId": "spiritual-flurry",
+   "reason": "all-unsupported",
+   "blockers": [
+    {
+     "reason": "needs-item-model",
+     "count": 1
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
     }
    ]
   },
@@ -125828,6 +125142,21 @@
    ]
   },
   {
+   "entityId": "death-from-above-eternal-legend",
+   "reason": "action-feat",
+   "actionCost": "2",
+   "blockers": [
+    {
+     "reason": "needs-item-model",
+     "count": 1
+    },
+    {
+     "reason": "unsupported-value",
+     "count": 1
+    }
+   ]
+  },
+  {
    "entityId": "deathblow",
    "reason": "action-feat",
    "actionCost": "2"
@@ -130142,7 +129471,6 @@
   "smite",
   "snap-falling-fruit",
   "snipers-aim",
-  "spirits-interference",
   "stoney-deflection",
   "sweeping-fan-block",
   "triggerbrand-salvo",
@@ -130294,7 +129622,6 @@
   "legendary-negotiation",
   "abjure-harm",
   "cry-of-rebellion",
-  "death-from-above-eternal-legend",
   "declare-anathema",
   "deflecting-cloud",
   "desperate-wrath",
@@ -130344,7 +129671,7 @@
  "silenceBlockers": [
   {
    "reason": "needs-item-model",
-   "count": 1468
+   "count": 1470
   },
   {
    "reason": "needs-combat-tags",
@@ -130356,19 +129683,19 @@
   },
   {
    "reason": "unsupported-selector",
-   "count": 330
+   "count": 329
   },
   {
    "reason": "unsupported-shape",
-   "count": 318
+   "count": 319
   },
   {
    "reason": "needs-granting",
-   "count": 300
+   "count": 302
   },
   {
    "reason": "unsupported-value",
-   "count": 75
+   "count": 88
   },
   {
    "reason": "unknown-key",
