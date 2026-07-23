@@ -619,21 +619,33 @@ function PatchFields({
           <span className="text-parchment/40">the stat the pronoun refers to</span>
         </label>
       )}
-      {fields.has('when') && (
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 text-xs text-parchment/70">
-            <input
-              type="checkbox"
-              checked={!!patch.unconditional}
-              onChange={(e) => onPatch({ ...patch, unconditional: e.target.checked, ...(e.target.checked ? { when: undefined } : {}) })}
-            />
-            no condition — the prose clause is not a condition on this effect
-          </label>
-          {!patch.unconditional && (
-            <PredicateField value={patch.when} onChange={(v) => onPatch({ ...patch, when: v })} />
-          )}
-        </div>
-      )}
+      {/* The condition builder is NOT gated on a `when` gap, unlike `target` above.
+          A gap list records what the parser NOTICED, and a condition it failed to
+          notice is still a condition: Alghollthu Bound's degree shift was flagged
+          only for its pronoun ("such an effect"), so the row offered a target
+          dropdown and no way to say "vs mental effects that would make you
+          controlled" — and filling in the target alone would have promoted an
+          unconditional upgrade on EVERY Will save. 55 undecided rows are gapped on
+          `target` alone, many of them scoped in prose the same way.
+
+          Still two fields, so the queue does not become the general authoring
+          surface `resolution.ts` keeps it from being. `target` stays gap-gated
+          because a row that already names its target should not invite retargeting
+          — that would be authoring. An untouched builder leaves `patch.when`
+          undefined, so `applyResolution` changes nothing. */}
+      <div className="space-y-1.5">
+        <label className="flex items-center gap-2 text-xs text-parchment/70">
+          <input
+            type="checkbox"
+            checked={!!patch.unconditional}
+            onChange={(e) => onPatch({ ...patch, unconditional: e.target.checked, ...(e.target.checked ? { when: undefined } : {}) })}
+          />
+          no condition — the prose clause is not a condition on this effect
+        </label>
+        {!patch.unconditional && (
+          <PredicateField value={patch.when} onChange={(v) => onPatch({ ...patch, when: v })} />
+        )}
+      </div>
     </div>
   );
 }
