@@ -1342,6 +1342,13 @@
       "at": "2026-07-21T01:50:00.541999+00:00"
     },
     {
+      "entityId": "agonizing-rebuke",
+      "key": "note:intimidation",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-24T02:32:21.720884+00:00"
+    },
+    {
       "entityId": "air-shroud",
       "key": "modifier:attack:circumstance",
       "action": "reject",
@@ -1877,6 +1884,13 @@
       "at": "2026-07-22T13:55:08.58667+00:00"
     },
     {
+      "entityId": "avowed-insight",
+      "key": "modifier:ac:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-24T02:27:38.717466+00:00"
+    },
+    {
       "entityId": "awakened-animal-lore",
       "key": "proficiency:arcana",
       "action": "accept",
@@ -1925,6 +1939,13 @@
       "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
+      "entityId": "axumas-vigor",
+      "key": "modifier:?:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-24T02:30:19.773784+00:00"
+    },
+    {
       "entityId": "azarketi-lore",
       "key": "proficiency:athletics",
       "action": "accept",
@@ -1959,6 +1980,24 @@
         "target": "athletics"
       },
       "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "barbarian-dedication",
+      "key": "modifier:ac:untyped",
+      "action": "edit",
+      "effect": {
+        "kind": "modifier",
+        "when": {
+          "prose": "while raging"
+        },
+        "value": {
+          "kind": "lit",
+          "value": -1
+        },
+        "target": "ac",
+        "bonusType": "untyped"
+      },
+      "at": "2026-07-24T02:29:59.568+00:00"
     },
     {
       "entityId": "bard-dedication",
@@ -2033,6 +2072,13 @@
       "at": "2026-07-19T19:57:43.388416+00:00"
     },
     {
+      "entityId": "battleforger",
+      "key": "modifier:attack:item",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-24T02:27:15.110918+00:00"
+    },
+    {
       "entityId": "beast-trainer",
       "key": "proficiency:nature",
       "action": "accept",
@@ -2057,6 +2103,13 @@
         "target": "society"
       },
       "at": "2026-07-19T19:57:43.388416+00:00"
+    },
+    {
+      "entityId": "beautiful-knifework",
+      "key": "modifier:deception:circumstance",
+      "action": "reject",
+      "note": "not-a-passive",
+      "at": "2026-07-24T02:29:22.7976+00:00"
     },
     {
       "entityId": "become-thought",
